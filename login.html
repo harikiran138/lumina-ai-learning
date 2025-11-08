@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Signup - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lumina Core Scripts -->
+    <script src="/js/postgresql-api.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #f59e0b, #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #light-icon, #dark-icon { display: none; }
+        html.dark #dark-icon { display: block; }
+        html:not(.dark) #light-icon { display: block; }
+    </style>
+    <script>
+        // On page load or when changing themes, best to add inline in `head` to avoid FOUC
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300">
+
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="absolute top-4 right-4 z-20">
+             <button id="theme-toggle" class="p-2 rounded-lg bg-white/50 dark:bg-black/50 backdrop-blur-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800">
+                <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+            </button>
+        </div>
+        
+        <div class="max-w-md w-full space-y-8 bg-white/80 dark:bg-black/80 backdrop-blur-xl p-10 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800">
+            <div>
+                <a href="index.html" class="flex justify-center text-3xl font-bold">
+                    <span class="gradient-text">Lumina</span> ✨
+                </a>
+                <h2 id="form-title" class="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
+                    Sign in to your account
+                </h2>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="flex justify-center rounded-lg bg-gray-200 dark:bg-gray-900 p-1">
+                <button id="signin-btn" class="w-full py-2 px-4 rounded-md text-sm font-medium bg-white dark:bg-gray-800 text-amber-600 shadow">Sign In</button>
+                <button id="signup-btn" class="w-full py-2 px-4 rounded-md text-sm font-medium text-gray-600 dark:text-gray-400">Sign Up</button>
+            </div>
+
+            <!-- Sign In Form -->
+            <form id="signin-form" class="mt-8 space-y-6">
+                <div class="rounded-md shadow-sm -space-y-px">
+                    <div>
+                        <label for="signin-email" class="sr-only">Email address</label>
+                        <input id="signin-email" name="email" type="email" autocomplete="email" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 placeholder-gray-500 text-gray-900 dark:text-white rounded-t-md focus:outline-none focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm" placeholder="Email address">
+                    </div>
+                    <div>
+                        <label for="signin-password" class="sr-only">Password</label>
+                        <input id="signin-password" name="password" type="password" autocomplete="current-password" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 placeholder-gray-500 text-gray-900 dark:text-white focus:outline-none focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm" placeholder="Password">
+                    </div>
+                    <div>
+                        <label for="role" class="sr-only">Role</label>
+                        <select id="role" name="role" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-300 rounded-b-md focus:outline-none focus:ring-amber-500 focus:border-amber-500 focus:z-10 sm:text-sm">
+                            <option value="" disabled selected>Select your role</option>
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="text-sm">
+                        <a href="#" class="font-medium text-amber-600 hover:text-amber-500">
+                            Forgot your password?
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500" id="signin-btn">
+                        <span id="signin-text">Sign in</span>
+                        <span id="signin-loading" class="hidden">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+                
+                <!-- Quick Login Helpers for Demo -->
+                <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">Quick Login (Demo):</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="quickLogin('admin')" class="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600">Admin</button>
+                        <button type="button" onclick="quickLogin('teacher')" class="text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600">Teacher</button>
+                        <button type="button" onclick="quickLogin('student')" class="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Student</button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Sign Up Form -->
+            <form id="signup-form" class="mt-8 space-y-6 hidden">
+                <div class="rounded-md shadow-sm space-y-3">
+                     <div>
+                        <label for="signup-name" class="sr-only">Full Name</label>
+                        <input id="signup-name" name="name" type="text" autocomplete="name" required class="appearance-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 placeholder-gray-500 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm" placeholder="Full Name">
+                    </div>
+                    <div>
+                        <label for="signup-email" class="sr-only">Email address</label>
+                        <input id="signup-email" name="email" type="email" autocomplete="email" required class="appearance-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 placeholder-gray-500 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm" placeholder="Email address">
+                    </div>
+                    <div>
+                        <label for="signup-password" class="sr-only">Password</label>
+                        <input id="signup-password" name="password" type="password" autocomplete="new-password" required class="appearance-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 placeholder-gray-500 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm" placeholder="Password">
+                    </div>
+                     <div>
+                        <label for="role" class="sr-only">Role</label>
+<select id="role" name="role" required class="appearance-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-300 rounded-md focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm">
+    <option value="" disabled selected>Select your role</option>
+    <option value="student">Student</option>
+    <option value="teacher">Teacher</option>
+    <option value="admin">Admin</option>
+</select>
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500" id="signup-btn">
+                        <span id="signup-text">Create Account</span>
+                        <span id="signup-loading" class="hidden">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+async function quickLogin(role) {
+    // For demo purposes, accept any email/password and use selected role
+    const demoEmails = {
+        admin: 'demo-admin@lumina.com',
+        teacher: 'demo-teacher@lumina.com',
+        student: 'demo-student@lumina.com'
+    };
+
+    const email = demoEmails[role] || 'demo@lumina.com';
+    const password = 'demo123';
+
+    document.getElementById('signin-email').value = email;
+    document.getElementById('signin-password').value = password;
+
+    // Set role in the role select dropdown
+    const roleSelect = document.getElementById('role');
+    if (roleSelect) {
+        roleSelect.value = role;
+    }
+
+    // Trigger form submission
+    document.getElementById('signin-form').dispatchEvent(new Event('submit'));
+}
+
+        // Fix: Add event listener to redirect after successful login
+        document.getElementById('signin-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signin-email').value;
+            const password = document.getElementById('signin-password').value;
+            const role = document.getElementById('role').value;
+            try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, role }),
+        });
+        if (!response.ok) {
+            alert('Login failed');
+            return;
+        }
+        const data = await response.json();
+        localStorage.setItem('authToken', data.token);
+        sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+        // Redirect based on role
+        if (data.user.role === 'teacher') {
+            window.location.href = '/teacher/dashboard.html';
+        } else if (data.user.role === 'student') {
+            window.location.href = '/student/dashboard.html';
+        } else if (data.user.role === 'admin') {
+            window.location.href = '/admin/dashboard.html';
+        } else {
+            window.location.href = '/login.html';
+        }
+            } catch (err) {
+                alert('Error during login');
+                console.error(err);
+            }
+        });
+
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Login page loaded');
+
+    // Check if user is already logged in with valid token
+    const token = localStorage.getItem('authToken');
+    console.log('Existing token found:', !!token);
+
+    if (token) {
+        try {
+            console.log('Checking for existing user session...');
+            const response = await fetch('http://localhost:3001/api/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            console.log('Session check response status:', response.status);
+
+            if (response.ok) {
+                const currentUser = await response.json();
+                console.log('Valid user session found:', currentUser);
+
+                // Store user data in session for dashboard use
+                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+                console.log('Redirecting to dashboard for role:', currentUser.role);
+
+                // If role is missing or unknown, show role selection modal
+                if (!currentUser.role || !['student', 'teacher', 'admin'].includes(currentUser.role)) {
+                    showRoleSelectionModal();
+                    return;
+                }
+
+                // Immediate redirect
+                redirectToDashboard(currentUser.role);
+                return; // Don't setup form handlers if redirecting
+            } else {
+                // Token is invalid, remove it
+                localStorage.removeItem('authToken');
+                sessionStorage.removeItem('currentUser');
+                console.log('Invalid token found, cleared session');
+            }
+        } catch (error) {
+            console.log('Error checking session:', error);
+            // Clear invalid session data
+            localStorage.removeItem('authToken');
+            sessionStorage.removeItem('currentUser');
+        }
+    }
+
+    console.log('Setting up form handlers...');
+    setupFormHandlers();
+});
+
+        function setupFormHandlers() {
+            const signinTabBtn = document.getElementById('signin-btn');
+            const signupTabBtn = document.getElementById('signup-btn');
+            const signinForm = document.getElementById('signin-form');
+            const signupForm = document.getElementById('signup-form');
+            const formTitle = document.getElementById('form-title');
+
+            // Tab switching
+            signinTabBtn.addEventListener('click', () => {
+                signinForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+                formTitle.textContent = 'Sign in to your account';
+                signinTabBtn.classList.add('bg-white', 'dark:bg-gray-800', 'text-amber-600', 'shadow');
+                signinTabBtn.classList.remove('text-gray-600', 'dark:text-gray-400');
+                signupTabBtn.classList.remove('bg-white', 'dark:bg-gray-800', 'text-amber-600', 'shadow');
+                signupTabBtn.classList.add('text-gray-600', 'dark:text-gray-400');
+            });
+
+            signupTabBtn.addEventListener('click', () => {
+                signupForm.classList.remove('hidden');
+                signinForm.classList.add('hidden');
+                formTitle.textContent = 'Create a new account';
+                signupTabBtn.classList.add('bg-white', 'dark:bg-gray-800', 'text-amber-600', 'shadow');
+                signupTabBtn.classList.remove('text-gray-600', 'dark:text-gray-400');
+                signinTabBtn.classList.remove('bg-white', 'dark:bg-gray-800', 'text-amber-600', 'shadow');
+                signinTabBtn.classList.add('text-gray-600', 'dark:text-gray-400');
+            });
+
+            // Form submission handlers
+            signinForm.addEventListener('submit', handleSignIn);
+            signupForm.addEventListener('submit', handleSignUp);
+        }
+
+        // Utility functions
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg z-50 ${
+                type === 'error' ? 'bg-red-500 text-white' : 
+                type === 'success' ? 'bg-green-500 text-white' : 
+                'bg-blue-500 text-white'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+        
+function redirectToDashboard(role) {
+    // Prevent multiple redirects
+    if (window.redirecting) {
+        console.log('Redirect already in progress, ignoring');
+        return;
+    }
+    window.redirecting = true;
+
+    // Check for redirect loops
+    const redirectCount = parseInt(sessionStorage.getItem('redirectCount') || '0');
+    if (redirectCount > 3) {
+        console.error('Too many redirects detected, clearing session');
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('currentUser');
+        sessionStorage.removeItem('redirectCount');
+        alert('Login error detected. Please try logging in again.');
+        return;
+    }
+
+    sessionStorage.setItem('redirectCount', (redirectCount + 1).toString());
+
+    // Redirect based on role
+    let url = '';
+    if (role === 'teacher') {
+        url = 'teacher/dashboard.html';
+    } else if (role === 'student') {
+        url = 'student/dashboard.html';
+    } else if (role === 'admin') {
+        url = 'admin/dashboard.html';
+    } else {
+        url = 'login.html';
+    }
+    console.log('Redirecting to:', url, '(attempt', redirectCount + 1, ')');
+
+    // Clear redirect count after successful load
+    setTimeout(() => {
+        sessionStorage.removeItem('redirectCount');
+    }, 2000);
+
+    window.location.href = url;
+}
+
+        async function handleSignIn(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('signin-btn');
+            const submitText = document.getElementById('signin-text');
+            const submitLoading = document.getElementById('signin-loading');
+
+            const email = document.getElementById('signin-email').value;
+            const password = document.getElementById('signin-password').value;
+            const role = document.getElementById('role').value;
+
+            if (!email || !password || !role) {
+                showNotification('Email, password, and role are required', 'error');
+                return;
+            }
+
+            // Show loading state
+            submitText.classList.add('hidden');
+            submitLoading.classList.remove('hidden');
+            submitBtn.disabled = true;
+
+        try {
+            // Use PostgreSQL authentication API
+            const response = await fetch('http://localhost:3001/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password, role })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                console.log('Login successful, received data:', data);
+                
+                // Verify we have the required data
+                if (!data.token) {
+                    throw new Error('No authentication token received');
+                }
+                if (!data.user) {
+                    throw new Error('No user data received');
+                }
+                
+                console.log('Token received:', data.token.substring(0, 20) + '...');
+                console.log('User data:', data.user);
+                
+                // Store authentication token and user data
+                localStorage.setItem('authToken', data.token);
+                sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+                
+                showNotification(`Welcome back, ${data.user.name}!`, 'success');
+                
+                console.log('Stored token and user, redirecting to dashboard for role:', data.user.role);
+                
+                // Redirect immediately after successful storage
+                redirectToDashboard(data.user.role);
+            } else {
+                console.log('Login failed with status:', response.status);
+                throw new Error(data.error || 'Login failed');
+            }
+            
+        } catch (error) {
+            console.error('Login failed:', error);
+            showNotification(error.message || 'Login failed', 'error');
+        } finally {
+            // Reset button state
+            submitText.classList.remove('hidden');
+            submitLoading.classList.add('hidden');
+            submitBtn.disabled = false;
+        }
+    }
+
+        async function handleSignUp(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('signup-btn');
+            const submitText = document.getElementById('signup-text');
+            const submitLoading = document.getElementById('signup-loading');
+            
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const role = document.getElementById('role').value;
+
+            // Basic validation
+            if (!name || !email || !password || !role) {
+                showNotification('Please fill in all fields', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showNotification('Password must be at least 6 characters long', 'error');
+                return;
+            }
+
+            // Show loading state
+            submitText.classList.add('hidden');
+            submitLoading.classList.remove('hidden');
+            submitBtn.disabled = true;
+
+            try {
+                // Use new PostgreSQL authentication API
+                const response = await fetch('http://localhost:3001/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, email, password, role })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Store authentication token
+                    localStorage.setItem('authToken', data.token);
+                    sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+                    
+                    showNotification(`Account created successfully! Welcome, ${data.user.name}!`, 'success');
+                    
+                    // Redirect to appropriate dashboard
+                    setTimeout(() => {
+                        redirectToDashboard(data.user.role);
+                    }, 1500);
+                } else {
+                    let errorMessage = data.error || 'Failed to create account';
+                    if (errorMessage.includes('already exists')) {
+                        errorMessage = 'An account with this email already exists';
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+            } catch (error) {
+                console.error('Signup failed:', error);
+                showNotification(error.message || 'Failed to create account', 'error');
+            } finally {
+                // Reset button state
+                submitText.classList.remove('hidden');
+                submitLoading.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
+
+    <!-- Role Selection Modal -->
+    <div id="role-selection-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white dark:bg-gray-900 rounded-lg p-8 max-w-sm w-full text-center shadow-lg">
+            <h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Select Your Role</h3>
+            <p class="mb-6 text-gray-700 dark:text-gray-300">Please select your role to continue:</p>
+            <div class="flex justify-around">
+                <button id="select-student" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Student</button>
+                <button id="select-teacher" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Teacher</button>
+                <button id="select-admin" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Admin</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showRoleSelectionModal() {
+            const modal = document.getElementById('role-selection-modal');
+            modal.classList.remove('hidden');
+
+            document.getElementById('select-student').onclick = () => {
+                modal.classList.add('hidden');
+                redirectToDashboard('student');
+            };
+            document.getElementById('select-teacher').onclick = () => {
+                modal.classList.add('hidden');
+                redirectToDashboard('teacher');
+            };
+            document.getElementById('select-admin').onclick = () => {
+                modal.classList.add('hidden');
+                redirectToDashboard('admin');
+            };
+        }
+    </script>
+</body>
+</html>
+

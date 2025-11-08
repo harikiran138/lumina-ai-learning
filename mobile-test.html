@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Responsiveness Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Test Container -->
+    <div class="min-h-screen p-4">
+        <h1 class="text-2xl font-bold mb-6 text-center">Mobile Responsiveness Test</h1>
+        
+        <!-- Screen Size Indicator -->
+        <div class="mb-6 p-4 bg-white rounded-lg shadow">
+            <h2 class="font-semibold mb-2">Current Screen Size:</h2>
+            <div class="space-y-2">
+                <div class="block sm:hidden bg-red-100 p-2 rounded">📱 Mobile (< 640px)</div>
+                <div class="hidden sm:block md:hidden bg-yellow-100 p-2 rounded">📱 Small (640px - 768px)</div>
+                <div class="hidden md:block lg:hidden bg-blue-100 p-2 rounded">💻 Medium (768px - 1024px)</div>
+                <div class="hidden lg:block xl:hidden bg-green-100 p-2 rounded">🖥️ Large (1024px - 1280px)</div>
+                <div class="hidden xl:block bg-purple-100 p-2 rounded">🖥️ Extra Large (1280px+)</div>
+            </div>
+        </div>
+
+        <!-- Test Layout Similar to Dashboard -->
+        <div class="relative h-96 bg-white rounded-lg shadow overflow-hidden lg:flex">
+            <!-- Sidebar Test -->
+            <aside id="test-sidebar" class="w-64 bg-blue-500 text-white flex-shrink-0 transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-40 h-full">
+                <div class="p-4">
+                    <h3 class="font-bold">Sidebar</h3>
+                    <p class="text-sm opacity-90">This should be hidden on mobile and visible on desktop</p>
+                </div>
+            </aside>
+
+            <!-- Main Content Test -->
+            <div class="flex-1 flex flex-col w-full lg:w-auto">
+                <header class="h-16 bg-gray-800 text-white flex items-center justify-between px-4">
+                    <div class="flex items-center">
+                        <button id="test-menu-btn" class="lg:hidden mr-4 p-2 bg-gray-700 rounded" onclick="testToggleSidebar()">
+                            ☰
+                        </button>
+                        <h1>Header</h1>
+                    </div>
+                </header>
+                
+                <main class="flex-1 p-4 bg-gray-50">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="bg-white p-4 rounded shadow">Card 1</div>
+                        <div class="bg-white p-4 rounded shadow">Card 2</div>
+                        <div class="bg-white p-4 rounded shadow">Card 3</div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- Overlay for mobile -->
+        <div id="test-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="testToggleSidebar()"></div>
+
+        <!-- Test Results -->
+        <div class="mt-6 p-4 bg-white rounded-lg shadow">
+            <h2 class="font-semibold mb-4">Test Results:</h2>
+            <div id="test-results" class="space-y-2">
+                <div>Window Width: <span id="window-width"></span>px</div>
+                <div>Tailwind CSS: <span id="tailwind-status"></span></div>
+                <div>Sidebar Transform: <span id="sidebar-transform"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function testToggleSidebar() {
+            const sidebar = document.getElementById('test-sidebar');
+            const overlay = document.getElementById('test-overlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('translate-x-0');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function updateTestResults() {
+            const windowWidth = window.innerWidth;
+            document.getElementById('window-width').textContent = windowWidth;
+            
+            // Check if Tailwind is working
+            const testEl = document.createElement('div');
+            testEl.className = 'hidden';
+            document.body.appendChild(testEl);
+            const isHidden = window.getComputedStyle(testEl).display === 'none';
+            document.body.removeChild(testEl);
+            document.getElementById('tailwind-status').textContent = isHidden ? 'Working' : 'Not Working';
+            
+            // Check sidebar transform
+            const sidebar = document.getElementById('test-sidebar');
+            const transform = window.getComputedStyle(sidebar).transform;
+            document.getElementById('sidebar-transform').textContent = transform;
+        }
+
+        // Update results on load and resize
+        window.addEventListener('load', updateTestResults);
+        window.addEventListener('resize', updateTestResults);
+    </script>
+
+</body>
+</html>
