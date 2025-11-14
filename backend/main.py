@@ -1230,16 +1230,20 @@ async def startup_event():
     init_telemetry()
     logger.info("OpenTelemetry instrumentation initialized")
     
-    # Create database tables
-    from db import create_tables
-    create_tables()
-    logger.info("Database tables created/verified")
+    # Create database tables (commented out for quick local dev; uncomment if using Postgres with proper schema)
+    # from db import create_tables
+    # create_tables()
+    # logger.info("Database tables created/verified")
     
-    # Initialize WebSocket service
+    logger.info("Skipping DB table creation for local dev (using dummy services)")
+    
+    # Initialize WebSocket service (commented out for quick local dev; requires networkx and other heavy deps)
     global realtime_pathway_service
-    from services.websocket_service import RealTimePathwayService
-    realtime_pathway_service = RealTimePathwayService()
-    logger.info("WebSocket service initialized")
+    realtime_pathway_service = None  # Set to None for local dev
+    # from services.websocket_service import RealTimePathwayService
+    # realtime_pathway_service = RealTimePathwayService()
+    # logger.info("WebSocket service initialized")
+    logger.info("WebSocket service skipped for quick local dev")
 
 # Shutdown event
 @app.on_event("shutdown")
