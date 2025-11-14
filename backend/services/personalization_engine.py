@@ -242,26 +242,25 @@ class PersonalizationEngine:
                 progress = {"completed_lessons": [], "weak_topics": [], "strong_topics": []}
 
             prompt = f"""
-        Create a personalized learning pathway for student {student_id} in course {course_id}.
-        
-        Student Profile:
-        - Current Level: {current_level}
-        - Completed Lessons: {len(progress.get('completed_lessons', []))}
-        - Average Assessment Score: {self._calculate_average_score(progress)}
-        - Weak Topics: {progress.get('weak_topics', [])}
-        - Strong Topics: {progress.get('strong_topics', [])}
-        
-        Generate a learning pathway with:
-        1. Recommended lesson sequence
-        2. Practice exercises for weak areas
-        3. Advanced topics for strong areas
-        4. Estimated completion time
-        5. Milestones and checkpoints
-        
-        Format as JSON with keys: lessons, exercises, milestones, estimated_time
-        """
+Create a personalized learning pathway for student {student_id} in course {course_id}.
 
-        try:
+Student Profile:
+- Current Level: {current_level}
+- Completed Lessons: {len(progress.get('completed_lessons', []))}
+- Average Assessment Score: {self._calculate_average_score(progress)}
+- Weak Topics: {progress.get('weak_topics', [])}
+- Strong Topics: {progress.get('strong_topics', [])}
+
+Generate a learning pathway with:
+1. Recommended lesson sequence
+2. Practice exercises for weak areas
+3. Advanced topics for strong areas
+4. Estimated completion time
+5. Milestones and checkpoints
+
+Format as JSON with keys: lessons, exercises, milestones, estimated_time
+"""
+
             # Generate multiple pathway candidates
             responses = await asyncio.gather(*[
                 self.llm_service.generate_response(prompt)
