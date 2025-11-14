@@ -22,7 +22,7 @@ hnswlib>=0.8.0  # For efficient similarity search
 PyPDF2==3.0.1
 pdfplumber==0.10.3
 python-docx==1.0.1
-pdfminer.six==20231228
+pdfminer.six==20221105
 docx2txt==0.8
 mammoth==1.6.0
 
@@ -61,18 +61,6 @@ prometheus-client==0.17.1
 psutil==5.9.8
 py-spy==0.3.14  # For CPU profiling
 memory-profiler==0.61.0  # For memory profiling
-
-# OpenTelemetry
-opentelemetry-api==1.21.0
-opentelemetry-sdk==1.21.0
-opentelemetry-instrumentation-fastapi==0.42b0
-opentelemetry-instrumentation-sqlalchemy==0.42b0
-opentelemetry-instrumentation-redis==0.42b0
-opentelemetry-instrumentation-requests==0.42b0
-opentelemetry-exporter-otlp-proto-grpc==1.21.0
-opentelemetry-exporter-prometheus==1.21.0
-opentelemetry-semantic-conventions==0.42b0
-grpcio==1.59.0  # For gRPC exporter
 
 # Development
 pytest==7.4.3

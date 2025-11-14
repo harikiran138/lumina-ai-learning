@@ -3,16 +3,16 @@ Lumina AI Backend - FastAPI Application
 Core AI services for RAG, embeddings, and LLM inference
 """
 
-from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from opentelemetry.instrumentation.redis import RedisInstrumentor
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+# from opentelemetry import trace
+# from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+# from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+# from opentelemetry.sdk.trace import TracerProvider
+# from opentelemetry.sdk.trace.export import BatchSpanProcessor
+# from opentelemetry.sdk.resources import Resource
+# from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+# from opentelemetry.instrumentation.redis import RedisInstrumentor
+# from opentelemetry.instrumentation.requests import RequestsInstrumentor
+# from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Depends, Request, status, WebSocket
 from fastapi.security import HTTPBearer
@@ -1129,46 +1129,46 @@ async def process_content_async(request: ContentIngestionRequest, content_id: st
             current_span.record_exception(e)
         raise
 # Initialize OpenTelemetry
-def init_telemetry():
-    """Initialize OpenTelemetry configuration"""
-    # Create a resource with service name
-    resource = Resource(attributes={
-        SERVICE_NAME: "lumina-ai-backend"
-    })
-
-    # Set up the trace provider
-    trace_provider = TracerProvider(resource=resource)
-    
-    # Create gRPC exporter
-    otlp_exporter = OTLPSpanExporter(
-        endpoint="http://localhost:4317",  # Default OTLP gRPC endpoint
-        insecure=True
-    )
-    
-    # Add BatchSpanProcessor to the trace provider
-    trace_provider.add_span_processor(
-        BatchSpanProcessor(otlp_exporter)
-    )
-    
-    # Set the trace provider as the global provider
-    trace.set_tracer_provider(trace_provider)
-    
-    # Instrument FastAPI
-    FastAPIInstrumentor.instrument_app(app)
-    
-    # Instrument SQLAlchemy
-    from db import engine
-    SQLAlchemyInstrumentor().instrument(engine=engine)
-    
-    # Instrument Redis if used
-    try:
-        from services.streak_service import redis_client
-        RedisInstrumentor().instrument()
-    except ImportError:
-        logger.warning("Redis instrumentation skipped - client not found")
-    
-    # Instrument requests library
-    RequestsInstrumentor().instrument()
+# def init_telemetry():
+#     """Initialize OpenTelemetry configuration"""
+#     # Create a resource with service name
+#     resource = Resource(attributes={
+#         SERVICE_NAME: "lumina-ai-backend"
+#     })
+#
+#     # Set up the trace provider
+#     trace_provider = TracerProvider(resource=resource)
+#
+#     # Create gRPC exporter
+#     otlp_exporter = OTLPSpanExporter(
+#         endpoint="http://localhost:4317",  # Default OTLP gRPC endpoint
+#         insecure=True
+#     )
+#
+#     # Add BatchSpanProcessor to the trace provider
+#     trace_provider.add_span_processor(
+#         BatchSpanProcessor(otlp_exporter)
+#     )
+#
+#     # Set the trace provider as the global provider
+#     trace.set_tracer_provider(trace_provider)
+#
+#     # Instrument FastAPI
+#     FastAPIInstrumentor.instrument_app(app)
+#
+#     # Instrument SQLAlchemy
+#     from db import engine
+#     SQLAlchemyInstrumentor().instrument(engine=engine)
+#
+#     # Instrument Redis if used
+#     try:
+#         from services.streak_service import redis_client
+#         RedisInstrumentor().instrument()
+#     except ImportError:
+#         logger.warning("Redis instrumentation skipped - client not found")
+#
+#     # Instrument requests library
+#     RequestsInstrumentor().instrument()
 
 # Startup event
 # WebSocket endpoints for real-time updates
@@ -1227,8 +1227,8 @@ async def startup_event():
     logger.info("Starting Lumina AI Backend")
     
     # Initialize OpenTelemetry
-    init_telemetry()
-    logger.info("OpenTelemetry instrumentation initialized")
+    # init_telemetry()
+    # logger.info("OpenTelemetry instrumentation initialized")
     
     # Create database tables (commented out for quick local dev; uncomment if using Postgres with proper schema)
     # from db import create_tables
