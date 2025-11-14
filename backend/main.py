@@ -493,13 +493,10 @@ async def generate_assessment(request: AssessmentGenerationRequest):
     try:
         logger.info(f"Generating {request.assessment_type} assessment for course: {request.course_id}")
         
-        with (
-            tracer.start_as_current_span("assessment_generation") as span,
-            ASSESSMENT_GENERATION_TIME.labels(
-                assessment_type=request.assessment_type,
-                difficulty=request.difficulty
-            ).time()
-        ):
+        with tracer.start_as_current_span("assessment_generation") as span, ASSESSMENT_GENERATION_TIME.labels(
+            assessment_type=request.assessment_type,
+            difficulty=request.difficulty
+        ).time():
             # Add trace context
             span.set_attribute("course_id", request.course_id)
             span.set_attribute("assessment_type", request.assessment_type)
