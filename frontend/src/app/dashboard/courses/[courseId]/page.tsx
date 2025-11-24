@@ -42,8 +42,12 @@ export default function CoursePage() {
         ]);
         setCourse(courseData);
         setLessons(lessonsData);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load course');
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message || 'Failed to load course');
+        } else {
+          setError('Failed to load course');
+        }
       } finally {
         setLoading(false);
       }

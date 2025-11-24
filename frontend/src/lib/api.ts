@@ -40,7 +40,12 @@ export const auth = {
     return Promise.resolve({
       access_token: 'mock-access-token',
       refresh_token: 'mock-refresh-token',
-      user: { email, name: 'Test User' },
+      user: {
+        id: '1',
+        email,
+        name: 'Test User',
+        role: 'student',
+      },
     });
   },
   register: async (name: string, email: string, password: string, role = 'student') => {
@@ -155,7 +160,7 @@ export const content = {
     if (courseId) {
       formData.append('course_id', courseId);
     }
-    
+
     const response = await api.post('/api/upload-content', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',

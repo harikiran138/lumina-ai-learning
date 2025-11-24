@@ -2,24 +2,37 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth, ROLES } from '@/lib/auth';
-import { analytics } from '@/lib/api';
+import { analytics as analyticsApi } from '@/lib/api';
+
+interface Activity {
+  id: string;
+  description: string;
+  date: string;
+}
+
+interface AnalyticsData {
+  current_streak: number;
+  average_score: number;
+  completed_courses: number;
+  recent_activity: Activity[];
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadAnalytics = async () => {
       try {
         if (user?.role === ROLES.STUDENT) {
-          const data = await analytics.getStudentAnalytics(user.id);
-          setAnalytics(data);
+          const data = await analyticsApi.getStudentAnalytics(user.id);
+          setAnalyticsData(data);
         } else if (user?.role === ROLES.TEACHER) {
           // For teachers, we'll load their first course's analytics
           // In a real app, you might want to show a course selector
-          const data = await analytics.getClassAnalytics('course_1');
-          setAnalytics(data);
+          const data = await analyticsApi.getClassAnalytics('course_1');
+          setAnalyticsData(data);
         }
       } catch (error) {
         console.error('Error loading analytics:', error);
@@ -51,7 +64,7 @@ export default function DashboardPage() {
     return (
       <div>
         <h1 className="text-2xl font-semibold text-gray-900 mb-6">Welcome back, {user.name}!</h1>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">
@@ -64,7 +77,7 @@ export default function DashboardPage() {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Current Streak</dt>
-                    <dd className="text-lg font-medium text-gray-900">{analytics?.current_streak || 0} days</dd>
+                    <dd className="text-lg font-medium text-gray-900">{analyticsData?.current_streak || 0} days</dd>
                   </dl>
                 </div>
               </div>
@@ -82,7 +95,7 @@ export default function DashboardPage() {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Average Score</dt>
-                    <dd className="text-lg font-medium text-gray-900">{analytics?.average_score || 0}%</dd>
+                    <dd className="text-lg font-medium text-gray-900">{analyticsData?.average_score || 0}%</dd>
                   </dl>
                 </div>
               </div>
@@ -100,7 +113,7 @@ export default function DashboardPage() {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Courses Completed</dt>
-                    <dd className="text-lg font-medium text-gray-900">{analytics?.completed_courses || 0}</dd>
+                    <dd className="text-lg font-medium text-gray-900">{analyticsData?.completed_courses || 0}</dd>
                   </dl>
                 </div>
               </div>
@@ -114,10 +127,10 @@ export default function DashboardPage() {
             <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Recent Activity</h3>
             <div className="flow-root">
               <ul role="list" className="-mb-8">
-                {(analytics?.recent_activity || []).map((activity: any, index: number) => (
+                {(analyticsData?.recent_activity || []).map((activity: Activity, index: number) => (
                   <li key={activity.id}>
                     <div className="relative pb-8">
-                      {index !== analytics.recent_activity.length - 1 && (
+                      {index !== analyticsData.recent_activity.length - 1 && (
                         <span className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true" />
                       )}
                       <div className="relative flex space-x-3">

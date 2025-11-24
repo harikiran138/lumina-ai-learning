@@ -9,19 +9,21 @@ interface AuthToken {
   exp: number;
 }
 
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatar?: string;
+  color?: string;
+} | null;
+
 interface AuthState {
   token: string | null;
   refreshToken: string | null;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    avatar?: string;
-    color?: string;
-  } | null;
+  user: User;
   setTokens: (access: string, refresh: string) => void;
-  setUser: (user: any) => void;
+  setUser: (user: User) => void;
   logout: () => void;
 }
 
@@ -54,7 +56,7 @@ export const useAuth = create<AuthState>()(
       refreshToken: null,
       user: null,
       setTokens: (access: string, refresh: string) => set({ token: access, refreshToken: refresh }),
-      setUser: (user: any) => set({ user }),
+      setUser: (user: User) => set({ user }),
       logout: () => set({ token: null, refreshToken: null, user: null }),
     }),
     {

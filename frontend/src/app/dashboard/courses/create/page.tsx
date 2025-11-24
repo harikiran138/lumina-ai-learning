@@ -24,9 +24,8 @@ export default function CreateCoursePage() {
       setSubmitting(true);
       await courses.create(data);
       router.push('/dashboard/courses');
-    } catch (error: any) {
-      console.error('Error creating course:', error);
-      alert(error.response?.data?.detail || 'Failed to create course');
+    } catch {
+      alert('Failed to create course');
     } finally {
       setSubmitting(false);
     }

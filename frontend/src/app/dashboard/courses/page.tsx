@@ -25,8 +25,12 @@ export default function CoursesPage() {
       try {
         const data = await courses.list();
         setCourseList(data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load courses');
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message || 'Failed to load courses');
+        } else {
+          setError('Failed to load courses');
+        }
       } finally {
         setLoading(false);
       }
