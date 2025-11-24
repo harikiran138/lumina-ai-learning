@@ -4,6 +4,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { auth as authApi } from './api';
 import { jwtDecode } from 'jwt-decode';
+import { logError } from './error-logger';
+import { handleApiError } from './api-error-handler';
 
 export const ROLES = {
     STUDENT: 'student',
@@ -23,10 +25,12 @@ interface AuthState {
     token: string | null;
     refreshToken: string | null;
     isLoading: boolean;
+    error: string | null;
     login: (email: string, password: string) => Promise<void>;
     register: (name: string, email: string, password: string, role?: string) => Promise<void>;
     logout: () => void;
     setUser: (user: User | null) => void;
+    clearError: () => void;
 }
 
 export const useAuth = create<AuthState>()(
@@ -36,9 +40,10 @@ export const useAuth = create<AuthState>()(
             token: null,
             refreshToken: null,
             isLoading: false,
+            error: null,
 
             login: async (email: string, password: string) => {
-                set({ isLoading: true });
+                set({ isLoading: true, error: null });
                 try {
                     const response = await authApi.login(email, password);
                     const { token, refreshToken } = response;
@@ -56,33 +61,39 @@ export const useAuth = create<AuthState>()(
                         role: decoded.role || ROLES.STUDENT,
                     };
 
-                    set({ user, token, refreshToken, isLoading: false });
+                    set({ user, token, refreshToken, isLoading: false, error: null });
                 } catch (error) {
-                    console.error('Login failed:', error);
-                    set({ isLoading: false });
-                    throw error;
+                    const apiError = handleApiError(error, { action: 'login', email });
+                    logError(apiError, { action: 'login' });
+                    set({ isLoading: false, error: apiError.message });
+                    throw apiError;
                 }
             },
 
             register: async (name: string, email: string, password: string, role = ROLES.STUDENT) => {
-                set({ isLoading: true });
+                set({ isLoading: true, error: null });
                 try {
                     await authApi.register(name, email, password, role);
                     // After registration, automatically log in
                     await useAuth.getState().login(email, password);
                 } catch (error) {
-                    console.error('Registration failed:', error);
-                    set({ isLoading: false });
-                    throw error;
+                    const apiError = handleApiError(error, { action: 'register', email });
+                    logError(apiError, { action: 'register' });
+                    set({ isLoading: false, error: apiError.message });
+                    throw apiError;
                 }
             },
 
             logout: () => {
-                set({ user: null, token: null, refreshToken: null });
+                set({ user: null, token: null, refreshToken: null, error: null });
             },
 
             setUser: (user: User | null) => {
                 set({ user });
+            },
+
+            clearError: () => {
+                set({ error: null });
             },
         }),
         {
