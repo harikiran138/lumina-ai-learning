@@ -1,0 +1,25 @@
+{
+  "name": "lumina-ai-learning",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.html",
+  "scripts": {
+    "start": "parcel src/index.html",
+    "build": "parcel build src/index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harikiran138/lumina-ai-learning.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/harikiran138/lumina-ai-learning/issues"
+  },
+  "homepage": "https://github.com/harikiran138/lumina-ai-learning#readme",
+  "devDependencies": {
+    "parcel": "^2.16.1"
+  }
+}
