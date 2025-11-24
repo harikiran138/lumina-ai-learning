@@ -53,7 +53,14 @@ export const useAuth = create<AuthState>()(
                     }
 
                     // Decode token to get user info
-                    const decoded: any = jwtDecode(token);
+                    interface DecodedToken {
+                        sub?: string;
+                        user_id?: string;
+                        name?: string;
+                        email?: string;
+                        role?: string;
+                    }
+                    const decoded = jwtDecode<DecodedToken>(token);
                     const user: User = {
                         id: decoded.sub || decoded.user_id || '1',
                         name: decoded.name || email.split('@')[0],

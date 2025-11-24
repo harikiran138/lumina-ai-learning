@@ -1,7 +1,7 @@
 
 // Mock API for frontend-only mode
 const mockApi = {
-  post: async (url: string, data?: any) => {
+  post: async (url: string, data?: unknown) => {
     console.log(`Mock POST to ${url}`, data);
     await new Promise(resolve => setTimeout(resolve, 500));
     if (url === '/api/auth/login') {

@@ -7,7 +7,7 @@ export class ApiError extends Error {
         message: string,
         public statusCode?: number,
         public code?: string,
-        public details?: any
+        public details?: unknown
     ) {
         super(message);
         this.name = 'ApiError';
@@ -25,25 +25,26 @@ const ERROR_MESSAGES: Record<string, string> = {
     INVALID_REQUEST: 'Invalid request. Please check your input.',
 };
 
-export function getErrorMessage(error: any): string {
+export function getErrorMessage(error: unknown): string {
     if (error instanceof ApiError) {
         return error.message;
     }
 
-    if (error?.code && ERROR_MESSAGES[error.code]) {
+    if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && ERROR_MESSAGES[error.code]) {
         return ERROR_MESSAGES[error.code];
     }
 
-    if (error?.message) {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
         return error.message;
     }
 
     return 'An unexpected error occurred.';
 }
 
-export function handleApiError(error: any, context?: Record<string, any>): ApiError {
-    // Log the error
-    logError(error, { ...context, type: 'API_ERROR' });
+export function handleApiError(error: unknown, context?: Record<string, unknown>): ApiError {
+    // Log the error - convert unknown to Error or string
+    const errorToLog = error instanceof Error ? error : String(error);
+    logError(errorToLog, { ...context, type: 'API_ERROR' });
 
     // Convert to ApiError if not already
     if (error instanceof ApiError) {
@@ -51,30 +52,35 @@ export function handleApiError(error: any, context?: Record<string, any>): ApiEr
     }
 
     // Handle network errors
-    if (error?.message?.includes('fetch') || error?.message?.includes('network')) {
-        return new ApiError(
-            ERROR_MESSAGES.NETWORK_ERROR,
-            0,
-            'NETWORK_ERROR',
-            error
-        );
-    }
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+        if (error.message.includes('fetch') || error.message.includes('network')) {
+            return new ApiError(
+                ERROR_MESSAGES.NETWORK_ERROR,
+                0,
+                'NETWORK_ERROR',
+                error
+            );
+        }
 
-    // Handle timeout errors
-    if (error?.message?.includes('timeout')) {
-        return new ApiError(
-            ERROR_MESSAGES.TIMEOUT,
-            408,
-            'TIMEOUT',
-            error
-        );
+        // Handle timeout errors
+        if (error.message.includes('timeout')) {
+            return new ApiError(
+                ERROR_MESSAGES.TIMEOUT,
+                408,
+                'TIMEOUT',
+                error
+            );
+        }
     }
 
     // Default error
+    const statusCode = error && typeof error === 'object' && 'statusCode' in error && typeof error.statusCode === 'number' ? error.statusCode : 500;
+    const code = error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' ? error.code : 'INTERNAL_ERROR';
+
     return new ApiError(
         getErrorMessage(error),
-        error?.statusCode || 500,
-        error?.code || 'INTERNAL_ERROR',
+        statusCode,
+        code,
         error
     );
 }
@@ -85,7 +91,7 @@ export async function withRetry<T>(
     maxRetries: number = 3,
     delay: number = 1000
 ): Promise<T> {
-    let lastError: any;
+    let lastError: unknown;
 
     for (let i = 0; i < maxRetries; i++) {
         try {
