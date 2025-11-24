@@ -20,24 +20,28 @@ api.interceptors.request.use(async (config) => {
 });
 
 // Handle 401 responses
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      // Redirect to login
-      window.location.href = '/auth/login';
-    }
-    return Promise.reject(error);
-  }
-);
+// api.interceptors.response.use(
+//   (response) => response,
+//   async (error) => {
+//     if (error.response?.status === 401) {
+//       // Redirect to login
+//       window.location.href = '/auth/login';
+//     }
+//     return Promise.reject(error);
+//   }
+// );
 
 export default api;
 
 // Auth API
 export const auth = {
   login: async (email: string, password: string) => {
-    const response = await api.post('/api/auth/login', { email, password });
-    return response.data;
+    console.log('Mock login for', email);
+    return Promise.resolve({
+      access_token: 'mock-access-token',
+      refresh_token: 'mock-refresh-token',
+      user: { email, name: 'Test User' },
+    });
   },
   register: async (name: string, email: string, password: string, role = 'student') => {
     const response = await api.post('/api/auth/register', { name, email, password, role });
@@ -52,20 +56,47 @@ export const auth = {
 // Courses API
 export const courses = {
   list: async () => {
-    const response = await api.get('/api/courses');
-    return response.data;
+    console.log('Mock courses.list');
+    return Promise.resolve([
+      {
+        id: '1',
+        name: 'Introduction to Mocking',
+        description: 'Learn how to mock API calls.',
+        teacher_id: '1',
+        status: 'published' as 'published' | 'draft' | 'archived',
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        name: 'Advanced Frontend Techniques',
+        description: 'Dive deep into frontend development.',
+        teacher_id: '1',
+        status: 'draft' as 'published' | 'draft' | 'archived',
+        created_at: new Date().toISOString(),
+      },
+    ]);
   },
   get: async (id: string) => {
-    const response = await api.get(`/api/courses/${id}`);
-    return response.data;
+    console.log('Mock courses.get for id', id);
+    return Promise.resolve({
+      id,
+      name: 'Introduction to Mocking',
+      description: 'Learn how to mock API calls.',
+      teacher_id: '1',
+      status: 'published' as 'published' | 'draft' | 'archived',
+      created_at: new Date().toISOString(),
+    });
   },
   create: async (data: { name: string; description?: string }) => {
     const response = await api.post('/api/courses', data);
     return response.data;
   },
   getLessons: async (courseId: string) => {
-    const response = await api.get(`/api/courses/${courseId}/lessons`);
-    return response.data;
+    console.log('Mock courses.getLessons for courseId', courseId);
+    return Promise.resolve([
+      { id: 1, title: 'Lesson 1: What is Mocking?', content: '...', order: 1, created_at: new Date().toISOString() },
+      { id: 2, title: 'Lesson 2: How to Mock?', content: '...', order: 2, created_at: new Date().toISOString() },
+    ]);
   },
 };
 
