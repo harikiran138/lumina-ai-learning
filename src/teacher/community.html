@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Hub - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Dynamic Database System Scripts -->
+    <script src="../js/database.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/dashboard-loader.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #f59e0b, #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #light-icon, #dark-icon { display: none; }
+        html.dark #dark-icon { display: block; }
+        html:not(.dark) #light-icon { display: block; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background-color: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
+        html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
+        ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+        html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
+        
+        aside nav {
+             min-height: calc(100vh - 128px);
+        }
+        .chat-message-group:not(:first-child) .chat-avatar {
+            visibility: hidden;
+        }
+    </style>
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300">
+
+    <div class="relative h-screen overflow-hidden lg:flex">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 flex-shrink-0 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-40 h-full">
+            <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+                <a href="../index.html" class="text-2xl font-bold">
+                    <span class="gradient-text">Lumina</span> ✨
+                </a>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <a href="dashboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    Dashboard
+                </a>
+                <a href="content_upload.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 1.1.9 2 2 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H6a2 2 0 00-2 2z"></path></svg>
+                    Content Manager
+                </a>
+                <a href="assessment_management.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                    Assessments
+                </a>
+                <a href="reports.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    Reports
+                </a>
+                 <a href="community.html" class="flex items-center px-4 py-2.5 text-sm font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300 rounded-lg">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    Community
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 mt-auto">
+                <a href="../login.html" class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="main-content" class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out h-screen">
+            <header class="h-16 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 flex-shrink-0 sticky top-0 z-20">
+                 <div class="flex items-center">
+                    <button id="menu-button" class="lg:hidden mr-4 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onclick="toggleSidebar()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Community Hub</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                     <button id="theme-toggle" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-semibold text-sm text-gray-700 dark:text-gray-300">Prof. Evelyn Reed</span>
+                        <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-lg">E</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Inner Sidebar for Groups -->
+                <div class="w-80 bg-white dark:bg-[#1C1C1C] border-r border-gray-200 dark:border-gray-800 flex-col flex">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 flex justify-between items-center">
+                        <h2 class="font-bold text-lg">Community Groups</h2>
+                        <button id="create-group-btn" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
+                        </button>
+                    </div>
+                    <div id="group-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+                        <!-- Group items will be dynamically inserted here -->
+                    </div>
+                </div>
+
+                <!-- Chat Area -->
+                <div id="chat-area" class="flex-1 flex flex-col bg-gray-50 dark:bg-black relative overflow-hidden">
+                    <!-- Chat Header -->
+                     <div id="chat-header" class="h-16 flex-shrink-0 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800">
+                        <!-- Dynamic header content -->
+                    </div>
+                    <!-- Messages -->
+                    <div id="messages-container" class="flex-1 p-6 overflow-y-auto space-y-2">
+                        <!-- Dynamic messages content -->
+                    </div>
+                    <!-- Message Input -->
+                    <div class="p-4 bg-white dark:bg-[#111111] border-t border-gray-200 dark:border-gray-800">
+                        <form id="message-input-form" class="relative">
+                            <label for="file-upload" class="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                            </label>
+                            <input type="file" id="file-upload" class="hidden">
+                            <input id="message-input" type="text" placeholder="Type a message..." class="w-full pl-12 pr-28 py-3 bg-gray-100 dark:bg-[#222222] border border-transparent rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none transition-shadow">
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                <button type="submit" class="p-2 rounded-full bg-amber-500 text-white hover:bg-amber-600 transition-colors">
+                                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Members Sidebar (now hidden by default) -->
+                 <aside id="member-sidebar" class="w-64 bg-white dark:bg-[#1C1C1C] border-l border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out absolute right-0 top-0 h-full z-30 translate-x-full">
+                     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 h-16 flex items-center justify-between">
+                        <h2 class="font-bold text-lg">Members</h2>
+                        <button class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onclick="toggleMemberSidebar()">
+                             <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                    <div id="member-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+                        <!-- Member items will be dynamically inserted here -->
+                    </div>
+                </aside>
+            </div>
+        </div>
+        
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
+        <div id="member-sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleMemberSidebar()"></div>
+        
+        <!-- Create Group Modal -->
+        <div id="create-group-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
+            <div id="create-group-modal-content" class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 w-full max-w-lg transform transition-all scale-95 opacity-0">
+                <form id="create-group-form">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">Create New Group</h3>
+                        <button type="button" class="close-modal-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="group-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Group Name</label>
+                            <input type="text" id="group-name" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500" required>
+                        </div>
+                        <div>
+                            <label for="group-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                            <textarea id="group-description" rows="2" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-4">
+                        <button type="button" class="close-modal-btn px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancel</button>
+                        <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600">Create Group</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        let currentUser = null;
+        let chatRooms = [];
+        let currentRoomId = null;
+        let currentMessages = [];
+        let api = null;
+        let allUsers = [];
+
+        // Initialize the community chat system
+        async function initializeCommunity() {
+            try {
+                api = new LuminaAPI();
+                
+                currentUser = await api.getCurrentUser();
+                allUsers = await api.getAllUsers();
+                chatRooms = await api.getAllChatRooms();
+                
+                if (chatRooms.length > 0) {
+                    currentRoomId = chatRooms[0].id;
+                    await loadChatRoom(currentRoomId);
+                }
+                
+                renderGroupList();
+                
+                // Auto-refresh messages every 3 seconds
+                setInterval(refreshMessages, 3000);
+                
+            } catch (error) {
+                console.error('Failed to initialize community:', error);
+            }
+        }
+
+        async function loadChatRoom(roomId) {
+            try {
+                currentRoomId = roomId;
+                currentMessages = await api.getChatMessages(roomId);
+                const room = chatRooms.find(r => r.id === roomId);
+                
+                renderChat(room);
+                renderMemberList(room);
+            } catch (error) {
+                console.error('Failed to load chat room:', error);
+            }
+        }
+
+        async function sendMessage(text) {
+            try {
+                await api.sendChatMessage(currentRoomId, text);
+                await refreshMessages();
+            } catch (error) {
+                console.error('Failed to send message:', error);
+            }
+        }
+
+        async function refreshMessages() {
+            if (currentRoomId) {
+                try {
+                    currentMessages = await api.getChatMessages(currentRoomId);
+                    const room = chatRooms.find(r => r.id === currentRoomId);
+                    renderMessages();
+                } catch (error) {
+                    console.error('Failed to refresh messages:', error);
+                }
+            }
+        }
+
+        // --- DOM ELEMENTS ---
+        const groupList = document.getElementById('group-list');
+        const chatHeader = document.getElementById('chat-header');
+        const messagesContainer = document.getElementById('messages-container');
+        const messageInputForm = document.getElementById('message-input-form');
+        const messageInput = document.getElementById('message-input');
+        const memberList = document.getElementById('member-list');
+        
+        // --- RENDERING FUNCTIONS ---
+
+        function renderGroupList() {
+            groupList.innerHTML = '';
+            chatRooms.forEach(room => {
+                const isActive = room.id === currentRoomId;
+                const activeClasses = isActive ? 'text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-500/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800';
+                
+                groupList.innerHTML += `
+                    <a href="#" data-room-id="${room.id}" class="group-link flex items-center justify-between px-3 py-2 text-sm font-semibold rounded-md ${activeClasses}">
+                        <div class="flex items-center">
+                            <span class="text-lg mr-2">${room.avatar}</span>
+                            <div>
+                                <div class="font-semibold">${room.name}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 truncate">${room.description}</div>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            });
+        }
+
+        function renderMemberList(room) {
+            if (!room) return;
+            
+            memberList.innerHTML = '';
+            
+            // Get member details from all users
+            const members = room.members.map(memberId => 
+                allUsers.find(user => user.id === memberId)
+            ).filter(user => user && user.role); // Filter out null/undefined users and users without roles
+            
+            // Sort members by role: admins, teachers, then students
+            const admins = members.filter(m => m && m.role === 'admin');
+            const teachers = members.filter(m => m && m.role === 'teacher');
+            const students = members.filter(m => m && m.role === 'student');
+            
+            // Render admins
+            if (admins.length > 0) {
+                memberList.innerHTML += `<h3 class="px-2 pt-3 pb-1 text-xs font-bold uppercase text-gray-500 dark:text-gray-400">Admins — ${admins.length}</h3>`;
+                admins.forEach(member => {
+                    memberList.innerHTML += `
+                        <div class="flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                            <div class="w-8 h-8 rounded-full ${member.color} flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">${member.avatar}</div>
+                            <span class="ml-3 font-semibold text-sm">${member.name}</span>
+                        </div>
+                    `;
+                });
+            }
+            
+            // Render teachers
+            if (teachers.length > 0) {
+                memberList.innerHTML += `<h3 class="px-2 pt-3 pb-1 text-xs font-bold uppercase text-gray-500 dark:text-gray-400">Teachers — ${teachers.length}</h3>`;
+                teachers.forEach(member => {
+                    memberList.innerHTML += `
+                        <div class="flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                            <div class="w-8 h-8 rounded-full ${member.color} flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">${member.avatar}</div>
+                            <span class="ml-3 font-semibold text-sm">${member.name}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            // Render students
+            if (students.length > 0) {
+                memberList.innerHTML += `<h3 class="px-2 pt-3 pb-1 text-xs font-bold uppercase text-gray-500 dark:text-gray-400">Students — ${students.length}</h3>`;
+                students.forEach(member => {
+                    memberList.innerHTML += `
+                        <div class="flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                            <div class="relative w-8 h-8">
+                                <div class="w-8 h-8 rounded-full ${member.color} flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">${member.avatar}</div>
+                                <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-400 border-2 border-white dark:border-[#1C1C1C]"></span>
+                            </div>
+                            <span class="ml-3 font-semibold text-sm">${member.name}</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function renderChat(room) {
+            if (!room) return;
+            
+            // Update Header with member avatars
+            const members = room.members.map(memberId => 
+                allUsers.find(user => user.id === memberId)
+            ).filter(Boolean);
+            
+            let memberAvatars = '';
+            members.slice(0, 4).forEach(m => {
+                memberAvatars += `<div class="w-8 h-8 rounded-full ${m.color} flex items-center justify-center text-white text-sm font-bold border-2 border-white dark:border-black">${m.avatar}</div>`;
+            });
+            if (members.length > 4) {
+                memberAvatars += `<div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-300 text-xs font-bold border-2 border-white dark:border-black">+${members.length - 4}</div>`;
+            }
+
+            chatHeader.innerHTML = `
+                <button class="flex items-center justify-between w-full text-left p-1 -m-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50" onclick="toggleMemberSidebar()">
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">${room.name}</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${room.description}</p>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="flex -space-x-2 mr-4">${memberAvatars}</div>
+                        <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                </button>`;
+
+            renderMessages();
+            messageInput.placeholder = `Message ${room.name}`;
+        }
+
+        function renderMessages() {
+            messagesContainer.innerHTML = '';
+            let lastSender = null;
+            
+            currentMessages.forEach(msg => {
+                const isCurrentUser = msg.senderId === currentUser.id;
+                const isContinuing = lastSender === msg.senderId;
+                const messageGroupClass = isContinuing ? 'chat-message-group mt-1' : 'chat-message-group mt-4';
+
+                if (isCurrentUser) {
+                    messagesContainer.innerHTML += `
+                        <div class="flex items-start gap-3 flex-row-reverse ${messageGroupClass}">
+                            <div class="w-10 h-10 rounded-full ${currentUser.color} flex-shrink-0 flex items-center justify-center text-white font-bold chat-avatar">
+                                ${currentUser.avatar}
+                            </div>
+                            <div class="flex-1 flex flex-col items-end">
+                                ${!isContinuing ? `<p class="font-semibold text-sm">You <span class="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">${msg.time}</span></p>` : ''}
+                                <div class="mt-1 text-sm bg-amber-500 text-white p-3 rounded-lg ${isContinuing ? '' : 'rounded-br-none'} max-w-md">
+                                    ${msg.text}
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                    const roleBadge = msg.senderRole === 'teacher' ? `<span class="text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-bold px-1.5 py-0.5 rounded-full ml-2">TEACHER</span>` : 
+                                    msg.senderRole === 'admin' ? `<span class="text-xs bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-bold px-1.5 py-0.5 rounded-full ml-2">ADMIN</span>` : '';
+                                    
+                    messagesContainer.innerHTML += `
+                        <div class="flex items-start gap-3 ${messageGroupClass}">
+                            <div class="w-10 h-10 rounded-full ${msg.senderColor} flex-shrink-0 flex items-center justify-center text-white font-bold chat-avatar">
+                                ${msg.senderAvatar}
+                            </div>
+                            <div>
+                                ${!isContinuing ? `<p class="font-semibold text-sm">${msg.sender} ${roleBadge}<span class="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">${msg.time}</span></p>` : ''}
+                                <div class="mt-1 text-sm bg-white dark:bg-[#1C1C1C] p-3 rounded-lg ${isContinuing ? '' : 'rounded-tl-none'} border border-gray-200 dark:border-gray-800 max-w-md">
+                                    ${msg.text}
+                                </div>
+                            </div>
+                        </div>`;
+                }
+                lastSender = msg.senderId;
+            });
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // --- EVENT LISTENERS ---
+        groupList.addEventListener('click', (e) => {
+            const link = e.target.closest('.group-link');
+            if (link) {
+                e.preventDefault();
+                const roomId = link.dataset.roomId;
+                loadChatRoom(roomId);
+            }
+        });
+
+        messageInputForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = messageInput.value.trim();
+            if (text && currentRoomId) {
+                messageInput.value = '';
+                await sendMessage(text);
+            }
+        });
+        const createGroupForm = document.getElementById('create-group-form');
+        
+        // --- FUNCTIONS ---
+
+        function renderGroupList() {
+            groupList.innerHTML = '';
+            for (const groupId in chatData) {
+                const group = chatData[groupId];
+                const isActive = groupId === window.activeChatId;
+                const activeClasses = isActive ? 'text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-500/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800';
+                
+                groupList.innerHTML += `
+                    <a href="#" data-group-id="${groupId}" class="group-link flex items-center justify-between px-3 py-2 text-sm font-semibold rounded-md ${activeClasses}">
+                        <div class="flex items-center">
+                             <svg class="w-4 h-4 mr-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                            ${group.name}
+                        </div>
+                        ${group.unread > 0 ? `<span class="w-5 h-5 bg-amber-500 text-white text-xs font-bold rounded-full flex items-center justify-center">${group.unread}</span>` : ''}
+                    </a>
+                `;
+            }
+        }
+
+        function renderMemberList(groupId) {
+            const group = chatData[groupId];
+            memberList.innerHTML = '';
+            
+            const teachers = group.members.filter(m => m.role === 'teacher');
+            if (teachers.length > 0) {
+                memberList.innerHTML += `<h3 class="px-2 pt-3 pb-1 text-xs font-bold uppercase text-gray-500 dark:text-gray-400">Teachers — ${teachers.length}</h3>`;
+                teachers.forEach(member => {
+                    memberList.innerHTML += `
+                        <div class="flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                            <div class="w-8 h-8 rounded-full ${member.color} flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">${member.avatar}</div>
+                            <span class="ml-3 font-semibold text-sm">${member.name} ${member.name === currentUser.name ? '(You)' : ''}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            const students = group.members.filter(m => m.role === 'student');
+             if (students.length > 0) {
+                memberList.innerHTML += `<h3 class="px-2 pt-3 pb-1 text-xs font-bold uppercase text-gray-500 dark:text-gray-400">Students — ${students.length}</h3>`;
+                students.forEach(member => {
+                    memberList.innerHTML += `
+                        <div class="flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                             <div class="relative w-8 h-8">
+                                <div class="w-8 h-8 rounded-full ${member.color} flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">${member.avatar}</div>
+                                <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-400 border-2 border-white dark:border-[#1C1C1C]"></span>
+                            </div>
+                            <span class="ml-3 font-semibold text-sm">${member.name}</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function renderChat(groupId) {
+            window.activeChatId = groupId;
+            const group = chatData[groupId];
+            
+            // Update Header
+            chatHeader.innerHTML = `
+                <button class="flex items-center justify-between w-full text-left p-1 -m-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50" onclick="toggleMemberSidebar()">
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">${group.name}</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${group.description}</p>
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                </button>`;
+
+            // Update Messages
+            messagesContainer.innerHTML = '';
+            let lastSender = null;
+            group.messages.forEach(msg => {
+                const isCurrentUser = msg.sender === currentUser.name;
+                const member = group.members.find(m => m.name === msg.sender) || currentUser;
+                const isContinuing = lastSender === msg.sender;
+
+                const messageGroupClass = isContinuing ? 'chat-message-group mt-1' : 'chat-message-group mt-4';
+
+                if (isCurrentUser) {
+                    messagesContainer.innerHTML += `
+                        <div class="flex items-start gap-3 flex-row-reverse ${messageGroupClass}">
+                            <div class="w-10 h-10 rounded-full ${currentUser.color} flex-shrink-0 flex items-center justify-center text-white font-bold chat-avatar">
+                                ${currentUser.avatar}
+                            </div>
+                            <div class="flex-1 flex flex-col items-end">
+                                ${!isContinuing ? `<p class="font-semibold text-sm">You <span class="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">${msg.time}</span></p>` : ''}
+                                <div class="mt-1 text-sm bg-indigo-500 text-white p-3 rounded-lg ${isContinuing ? '' : 'rounded-br-none'} max-w-md">
+                                    ${msg.text}
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                     messagesContainer.innerHTML += `
+                        <div class="flex items-start gap-3 ${messageGroupClass}">
+                            <div class="w-10 h-10 rounded-full ${member.color} flex-shrink-0 flex items-center justify-center text-white font-bold chat-avatar">
+                                ${member.avatar}
+                            </div>
+                            <div>
+                                ${!isContinuing ? `<p class="font-semibold text-sm">${msg.sender}<span class="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">${msg.time}</span></p>` : ''}
+                                <div class="mt-1 text-sm bg-white dark:bg-[#1C1C1C] p-3 rounded-lg ${isContinuing ? '' : 'rounded-tl-none'} border border-gray-200 dark:border-gray-800 max-w-md">
+                                    ${msg.text}
+                                </div>
+                            </div>
+                        </div>`;
+                }
+                lastSender = msg.sender;
+            });
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            messageInput.placeholder = `Message ${group.name}`;
+            renderGroupList();
+            renderMemberList(groupId);
+        }
+
+        function openCreateGroupModal() {
+            createGroupForm.reset();
+            createGroupModal.classList.remove('hidden');
+            setTimeout(() => createGroupModalContent.classList.remove('scale-95', 'opacity-0'), 10);
+        }
+
+        function closeCreateGroupModal() {
+            createGroupModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => createGroupModal.classList.add('hidden'), 200);
+        }
+        
+        // --- EVENT LISTENERS ---
+        document.getElementById('create-group-btn').addEventListener('click', openCreateGroupModal);
+        createGroupModal.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', closeCreateGroupModal));
+        
+        createGroupForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const groupName = document.getElementById('group-name').value;
+            const groupDesc = document.getElementById('group-description').value;
+            
+            const newGroupId = groupName.toLowerCase().replace(/\s+/g, '-');
+            chatData[newGroupId] = {
+                name: groupName,
+                description: groupDesc,
+                members: [currentUser],
+                unread: 0,
+                messages: []
+            };
+
+            renderChat(newGroupId);
+            closeCreateGroupModal();
+        });
+
+        groupList.addEventListener('click', (e) => {
+            const link = e.target.closest('.group-link');
+            if (link) {
+                e.preventDefault();
+                const groupId = link.dataset.groupId;
+                if(chatData[groupId]) chatData[groupId].unread = 0; // Mark as read
+                renderChat(groupId);
+            }
+        });
+        
+        messageInputForm.addEventListener('submit', (e) => {
+             e.preventDefault();
+             const text = messageInput.value.trim();
+             if (text) {
+                const newMessage = {
+                    sender: currentUser.name,
+                    text: text,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                };
+                chatData[window.activeChatId].messages.push(newMessage);
+                renderChat(window.activeChatId);
+                messageInput.value = '';
+             }
+        });
+
+        // --- THEME & SIDEBAR LOGIC ---
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                mainContent.classList.remove('lg:translate-x-0', 'translate-x-64');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function toggleMemberSidebar() {
+            const memberSidebar = document.getElementById('member-sidebar');
+            const overlay = document.getElementById('member-sidebar-overlay');
+            if (memberSidebar.classList.contains('translate-x-full')) {
+                memberSidebar.classList.remove('translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                memberSidebar.classList.add('translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+        
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', initializeCommunity);
+    </script>
+</body>
+</html>
+

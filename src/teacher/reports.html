@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports & Analytics - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Dynamic Database System Scripts -->
+    <script src="../js/database.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/dashboard-loader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #f59e0b, #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #light-icon, #dark-icon { display: none; }
+        html.dark #dark-icon { display: block; }
+        html:not(.dark) #light-icon { display: block; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background-color: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
+        html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
+        ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+        html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
+        
+        aside nav {
+             min-height: calc(100vh - 128px);
+        }
+    </style>
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300">
+
+    <div class="relative h-screen overflow-hidden lg:flex">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 flex-shrink-0 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-40 h-full">
+            <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+                <a href="../index.html" class="text-2xl font-bold">
+                    <span class="gradient-text">Lumina</span> ✨
+                </a>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <a href="dashboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    Dashboard
+                </a>
+                <a href="content_upload.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 1.1.9 2 2 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H6a2 2 0 00-2 2z"></path></svg>
+                    Content Manager
+                </a>
+                <a href="assessment_management.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                    Assessments
+                </a>
+                <a href="reports.html" class="flex items-center px-4 py-2.5 text-sm font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300 rounded-lg">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    Reports
+                </a>
+                 <a href="community.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    Community
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 mt-auto">
+                <a href="../login.html" class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="main-content" class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out overflow-y-auto">
+            <header class="h-16 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 flex-shrink-0 sticky top-0 z-20">
+                 <div class="flex items-center">
+                    <button id="menu-button" class="lg:hidden mr-4 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onclick="toggleSidebar()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Reports & Analytics</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                     <button id="theme-toggle" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-semibold text-sm text-gray-700 dark:text-gray-300">Prof. Evelyn Reed</span>
+                        <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-lg">E</div>
+                    </div>
+                </div>
+            </header>
+            
+            <main class="flex-1 p-4 md:p-6 lg:p-8">
+                <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
+                    <!-- Left Panel: Filters & Student List -->
+                    <div class="w-full lg:w-1/3 xl:w-1/4 flex-shrink-0 lg:sticky lg:top-24">
+                        <div class="bg-white dark:bg-[#1C1C1C] p-4 rounded-2xl border border-gray-200 dark:border-gray-800">
+                             <div class="mb-4">
+                                <label for="course-select-report" class="text-sm font-semibold text-gray-500 dark:text-gray-400">Select Course</label>
+                                <select id="course-select-report" class="mt-1 w-full bg-gray-100 dark:bg-gray-800 border-none rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500 px-3 py-2">
+                                    <!-- Options will be dynamically inserted here -->
+                                </select>
+                            </div>
+                            <h2 class="text-lg font-bold mb-2">Students</h2>
+                            <div id="student-list" class="space-y-1">
+                                <!-- Student links will be dynamically inserted here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Report Details -->
+                    <div id="report-details" class="flex-1">
+                        <!-- Report content will be dynamically inserted here -->
+                    </div>
+                </div>
+            </main>
+        </div>
+        
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const reportsData = {
+            qm: {
+                name: "Quantum Mechanics",
+                class_overview: {
+                    avg_score: 82,
+                    completion_rate: 95,
+                    grade_distribution: { A: 8, B: 5, C: 2, D: 0, F: 0 }
+                },
+                students: [
+                    { id: 1, name: 'Alex Turner', avatar: 'A', color: 'bg-amber-500', mastery: 95, progress: 100, streak: 98, assessments: [ {title: 'Ch 1 Quiz', score: '10/10'}, {title: 'Midterm', score: '88/100'} ], topic_mastery: { labels: ['Duality', 'Quantization', 'Uncertainty', 'Entanglement'], data: [98, 92, 95, 94] } },
+                    { id: 2, name: 'Ben Carter', avatar: 'B', color: 'bg-red-500', mastery: 55, progress: 60, streak: 0, assessments: [ {title: 'Ch 1 Quiz', score: '4/10'}, {title: 'Midterm', score: '52/100'} ], topic_mastery: { labels: ['Duality', 'Quantization', 'Uncertainty', 'Entanglement'], data: [40, 60, 55, 62] } },
+                    { id: 3, name: 'Chloe Garcia', avatar: 'C', color: 'bg-blue-500', mastery: 78, progress: 90, streak: 5, assessments: [ {title: 'Ch 1 Quiz', score: '8/10'}, {title: 'Midterm', score: '75/100'} ], topic_mastery: { labels: ['Duality', 'Quantization', 'Uncertainty', 'Entanglement'], data: [80, 75, 72, 85] } },
+                ]
+            },
+            thermo: {
+                name: "Thermodynamics",
+                class_overview: {
+                    avg_score: 78,
+                    completion_rate: 88,
+                    grade_distribution: { A: 5, B: 10, C: 4, D: 1, F: 0 }
+                },
+                students: [
+                    { id: 4, name: 'Sophia Chen', avatar: 'S', color: 'bg-teal-500', mastery: 88, progress: 100, streak: 45, assessments: [ {title: 'Heat Transfer Quiz', score: '9/10'} ], topic_mastery: { labels: ['Zeroth Law', 'First Law', 'Second Law', 'Entropy'], data: [95, 90, 82, 88] } }
+                ]
+            }
+        };
+
+        // --- DOM ELEMENTS ---
+        const courseSelect = document.getElementById('course-select-report');
+        const studentList = document.getElementById('student-list');
+        const reportDetails = document.getElementById('report-details');
+
+        // --- STATE ---
+        let currentCourseId = 'qm';
+        let currentStudentId = null; // null means class overview
+        let gradeChart, topicChart;
+
+        // --- FUNCTIONS ---
+        function populateCourseSelect() {
+            for (const courseId in reportsData) {
+                const course = reportsData[courseId];
+                const option = document.createElement('option');
+                option.value = courseId;
+                option.textContent = course.name;
+                courseSelect.appendChild(option);
+            }
+        }
+        
+        function renderStudentList(courseId) {
+            const course = reportsData[courseId];
+            studentList.innerHTML = '';
+            
+            // Add Class Overview link
+            const isClassActive = currentStudentId === null;
+            studentList.innerHTML += `
+                <a href="#" data-student-id="null" class="student-link block p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ${isClassActive ? 'bg-amber-50 dark:bg-amber-500/10' : ''}">
+                    <span class="font-bold">Class Overview</span>
+                </a>
+            `;
+
+            if (!course || course.students.length === 0) {
+                return;
+            }
+            
+            course.students.forEach(student => {
+                 const isStudentActive = currentStudentId === student.id;
+                 studentList.innerHTML += `
+                    <a href="#" data-student-id="${student.id}" class="student-link flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ${isStudentActive ? 'bg-amber-50 dark:bg-amber-500/10' : ''}">
+                        <div class="w-8 h-8 rounded-full ${student.color} flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">${student.avatar}</div>
+                        <span class="ml-3 font-semibold">${student.name}</span>
+                    </a>
+                `;
+            });
+        }
+        
+        function renderReport(courseId, studentId) {
+            currentCourseId = courseId;
+            currentStudentId = studentId;
+
+            renderStudentList(courseId); // Re-render to update active state
+            
+            if (studentId === null) {
+                renderClassOverview(courseId);
+            } else {
+                renderStudentReport(courseId, studentId);
+            }
+        }
+        
+        function renderClassOverview(courseId) {
+            const overview = reportsData[courseId].class_overview;
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            reportDetails.innerHTML = `
+                 <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Class Overview: ${reportsData[courseId].name}</h2>
+                         <button class="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2">
+                             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Export CSV
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400">Average Score</h4>
+                            <p class="text-3xl font-bold mt-1">${overview.avg_score}%</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400">Completion Rate</h4>
+                            <p class="text-3xl font-bold mt-1">${overview.completion_rate}%</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">Grade Distribution</h3>
+                        <div class="h-64"><canvas id="gradeDistributionChart"></canvas></div>
+                    </div>
+                </div>`;
+            
+            // Init Chart
+            if(gradeChart) gradeChart.destroy();
+            const ctx = document.getElementById('gradeDistributionChart').getContext('2d');
+            gradeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(overview.grade_distribution),
+                    datasets: [{
+                        label: 'Number of Students',
+                        data: Object.values(overview.grade_distribution),
+                        backgroundColor: isDarkMode ? 'rgba(251, 191, 36, 0.6)' : 'rgba(251, 191, 36, 0.7)',
+                        borderColor: '#fbbf24',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     scales: {
+                         y: { beginAtZero: true, grid: { color: isDarkMode ? '#374151' : '#e5e7eb' }, ticks: { color: isDarkMode ? '#9ca3af' : '#6b7280' } },
+                         x: { grid: { color: 'transparent' }, ticks: { color: isDarkMode ? '#9ca3af' : '#6b7280' } }
+                     },
+                     plugins: { legend: { display: false } }
+                }
+            });
+        }
+        
+        function renderStudentReport(courseId, studentId) {
+            const student = reportsData[courseId].students.find(s => s.id === studentId);
+            if (!student) return;
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            
+            let assessmentsHTML = '';
+            student.assessments.forEach(a => {
+                assessmentsHTML += `<li class="flex justify-between items-center py-2"><span>${a.title}</span><span class="font-bold">${a.score}</span></li>`;
+            });
+
+            reportDetails.innerHTML = `
+                 <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-full ${student.color} flex-shrink-0 flex items-center justify-center text-white font-bold text-3xl">${student.avatar}</div>
+                            <div>
+                                <h2 class="text-2xl font-bold">${student.name}</h2>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Student Report for ${reportsData[courseId].name}</p>
+                            </div>
+                        </div>
+                        <button class="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Export PDF
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-center"><h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400">Overall Mastery</h4><p class="text-2xl font-bold mt-1">${student.mastery}%</p></div>
+                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-center"><h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400">Course Progress</h4><p class="text-2xl font-bold mt-1">${student.progress}%</p></div>
+                        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-center"><h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400">Current Streak</h4><p class="text-2xl font-bold mt-1">${student.streak} 🔥</p></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-lg font-bold mb-4">Assessment Scores</h3>
+                            <ul class="divide-y divide-gray-200 dark:divide-gray-800">${assessmentsHTML}</ul>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold mb-4">Topic Mastery</h3>
+                            <div class="h-64"><canvas id="topicMasteryChart"></canvas></div>
+                        </div>
+                    </div>
+                 </div>`;
+            
+             // Init Chart
+            if(topicChart) topicChart.destroy();
+            const ctx = document.getElementById('topicMasteryChart').getContext('2d');
+            topicChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: student.topic_mastery.labels,
+                    datasets: [{
+                        label: 'Mastery',
+                        data: student.topic_mastery.data,
+                        backgroundColor: isDarkMode ? 'rgba(251, 191, 36, 0.2)' : 'rgba(251, 191, 36, 0.2)',
+                        borderColor: '#fbbf24',
+                        pointBackgroundColor: '#fbbf24',
+                        pointBorderColor: '#fff',
+                    }]
+                },
+                options: {
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     scales: { r: { min: 0, max: 100, angleLines: { color: isDarkMode ? '#374151' : '#e5e7eb' }, grid: { color: isDarkMode ? '#374151' : '#e5e7eb' }, pointLabels: { color: isDarkMode ? '#d1d5db' : '#4b5563' }, ticks: { backdropColor: 'transparent', color: isDarkMode ? '#9ca3af' : '#6b7280' } } },
+                     plugins: { legend: { display: false } }
+                }
+            });
+        }
+        
+        // --- EVENT LISTENERS ---
+        courseSelect.addEventListener('change', (e) => {
+            currentStudentId = null; // Reset to class overview when course changes
+            renderReport(e.target.value, currentStudentId);
+        });
+
+        studentList.addEventListener('click', (e) => {
+            const link = e.target.closest('.student-link');
+            if (link) {
+                e.preventDefault();
+                const studentId = link.dataset.studentId === 'null' ? null : parseInt(link.dataset.studentId);
+                renderReport(currentCourseId, studentId);
+            }
+        });
+
+        // --- THEME & SIDEBAR LOGIC ---
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            // Re-render report to update chart colors
+            renderReport(currentCourseId, currentStudentId);
+        });
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                mainContent.classList.remove('lg:translate-x-0', 'translate-x-64');
+                overlay.classList.add('hidden');
+            }
+        }
+        
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            populateCourseSelect();
+            renderReport(currentCourseId, currentStudentId);
+        });
+    </script>
+</body>
+</html>
+

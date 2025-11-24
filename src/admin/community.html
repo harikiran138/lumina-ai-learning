@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Hub - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lumina Core Scripts -->
+    <script src="../js/database.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/dashboard-loader.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .gradient-text {
+             background: linear-gradient(to right, #f59e0b, #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #light-icon, #dark-icon { display: none; }
+        html.dark #dark-icon { display: block; }
+        html:not(.dark) #light-icon { display: block; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background-color: transparent; }
+        html.dark ::-webkit-scrollbar-track { background-color: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
+        html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
+        ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+        html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
+        
+        aside nav {
+             min-height: calc(100vh - 128px);
+        }
+        .chat-message-group:not(:first-child) .chat-avatar {
+            visibility: hidden;
+        }
+    </style>
+    <script>
+        // Apply theme based on localStorage or system preference
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300">
+
+    <div class="relative h-screen overflow-hidden lg:flex">
+        <!-- Sidebar (Static) -->
+        <aside id="sidebar" class="w-64 flex-shrink-0 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-40 h-full">
+            <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+                <a href="../index.html" class="text-2xl font-bold">
+                    <span class="gradient-text">Lumina</span> ✨
+                </a>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <a href="dashboard.html" id="nav-admin_dashboard" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    Admin Dashboard
+                </a>
+                <a href="community.html" id="nav-community_hub" class="flex items-center px-4 py-2.5 text-sm font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    Community Hub
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 mt-auto">
+                <a href="../login.html" class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <div id="main-content-container" class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out h-screen">
+            <header class="h-16 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 flex-shrink-0 sticky top-0 z-20">
+                 <div class="flex items-center">
+                    <button id="menu-button" class="lg:hidden mr-4 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onclick="toggleSidebar()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <h1 id="main-header-title" class="text-lg font-semibold text-gray-900 dark:text-white">Community Hub</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                     <button id="theme-toggle" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-semibold text-sm text-gray-700 dark:text-gray-300" id="user-name-display">Prof. Evelyn Reed (Admin)</span>
+                        <div class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white font-bold text-lg" id="user-avatar-display">A</div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="main-content" class="flex-1 flex overflow-hidden">
+                <!-- Community Hub Content will be injected here -->
+            </div>
+        </div>
+        
+        <!-- Member Sidebar (Static) -->
+        <aside id="member-sidebar" class="w-64 bg-white dark:bg-[#1C1C1C] border-l border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out absolute right-0 top-0 h-full z-30 translate-x-full">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 h-16 flex items-center justify-between">
+                <h2 class="font-bold text-lg">Members</h2>
+                <button class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onclick="toggleMemberSidebar()">
+                     <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div id="member-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+                <!-- Member items will be dynamically inserted here -->
+            </div>
+            <!-- Add Member Button Container -->
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 mt-auto" id="add-member-container">
+                <!-- Button will be injected here by renderMemberList -->
+            </div>
+        </aside>
+
+        <!-- Overlays (Static) -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
+        <div id="member-sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleMemberSidebar()"></div>
+        
+        <!-- MODALS (Hidden by default) -->
+        
+        <!-- Create Group Modal -->
+        <div id="create-group-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
+            <div id="create-group-modal-content" class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 w-full max-w-lg transform transition-all scale-95 opacity-0">
+                <form id="create-group-form">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">Create New Group</h3>
+                        <button type="button" class="close-modal-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="group-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Group Name</label>
+                            <input type="text" id="group-name" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500" required>
+                        </div>
+                        <div>
+                            <label for="group-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                            <textarea id="group-description" rows="2" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-4">
+                        <button type="button" class="close-modal-btn px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancel</button>
+                        <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600">Create Group</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Members Modal -->
+        <div id="add-members-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
+            <div id="add-members-modal-content" class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 w-full max-w-lg transform transition-all scale-95 opacity-0">
+                <!-- Dynamic content (form, member list) is injected here -->
+            </div>
+        </div>
+
+        <!-- Moderation Warning Modal -->
+        <div id="moderation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4 transition-opacity duration-300">
+            <div class="bg-white dark:bg-[#1C1C1C] rounded-xl shadow-2xl max-w-sm w-full p-6 transform scale-95 transition-transform duration-300">
+                <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0 h-10 w-10 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+                        <svg class="h-6 w-6 text-red-600 dark:text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.3 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Content Flagged</h3>
+                </div>
+                <p class="mt-4 text-sm text-gray-600 dark:text-gray-300" id="moderation-reason">Your message was automatically flagged for violating community guidelines. Please review your content before attempting to send it again.</p>
+                <div class="mt-6 flex justify-end">
+                    <button onclick="closeModerationModal()" class="px-4 py-2 text-sm font-medium rounded-lg text-white bg-amber-500 hover:bg-amber-600 transition-colors shadow-md">
+                        I Understand
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DYNAMIC DATA MANAGEMENT ---
+        let currentUser = null;
+        let allUsers = [];
+        let chatData = {};
+        let activeChatId = null;
+
+        // Initialize data from database
+        async function loadData() {
+            try {
+                // Load current user
+                currentUser = await luminaAPI.getCurrentUser();
+                if (!currentUser) {
+                    luminaUI.redirectToLogin();
+                    return;
+                }
+
+                // Load all users
+                allUsers = await luminaAPI.getAllUsers();
+
+                // Load courses as chat data
+                const courses = await luminaAPI.getAllCourses();
+                chatData = {};
+                
+                for (const course of courses) {
+                    // Get course members with full user data
+                    const members = [];
+                    for (const memberId of course.members) {
+                        const member = allUsers.find(u => u.id === memberId);
+                        if (member) members.push(member);
+                    }
+
+                    // Get course messages
+                    const messages = await luminaAPI.getCourseMessages(course.id);
+
+                    chatData[course.id] = {
+                        id: course.id,
+                        name: course.name,
+                        description: course.description,
+                        teacherId: course.teacherId,
+                        contentStatus: course.contentStatus,
+                        members: members,
+                        unread: 0, // Calculate from last read timestamp in real app
+                        messages: messages
+                    };
+                }
+
+                console.log('Data loaded successfully:', { currentUser, allUsers, chatData });
+            } catch (error) {
+                console.error('Failed to load data:', error);
+                luminaUI.showNotification('Failed to load data', 'error');
+            }
+        }
+
+        // --- GLOBAL DOM ELEMENTS ---
+        const pageContentWrapper = document.getElementById('main-content');
+        const mainHeaderTitle = document.getElementById('main-header-title');
+        const memberSidebar = document.getElementById('member-sidebar');
+        const memberSidebarOverlay = document.getElementById('member-sidebar-overlay');
+        const memberList = document.getElementById('member-list');
+        const addMemberContainer = document.getElementById('add-member-container');
+        const createGroupModal = document.getElementById('create-group-modal');
+        const createGroupModalContent = document.getElementById('create-group-modal-content');
+        const createGroupForm = document.getElementById('create-group-form');
+        const addMembersModal = document.getElementById('add-members-modal');
+        const addMembersModalContent = document.getElementById('add-members-modal-content');
+        
+        // These variables are re-mapped inside initializeCommunityHub
+        let groupList, chatHeader, messagesContainer, messageInputForm, messageInput;
+        
+        // --- HELPERS ---
+        function openModal(modalEl, contentEl) {
+            luminaUI.openModal(modalEl, contentEl);
+        }
+
+        function closeModal(modalEl, contentEl) {
+            luminaUI.closeModal(modalEl, contentEl);
+        }
+
+        function findUserById(id) {
+            return allUsers.find(u => u.id === id) || null;
+        }
+
+        // Removed mockAction - now using luminaUI.showNotification()
+
+        // --- MODERATION ---
+
+        // Exponential backoff retry function
+        const callWithBackoff = async (func) => {
+            for (let i = 0; i < 3; i++) {
+                try {
+                    return await func();
+                } catch (error) {
+                    if (i === 2) throw error;
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                }
+            }
+        };
+
+        /**
+         * Uses the Perspective API to classify the message content for toxicity.
+         * @param {string} text The message text to moderate.
+         * @returns {Promise<{isSafe: boolean, reason: string}>}
+         */
+        async function moderateMessage(text) {
+            const apiKey = "f075050b1691438bae59ddeda751aa0b-1ed8c655702a8443ef29b2d7842b6708";
+            const apiUrl = `https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze?key=${apiKey}`;
+
+            const payload = {
+                comment: { text: text },
+                languages: ["en"],
+                requestedAttributes: { TOXICITY: {} }
+            };
+
+            const fetchModeration = async () => {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error(`API response error: ${response.statusText}`);
+                return response.json();
+            };
+
+            try {
+                const result = await callWithBackoff(fetchModeration);
+                const toxicityScore = result?.attributeScores?.TOXICITY?.summaryScore?.value || 0;
+                const isSafe = toxicityScore <= 0.5;
+                const reason = isSafe ? 'Content is safe' : 'Toxicity detected';
+                return { isSafe, reason };
+            } catch (error) {
+                console.error("Moderation API call failed:", error);
+                // Block message on error for safety
+                return { isSafe: false, reason: 'Moderation API error - message blocked for safety' };
+            }
+        }
+
+        function showModerationModal(reason) {
+            document.getElementById('moderation-reason').textContent = `Your message was automatically flagged for: ${reason}. Please review your content before attempting to send it again.`;
+            document.getElementById('moderation-modal').classList.remove('hidden');
+        }
+
+        function closeModerationModal() {
+            document.getElementById('moderation-modal').classList.add('hidden');
+        }
+        window.closeModerationModal = closeModerationModal; // Expose to global scope for onclick
+
+        // --- UI UTILITIES ---
+        function toggleSidebar() {
+            luminaUI.toggleSidebar();
+        }
+
+        function toggleMemberSidebar() {
+            if (memberSidebar.classList.contains('translate-x-full')) {
+                memberSidebar.classList.add('translate-x-full');
+                memberSidebarOverlay.classList.add('hidden');
+            } else {
+                memberSidebar.classList.remove('translate-x-full');
+                memberSidebarOverlay.classList.remove('hidden');
+            }
+        }
+
+
+        // --- CHAT SPECIFIC LOGIC ---
+        
+        function renderGroupList() {
+            groupList.innerHTML = '';
+            for (const groupId in chatData) {
+                const group = chatData[groupId];
+                const isActive = groupId === window.activeChatId;
+                const activeClasses = isActive ? 'text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-500/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800';
+                
+                groupList.innerHTML += `
+                    <a href="#" data-group-id="${groupId}" class="group-link flex items-center justify-between px-3 py-2 text-sm font-semibold rounded-md ${activeClasses}">
+                        <div class="flex items-center">
+                             <svg class="w-4 h-4 mr-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                            ${group.name}
+                        </div>
+                        ${group.unread > 0 ? `<span class="w-5 h-5 bg-amber-500 text-white text-xs font-bold rounded-full flex items-center justify-center">${group.unread}</span>` : ''}
+                    </a>
+                `;
+            }
+        }
+        
+        function renderMemberList(groupId) {
+            const group = chatData[groupId];
+            memberList.innerHTML = '';
+            addMemberContainer.innerHTML = `
+                <button id="open-add-member-btn" class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" /></svg>
+                    Add Members
+                </button>
+            `;
+            const openAddMemberBtn = document.getElementById('open-add-member-btn');
+            if (openAddMemberBtn) openAddMemberBtn.addEventListener('click', openAddMembersModal);
+            
+            const teachers = group.members.filter(m => m.role === 'teacher' || m.role === 'admin');
+            const students = group.members.filter(m => m.role === 'student');
+
+            [
+                { list: teachers, title: 'Teachers' },
+                { list: students, title: 'Students' }
+            ].forEach(({ list, title }) => {
+                if (list.length > 0) {
+                    memberList.innerHTML += `<h3 class="px-2 pt-3 pb-1 text-xs font-bold uppercase text-gray-500 dark:text-gray-400">${title} — ${list.length}</h3>`;
+                    list.forEach(member => {
+                        const isCurrentUser = member.id === currentUser.id;
+                        memberList.innerHTML += `
+                            <div class="flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                                <div class="w-8 h-8 rounded-full ${member.color} flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">${member.avatar}</div>
+                                <span class="ml-3 font-semibold text-sm">${member.name} ${isCurrentUser ? '(You)' : ''}</span>
+                            </div>
+                        `;
+                    });
+                }
+            });
+        }
+        
+        function renderChat(groupId) {
+            window.activeChatId = groupId;
+            const group = chatData[groupId];
+            
+            chatHeader.innerHTML = `
+                <button class="flex items-center justify-between w-full text-left p-1 -m-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50" onclick="toggleMemberSidebar()">
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">${group.name}</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${group.description}</p>
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                </button>`;
+
+            messagesContainer.innerHTML = '';
+            let lastSender = null;
+            group.messages.forEach(msg => {
+                const isCurrentUser = msg.sender === currentUser.name;
+                // Find member by name, falling back to allUsers list for avatar/color data
+                const member = allUsers.find(m => m.name === msg.sender) || (isCurrentUser ? currentUser : { name: msg.sender, avatar: '?', color: 'bg-gray-500' });
+                const isContinuing = lastSender === msg.sender;
+
+                const messageGroupClass = isContinuing ? 'chat-message-group mt-1' : 'chat-message-group mt-4';
+
+                if (isCurrentUser) {
+                    messagesContainer.innerHTML += `
+                        <div class="flex items-start gap-3 flex-row-reverse ${messageGroupClass}">
+                            <div class="w-10 h-10 rounded-full ${currentUser.color} flex-shrink-0 flex items-center justify-center text-white font-bold chat-avatar">
+                                ${currentUser.avatar}
+                            </div>
+                            <div class="flex-1 flex flex-col items-end">
+                                ${!isContinuing ? `<p class="font-semibold text-sm">You <span class="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">${msg.time}</span></p>` : ''}
+                                <div class="mt-1 text-sm bg-indigo-500 text-white p-3 rounded-lg ${isContinuing ? '' : 'rounded-br-none'} max-w-md">
+                                    ${msg.text}
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                     messagesContainer.innerHTML += `
+                        <div class="flex items-start gap-3 ${messageGroupClass}">
+                            <div class="w-10 h-10 rounded-full ${member.color} flex-shrink-0 flex items-center justify-center text-white font-bold chat-avatar">
+                                ${member.avatar}
+                            </div>
+                            <div>
+                                ${!isContinuing ? `<p class="font-semibold text-sm">${msg.sender}<span class="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">${msg.time}</span></p>` : ''}
+                                <div class="mt-1 text-sm bg-white dark:bg-[#1C1C1C] p-3 rounded-lg ${isContinuing ? '' : 'rounded-tl-none'} border border-gray-200 dark:border-gray-800 max-w-md">
+                                    ${msg.text}
+                                </div>
+                            </div>
+                        </div>`;
+                }
+                lastSender = msg.sender;
+            });
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            messageInput.placeholder = `Message ${group.name}`;
+            renderGroupList();
+            renderMemberList(groupId);
+        }
+        
+        function handleGroupLinkClick(e) {
+            const link = e.target.closest('.group-link');
+            if (link) {
+                e.preventDefault();
+                const groupId = link.dataset.groupId;
+                if(chatData[groupId]) chatData[groupId].unread = 0;
+                renderChat(groupId);
+            }
+        }
+
+        async function handleMessageFormSubmit(e) {
+             e.preventDefault();
+             const text = messageInput.value.trim();
+             if (text && window.activeChatId) {
+                document.getElementById('send-button').disabled = true;
+
+                // 1. MODERATION CHECK
+                const moderationResult = await moderateMessage(text);
+
+                if (!moderationResult.isSafe) {
+                    // 2. SHOW WARNING AND PREVENT SENDING
+                    showModerationModal(moderationResult.reason);
+                    document.getElementById('send-button').disabled = false;
+                    return; // Stop execution
+                }
+
+                try {
+                    // 3. SEND MESSAGE TO FIRESTORE
+                    await luminaAPI.sendMessage(window.activeChatId, text);
+
+                    // Reload messages and re-render
+                    const messages = await luminaAPI.getCourseMessages(window.activeChatId);
+                    chatData[window.activeChatId].messages = messages;
+
+                    renderChat(window.activeChatId);
+                    messageInput.value = '';
+
+                    luminaUI.showNotification('Message sent', 'success', 1000);
+                } catch (error) {
+                    console.error('Failed to send message:', error);
+                    luminaUI.showNotification('Failed to send message', 'error');
+                } finally {
+                    document.getElementById('send-button').disabled = false;
+                }
+             }
+        }
+
+        // --- ADD MEMBERS MODAL LOGIC (Full Integration) ---
+        function renderAddMembersModalContent() {
+            const currentGroup = chatData[window.activeChatId];
+            const currentMemberIds = currentGroup.members.map(m => m.id);
+
+            let studentListHtml = allUsers.filter(u => u.role === 'student' || u.role === 'teacher').map(user => {
+                const alreadyInGroup = currentMemberIds.includes(user.id);
+                const disabledAttr = alreadyInGroup ? 'disabled' : '';
+                const opacityClass = alreadyInGroup ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800';
+                
+                return `
+                    <label class="flex items-center justify-between p-3 rounded-lg ${opacityClass}">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full ${user.color} flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">${user.avatar}</div>
+                            <span class="ml-3 font-medium text-sm">${user.name} (${user.role}) ${alreadyInGroup ? '(Added)' : ''}</span>
+                        </div>
+                        <input type="checkbox" name="member" value="${user.id}" class="form-checkbox h-5 w-5 text-amber-600 rounded-md bg-gray-200 dark:bg-gray-700 border-transparent focus:ring-amber-500" ${disabledAttr}>
+                    </label>
+                `;
+            }).join('');
+
+            addMembersModalContent.innerHTML = `
+                <form id="add-members-form">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">Add Users to ${currentGroup.name}</h3>
+                        <button type="button" class="close-add-members-modal-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="space-y-2 max-h-80 overflow-y-auto pr-2">
+                        ${studentListHtml}
+                    </div>
+                    <div class="mt-6 flex justify-end gap-4">
+                        <button type="button" class="close-add-members-modal-btn px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancel</button>
+                        <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600">Add to Group</button>
+                    </div>
+                </form>
+            `;
+            
+            // Attach listeners to the dynamically created content immediately
+            document.getElementById('add-members-form').addEventListener('submit', handleAddMembersFormSubmit);
+            addMembersModalContent.querySelectorAll('.close-add-members-modal-btn').forEach(btn => btn.addEventListener('click', closeAddMembersModal));
+        }
+
+        function openAddMembersModal() {
+            if (!window.activeChatId || !chatData[window.activeChatId]) {
+                 mockAction("Please select a group first.");
+                 return;
+            }
+            renderAddMembersModalContent();
+            openModal(addMembersModal, addMembersModalContent);
+        }
+
+        function closeAddMembersModal() {
+            closeModal(addMembersModal, addMembersModalContent);
+        }
+
+        async function handleAddMembersFormSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const selectedUserIds = Array.from(form.querySelectorAll('input[name="member"]:checked')).map(input => input.value);
+            
+            if (selectedUserIds.length > 0) {
+                try {
+                    const currentGroup = chatData[window.activeChatId];
+                    
+                    // Add members to the course in database
+                    for (const userId of selectedUserIds) {
+                        await luminaAPI.addUserToCourse(window.activeChatId, userId);
+                    }
+                    
+                    // Reload course data
+                    const updatedCourse = await luminaAPI.getCourseById(window.activeChatId);
+                    const members = [];
+                    for (const memberId of updatedCourse.members) {
+                        const member = allUsers.find(u => u.id === memberId);
+                        if (member) members.push(member);
+                    }
+                    
+                    chatData[window.activeChatId].members = members;
+                    
+                    renderChat(window.activeChatId);
+                    closeAddMembersModal();
+                    luminaUI.showNotification(`Added ${selectedUserIds.length} user(s) to ${currentGroup.name}`, 'success');
+                } catch (error) {
+                    console.error('Failed to add members:', error);
+                    luminaUI.showNotification('Failed to add members', 'error');
+                }
+            } else {
+                luminaUI.showNotification("Please select at least one user to add", 'warning');
+            }
+        }
+        
+        // --- INITIALIZATION ---
+        
+        async function initializeCommunityHub() {
+            // Load data from database first
+            await loadData();
+            if (!currentUser) return; // Redirected to login
+            // Main content structure for the chat page
+            const contentHTML = `
+                <div class="flex-1 flex overflow-hidden h-full">
+                    <div id="group-sidebar" class="w-80 bg-white dark:bg-[#1C1C1C] border-r border-gray-200 dark:border-gray-800 flex-col flex">
+                        <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 flex justify-between items-center">
+                            <h2 class="font-bold text-lg">Community Groups</h2>
+                            <button id="create-group-btn" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
+                            </button>
+                        </div>
+                        <div id="group-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+                        </div>
+                    </div>
+                    <div id="chat-area" class="flex-1 flex flex-col bg-gray-50 dark:bg-black relative overflow-hidden">
+                         <div id="chat-header" class="h-16 flex-shrink-0 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800">
+                        </div>
+                        <div id="messages-container" class="flex-1 p-6 overflow-y-auto space-y-2">
+                        </div>
+                        <div class="p-4 bg-white dark:bg-[#111111] border-t border-gray-200 dark:border-gray-800">
+                            <form id="message-input-form" class="relative">
+                                <label for="file-upload" class="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
+                                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                </label>
+                                <input type="file" id="file-upload" class="hidden">
+                                <input id="message-input" type="text" placeholder="Type a message..." class="w-full pl-12 pr-28 py-3 bg-gray-100 dark:bg-[#222222] border border-transparent rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none transition-shadow">
+                                <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                    <button type="submit" id="send-button" class="p-2 rounded-full bg-amber-500 text-white hover:bg-amber-600 transition-colors">
+                                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            pageContentWrapper.innerHTML = contentHTML;
+
+            // RE-MAP CRITICAL GLOBAL CHAT ELEMENTS after injection
+            groupList = document.getElementById('group-list');
+            chatHeader = document.getElementById('chat-header');
+            messagesContainer = document.getElementById('messages-container');
+            messageInputForm = document.getElementById('message-input-form');
+            messageInput = document.getElementById('message-input');
+            
+            // Re-attach listeners to the new elements
+            document.getElementById('create-group-btn').addEventListener('click', () => openModal(createGroupModal, createGroupModalContent));
+            groupList.addEventListener('click', handleGroupLinkClick);
+            if (messageInputForm) messageInputForm.addEventListener('submit', handleMessageFormSubmit);
+            
+            // Determine active chat and render
+            if (!window.activeChatId || !chatData[window.activeChatId]) window.activeChatId = Object.keys(chatData)[0];
+            
+            if (groupList) renderChat(window.activeChatId);
+        }
+
+        // --- Initialization Execution ---
+        
+        // Modal Listeners
+        createGroupModal.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => closeModal(createGroupModal, createGroupModalContent)));
+        createGroupForm.addEventListener('submit', async (e) => {
+             e.preventDefault();
+             const groupName = document.getElementById('group-name').value;
+             const groupDesc = document.getElementById('group-description').value;
+             
+             try {
+                 // Create course in database
+                 const courseData = {
+                     name: groupName,
+                     description: groupDesc,
+                     teacherId: currentUser.id,
+                     members: [currentUser.id],
+                     contentStatus: { vectorDB: '0%', pathways: '0%' }
+                 };
+                 
+                 await luminaAPI.createCourse(courseData);
+                 
+                 // Send welcome message
+                 const courses = await luminaAPI.getAllCourses();
+                 const newCourse = courses.find(c => c.name === groupName);
+                 if (newCourse) {
+                     await luminaAPI.sendMessage(newCourse.id, "Group created! Welcome everyone.");
+                     window.activeChatId = newCourse.id;
+                 }
+                 
+                 // Reload and re-render
+                 await initializeCommunityHub();
+                 closeModal(createGroupModal, createGroupModalContent);
+                 
+                 luminaUI.showNotification(`Course "${groupName}" created successfully`, 'success');
+             } catch (error) {
+                 console.error('Failed to create course:', error);
+                 luminaUI.showNotification('Failed to create course', 'error');
+             }
+        });
+
+        addMembersModal.querySelectorAll('.close-add-members-modal-btn').forEach(btn => btn.addEventListener('click', closeAddMembersModal));
+
+        // Start the application by rendering the Community Hub view
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Wait for database to be ready
+            if (typeof luminaAPI !== 'undefined') {
+                await initializeCommunityHub();
+            } else {
+                // Wait a bit for scripts to load
+                setTimeout(async () => {
+                    await initializeCommunityHub();
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>
