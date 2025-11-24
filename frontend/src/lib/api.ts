@@ -36,7 +36,7 @@ export default api;
 // Auth API
 export const auth = {
   login: async (email: string, password: string) => {
-    console.log('Mock login for', email);
+    console.log('Mock login for', email, password);
     return Promise.resolve({
       access_token: 'mock-access-token',
       refresh_token: 'mock-refresh-token',
@@ -108,64 +108,77 @@ export const courses = {
 // Progress API
 export const progress = {
   getStudentProgress: async (studentId: string) => {
-    const response = await api.get(`/api/progress/${studentId}`);
-    return response.data;
+    console.log('Mock progress.getStudentProgress for studentId', studentId);
+    return Promise.resolve({
+      completed_lessons: [1],
+      mastery_score: 85,
+    });
   },
   updateProgress: async (studentId: string, data: {
     completed_lessons: number[];
     mastery_score?: number;
   }) => {
-    const response = await api.post(`/api/progress/${studentId}`, data);
-    return response.data;
+    console.log('Mock progress.updateProgress for studentId', studentId, data);
+    return Promise.resolve({ success: true });
   },
 };
 
 // Analytics API
 export const analytics = {
   getClassAnalytics: async (courseId: string) => {
-    const response = await api.get(`/api/class-analytics/${courseId}`);
-    return response.data;
+    console.log('Mock analytics.getClassAnalytics for courseId', courseId);
+    return Promise.resolve({
+      average_score: 85,
+      attendance_rate: 92,
+      total_students: 25,
+      recent_activities: [
+        { id: '1', description: 'Quiz 1 completed', date: new Date().toISOString() },
+        { id: '2', description: 'Lesson 3 started', date: new Date().toISOString() },
+      ],
+    });
   },
   getStudentAnalytics: async (studentId: string) => {
-    const response = await api.get(`/api/student-analytics/${studentId}`);
-    return response.data;
+    console.log('Mock analytics.getStudentAnalytics for studentId', studentId);
+    return Promise.resolve({
+      current_streak: 5,
+      average_score: 88,
+      completed_courses: 2,
+      recent_activity: [
+        { id: '1', description: 'Completed Lesson 1', date: new Date().toISOString() },
+        { id: '2', description: 'Started Course 2', date: new Date().toISOString() },
+      ],
+    });
   },
   getWeaknessDetection: async (courseId: string) => {
-    const response = await api.get(`/api/weakness-detection/${courseId}`);
-    return response.data;
+    console.log('Mock analytics.getWeaknessDetection for courseId', courseId);
+    return Promise.resolve({
+      weak_topics: ['State Management', 'React Hooks'],
+      suggested_resources: [
+        { title: 'React Hooks Guide', url: '#' },
+        { title: 'Zustand Documentation', url: '#' },
+      ],
+    });
   },
 };
 
 // Attendance API
 export const attendance = {
   verifyAttendance: async (studentId: string, imageData: FormData) => {
-    const response = await api.post(`/api/verify-attendance?student_id=${studentId}`, imageData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+    console.log('Mock attendance.verifyAttendance for studentId', studentId);
+    return Promise.resolve({ verified: true, confidence: 0.95 });
   },
   getAttendanceReports: async (courseId: string) => {
-    const response = await api.get(`/api/attendance-reports/${courseId}`);
-    return response.data;
+    console.log('Mock attendance.getAttendanceReports for courseId', courseId);
+    return Promise.resolve([
+      { student_id: '1', date: new Date().toISOString(), status: 'present' },
+    ]);
   },
 };
 
 // Content API
 export const content = {
   upload: async (file: File, courseId?: string) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (courseId) {
-      formData.append('course_id', courseId);
-    }
-
-    const response = await api.post('/api/upload-content', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+    console.log('Mock content.upload', file.name, courseId);
+    return Promise.resolve({ url: 'https://example.com/mock-file.pdf' });
   },
 };
