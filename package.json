@@ -21,5 +21,8 @@
   "homepage": "https://github.com/harikiran138/lumina-ai-learning#readme",
   "devDependencies": {
     "parcel": "^2.16.1"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^1.5.0"
   }
 }
