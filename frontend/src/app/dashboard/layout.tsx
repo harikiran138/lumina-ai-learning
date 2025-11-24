@@ -1,7 +1,6 @@
 'use client';
 
-import Image from 'next/image';
-import { Fragment, useState, useEffect } from 'react';
+import { Fragment, useState } from 'react';
 import { Dialog, Menu, Transition } from '@headlessui/react';
 import {
   Bars3Icon,
@@ -65,13 +64,8 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    if (!user) {
-      router.push('/auth/login');
-    }
-  }, [user, router]);
-
   if (!user) {
+    router.push('/auth/login');
     return null;
   }
 
@@ -124,12 +118,10 @@ export default function DashboardLayout({
                   {/* Sidebar component for mobile */}
                   <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
                     <div className="flex h-16 shrink-0 items-center">
-                      <Image
+                      <img
                         className="h-8 w-auto"
                         src="/logo.svg"
                         alt="Lumina"
-                        width={100}
-                        height={32}
                       />
                     </div>
                     <nav className="flex flex-1 flex-col">
@@ -175,12 +167,10 @@ export default function DashboardLayout({
         <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
           <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
             <div className="flex h-16 shrink-0 items-center">
-              <Image
+              <img
                 className="h-8 w-auto"
                 src="/logo.svg"
                 alt="Lumina"
-                width={100}
-                height={32}
               />
             </div>
             <nav className="flex flex-1 flex-col">

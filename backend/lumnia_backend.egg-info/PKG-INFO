@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: lumnia-backend
+Version: 1.0.0
+Summary: Lumnia AI-powered Learning Management System Backend
+Author: Lumnia Team
+Author-email: team@lumnia.ai
+Requires-Python: >=3.8
+Requires-Dist: fastapi>=0.68.0
+Requires-Dist: uvicorn>=0.15.0
+Requires-Dist: sqlalchemy>=1.4.0
+Requires-Dist: pydantic>=1.8.0
+Requires-Dist: loguru>=0.5.3
+Requires-Dist: pytest>=6.0.0
+Requires-Dist: pytest-asyncio>=0.15.0
+Requires-Dist: pytest-cov>=2.0.0
+Requires-Dist: httpx>=0.18.0

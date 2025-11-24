@@ -1,0 +1,45 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'lumina-backend'
+    static_configs:
+      - targets: ['backend:8000']
+    scrape_interval: 5s
+    metrics_path: '/metrics'
+
+  - job_name: 'lumina-api'
+    static_configs:
+      - targets: ['api:3001']
+    scrape_interval: 5s
+    metrics_path: '/metrics'
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:9187']
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:9121']
+
+  - job_name: 'milvus'
+    static_configs:
+      - targets: ['milvus:9091']
+
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:9113']
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']

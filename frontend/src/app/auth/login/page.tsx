@@ -27,8 +27,8 @@ export default function LoginPage() {
       setTokens(response.access_token, response.refresh_token);
       setUser(response.user);
       router.push('/dashboard');
-    } catch {
-      setError('Login failed');
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Login failed');
     }
   };
 

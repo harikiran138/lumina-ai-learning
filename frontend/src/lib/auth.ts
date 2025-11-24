@@ -9,44 +9,21 @@ interface AuthToken {
   exp: number;
 }
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  avatar?: string;
-  color?: string;
-} | null;
-
 interface AuthState {
   token: string | null;
   refreshToken: string | null;
-  user: User;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    avatar?: string;
+    color?: string;
+  } | null;
   setTokens: (access: string, refresh: string) => void;
-  setUser: (user: User) => void;
+  setUser: (user: any) => void;
   logout: () => void;
 }
-
-import { StateStorage, createJSONStorage } from 'zustand/middleware';
-
-const storage: StateStorage = {
-  getItem: (name) => {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-    return localStorage.getItem(name);
-  },
-  setItem: (name, value) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(name, value);
-    }
-  },
-  removeItem: (name) => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(name);
-    }
-  },
-};
 
 // Auth store with persistence
 export const useAuth = create<AuthState>()(
@@ -56,12 +33,11 @@ export const useAuth = create<AuthState>()(
       refreshToken: null,
       user: null,
       setTokens: (access: string, refresh: string) => set({ token: access, refreshToken: refresh }),
-      setUser: (user: User) => set({ user }),
+      setUser: (user: any) => set({ user }),
       logout: () => set({ token: null, refreshToken: null, user: null }),
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => storage),
     }
   )
 );
