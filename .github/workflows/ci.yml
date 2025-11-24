@@ -36,11 +36,12 @@ jobs:
       - name: Test
         run: cd frontend && npm test --if-present --passWithNoTests
 
-  # Build and push Docker images (only on main branch)
+  # Build and push Docker images (DISABLED - Using Vercel deployment instead)
+  # Uncomment and create frontend/Dockerfile if you need Docker deployment
   build-docker:
     needs: [frontend-lint-test]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: false  # Disabled - using Vercel deployment instead
     permissions:
       contents: read
       packages: write
