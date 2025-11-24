@@ -23,17 +23,33 @@ const mockApi = {
         ],
       };
     }
+    if (url.startsWith('/api/courses/') && url.includes('/lessons')) {
+      return {
+        data: [
+          { id: 1, title: "Introduction to Mocking", content: "Mock content", order: 1, created_at: new Date().toISOString() },
+          { id: 2, title: "Advanced Mocking Techniques", content: "Advanced content", order: 2, created_at: new Date().toISOString() }
+        ],
+      };
+    }
     if (url.startsWith('/api/courses/')) {
-        return {
-            data: { id: '1', name: 'Introduction to Mocking', description: 'Learn how to mock APIs in your frontend applications.', lessons: [{id: 1, title: "lesson 1"}, {id: 2, title: "lesson 2"}] },
-        }
+      const courseId = url.split('/')[3];
+      return {
+        data: {
+          id: courseId,
+          name: 'Introduction to Mocking',
+          description: 'Learn how to mock APIs in your frontend applications.',
+          teacher_id: '1',
+          status: 'published' as const,
+          created_at: new Date().toISOString()
+        },
+      };
     }
     return { data: {} };
   },
 };
 
 export default {
-    create: () => mockApi
+  create: () => mockApi
 };
 
 // Auth API
@@ -123,7 +139,7 @@ export const content = {
     if (courseId) {
       formData.append('course_id', courseId);
     }
-    
+
     const response = await mockApi.post('/api/upload-content', formData);
     return response.data;
   },
