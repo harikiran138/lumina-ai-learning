@@ -18,8 +18,22 @@ const mockApi = {
     if (url === '/api/courses') {
       return {
         data: [
-          { id: '1', name: 'Introduction to Mocking', description: 'Learn how to mock APIs in your frontend applications.' },
-          { id: '2', name: 'Advanced Frontend Techniques', description: 'Take your frontend skills to the next level.' },
+          {
+            id: '1',
+            name: 'Introduction to Mocking',
+            description: 'Learn how to mock APIs in your frontend applications.',
+            teacher_id: '1',
+            status: 'published' as const,
+            created_at: new Date().toISOString()
+          },
+          {
+            id: '2',
+            name: 'Advanced Frontend Techniques',
+            description: 'Take your frontend skills to the next level.',
+            teacher_id: '1',
+            status: 'published' as const,
+            created_at: new Date().toISOString()
+          },
         ],
       };
     }
@@ -70,21 +84,61 @@ export const auth = {
 
 // Courses API
 export const courses = {
-  list: async () => {
+  list: async (): Promise<Array<{
+    id: string;
+    name: string;
+    description: string;
+    teacher_id: string;
+    status: 'draft' | 'published' | 'archived';
+    created_at: string;
+  }>> => {
     const response = await mockApi.get('/api/courses');
-    return response.data;
+    return response.data as Array<{
+      id: string;
+      name: string;
+      description: string;
+      teacher_id: string;
+      status: 'draft' | 'published' | 'archived';
+      created_at: string;
+    }>;
   },
-  get: async (id: string) => {
+  get: async (id: string): Promise<{
+    id: string;
+    name: string;
+    description: string;
+    teacher_id: string;
+    status: 'draft' | 'published' | 'archived';
+    created_at: string;
+  }> => {
     const response = await mockApi.get(`/api/courses/${id}`);
-    return response.data;
+    return response.data as {
+      id: string;
+      name: string;
+      description: string;
+      teacher_id: string;
+      status: 'draft' | 'published' | 'archived';
+      created_at: string;
+    };
   },
   create: async (data: { name: string; description?: string }) => {
     const response = await mockApi.post('/api/courses', data);
     return response.data;
   },
-  getLessons: async (courseId: string) => {
+  getLessons: async (courseId: string): Promise<Array<{
+    id: number;
+    title: string;
+    content: string;
+    order: number;
+    created_at: string;
+  }>> => {
     const response = await mockApi.get(`/api/courses/${courseId}/lessons`);
-    return response.data;
+    return response.data as Array<{
+      id: number;
+      title: string;
+      content: string;
+      order: number;
+      created_at: string;
+    }>;
   },
 };
 

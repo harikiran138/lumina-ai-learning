@@ -43,6 +43,10 @@ export const useAuth = create<AuthState>()(
                     const response = await authApi.login(email, password);
                     const { token, refreshToken } = response;
 
+                    if (!token) {
+                        throw new Error('No token received from login');
+                    }
+
                     // Decode token to get user info
                     const decoded: any = jwtDecode(token);
                     const user: User = {
