@@ -164,7 +164,7 @@ export const analytics = {
 // Attendance API
 export const attendance = {
   verifyAttendance: async (studentId: string, imageData: FormData) => {
-    console.log('Mock attendance.verifyAttendance for studentId', studentId);
+    console.log('Mock attendance.verifyAttendance for studentId', studentId, imageData);
     return Promise.resolve({ verified: true, confidence: 0.95 });
   },
   getAttendanceReports: async (courseId: string) => {
