@@ -3,10 +3,8 @@ Tests for ML Skill Grouper Service
 """
 
 import pytest
-import asyncio
 import numpy as np
 from unittest.mock import Mock, patch, AsyncMock
-from sklearn.cluster import KMeans
 
 from services.ml_skill_grouper import MLSkillGrouper
 from services.optimized_embedding import OptimizedEmbeddingService

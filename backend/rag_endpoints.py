@@ -5,31 +5,21 @@ Handles content ingestion, search, and LLM-powered query answering
 
 from fastapi import HTTPException, BackgroundTasks, UploadFile, File, Depends, APIRouter
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-import uvicorn
 import logging
 import uuid
 import os
 import jwt
 from datetime import datetime
-import json
 
 from services.embeddings import EmbeddingService
 from services.vector_store import VectorStoreService
 from services.content_parser import ContentParser
 from services.llm_service import LLMService
 from config import settings
-
-# Initialize services
-embedding_service = EmbeddingService()
-vector_store = VectorStoreService()
-content_parser = ContentParser()
-llm_service = LLMService()
-
-from config import settings
 from models_rag import (
-    ContentIngestionRequest, SearchRequest, QueryRequest,
+    ContentIngestionRequest, SearchRequest,
     FileUploadMetadata, ProcessingStatus, SearchResult, QueryResponse
 )
 

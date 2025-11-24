@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tests.models import TestBase
-from tests.db_test import get_db, setup_test_db
+from tests.db_test import get_db
 
 @pytest.fixture(autouse=True)
 def override_db_dependency():

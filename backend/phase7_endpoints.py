@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from services.conversational_tutor import ConversationalTutorService, ConversationContext, ConversationState
+from services.conversational_tutor import ConversationalTutorService, ConversationState
 from services.nlp_engine import NLPEngine
 from services.qa_engine import QAEngine
 from services.optimized_embedding import OptimizedEmbeddingService
@@ -317,12 +317,6 @@ async def process_voice_interaction(
         # If transcription successful, process as chat message
         conversation_response = None
         if transcription and len(transcription.strip()) > 0:
-            chat_request = ChatMessageRequest(
-                message=transcription,
-                conversation_id=request.conversation_id,
-                course_id=request.course_id
-            )
-
             conversation_response = await tutor.process_message(
                 student_id=student_id,
                 course_id=request.course_id,

@@ -3,34 +3,17 @@ SQLAlchemy models for Lumina LMS
 Based on the PostgreSQL vector schema
 """
 
-from datetime import datetime
 import uuid
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, TIMESTAMP, Float, ForeignKey, ARRAY, JSON, Enum, BigInteger, func
+from sqlalchemy import Column, Integer, String, Text, Boolean, TIMESTAMP, Float, ForeignKey, ARRAY, JSON, Enum, BigInteger
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+import enum
+
 # Note: VECTOR type requires pgvector extension, using Text for now as fallback
 # from sqlalchemy.dialects.postgresql import VECTOR
 VECTOR = Text  # Placeholder until pgvector is properly installed
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-
-Base = declarative_base()
-
-# Additional models for course enrollment and student tracking
-class StudentCourseEnrollment(Base):
-    __tablename__ = 'student_course_enrollments'
-    
-    student_id = Column(String(50), ForeignKey('users.id'), primary_key=True)
-    course_id = Column(String(50), ForeignKey('courses.id'), primary_key=True)
-    enrolled_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    is_active = Column(Boolean, default=True)
-    status = Column(String(50), default='enrolled')  # enrolled, completed, dropped
-    progress = Column(Float, default=0.0)
-    
-    # Relationships
-    student = relationship("User")
-    course = relationship("Course")
-from sqlalchemy.sql import func
-import enum
 
 Base = declarative_base()
 

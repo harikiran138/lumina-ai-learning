@@ -2,8 +2,6 @@
 import pytest
 import json
 from datetime import datetime
-from db import get_db
-import pytest_asyncio
 from tests.models import TestUser as User
 from tests.models import TestCourse as Course
 from tests.models import TestSkill as Skill
@@ -206,7 +204,6 @@ async def test_generate_insights(test_db, analytics_service, setup_test_data):
 @pytest.mark.asyncio
 async def test_analytics_broadcast(test_db, analytics_service, setup_test_data):
     """Test analytics broadcasting"""
-    course = setup_test_data['course']
     
     # Start analytics broadcast in background
     import asyncio

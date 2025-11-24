@@ -9,11 +9,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import pytest
 from fastapi.testclient import TestClient
 from fastapi.websockets import WebSocket
-from services.websocket_service import RealTimePathwayService, ConnectionManager
+from services.websocket_service import RealTimePathwayService
 from unittest.mock import MagicMock, AsyncMock
-from datetime import datetime
 from main import app
-import asyncio
 
 def create_mock_websocket():
     """Create a mock WebSocket instance for testing"""

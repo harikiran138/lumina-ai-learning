@@ -2,7 +2,6 @@
 Configuration settings for Lumina LMS Backend
 """
 
-import os
 from typing import List, Optional
 from pydantic_settings import BaseSettings
 from pydantic import validator

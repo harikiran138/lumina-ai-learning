@@ -3,8 +3,7 @@ Tests for Collaborative Learning Service
 """
 
 import pytest
-import asyncio
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 from datetime import datetime
 
 from services.collaborative_learning import CollaborativeLearningService
@@ -41,8 +40,7 @@ class TestCollaborativeLearningService:
 
         with patch.object(collab_service, '_find_potential_members') as mock_find_members, \
              patch.object(collab_service, '_select_optimal_members') as mock_select, \
-             patch.object(collab_service, '_create_group_record') as mock_create, \
-             patch.object(collab_service, '_send_group_invitations') as mock_send_invites:
+             patch.object(collab_service, '_create_group_record') as mock_create:
 
             mock_find_members.return_value = [
                 {"student_id": "s1", "profile": {"skill_level": 0.5}},
@@ -145,8 +143,7 @@ class TestCollaborativeLearningService:
         group_id = "group_123"
 
         with patch('services.collaborative_learning.get_db') as mock_get_db, \
-             patch.object(collab_service, '_check_group_health') as mock_check_health, \
-             patch.object(collab_service, '_notify_group_members') as mock_notify:
+             patch.object(collab_service, '_check_group_health') as mock_check_health:
 
             mock_db = Mock()
             mock_get_db.return_value.__enter__.return_value = mock_db

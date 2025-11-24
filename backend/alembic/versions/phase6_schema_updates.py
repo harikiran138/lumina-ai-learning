@@ -12,7 +12,6 @@ Add tables and columns for Phase 6 features:
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'phase6_001'

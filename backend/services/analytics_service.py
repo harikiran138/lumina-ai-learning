@@ -4,19 +4,17 @@ Provides real-time analytics, insights, and predictions for student learning pat
 Uses machine learning for pattern detection and predictive modeling.
 """
 
-import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor, IsolationForest
 from typing import List, Dict, Any, Optional
-import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime
 from loguru import logger
 from db import get_db
 from sqlalchemy.orm import Session
 from models import (
     StudentProgress, AssessmentScore, LearningActivity,
-    SkillLevel, LearningPathway, StudentPreference
+    LearningPathway
 )
 
 class LearningAnalytics:
@@ -217,11 +215,11 @@ class LearningAnalytics:
 
     async def _get_course_students(self, db: Session, course_id: str) -> List[Any]:
         """Get all students enrolled in a course."""
-        from models import StudentCourseEnrollment, User
+        from models import StudentCourseEnrollment
         
         enrollments = db.query(StudentCourseEnrollment).filter(
             StudentCourseEnrollment.course_id == course_id,
-            StudentCourseEnrollment.is_active == True
+            StudentCourseEnrollment.is_active
         ).all()
         
         return [enrollment.student for enrollment in enrollments]
@@ -264,7 +262,7 @@ class LearningAnalytics:
         """Get student's current learning pathway."""
         pathway = db.query(LearningPathway).filter(
             LearningPathway.student_id == student_id,
-            LearningPathway.is_active == True
+            LearningPathway.is_active
         ).first()
         
         return pathway.pathway_data if pathway else None

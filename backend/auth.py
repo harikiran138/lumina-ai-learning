@@ -11,6 +11,7 @@ from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
+import uuid
 
 from config import settings
 from db import get_db
@@ -214,5 +215,4 @@ def generate_tokens(user: User) -> TokenResponse:
         user=user_data
     )
 
-# Import uuid here to avoid circular imports
-import uuid
+

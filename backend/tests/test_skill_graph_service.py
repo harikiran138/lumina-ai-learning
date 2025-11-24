@@ -1,5 +1,4 @@
 import pytest
-import networkx as nx
 from services.skill_graph_service import SkillGraphService
 from models import SkillNode
 

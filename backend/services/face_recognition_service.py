@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-import insightface
 from insightface.app import FaceAnalysis
 import logging
 from typing import List, Tuple, Optional, Dict

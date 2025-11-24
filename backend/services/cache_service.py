@@ -6,7 +6,7 @@ from typing import Optional, Any, Dict, List
 import json
 import aioredis
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache

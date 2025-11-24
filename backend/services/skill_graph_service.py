@@ -6,7 +6,6 @@ Uses networkx for graph operations and analysis.
 
 import networkx as nx
 from typing import List, Dict, Any, Optional, Set
-from datetime import datetime
 from loguru import logger
 
 from models import Skill, SkillPrerequisite

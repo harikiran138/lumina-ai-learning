@@ -5,8 +5,8 @@ NLP Engine Service for advanced natural language processing capabilities.
 import asyncio
 import logging
 import re
-from typing import Dict, List, Any, Optional, Tuple, Set
-from collections import defaultdict, Counter
+from typing import Dict, List, Any, Optional, Tuple
+from collections import defaultdict
 from datetime import datetime
 
 from services.base import BaseService

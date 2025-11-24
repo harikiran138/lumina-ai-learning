@@ -7,12 +7,11 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import logging
 import hashlib
-import json
 
 from .auth import get_current_user
 from .models_rag import (
-    ContentIngestionRequest, SearchRequest, ProcessingStatus,
-    SearchResult, CourseContent
+    ContentIngestionRequest, ProcessingStatus,
+    SearchResult
 )
 from .services.vector_store import VectorStoreService
 from .services.embeddings import EmbeddingService

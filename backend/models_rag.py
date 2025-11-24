@@ -3,7 +3,7 @@ RAG-specific models for Lumina LMS
 Includes both SQLAlchemy models and Pydantic schemas
 """
 
-from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, ForeignKey, JSON, Float
+from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, ForeignKey, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func

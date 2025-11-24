@@ -1,6 +1,5 @@
 import pytest
 from services.pathway_generator import LearningPathwayGenerator
-import asyncio
 
 @pytest.fixture
 def pathway_generator():

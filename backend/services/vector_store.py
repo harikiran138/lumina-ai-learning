@@ -4,7 +4,6 @@ Vector database service using Milvus for efficient similarity search
 
 from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType, utility
 from typing import List, Dict, Any, Optional
-import numpy as np
 from loguru import logger
 from config import settings
 import json

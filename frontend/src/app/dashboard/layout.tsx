@@ -13,8 +13,9 @@ import {
   UserGroupIcon,
   CogIcon,
 } from '@heroicons/react/24/outline';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -59,7 +60,6 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const router = useRouter();
   const pathname = usePathname();
   const user = {
     name: 'Lumina User',
@@ -112,10 +112,12 @@ export default function DashboardLayout({
                   {/* Sidebar component for mobile */}
                   <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
                     <div className="flex h-16 shrink-0 items-center">
-                      <img
+                      <Image
                         className="h-8 w-auto"
                         src="/logo.svg"
                         alt="Lumina"
+                        width={32}
+                        height={32}
                       />
                     </div>
                     <nav className="flex flex-1 flex-col">
@@ -161,10 +163,12 @@ export default function DashboardLayout({
         <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
           <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
             <div className="flex h-16 shrink-0 items-center">
-              <img
+              <Image
                 className="h-8 w-auto"
                 src="/logo.svg"
                 alt="Lumina"
+                width={32}
+                height={32}
               />
             </div>
             <nav className="flex flex-1 flex-col">
@@ -244,6 +248,45 @@ export default function DashboardLayout({
                     leaveTo="transform opacity-0 scale-95"
                   >
                     <Menu.Items className="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
+                      <Menu.Item>
+                        {({ active }) => (
+                          <a
+                            href="#"
+                            className={classNames(
+                              active ? 'bg-gray-50' : '',
+                              'block px-3 py-1 text-sm leading-6 text-gray-900'
+                            )}
+                          >
+                            Your Profile
+                          </a>
+                        )}
+                      </Menu.Item>
+                      <Menu.Item>
+                        {({ active }) => (
+                          <a
+                            href="#"
+                            className={classNames(
+                              active ? 'bg-gray-50' : '',
+                              'block px-3 py-1 text-sm leading-6 text-gray-900'
+                            )}
+                          >
+                            Settings
+                          </a>
+                        )}
+                      </Menu.Item>
+                      <Menu.Item>
+                        {({ active }) => (
+                          <a
+                            href="#"
+                            className={classNames(
+                              active ? 'bg-gray-50' : '',
+                              'block px-3 py-1 text-sm leading-6 text-gray-900'
+                            )}
+                          >
+                            Sign out
+                          </a>
+                        )}
+                      </Menu.Item>
                     </Menu.Items>
                   </Transition>
                 </Menu>

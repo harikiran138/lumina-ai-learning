@@ -3,21 +3,18 @@ Machine Learning-Based Skill Grouper Service
 Uses advanced clustering algorithms to create optimal skill groupings based on embeddings and student profiles.
 """
 
-import asyncio
 from datetime import datetime
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any
 from loguru import logger
 import numpy as np
 from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-import pandas as pd
 from collections import defaultdict
 
 from .base import AnalyticsSubscriber
 from .optimized_embedding import OptimizedEmbeddingService
-from db import get_db
 
 # Support both production and test models
 import sys

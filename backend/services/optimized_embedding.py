@@ -4,8 +4,7 @@ Optimized embedding service with GPU support and batch processing
 
 import torch
 from sentence_transformers import SentenceTransformer
-from typing import List, Optional, Union, Dict
-import numpy as np
+from typing import List, Dict
 from loguru import logger
 import asyncio
 from concurrent.futures import ThreadPoolExecutor

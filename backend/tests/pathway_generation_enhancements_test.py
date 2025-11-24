@@ -2,7 +2,7 @@
 
 import networkx as nx
 from typing import List, Dict, Any, Optional, Set
-from datetime import datetime, timedelta
+from datetime import datetime
 import json
 from loguru import logger
 
@@ -10,7 +10,6 @@ from tests.models import TestSkill as Skill
 from tests.models import TestLearningPathway as LearningPathway
 from tests.models import TestSkillLevel as SkillLevel
 from tests.models import TestStudentPreference as StudentPreference
-from tests.db_test import get_db
 
 class PathwayGenerationEnhancements:
     def __init__(self, skill_graph_service):

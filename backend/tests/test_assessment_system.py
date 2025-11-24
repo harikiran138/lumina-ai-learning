@@ -3,8 +3,7 @@ Tests for Assessment System
 """
 
 import pytest
-import asyncio
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from services.assessment_generator import AssessmentGenerator
 from services.auto_grader import AutoGrader
 from services.llm_service import LLMService

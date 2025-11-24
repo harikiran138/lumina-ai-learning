@@ -4,15 +4,13 @@ This service generates personalized learning pathways based on student performan
 learning style, and course content using skill graphs and prerequisite mapping.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import networkx as nx
 from datetime import datetime
 import numpy as np
 from loguru import logger
 from .test_vector_store import vector_store
 from .test_embeddings import embedding_service
-import asyncio
-from config import settings
 
 
 class LearningPathwayGenerator:
@@ -374,7 +372,8 @@ class LearningPathwayGenerator:
             # Analyze prerequisites
             try:
                 prereq_count = len(list(self.skill_graph.predecessors(skill)))
-            except:
+            except Exception as e:
+                logger.warning(f"Error checking prerequisites for {skill}: {str(e)}")
                 prereq_count = 0
             prereq_weight = min(prereq_count / 3, 1.0)  # Scale based on number of prereqs
 
@@ -531,7 +530,8 @@ class LearningPathwayGenerator:
                 for level in levels
             ]
             return float(np.mean(np.diff(level_values) > 0))
-        except:
+        except Exception as e:
+            logger.warning(f"Error scoring progression: {str(e)}")
             return 0.0
 
     def _get_target_mastery(self, difficulty: str) -> float:
@@ -627,7 +627,6 @@ class LearningPathwayGenerator:
             base_difficulty = difficulty_levels.get(base_difficulty_str, 0.5)
 
             # Calculate difficulty adjustment
-            mastery_factor = 1 - (current_mastery / 100.0)  # Normalize mastery to 0-1
             adjusted_difficulty = (base_difficulty + target_level) / 2
 
             # Apply adaptations based on difficulty

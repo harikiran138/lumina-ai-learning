@@ -195,7 +195,7 @@ async def check_cache_service() -> Dict[str, Any]:
             [0.0],
             ttl=60
         )
-        cached = await cache_service.get_cached_embeddings(test_key)
+        await cache_service.get_cached_embeddings(test_key)
         
         return {
             "status": "healthy",

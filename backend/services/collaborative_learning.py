@@ -3,14 +3,10 @@ Collaborative Learning Service
 Manages study groups, peer learning recommendations, and collaborative features.
 """
 
-import asyncio
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from loguru import logger
 import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-from collections import defaultdict
-import json
 
 from .base import AnalyticsSubscriber
 from .ml_skill_grouper import MLSkillGrouper
@@ -361,7 +357,7 @@ class CollaborativeLearningService(AnalyticsSubscriber):
                 {
                     'id': f'activity_{i}',
                     'type': 'member_joined',
-                    'description': f'Member joined the group',
+                    'description': 'Member joined the group',
                     'timestamp': (datetime.utcnow() - timedelta(hours=i)).isoformat(),
                     'actor': f'student_{i}'
                 }
@@ -419,7 +415,6 @@ class CollaborativeLearningService(AnalyticsSubscriber):
         """Select optimal members for the group."""
         try:
             target_size = criteria.get('size', 3)
-            max_size = criteria.get('max_size', 5)
 
             if len(potential_members) <= target_size:
                 return potential_members

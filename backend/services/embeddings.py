@@ -4,7 +4,6 @@ Embedding service using SentenceTransformers
 
 from sentence_transformers import SentenceTransformer
 from typing import List
-import numpy as np
 from config import settings
 
 

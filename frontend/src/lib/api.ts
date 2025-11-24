@@ -62,9 +62,11 @@ const mockApi = {
   },
 };
 
-export default {
+const api = {
   create: () => mockApi
 };
+
+export default api;
 
 // Auth API
 export const auth = {

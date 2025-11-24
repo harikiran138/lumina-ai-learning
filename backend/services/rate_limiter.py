@@ -4,8 +4,7 @@ Rate limiting service for API endpoints
 
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from redis import Redis
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import os
 from loguru import logger
 
@@ -18,9 +17,6 @@ class RateLimiter:
     def _initialize_limiter(self):
         """Initialize Flask-Limiter with Redis storage"""
         try:
-            # Create Redis connection for rate limiting
-            redis_conn = Redis.from_url(self.redis_url)
-
             # Initialize limiter with Redis storage
             self.limiter = Limiter(
                 key_func=get_remote_address,

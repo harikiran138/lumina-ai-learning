@@ -3,13 +3,12 @@ Monitoring and metrics service for production deployment
 """
 
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
-from fastapi import Request, Response
+from fastapi import Request
 from fastapi.responses import PlainTextResponse
 import time
 import psutil
 from typing import Callable
 from functools import wraps
-import logging
 from loguru import logger
 
 # System metrics

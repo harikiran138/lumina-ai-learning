@@ -3,10 +3,8 @@ Tests for Real-Time Pathway Adapter Service
 """
 
 import pytest
-import asyncio
 from unittest.mock import Mock, patch, AsyncMock
-import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from services.realtime_pathway_adapter import RealTimePathwayAdapter
 from services.skill_graph_service import SkillGraphService

@@ -9,28 +9,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # Now you can import from services package
 from services.analytics_service import LearningAnalytics
 import pytest
-import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import numpy as np
-
-from db import get_db
-from tests.models import TestBase, TestStudentProgress, TestAssessmentScore, TestLearningActivity, TestUser, TestCourse, TestLearningPathway, TestSkillLevel, TestStudentCourseEnrollment
-
-# Alias for compatibility
-Base = TestBase
-StudentProgress = TestStudentProgress
-AssessmentScore = TestAssessmentScore
-LearningActivity = TestLearningActivity
-User = TestUser
-Course = TestCourse
-LearningPathway = TestLearningPathway
-SkillLevel = TestSkillLevel
-StudentCourseEnrollment = TestStudentCourseEnrollment
-from services.test_embeddings import MockEmbeddingService
-from services.test_vector_store import MockVectorStore
-from datetime import timedelta
 
 @pytest.fixture(scope="session")
 def test_db():

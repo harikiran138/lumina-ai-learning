@@ -6,10 +6,8 @@ import pdfplumber
 from PIL import Image
 import pytesseract
 import cv2
-import numpy as np
 import pandas as pd
-from typing import List, Dict, Any, Tuple
-import io
+from typing import List, Dict, Any
 from loguru import logger
 import tempfile
 import os

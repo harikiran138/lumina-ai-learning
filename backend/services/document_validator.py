@@ -5,10 +5,8 @@ Document validation service to ensure content quality and security
 import magic
 from typing import Tuple, Dict, Any
 from loguru import logger
-import re
 from pathlib import Path
 import hashlib
-import asyncio
 import aiofiles
 from config import settings
 

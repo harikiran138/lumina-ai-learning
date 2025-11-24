@@ -2,8 +2,7 @@
 Tests for rate limiting service
 """
 
-import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from services.rate_limiter import RateLimiter, rate_limiter, auth_rate_limit, api_rate_limit
 
 

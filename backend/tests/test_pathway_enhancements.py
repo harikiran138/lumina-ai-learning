@@ -1,13 +1,10 @@
 """Tests for pathway generation enhancements"""
 
-import pytest
-from datetime import datetime, timedelta
 from tests.pathway_generation_enhancements_test import PathwayGenerationEnhancements
 from tests.skill_graph_service_test import SkillGraphService
 from tests.models import TestUser as User, TestCourse as Course
 from tests.models import TestSkill as Skill, TestSkillLevel as SkillLevel
 from tests.models import TestStudentPreference as StudentPreference
-from tests.models import TestLearningPathway as LearningPathway
 
 def test_pathway_caching(test_db):
     """Test pathway caching functionality"""

@@ -4,7 +4,6 @@ from datetime import datetime
 from tests.models import TestUser as User
 from tests.models import TestCourse as Course
 from tests.models import TestSkill as Skill
-from tests.models import TestLearningPathway as LearningPathway
 from tests.models import TestStudentPreference as StudentPreference
 from tests.pathway_generation_enhancements_test import PathwayGenerationEnhancements
 from tests.skill_graph_service_test import SkillGraphService

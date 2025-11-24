@@ -1,7 +1,7 @@
 import redis
 import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List
 import logging
 
 logger = logging.getLogger(__name__)

@@ -11,7 +11,6 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics.pairwise import cosine_similarity
 from .llm_service import LLMService
 from .vector_store import VectorStore
 from .embeddings import EmbeddingService
@@ -227,39 +226,39 @@ class PersonalizationEngine:
                 'objectives': str(objectives) if objectives else None
             })
             
-            try:
-                if not force_refresh:
-                    cached = self._get_cached_pathway(cache_key)
-                    if cached:
-                        return cached
+            if not force_refresh:
+                cached = self._get_cached_pathway(cache_key)
+                if cached:
+                    return cached
 
-                # Get student data
-                progress = await self.get_student_progress(student_id)
-                if not progress:
-                    raise ValueError(f"No progress data found for student {student_id}")
-            except Exception as e:
-                logger.error(f"Error preparing pathway data: {str(e)}")
-                progress = {"completed_lessons": [], "weak_topics": [], "strong_topics": []}
+            # Get student data
+            progress = await self.get_student_progress(student_id)
+            if not progress:
+                raise ValueError(f"No progress data found for student {student_id}")
 
-            prompt = f"""
-        Create a personalized learning pathway for student {student_id} in course {course_id}.
-        
-        Student Profile:
-        - Current Level: {current_level}
-        - Completed Lessons: {len(progress.get('completed_lessons', []))}
-        - Average Assessment Score: {self._calculate_average_score(progress)}
-        - Weak Topics: {progress.get('weak_topics', [])}
-        - Strong Topics: {progress.get('strong_topics', [])}
-        
-        Generate a learning pathway with:
-        1. Recommended lesson sequence
-        2. Practice exercises for weak areas
-        3. Advanced topics for strong areas
-        4. Estimated completion time
-        5. Milestones and checkpoints
-        
-        Format as JSON with keys: lessons, exercises, milestones, estimated_time
-        """
+        except Exception as e:
+            logger.error(f"Error preparing pathway data: {str(e)}")
+            progress = {"completed_lessons": [], "weak_topics": [], "strong_topics": []}
+
+        prompt = f"""
+    Create a personalized learning pathway for student {student_id} in course {course_id}.
+    
+    Student Profile:
+    - Current Level: {current_level}
+    - Completed Lessons: {len(progress.get('completed_lessons', []))}
+    - Average Assessment Score: {self._calculate_average_score(progress)}
+    - Weak Topics: {progress.get('weak_topics', [])}
+    - Strong Topics: {progress.get('strong_topics', [])}
+    
+    Generate a learning pathway with:
+    1. Recommended lesson sequence
+    2. Practice exercises for weak areas
+    3. Advanced topics for strong areas
+    4. Estimated completion time
+    5. Milestones and checkpoints
+    
+    Format as JSON with keys: lessons, exercises, milestones, estimated_time
+    """
 
         try:
             # Generate multiple pathway candidates
@@ -273,7 +272,8 @@ class PersonalizationEngine:
                 try:
                     pathway = json.loads(response)
                     pathways.append(pathway)
-                except:
+                except Exception as e:
+                    logger.warning(f"Error loading pathway from response: {str(e)}")
                     continue
             
             if not pathways:

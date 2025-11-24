@@ -3,13 +3,10 @@ Real-Time Pathway Adapter Service
 Provides dynamic learning pathway adaptation based on live student progress and performance data.
 """
 
-import asyncio
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from loguru import logger
 import numpy as np
-from sklearn.linear_model import LinearRegression
-from collections import defaultdict
 
 from .base import AnalyticsSubscriber
 from .skill_graph_service import SkillGraphService
@@ -474,8 +471,6 @@ class RealTimePathwayAdapter(AnalyticsSubscriber):
     ):
         """Log adaptation details for analytics."""
         try:
-            db = next(get_db())
-
             # This would typically insert into a realtime_adaptations table
             # For now, we'll just log it
             logger.info(f"Adaptation logged for student {student_id}: {len(adaptations)} changes")

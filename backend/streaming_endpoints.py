@@ -2,16 +2,16 @@
 Streaming endpoints for optimized content processing
 """
 
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.responses import StreamingResponse
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any
 from datetime import datetime
 import asyncio
 import json
 from loguru import logger
 
 from .auth import get_current_user
-from .models_rag import ContentIngestionRequest, ProcessingStatus
+from .models_rag import ContentIngestionRequest
 from .services.optimized_embedding import OptimizedEmbeddingService
 from .services.streaming_processor import StreamingContentProcessor
 from .services.vector_store import VectorStoreService

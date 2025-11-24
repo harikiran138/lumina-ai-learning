@@ -3,22 +3,16 @@ Advanced Analytics Service
 Provides predictive analytics, deep insights, and machine learning-driven predictions for student learning.
 """
 
-import asyncio
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Tuple
 from loguru import logger
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, mean_squared_error
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.cluster import KMeans
-import tensorflow as tf
 from tensorflow import keras
-from collections import defaultdict
-import json
 
 from .base import AnalyticsSubscriber
 from .realtime_analytics import RealTimeAnalytics

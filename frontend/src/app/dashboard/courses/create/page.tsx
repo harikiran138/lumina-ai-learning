@@ -24,9 +24,25 @@ export default function CreateCoursePage() {
       setSubmitting(true);
       await courses.create(data);
       router.push('/dashboard/courses');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating course:', error);
-      alert(error.response?.data?.detail || 'Failed to create course');
+      let message = 'Failed to create course';
+interface ApiError {
+  response?: {
+    data?: {
+      detail?: string;
+    };
+  };
+}
+
+// ... inside the catch block
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        const apiError = error as ApiError;
+        if (apiError.response?.data?.detail) {
+          message = apiError.response.data.detail;
+        }
+      }
+      alert(message);
     } finally {
       setSubmitting(false);
     }

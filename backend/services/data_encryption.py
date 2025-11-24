@@ -3,12 +3,9 @@ Data encryption service for sensitive data protection
 """
 
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import base64
 import os
 from typing import Optional
-import secrets
 from loguru import logger
 
 class DataEncryption:
@@ -88,7 +85,6 @@ class DataEncryption:
     def rotate_key(self, new_key: str) -> None:
         """Rotate encryption key"""
         try:
-            old_cipher = self.cipher
             self.key = base64.urlsafe_b64decode(new_key)
             self.cipher = Fernet(self.key)
             logger.info("Encryption key rotated successfully")

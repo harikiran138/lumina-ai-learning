@@ -10,7 +10,6 @@ import docx2txt
 import mammoth
 from loguru import logger
 from .chunking_service import chunking_service
-from config import settings
 
 
 class ContentParser:
@@ -103,7 +102,7 @@ class ContentParser:
             except UnicodeDecodeError:
                 continue
             
-        raise Exception(f"Could not decode text file with any supported encoding")
+        raise Exception("Could not decode text file with any supported encoding")
 
     def _parse_docx(self, file_path: str) -> str:
         """Parse DOCX files using multiple approaches"""

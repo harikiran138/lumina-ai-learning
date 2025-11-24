@@ -3,11 +3,9 @@ Intelligent Q&A Engine for educational content.
 Provides advanced question answering capabilities with context-aware responses.
 """
 
-import asyncio
 import logging
 import re
-from typing import Dict, List, Any, Optional, Tuple, Set
-from collections import defaultdict
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 from services.base import BaseService
@@ -741,9 +739,6 @@ class QAEngine(BaseService):
             correct_analysis = await self.nlp_engine.analyze_message(correct_answer)
 
             # Compare semantic similarity (simplified)
-            user_embedding = await self.answer_generator.embedding_service.generate_embedding(user_answer)
-            correct_embedding = await self.answer_generator.embedding_service.generate_embedding(correct_answer)
-
             # Simple cosine similarity (would use proper implementation)
             similarity = 0.8  # Placeholder - would calculate actual similarity
 

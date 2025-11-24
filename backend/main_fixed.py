@@ -3,14 +3,13 @@ Lumina AI Backend - FastAPI Application
 Core AI services for RAG, embeddings, and LLM inference
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import uvicorn
 import logging
 import uuid
-import os
 from datetime import datetime
 
 # Import services
@@ -18,7 +17,6 @@ from .services.embeddings import embedding_service
 from .services.vector_store import vector_store
 from .services.llm_service import llm_service
 from .services.content_parser import content_parser
-from .config import settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

@@ -3,12 +3,11 @@ Skill Graph Service for managing educational skill relationships and dependencie
 """
 
 import networkx as nx
-from typing import List, Dict, Any, Optional, Set, Tuple
+from typing import List, Dict, Any, Optional, Set
 import numpy as np
 from loguru import logger
 from datetime import datetime
 import json
-from sqlalchemy.orm import Session
 from db import get_db
 
 

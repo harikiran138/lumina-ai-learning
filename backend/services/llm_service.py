@@ -4,7 +4,7 @@ LLM service using Ollama
 
 import ollama
 import asyncio
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from config import settings
 
 
@@ -38,19 +38,6 @@ class LLMService:
 
     def generate_pathway(self, student_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate learning pathway"""
-        prompt = f"""
-        Based on the following student information, generate a personalized learning pathway:
-
-        Student ID: {student_data['student_id']}
-        Current Skills: {', '.join(student_data['current_skills'])}
-        Target Skills: {', '.join(student_data['target_skills'])}
-        Learning Style: {student_data.get('learning_style', 'general')}
-
-        Provide a structured pathway with courses, lessons, and estimated time.
-        Format as JSON with keys: pathway (list of dicts with course_id, lessons, estimated_time), recommendations (list of strings)
-        """
-
-        response = self.generate(prompt)
         # In a real implementation, parse JSON response
         # For now, return mock data
         return {
@@ -66,20 +53,6 @@ class LLMService:
 
     def generate_assessment(self, course_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate assessment questions"""
-        prompt = f"""
-        Generate an assessment for the following course:
-
-        Course: {course_data['course_id']}
-        Type: {course_data['assessment_type']}
-        Difficulty: {course_data['difficulty']}
-        Number of questions: {course_data['num_questions']}
-
-        For MCQ: Provide questions with 4 options and correct answer index.
-        For short_answer: Provide questions with expected keywords and rubric.
-        Format as JSON with keys: questions (list), difficulty, generated_at
-        """
-
-        response = self.generate(prompt)
         # Mock response
         if course_data['assessment_type'] == 'mcq':
             questions = [
@@ -107,18 +80,6 @@ class LLMService:
 
     def adaptive_learning(self, performance_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate adaptive learning suggestions"""
-        prompt = f"""
-        Analyze student performance and provide adaptive suggestions:
-
-        Student: {performance_data['student_id']}
-        Performance: {performance_data['current_performance']}
-        Recent Activities: {performance_data['recent_activities']}
-
-        Suggest remediation or acceleration based on performance.
-        Format as JSON with suggestions (list of dicts with type, topic, reason, resources), predicted_performance
-        """
-
-        response = self.generate(prompt)
         # Mock
         return {
             "suggestions": [

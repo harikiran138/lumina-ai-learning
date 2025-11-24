@@ -4,10 +4,9 @@ REST API endpoints for Phase 6 features.
 """
 
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 from pydantic import BaseModel
 from datetime import datetime
-import json
 
 from auth import get_current_user
 from services.realtime_pathway_adapter import realtime_pathway_adapter

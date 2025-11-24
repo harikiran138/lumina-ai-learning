@@ -4,7 +4,6 @@ Knowledge ingestion pipeline for processing educational content
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-import numpy as np
 from loguru import logger
 from config import settings
 from services.content_parser import content_parser
