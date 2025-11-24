@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useState } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Menu, Transition } from '@headlessui/react';
 import {
   Bars3Icon,
@@ -64,8 +64,13 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
 
+  useEffect(() => {
+    if (!user) {
+      router.push('/auth/login');
+    }
+  }, [user, router]);
+
   if (!user) {
-    router.push('/auth/login');
     return null;
   }
 

@@ -25,6 +25,27 @@ interface AuthState {
   logout: () => void;
 }
 
+import { StateStorage, createJSONStorage } from 'zustand/middleware';
+
+const storage: StateStorage = {
+  getItem: (name) => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    return localStorage.getItem(name);
+  },
+  setItem: (name, value) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(name, value);
+    }
+  },
+  removeItem: (name) => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(name);
+    }
+  },
+};
+
 // Auth store with persistence
 export const useAuth = create<AuthState>()(
   persist(
@@ -38,6 +59,7 @@ export const useAuth = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      storage: createJSONStorage(() => storage),
     }
   )
 );
