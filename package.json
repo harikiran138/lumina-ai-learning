@@ -1,11 +1,11 @@
 {
   "name": "lumina-ai-learning",
   "version": "1.0.0",
-  "description": "",
-  "main": "src/index.html",
+  "description": "AI-powered learning management system",
   "scripts": {
     "start": "parcel src/index.html",
-    "build": "parcel build src/index.html"
+    "build": "./build.sh",
+    "clean": "rm -rf dist .parcel-cache"
   },
   "repository": {
     "type": "git",
