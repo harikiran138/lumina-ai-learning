@@ -64,7 +64,7 @@ export default function DashboardPage() {
     return (
       <div>
         <h1 className="text-2xl font-semibold text-gray-900 mb-6">Welcome back, {user.name}!</h1>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">
@@ -130,7 +130,7 @@ export default function DashboardPage() {
                 {(analyticsData?.recent_activity || []).map((activity, index: number) => (
                   <li key={activity.id}>
                     <div className="relative pb-8">
-                      {index !== analyticsData.recent_activity.length - 1 && (
+                      {index !== (analyticsData?.recent_activity.length ?? 0) - 1 && (
                         <span className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true" />
                       )}
                       <div className="relative flex space-x-3">
