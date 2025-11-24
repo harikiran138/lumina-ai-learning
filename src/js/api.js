@@ -13,7 +13,7 @@ class LuminaAPI {
         try {
             const users = await this.db.getAll('users');
             const user = users.find(u => u.email === email && u.status === 'active');
-            
+
             if (!user) {
                 throw new Error('User not found or account suspended');
             }
@@ -29,10 +29,10 @@ class LuminaAPI {
 
             await this.db.setCurrentUser(user);
             this.currentUser = user;
-            
+
             // Update last active time
             await this.db.updateUser(user.id, { lastActive: new Date().toISOString() });
-            
+
             return user;
         } catch (error) {
             console.error('Login failed:', error);
@@ -125,14 +125,14 @@ class LuminaAPI {
     async sendMessage(courseId, text) {
         const currentUser = await this.getCurrentUser();
         if (!currentUser) throw new Error('User not authenticated');
-        
+
         return this.db.addCourseMessage(courseId, currentUser.id, text);
     }
 
     async getCourseMessages(courseId) {
         const messages = await this.db.getCourseMessages(courseId);
         const users = await this.getAllUsers();
-        
+
         // Enhance messages with user data
         return messages.map(msg => {
             const sender = users.find(u => u.id === msg.senderId);
@@ -141,9 +141,9 @@ class LuminaAPI {
                 sender: sender ? sender.name : 'Unknown User',
                 senderAvatar: sender ? sender.avatar : '?',
                 senderColor: sender ? sender.color : 'bg-gray-500',
-                time: new Date(msg.timestamp).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+                time: new Date(msg.timestamp).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
                 })
             };
         }).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -153,10 +153,10 @@ class LuminaAPI {
     async createChatRoom(roomData) {
         const currentUser = await this.getCurrentUser();
         if (!currentUser) throw new Error('User not authenticated');
-        
+
         roomData.createdBy = currentUser.id;
         if (!roomData.members) roomData.members = [currentUser.id];
-        
+
         return this.db.createChatRoom(roomData);
     }
 
@@ -171,14 +171,14 @@ class LuminaAPI {
     async sendChatMessage(roomId, text) {
         const currentUser = await this.getCurrentUser();
         if (!currentUser) throw new Error('User not authenticated');
-        
+
         return this.db.addChatMessage(roomId, currentUser.id, text);
     }
 
     async getChatMessages(roomId) {
         const messages = await this.db.getChatMessages(roomId);
         const users = await this.getAllUsers();
-        
+
         // Enhance messages with user data
         return messages.map(msg => {
             const sender = users.find(u => u.id === msg.senderId);
@@ -188,9 +188,9 @@ class LuminaAPI {
                 senderAvatar: sender ? sender.avatar : '?',
                 senderColor: sender ? sender.color : 'bg-gray-500',
                 senderRole: sender ? sender.role : 'unknown',
-                time: new Date(msg.timestamp).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+                time: new Date(msg.timestamp).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
                 })
             };
         }).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -199,7 +199,7 @@ class LuminaAPI {
     async joinChatRoom(roomId) {
         const currentUser = await this.getCurrentUser();
         if (!currentUser) throw new Error('User not authenticated');
-        
+
         return this.db.joinChatRoom(roomId, currentUser.id);
     }
 
@@ -219,7 +219,7 @@ class LuminaAPI {
     // Dashboard data methods
     async getDashboardData(userRole, userId = null) {
         const currentUser = userId ? await this.db.get('users', userId) : await this.getCurrentUser();
-        
+
         switch (userRole) {
             case 'admin':
                 return this.getAdminDashboardData();
@@ -236,7 +236,7 @@ class LuminaAPI {
         const users = await this.getAllUsers();
         const courses = await this.getAllCourses();
         const systemHealth = await this.db.getSystemHealth();
-        
+
         return {
             totalUsers: users.length,
             activeUsers: users.filter(u => u.status === 'active').length,
@@ -253,55 +253,33 @@ class LuminaAPI {
         const courses = await this.getCoursesByTeacher(teacherId);
         const allProgress = await this.getAllStudentProgress();
         const users = await this.getAllUsers();
-        
+
         let totalStudents = 0;
         let avgMastery = 0;
         let assessmentsToGrade = 0;
-        
+
         // Calculate statistics across all teacher's courses
         for (const course of courses) {
-            totalStudents += course.members.filter(id => 
+            totalStudents += course.members.filter(id =>
                 users.find(u => u.id === id && u.role === 'student')
             ).length;
         }
-        
-        const studentProgress = allProgress.filter(p => 
+
+        const studentProgress = allProgress.filter(p =>
             courses.some(c => c.id === p.courseId)
         );
-        
-        if (studentProgress.length > 0) {
-            avgMastery = studentProgress.reduce((sum, p) => sum + p.mastery, 0) / studentProgress.length;
-        }
-        
-        // Mock assessments to grade (in a real app, this would be calculated)
-        assessmentsToGrade = Math.floor(Math.random() * 10);
-        
-        return {
-            totalStudents,
-            avgMastery: Math.round(avgMastery),
-            assessmentsToGrade,
-            courses,
-            studentProgress,
-            coursesManaged: courses.length
-        };
-    }
-
-    async getStudentDashboardData(studentId) {
-        const studentProgress = await this.getStudentProgress(studentId);
-        const courses = await this.getAllCourses();
-        
         // Get courses the student is enrolled in
         const enrolledCourses = courses.filter(c => c.members.includes(studentId));
-        
+
         // Calculate overall statistics
         let overallMastery = 0;
         let currentStreak = 0;
-        
+
         if (Array.isArray(studentProgress) && studentProgress.length > 0) {
             overallMastery = studentProgress.reduce((sum, p) => sum + p.mastery, 0) / studentProgress.length;
             currentStreak = Math.max(...studentProgress.map(p => p.streak));
         }
-        
+
         return {
             enrolledCourses,
             overallMastery: Math.round(overallMastery),
@@ -347,8 +325,8 @@ class LuminaAPI {
     async searchUsers(query) {
         const users = await this.getAllUsers();
         const lowercaseQuery = query.toLowerCase();
-        
-        return users.filter(user => 
+
+        return users.filter(user =>
             user.name.toLowerCase().includes(lowercaseQuery) ||
             user.email.toLowerCase().includes(lowercaseQuery)
         );
@@ -357,8 +335,8 @@ class LuminaAPI {
     async searchCourses(query) {
         const courses = await this.getAllCourses();
         const lowercaseQuery = query.toLowerCase();
-        
-        return courses.filter(course => 
+
+        return courses.filter(course =>
             course.name.toLowerCase().includes(lowercaseQuery) ||
             course.description.toLowerCase().includes(lowercaseQuery)
         );
@@ -368,7 +346,7 @@ class LuminaAPI {
     async createNotification(userId, message, type = 'info') {
         // In a real app, this would store notifications in the database
         console.log(`Notification for ${userId}: ${message} (${type})`);
-        
+
         // Show browser notification if available
         if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('Lumina', {
@@ -390,46 +368,46 @@ class LuminaAPI {
             systemHealth: await this.db.getSystemHealth(),
             exportDate: new Date().toISOString()
         };
-        
+
         return JSON.stringify(data, null, 2);
     }
 
     async importData(jsonData) {
         try {
             const data = JSON.parse(jsonData);
-            
+
             // Clear existing data first (optional)
             // await this.clearAllData();
-            
+
             // Import each data type
             if (data.users) {
                 for (const user of data.users) {
                     await this.db.put('users', user);
                 }
             }
-            
+
             if (data.courses) {
                 for (const course of data.courses) {
                     await this.db.put('courses', course);
                 }
             }
-            
+
             if (data.messages) {
                 for (const message of data.messages) {
                     await this.db.put('messages', message);
                 }
             }
-            
+
             if (data.progress) {
                 for (const progress of data.progress) {
                     await this.db.put('progress', progress);
                 }
             }
-            
+
             if (data.systemHealth) {
                 await this.db.put('systemHealth', data.systemHealth);
             }
-            
+
             console.log('Data imported successfully');
             return true;
         } catch (error) {
