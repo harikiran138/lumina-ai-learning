@@ -13,7 +13,6 @@ import {
   UserGroupIcon,
   CogIcon,
 } from '@heroicons/react/24/outline';
-import { useAuth, ROLES } from '@/lib/auth';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -28,21 +27,21 @@ const getNavigationForRole = (role: string) => {
   ];
 
   switch (role) {
-    case ROLES.STUDENT:
+    case 'student':
       return [
         ...baseNavigation,
         { name: 'My Progress', href: '/dashboard/progress', icon: ChartBarIcon },
         { name: 'Assessments', href: '/dashboard/assessments', icon: ClipboardDocumentListIcon },
         { name: 'Community', href: '/dashboard/community', icon: UserGroupIcon },
       ];
-    case ROLES.TEACHER:
+    case 'teacher':
       return [
         ...baseNavigation,
         { name: 'Students', href: '/dashboard/students', icon: AcademicCapIcon },
         { name: 'Assessments', href: '/dashboard/assessments', icon: ClipboardDocumentListIcon },
         { name: 'Analytics', href: '/dashboard/analytics', icon: ChartBarIcon },
       ];
-    case ROLES.ADMIN:
+    case 'admin':
       return [
         ...baseNavigation,
         { name: 'Users', href: '/dashboard/users', icon: UserGroupIcon },
@@ -60,21 +59,16 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-
-  if (!user) {
-    router.push('/auth/login');
-    return null;
+  const user = {
+    name: 'Lumina User',
+    role: 'student',
+    avatar: 'L',
+    color: 'bg-blue-500',
   }
 
   const navigation = getNavigationForRole(user.role);
-
-  const handleLogout = () => {
-    logout();
-    router.push('/auth/login');
-  };
 
   return (
     <>
@@ -250,19 +244,6 @@ export default function DashboardLayout({
                     leaveTo="transform opacity-0 scale-95"
                   >
                     <Menu.Items className="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
-                      <Menu.Item>
-                        {({ active }) => (
-                          <button
-                            onClick={handleLogout}
-                            className={classNames(
-                              active ? 'bg-gray-50' : '',
-                              'block px-3 py-1 text-sm leading-6 text-gray-900 w-full text-left'
-                            )}
-                          >
-                            Sign out
-                          </button>
-                        )}
-                      </Menu.Item>
                     </Menu.Items>
                   </Transition>
                 </Menu>
