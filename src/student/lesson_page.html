@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Lesson - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Dynamic Database System Scripts -->
+    <script src="../js/database.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/dashboard-loader.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #f59e0b, #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #light-icon, #dark-icon { display: none; }
+        html.dark #dark-icon { display: block; }
+        html:not(.dark) #light-icon { display: block; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background-color: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
+        html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
+        ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+        html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
+        
+        aside nav {
+             min-height: calc(100vh - 128px);
+        }
+        /* Style for the lesson content */
+        .lesson-content h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid;
+        }
+        html.dark .lesson-content h2 { border-color: #374151; }
+        html:not(.dark) .lesson-content h2 { border-color: #e5e7eb; }
+
+        .lesson-content p {
+            line-height: 1.75;
+            margin-bottom: 1.25rem;
+        }
+        .lesson-content strong {
+            font-weight: 600;
+            color: #fbbf24;
+        }
+        /* New Accordion Styles */
+        .accordion-content {
+            display: grid;
+            grid-template-rows: 0fr; /* Collapsed state */
+            transition: grid-template-rows 0.5s ease-in-out;
+        }
+        .accordion-content.is-open {
+            grid-template-rows: 1fr; /* Expanded state */
+        }
+        .accordion-content > div {
+            overflow: hidden; /* This is crucial for the animation */
+        }
+    </style>
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300">
+
+    <div class="relative min-h-screen lg:flex">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 flex-shrink-0 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-40 h-full">
+            <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+                <a href="../index.html" class="text-2xl font-bold">
+                    <span class="gradient-text">Lumina</span> ✨
+                </a>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                 <a href="dashboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    Dashboard
+                </a>
+                <a href="course_explorer.html" class="flex items-center px-4 py-2.5 text-sm font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300 rounded-lg">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    My Courses
+                </a>
+                <a href="#my-notes-section" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    My Notes
+                </a>
+                <a href="progress_streaks.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    My Progress
+                </a>
+                <a href="leaderboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    Leaderboard
+                </a>
+                <a href="community.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    Community
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 mt-auto">
+                <a href="../login.html" class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="main-content" class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out h-screen overflow-y-auto">
+            <header class="h-16 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 flex-shrink-0 sticky top-0 z-20">
+                 <div class="flex items-center">
+                    <button id="menu-button" class="lg:hidden mr-4 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onclick="toggleSidebar()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <div>
+                         <h1 id="course-title" class="text-lg font-semibold text-gray-900 dark:text-white">Quantum Mechanics</h1>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                     <button id="theme-toggle" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-semibold text-sm text-gray-700 dark:text-gray-300">Alex Turner</span>
+                        <div class="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-lg">A</div>
+                    </div>
+                </div>
+            </header>
+            
+            <main class="flex-1 p-4 md:p-6 lg:p-8 flex gap-8">
+                 <div id="course-chapters" class="flex-1 space-y-4">
+                    <!-- Chapters will be dynamically inserted here -->
+                 </div>
+
+                 <!-- Right Sidebar -->
+                 <aside class="w-80 flex-shrink-0 hidden lg:block space-y-8">
+                    <div class="bg-white dark:bg-[#1C1C1C] p-5 rounded-2xl border border-gray-200 dark:border-gray-800 sticky top-24">
+                        <h3 class="font-bold mb-4">Course Outline</h3>
+                        <ul class="space-y-2 text-sm" id="course-outline">
+                            <!-- Outline links will be dynamically inserted here -->
+                        </ul>
+                    </div>
+                     <div id="my-notes-section" class="bg-white dark:bg-[#1C1C1C] p-5 rounded-2xl border border-gray-200 dark:border-gray-800 sticky top-56">
+                        <h3 class="font-bold mb-4">My Course Notes</h3>
+                        <textarea id="notes-textarea" class="w-full h-40 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" placeholder="Jot down your thoughts on the course..."></textarea>
+                        <p id="notes-feedback" class="text-xs text-gray-500 mt-2 h-4"></p>
+                    </div>
+                 </aside>
+            </main>
+        </div>
+        
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
+    </div>
+
+    <script>
+        // --- COURSE DATA ---
+        const courseData = {
+            id: 'qm-101',
+            title: 'Quantum Mechanics',
+            chapters: [
+                {
+                    id: 'chapter-1',
+                    title: 'The Core Principles',
+                    content: `
+                        <h2 id="section-1-1">Wave-Particle Duality</h2>
+                        <p>One of the most profound concepts in quantum mechanics is <strong>wave-particle duality</strong>. This principle states that all particles, such as electrons and photons, exhibit both wave and particle properties. Depending on the experiment, an electron can behave like a solid object (a particle) or like a spread-out wave.</p>
+                        <h2 id="section-1-2">The Uncertainty Principle</h2>
+                        <p>Formulated by Werner Heisenberg, the <strong>Uncertainty Principle</strong> is another cornerstone of quantum theory. It states that there is a fundamental limit to the precision with which certain pairs of physical properties of a particle, known as complementary variables (such as position and momentum), can be known simultaneously.</p>
+                        <h2 id="section-1-3">Superposition and Entanglement</h2>
+                        <p><strong>Superposition</strong> is the idea that a quantum system can exist in multiple states at the same time. For example, an electron can be in a superposition of "spin up" and "spin down" until a measurement is made. The act of measuring forces the system to "choose" one state, a process known as the collapse of the wavefunction.</p>`
+                },
+                {
+                    id: 'chapter-2',
+                    title: 'The Schrödinger Equation',
+                    content: `
+                        <h2 id="section-2-1">Introduction to the Equation</h2>
+                        <p>The Schrödinger equation is a linear partial differential equation that governs the wave function of a quantum-mechanical system. It is as central to quantum mechanics as Newton's laws of motion are to classical mechanics.</p>
+                        <h2 id="section-2-2">Time-Dependent vs. Time-Independent</h2>
+                        <p>The equation comes in two forms: the time-dependent Schrödinger equation, which describes a system evolving over time, and the time-independent Schrödinger equation, which describes a system in a stationary state.</p>`
+                },
+                {
+                    id: 'chapter-3',
+                    title: 'Applications in Quantum Computing',
+                    content: `
+                        <h2 id="section-3-1">Qubits</h2>
+                        <p>Unlike classical bits, which can be 0 or 1, a qubit can be in a superposition of both states. This allows quantum computers to perform certain calculations much faster than classical computers.</p>`
+                }
+            ]
+        };
+        
+        // --- DOM ELEMENTS ---
+        const courseChaptersContainer = document.getElementById('course-chapters');
+        const courseOutlineContainer = document.getElementById('course-outline');
+
+        // --- FUNCTIONS ---
+        function getChapterProgress(chapterId) {
+            return localStorage.getItem(`${courseData.id}-${chapterId}-completed`) === 'true';
+        }
+
+        function setChapterProgress(chapterId, isCompleted) {
+            localStorage.setItem(`${courseData.id}-${chapterId}-completed`, isCompleted);
+        }
+
+        function renderCourse() {
+            courseChaptersContainer.innerHTML = '';
+            courseOutlineContainer.innerHTML = '';
+            let previousChapterCompleted = true;
+
+            courseData.chapters.forEach((chapter, index) => {
+                const isCompleted = getChapterProgress(chapter.id);
+                const isLocked = !previousChapterCompleted;
+                
+                // Render Course Outline
+                const outlineLi = document.createElement('li');
+                if(isLocked) {
+                    outlineLi.innerHTML = `<span class="flex items-center text-gray-400 dark:text-gray-600 cursor-not-allowed"><svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" /></svg> ${index + 1}. ${chapter.title}</span>`;
+                } else {
+                     outlineLi.innerHTML = `<a href="#${chapter.id}" class="font-semibold text-gray-600 dark:text-gray-400 hover:text-amber-500">${index + 1}. ${chapter.title}</a>`;
+                }
+                courseOutlineContainer.appendChild(outlineLi);
+
+                // Render Chapter Accordion
+                const chapterDiv = document.createElement('div');
+                chapterDiv.id = chapter.id;
+                
+                let completionButton = '';
+                if (!isCompleted) {
+                    completionButton = `<div class="pt-8 flex justify-end items-center">
+                        <button data-chapter-id="${chapter.id}" class="complete-btn px-6 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors">Mark as Complete & Continue</button>
+                    </div>`;
+                } else if (index === courseData.chapters.length - 1) {
+                     /*completionButton = `<div class="mt-8 text-center p-4 bg-green-50 dark:bg-green-500/10 rounded-lg">
+                        <p class="font-bold text-green-700 dark:text-green-300">🎉 Course Completed!</p>
+                        <a href="dashboard.html" class="inline-block mt-2 text-sm font-semibold text-amber-600 hover:underline">Back to Dashboard</a>
+                     </div>`;*/
+                     window.open('assessment.html', '_self');
+                }
+
+                chapterDiv.innerHTML = `
+                    <div class="bg-white dark:bg-[#1C1C1C] rounded-2xl border border-gray-200 dark:border-gray-800">
+                        <button class="accordion-header w-full flex justify-between items-center p-6 text-left" ${isLocked ? 'disabled' : ''}>
+                            <div class="flex items-center">
+                                ${isCompleted ? '<div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mr-4"><svg class="w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg></div>' : ''}
+                                ${isLocked ? '<div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-4"><svg class="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" /></svg></div>' : ''}
+                                 <h2 class="text-xl font-bold ${isLocked ? 'text-gray-400 dark:text-gray-600' : ''}">${index + 1}. ${chapter.title}</h2>
+                            </div>
+                            <svg class="w-6 h-6 shrink-0 transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="lesson-content px-6 pb-6">
+                                ${chapter.content}
+                                ${completionButton}
+                            </div>
+                        </div>
+                    </div>`;
+                courseChaptersContainer.appendChild(chapterDiv);
+
+                previousChapterCompleted = isCompleted;
+            });
+
+            addEventListeners();
+        }
+
+        function addEventListeners() {
+            // Accordion toggle
+            document.querySelectorAll('.accordion-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    const icon = header.querySelector('svg:last-child');
+                    
+                    content.classList.toggle('is-open');
+                    icon.classList.toggle('rotate-180');
+                });
+            });
+
+            // Mark as complete
+            document.querySelectorAll('.complete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const chapterId = e.target.dataset.chapterId;
+                    setChapterProgress(chapterId, true);
+                    renderCourse();
+                    // Auto-open the next chapter
+                     const nextChapter = document.querySelector(`#${chapterId}`).nextElementSibling;
+                     if(nextChapter) {
+                        nextChapter.querySelector('.accordion-header')?.click();
+                        nextChapter.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                     }
+                });
+            });
+
+            // Smooth scroll for outline
+            document.querySelectorAll('#course-outline a').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetElement = document.querySelector(this.getAttribute('href'));
+                    if (targetElement) {
+                         const header = targetElement.querySelector('.accordion-header');
+                         const content = header.nextElementSibling;
+                         if (!content.classList.contains('is-open')) {
+                            header.click();
+                         }
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            });
+        }
+
+        // --- THEME & SIDEBAR LOGIC ---
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                mainContent.classList.remove('lg:translate-x-0', 'translate-x-64');
+                overlay.classList.add('hidden');
+            }
+        }
+        
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCourse();
+            
+            // Auto-open the first unlocked, uncompleted chapter
+            const firstUncompleted = courseData.chapters.find(c => !getChapterProgress(c.id));
+            if (firstUncompleted) {
+                const firstUncompletedEl = document.querySelector(`#${firstUncompleted.id} .accordion-header`);
+                if(firstUncompletedEl && !firstUncompletedEl.disabled) {
+                    firstUncompletedEl.click();
+                }
+            }
+
+
+            // Notes functionality
+            const notesTextarea = document.getElementById('notes-textarea');
+            const notesFeedback = document.getElementById('notes-feedback');
+            const courseNotesId = `${courseData.id}-notes`;
+
+            notesTextarea.value = localStorage.getItem(courseNotesId) || '';
+
+            let saveTimeout;
+            notesTextarea.addEventListener('input', () => {
+                clearTimeout(saveTimeout);
+                notesFeedback.textContent = 'Saving...';
+                saveTimeout = setTimeout(() => {
+                    localStorage.setItem(courseNotesId, notesTextarea.value);
+                    notesFeedback.textContent = 'Saved!';
+                    setTimeout(() => notesFeedback.textContent = '', 2000);
+                }, 1000);
+            });
+        });
+    </script>
+</body>
+</html>
+

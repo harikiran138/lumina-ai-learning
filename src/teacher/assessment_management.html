@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Management - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Dynamic Database System Scripts -->
+    <script src="../js/database.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/dashboard-loader.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #f59e0b, #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #light-icon, #dark-icon { display: none; }
+        html.dark #dark-icon { display: block; }
+        html:not(.dark) #light-icon { display: block; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background-color: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
+        html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
+        ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+        html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
+        
+        aside nav {
+             min-height: calc(100vh - 128px);
+        }
+    </style>
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300">
+
+    <div class="relative min-h-screen lg:flex">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 flex-shrink-0 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-40 h-full">
+            <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+                <a href="../index.html" class="text-2xl font-bold">
+                    <span class="gradient-text">Lumina</span> ✨
+                </a>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <a href="dashboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    Dashboard
+                </a>
+                <a href="content_upload.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 1.1.9 2 2 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H6a2 2 0 00-2 2z"></path></svg>
+                    Content Manager
+                </a>
+                <a href="assessment_management.html" class="flex items-center px-4 py-2.5 text-sm font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300 rounded-lg">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                    Assessments
+                </a>
+                <a href="reports.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    Reports
+                </a>
+                 <a href="community.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    Community
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 mt-auto">
+                <a href="../login.html" class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="main-content" class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out h-screen overflow-y-auto">
+            <header class="h-16 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 flex-shrink-0 sticky top-0 z-20">
+                 <div class="flex items-center">
+                    <button id="menu-button" class="lg:hidden mr-4 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onclick="toggleSidebar()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Assessment Management</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                     <button id="theme-toggle" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-semibold text-sm text-gray-700 dark:text-gray-300">Prof. Evelyn Reed</span>
+                        <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-lg">E</div>
+                    </div>
+                </div>
+            </header>
+            
+            <main class="flex-1 p-4 md:p-6 lg:p-8">
+                <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
+                    <!-- Left Panel: Assessments List -->
+                    <div class="w-full lg:w-1/3 xl:w-1/4 flex-shrink-0">
+                        <div class="bg-white dark:bg-[#1C1C1C] p-4 rounded-2xl border border-gray-200 dark:border-gray-800">
+                             <div class="mb-4">
+                                <label for="course-select-assess" class="text-sm font-semibold text-gray-500 dark:text-gray-400">Select Course</label>
+                                <select id="course-select-assess" class="mt-1 w-full bg-gray-100 dark:bg-gray-800 border-none rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500">
+                                    <!-- Options will be dynamically inserted here -->
+                                </select>
+                            </div>
+                            <h2 class="text-lg font-bold mb-2">Assessments</h2>
+                            <div id="assessment-list" class="space-y-2">
+                                <!-- Assessment links will be dynamically inserted here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Questions -->
+                    <div class="flex-1">
+                        <div id="assessment-details" class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
+                           <!-- Details and questions will be dynamically inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+        
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
+
+        <!-- Add/Edit Question Modal -->
+        <div id="question-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
+            <div id="question-modal-content" class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 w-full max-w-2xl transform transition-all scale-95 opacity-0">
+                <form id="question-form">
+                    <!-- Modal Header -->
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 id="modal-title" class="text-xl font-bold">Add New Question</h3>
+                        <button type="button" id="close-modal-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-2xl leading-none">&times;</button>
+                    </div>
+                    <!-- Form Body -->
+                    <input type="hidden" id="modal-course-id">
+                    <input type="hidden" id="modal-assessment-id">
+                    <input type="hidden" id="modal-question-id">
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="question-text" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Question Text</label>
+                            <textarea id="question-text" rows="3" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500" required></textarea>
+                        </div>
+                        <div>
+                            <label for="question-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Question Type</label>
+                            <select id="question-type" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500">
+                                <option value="mcq">Multiple Choice</option>
+                                <option value="short_answer">Short Answer</option>
+                            </select>
+                        </div>
+                        <div id="mcq-options-container">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Options & Correct Answer</label>
+                            <div id="mcq-options-list" class="mt-2 space-y-2">
+                                <!-- Options will be added here -->
+                            </div>
+                            <button type="button" id="add-option-btn" class="mt-2 text-sm text-amber-600 font-semibold hover:underline">+ Add Option</button>
+                        </div>
+                        <div id="answer-container" class="hidden">
+                            <label for="short-answer-text" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Correct Answer</label>
+                             <input type="text" id="short-answer-text" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500">
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="mt-6 flex justify-end gap-4">
+                        <button type="button" id="cancel-modal-btn" class="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancel</button>
+                        <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600">Save Question</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATA ---
+        let assessmentData = {
+            qm: {
+                name: "Quantum Mechanics",
+                assessments: [
+                    {
+                        id: 'qm_ch1_quiz',
+                        title: 'Chapter 1 Quiz',
+                        status: 'Published',
+                        questions: [
+                            { id: 1, type: 'mcq', text: 'Which concept states that particles can exhibit properties of both particles and waves?', options: ['Quantum Entanglement', 'Wave-Particle Duality', 'The Uncertainty Principle', 'Superposition'], answer: 'Wave-Particle Duality'},
+                            { id: 2, type: 'short_answer', text: "What is the name of the constant 'h' in the de Broglie equation (λ = h / p)?", answer: "Planck's constant"}
+                        ]
+                    },
+                    {
+                        id: 'qm_midterm',
+                        title: 'Midterm Exam',
+                        status: 'Draft',
+                        questions: [
+                            { id: 3, type: 'mcq', text: 'The double-slit experiment demonstrates the ____-like nature of electrons.', options: ['particle', 'wave', 'magnetic', 'gravitational'], answer: 'wave'}
+                        ]
+                    }
+                ]
+            },
+            thermo: {
+                name: "Thermodynamics",
+                assessments: [
+                     { id: 'thermo_ch1_quiz', title: 'Chapter 1 Quiz', status: 'Published', questions: [] }
+                ]
+            }
+        };
+
+        // --- DOM ELEMENTS ---
+        const courseSelect = document.getElementById('course-select-assess');
+        const assessmentList = document.getElementById('assessment-list');
+        const assessmentDetails = document.getElementById('assessment-details');
+        const modal = document.getElementById('question-modal');
+        const modalContent = document.getElementById('question-modal-content');
+        const questionForm = document.getElementById('question-form');
+
+        // --- STATE ---
+        let currentCourseId = 'qm';
+        let currentAssessmentId = 'qm_ch1_quiz';
+
+        // --- FUNCTIONS ---
+        function populateCourseSelect() {
+            for (const courseId in assessmentData) {
+                const course = assessmentData[courseId];
+                const option = document.createElement('option');
+                option.value = courseId;
+                option.textContent = course.name;
+                courseSelect.appendChild(option);
+            }
+        }
+
+        function renderAssessmentList(courseId) {
+            currentCourseId = courseId;
+            const course = assessmentData[courseId];
+            assessmentList.innerHTML = '';
+            if (!course || course.assessments.length === 0) {
+                assessmentList.innerHTML = `<p class="text-sm text-gray-500 text-center py-4">No assessments for this course.</p>`;
+                assessmentDetails.innerHTML = `<div class="text-center py-20 text-gray-500">Select an assessment to view its questions.</div>`;
+                return;
+            }
+
+            course.assessments.forEach(assessment => {
+                const statusColor = assessment.status === 'Published' ? 'text-green-500' : 'text-gray-500';
+                const isActive = assessment.id === currentAssessmentId;
+                const activeClass = isActive ? 'bg-amber-50 dark:bg-amber-500/10' : '';
+                assessmentList.innerHTML += `
+                    <a href="#" data-course-id="${courseId}" data-assessment-id="${assessment.id}" class="assessment-link block p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ${activeClass}">
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold">${assessment.title}</span>
+                            <span class="text-xs font-bold ${statusColor}">${assessment.status}</span>
+                        </div>
+                        <p class="text-xs text-gray-500">${assessment.questions.length} questions</p>
+                    </a>
+                `;
+            });
+             renderAssessmentDetails(courseId, course.assessments[0].id);
+        }
+
+        function renderAssessmentDetails(courseId, assessmentId) {
+            currentCourseId = courseId;
+            currentAssessmentId = assessmentId;
+            // Update active link in list
+            document.querySelectorAll('.assessment-link').forEach(link => {
+                link.classList.toggle('bg-amber-50', link.dataset.assessmentId === assessmentId);
+                link.classList.toggle('dark:bg-amber-500/10', link.dataset.assessmentId === assessmentId);
+            });
+            
+            const assessment = assessmentData[courseId].assessments.find(a => a.id === assessmentId);
+            if (!assessment) return;
+
+            let questionsHTML = `<div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold">${assessment.title}</h2>
+                    <p class="text-sm text-gray-500">${assessment.status}</p>
+                </div>
+                <button data-action="add-question" class="px-4 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600">Add Question</button>
+            </div>
+            <div class="space-y-6">`;
+            
+            if (assessment.questions.length === 0) {
+                questionsHTML += `<p class="text-center py-12 text-gray-500">This assessment has no questions yet.</p>`;
+            }
+
+            assessment.questions.forEach((q, index) => {
+                questionsHTML += `<div class="p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
+                    <div class="flex justify-between items-start">
+                        <p class="font-semibold flex-1 pr-4">${index + 1}. ${q.text}</p>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <button data-action="edit-question" data-question-id="${q.id}" class="p-2 text-gray-500 hover:text-amber-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"><svg class="w-5 h-5 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                            <button data-action="delete-question" data-question-id="${q.id}" class="p-2 text-gray-500 hover:text-red-500 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"><svg class="w-5 h-5 pointer-events-none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                        </div>
+                    </div>`;
+
+                if (q.type === 'mcq') {
+                    questionsHTML += `<div class="mt-4 space-y-2 text-sm">`;
+                    q.options.forEach(opt => {
+                        const isCorrect = opt === q.answer;
+                        questionsHTML += `<p class="flex items-center ${isCorrect ? 'font-bold text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 16 16">${isCorrect ? '<path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>' : '<circle cx="8" cy="8" r="4"/>'}</svg>
+                            ${opt}
+                        </p>`;
+                    });
+                    questionsHTML += `</div>`;
+                } else { // short_answer
+                    questionsHTML += `<p class="mt-2 text-sm text-green-600 dark:text-green-400 font-semibold">Correct Answer: "${q.answer}"</p>`;
+                }
+
+                questionsHTML += `</div>`;
+            });
+            questionsHTML += `</div>`;
+
+            assessmentDetails.innerHTML = questionsHTML;
+        }
+
+        function openQuestionModal(questionId = null) {
+            questionForm.reset();
+            const modalTitle = document.getElementById('modal-title');
+            const courseId = currentCourseId;
+            const assessmentId = currentAssessmentId;
+            
+            document.getElementById('modal-course-id').value = courseId;
+            document.getElementById('modal-assessment-id').value = assessmentId;
+            document.getElementById('modal-question-id').value = questionId;
+
+            if (questionId) {
+                modalTitle.textContent = 'Edit Question';
+                const question = assessmentData[courseId].assessments.find(a => a.id === assessmentId).questions.find(q => q.id === questionId);
+                document.getElementById('question-text').value = question.text;
+                document.getElementById('question-type').value = question.type;
+                updateModalForm(question.type, question.options, question.answer);
+            } else {
+                modalTitle.textContent = 'Add New Question';
+                updateModalForm('mcq', ['Option 1', 'Option 2'], 'Option 1');
+            }
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => modalContent.classList.remove('scale-95', 'opacity-0'), 10);
+        }
+
+        function closeQuestionModal() {
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        function updateModalForm(type, options = [], answer = '') {
+            const mcqContainer = document.getElementById('mcq-options-container');
+            const answerContainer = document.getElementById('answer-container');
+            const mcqOptionsList = document.getElementById('mcq-options-list');
+            
+            mcqContainer.classList.toggle('hidden', type !== 'mcq');
+            answerContainer.classList.toggle('hidden', type !== 'short_answer');
+
+            if (type === 'mcq') {
+                mcqOptionsList.innerHTML = '';
+                options.forEach((opt, index) => {
+                    mcqOptionsList.innerHTML += `
+                        <div class="flex items-center gap-2">
+                            <input type="radio" name="correct-answer" value="${opt}" ${opt === answer ? 'checked' : ''} class="form-radio text-amber-500 focus:ring-amber-500">
+                            <input type="text" value="${opt}" class="flex-1 rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500 text-sm">
+                            <button type="button" class="remove-option-btn text-red-500 hover:text-red-700">&times;</button>
+                        </div>`;
+                });
+            } else {
+                document.getElementById('short-answer-text').value = answer;
+            }
+        }
+        
+        // --- EVENT LISTENERS ---
+        courseSelect.addEventListener('change', (e) => renderAssessmentList(e.target.value));
+        assessmentList.addEventListener('click', (e) => {
+            const link = e.target.closest('.assessment-link');
+            if (link) {
+                e.preventDefault();
+                renderAssessmentDetails(link.dataset.courseId, link.dataset.assessmentId);
+            }
+        });
+
+        assessmentDetails.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (!button) return;
+            
+            const action = button.dataset.action;
+            const questionId = parseInt(button.dataset.questionId);
+
+            switch(action) {
+                case 'add-question':
+                    openQuestionModal();
+                    break;
+                case 'edit-question':
+                    openQuestionModal(questionId);
+                    break;
+                case 'delete-question':
+                    if (confirm('Are you sure you want to delete this question?')) {
+                        const assessment = assessmentData[currentCourseId].assessments.find(a => a.id === currentAssessmentId);
+                        assessment.questions = assessment.questions.filter(q => q.id !== questionId);
+                        renderAssessmentDetails(currentCourseId, currentAssessmentId);
+                    }
+                    break;
+            }
+        });
+
+        // Modal Listeners
+        document.getElementById('question-type').addEventListener('change', (e) => updateModalForm(e.target.value, ['Option 1', 'Option 2']));
+        document.getElementById('add-option-btn').addEventListener('click', () => {
+            document.getElementById('mcq-options-list').insertAdjacentHTML('beforeend', `
+                <div class="flex items-center gap-2">
+                    <input type="radio" name="correct-answer" value="New Option" class="form-radio text-amber-500 focus:ring-amber-500">
+                    <input type="text" value="New Option" class="flex-1 rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500 text-sm">
+                    <button type="button" class="remove-option-btn text-red-500 hover:text-red-700">&times;</button>
+                </div>`);
+        });
+        document.getElementById('mcq-options-list').addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-option-btn')) {
+                e.target.closest('div').remove();
+            }
+        });
+        
+        questionForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const courseId = document.getElementById('modal-course-id').value;
+            const assessmentId = document.getElementById('modal-assessment-id').value;
+            const questionId = parseInt(document.getElementById('modal-question-id').value);
+            const type = document.getElementById('question-type').value;
+
+            const newQuestionData = {
+                text: document.getElementById('question-text').value,
+                type: type,
+            };
+            
+            if(type === 'mcq') {
+                newQuestionData.options = Array.from(document.querySelectorAll('#mcq-options-list input[type="text"]')).map(input => input.value);
+                newQuestionData.answer = document.querySelector('#mcq-options-list input[type="radio"]:checked').value;
+            } else {
+                newQuestionData.answer = document.getElementById('short-answer-text').value;
+            }
+            
+            const assessment = assessmentData[courseId].assessments.find(a => a.id === assessmentId);
+            if(questionId) { // Editing
+                const qIndex = assessment.questions.findIndex(q => q.id === questionId);
+                assessment.questions[qIndex] = { ...assessment.questions[qIndex], ...newQuestionData };
+            } else { // Adding
+                newQuestionData.id = Date.now(); // Simple unique ID
+                assessment.questions.push(newQuestionData);
+            }
+            
+            renderAssessmentDetails(courseId, assessmentId);
+            closeQuestionModal();
+        });
+
+        document.getElementById('close-modal-btn').addEventListener('click', closeQuestionModal);
+        document.getElementById('cancel-modal-btn').addEventListener('click', closeQuestionModal);
+
+
+        // --- THEME & SIDEBAR LOGIC ---
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                mainContent.classList.remove('lg:translate-x-0', 'translate-x-64');
+                overlay.classList.add('hidden');
+            }
+        }
+        
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            populateCourseSelect();
+            renderAssessmentList('qm');
+        });
+    </script>
+</body>
+</html>
+

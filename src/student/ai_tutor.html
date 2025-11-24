@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Tutor - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js" integrity="sha512-0gnb9qK3ak13EqhV5noAv7W4kBmidDq3JlesRAEDMGvGgtHo4ZpwMBg00oYJXO2gUaetlgEcIxkJr61a/YPQHA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>window.pdfjsLib && (window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js');</script>
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        .gradient-text { background: linear-gradient(to right,#f59e0b,#fbbf24); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+        #light-icon,#dark-icon{display:none} html.dark #dark-icon{display:block} html:not(.dark) #light-icon{display:block}
+        ::-webkit-scrollbar{width:8px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px} html.dark ::-webkit-scrollbar-thumb{background:#4b5563} ::-webkit-scrollbar-thumb:hover{background:#9ca3af} html.dark ::-webkit-scrollbar-thumb:hover{background:#6b7280}
+        aside nav { min-height: calc(100vh - 128px); }
+        .chat-message-group:not(:first-child) .chat-avatar { visibility:hidden; }
+        .typing-indicator{display:inline-flex;align-items:center;gap:4px}
+        .typing-indicator span{height:6px;width:6px;background:#9ca3af;border-radius:50%;display:inline-block;animation:typing 1.4s infinite ease-in-out}
+        .quick-btn{font-size:.65rem}
+        @keyframes typing {0%,80%,100%{transform:scale(.8);opacity:.5}40%{transform:scale(1);opacity:1}}
+    </style>
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300">
+    <div class="relative h-screen overflow-hidden lg:flex">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 flex-shrink-0 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-30 h-full">
+            <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+                <a href="../index.html" class="text-2xl font-bold"><span class="gradient-text">Lumina</span> ✨</a>
+            </div>
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto text-sm">
+                <a href="dashboard.html" class="flex items-center px-4 py-2.5 font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">Dashboard</a>
+                <a href="ai_tutor.html" class="flex items-center px-4 py-2.5 font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300 rounded-lg">AI Tutor</a>
+                <a href="course_explorer.html" class="flex items-center px-4 py-2.5 font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">Explore Courses</a>
+                <a href="my_notes.html" class="flex items-center px-4 py-2.5 font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">My Notes</a>
+                <a href="progress_streaks.html" class="flex items-center px-4 py-2.5 font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">My Progress</a>
+                <a href="leaderboard.html" class="flex items-center px-4 py-2.5 font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">Leaderboard</a>
+                <a href="community.html" class="flex items-center px-4 py-2.5 font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">Community</a>
+            </nav>
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 mt-auto">
+                <a href="../login.html" class="flex items-center w-full px-4 py-2.5 font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">Logout</a>
+            </div>
+        </aside>
+        <div id="main-content" class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out h-screen">
+            <header class="h-16 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800">
+                <div class="flex items-center">
+                    <button id="menu-button" class="lg:hidden mr-4 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onclick="toggleSidebar()">☰</button>
+                    <div class="flex items-center gap-3">
+                        <div class="relative"><div class="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-lg border-2 border-white dark:border-black">✨</div><span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-400 border-2 border-white dark:border-[#111111]"></span></div>
+                        <div><h1 class="text-lg font-semibold text-gray-900 dark:text-white">AI Tutor</h1><p class="text-xs text-green-500 dark:text-green-400 font-semibold">Online</p></div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button id="theme-toggle" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" title="Toggle theme"><span id="light-icon">🌞</span><span id="dark-icon">🌜</span></button>
+                    <button onclick="openApiKeySettings()" class="px-3 py-1.5 text-xs rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600">API Settings</button>
+                </div>
+            </header>
+            <div class="flex-1 flex flex-col bg-gray-50 dark:bg-black overflow-hidden">
+                <div class="px-4 py-2 bg-gray-50 dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800 flex flex-wrap gap-2 text-[11px]">
+                    <button onclick="sendQuickMessage('Explain the Pythagorean theorem with an example')" class="quick-btn px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/50">📚 Concept</button>
+                    <button onclick="sendQuickMessage('Generate 3 practice algebra problems and wait for my answers')" class="quick-btn px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-900/50">✏️ Practice</button>
+                    <button onclick="sendQuickMessage('Help me review a paragraph for clarity and grammar')" class="quick-btn px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/50">✅ Review</button>
+                    <button onclick="document.getElementById('hidden-knowledge-panel').classList.toggle('hidden')" class="quick-btn px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/50">📖 Knowledge</button>
+                </div>
+                <div id="hidden-knowledge-panel" class="hidden border-b border-gray-200 dark:border-gray-800 p-4 bg-white dark:bg-[#111111] text-xs space-y-3">
+                    <div class="flex items-center justify-between"><h3 class="font-semibold text-gray-700 dark:text-gray-200">Add Custom Context</h3><button class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200" onclick="this.closest('#hidden-knowledge-panel').classList.add('hidden')">✖</button></div>
+                    <textarea id="paste-knowledge" rows="3" placeholder="Paste notes or text here..." class="w-full text-xs p-2 rounded bg-gray-100 dark:bg-[#222] resize-y"></textarea>
+                    <div class="flex gap-2">
+                        <button id="add-knowledge-btn" class="px-3 py-1.5 rounded bg-amber-500 text-white text-xs hover:bg-amber-600">Add</button>
+                        <button id="clear-knowledge-btn" class="px-3 py-1.5 rounded bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs hover:bg-gray-400 dark:hover:bg-gray-600">Clear All</button>
+                        <label class="ml-auto cursor-pointer px-3 py-1.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600">📎 PDF/Text<input type="file" id="file-upload" class="hidden" accept="application/pdf,text/plain"></label>
+                    </div>
+                    <p id="knowledge-stats" class="text-[10px] text-gray-500">No custom knowledge added yet.</p>
+                </div>
+                <div id="messages-container" class="flex-1 p-6 overflow-y-auto space-y-2"></div>
+                <div class="p-4 bg-white dark:bg-[#111111] border-t border-gray-200 dark:border-gray-800">
+                    <form id="message-input-form" class="relative flex gap-2">
+                        <input id="message-input" type="text" placeholder="Ask the AI Tutor anything..." class="flex-1 px-4 py-3 bg-gray-100 dark:bg-[#222222] border border-transparent rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+                        <button type="submit" class="px-4 py-3 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleSidebar()"></div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div id="api-key-modal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-sm text-sm">
+            <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">OpenRouter API Key</h3>
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">Enter your OpenRouter API key. It is stored locally in your browser. You can get a key at <a href="https://openrouter.ai/" target="_blank" rel="noopener" class="text-amber-600 hover:underline">openrouter.ai</a>.</p>
+            <input id="api-key-input" type="password" placeholder="sk-or-..." class="w-full mb-3 px-3 py-2 rounded bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white" />
+            <div class="flex gap-2">
+                <button onclick="saveApiKey()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded">Save & Test</button>
+                <button onclick="closeApiModal()" class="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Cancel</button>
+            </div>
+            <p class="mt-3 text-[10px] text-gray-500">Next step (optional): move the key server-side via a proxy endpoint.</p>
+        </div>
+    </div>
+
+    <script>
+        // ========= Utilities =========
+        const currentUser = { name: 'Alex Turner', avatar: 'A', color: 'bg-amber-500' };
+        const aiTutor = { name: 'AI Tutor', avatar: '✨', color: 'bg-amber-500' };
+        let chatHistory = [];
+        const knowledgeChunks = []; // {id, text}
+        const MAX_CONTEXT_CHUNKS = 3;
+        const messagesContainer = document.getElementById('messages-container');
+        const messageInputForm = document.getElementById('message-input-form');
+        const messageInput = document.getElementById('message-input');
+        const knowledgeStats = document.getElementById('knowledge-stats');
+        const pasteKnowledge = document.getElementById('paste-knowledge');
+        const fileUpload = document.getElementById('file-upload');
+
+        function uuid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+        function sanitize(str){ return str.replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function formatMarkdown(text){
+            return text
+                .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g,'<em>$1</em>')
+                .replace(/`([^`]+)`/g,'<code class="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-xs">$1</code>')
+                .replace(/^\* (.*$)/gim,'<li class="ml-4 list-disc">$1</li>')
+                .replace(/\n/g,'<br>')
+                .replace(/(<li[^>]*>.*<\/li>)/gs,'<ul class="my-2 space-y-1">$1</ul>')
+                .replace(/<\/ul>\s*<br>\s*<ul[^>]*>/g,'')
+                .replace(/<ul/g,'<br><ul')
+                .replace(/<\/ul>/g,'</ul><br>');
+        }
+
+        function renderChat(){
+            messagesContainer.innerHTML='';
+            let last=null;
+            chatHistory.forEach(msg=>{
+                const self = msg.sender===currentUser.name;
+                const cont = last===msg.sender;
+                const group = cont? 'mt-1':'mt-4';
+                if(self){
+                    messagesContainer.innerHTML += `\n<div class="flex items-start gap-3 flex-row-reverse chat-message-group ${group}">\n  <div class="w-10 h-10 rounded-full ${currentUser.color} flex items-center justify-center text-white font-bold chat-avatar">${currentUser.avatar}</div>\n  <div class="flex-1 flex flex-col items-end">${!cont?`<p class=\"font-semibold text-sm\">You <span class=\"text-xs text-gray-500 dark:text-gray-400 font-normal ml-2\">${msg.time}</span></p>`:''}<div class="mt-1 text-sm bg-amber-500 text-white p-3 rounded-lg ${cont?'':'rounded-br-none'} max-w-md">${formatMarkdown(msg.text)}</div></div>\n</div>`;
+                } else {
+                    messagesContainer.innerHTML += `\n<div class="flex items-start gap-3 chat-message-group ${group}">\n  <div class="w-10 h-10 rounded-full ${aiTutor.color} flex items-center justify-center text-white font-bold chat-avatar">${aiTutor.avatar}</div>\n  <div>${!cont?`<p class=\"font-semibold text-sm\">${msg.sender}<span class=\"text-xs text-gray-500 dark:text-gray-400 font-normal ml-2\">${msg.time}</span></p>`:''}<div class="mt-1 text-sm bg-white dark:bg-[#1C1C1C] p-3 rounded-lg ${cont?'':'rounded-tl-none'} border border-gray-200 dark:border-gray-800 max-w-md">${formatMarkdown(msg.text)}</div></div>\n</div>`;
+                }
+                last = msg.sender;
+            });
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        function addMessage(sender,text,id=null){ chatHistory.push({id:id||uuid(), sender, text, time:new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}); renderChat(); }
+        function removeMessage(id){ chatHistory = chatHistory.filter(m=>m.id!==id); renderChat(); }
+
+        // Knowledge handling
+        function chunkText(text,size=800,overlap=100){ const out=[]; let i=0; while(i<text.length){ const end=i+size; out.push(text.slice(i,end)); i=end-overlap;} return out.map(c=>c.trim()).filter(Boolean); }
+        function updateKnowledgeStats(){ knowledgeStats.textContent = knowledgeChunks.length? `${knowledgeChunks.length} chunk(s) loaded for context.` : 'No custom knowledge added yet.'; }
+        function addKnowledgeFromText(raw){ const cleaned=raw.replace(/\s+/g,' ').trim(); if(!cleaned) return; const chunks=chunkText(cleaned); chunks.forEach(c=>knowledgeChunks.push({id:uuid(), text:c})); updateKnowledgeStats(); addMessage(aiTutor.name, `✅ Added ${chunks.length} knowledge chunk(s).`); }
+        async function extractPdfText(file){ const ab=await file.arrayBuffer(); const pdf=await pdfjsLib.getDocument({data:ab}).promise; let txt=''; for(let p=1;p<=pdf.numPages;p++){ const page=await pdf.getPage(p); const tc=await page.getTextContent(); txt += tc.items.map(i=>i.str).join(' ')+'\n'; } return txt; }
+        function scoreChunk(q,c){ const words=new Set(q.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)); let s=0; for(const w of words){ if(c.toLowerCase().includes(w)) s++; } return s; }
+        function retrieveContext(query){ if(!knowledgeChunks.length) return ''; const ranked=knowledgeChunks.map(c=>({text:c.text, score:scoreChunk(query,c.text)})).filter(r=>r.score>0).sort((a,b)=>b.score-a.score).slice(0,MAX_CONTEXT_CHUNKS); return ranked.length? ranked.map(r=>r.text).join('\n---\n'):''; }
+
+        // OpenRouter API
+        const OpenRouter = {
+            model: 'meta-llama/llama-3.2-3b-instruct:free',
+            getApiKey(){ return localStorage.getItem('openrouter_api_key')||''; },
+            setApiKey(k){ localStorage.setItem('openrouter_api_key', k); },
+            isConfigured(){ return !!this.getApiKey(); },
+            async chat(userMessage){
+                if(!this.isConfigured()) throw new Error('API key not set');
+                const context = retrieveContext(userMessage);
+                const system = context ? `You are Lumina AI Tutor. Use context if relevant.\nContext:\n${context}` : 'You are Lumina AI Tutor. Be concise, clear, and educational.';
+                const recent = chatHistory.slice(-12).map(m=>({role: m.sender===currentUser.name? 'user':'assistant', content: m.text.replace(/<[^>]+>/g,'')}));
+                const body = { model:this.model, messages:[{role:'system', content:system}, ...recent, {role:'user', content:userMessage}], temperature:0.7 };
+                const r = await fetch('https://openrouter.ai/api/v1/chat/completions', { method:'POST', headers:{ 'Authorization':'Bearer '+this.getApiKey(), 'Content-Type':'application/json', 'HTTP-Referer':location.origin, 'X-Title':'Lumina AI Tutor' }, body: JSON.stringify(body)});
+                if(!r.ok){ let msg=`Request failed (${r.status})`; if(r.status===401) msg='Unauthorized (check key)'; else if(r.status===429) msg='Rate limited'; else if(r.status>=500) msg='Upstream error'; throw new Error(msg); }
+                const data = await r.json();
+                return data.choices?.[0]?.message?.content?.trim() || 'No response.';
+            }
+        };
+        async function offlineFallback(q){ const canned=[`Structured approach to: ${sanitize(q).slice(0,60)}...\n1. Define terms\n2. Break problem\n3. Work example\n4. Summarize.`,'AI service unreachable; use systematic reasoning: list known, unknown, link concepts, attempt solution.']; return canned[Math.floor(Math.random()*canned.length)]; }
+        async function sendMessageToAI(userMessage){ const typingId='typing-'+uuid(); addMessage(aiTutor.name,'<div class=\"flex items-center gap-1\"><div class=\"typing-indicator\"><span></span><span></span><span></span></div> Thinking...</div>',typingId); try{ const reply=await OpenRouter.chat(userMessage); removeMessage(typingId); addMessage(aiTutor.name,reply);} catch(err){ removeMessage(typingId); addMessage(aiTutor.name,`⚠️ ${err.message}.\n\n${await offlineFallback(userMessage)}`);} }
+
+        // Events
+        messageInputForm.addEventListener('submit', e=>{ e.preventDefault(); const v=messageInput.value.trim(); if(!v) return; addMessage(currentUser.name, sanitize(v)); messageInput.value=''; sendMessageToAI(v); });
+        document.getElementById('add-knowledge-btn').addEventListener('click', ()=>{ addKnowledgeFromText(pasteKnowledge.value); pasteKnowledge.value=''; });
+        document.getElementById('clear-knowledge-btn').addEventListener('click', ()=>{ knowledgeChunks.length=0; updateKnowledgeStats(); addMessage(aiTutor.name,'🗑️ Cleared custom knowledge.'); });
+        fileUpload?.addEventListener('change', async e=>{ const f=e.target.files[0]; if(!f) return; if(f.type==='application/pdf'){ addMessage(currentUser.name,`Uploading PDF: <strong>${sanitize(f.name)}</strong>`); try{ const t=await extractPdfText(f); addKnowledgeFromText(t);}catch(err){ addMessage(aiTutor.name,'Failed to read PDF: '+err.message);} } else if(f.type.startsWith('text/')) { const t=await f.text(); addKnowledgeFromText(t);} else { addMessage(aiTutor.name,'Unsupported file type.'); } fileUpload.value=''; });
+        function sendQuickMessage(q){ addMessage(currentUser.name, sanitize(q)); sendMessageToAI(q); }
+
+        // API Key modal logic
+        function openApiKeySettings(){ const m=document.getElementById('api-key-modal'); const i=document.getElementById('api-key-input'); i.value=OpenRouter.getApiKey(); m.classList.remove('hidden'); m.classList.add('flex'); setTimeout(()=>i.focus(),80); }
+        function closeApiModal(){ const m=document.getElementById('api-key-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+        async function saveApiKey(){ const i=document.getElementById('api-key-input'); const k=i.value.trim(); if(!k) return alert('Enter a key'); OpenRouter.setApiKey(k); try{ await OpenRouter.chat('Test connection. Reply with OK.'); closeApiModal(); addMessage(aiTutor.name,'✅ API key saved & working!'); }catch(err){ alert('Key test failed: '+err.message); } }
+        document.getElementById('api-key-modal').addEventListener('click', e=>{ if(e.target.id==='api-key-modal') closeApiModal(); });
+        document.getElementById('api-key-input').addEventListener('keypress', e=>{ if(e.key==='Enter') saveApiKey(); });
+
+        // Theme & sidebar
+        const themeToggle=document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click',()=>{ document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark')?'dark':'light'); });
+        function toggleSidebar(){ const sidebar=document.getElementById('sidebar'); const overlay=document.getElementById('sidebar-overlay'); if(sidebar.classList.contains('-translate-x-full')){ sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
+        window.toggleSidebar = toggleSidebar; // expose for button
+
+        // Init
+        function seedWelcome(){ if(chatHistory.length) return; addMessage(aiTutor.name,"Hello! I'm your AI Tutor. Ask me anything. ✨"); addMessage(aiTutor.name,"Upload PDFs or add notes to build private study context."); if(!OpenRouter.isConfigured()) addMessage(aiTutor.name,'⚙️ Set your OpenRouter API key (top right) to enable live answers.'); }
+        seedWelcome(); updateKnowledgeStats();
+    </script>
+</body>
+</html>
+
