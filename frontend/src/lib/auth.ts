@@ -1,74 +1,35 @@
-import { jwtDecode } from 'jwt-decode';
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
-interface AuthToken {
-  user_id: string;
-  role: string;
-  email: string;
-  exp: number;
-}
+// Mock Auth for frontend-only mode
 
-interface AuthState {
-  token: string | null;
-  refreshToken: string | null;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    avatar?: string;
-    color?: string;
-  } | null;
-  setTokens: (access: string, refresh: string) => void;
-  setUser: (user: any) => void;
-  logout: () => void;
-}
+// Mock user data
+const mockUser = {
+  id: '1',
+  name: 'Mock User',
+  email: 'mock@example.com',
+  role: 'student',
+};
 
-// Auth store with persistence
-export const useAuth = create<AuthState>()(
-  persist(
-    (set) => ({
-      token: null,
-      refreshToken: null,
-      user: null,
-      setTokens: (access: string, refresh: string) => set({ token: access, refreshToken: refresh }),
-      setUser: (user: any) => set({ user }),
-      logout: () => set({ token: null, refreshToken: null, user: null }),
-    }),
-    {
-      name: 'auth-storage',
-    }
-  )
-);
+// Mock auth store
+export const useAuth = () => ({
+  token: 'mock-token',
+  refreshToken: 'mock-refresh-token',
+  user: mockUser,
+  setTokens: (access: string, refresh: string) => console.log('Mock setTokens', { access, refresh }),
+  setUser: (user: any) => console.log('Mock setUser', user),
+  logout: () => console.log('Mock logout'),
+});
 
 // Get the current auth token
-export const getAuthToken = () => {
-  return useAuth.getState().token;
-};
+export const getAuthToken = () => 'mock-token';
 
 // Get the current user
-export const getCurrentUser = () => {
-  return useAuth.getState().user;
-};
+export const getCurrentUser = () => mockUser;
 
 // Check if the user is authenticated
-export const isAuthenticated = () => {
-  const token = getAuthToken();
-  if (!token) return false;
-
-  try {
-    const decoded = jwtDecode<AuthToken>(token);
-    return decoded.exp * 1000 > Date.now();
-  } catch {
-    return false;
-  }
-};
+export const isAuthenticated = () => true;
 
 // Get user role
-export const getUserRole = () => {
-  return useAuth.getState().user?.role;
-};
+export const getUserRole = () => mockUser.role;
 
 // Role-based access control
 export const hasRole = (requiredRole: string | string[]) => {

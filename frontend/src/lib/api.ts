@@ -1,50 +1,53 @@
-import axios from 'axios';
-import { getAuthToken } from './auth';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-const api = axios.create({
-  baseURL: BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add auth token to requests
-api.interceptors.request.use(async (config) => {
-  const token = getAuthToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Handle 401 responses
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      // Redirect to login
-      window.location.href = '/auth/login';
+// Mock API for frontend-only mode
+const mockApi = {
+  post: async (url: string, data?: any) => {
+    console.log(`Mock POST to ${url}`, data);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    if (url === '/api/auth/login') {
+      return { data: { token: 'mock-token', refreshToken: 'mock-refresh-token' } };
     }
-    return Promise.reject(error);
-  }
-);
+    if (url === '/api/auth/register') {
+      return { data: { message: 'Registration successful' } };
+    }
+    return { data: {} };
+  },
+  get: async (url: string) => {
+    console.log(`Mock GET from ${url}`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    if (url === '/api/courses') {
+      return {
+        data: [
+          { id: '1', name: 'Introduction to Mocking', description: 'Learn how to mock APIs in your frontend applications.' },
+          { id: '2', name: 'Advanced Frontend Techniques', description: 'Take your frontend skills to the next level.' },
+        ],
+      };
+    }
+    if (url.startsWith('/api/courses/')) {
+        return {
+            data: { id: '1', name: 'Introduction to Mocking', description: 'Learn how to mock APIs in your frontend applications.', lessons: [{id: 1, title: "lesson 1"}, {id: 2, title: "lesson 2"}] },
+        }
+    }
+    return { data: {} };
+  },
+};
 
-export default api;
+export default {
+    create: () => mockApi
+};
 
 // Auth API
 export const auth = {
   login: async (email: string, password: string) => {
-    const response = await api.post('/api/auth/login', { email, password });
+    const response = await mockApi.post('/api/auth/login', { email, password });
     return response.data;
   },
   register: async (name: string, email: string, password: string, role = 'student') => {
-    const response = await api.post('/api/auth/register', { name, email, password, role });
+    const response = await mockApi.post('/api/auth/register', { name, email, password, role });
     return response.data;
   },
   refreshToken: async (refreshToken: string) => {
-    const response = await api.post('/api/auth/refresh', { refreshToken });
+    const response = await mockApi.post('/api/auth/refresh', { refreshToken });
     return response.data;
   },
 };
@@ -52,19 +55,19 @@ export const auth = {
 // Courses API
 export const courses = {
   list: async () => {
-    const response = await api.get('/api/courses');
+    const response = await mockApi.get('/api/courses');
     return response.data;
   },
   get: async (id: string) => {
-    const response = await api.get(`/api/courses/${id}`);
+    const response = await mockApi.get(`/api/courses/${id}`);
     return response.data;
   },
   create: async (data: { name: string; description?: string }) => {
-    const response = await api.post('/api/courses', data);
+    const response = await mockApi.post('/api/courses', data);
     return response.data;
   },
   getLessons: async (courseId: string) => {
-    const response = await api.get(`/api/courses/${courseId}/lessons`);
+    const response = await mockApi.get(`/api/courses/${courseId}/lessons`);
     return response.data;
   },
 };
@@ -72,14 +75,14 @@ export const courses = {
 // Progress API
 export const progress = {
   getStudentProgress: async (studentId: string) => {
-    const response = await api.get(`/api/progress/${studentId}`);
+    const response = await mockApi.get(`/api/progress/${studentId}`);
     return response.data;
   },
   updateProgress: async (studentId: string, data: {
     completed_lessons: number[];
     mastery_score?: number;
   }) => {
-    const response = await api.post(`/api/progress/${studentId}`, data);
+    const response = await mockApi.post(`/api/progress/${studentId}`, data);
     return response.data;
   },
 };
@@ -87,15 +90,15 @@ export const progress = {
 // Analytics API
 export const analytics = {
   getClassAnalytics: async (courseId: string) => {
-    const response = await api.get(`/api/class-analytics/${courseId}`);
+    const response = await mockApi.get(`/api/class-analytics/${courseId}`);
     return response.data;
   },
   getStudentAnalytics: async (studentId: string) => {
-    const response = await api.get(`/api/student-analytics/${studentId}`);
+    const response = await mockApi.get(`/api/student-analytics/${studentId}`);
     return response.data;
   },
   getWeaknessDetection: async (courseId: string) => {
-    const response = await api.get(`/api/weakness-detection/${courseId}`);
+    const response = await mockApi.get(`/api/weakness-detection/${courseId}`);
     return response.data;
   },
 };
@@ -103,15 +106,11 @@ export const analytics = {
 // Attendance API
 export const attendance = {
   verifyAttendance: async (studentId: string, imageData: FormData) => {
-    const response = await api.post(`/api/verify-attendance?student_id=${studentId}`, imageData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await mockApi.post(`/api/verify-attendance?student_id=${studentId}`, imageData);
     return response.data;
   },
   getAttendanceReports: async (courseId: string) => {
-    const response = await api.get(`/api/attendance-reports/${courseId}`);
+    const response = await mockApi.get(`/api/attendance-reports/${courseId}`);
     return response.data;
   },
 };
@@ -125,11 +124,7 @@ export const content = {
       formData.append('course_id', courseId);
     }
     
-    const response = await api.post('/api/upload-content', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await mockApi.post('/api/upload-content', formData);
     return response.data;
   },
 };
