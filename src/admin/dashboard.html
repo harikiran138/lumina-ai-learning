@@ -110,225 +110,137 @@
         <!-- Sidebar (Static) -->
         <aside id="sidebar"
             class="w-64 flex-shrink-0 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-40 h-full">
-            <div
-                class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-                <a href="dashboard.html" class="text-2xl font-bold">
-                    <span class="gradient-text">Lumina</span> ✨
-                </a>
+            <div <!-- Dashboard content injected here -->
             </div>
+    </div>
+    </div>
 
-            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-                <a href="dashboard.html" id="nav-admin_dashboard"
-                    class="flex items-center px-4 py-2.5 text-sm font-medium bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/10 text-amber-700 dark:text-amber-400 rounded-lg shadow-sm transition-colors">
-                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    Admin Dashboard
-                </a>
-                <a href="community.html" id="nav-community_hub"
-                    class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Community Hub
-                </a>
-            </nav>
-
-            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 mt-auto">
-                <a href="../login.html"
-                    class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Logout
-                </a>
-            </div>
-        </aside>
-
-        <!-- Main Content Wrapper -->
-        <div id="main-content-container"
-            class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out h-screen">
-            <header
-                class="h-16 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 flex-shrink-0 sticky top-0 z-20">
-                <div class="flex items-center">
-                    <button id="menu-button"
-                        class="lg:hidden mr-4 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        onclick="toggleSidebar()">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
-                    <h1 id="main-header-title" class="text-lg font-semibold text-gray-900 dark:text-white">Admin
-                        Dashboard</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <button id="theme-toggle"
-                        class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                        </svg>
-                    </button>
-                    <div class="flex items-center space-x-2">
-                        <span class="font-semibold text-sm text-gray-700 dark:text-gray-300"
-                            id="user-name-display">Prof. Evelyn Reed (Admin)</span>
-                        <div class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white font-bold text-lg"
-                            id="user-avatar-display">A</div>
-                    </div>
-                </div>
-            </header>
-
-            <div id="main-content" class="flex-1 flex overflow-hidden">
-                <!-- Dynamic Content Container -->
-                <div id="page-content-wrapper" class="flex-1 flex flex-col overflow-y-auto animate-fade-in-up">
-                    <!-- Dashboard content injected here -->
-                </div>
-            </div>
+    <!-- Member Sidebar - Not used on dashboard but kept for consistent file structure -->
+    <aside id="member-sidebar"
+        class="w-64 bg-white dark:bg-[#1C1C1C] border-l border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out absolute right-0 top-0 h-full z-30 translate-x-full">
+        <div
+            class="p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 h-16 flex items-center justify-between">
+            <h2 class="font-bold text-lg">Members</h2>
+            <button class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                onclick="closeMemberSidebar()">
+                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
         </div>
-
-        <!-- Member Sidebar - Not used on dashboard but kept for consistent file structure -->
-        <aside id="member-sidebar"
-            class="w-64 bg-white dark:bg-[#1C1C1C] border-l border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out absolute right-0 top-0 h-full z-30 translate-x-full">
-            <div
-                class="p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 h-16 flex items-center justify-between">
-                <h2 class="font-bold text-lg">Members</h2>
-                <button class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    onclick="closeMemberSidebar()">
-                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div id="member-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
-            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 mt-auto"
-                id="add-member-container"></div>
-        </aside>
-
-        <!-- Overlays (Static) -->
-        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()">
+        <div id="member-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
+        <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 mt-auto" id="add-member-container">
         </div>
-        <div id="member-sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden"
-            onclick="closeMemberSidebar()"></div>
+    </aside>
 
-        <!-- MODALS (Hidden by default) -->
+    <!-- Overlays (Static) -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()">
+    </div>
+    <div id="member-sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden"
+        onclick="closeMemberSidebar()"></div>
 
-        <!-- Edit User Modal -->
-        <div id="edit-user-modal"
-            class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
-            <div id="edit-user-modal-content"
-                class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 w-full max-w-lg transform transition-all scale-95 opacity-0">
-                <form id="edit-user-form">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xl font-bold">Edit User: <span id="edit-user-name"
-                                class="font-normal text-amber-500"></span></h3>
-                        <button type="button"
-                            class="close-edit-user-modal-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-2xl leading-none">&times;</button>
+    <!-- MODALS (Hidden by default) -->
+
+    <!-- Edit User Modal -->
+    <div id="edit-user-modal"
+        class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
+        <div id="edit-user-modal-content"
+            class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 w-full max-w-lg transform transition-all scale-95 opacity-0">
+            <form id="edit-user-form">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold">Edit User: <span id="edit-user-name"
+                            class="font-normal text-amber-500"></span></h3>
+                    <button type="button"
+                        class="close-edit-user-modal-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-2xl leading-none">&times;</button>
+                </div>
+                <input type="hidden" id="edit-user-id">
+                <div class="space-y-4">
+                    <div>
+                        <label for="edit-user-role"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Role
+                            Assignment</label>
+                        <select id="edit-user-role"
+                            class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500">
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="admin">Admin</option>
+                        </select>
                     </div>
-                    <input type="hidden" id="edit-user-id">
-                    <div class="space-y-4">
-                        <div>
-                            <label for="edit-user-role"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Role
-                                Assignment</label>
-                            <select id="edit-user-role"
-                                class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500">
-                                <option value="student">Student</option>
-                                <option value="teacher">Teacher</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="edit-user-status"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Account
-                                Status</label>
-                            <select id="edit-user-status"
-                                class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500">
-                                <option value="active">Active</option>
-                                <option value="suspended">Suspended</option>
-                            </select>
-                        </div>
+                    <div>
+                        <label for="edit-user-status"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Account
+                            Status</label>
+                        <select id="edit-user-status"
+                            class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500">
+                            <option value="active">Active</option>
+                            <option value="suspended">Suspended</option>
+                        </select>
                     </div>
-                    <div class="mt-6 flex justify-end gap-4">
+                </div>
+                <div class="mt-6 flex justify-end gap-4">
+                    <button type="button"
+                        class="close-edit-user-modal-btn px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancel</button>
+                    <button type="submit"
+                        class="px-4 py-2 text-sm font-semibold text-white bg-indigo-500 rounded-lg hover:bg-indigo-600">Save
+                        Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Course Modal -->
+    <div id="edit-course-modal"
+        class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
+        <div id="edit-course-modal-content"
+            class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 w-full max-w-lg transform transition-all scale-95 opacity-0">
+            <form id="edit-course-form">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold">Manage Course: <span id="edit-course-name"
+                            class="font-normal text-amber-500"></span></h3>
+                    <button type="button"
+                        class="close-edit-course-modal-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-2xl leading-none">&times;</button>
+                </div>
+                <input type="hidden" id="edit-course-id">
+                <div class="space-y-4">
+                    <div>
+                        <label for="edit-course-title"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Course Title</label>
+                        <input type="text" id="edit-course-title"
+                            class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500"
+                            required>
+                    </div>
+                    <div>
+                        <label for="edit-course-desc"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                        <textarea id="edit-course-desc" rows="2"
+                            class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500"></textarea>
+                    </div>
+                    <div>
+                        <label for="edit-course-teacher"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Lead Teacher</label>
+                        <select id="edit-course-teacher"
+                            class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500">
+                            <option value="er">Prof. Evelyn Reed (Admin)</option>
+                            <option value="jd">Jane Doe (Teacher)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-between gap-4">
+                    <button type="button" id="delete-course-btn"
+                        class="px-4 py-2 text-sm font-semibold text-white bg-red-500 rounded-lg hover:bg-red-600">Delete
+                        Course</button>
+                    <div class="flex gap-4">
                         <button type="button"
-                            class="close-edit-user-modal-btn px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancel</button>
+                            class="close-edit-course-modal-btn px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancel</button>
                         <button type="submit"
                             class="px-4 py-2 text-sm font-semibold text-white bg-indigo-500 rounded-lg hover:bg-indigo-600">Save
                             Changes</button>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
-
-        <!-- Edit Course Modal -->
-        <div id="edit-course-modal"
-            class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
-            <div id="edit-course-modal-content"
-                class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 w-full max-w-lg transform transition-all scale-95 opacity-0">
-                <form id="edit-course-form">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xl font-bold">Manage Course: <span id="edit-course-name"
-                                class="font-normal text-amber-500"></span></h3>
-                        <button type="button"
-                            class="close-edit-course-modal-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-2xl leading-none">&times;</button>
-                    </div>
-                    <input type="hidden" id="edit-course-id">
-                    <div class="space-y-4">
-                        <div>
-                            <label for="edit-course-title"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Course Title</label>
-                            <input type="text" id="edit-course-title"
-                                class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500"
-                                required>
-                        </div>
-                        <div>
-                            <label for="edit-course-desc"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-                            <textarea id="edit-course-desc" rows="2"
-                                class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500"></textarea>
-                        </div>
-                        <div>
-                            <label for="edit-course-teacher"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Lead Teacher</label>
-                            <select id="edit-course-teacher"
-                                class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500">
-                                <option value="er">Prof. Evelyn Reed (Admin)</option>
-                                <option value="jd">Jane Doe (Teacher)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mt-6 flex justify-between gap-4">
-                        <button type="button" id="delete-course-btn"
-                            class="px-4 py-2 text-sm font-semibold text-white bg-red-500 rounded-lg hover:bg-red-600">Delete
-                            Course</button>
-                        <div class="flex gap-4">
-                            <button type="button"
-                                class="close-edit-course-modal-btn px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancel</button>
-                            <button type="submit"
-                                class="px-4 py-2 text-sm font-semibold text-white bg-indigo-500 rounded-lg hover:bg-indigo-600">Save
-                                Changes</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
+    </div>
 
     </div>
 
