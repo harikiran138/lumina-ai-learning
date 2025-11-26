@@ -4,8 +4,8 @@
   "description": "AI-powered learning management system",
   "scripts": {
     "start": "parcel src/index.html",
-    "build": "./build.sh",
-    "clean": "rm -rf dist .parcel-cache"
+    "build": "parcel build src/index.html src/login.html --dist-dir dist --public-url ./",
+    "clean": "rimraf dist .parcel-cache"
   },
   "repository": {
     "type": "git",

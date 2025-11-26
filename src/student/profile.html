@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="../js/database.js"></script>
+    <script src="../js/courses-data.js"></script>
+    <script src="../js/messaging-system.js"></script>
+    <script src="../js/profile-manager.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/navigation.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+    <!-- Top Navigation -->
+    <div id="top-nav-container"></div>
+
+    <div class="flex">
+        <!-- Sidebar -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 pt-20 pb-8">
+            <div class="container mx-auto px-4 lg:px-8 max-w-4xl">
+                <!-- Page Header -->
+                <div class="mb-8">
+                    <h1 class="text-4xl font-bold mb-2">My Profile</h1>
+                    <p class="text-gray-600 dark:text-gray-400">Manage your profile and personal information</p>
+                </div>
+
+                <!-- Profile Header Card -->
+                <div class="card p-8 mb-8">
+                    <div class="flex items-center gap-6 mb-6">
+                        <div class="w-24 h-24 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-4xl font-bold" id="profile-avatar">
+                            JD
+                        </div>
+                        <div class="flex-1">
+                            <h2 class="text-3xl font-bold mb-2" id="profile-name">John Doe</h2>
+                            <p class="text-gray-600 dark:text-gray-400 mb-3" id="profile-email">john@example.com</p>
+                            <div class="flex gap-4">
+                                <span class="badge badge-primary">Student</span>
+                                <span class="badge badge-success">Active</span>
+                            </div>
+                        </div>
+                        <button id="edit-profile-btn" class="btn btn-primary">Edit Profile</button>
+                    </div>
+
+                    <!-- Profile Stats -->
+                    <div class="grid grid-cols-4 gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold" id="stat-courses">8</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Courses</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold" id="stat-hours">124</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Hours</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold" id="stat-mastery">82%</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Mastery</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold" id="stat-streak">5</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Streak</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex gap-4 mb-8 border-b border-gray-200 dark:border-gray-700">
+                    <button class="tab-btn active px-4 py-2 font-semibold text-amber-600 dark:text-amber-400 border-b-2 border-amber-600 dark:border-amber-400" data-tab="about">
+                        About
+                    </button>
+                    <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400" data-tab="achievements">
+                        Achievements
+                    </button>
+                    <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400" data-tab="courses">
+                        My Courses
+                    </button>
+                </div>
+
+                <!-- About Tab -->
+                <div id="about-tab" class="tab-content">
+                    <div class="card p-8">
+                        <h3 class="text-2xl font-bold mb-6">About You</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="form-label">Full Name</label>
+                                <input type="text" id="input-name" class="form-input" placeholder="Your full name">
+                            </div>
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="form-label">Email</label>
+                                    <input type="email" id="input-email" class="form-input" placeholder="your@email.com" disabled>
+                                </div>
+                                <div>
+                                    <label class="form-label">Phone</label>
+                                    <input type="tel" id="input-phone" class="form-input" placeholder="Your phone number">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label">Bio</label>
+                                <textarea id="input-bio" class="form-textarea" rows="4" placeholder="Tell us about yourself..."></textarea>
+                            </div>
+                            <div>
+                                <label class="form-label">Location</label>
+                                <input type="text" id="input-location" class="form-input" placeholder="Your location">
+                            </div>
+                            <div class="flex gap-4">
+                                <button id="save-profile-btn" class="btn btn-primary">Save Changes</button>
+                                <button class="btn btn-secondary">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Achievements Tab -->
+                <div id="achievements-tab" class="tab-content hidden">
+                    <div class="card p-8">
+                        <h3 class="text-2xl font-bold mb-6">Your Achievements</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="achievements-grid">
+                            <!-- Badges will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Courses Tab -->
+                <div id="courses-tab" class="tab-content hidden">
+                    <div class="space-y-4" id="enrolled-courses-list">
+                        <!-- Courses will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        // Initialize
+        await window.navigationManager.init();
+        const currentUser = await window.luminaDB.getCurrentUser();
+
+        if (!currentUser) {
+            window.location.href = '../login.html';
+        } else {
+            // Load navigation
+            document.getElementById('top-nav-container').innerHTML = window.navigationManager.generateTopNav('student');
+            document.getElementById('sidebar-container').innerHTML = window.navigationManager.generateSidebar('student');
+            window.navigationManager.setupEventListeners();
+
+            // Load profile data
+            const stats = await window.profileManager.getUserStatistics(currentUser.id);
+            
+            document.getElementById('profile-name').textContent = currentUser.name;
+            document.getElementById('profile-email').textContent = currentUser.email;
+            document.getElementById('profile-avatar').textContent = currentUser.name.split(' ').map(n => n[0]).join('');
+            document.getElementById('input-name').value = currentUser.name;
+            document.getElementById('input-phone').value = currentUser.phone || '';
+            document.getElementById('input-location').value = currentUser.location || '';
+            document.getElementById('input-bio').value = currentUser.bio || '';
+
+            document.getElementById('stat-courses').textContent = stats.enrolledCourses;
+            document.getElementById('stat-hours').textContent = stats.totalHoursLearned;
+            document.getElementById('stat-mastery').textContent = stats.averageMastery + '%';
+            document.getElementById('stat-streak').textContent = stats.streak;
+
+            // Tab switching
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => {
+                        b.classList.remove('active', 'text-amber-600', 'dark:text-amber-400', 'border-b-2', 'border-amber-600', 'dark:border-amber-400');
+                        b.classList.add('text-gray-600', 'dark:text-gray-400');
+                    });
+                    btn.classList.add('active', 'text-amber-600', 'dark:text-amber-400', 'border-b-2', 'border-amber-600', 'dark:border-amber-400');
+                    btn.classList.remove('text-gray-600', 'dark:text-gray-400');
+
+                    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+                    document.getElementById(btn.dataset.tab + '-tab').classList.remove('hidden');
+                });
+            });
+
+            // Load achievements
+            const badges = [
+                { id: 'first-lesson', name: 'First Step', emoji: '👶', desc: 'Completed your first lesson' },
+                { id: 'streak-7', name: '7-Day Streak', emoji: '🔥', desc: '7 days of consistent learning' },
+                { id: 'course-complete', name: 'Course Master', emoji: '🎓', desc: 'Completed a full course' },
+                { id: 'quiz-ace', name: 'Quiz Ace', emoji: '💯', desc: 'Scored 100% on a quiz' },
+                { id: 'helper', name: 'Community Helper', emoji: '🤝', desc: 'Helped 5+ community members' },
+                { id: 'speed-learner', name: 'Speed Learner', emoji: '⚡', desc: 'Completed a course in 1 week' }
+            ];
+
+            document.getElementById('achievements-grid').innerHTML = badges.map(badge => `
+                <div class="text-center">
+                    <div class="w-20 h-20 mx-auto mb-3 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center text-4xl">
+                        ${badge.emoji}
+                    </div>
+                    <h4 class="font-bold text-sm">${badge.name}</h4>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">${badge.desc}</p>
+                </div>
+            `).join('');
+
+            // Load enrolled courses
+            const courses = await window.profileManager.getUserCourses(currentUser.id);
+            document.getElementById('enrolled-courses-list').innerHTML = courses.length > 0 ? courses.map(course => `
+                <div class="card p-6 hover:shadow-lg transition-all">
+                    <div class="flex gap-4">
+                        <img src="${course.image}" alt="${course.name}" class="w-24 h-24 rounded-lg object-cover">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-lg">${course.name}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">by ${course.instructor.name}</p>
+                            <div class="flex items-center gap-4">
+                                <div>
+                                    <p class="text-sm font-semibold">Progress: ${course.progress}%</p>
+                                    <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
+                                        <div class="bg-amber-500 h-2 rounded-full" style="width: ${course.progress}%"></div>
+                                    </div>
+                                </div>
+                                <span class="badge badge-primary">${course.mastery}% Mastery</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('') : '<p class="text-center text-gray-600 dark:text-gray-400 py-8">No courses yet</p>';
+
+            // Save profile
+            document.getElementById('save-profile-btn').addEventListener('click', async () => {
+                await window.profileManager.updateProfile(currentUser.id, {
+                    name: document.getElementById('input-name').value,
+                    phone: document.getElementById('input-phone').value,
+                    location: document.getElementById('input-location').value,
+                    bio: document.getElementById('input-bio').value
+                });
+                window.notificationsManager.success('Profile Updated', 'Your profile has been saved successfully');
+            });
+        }
+    </script>
+</body>
+
+</html>

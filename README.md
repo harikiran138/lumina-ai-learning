@@ -282,6 +282,12 @@ Please report security vulnerabilities to: [security@lumina.com](mailto:security
 
 ## 📚 Documentation
 
+### Quick References
+- **Quick Start Guide**: [`QUICK_START.md`](QUICK_START.md) - Get started in 5 minutes
+- **Features Documentation**: [`FEATURES_DOCUMENTATION.md`](FEATURES_DOCUMENTATION.md) - Complete feature list
+- **Redesign Summary**: [`REDESIGN_SUMMARY.md`](REDESIGN_SUMMARY.md) - All changes and improvements
+
+### Detailed Guides
 - **Architecture**: See `.agent/QA_AUDIT_REPORT.md`
 - **Deployment**: See `.agent/VERCEL_DEPLOYMENT_FIX.md`
 - **Checkpoints**: See `.agent/CHECKPOINT_3_COMPLETED.md`

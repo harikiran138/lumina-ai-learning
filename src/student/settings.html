@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="../js/database.js"></script>
+    <script src="../js/messaging-system.js"></script>
+    <script src="../js/profile-manager.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/navigation.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .setting-item {
+            border-bottom: 1px solid;
+            border-color: inherit;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+    <!-- Top Navigation -->
+    <div id="top-nav-container"></div>
+
+    <div class="flex">
+        <!-- Sidebar -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 pt-20 pb-8">
+            <div class="container mx-auto px-4 lg:px-8 max-w-4xl">
+                <!-- Page Header -->
+                <div class="mb-8">
+                    <h1 class="text-4xl font-bold mb-2">Settings</h1>
+                    <p class="text-gray-600 dark:text-gray-400">Manage your account and preferences</p>
+                </div>
+
+                <!-- Settings Sections -->
+                <div class="space-y-6">
+                    <!-- Account Settings -->
+                    <div class="card p-8">
+                        <h2 class="text-2xl font-bold mb-6">Account Settings</h2>
+                        
+                        <div class="space-y-6">
+                            <!-- Email -->
+                            <div class="setting-item pb-6">
+                                <h3 class="font-bold mb-2">Email Address</h3>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm mb-3" id="account-email">your@email.com</p>
+                                <button class="btn btn-secondary btn-sm">Change Email</button>
+                            </div>
+
+                            <!-- Password -->
+                            <div class="setting-item pb-6">
+                                <h3 class="font-bold mb-2">Password</h3>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm mb-3">Last changed 3 months ago</p>
+                                <button class="btn btn-secondary btn-sm" id="change-password-btn">Change Password</button>
+                            </div>
+
+                            <!-- Two-Factor Auth -->
+                            <div class="setting-item pb-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="font-bold mb-2">Two-Factor Authentication</h3>
+                                        <p class="text-gray-600 dark:text-gray-400 text-sm">Add extra security to your account</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Sessions -->
+                            <div class="setting-item pb-6">
+                                <h3 class="font-bold mb-3">Active Sessions</h3>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                        <div>
+                                            <p class="font-semibold text-sm">Chrome on Windows</p>
+                                            <p class="text-xs text-gray-600 dark:text-gray-400">Last active: Now</p>
+                                        </div>
+                                        <span class="badge badge-success">Current</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Privacy & Security -->
+                    <div class="card p-8">
+                        <h2 class="text-2xl font-bold mb-6">Privacy & Security</h2>
+                        
+                        <div class="space-y-6">
+                            <!-- Profile Visibility -->
+                            <div class="setting-item pb-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="font-bold mb-1">Public Profile</h3>
+                                        <p class="text-gray-600 dark:text-gray-400 text-sm">Let others see your profile</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Show Achievements -->
+                            <div class="setting-item pb-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="font-bold mb-1">Display Achievements</h3>
+                                        <p class="text-gray-600 dark:text-gray-400 text-sm">Show your badges and certificates</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Data Download -->
+                            <div class="setting-item pb-6">
+                                <h3 class="font-bold mb-2">Download Your Data</h3>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm mb-3">Get a copy of your data in JSON format</p>
+                                <button class="btn btn-secondary btn-sm">Download Data</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications -->
+                    <div class="card p-8">
+                        <h2 class="text-2xl font-bold mb-6">Notifications</h2>
+                        
+                        <div class="space-y-6">
+                            <!-- Email Notifications -->
+                            <div class="setting-item pb-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="font-bold mb-1">Email Notifications</h3>
+                                        <p class="text-gray-600 dark:text-gray-400 text-sm">Receive email updates</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Course Updates -->
+                            <div class="setting-item pb-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="font-bold mb-1">Course Updates</h3>
+                                        <p class="text-gray-600 dark:text-gray-400 text-sm">Get notified about new content</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Weekly Digest -->
+                            <div class="setting-item pb-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="font-bold mb-1">Weekly Digest</h3>
+                                        <p class="text-gray-600 dark:text-gray-400 text-sm">Summary of your learning activity</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Appearance -->
+                    <div class="card p-8">
+                        <h2 class="text-2xl font-bold mb-6">Appearance</h2>
+                        
+                        <div class="space-y-6">
+                            <!-- Theme -->
+                            <div class="setting-item pb-6">
+                                <h3 class="font-bold mb-3">Theme</h3>
+                                <div class="flex gap-4">
+                                    <button class="p-4 border-2 border-amber-500 rounded-lg dark:border-gray-600">
+                                        ☀️ <span class="text-sm font-semibold">Light</span>
+                                    </button>
+                                    <button class="p-4 border-2 border-gray-700 rounded-lg hover:border-amber-500">
+                                        🌙 <span class="text-sm font-semibold">Dark</span>
+                                    </button>
+                                    <button class="p-4 border-2 border-gray-300 dark:border-gray-700 rounded-lg hover:border-amber-500">
+                                        🖥️ <span class="text-sm font-semibold">System</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Language -->
+                            <div class="setting-item pb-6">
+                                <label class="form-label">Language</label>
+                                <select class="form-select">
+                                    <option>English</option>
+                                    <option>Spanish</option>
+                                    <option>French</option>
+                                    <option>German</option>
+                                    <option>Chinese</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="card p-8 border-red-200 dark:border-red-900">
+                        <h2 class="text-2xl font-bold mb-6 text-red-600">Danger Zone</h2>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                <div>
+                                    <h3 class="font-bold text-red-700 dark:text-red-400">Deactivate Account</h3>
+                                    <p class="text-sm text-red-600 dark:text-red-500">Temporarily disable your account</p>
+                                </div>
+                                <button class="btn bg-red-600 hover:bg-red-700 text-white">Deactivate</button>
+                            </div>
+
+                            <div class="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                <div>
+                                    <h3 class="font-bold text-red-700 dark:text-red-400">Delete Account</h3>
+                                    <p class="text-sm text-red-600 dark:text-red-500">Permanently delete your account and all data</p>
+                                </div>
+                                <button class="btn bg-red-600 hover:bg-red-700 text-white">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        // Initialize
+        await window.navigationManager.init();
+        const currentUser = await window.luminaDB.getCurrentUser();
+
+        if (!currentUser) {
+            window.location.href = '../login.html';
+        } else {
+            // Load navigation
+            document.getElementById('top-nav-container').innerHTML = window.navigationManager.generateTopNav('student');
+            document.getElementById('sidebar-container').innerHTML = window.navigationManager.generateSidebar('student');
+            window.navigationManager.setupEventListeners();
+
+            // Load user email
+            document.getElementById('account-email').textContent = currentUser.email;
+
+            // Theme toggle
+            document.querySelectorAll('.setting-item').forEach(el => {
+                const toggles = el.querySelectorAll('input[type="checkbox"]');
+                toggles.forEach(toggle => {
+                    toggle.addEventListener('change', () => {
+                        window.notificationsManager.success('Settings Updated', 'Your preferences have been saved');
+                    });
+                });
+            });
+        }
+    </script>
+</body>
+
+</html>
