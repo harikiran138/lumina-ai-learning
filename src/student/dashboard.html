@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -25,7 +25,6 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            padding-top: 0;
         }
 
         .gradient-text {
@@ -33,6 +32,23 @@
             background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        /* Animations */
+        @keyframes fade-in-up {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fade-in-up 0.6s ease-out forwards;
         }
 
         #light-icon,
@@ -72,134 +88,136 @@
 </head>
 
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300">
-    <!-- Top Navigation -->
+    <!-- Top Navigation (populated by navigationManager) -->
     <div id="top-nav-container"></div>
 
     <div class="flex">
-        <!-- Sidebar -->
+        <!-- Sidebar (populated by navigationManager) -->
         <div id="sidebar-container"></div>
 
         <!-- Main Content -->
         <main class="flex-1 pt-20 pb-8">
             <div class="container mx-auto px-4 lg:px-8">
                 <!-- Welcome Section -->
-                <div class="mb-8">
-                    <h1 class="text-4xl font-bold mb-2">Welcome back, <span class="gradient-text" id="user-name">Student</span>!</h1>
-                    <p class="text-gray-600 dark:text-gray-400">Keep your learning journey going strong 🚀</p>
+                <div class="mb-6">
+                    <h1 class="text-3xl md:text-4xl font-bold mb-2">Welcome back, <span class="gradient-text" id="user-name">Student</span>!</h1>
+                    <p class="text-gray-600 dark:text-gray-400">Here's your personalized learning snapshot.</p>
                 </div>
 
-                <!-- Quick Stats -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    <!-- Streak Card -->
-                    <div class="card stat-card p-6">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-gray-600 dark:text-gray-400 text-sm font-semibold">CURRENT STREAK</span>
-                            <span class="text-2xl">🔥</span>
-                        </div>
-                        <p class="text-4xl font-bold" id="current-streak">5</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Days in a row</p>
-                    </div>
-
-                    <!-- Courses Enrolled -->
-                    <div class="card stat-card p-6">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-gray-600 dark:text-gray-400 text-sm font-semibold">ENROLLED</span>
-                            <span class="text-2xl">📚</span>
-                        </div>
-                        <p class="text-4xl font-bold" id="enrolled-count">8</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Active courses</p>
-                    </div>
-
-                    <!-- Hours Learned -->
-                    <div class="card stat-card p-6">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-gray-600 dark:text-gray-400 text-sm font-semibold">TOTAL HOURS</span>
-                            <span class="text-2xl">⏱️</span>
-                        </div>
-                        <p class="text-4xl font-bold" id="total-hours">124</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Learning time</p>
-                    </div>
-
-                    <!-- Average Mastery -->
-                    <div class="card stat-card p-6">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-gray-600 dark:text-gray-400 text-sm font-semibold">MASTERY</span>
-                            <span class="text-2xl">🎯</span>
-                        </div>
-                        <p class="text-4xl font-bold" id="avg-mastery">82</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Average %</p>
-                    </div>
-                </div>
-
-                <!-- Mastery Progress Chart -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                    <div class="lg:col-span-2 card p-6">
-                        <h2 class="text-xl font-bold mb-4">Learning Progress This Month</h2>
-                        <canvas id="progress-chart" height="80"></canvas>
-                    </div>
-
-                    <!-- Quick Actions -->
-                    <div class="card p-6">
-                        <h2 class="text-xl font-bold mb-4">Quick Actions</h2>
-                        <div class="space-y-3">
-                            <a href="ai_tutor.html" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                <span class="text-2xl">🤖</span>
-                                <div>
-                                    <p class="font-semibold text-sm">Ask AI Tutor</p>
-                                    <p class="text-xs text-gray-500">Get instant help</p>
+                <!-- Stats & Progress -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="card stat-card p-5 rounded-xl">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">CURRENT STREAK</span>
+                                    <span class="text-2xl">🔥</span>
                                 </div>
-                            </a>
-                            <a href="assessment.html" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                <span class="text-2xl">✏️</span>
-                                <div>
-                                    <p class="font-semibold text-sm">Take Quiz</p>
-                                    <p class="text-xs text-gray-500">Test your knowledge</p>
+                                <p class="text-3xl font-bold" id="current-streak">--</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Days in a row</p>
+                            </div>
+
+                            <div class="card stat-card p-5 rounded-xl">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">ENROLLED</span>
+                                    <span class="text-2xl">📚</span>
                                 </div>
-                            </a>
-                            <a href="my_notes.html" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                <span class="text-2xl">📝</span>
-                                <div>
-                                    <p class="font-semibold text-sm">View Notes</p>
-                                    <p class="text-xs text-gray-500">Review your notes</p>
+                                <p class="text-3xl font-bold" id="enrolled-count">--</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Active courses</p>
+                            </div>
+
+                            <div class="card stat-card p-5 rounded-xl">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">TOTAL HOURS</span>
+                                    <span class="text-2xl">⏱️</span>
                                 </div>
-                            </a>
-                            <a href="community.html" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                <span class="text-2xl">💬</span>
-                                <div>
-                                    <p class="font-semibold text-sm">Community</p>
-                                    <p class="text-xs text-gray-500">Connect with peers</p>
+                                <p class="text-3xl font-bold" id="total-hours">--</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Learning time</p>
+                            </div>
+
+                            <div class="card stat-card p-5 rounded-xl">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">MASTERY</span>
+                                    <span class="text-2xl">🎯</span>
                                 </div>
-                            </a>
+                                <p class="text-3xl font-bold" id="avg-mastery">--</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Average %</p>
+                            </div>
+                        </div>
+
+                        <!-- Progress Chart + Quick Actions -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="lg:col-span-2 bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
+                                <h2 class="text-lg font-semibold mb-4">Learning Progress This Month</h2>
+                                <div class="h-56">
+                                    <canvas id="progress-chart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
+                                <h2 class="text-lg font-semibold mb-4">Quick Actions</h2>
+                                <div class="space-y-3">
+                                    <a href="ai_tutor.html" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                        <span class="text-2xl">🤖</span>
+                                        <div>
+                                            <p class="font-semibold text-sm">Ask AI Tutor</p>
+                                            <p class="text-xs text-gray-500">Get instant help</p>
+                                        </div>
+                                    </a>
+                                    <a href="assessment.html" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                        <span class="text-2xl">✏️</span>
+                                        <div>
+                                            <p class="font-semibold text-sm">Take Quiz</p>
+                                            <p class="text-xs text-gray-500">Test your knowledge</p>
+                                        </div>
+                                    </a>
+                                    <a href="my_notes.html" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                        <span class="text-2xl">📝</span>
+                                        <div>
+                                            <p class="font-semibold text-sm">View Notes</p>
+                                            <p class="text-xs text-gray-500">Review your notes</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Continue Learning -->
+                        <div class="mt-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-2xl font-bold">Continue Learning</h2>
+                                <a href="course_explorer.html" class="text-amber-600 dark:text-amber-400 hover:underline font-semibold">View All →</a>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="continue-learning">
+                                <!-- Courses will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Mastery Chart, Recommended -->
+                    <div>
+                        <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 mb-6">
+                            <h3 class="text-lg font-semibold mb-4">Topic Mastery</h3>
+                            <div class="h-48">
+                                <canvas id="masteryChart"></canvas>
+                            </div>
+                            <div class="mt-4 text-center">
+                                <a href="progress_streaks.html" class="text-sm font-medium text-amber-600 hover:text-amber-500">View Detailed Progress →</a>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
+                            <h3 class="text-lg font-semibold mb-4">Recommended For You</h3>
+                            <div id="recommended-courses" class="space-y-4">
+                                <!-- recommended courses inserted here -->
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Continue Learning Section -->
-                <div class="mb-8">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-2xl font-bold">Continue Learning</h2>
-                        <a href="course_explorer.html" class="text-amber-600 dark:text-amber-400 hover:underline font-semibold">View All →</a>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="continue-learning">
-                        <!-- Courses will be loaded here -->
-                    </div>
-                </div>
-
-                <!-- Recommended Courses Section -->
-                <div class="mb-8">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-2xl font-bold">Recommended For You</h2>
-                        <a href="course_explorer.html" class="text-amber-600 dark:text-amber-400 hover:underline font-semibold">Explore More →</a>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="recommended-courses">
-                        <!-- Courses will be loaded here -->
-                    </div>
-                </div>
-
-                <!-- Achievements Section -->
-                <div class="card p-6">
+                <!-- Achievements -->
+                <div class="mt-6 bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
                     <h2 class="text-2xl font-bold mb-4">Your Achievements</h2>
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4" id="achievements">
                         <!-- Badges will be loaded here -->
@@ -210,13 +228,13 @@
     </div>
 
     <script type="module">
-        // Initialize all managers
+        // Initialize managers and navigation
         await window.luminaDB.init();
         await window.messagingSystem.init();
         await window.profileManager.init();
         await window.navigationManager.init();
 
-        // Load navigation
+        // Populate navigation
         const topNavContainer = document.getElementById('top-nav-container');
         const sidebarContainer = document.getElementById('sidebar-container');
         const currentUser = await window.luminaDB.getCurrentUser();
@@ -228,49 +246,44 @@
             sidebarContainer.innerHTML = window.navigationManager.generateSidebar('student');
             window.navigationManager.setupEventListeners();
 
-            // Update user name
-            document.getElementById('user-name').textContent = currentUser.name.split(' ')[0];
+            // Update user name in page and nav
+            const shortName = currentUser.name.split(' ')[0];
+            const userNameEls = document.querySelectorAll('#user-name');
+            userNameEls.forEach(el => el.textContent = shortName);
 
             // Load statistics
             const stats = await window.profileManager.getUserStatistics(currentUser.id);
-            document.getElementById('current-streak').textContent = stats.streak;
-            document.getElementById('enrolled-count').textContent = stats.enrolledCourses;
-            document.getElementById('total-hours').textContent = stats.totalHoursLearned;
-            document.getElementById('avg-mastery').textContent = stats.averageMastery + '%';
+            document.getElementById('current-streak').textContent = stats?.streak ?? 0;
+            document.getElementById('enrolled-count').textContent = stats?.enrolledCourses ?? 0;
+            document.getElementById('total-hours').textContent = stats?.totalHoursLearned ?? 0;
+            document.getElementById('avg-mastery').textContent = (stats?.averageMastery ?? 0) + '%';
 
             // Load enrolled courses
-            const enrolledCourses = await window.profileManager.getUserCourses(currentUser.id);
+            const enrolledCourses = await window.profileManager.getUserCourses(currentUser.id) || [];
 
             // Render continue learning
             const continueContainer = document.getElementById('continue-learning');
             if (enrolledCourses.length > 0) {
                 continueContainer.innerHTML = enrolledCourses.slice(0, 3).map(course => `
-                    <div class="course-card card hover:shadow-lg transition-all overflow-hidden">
+                    <div class="course-card bg-white dark:bg-[#0f0f0f] rounded-xl overflow-hidden shadow-sm">
                         <img src="${course.image}" alt="${course.name}" class="w-full h-40 object-cover">
                         <div class="p-4">
                             <h3 class="font-bold text-lg mb-2">${course.name}</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">${course.description}</p>
-                            
-                            <!-- Progress Bar -->
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">${course.description}</p>
                             <div class="mb-3">
                                 <div class="flex justify-between text-xs mb-1">
                                     <span class="font-semibold">Progress</span>
                                     <span class="text-amber-600 dark:text-amber-400">${course.progress}%</span>
                                 </div>
                                 <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                    <div class="bg-gradient-to-r from-amber-500 to-amber-600 h-2 rounded-full transition-all" style="width: ${course.progress}%"></div>
+                                    <div class="bg-gradient-to-r from-amber-500 to-amber-600 h-2 rounded-full" style="width: ${course.progress}%"></div>
                                 </div>
                             </div>
-
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center gap-2 text-sm">
-                                    <span class="text-lg">🎯</span>
-                                    <span>${course.mastery}% mastery</span>
-                                </div>
-                                <span class="text-lg">🔥 ${course.streak}</span>
+                            <div class="flex items-center justify-between mb-3 text-sm text-gray-600 dark:text-gray-400">
+                                <div class="flex items-center gap-2"><span>🎯</span>${course.mastery}% mastery</div>
+                                <div>🔥 ${course.streak}</div>
                             </div>
-
-                            <button class="w-full btn btn-primary btn-sm">Continue Learning</button>
+                            <a href="lesson_page.html" class="block text-center px-4 py-2 bg-amber-600 text-white rounded-lg">Continue Learning</a>
                         </div>
                     </div>
                 `).join('');
@@ -278,81 +291,70 @@
                 continueContainer.innerHTML = `
                     <div class="col-span-3 text-center py-8">
                         <p class="text-gray-600 dark:text-gray-400 mb-4">No courses yet. Start learning today!</p>
-                        <a href="course_explorer.html" class="btn btn-primary">Explore Courses</a>
+                        <a href="course_explorer.html" class="px-4 py-2 bg-amber-600 text-white rounded-lg">Explore Courses</a>
                     </div>
                 `;
             }
 
             // Render recommended courses
-            const allCourses = window.getAllCourses();
+            const allCourses = window.getAllCourses?.() || [];
             const recommended = allCourses
                 .filter(c => !enrolledCourses.find(ec => ec.id === c.id))
-                .sort((a, b) => b.rating - a.rating)
+                .sort((a, b) => (b.rating || 0) - (a.rating || 0))
                 .slice(0, 3);
 
             const recommendedContainer = document.getElementById('recommended-courses');
             recommendedContainer.innerHTML = recommended.map(course => `
-                <div class="course-card card hover:shadow-lg transition-all overflow-hidden">
-                    <img src="${course.image}" alt="${course.name}" class="w-full h-40 object-cover">
-                    <div class="p-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="badge badge-primary text-xs">${course.level}</span>
-                            <span class="text-sm font-semibold">⭐ ${course.rating}</span>
-                        </div>
-                        <h3 class="font-bold text-lg mb-2 line-clamp-2">${course.name}</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">${course.description}</p>
-                        <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
-                            <span>👥 ${course.students} students</span>
-                            <span>💰 $${course.price}</span>
-                        </div>
-                        <button class="w-full btn btn-primary btn-sm">Explore Course</button>
+                <div class="flex items-start gap-3">
+                    <img src="${course.image}" alt="${course.name}" class="w-16 h-16 rounded-lg object-cover">
+                    <div>
+                        <h4 class="font-semibold">${course.name}</h4>
+                        <p class="text-xs text-gray-500">${course.level} • ⭐ ${course.rating}</p>
+                        <a href="course_explorer.html" class="text-amber-600 text-sm mt-2 inline-block">Explore →</a>
                     </div>
                 </div>
             `).join('');
 
-            // Create progress chart
-            const ctx = document.getElementById('progress-chart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                    datasets: [{
-                        label: 'Learning Hours',
-                        data: [5, 8, 10, 14],
-                        borderColor: '#f59e0b',
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: '#f59e0b',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+            // Progress chart
+            const progressCtxEl = document.getElementById('progress-chart');
+            if (progressCtxEl) {
+                const ctx = progressCtxEl.getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                        datasets: [{
+                            label: 'Learning Hours',
+                            data: [5, 8, 10, 14],
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#f59e0b'
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
-                            }
-                        }
-                    }
-                }
-            });
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
 
-            // Load achievements/badges
-            const badges = await window.profileManager.getUserBadges(currentUser.id);
+            // Mastery chart
+            const masteryEl = document.getElementById('masteryChart');
+            if (masteryEl) {
+                const ctx2 = masteryEl.getContext('2d');
+                new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Mastered', 'To Improve'],
+                        datasets: [{ data: [stats?.averageMastery || 0, 100 - (stats?.averageMastery || 0)], backgroundColor: ['#f59e0b', '#e5e7eb'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            // Achievements
+            const badges = await window.profileManager.getUserBadges(currentUser.id) || [];
             const achievementsContainer = document.getElementById('achievements');
-            
-            const defaultBadges = [
+            const defaultBadges = badges.length ? badges : [
                 { id: 'first-lesson', name: 'First Step', emoji: '👶' },
                 { id: 'streak-7', name: '7-Day Streak', emoji: '🔥' },
                 { id: 'course-complete', name: 'Course Master', emoji: '🎓' },

@@ -10,18 +10,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Dynamic Database System Scripts -->
-    <script src="../js/database.js"></script>
-    <script src="../js/api.js"></script>
-    <script src="../js/utils.js"></script>
-    <script src="../js/dashboard-loader.js"></script>
-    <script src="../js/dynamic-dashboard.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
 
         .gradient-text {
@@ -29,6 +20,23 @@
             background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        /* Animations */
+        @keyframes fade-in-up {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fade-in-up 0.6s ease-out forwards;
         }
 
         #light-icon,
@@ -43,35 +51,6 @@
         html:not(.dark) #light-icon {
             display: block;
         }
-
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background-color: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background-color: #d1d5db;
-            border-radius: 4px;
-        }
-
-        html.dark ::-webkit-scrollbar-thumb {
-            background-color: #4b5563;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background-color: #9ca3af;
-        }
-
-        html.dark ::-webkit-scrollbar-thumb:hover {
-            background-color: #6b7280;
-        }
-
-        aside nav {
-            min-height: calc(100vh - 128px);
-        }
     </style>
     <script>
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -84,20 +63,19 @@
 
 <body class="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300">
 
-    <div class="relative min-h-screen lg:flex">
+    <div class="relative h-screen overflow-hidden lg:flex">
         <!-- Sidebar -->
         <aside id="sidebar"
-            class="w-64 flex-shrink-0 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-40 h-full">
-            <div
-                class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+            class="bg-white dark:bg-[#111111] w-64 min-h-screen flex flex-col border-r border-gray-200 dark:border-gray-800 fixed lg:static transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-30">
+            <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800">
                 <a href="../index.html" class="text-2xl font-bold">
                     <span class="gradient-text">Lumina</span> ✨
                 </a>
             </div>
 
-            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
                 <a href="dashboard.html"
-                    class="flex items-center px-4 py-2.5 text-sm font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300 rounded-lg">
+                    class="flex items-center px-4 py-2.5 text-sm font-medium bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/10 text-amber-600 dark:text-amber-400 rounded-lg shadow-sm transition-all duration-200">
                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -106,46 +84,26 @@
                     Dashboard
                 </a>
                 <a href="content_upload.html"
-                    class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M7 16a4 4 0 01-4 4H4a4 4 0 01-4-4V6a4 4 0 014-4h5L14 6h5a4 4 0 014 4v2m-1 8l-2-2m0 0l-2-2m2 2l2-2m-2 2l2 2" />
+                    class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" <path
+                        stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    Content Manager
-                </a>
-                <a href="assessment_management.html"
-                    class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                    </svg>
-                    Assessments
-                </a>
-                <a href="reports.html"
-                    class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Reports
+                    Student Reports
                 </a>
                 <a href="community.html"
-                    class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors">
                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     Community
                 </a>
             </nav>
-
-            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 mt-auto">
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800">
                 <a href="../login.html"
-                    class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors">
                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -160,7 +118,7 @@
         <div id="main-content"
             class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out h-screen overflow-y-auto">
             <header
-                class="h-16 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 flex-shrink-0 sticky top-0 z-20">
+                class="h-16 flex items-center justify-between px-6 bg-white/80 dark:bg-[#111111]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex-shrink-0 sticky top-0 z-20">
                 <div class="flex items-center">
                     <button id="menu-button"
                         class="lg:hidden mr-4 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -171,11 +129,11 @@
                                 d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-                    <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Teacher Dashboard</h1>
+                    <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Teacher Dashboard</h1>
                 </div>
                 <div class="flex items-center space-x-4">
                     <button id="theme-toggle"
-                        class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                         <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
                             viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -187,75 +145,102 @@
                                 d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
                     </button>
-                    <div class="flex items-center space-x-2">
-                        <span class="font-semibold text-sm text-gray-700 dark:text-gray-300">Prof. Evelyn Reed</span>
+                    <div class="flex items-center space-x-3 pl-4 border-l border-gray-200 dark:border-gray-700">
+                        <div class="text-right hidden sm:block">
+                            <p class="font-semibold text-sm text-gray-900 dark:text-white">Prof. Evelyn Reed</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Physics Dept.</p>
+                        </div>
                         <div
-                            class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-lg">
+                            class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-white dark:ring-gray-800">
                             E</div>
                     </div>
                 </div>
             </header>
 
-            <main class="flex-1 p-4 md:p-6 lg:p-8">
+            <main class="flex-1 p-4 md:p-6 lg:p-8 animate-fade-in-up">
                 <div class="max-w-7xl mx-auto">
                     <!-- Stat cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         <div
-                            class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
-                            <div class="flex items-center justify-between">
-                                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400">Total Students</h3>
-                                <div class="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-lg">
-                                    <svg class="w-6 h-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group">
+                            <div class="flex items-center justify-between mb-4">
+                                <div
+                                    class="p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 transition-colors">
+                                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
                                 </div>
+                                <span
+                                    class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">Active</span>
                             </div>
-                            <p id="total-students" class="text-3xl font-bold mt-2">48</p>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
+                                <p id="total-students" class="text-3xl font-bold text-gray-900 dark:text-white mt-1">48
+                                </p>
+                            </div>
                         </div>
+
                         <div
-                            class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
-                            <div class="flex items-center justify-between">
-                                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400">Courses Managed</h3>
-                                <div class="p-2 bg-green-100 dark:bg-green-500/20 rounded-lg">
-                                    <svg class="w-6 h-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group">
+                            <div class="flex items-center justify-between mb-4">
+                                <div
+                                    class="p-3 rounded-xl bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 group-hover:bg-green-100 dark:group-hover:bg-green-500/20 transition-colors">
+                                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                     </svg>
                                 </div>
                             </div>
-                            <p class="text-3xl font-bold mt-2">3</p>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Courses Managed</p>
+                                <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">3</p>
+                            </div>
                         </div>
+
                         <div
-                            class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
-                            <div class="flex items-center justify-between">
-                                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400">Avg. Mastery</h3>
-                                <div class="p-2 bg-amber-100 dark:bg-amber-500/20 rounded-lg">
-                                    <svg class="w-6 h-6 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group">
+                            <div class="flex items-center justify-between mb-4">
+                                <div
+                                    class="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-100 dark:group-hover:bg-amber-500/20 transition-colors">
+                                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
+                                <span
+                                    class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">+5%</span>
                             </div>
-                            <p id="avg-mastery" class="text-3xl font-bold mt-2">82%</p>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Avg. Mastery</p>
+                                <p id="avg-mastery" class="text-3xl font-bold text-gray-900 dark:text-white mt-1">82%
+                                </p>
+                            </div>
                         </div>
+
                         <div
-                            class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
-                            <div class="flex items-center justify-between">
-                                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400">Assessments to Grade
-                                </h3>
-                                <div class="p-2 bg-red-100 dark:bg-red-500/20 rounded-lg">
-                                    <svg class="w-6 h-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 transform hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group">
+                            <div class="flex items-center justify-between mb-4">
+                                <div
+                                    class="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 group-hover:bg-red-100 dark:group-hover:bg-red-500/20 transition-colors">
+                                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                 </div>
+                                <span
+                                    class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Pending</span>
                             </div>
-                            <p id="assessments-to-grade" class="text-3xl font-bold mt-2">5</p>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Assessments to Grade</p>
+                                <p id="assessments-to-grade"
+                                    class="text-3xl font-bold text-gray-900 dark:text-white mt-1">5
+                                </p>
+                            </div>
                         </div>
                     </div>
 
