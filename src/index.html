@@ -4,18 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Lumina - AI-Powered Learning Pathways for Modern Education">
+    <meta name="keywords" content="AI, learning, education, courses, LMS, personalized learning">
     <title>Lumina - AI-Powered Learning Pathways</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
-        }
-
-        html {
-            scroll-behavior: smooth;
         }
 
         .gradient-text {
@@ -38,257 +38,226 @@
             display: block;
         }
 
-        .hero-bg {
-            background-image: url('https://placehold.co/1200x800/000000/FFFFFF?text=Lumina+UI');
-            background-size: cover;
-            background-position: center;
+        .hero-gradient {
+            background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
+            background-size: 200% 200%;
+            animation: gradient 15s ease infinite;
         }
 
-        html.dark .hero-bg {
-            background-image: url('https://placehold.co/1200x800/000000/amber-500?text=Lumina+Dark+UI');
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .feature-card {
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .course-card-home {
+            transition: all 0.3s ease;
+        }
+
+        .course-card-home:hover {
+            transform: translateY(-8px);
         }
     </style>
+
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
 </head>
 
-<body class="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300">
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300">
 
-    <!-- Header -->
-    <header
-        class="fixed top-0 left-0 right-0 z-20 bg-white/80 dark:bg-black/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+    <!-- Header/Navigation -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex-shrink-0">
-                    <a href="index.html" class="text-2xl font-bold">
+                    <a href="#" class="text-2xl font-bold">
                         <span class="gradient-text">Lumina</span> ✨
                     </a>
                 </div>
                 <div class="hidden md:flex md:items-center md:space-x-8">
-                    <a href="#features"
-                        class="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Features</a>
-                    <a href="#for-who"
-                        class="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">For
-                        Who?</a>
-                    <a href="#testimonials"
-                        class="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Testimonials</a>
-                    <a href="login.html"
-                        class="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Sign
-                        In</a>
+                    <a href="#features" class="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors font-medium">Features</a>
+                    <a href="#courses" class="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors font-medium">Courses</a>
+                    <a href="#testimonials" class="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors font-medium">Testimonials</a>
+                    <a href="#faq" class="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors font-medium">FAQ</a>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="login.html"
-                        class="hidden md:inline-block bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors">Get
-                        Started</a>
-                    <button id="theme-toggle"
-                        class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900">
-                        <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    <button id="theme-toggle" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
-                        <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
                     </button>
+                    <a href="login.html" class="btn btn-primary">Get Started</a>
                 </div>
             </div>
         </div>
     </header>
 
-    <main>
+    <main class="pt-16">
         <!-- Hero Section -->
-        <section class="relative min-h-screen flex items-center">
-            <div
-                class="absolute inset-0 bg-gradient-to-t from-gray-50 via-gray-50/80 to-transparent dark:from-black dark:via-black/80 dark:to-transparent z-10">
-            </div>
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center py-16">
-                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white leading-tight">
-                    The Future of Learning, <br> <span class="gradient-text">Personalized for You.</span>
-                </h1>
-                <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-600 dark:text-gray-400">
-                    Lumina is an AI-driven, self-hosted platform that transforms your course materials into adaptive
-                    learning pathways, automated assessments, and engaging experiences.
-                </p>
-                <div class="mt-8 flex justify-center space-x-4">
-                    <a href="login.html"
-                        class="bg-amber-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-amber-600 transition-colors text-lg shadow-lg shadow-amber-500/20">
-                        Start Learning
-                    </a>
-                    <a href="#features"
-                        class="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-bold py-3 px-8 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-lg shadow-lg dark:shadow-white/5">
-                        Learn More
-                    </a>
+        <section class="min-h-screen flex items-center py-20">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div class="animate-slideInLeft">
+                        <h1 class="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
+                            The Future of Learning, <br><span class="gradient-text">Personalized for You</span>
+                        </h1>
+                        <p class="text-xl text-gray-600 dark:text-gray-400 mb-8">
+                            Lumina is an AI-driven, comprehensive learning platform that transforms education with adaptive pathways, intelligent tutoring, and engaging experiences.
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <a href="login.html" class="btn btn-primary btn-lg">Start Learning</a>
+                            <button class="btn btn-secondary btn-lg" onclick="document.getElementById('features').scrollIntoView()">Explore Features</button>
+                        </div>
+                    </div>
+                    <div class="hidden md:block animate-slideInRight">
+                        <div class="relative">
+                            <div class="hero-gradient rounded-2xl p-1 shadow-2xl">
+                                <div class="bg-white dark:bg-gray-800 rounded-2xl p-8">
+                                    <div class="space-y-4">
+                                        <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                                        <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                                        <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="absolute inset-0 hero-bg opacity-10 dark:opacity-20"></div>
         </section>
 
         <!-- Features Section -->
-        <section id="features" class="min-h-screen flex items-center bg-white dark:bg-gray-900">
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div class="text-center">
-                    <h2 class="text-3xl font-bold">Why Lumina?</h2>
-                    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">An all-in-one, ethical, and private
-                        education ecosystem.</p>
+        <section id="features" class="py-20 bg-white dark:bg-gray-800">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-bold mb-4">Why Choose Lumina?</h2>
+                    <p class="text-xl text-gray-600 dark:text-gray-400">Everything you need for modern education</p>
                 </div>
-                <div class="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                    <div
-                        class="flex flex-col items-center text-center p-6 border border-transparent hover:border-amber-500/20 hover:bg-amber-500/5 dark:hover:bg-amber-500/5 rounded-2xl transition-all">
-                        <div
-                            class="bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 p-4 rounded-full">
-                            <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547a2 2 0 01-1.022.547m16.5 0a2 2 0 01.547 1.022l.477 2.387a6 6 0 01-.517 3.86l-.158.318a6 6 0 01-.517 3.86l-2.387.477a2 2 0 01-.547 1.022m-16.5 0a2 2 0 00-.547-1.022l-.477-2.387a6 6 0 00.517-3.86l.158-.318a6 6 0 00.517-3.86l2.387-.477a2 2 0 00.547-1.022m16.5 0l-3.473 3.473m0 0a3 3 0 10-4.243-4.243l-3.473-3.473a3 3 0 00-4.243 4.243l3.473 3.473a3 3 0 004.243 4.243z" />
-                            </svg>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Feature 1 -->
+                    <div class="feature-card card p-8">
+                        <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center mb-4 text-2xl">
+                            🤖
                         </div>
-                        <h3 class="mt-5 text-xl font-semibold">Adaptive Pathways</h3>
-                        <p class="mt-2 text-gray-600 dark:text-gray-400">AI generates personalized learning roadmaps
-                            based on student performance and engagement.</p>
+                        <h3 class="text-xl font-bold mb-2">AI-Powered Tutoring</h3>
+                        <p class="text-gray-600 dark:text-gray-400">Get personalized learning assistance powered by advanced AI models available 24/7.</p>
                     </div>
-                    <div
-                        class="flex flex-col items-center text-center p-6 border border-transparent hover:border-amber-500/20 hover:bg-amber-500/5 dark:hover:bg-amber-500/5 rounded-2xl transition-all">
-                        <div
-                            class="bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 p-4 rounded-full">
-                            <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                            </svg>
+
+                    <!-- Feature 2 -->
+                    <div class="feature-card card p-8">
+                        <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center mb-4 text-2xl">
+                            📊
                         </div>
-                        <h3 class="mt-5 text-xl font-semibold">Automated Assessments</h3>
-                        <p class="mt-2 text-gray-600 dark:text-gray-400">Save time with AI-generated questions,
-                            auto-grading, and insightful feedback.</p>
+                        <h3 class="text-xl font-bold mb-2">Smart Dashboards</h3>
+                        <p class="text-gray-600 dark:text-gray-400">Role-based interfaces for students, teachers, and administrators with real-time analytics.</p>
                     </div>
-                    <div
-                        class="flex flex-col items-center text-center p-6 border border-transparent hover:border-amber-500/20 hover:bg-amber-500/5 dark:hover:bg-amber-500/5 rounded-2xl transition-all">
-                        <div
-                            class="bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 p-4 rounded-full">
-                            <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
+
+                    <!-- Feature 3 -->
+                    <div class="feature-card card p-8">
+                        <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center mb-4 text-2xl">
+                            🎯
                         </div>
-                        <h3 class="mt-5 text-xl font-semibold">Self-Hosted & Private</h3>
-                        <p class="mt-2 text-gray-600 dark:text-gray-400">Run Lumina on your own servers. No external
-                            APIs, full data sovereignty, and complete privacy.</p>
+                        <h3 class="text-xl font-bold mb-2">Adaptive Assessments</h3>
+                        <p class="text-gray-600 dark:text-gray-400">Intelligent quizzes that adapt to your learning pace with immediate feedback.</p>
+                    </div>
+
+                    <!-- Feature 4 -->
+                    <div class="feature-card card p-8">
+                        <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center mb-4 text-2xl">
+                            📈
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Progress Tracking</h3>
+                        <p class="text-gray-600 dark:text-gray-400">Comprehensive analytics showing mastery levels, streaks, and learning insights.</p>
+                    </div>
+
+                    <!-- Feature 5 -->
+                    <div class="feature-card card p-8">
+                        <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center mb-4 text-2xl">
+                            💬
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Community Hub</h3>
+                        <p class="text-gray-600 dark:text-gray-400">Engage with peers, ask questions, and collaborate in moderated discussion forums.</p>
+                    </div>
+
+                    <!-- Feature 6 -->
+                    <div class="feature-card card p-8">
+                        <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center mb-4 text-2xl">
+                            🌙
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Dark Mode & Accessibility</h3>
+                        <p class="text-gray-600 dark:text-gray-400">Full dark mode support and accessible design for all users.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- For Who Section -->
-        <section id="for-who" class="min-h-screen flex items-center">
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div class="text-center">
-                    <h2 class="text-3xl font-bold">Built for Modern Education</h2>
-                    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">Empowering every stakeholder in the
-                        learning journey.</p>
+        <!-- Courses Preview Section -->
+        <section id="courses" class="py-20">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-bold mb-4">Featured Courses</h2>
+                    <p class="text-xl text-gray-600 dark:text-gray-400">Learn from industry experts</p>
                 </div>
-                <div class="mt-12 grid gap-8 md:grid-cols-3">
-                    <div
-                        class="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
-                        <h3 class="text-xl font-bold gradient-text">For Students</h3>
-                        <p class="mt-4 text-gray-600 dark:text-gray-400">Experience learning that adapts to your pace.
-                            Get instant feedback, track your progress with engaging streaks, and never feel overwhelmed
-                            again.</p>
-                    </div>
-                    <div
-                        class="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
-                        <h3 class="text-xl font-bold gradient-text">For Teachers</h3>
-                        <p class="mt-4 text-gray-600 dark:text-gray-400">Automate the tedious work. Convert your
-                            existing materials into interactive courses, generate assessments instantly, and get deep
-                            insights into class performance.</p>
-                    </div>
-                    <div
-                        class="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
-                        <h3 class="text-xl font-bold gradient-text">For Institutions</h3>
-                        <p class="mt-4 text-gray-600 dark:text-gray-400">Own your educational ecosystem. Lumina is a
-                            scalable, secure, and private solution that integrates with your existing LMS and respects
-                            data sovereignty.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
 
-        <!-- How It Works Section -->
-        <section id="how-it-works" class="min-h-screen flex items-center bg-white dark:bg-gray-900">
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div class="text-center">
-                    <h2 class="text-3xl font-bold">A Seamless Workflow</h2>
-                    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">From raw text to personalized education in
-                        a few simple steps.</p>
-                </div>
-                <div class="mt-12 relative">
-                    <div
-                        class="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gray-300 dark:bg-gray-700 -translate-y-1/2">
-                    </div>
-                    <div class="grid gap-12 md:grid-cols-3 relative">
-                        <div class="flex flex-col items-center text-center">
-                            <div
-                                class="bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-700 h-16 w-16 rounded-full flex items-center justify-center text-amber-500 font-bold text-2xl">
-                                1</div>
-                            <h3 class="mt-4 text-xl font-semibold">Upload Content</h3>
-                            <p class="mt-2 text-gray-600 dark:text-gray-400">Teachers upload textbooks, syllabi, or any
-                                course document.</p>
-                        </div>
-                        <div class="flex flex-col items-center text-center">
-                            <div
-                                class="bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-700 h-16 w-16 rounded-full flex items-center justify-center text-amber-500 font-bold text-2xl">
-                                2</div>
-                            <h3 class="mt-4 text-xl font-semibold">AI Generates Pathway</h3>
-                            <p class="mt-2 text-gray-600 dark:text-gray-400">Lumina processes the content and creates a
-                                structured, adaptive course.</p>
-                        </div>
-                        <div class="flex flex-col items-center text-center">
-                            <div
-                                class="bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-700 h-16 w-16 rounded-full flex items-center justify-center text-amber-500 font-bold text-2xl">
-                                3</div>
-                            <h3 class="mt-4 text-xl font-semibold">Students Engage & Grow</h3>
-                            <p class="mt-2 text-gray-600 dark:text-gray-400">Students follow their unique path, take
-                                quizzes, and track their progress.</p>
-                        </div>
-                    </div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8" id="featured-courses">
+                    <!-- Courses will be loaded here -->
                 </div>
             </div>
         </section>
 
         <!-- Testimonials Section -->
-        <section id="testimonials" class="min-h-screen flex items-center">
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div class="text-center">
-                    <h2 class="text-3xl font-bold">Loved by Educators & Students</h2>
-                    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">Don't just take our word for it. Here's
-                        what people are saying.</p>
+        <section id="testimonials" class="py-20 bg-white dark:bg-gray-800">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-bold mb-4">Loved by Educators & Students</h2>
+                    <p class="text-xl text-gray-600 dark:text-gray-400">Real stories from real learners</p>
                 </div>
-                <div class="mt-12 grid gap-8 md:grid-cols-2">
-                    <div
-                        class="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
-                        <p class="text-gray-700 dark:text-gray-300">"Lumina has been a game-changer for my classroom. I
-                            can finally spend more time teaching and less time creating materials. The students are more
-                            engaged than ever before!"</p>
-                        <div class="flex items-center mt-6">
-                            <img class="h-12 w-12 rounded-full object-cover"
-                                src="https://placehold.co/100x100/7c3aed/white?text=E" alt="Evelyn Reed">
-                            <div class="ml-4">
-                                <p class="font-semibold">Prof. Evelyn Reed</p>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">Physics Professor</p>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="card p-8">
+                        <div class="flex items-center mb-4">
+                            <span class="text-yellow-400">★★★★★</span>
+                        </div>
+                        <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">
+                            "Lumina has transformed how I teach. The AI-powered assessments save me hours, and my students are more engaged than ever."
+                        </p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-sm">ER</div>
+                            <div>
+                                <p class="font-bold">Prof. Evelyn Reed</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Physics Professor</p>
                             </div>
                         </div>
                     </div>
-                    <div
-                        class="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
-                        <p class="text-gray-700 dark:text-gray-300">"The personalized pathway helped me focus on my weak
-                            spots in chemistry. The streak feature is surprisingly motivating, and I actually enjoy
-                            studying now."</p>
-                        <div class="flex items-center mt-6">
-                            <img class="h-12 w-12 rounded-full object-cover"
-                                src="https://placehold.co/100x100/f59e0b/white?text=A" alt="Alex Turner">
-                            <div class="ml-4">
-                                <p class="font-semibold">Alex Turner</p>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">University Student</p>
+
+                    <div class="card p-8">
+                        <div class="flex items-center mb-4">
+                            <span class="text-yellow-400">★★★★★</span>
+                        </div>
+                        <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">
+                            "The personalized learning paths helped me focus on my weak areas. I improved my grades significantly!"
+                        </p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">AT</div>
+                            <div>
+                                <p class="font-bold">Alex Turner</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Student</p>
                             </div>
                         </div>
                     </div>
@@ -296,18 +265,153 @@
             </div>
         </section>
 
+        <!-- FAQ Section -->
+        <section id="faq" class="py-20">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-bold mb-4">Frequently Asked Questions</h2>
+                </div>
+
+                <div class="max-w-3xl mx-auto space-y-4">
+                    <div class="card p-6 accordion">
+                        <button class="w-full text-left font-bold text-lg flex items-center justify-between">
+                            <span>How does AI tutoring work?</span>
+                            <span>+</span>
+                        </button>
+                        <div class="hidden mt-4 text-gray-600 dark:text-gray-400">
+                            <p>Our AI tutors use advanced language models to provide personalized explanations, answer questions, and adapt to your learning style in real-time.</p>
+                        </div>
+                    </div>
+
+                    <div class="card p-6 accordion">
+                        <button class="w-full text-left font-bold text-lg flex items-center justify-between">
+                            <span>Is Lumina free?</span>
+                            <span>+</span>
+                        </button>
+                        <div class="hidden mt-4 text-gray-600 dark:text-gray-400">
+                            <p>Lumina offers a free tier with basic features and paid courses for more advanced content. All demo accounts get full access to explore.</p>
+                        </div>
+                    </div>
+
+                    <div class="card p-6 accordion">
+                        <button class="w-full text-left font-bold text-lg flex items-center justify-between">
+                            <span>Can teachers create their own courses?</span>
+                            <span>+</span>
+                        </button>
+                        <div class="hidden mt-4 text-gray-600 dark:text-gray-400">
+                            <p>Yes! Teachers can upload course materials and Lumina automatically generates adaptive pathways and assessments using AI.</p>
+                        </div>
+                    </div>
+
+                    <div class="card p-6 accordion">
+                        <button class="w-full text-left font-bold text-lg flex items-center justify-between">
+                            <span>What about data privacy?</span>
+                            <span>+</span>
+                        </button>
+                        <div class="hidden mt-4 text-gray-600 dark:text-gray-400">
+                            <p>Your data is encrypted and stored securely. We comply with GDPR and never sell student data to third parties.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="py-20 bg-gradient-to-r from-amber-500 to-amber-600">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-4xl font-bold text-white mb-6">Ready to Transform Your Learning?</h2>
+                <p class="text-xl text-amber-50 mb-8">Join thousands of students and teachers using Lumina today</p>
+                <a href="login.html" class="btn bg-white text-amber-600 hover:bg-gray-100 btn-lg">
+                    Start Free Trial
+                </a>
+            </div>
+        </section>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="text-center text-gray-600 dark:text-gray-400">
-                &copy; 2025 Lumina. All rights reserved.
+    <footer class="bg-gray-900 dark:bg-black text-gray-400 py-12">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <h3 class="text-white font-bold mb-4">Lumina</h3>
+                    <p class="text-sm">AI-Powered Learning for Modern Education</p>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white transition">Features</a></li>
+                        <li><a href="#" class="hover:text-white transition">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white transition">Security</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white transition">About</a></li>
+                        <li><a href="#" class="hover:text-white transition">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white transition">Privacy</a></li>
+                        <li><a href="#" class="hover:text-white transition">Terms</a></li>
+                        <li><a href="#" class="hover:text-white transition">Cookies</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 text-center text-sm">
+                <p>&copy; 2025 Lumina. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
-    <script type="module" src="index.js"></script>
+    <script type="module">
+        // Theme toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Accordion
+        document.querySelectorAll('.accordion').forEach(item => {
+            item.querySelector('button').addEventListener('click', () => {
+                const content = item.querySelector('div');
+                content.classList.toggle('hidden');
+                item.querySelector('span:last-child').textContent = content.classList.contains('hidden') ? '+' : '−';
+            });
+        });
+
+        // Load featured courses
+        const courses = window.getFeaturedCourses ? window.getFeaturedCourses() : [];
+        const coursesContainer = document.getElementById('featured-courses');
+        
+        if (courses.length > 0) {
+            coursesContainer.innerHTML = courses.slice(0, 6).map(course => `
+                <div class="course-card-home card overflow-hidden hover:shadow-xl">
+                    <img src="${course.image}" alt="${course.name}" class="w-full h-40 object-cover">
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="inline-block bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-3 py-1 rounded-full text-xs font-semibold">
+                                ${course.level}
+                            </span>
+                            <span class="text-sm font-semibold">⭐ ${course.rating}</span>
+                        </div>
+                        <h3 class="font-bold text-lg mb-2 line-clamp-2">${course.name}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">${course.description}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-lg font-bold">$${course.price}</span>
+                            <a href="login.html" class="btn btn-primary btn-sm">Explore</a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+
     <script type="module" src="js/analytics.js"></script>
 </body>
 
