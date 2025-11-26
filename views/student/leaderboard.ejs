@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %> - Lumina
+    </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/glassmorphism.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .podium-1 {
+            height: 200px;
+        }
+
+        .podium-2 {
+            height: 160px;
+        }
+
+        .podium-3 {
+            height: 130px;
+        }
+    </style>
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50 dark:bg-black text-gray-900 dark:text-white transition-colors duration-300">
+    <div class="relative h-screen overflow-hidden lg:flex">
+
+        <!-- Sidebar -->
+        <%- include('../partials/sidebar') %>
+
+            <!-- Main Content -->
+            <div class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out">
+
+                <!-- Header -->
+                <%- include('../partials/header') %>
+
+                    <!-- Leaderboard Content -->
+                    <main
+                        class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-black p-6 animate-fade-in-up">
+
+                        <!-- Top 3 Podium -->
+                        <div class="flex justify-center items-end gap-4 mb-12 pt-8">
+                            <!-- 2nd Place -->
+                            <div class="flex flex-col items-center animate-fade-in-up" style="animation-delay: 0.1s">
+                                <div
+                                    class="w-16 h-16 rounded-full border-4 border-gray-300 overflow-hidden mb-2 relative">
+                                    <img src="https://i.pravatar.cc/150?u=2" alt="User"
+                                        class="w-full h-full object-cover">
+                                    <div
+                                        class="absolute bottom-0 right-0 bg-gray-300 text-gray-800 text-xs font-bold px-1.5 rounded-full">
+                                        2</div>
+                                </div>
+                                <div class="text-sm font-bold mb-1">Sarah M.</div>
+                                <div class="text-xs text-gray-500 mb-2">2,450 XP</div>
+                                <div
+                                    class="w-24 bg-gradient-to-t from-gray-300 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-t-lg podium-2 shadow-lg flex items-end justify-center pb-4">
+                                    <span class="text-2xl font-bold text-gray-400">2</span>
+                                </div>
+                            </div>
+
+                            <!-- 1st Place -->
+                            <div class="flex flex-col items-center animate-fade-in-up" style="animation-delay: 0.2s">
+                                <div
+                                    class="w-20 h-20 rounded-full border-4 border-yellow-400 overflow-hidden mb-2 relative shadow-lg shadow-yellow-500/30">
+                                    <img src="https://i.pravatar.cc/150?u=1" alt="User"
+                                        class="w-full h-full object-cover">
+                                    <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 text-2xl">👑</div>
+                                </div>
+                                <div class="text-base font-bold mb-1 text-[#FF6B35]">Alex T.</div>
+                                <div class="text-sm text-gray-500 mb-2">2,890 XP</div>
+                                <div
+                                    class="w-28 bg-gradient-to-t from-yellow-400 to-yellow-200 rounded-t-lg podium-1 shadow-xl shadow-yellow-500/20 flex items-end justify-center pb-4 relative overflow-hidden">
+                                    <div class="absolute inset-0 bg-white/20 skew-y-12"></div>
+                                    <span class="text-4xl font-bold text-yellow-700 relative z-10">1</span>
+                                </div>
+                            </div>
+
+                            <!-- 3rd Place -->
+                            <div class="flex flex-col items-center animate-fade-in-up" style="animation-delay: 0.3s">
+                                <div
+                                    class="w-16 h-16 rounded-full border-4 border-orange-300 overflow-hidden mb-2 relative">
+                                    <img src="https://i.pravatar.cc/150?u=3" alt="User"
+                                        class="w-full h-full object-cover">
+                                    <div
+                                        class="absolute bottom-0 right-0 bg-orange-300 text-orange-900 text-xs font-bold px-1.5 rounded-full">
+                                        3</div>
+                                </div>
+                                <div class="text-sm font-bold mb-1">Mike R.</div>
+                                <div class="text-xs text-gray-500 mb-2">2,100 XP</div>
+                                <div
+                                    class="w-24 bg-gradient-to-t from-orange-300 to-orange-100 dark:from-orange-800 dark:to-orange-700 rounded-t-lg podium-3 shadow-lg flex items-end justify-center pb-4">
+                                    <span class="text-2xl font-bold text-orange-700 dark:text-orange-300">3</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Leaderboard List -->
+                        <div
+                            class="bg-white dark:bg-[#1C1C1C] rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden max-w-3xl mx-auto">
+                            <div
+                                class="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 flex justify-between items-center">
+                                <h3 class="font-bold text-gray-900 dark:text-white">Global Rankings</h3>
+                                <div class="flex gap-2">
+                                    <button
+                                        class="px-3 py-1 text-xs font-medium rounded-full bg-[#FF6B35] text-white">Weekly</button>
+                                    <button
+                                        class="px-3 py-1 text-xs font-medium rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">All
+                                        Time</button>
+                                </div>
+                            </div>
+
+                            <div class="divide-y divide-gray-100 dark:divide-gray-800">
+                                <% const users=[ { rank: 4, name: 'Emily Chen' , xp: '1,950' ,
+                                    avatar: 'https://i.pravatar.cc/150?u=4' , trend: 'up' }, { rank: 5,
+                                    name: 'David Kim' , xp: '1,820' , avatar: 'https://i.pravatar.cc/150?u=5' ,
+                                    trend: 'down' }, { rank: 6, name: 'Lisa Wang' , xp: '1,750' ,
+                                    avatar: 'https://i.pravatar.cc/150?u=6' , trend: 'same' }, { rank: 7,
+                                    name: 'James Wilson' , xp: '1,600' , avatar: 'https://i.pravatar.cc/150?u=7' ,
+                                    trend: 'up' }, { rank: 8, name: 'Sophie Martin' , xp: '1,550' ,
+                                    avatar: 'https://i.pravatar.cc/150?u=8' , trend: 'up' }, ]; %>
+
+                                    <% users.forEach(user=> { %>
+                                        <div
+                                            class="flex items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                            <div class="w-8 text-center font-bold text-gray-500">
+                                                <%= user.rank %>
+                                            </div>
+                                            <div class="w-8 text-center mr-4">
+                                                <% if (user.trend==='up' ) { %>
+                                                    <span class="text-green-500 text-xs">▲</span>
+                                                    <% } else if (user.trend==='down' ) { %>
+                                                        <span class="text-red-500 text-xs">▼</span>
+                                                        <% } else { %>
+                                                            <span class="text-gray-400 text-xs">-</span>
+                                                            <% } %>
+                                            </div>
+                                            <div class="flex items-center flex-1">
+                                                <img src="<%= user.avatar %>" alt="<%= user.name %>"
+                                                    class="w-10 h-10 rounded-full mr-3">
+                                                <span class="font-medium text-gray-900 dark:text-white">
+                                                    <%= user.name %>
+                                                </span>
+                                            </div>
+                                            <div class="font-bold text-[#FF6B35]">
+                                                <%= user.xp %> XP
+                                            </div>
+                                        </div>
+                                        <% }); %>
+                            </div>
+
+                            <div
+                                class="p-4 border-t border-gray-100 dark:border-gray-800 bg-orange-50 dark:bg-orange-900/10">
+                                <div class="flex items-center">
+                                    <div class="w-8 text-center font-bold text-[#FF6B35]">42</div>
+                                    <div class="w-8 text-center mr-4 text-green-500 text-xs">▲</div>
+                                    <div class="flex items-center flex-1">
+                                        <div
+                                            class="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF9155] flex items-center justify-center text-white font-bold mr-3">
+                                            ME</div>
+                                        <span class="font-bold text-gray-900 dark:text-white">You</span>
+                                    </div>
+                                    <div class="font-bold text-[#FF6B35]">850 XP</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </main>
+            </div>
+    </div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleSidebar()"></div>
+
+    <script src="/js/theme-manager.js"></script>
+    <script>
+        // Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+    </script>
+</body>
+
+</html>

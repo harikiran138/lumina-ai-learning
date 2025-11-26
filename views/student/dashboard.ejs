@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %> - Lumina
+    </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/glassmorphism.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50 dark:bg-black text-gray-900 dark:text-white transition-colors duration-300">
+    <div class="relative h-screen overflow-hidden lg:flex">
+
+        <!-- Sidebar -->
+        <%- include('../partials/sidebar') %>
+
+            <!-- Main Content -->
+            <div class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out">
+
+                <!-- Header -->
+                <%- include('../partials/header') %>
+
+                    <!-- Dashboard Content -->
+                    <main
+                        class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-black p-6 animate-fade-in-up">
+
+                        <!-- Welcome Section -->
+                        <div class="mb-8">
+                            <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Welcome back, <%=
+                                    user.name %>! 👋</h2>
+                            <p class="text-gray-600 dark:text-gray-400">You're on a 5-day streak. Keep it up!</p>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <!-- Stat Card 1 -->
+                            <div
+                                class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-shadow group">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div
+                                        class="p-3 rounded-xl bg-orange-50 dark:bg-orange-900/20 text-[#FF6B35] group-hover:scale-110 transition-transform">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    <span
+                                        class="text-xs font-medium text-green-500 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">+12%</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">4 Active</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Courses in progress</p>
+                            </div>
+
+                            <!-- Stat Card 2 -->
+                            <div
+                                class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-shadow group">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div
+                                        class="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 group-hover:scale-110 transition-transform">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                        </svg>
+                                    </div>
+                                    <span
+                                        class="text-xs font-medium text-green-500 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">+5%</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">850 XP</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Total points earned</p>
+                            </div>
+
+                            <!-- Stat Card 3 -->
+                            <div
+                                class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-shadow group">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div
+                                        class="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-500 group-hover:scale-110 transition-transform">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <span
+                                        class="text-xs font-medium text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-full">Streak</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">5 Days</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Current learning streak</p>
+                            </div>
+
+                            <!-- Stat Card 4 -->
+                            <div
+                                class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-shadow group">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div
+                                        class="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-500 group-hover:scale-110 transition-transform">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <span
+                                        class="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">Target</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">92%</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Average completion rate</p>
+                            </div>
+                        </div>
+
+                        <!-- Content Grid -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                            <!-- Left Column -->
+                            <div class="lg:col-span-2 space-y-8">
+                                <!-- AI Tutor Section -->
+                                <div
+                                    class="bg-gradient-to-r from-[#FF6B35]/10 to-[#FF9155]/10 rounded-2xl p-6 border border-[#FF6B35]/20 relative overflow-hidden">
+                                    <div class="relative z-10">
+                                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Need help with
+                                            Physics?</h3>
+                                        <p class="text-gray-600 dark:text-gray-300 mb-4 max-w-md">Your AI Tutor is ready
+                                            to explain complex concepts in simple terms.</p>
+                                        <a href="/student/ai-tutor"
+                                            class="inline-flex items-center px-4 py-2 bg-[#FF6B35] hover:bg-[#E85A26] text-white rounded-lg transition-colors font-medium shadow-lg shadow-orange-500/30">
+                                            Chat with AI Tutor
+                                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                            </svg>
+                                        </a>
+                                    </div>
+                                    <div
+                                        class="absolute right-0 bottom-0 opacity-10 transform translate-x-1/4 translate-y-1/4">
+                                        <svg class="w-64 h-64 text-[#FF6B35]" fill="currentColor" viewBox="0 0 24 24">
+                                            <path
+                                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z" />
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <!-- Learning Path -->
+                                <div
+                                    class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Your Learning Path
+                                        </h3>
+                                        <button class="text-sm text-[#FF6B35] hover:text-[#E85A26] font-medium">View
+                                            All</button>
+                                    </div>
+                                    <div class="space-y-4">
+                                        <div
+                                            class="flex items-center p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 hover:border-[#FF6B35]/30 transition-colors cursor-pointer group">
+                                            <div
+                                                class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-2xl mr-4 group-hover:scale-110 transition-transform">
+                                                ⚛️</div>
+                                            <div class="flex-1">
+                                                <div class="flex justify-between mb-1">
+                                                    <h4 class="font-semibold text-gray-900 dark:text-white">Quantum
+                                                        Mechanics 101</h4>
+                                                    <span class="text-xs font-medium text-gray-500">2h left</span>
+                                                </div>
+                                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 75%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="flex items-center p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 hover:border-[#FF6B35]/30 transition-colors cursor-pointer group">
+                                            <div
+                                                class="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-2xl mr-4 group-hover:scale-110 transition-transform">
+                                                📐</div>
+                                            <div class="flex-1">
+                                                <div class="flex justify-between mb-1">
+                                                    <h4 class="font-semibold text-gray-900 dark:text-white">Advanced
+                                                        Calculus</h4>
+                                                    <span class="text-xs font-medium text-gray-500">4h left</span>
+                                                </div>
+                                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                                    <div class="bg-purple-500 h-2 rounded-full" style="width: 30%">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Column -->
+                            <div class="space-y-8">
+                                <!-- Mastery Chart -->
+                                <div
+                                    class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
+                                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Skill Mastery</h3>
+                                    <div class="relative h-64">
+                                        <canvas id="masteryChart"></canvas>
+                                    </div>
+                                </div>
+
+                                <!-- Daily Goals -->
+                                <div
+                                    class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
+                                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Daily Goals</h3>
+                                    <div class="space-y-3">
+                                        <label class="flex items-center space-x-3 cursor-pointer group">
+                                            <input type="checkbox" checked
+                                                class="form-checkbox h-5 w-5 text-[#FF6B35] rounded border-gray-300 focus:ring-[#FF6B35]">
+                                            <span
+                                                class="text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors line-through opacity-70">Complete
+                                                Physics Quiz</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3 cursor-pointer group">
+                                            <input type="checkbox"
+                                                class="form-checkbox h-5 w-5 text-[#FF6B35] rounded border-gray-300 focus:ring-[#FF6B35]">
+                                            <span
+                                                class="text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Watch
+                                                Calculus Lecture</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3 cursor-pointer group">
+                                            <input type="checkbox"
+                                                class="form-checkbox h-5 w-5 text-[#FF6B35] rounded border-gray-300 focus:ring-[#FF6B35]">
+                                            <span
+                                                class="text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Review
+                                                AI Notes</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+            </div>
+    </div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleSidebar()"></div>
+
+    <script src="/js/theme-manager.js"></script>
+    <script>
+        // Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        // Chart.js Initialization
+        const ctx = document.getElementById('masteryChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Physics', 'Math', 'CS', 'Chemistry', 'Biology'],
+                datasets: [{
+                    label: 'Mastery Level',
+                    data: [85, 90, 75, 60, 70],
+                    backgroundColor: 'rgba(255, 107, 53, 0.2)',
+                    borderColor: '#FF6B35',
+                    pointBackgroundColor: '#FF6B35',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#FF6B35'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(128, 128, 128, 0.1)' },
+                        grid: { color: 'rgba(128, 128, 128, 0.1)' },
+                        pointLabels: { color: '#9ca3af' },
+                        ticks: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

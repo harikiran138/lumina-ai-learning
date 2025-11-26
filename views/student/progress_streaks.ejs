@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %> - Lumina
+    </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/glassmorphism.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50 dark:bg-black text-gray-900 dark:text-white transition-colors duration-300">
+    <div class="relative h-screen overflow-hidden lg:flex">
+
+        <!-- Sidebar -->
+        <%- include('../partials/sidebar') %>
+
+            <!-- Main Content -->
+            <div class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out">
+
+                <!-- Header -->
+                <%- include('../partials/header') %>
+
+                    <!-- Progress Content -->
+                    <main
+                        class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-black p-6 animate-fade-in-up">
+
+                        <!-- Streak Hero -->
+                        <div
+                            class="mb-8 bg-gradient-to-r from-[#FF6B35] to-[#FF9155] rounded-2xl p-8 text-white relative overflow-hidden shadow-lg shadow-orange-500/30">
+                            <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                                <div class="text-center md:text-left">
+                                    <h2 class="text-4xl font-bold mb-2">🔥 5 Day Streak!</h2>
+                                    <p class="text-orange-100 text-lg">You're on fire! Keep learning for 2 more days to
+                                        reach a weekly streak.</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <% ['M', 'T' , 'W' , 'T' , 'F' , 'S' , 'S' ].forEach((day, index)=> { %>
+                                        <div class="flex flex-col items-center gap-2">
+                                            <span class="text-xs font-medium opacity-80">
+                                                <%= day %>
+                                            </span>
+                                            <div
+                                                class="w-10 h-10 rounded-full flex items-center justify-center <%= index < 5 ? 'bg-white text-[#FF6B35]' : 'bg-white/20 text-white' %> font-bold shadow-sm">
+                                                <%= index < 5 ? '✓' : '' %>
+                                            </div>
+                                        </div>
+                                        <% }); %>
+                                </div>
+                            </div>
+                            <!-- Background Decoration -->
+                            <div
+                                class="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/10 rounded-full blur-3xl">
+                            </div>
+                            <div
+                                class="absolute bottom-0 left-0 -mb-10 -ml-10 w-48 h-48 bg-black/10 rounded-full blur-2xl">
+                            </div>
+                        </div>
+
+                        <!-- Charts Grid -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+                            <!-- Activity Chart -->
+                            <div
+                                class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Learning Activity</h3>
+                                <div class="h-64">
+                                    <canvas id="activityChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Subject Breakdown -->
+                            <div
+                                class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Time Spent by Subject
+                                </h3>
+                                <div class="h-64 flex justify-center">
+                                    <canvas id="subjectChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Achievements -->
+                        <div
+                            class="bg-white dark:bg-[#1C1C1C] rounded-2xl border border-gray-100 dark:border-gray-800 p-6">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6">Recent Achievements</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                <div
+                                    class="p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/50 flex flex-col items-center text-center">
+                                    <div class="text-4xl mb-2">🏆</div>
+                                    <h4 class="font-bold text-gray-900 dark:text-white text-sm">Fast Learner</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Completed 5 lessons in 1
+                                        day</p>
+                                </div>
+                                <div
+                                    class="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 flex flex-col items-center text-center">
+                                    <div class="text-4xl mb-2">🧠</div>
+                                    <h4 class="font-bold text-gray-900 dark:text-white text-sm">Quiz Master</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Scored 100% on 3 quizzes
+                                    </p>
+                                </div>
+                                <div
+                                    class="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-900/50 flex flex-col items-center text-center">
+                                    <div class="text-4xl mb-2">📚</div>
+                                    <h4 class="font-bold text-gray-900 dark:text-white text-sm">Bookworm</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Read 50 pages of notes</p>
+                                </div>
+                                <div
+                                    class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center opacity-50 grayscale">
+                                    <div class="text-4xl mb-2">⚡</div>
+                                    <h4 class="font-bold text-gray-900 dark:text-white text-sm">Power User</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Log in for 30 days straight
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </main>
+            </div>
+    </div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleSidebar()"></div>
+
+    <script src="/js/theme-manager.js"></script>
+    <script>
+        // Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        // Charts
+        const activityCtx = document.getElementById('activityChart').getContext('2d');
+        new Chart(activityCtx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Hours Learned',
+                    data: [2, 3.5, 1.5, 4, 3, 1, 2.5],
+                    borderColor: '#FF6B35',
+                    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(128, 128, 128, 0.1)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        const subjectCtx = document.getElementById('subjectChart').getContext('2d');
+        new Chart(subjectCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Physics', 'Math', 'CS', 'History'],
+                datasets: [{
+                    data: [35, 25, 30, 10],
+                    backgroundColor: ['#FF6B35', '#3B82F6', '#10B981', '#F59E0B'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'right' } }
+            }
+        });
+    </script>
+</body>
+
+</html>

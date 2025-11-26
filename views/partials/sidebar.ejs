@@ -1,0 +1,51 @@
+<!-- Sidebar Partial -->
+<aside id="sidebar"
+    class="w-64 flex-shrink-0 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-30 h-full">
+    <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+        <a href="/" class="text-2xl font-bold">
+            <span class="bg-clip-text text-transparent bg-gradient-to-r from-[#FF6B35] to-[#FF9155]">Lumina</span> ✨
+        </a>
+    </div>
+
+    <nav class="flex-1 p-4 space-y-2 overflow-y-auto text-sm">
+        <% const menuItems=[ { name: 'Dashboard' , path: '/student/dashboard' ,
+            icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'
+            }, { name: 'AI Tutor' , path: '/student/ai-tutor' ,
+            icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M6.343 18.364l-.707.707M19 12h-1M5 12H4M7.636 6.364l.707-.707M16.364 18.364l.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z'
+            }, { name: 'Explore Courses' , path: '/student/courses' ,
+            icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' }, { name: 'My Notes' , path: '/student/notes' ,
+            icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
+            }, { name: 'My Progress' , path: '/student/progress' , icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+            }, { name: 'Leaderboard' , path: '/student/leaderboard' ,
+            icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'
+            }, { name: 'Community' , path: '/student/community' ,
+            icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
+            } ]; %>
+
+            <% menuItems.forEach(item=> { %>
+                <a href="<%= item.path %>"
+                    class="flex items-center px-4 py-2.5 font-medium rounded-lg transition-all duration-200 
+               <%= path === item.path 
+                   ? 'bg-gradient-to-r from-[#FF6B35]/10 to-[#FF9155]/20 text-[#FF6B35] dark:text-[#FF9155] shadow-sm' 
+                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white' %>">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<%= item.icon %>" />
+                    </svg>
+                    <%= item.name %>
+                </a>
+                <% }); %>
+    </nav>
+
+    <div class="p-4 border-t border-gray-200 dark:border-gray-800">
+        <a href="/login"
+            class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors">
+            <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Logout
+        </a>
+    </div>
+</aside>

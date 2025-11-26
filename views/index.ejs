@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - AI Learning Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/glassmorphism.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .hero-gradient {
+            background: radial-gradient(circle at top right, #FF6B35 0%, transparent 40%), radial-gradient(circle at bottom left, #3B82F6 0%, transparent 40%);
+        }
+
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-black text-gray-900 dark:text-white transition-colors duration-300">
+
+    <!-- Navbar -->
+    <nav
+        class="fixed w-full z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <span
+                        class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF6B35] to-[#FF9155]">Lumina</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features"
+                        class="text-gray-600 dark:text-gray-300 hover:text-[#FF6B35] transition-colors">Features</a>
+                    <a href="#pricing"
+                        class="text-gray-600 dark:text-gray-300 hover:text-[#FF6B35] transition-colors">Pricing</a>
+                    <a href="#about"
+                        class="text-gray-600 dark:text-gray-300 hover:text-[#FF6B35] transition-colors">About</a>
+                    <a href="/login"
+                        class="px-4 py-2 rounded-lg text-[#FF6B35] font-medium hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">Login</a>
+                    <a href="/login"
+                        class="px-4 py-2 rounded-lg bg-[#FF6B35] text-white font-medium hover:bg-[#E85A26] shadow-lg shadow-orange-500/30 transition-colors">Get
+                        Started</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+        <div class="absolute inset-0 hero-gradient opacity-10 dark:opacity-20 pointer-events-none"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6">
+                Master Any Subject with <br>
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-[#FF6B35] to-[#FF9155]">AI-Powered
+                    Learning</span>
+            </h1>
+            <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-600 dark:text-gray-300">
+                Lumina adapts to your learning style, providing personalized tutoring, interactive courses, and a
+                supportive community.
+            </p>
+            <div class="mt-10 flex justify-center gap-4">
+                <a href="/login"
+                    class="px-8 py-4 rounded-xl bg-[#FF6B35] text-white text-lg font-bold shadow-xl shadow-orange-500/30 hover:scale-105 transition-transform">Start
+                    Learning Free</a>
+                <a href="#demo"
+                    class="px-8 py-4 rounded-xl bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-lg font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Watch
+                    Demo</a>
+            </div>
+
+            <!-- Hero Image/Mockup -->
+            <div class="mt-20 relative max-w-5xl mx-auto animate-float">
+                <div
+                    class="absolute inset-0 bg-gradient-to-t from-gray-50 dark:from-black to-transparent z-20 h-full w-full pointer-events-none">
+                </div>
+                <img src="https://cdn.dribbble.com/users/419375/screenshots/15467417/media/64b22557474447477344444444444444.png?compress=1&resize=1600x1200"
+                    alt="Dashboard Preview"
+                    class="rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 w-full">
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Grid -->
+    <section id="features" class="py-20 bg-white dark:bg-[#111111]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Everything you need to excel</h2>
+                <p class="text-gray-600 dark:text-gray-400">Powerful tools designed to accelerate your learning journey.
+                </p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div
+                    class="p-8 rounded-2xl bg-gray-50 dark:bg-[#1C1C1C] border border-gray-100 dark:border-gray-800 hover:border-[#FF6B35]/30 transition-colors group">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+                        🤖</div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">AI Personal Tutor</h3>
+                    <p class="text-gray-600 dark:text-gray-400">Get instant answers, explanations, and personalized
+                        practice problems 24/7.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div
+                    class="p-8 rounded-2xl bg-gray-50 dark:bg-[#1C1C1C] border border-gray-100 dark:border-gray-800 hover:border-blue-500/30 transition-colors group">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+                        📊</div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Smart Analytics</h3>
+                    <p class="text-gray-600 dark:text-gray-400">Track your progress, identify weak spots, and visualize
+                        your learning streaks.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div
+                    class="p-8 rounded-2xl bg-gray-50 dark:bg-[#1C1C1C] border border-gray-100 dark:border-gray-800 hover:border-green-500/30 transition-colors group">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+                        🌍</div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Global Community</h3>
+                    <p class="text-gray-600 dark:text-gray-400">Connect with learners worldwide, join study groups, and
+                        compete on leaderboards.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-50 dark:bg-black border-t border-gray-200 dark:border-gray-800 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
+            <div class="mb-4 md:mb-0">
+                <span
+                    class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF6B35] to-[#FF9155]">Lumina</span>
+                <p class="text-sm text-gray-500 mt-2">© 2025 Lumina Learning Inc.</p>
+            </div>
+            <div class="flex space-x-6">
+                <a href="#" class="text-gray-400 hover:text-[#FF6B35]">Twitter</a>
+                <a href="#" class="text-gray-400 hover:text-[#FF6B35]">GitHub</a>
+                <a href="#" class="text-gray-400 hover:text-[#FF6B35]">Discord</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>

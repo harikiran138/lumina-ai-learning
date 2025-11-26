@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %> - Lumina
+    </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/glassmorphism.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .auth-gradient {
+            background: linear-gradient(135deg, #FF6B35 0%, #FF9155 100%);
+        }
+    </style>
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+
+<body
+    class="bg-gray-50 dark:bg-black text-gray-900 dark:text-white transition-colors duration-300 flex items-center justify-center min-h-screen p-4">
+
+    <div
+        class="w-full max-w-md bg-white dark:bg-[#1C1C1C] rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+
+        <!-- Header -->
+        <div class="p-8 text-center">
+            <a href="/" class="inline-block mb-6">
+                <span
+                    class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FF6B35] to-[#FF9155]">Lumina</span>
+            </a>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Welcome Back</h2>
+            <p class="text-gray-500 dark:text-gray-400">Sign in to continue your learning journey</p>
+        </div>
+
+        <!-- Form -->
+        <form class="px-8 pb-8 space-y-6" action="/student/dashboard" method="GET">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
+                <input type="email" value="alex@lumina.com"
+                    class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#222] border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-[#FF6B35] focus:outline-none transition-all"
+                    required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
+                <input type="password" value="password123"
+                    class="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#222] border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-[#FF6B35] focus:outline-none transition-all"
+                    required>
+            </div>
+
+            <div class="flex items-center justify-between text-sm">
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" class="rounded border-gray-300 text-[#FF6B35] focus:ring-[#FF6B35]">
+                    <span class="ml-2 text-gray-600 dark:text-gray-400">Remember me</span>
+                </label>
+                <a href="#" class="text-[#FF6B35] hover:underline font-medium">Forgot password?</a>
+            </div>
+
+            <button type="submit"
+                class="w-full py-3.5 rounded-xl auth-gradient text-white font-bold shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40 hover:scale-[1.02] transition-all">
+                Sign In
+            </button>
+        </form>
+
+        <!-- Footer -->
+        <div class="p-6 bg-gray-50 dark:bg-[#111] border-t border-gray-200 dark:border-gray-800 text-center text-sm">
+            <span class="text-gray-500">Don't have an account?</span>
+            <a href="#" class="text-[#FF6B35] font-bold hover:underline ml-1">Sign up free</a>
+        </div>
+    </div>
+
+</body>
+
+</html>
