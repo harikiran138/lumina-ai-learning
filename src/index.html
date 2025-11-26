@@ -136,7 +136,7 @@
 
     <!-- Header -->
     <header
-        class="fixed top-0 left-0 right-0 z-20 bg-white/80 dark:bg-black/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+        class="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-black/70 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50 transition-all duration-300">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex-shrink-0">
@@ -146,22 +146,22 @@
                 </div>
                 <div class="hidden md:flex md:items-center md:space-x-8">
                     <a href="#features"
-                        class="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Features</a>
+                        class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Features</a>
                     <a href="#for-who"
-                        class="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">For
+                        class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">For
                         Who?</a>
                     <a href="#testimonials"
-                        class="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Testimonials</a>
+                        class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Testimonials</a>
                     <a href="login.html"
-                        class="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Sign
+                        class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Sign
                         In</a>
                 </div>
                 <div class="flex items-center space-x-4">
                     <a href="login.html"
-                        class="hidden md:inline-block bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors">Get
+                        class="hidden md:inline-block bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-amber-600 hover:to-orange-700 transition-all duration-300 shadow-md shadow-amber-500/20 hover:shadow-amber-500/40 hover:-translate-y-0.5">Get
                         Started</a>
                     <button id="theme-toggle"
-                        class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900">
+                        class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                         <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
                             viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -180,7 +180,7 @@
 
     <main>
         <!-- Hero Section -->
-        <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
             <!-- Dynamic Background -->
             <div class="absolute inset-0 bg-gray-50 dark:bg-black transition-colors duration-300">
                 <!-- Abstract Shapes/Gradients -->
@@ -203,7 +203,7 @@
 
             <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center py-20">
                 <div
-                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-sm font-medium mb-8 animate-fade-in-up">
+                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-sm font-medium mb-8 animate-fade-in-up backdrop-blur-sm">
                     <span class="relative flex h-2 w-2">
                         <span
                             class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
@@ -213,7 +213,7 @@
                 </div>
 
                 <h1
-                    class="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 dark:text-white leading-tight tracking-tight mb-6 animate-fade-in-up animation-delay-100">
+                    class="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 dark:text-white leading-tight tracking-tight mb-6 animate-fade-in-up animation-delay-100 drop-shadow-sm">
                     The Future of Learning, <br class="hidden sm:block" />
                     <span
                         class="bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 animate-gradient-x">Personalized
@@ -239,14 +239,14 @@
                         </svg>
                     </a>
                     <a href="#features"
-                        class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-gray-700 dark:text-gray-200 transition-all duration-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 dark:focus:ring-gray-700 shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                        class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-gray-700 dark:text-gray-200 transition-all duration-200 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-white dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 dark:focus:ring-gray-700 shadow-sm hover:shadow-md hover:-translate-y-0.5">
                         Learn More
                     </a>
                 </div>
 
                 <!-- Stats/Social Proof -->
                 <div
-                    class="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800 flex justify-center gap-8 text-gray-500 dark:text-gray-400 animate-fade-in-up animation-delay-400">
+                    class="mt-16 pt-8 border-t border-gray-200/50 dark:border-gray-800/50 flex justify-center gap-8 text-gray-500 dark:text-gray-400 animate-fade-in-up animation-delay-400">
                     <div class="flex flex-col items-center">
                         <span class="text-2xl font-bold text-gray-900 dark:text-white">10k+</span>
                         <span class="text-sm">Students</span>
@@ -275,7 +275,7 @@
                 </div>
                 <div class="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                     <div
-                        class="flex flex-col items-center text-center p-6 border border-transparent hover:border-amber-500/20 hover:bg-amber-500/5 dark:hover:bg-amber-500/5 rounded-2xl transition-all">
+                        class="flex flex-col items-center text-center p-6 border border-transparent hover:border-amber-500/20 hover:bg-amber-500/5 dark:hover:bg-amber-500/5 rounded-2xl transition-all duration-300 hover:-translate-y-1">
                         <div
                             class="bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 p-4 rounded-full">
                             <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -289,7 +289,7 @@
                             based on student performance and engagement.</p>
                     </div>
                     <div
-                        class="flex flex-col items-center text-center p-6 border border-transparent hover:border-amber-500/20 hover:bg-amber-500/5 dark:hover:bg-amber-500/5 rounded-2xl transition-all">
+                        class="flex flex-col items-center text-center p-6 border border-transparent hover:border-amber-500/20 hover:bg-amber-500/5 dark:hover:bg-amber-500/5 rounded-2xl transition-all duration-300 hover:-translate-y-1">
                         <div
                             class="bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 p-4 rounded-full">
                             <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -303,7 +303,7 @@
                             auto-grading, and insightful feedback.</p>
                     </div>
                     <div
-                        class="flex flex-col items-center text-center p-6 border border-transparent hover:border-amber-500/20 hover:bg-amber-500/5 dark:hover:bg-amber-500/5 rounded-2xl transition-all">
+                        class="flex flex-col items-center text-center p-6 border border-transparent hover:border-amber-500/20 hover:bg-amber-500/5 dark:hover:bg-amber-500/5 rounded-2xl transition-all duration-300 hover:-translate-y-1">
                         <div
                             class="bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 p-4 rounded-full">
                             <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
