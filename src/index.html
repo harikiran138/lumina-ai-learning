@@ -47,6 +47,88 @@
         html.dark .hero-bg {
             background-image: url('https://placehold.co/1200x800/000000/amber-500?text=Lumina+Dark+UI');
         }
+
+        /* Animations */
+        @keyframes blob {
+            0% {
+                transform: translate(0px, 0px) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+
+            100% {
+                transform: translate(0px, 0px) scale(1);
+            }
+        }
+
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+
+        .animation-delay-2000 {
+            animation-delay: 2s;
+        }
+
+        .animation-delay-4000 {
+            animation-delay: 4s;
+        }
+
+        @keyframes fade-in-up {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fade-in-up 0.8s ease-out forwards;
+        }
+
+        .animation-delay-100 {
+            animation-delay: 0.1s;
+        }
+
+        .animation-delay-200 {
+            animation-delay: 0.2s;
+        }
+
+        .animation-delay-300 {
+            animation-delay: 0.3s;
+        }
+
+        .animation-delay-400 {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes gradient-x {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .animate-gradient-x {
+            background-size: 200% 200%;
+            animation: gradient-x 15s ease infinite;
+        }
     </style>
 </head>
 
@@ -98,30 +180,89 @@
 
     <main>
         <!-- Hero Section -->
-        <section class="relative min-h-screen flex items-center">
-            <div
-                class="absolute inset-0 bg-gradient-to-t from-gray-50 via-gray-50/80 to-transparent dark:from-black dark:via-black/80 dark:to-transparent z-10">
+        <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
+            <!-- Dynamic Background -->
+            <div class="absolute inset-0 bg-gray-50 dark:bg-black transition-colors duration-300">
+                <!-- Abstract Shapes/Gradients -->
+                <div
+                    class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl opacity-30 dark:opacity-20 pointer-events-none">
+                    <div
+                        class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-amber-400/30 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-blob">
+                    </div>
+                    <div
+                        class="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-orange-400/30 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-blob animation-delay-2000">
+                    </div>
+                    <div
+                        class="absolute bottom-[-20%] left-[20%] w-[600px] h-[600px] bg-yellow-400/30 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-blob animation-delay-4000">
+                    </div>
+                </div>
+                <div
+                    class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150">
+                </div>
             </div>
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center py-16">
-                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white leading-tight">
-                    The Future of Learning, <br> <span class="gradient-text">Personalized for You.</span>
+
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center py-20">
+                <div
+                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-sm font-medium mb-8 animate-fade-in-up">
+                    <span class="relative flex h-2 w-2">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                    v2.0 is now live
+                </div>
+
+                <h1
+                    class="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 dark:text-white leading-tight tracking-tight mb-6 animate-fade-in-up animation-delay-100">
+                    The Future of Learning, <br class="hidden sm:block" />
+                    <span
+                        class="bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 animate-gradient-x">Personalized
+                        for You.</span>
                 </h1>
-                <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-600 dark:text-gray-400">
-                    Lumina is an AI-driven, self-hosted platform that transforms your course materials into adaptive
-                    learning pathways, automated assessments, and engaging experiences.
+
+                <p
+                    class="mt-6 max-w-2xl mx-auto text-xl text-gray-600 dark:text-gray-300 leading-relaxed animate-fade-in-up animation-delay-200">
+                    Lumina transforms your course materials into <span
+                        class="text-gray-900 dark:text-white font-semibold">adaptive learning pathways</span>, automated
+                    assessments, and engaging experiences.
                 </p>
-                <div class="mt-8 flex justify-center space-x-4">
+
+                <div
+                    class="mt-10 flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up animation-delay-300">
                     <a href="login.html"
-                        class="bg-amber-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-amber-600 transition-colors text-lg shadow-lg shadow-amber-500/20">
+                        class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl hover:from-amber-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:-translate-y-0.5">
                         Start Learning
+                        <svg class="w-5 h-5 ml-2 -mr-1 transition-transform group-hover:translate-x-1" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
                     </a>
                     <a href="#features"
-                        class="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-bold py-3 px-8 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-lg shadow-lg dark:shadow-white/5">
+                        class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-gray-700 dark:text-gray-200 transition-all duration-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 dark:focus:ring-gray-700 shadow-sm hover:shadow-md hover:-translate-y-0.5">
                         Learn More
                     </a>
                 </div>
+
+                <!-- Stats/Social Proof -->
+                <div
+                    class="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800 flex justify-center gap-8 text-gray-500 dark:text-gray-400 animate-fade-in-up animation-delay-400">
+                    <div class="flex flex-col items-center">
+                        <span class="text-2xl font-bold text-gray-900 dark:text-white">10k+</span>
+                        <span class="text-sm">Students</span>
+                    </div>
+                    <div class="w-px h-12 bg-gray-200 dark:bg-gray-800"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-2xl font-bold text-gray-900 dark:text-white">500+</span>
+                        <span class="text-sm">Institutions</span>
+                    </div>
+                    <div class="w-px h-12 bg-gray-200 dark:bg-gray-800"></div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-2xl font-bold text-gray-900 dark:text-white">99%</span>
+                        <span class="text-sm">Satisfaction</span>
+                    </div>
+                </div>
             </div>
-            <div class="absolute inset-0 hero-bg opacity-10 dark:opacity-20"></div>
         </section>
 
         <!-- Features Section -->
