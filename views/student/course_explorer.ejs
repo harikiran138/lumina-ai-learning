@@ -1,194 +1,85 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <%= title %> - Lumina
-    </title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/glassmorphism.css">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-
-        .animate-fade-in-up {
-            animation: fadeInUp 0.5s ease-out forwards;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
-    <script>
-        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    </script>
-</head>
-
-<body class="bg-gray-50 dark:bg-black text-gray-900 dark:text-white transition-colors duration-300">
-    <div class="relative h-screen overflow-hidden lg:flex">
-
-        <!-- Sidebar -->
-        <%- include('../partials/sidebar') %>
-
-            <!-- Main Content -->
-            <div class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out">
-
-                <!-- Header -->
-                <%- include('../partials/header') %>
-
-                    <!-- Course Explorer Content -->
-                    <main
-                        class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-black p-6 animate-fade-in-up">
-
-                        <!-- Search & Filter -->
-                        <div class="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-                            <div class="relative w-full md:w-96">
-                                <input type="text" placeholder="Search courses..."
-                                    class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-[#FF6B35] focus:outline-none text-sm">
-                                <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none"
-                                    stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                </svg>
-                            </div>
-                            <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-                                <button
-                                    class="px-4 py-2 rounded-lg bg-[#FF6B35] text-white text-sm font-medium shadow-lg shadow-orange-500/20 whitespace-nowrap">All
-                                    Courses</button>
-                                <button
-                                    class="px-4 py-2 rounded-lg bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium whitespace-nowrap transition-colors">Science</button>
-                                <button
-                                    class="px-4 py-2 rounded-lg bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium whitespace-nowrap transition-colors">Math</button>
-                                <button
-                                    class="px-4 py-2 rounded-lg bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium whitespace-nowrap transition-colors">Programming</button>
-                            </div>
-                        </div>
-
-                        <!-- Featured Course -->
-                        <div class="mb-8 relative rounded-2xl overflow-hidden group cursor-pointer">
-                            <div class="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent z-10"></div>
-                            <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=2070&auto=format&fit=crop"
-                                alt="Featured"
-                                class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500">
-                            <div class="absolute bottom-0 left-0 p-8 z-20 max-w-2xl">
-                                <span
-                                    class="px-3 py-1 rounded-full bg-[#FF6B35] text-white text-xs font-bold mb-3 inline-block">FEATURED</span>
-                                <h2 class="text-3xl font-bold text-white mb-2">Advanced Neural Networks</h2>
-                                <p class="text-gray-200 mb-4 line-clamp-2">Master deep learning architectures,
-                                    backpropagation, and build your own AI models from scratch using Python and
-                                    TensorFlow.</p>
-                                <button
-                                    class="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-gray-100 transition-colors">Start
-                                    Learning</button>
-                            </div>
-                        </div>
-
-                        <!-- Course Grid -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <% const courses=[ { title: 'Quantum Physics I' , category: 'Science' , progress: 75,
-                                color: 'blue' ,
-                                image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80'
-                                }, { title: 'Calculus for ML' , category: 'Math' , progress: 30, color: 'purple' ,
-                                image: 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=800&q=80'
-                                }, { title: 'React & Node.js' , category: 'Programming' , progress: 0, color: 'green' ,
-                                image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=800&q=80'
-                                }, { title: 'Organic Chemistry' , category: 'Science' , progress: 12, color: 'orange' ,
-                                image: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80'
-                                }, { title: 'Data Structures' , category: 'CS' , progress: 90, color: 'red' ,
-                                image: 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&w=800&q=80'
-                                }, { title: 'World History' , category: 'Humanities' , progress: 0, color: 'yellow' ,
-                                image: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?auto=format&fit=crop&w=800&q=80'
-                                } ]; %>
-
-                                <% courses.forEach(course=> { %>
-                                    <div
-                                        class="bg-white dark:bg-[#1C1C1C] rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 hover:shadow-lg transition-all hover:-translate-y-1 group cursor-pointer">
-                                        <div class="relative h-40 overflow-hidden">
-                                            <img src="<%= course.image %>" alt="<%= course.title %>"
-                                                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                                            <div
-                                                class="absolute top-3 right-3 bg-black/50 backdrop-blur-md px-2 py-1 rounded text-xs text-white font-medium">
-                                                <%= course.category %>
-                                            </div>
-                                        </div>
-                                        <div class="p-5">
-                                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                                                <%= course.title %>
-                                            </h3>
-                                            <div
-                                                class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
-                                                <span>12 Lessons</span>
-                                                <span>4.8 ⭐</span>
-                                            </div>
-                                            <% if (course.progress> 0) { %>
-                                                <div
-                                                    class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 mb-2">
-                                                    <div class="bg-<%= course.color %>-500 h-1.5 rounded-full"
-                                                        style="width: <%= course.progress %>%"></div>
-                                                </div>
-                                                <p class="text-xs text-<%= course.color %>-500 font-medium">
-                                                    <%= course.progress %>% Complete
-                                                </p>
-                                                <% } else { %>
-                                                    <button
-                                                        class="w-full py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium transition-colors">Enroll
-                                                        Now</button>
-                                                    <% } %>
-                                        </div>
-                                    </div>
-                                    <% }); %>
-                        </div>
-
-                    </main>
-            </div>
+<!-- Course Explorer Content -->
+<div class="animate-fade-in-up">
+    <!-- Search & Filter -->
+    <div class="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div class="relative w-full md:w-96">
+            <input type="text" placeholder="Search courses..."
+                class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-[#FF6B35] focus:outline-none text-sm">
+            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+        </div>
+        <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+            <button
+                class="px-4 py-2 rounded-lg bg-[#FF6B35] text-white text-sm font-medium shadow-lg shadow-orange-500/20 whitespace-nowrap">All
+                Courses</button>
+            <button
+                class="px-4 py-2 rounded-lg bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium whitespace-nowrap transition-colors">Science</button>
+            <button
+                class="px-4 py-2 rounded-lg bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium whitespace-nowrap transition-colors">Math</button>
+            <button
+                class="px-4 py-2 rounded-lg bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium whitespace-nowrap transition-colors">Programming</button>
+        </div>
     </div>
 
-    <!-- Mobile Sidebar Overlay -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleSidebar()"></div>
+    <!-- Featured Course -->
+    <div class="mb-8 relative rounded-2xl overflow-hidden group cursor-pointer">
+        <div class="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent z-10"></div>
+        <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=2070&auto=format&fit=crop"
+            alt="Featured" class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500">
+        <div class="absolute bottom-0 left-0 p-8 z-20 max-w-2xl">
+            <span
+                class="px-3 py-1 rounded-full bg-[#FF6B35] text-white text-xs font-bold mb-3 inline-block">FEATURED</span>
+            <h2 class="text-3xl font-bold text-white mb-2">Advanced Neural Networks</h2>
+            <p class="text-gray-200 mb-4 line-clamp-2">Master deep learning architectures, backpropagation, and build
+                your own AI models from scratch using Python and TensorFlow.</p>
+            <button
+                class="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-gray-100 transition-colors">Start
+                Learning</button>
+        </div>
+    </div>
 
-    <script src="/js/theme-manager.js"></script>
-    <script>
-        // Sidebar Toggle
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('hidden');
-            }
-        }
-
-        // Theme Toggle
-        const themeToggle = document.getElementById('theme-toggle');
-        themeToggle.addEventListener('click', () => {
-            if (document.documentElement.classList.contains('dark')) {
-                document.documentElement.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
-            } else {
-                document.documentElement.classList.add('dark');
-                localStorage.setItem('theme', 'dark');
-            }
-        });
-    </script>
-</body>
-
-</html>
+    <!-- Course Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <% courses.forEach(course=> { %>
+            <div
+                class="bg-white dark:bg-[#1C1C1C] rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 hover:shadow-lg transition-all hover:-translate-y-1 group cursor-pointer">
+                <div class="relative h-40 overflow-hidden">
+                    <img src="<%= course.image %>" alt="<%= course.title %>"
+                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                    <div
+                        class="absolute top-3 right-3 bg-black/50 backdrop-blur-md px-2 py-1 rounded text-xs text-white font-medium">
+                        <%= course.category %>
+                    </div>
+                </div>
+                <div class="p-5">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                        <%= course.title %>
+                    </h3>
+                    <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        <span>12 Lessons</span>
+                        <span>4.8 ⭐</span>
+                    </div>
+                    <% if (course.progress> 0) { %>
+                        <% const colorMap={ 'blue' : '#3B82F6' , 'purple' : '#A855F7' , 'green' : '#10B981' , 'orange'
+                            : '#FF6B35' , 'red' : '#EF4444' , 'yellow' : '#F59E0B' }; const
+                            bgColor=colorMap[course.color] || '#3B82F6' ; %>
+                            <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 mb-2">
+                                <div class="h-1.5 rounded-full"
+                                    style="width: <%= course.progress %>%; background-color: <%= bgColor %>;"></div>
+                            </div>
+                            <p class="text-xs font-medium" style="color: <%= bgColor %>;">
+                                <%= course.progress %>% Complete
+                            </p>
+                            <% } else { %>
+                                <button
+                                    class="w-full py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium transition-colors">Enroll
+                                    Now</button>
+                                <% } %>
+                </div>
+            </div>
+            <% }); %>
+    </div>
+</div>

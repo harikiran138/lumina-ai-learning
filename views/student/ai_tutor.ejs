@@ -1,217 +1,107 @@
-<!DOCTYPE html>
-<html lang="en">
+<!-- Chat Interface -->
+<div
+    class="flex-1 flex flex-col bg-gray-50 dark:bg-black overflow-hidden h-full rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <%= title %> - Lumina
-    </title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/glassmorphism.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js"></script>
-    <script>window.pdfjsLib && (window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js');</script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-
-        .animate-fade-in-up {
-            animation: fadeInUp 0.5s ease-out forwards;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .typing-indicator span {
-            animation: typing 1.4s infinite ease-in-out;
-        }
-
-        @keyframes typing {
-
-            0%,
-            100% {
-                transform: scale(0.8);
-                opacity: 0.5;
-            }
-
-            50% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-    </style>
-    <script>
-        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    </script>
-</head>
-
-<body class="bg-gray-50 dark:bg-black text-gray-900 dark:text-white transition-colors duration-300">
-    <div class="relative h-screen overflow-hidden lg:flex">
-
-        <!-- Sidebar -->
-        <%- include('../partials/sidebar') %>
-
-            <!-- Main Content -->
-            <div class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out">
-
-                <!-- Header -->
-                <%- include('../partials/header') %>
-
-                    <!-- Chat Interface -->
-                    <div class="flex-1 flex flex-col bg-gray-50 dark:bg-black overflow-hidden">
-
-                        <!-- Quick Actions -->
-                        <div
-                            class="px-4 py-2 bg-gray-50 dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800 flex flex-wrap gap-2 text-[11px]">
-                            <button onclick="sendQuickMessage('Explain the Pythagorean theorem with an example')"
-                                class="px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors">📚
-                                Concept</button>
-                            <button onclick="sendQuickMessage('Generate 3 practice algebra problems')"
-                                class="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">✏️
-                                Practice</button>
-                            <button onclick="sendQuickMessage('Review my essay for grammar')"
-                                class="px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">✅
-                                Review</button>
-                            <button onclick="document.getElementById('knowledge-panel').classList.toggle('hidden')"
-                                class="px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">📖
-                                Knowledge</button>
-                        </div>
-
-                        <!-- Knowledge Panel (Hidden) -->
-                        <div id="knowledge-panel"
-                            class="hidden border-b border-gray-200 dark:border-gray-800 p-4 bg-white dark:bg-[#111111] text-xs space-y-3 animate-fade-in-up">
-                            <div class="flex items-center justify-between">
-                                <h3 class="font-semibold text-gray-700 dark:text-gray-200">Add Custom Context</h3>
-                                <button onclick="this.closest('#knowledge-panel').classList.add('hidden')"
-                                    class="text-gray-500 hover:text-gray-800 dark:hover:text-white">✕</button>
-                            </div>
-                            <textarea id="paste-knowledge" rows="3" placeholder="Paste notes or text here..."
-                                class="w-full text-xs p-2 rounded bg-gray-100 dark:bg-[#222] border-none focus:ring-1 focus:ring-[#FF6B35] resize-y"></textarea>
-                            <div class="flex gap-2">
-                                <button id="add-knowledge-btn"
-                                    class="px-3 py-1.5 rounded bg-[#FF6B35] text-white text-xs hover:bg-[#E85A26]">Add
-                                    Context</button>
-                                <label
-                                    class="cursor-pointer px-3 py-1.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600">
-                                    📎 Upload PDF
-                                    <input type="file" id="file-upload" class="hidden"
-                                        accept="application/pdf,text/plain">
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Messages Area -->
-                        <div id="messages-container" class="flex-1 p-6 overflow-y-auto space-y-4 scroll-smooth">
-                            <!-- Welcome Message -->
-                            <div class="flex items-start gap-3">
-                                <div
-                                    class="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF9155] flex items-center justify-center text-white font-bold text-sm">
-                                    AI</div>
-                                <div
-                                    class="bg-white dark:bg-[#1C1C1C] p-3 rounded-2xl rounded-tl-none border border-gray-200 dark:border-gray-800 max-w-[80%] shadow-sm">
-                                    <p class="text-sm text-gray-800 dark:text-gray-200">Hello! I'm your AI Tutor. I can
-                                        help you learn concepts, solve problems, or review your work. What are we
-                                        studying today? 🚀</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Input Area -->
-                        <div class="p-4 bg-white dark:bg-[#111111] border-t border-gray-200 dark:border-gray-800">
-                            <form id="message-form" class="relative flex gap-2">
-                                <input id="message-input" type="text" placeholder="Ask anything..."
-                                    class="flex-1 px-4 py-3 bg-gray-100 dark:bg-[#222] border-none rounded-xl focus:ring-2 focus:ring-[#FF6B35] focus:outline-none text-sm">
-                                <button type="submit"
-                                    class="px-4 py-2 bg-[#FF6B35] hover:bg-[#E85A26] text-white rounded-xl font-medium transition-colors shadow-lg shadow-orange-500/20">
-                                    Send
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-            </div>
+    <!-- Quick Actions -->
+    <div
+        class="px-4 py-2 bg-gray-50 dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800 flex flex-wrap gap-2 text-[11px]">
+        <button onclick="sendQuickMessage('Explain the Pythagorean theorem with an example')"
+            class="px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors">📚
+            Concept</button>
+        <button onclick="sendQuickMessage('Generate 3 practice algebra problems')"
+            class="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">✏️
+            Practice</button>
+        <button onclick="sendQuickMessage('Review my essay for grammar')"
+            class="px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">✅
+            Review</button>
+        <button onclick="document.getElementById('knowledge-panel').classList.toggle('hidden')"
+            class="px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">📖
+            Knowledge</button>
     </div>
 
-    <!-- Mobile Sidebar Overlay -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleSidebar()"></div>
+    <!-- Knowledge Panel (Hidden) -->
+    <div id="knowledge-panel"
+        class="hidden border-b border-gray-200 dark:border-gray-800 p-4 bg-white dark:bg-[#111111] text-xs space-y-3 animate-fade-in-up">
+        <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-700 dark:text-gray-200">Add Custom Context</h3>
+            <button onclick="this.closest('#knowledge-panel').classList.add('hidden')"
+                class="text-gray-500 hover:text-gray-800 dark:hover:text-white">✕</button>
+        </div>
+        <textarea id="paste-knowledge" rows="3" placeholder="Paste notes or text here..."
+            class="w-full text-xs p-2 rounded bg-gray-100 dark:bg-[#222] border-none focus:ring-1 focus:ring-[#FF6B35] resize-y"></textarea>
+        <div class="flex gap-2">
+            <button id="add-knowledge-btn"
+                class="px-3 py-1.5 rounded bg-[#FF6B35] text-white text-xs hover:bg-[#E85A26]">Add Context</button>
+            <label
+                class="cursor-pointer px-3 py-1.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600">
+                📎 Upload PDF
+                <input type="file" id="file-upload" class="hidden" accept="application/pdf,text/plain">
+            </label>
+        </div>
+    </div>
 
-    <script src="/js/theme-manager.js"></script>
-    <script>
-        // Sidebar Toggle
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('hidden');
-            }
-        }
+    <!-- Messages Area -->
+    <div id="messages-container" class="flex-1 p-6 overflow-y-auto space-y-4 scroll-smooth">
+        <!-- Welcome Message -->
+        <div class="flex items-start gap-3">
+            <div
+                class="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF9155] flex items-center justify-center text-white font-bold text-sm">
+                AI</div>
+            <div
+                class="bg-white dark:bg-[#1C1C1C] p-3 rounded-2xl rounded-tl-none border border-gray-200 dark:border-gray-800 max-w-[80%] shadow-sm">
+                <p class="text-sm text-gray-800 dark:text-gray-200">Hello! I'm your AI Tutor. I can help you learn
+                    concepts, solve problems, or review your work. What are we studying today? 🚀</p>
+            </div>
+        </div>
+    </div>
 
-        // Theme Toggle
-        const themeToggle = document.getElementById('theme-toggle');
-        themeToggle.addEventListener('click', () => {
-            if (document.documentElement.classList.contains('dark')) {
-                document.documentElement.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
-            } else {
-                document.documentElement.classList.add('dark');
-                localStorage.setItem('theme', 'dark');
-            }
-        });
+    <!-- Input Area -->
+    <div class="p-4 bg-white dark:bg-[#111111] border-t border-gray-200 dark:border-gray-800">
+        <form id="message-form" class="relative flex gap-2">
+            <input id="message-input" type="text" placeholder="Ask anything..."
+                class="flex-1 px-4 py-3 bg-gray-100 dark:bg-[#222] border-none rounded-xl focus:ring-2 focus:ring-[#FF6B35] focus:outline-none text-sm">
+            <button type="submit"
+                class="px-4 py-2 bg-[#FF6B35] hover:bg-[#E85A26] text-white rounded-xl font-medium transition-colors shadow-lg shadow-orange-500/20">
+                Send
+            </button>
+        </form>
+    </div>
+</div>
 
-        // Chat Logic (Mock)
-        const form = document.getElementById('message-form');
-        const input = document.getElementById('message-input');
-        const container = document.getElementById('messages-container');
+<script>
+    // Chat Logic (Mock)
+    const form = document.getElementById('message-form');
+    const input = document.getElementById('message-input');
+    const container = document.getElementById('messages-container');
 
-        function addMessage(text, isUser = false) {
-            const div = document.createElement('div');
-            div.className = `flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''} animate-fade-in-up`;
+    function addMessage(text, isUser = false) {
+        const div = document.createElement('div');
+        div.className = `flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''} animate-fade-in-up`;
 
-            const avatar = isUser
-                ? `<div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold text-sm">ME</div>`
-                : `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF9155] flex items-center justify-center text-white font-bold text-sm">AI</div>`;
+        const avatar = isUser
+            ? `<div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold text-sm">ME</div>`
+            : `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF9155] flex items-center justify-center text-white font-bold text-sm">AI</div>`;
 
-            const bubble = isUser
-                ? `<div class="bg-[#FF6B35] text-white p-3 rounded-2xl rounded-tr-none max-w-[80%] shadow-md"><p class="text-sm">${text}</p></div>`
-                : `<div class="bg-white dark:bg-[#1C1C1C] p-3 rounded-2xl rounded-tl-none border border-gray-200 dark:border-gray-800 max-w-[80%] shadow-sm"><p class="text-sm text-gray-800 dark:text-gray-200">${text}</p></div>`;
+        const bubble = isUser
+            ? `<div class="bg-[#FF6B35] text-white p-3 rounded-2xl rounded-tr-none max-w-[80%] shadow-md"><p class="text-sm">${text}</p></div>`
+            : `<div class="bg-white dark:bg-[#1C1C1C] p-3 rounded-2xl rounded-tl-none border border-gray-200 dark:border-gray-800 max-w-[80%] shadow-sm"><p class="text-sm text-gray-800 dark:text-gray-200">${text}</p></div>`;
 
-            div.innerHTML = avatar + bubble;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-        }
+        div.innerHTML = avatar + bubble;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
 
-        function sendQuickMessage(text) {
-            addMessage(text, true);
-            setTimeout(() => addMessage("That's a great topic! Let's dive into it. Here's a structured breakdown...", false), 1000);
-        }
+    function sendQuickMessage(text) {
+        addMessage(text, true);
+        setTimeout(() => addMessage("That's a great topic! Let's dive into it. Here's a structured breakdown...", false), 1000);
+    }
 
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const text = input.value.trim();
-            if (!text) return;
-            addMessage(text, true);
-            input.value = '';
-            setTimeout(() => addMessage("I'm processing your request using the latest AI models...", false), 1000);
-        });
-    </script>
-</body>
-
-</html>
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+        addMessage(text, true);
+        input.value = '';
+        setTimeout(() => addMessage("I'm processing your request using the latest AI models...", false), 1000);
+    });
+</script>

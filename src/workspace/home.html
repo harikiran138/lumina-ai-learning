@@ -18,6 +18,7 @@
     <!-- Lumina Design System -->
     <link rel="stylesheet" href="../styles/design-tokens.css">
     <link rel="stylesheet" href="../styles/glassmorphism.css">
+    <link rel="stylesheet" href="../styles/themes.css">
 
     <style>
         body {
@@ -70,72 +71,7 @@
 <body class="bg-gray-50 dark:bg-black text-gray-900 dark:text-white transition-colors duration-300">
 
     <!-- Navigation -->
-    <nav class="glass-header fixed top-0 left-0 right-0 z-50 h-16 flex items-center px-6">
-        <div class="flex items-center gap-8 flex-1">
-            <!-- Logo -->
-            <a href="../index.html" class="flex items-center gap-2">
-                <div
-                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-lg">
-                    L
-                </div>
-                <span class="font-bold text-xl">Lumina</span>
-            </a>
-
-            <!-- Main Nav -->
-            <div class="hidden md:flex items-center gap-1">
-                <a href="home.html" class="px-4 py-2 rounded-lg bg-primary/10 text-primary font-medium text-sm">
-                    🏠 Home
-                </a>
-                <a href="../student/dashboard.html"
-                    class="px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium text-sm transition-colors">
-                    🎓 Learn
-                </a>
-                <a href="agents/console.html"
-                    class="px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium text-sm transition-colors">
-                    🤖 Agents
-                </a>
-                <a href="workflows/builder.html"
-                    class="px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium text-sm transition-colors">
-                    ⚙️ Workflows
-                </a>
-                <a href="apps/hub.html"
-                    class="px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium text-sm transition-colors">
-                    🧩 Apps
-                </a>
-                <a href="knowledge/board.html"
-                    class="px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium text-sm transition-colors">
-                    📝 Knowledge
-                </a>
-                <a href="files/explorer.html"
-                    class="px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium text-sm transition-colors">
-                    📁 Files
-                </a>
-            </div>
-        </div>
-
-        <!-- Right actions -->
-        <div class="flex items-center gap-3">
-            <!-- Search (⌘K) -->
-            <button
-                class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <span>Search</span>
-                <kbd class="px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 rounded">⌘K</kbd>
-            </button>
-
-            <!-- Theme Toggle -->
-            <div id="theme-toggle-container"></div>
-
-            <!-- User Avatar -->
-            <div
-                class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold cursor-pointer">
-                A
-            </div>
-        </div>
-    </nav>
+    <div id="navbar-container"></div>
 
     <!-- Main Content -->
     <main class="pt-20 px-6 pb-12 max-w-7xl mx-auto">
@@ -371,25 +307,70 @@
         </div>
     </main>
 
+    <!-- Command Palette Container -->
+    <div id="command-palette-container"></div>
+
     <!-- Scripts -->
     <script src="../js/theme-manager.js"></script>
     <script>
-        // Initialize theme toggle
-        const toggleContainer = document.getElementById('theme-toggle-container');
-        themeManager.createModeToggle(toggleContainer);
+        async function loadComponent(path, containerId) {
+            try {
+                const response = await fetch(path);
+                const html = await response.text();
+                const container = document.getElementById(containerId);
+                container.innerHTML = html;
 
-        // Initialize theme switcher
-        const switcherContainer = document.getElementById('theme-switcher-container');
-        themeManager.createThemeSwitcher(switcherContainer);
-
-        // Command palette trigger (⌘K)
-        document.addEventListener('keydown', (e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-                e.preventDefault();
-                console.log('Command palette would open here');
-                // TODO: Open command palette
+                // Execute scripts in the injected HTML
+                const scripts = container.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+                
+                return true;
+            } catch (error) {
+                console.error(`Error loading component ${path}:`, error);
+                return false;
             }
-        });
+        }
+
+        async function initWorkspace() {
+            // Load components
+            await loadComponent('../components/layout/navbar.html', 'navbar-container');
+            await loadComponent('../components/layout/command-palette.html', 'command-palette-container');
+
+            // Initialize theme components after navbar is loaded
+            const toggleContainer = document.getElementById('theme-mode-toggle'); // From navbar.html
+            if (toggleContainer) {
+                // Clear default content if any
+                toggleContainer.innerHTML = ''; 
+                themeManager.createModeToggle(toggleContainer);
+            }
+            
+            const switcherContainer = document.querySelector('.theme-switcher-wrapper'); // From navbar.html
+            if (switcherContainer) {
+                themeManager.createThemeSwitcher(switcherContainer);
+            }
+
+            // Inject nav links based on theme
+            const navLinksContainer = document.getElementById('nav-links');
+            if (navLinksContainer) {
+                const links = `
+                    <a href="home.html" class="px-3 py-2 rounded-md text-sm font-medium text-primary bg-primary/10">Home</a>
+                    <a href="../student/dashboard.html" class="px-3 py-2 rounded-md text-sm font-medium text-secondary hover:text-primary hover:bg-glass-bg">Learn</a>
+                    <a href="agents/console.html" class="px-3 py-2 rounded-md text-sm font-medium text-secondary hover:text-primary hover:bg-glass-bg">Agents</a>
+                    <a href="workflows/builder.html" class="px-3 py-2 rounded-md text-sm font-medium text-secondary hover:text-primary hover:bg-glass-bg">Workflows</a>
+                    <a href="apps/hub.html" class="px-3 py-2 rounded-md text-sm font-medium text-secondary hover:text-primary hover:bg-glass-bg">Apps</a>
+                    <a href="knowledge/board.html" class="px-3 py-2 rounded-md text-sm font-medium text-secondary hover:text-primary hover:bg-glass-bg">Knowledge</a>
+                    <a href="files/explorer.html" class="px-3 py-2 rounded-md text-sm font-medium text-secondary hover:text-primary hover:bg-glass-bg">Files</a>
+                `;
+                navLinksContainer.innerHTML = links;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initWorkspace);
     </script>
 </body>
 

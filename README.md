@@ -1,337 +1,373 @@
-# Lumina AI Learning Platform
+# 🚀 Lumina AI Learning Platform v2.0
 
-> AI-powered personalized learning management system with intelligent tutoring and adaptive assessments
+## Intelligent AI Dashboard with Multi-Agent Workflow System
 
-[![Vercel](https://vercelbadge.vercel.app/api/harikiran138/lumina-ai-learning)](https://lumina-ai-learning.vercel.app)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Lumina is a production-grade AI learning platform featuring secure backend APIs, PostgreSQL database integration, multi-agent intelligence, and a premium dark UI with glass morphism effects.
 
-## 🌟 Features
+---
 
-- **🤖 AI-Powered Tutoring** - Personalized learning assistance using Google Gemini AI
-- **📊 Adaptive Dashboards** - Role-based interfaces for students, teachers, and administrators
-- **📈 Progress Tracking** - Real-time learning analytics and mastery tracking
-- **🎯 Smart Assessments** - Adaptive quizzes with intelligent feedback
-- **💬 Community Hub** - Moderated discussion forums with AI content filtering
-- **📱 Responsive Design** - Mobile-first design using Tailwind CSS
-- **🌙 Dark Mode** - Full dark mode support across all pages
+## ✨ Features
 
-## 🚀 Quick Start
+### 🔹 **Database Integration**
+- PostgreSQL with Prisma ORM
+- Automated migrations and seeding
+- Comprehensive schema for users, agents, tasks, chat logs, and projects
+- Context memory for shared agent intelligence
+
+### 🔹 **Secure Backend APIs**
+- JWT-based authentication
+- Session management
+- Protected API routes
+- Rate limiting ready
+
+### 🔹 **Multi-Agent System**
+6 specialized AI agents working collaboratively:
+- **Research Agent**: Web search & competitive analysis
+- **UI/UX Agent**: Design improvements & component refinement
+- **Code Agent**: Code generation & bug fixes
+- **Database Agent**: Query execution & migrations
+- **Test Agent**: Validation & debugging
+- **Orchestrator Agent**: Task coordination
+
+### 🔹 **Premium UI/UX**
+- Dark mode with glass morphism
+- Smooth animations and transitions
+- Responsive design
+- Real-time status indicators
+- Accessibility-focused
+
+### 🔹 **Real-time Features**
+- Live agent status updates
+- Task progress tracking
+- Notification system
+
+---
+
+## 🛠️ Technology Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Database**: PostgreSQL
+- **ORM**: Prisma
+- **Styling**: Tailwind CSS
+- **AI**: OpenAI API
+- **Authentication**: JWT + bcrypt
+- **Deployment**: Vercel
+- **Analytics**: Vercel Analytics
+
+---
+
+## 📦 Quick Start
 
 ### Prerequisites
-
-- Node.js 18+ 
-- npm 9+
+- Node.js 18+ installed
+- PostgreSQL database (local or cloud)
+- OpenAI API key
 
 ### Installation
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/harikiran138/lumina-ai-learning.git
 cd lumina-ai-learning
 
-# Install dependencies
+# 2. Install dependencies
 npm install
+
+# 3. Setup environment variables
+cp .env.example .env.local
+# Edit .env.local with your credentials
+
+# 4. Setup database
+npm run db:push      # Push schema to database
+npm run db:seed      # Seed with sample data
+
+# 5. Start development server
+npm run dev
 ```
 
-### Development
-
-```bash
-# Start development server
-npm start
-
-# Open http://localhost:1234
-```
-
-### Build
-
-```bash
-# Clean previous builds
-npm run clean
-
-# Build for production
-npm run build
-
-# Output will be in dist/
-```
-
-## 📁 Project Structure
-
-```
-lumina-ai-learning/
-├── src/
-│   ├── index.html              # Landing page
-│   ├── login.html              # Authentication page
-│   ├── admin/                  # Admin dashboard & tools
-│   │   ├── dashboard.html
-│   │   └── community.html
-│   ├── teacher/                # Teacher portal
-│   │   ├── dashboard.html
-│   │   ├── content_upload.html
-│   │   ├── assessment_management.html
-│   │   ├── reports.html
-│   │   └── community.html
-│   ├── student/                # Student portal
-│   │   ├── dashboard.html
-│   │   ├── ai_tutor.html
-│   │   ├── course_explorer.html
-│   │   ├── assessment.html
-│   │   ├── my_notes.html
-│   │   ├── progress_streaks.html
-│   │   ├── leaderboard.html
-│   │   └── community.html
-│   └── js/                     # JavaScript modules
-│       ├── database.js         # IndexedDB management
-│       ├── api.js              # API layer
-│       ├── dynamic-dashboard.js # Dashboard renderer
-│       ├── gemini-ai.js         # AI integration
-│       ├── utils.js            # Utility functions
-│       ├── validation.js       # Form validation
-│       └── analytics.js        # Vercel Analytics
-├── build.sh                    # Custom build script
-├── package.json                # Dependencies
-├── vercel.json                 # Deployment config
-└── README.md                   # This file
-```
-
-## 🔐 Authentication
-
-### Demo Accounts
-
-The application includes pre-configured demo accounts for testing:
-
-| Role    | Email                   | Password     |
-|---------|-------------------------|--------------|
-| Admin   | admin@lumina.com        | admin123     |
-| Teacher | teacher@lumina.com      | teacher123   |
-| Student | student@lumina.com      | student123   |
-
-**⚠️ Note**: These are demo credentials only. In production, implement proper authentication with secure password hashing.
-
-## 🏗️ Architecture
-
-### Technology Stack
-
-- **Frontend**: Vanilla JavaScript (ES6+), HTML5, CSS3
-- **Styling**: Tailwind CSS (CDN)
-- **Database**: IndexedDB (client-side storage)
-- **Charts**: Chart.js
-- **Build Tool**: Parcel 2
-- **Deployment**: Vercel
-- **Analytics**: Vercel Analytics
-- **AI**: Google Gemini AI API
-
-### Key Design Decisions
-
-1. **Client-Side Storage**: Uses IndexedDB for offline-first functionality
-2. **No Backend (Currently)**: All data stored locally in the browser
-3. **Multi-Page Application**: Traditional MPA for simplicity and SEO
-4. **Progressive Enhancement**: Works without JavaScript for basic content
-
-## 📊 Data Structure
-
-### IndexedDB Stores
-
-- `users` - User profiles and authentication
-- `courses` - Course information and content
-- `student_progress` - Learning progress tracking
-- `assessments` - Quiz and assignment data
-- `notes` - Student notes
-- `chat_messages` - Community discussion
-
-### Mock Data
-
-On first load, the application initializes with sample data for demonstration purposes. This includes:
-- 3 preset users (admin, teacher, student)
-- Sample courses
-- Progress data
-- Assessment templates
-
-## 🎨 Customization
-
-### Theme Colors
-
-The application uses a color scheme defined in Tailwind:
-
-```css
-Primary: Amber (#f59e0b, #fbbf24)
-Success: Green (#10b981)
-Warning: Amber (#fbbf24)
-Error: Red (#ef4444)
-Neutral: Gray scale (50-900)
-```
-
-### Dark Mode
-
-Dark mode is automatically enabled based on:
-1. User's system preference
-2. Manual toggle (persisted in localStorage)
-
-## 🔧 Configuration
-
-### Environment Variables
-
-For production deployment, set these environment variables:
-
-```bash
-# Required for AI features
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# Required for content moderation (backend implementation needed)
-PERSPECTIVE_API_KEY=your_perspective_api_key_here
-
-# Vercel Analytics (automatic on Vercel)
-VERCEL_ANALYTICS_ID=auto
-```
-
-**⚠️ Security Note**: Never commit API keys to version control. Use environment variables or secret management.
-
-## 🚀 Deployment
-
-### Vercel (Recommended)
-
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel
-
-# Production deployment
-vercel --prod
-```
-
-### Manual Deployment
-
-```bash
-# Build the project
-npm run build
-
-# Deploy the dist/ folder to any static hosting service
-# (Netlify, GitHub Pages, AWS S3, etc.)
-```
-
-## 🧪 Testing
-
-**⚠️ Current Status**: No automated tests implemented
-
-### Recommended Testing Setup
-
-```bash
-# Install testing dependencies
-npm install --save-dev vitest @vitest/ui playwright
-
-# Unit tests (to be implemented)
-npm run test:unit
-
-# E2E tests (to be implemented)
-npm run test:e2e
-```
-
-## 🐛 Known Issues & Limitations
-
-### Critical
-
-1. **No Real Backend**: All data stored in browser (lost on cache clear)
-2. **No Authentication**: Demo accounts only, not production-ready
-3. **API Key Security**: Content moderation requires backend implementation
-
-### High Priority
-
-1. **No Test Coverage**: Automated tests not implemented
-2. **Accessibility**: WCAG AA compliance issues (color contrast, keyboard nav)
-3. **Performance**: Large Tailwind CSS loaded from CDN
-
-### Medium Priority
-
-1. **No Component Library**: Code duplication across HTML files
-2. **SEO**: Missing meta tags and structured data
-3. **Mobile**: Some pages need better mobile optimization
-
-See `.agent/QA_AUDIT_REPORT.md` for comprehensive issues list and fixes.
-
-## 📝 Contributing
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Code Style
-
-- Use ES6+ JavaScript features
-- Follow Tailwind CSS conventions
-- Comment complex logic
-- Use semantic HTML5 elements
-
-## 🔒 Security
-
-### Reporting Vulnerabilities
-
-Please report security vulnerabilities to: [security@lumina.com](mailto:security@lumina.com)
-
-### Security Considerations
-
-1. **XSS Prevention**: All user input must be sanitized
-2. **API Keys**: Never expose API keys in client-side code
-3. **Authentication**: Implement proper auth when adding backend
-4. **CSP**: Add Content-Security-Policy headers
-5. **HTTPS**: Always use HTTPS in production
-
-## 📚 Documentation
-
-### Quick References
-- **Quick Start Guide**: [`QUICK_START.md`](QUICK_START.md) - Get started in 5 minutes
-- **Features Documentation**: [`FEATURES_DOCUMENTATION.md`](FEATURES_DOCUMENTATION.md) - Complete feature list
-- **Redesign Summary**: [`REDESIGN_SUMMARY.md`](REDESIGN_SUMMARY.md) - All changes and improvements
-
-### Detailed Guides
-- **Architecture**: See `.agent/QA_AUDIT_REPORT.md`
-- **Deployment**: See `.agent/VERCEL_DEPLOYMENT_FIX.md`
-- **Checkpoints**: See `.agent/CHECKPOINT_3_COMPLETED.md`
-
-## 🗺️ Roadmap
-
-### Version 1.1 (Next Release)
-
-- [ ] Implement backend API (Node.js/Express)
-- [ ] Real authentication with JWT
-- [ ] Database migration (IndexedDB → PostgreSQL)
-- [ ] Automated testing (unit + E2E)
-- [ ] Accessibility improvements
-
-### Version 2.0 (Future)
-
-- [ ] Real-time collaboration features
-- [ ] Mobile app (React Native)
-- [ ] Advanced analytics dashboard
-- [ ] Multi-language support (i18n)
-- [ ] Offline-first PWA
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👥 Authors
-
-- **Hari Kiran** - Initial work - [@harikiran138](https://github.com/harikiran138)
-
-## 🙏 Acknowledgments
-
-- Google Gemini AI for intelligent tutoring
-- Tailwind CSS for styling framework
-- Chart.js for data visualization
-- Vercel for hosting and analytics
-- Perspective API for content moderation
-
-## 📞 Support
-
-- **Documentation**: [GitHub Wiki](https://github.com/harikiran138/lumina-ai-learning/wiki)
-- **Issues**: [GitHub Issues](https://github.com/harikiran138/lumina-ai-learning/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/harikiran138/lumina-ai-learning/discussions)
+Visit [http://localhost:1234](http://localhost:1234)
 
 ---
 
-Made with ❤️ by the Lumina AI Learning Team
+## 🔧 Environment Variables
+
+Create a `.env.local` file with the following:
+
+```bash
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/lumina_db"
+
+# Authentication
+NEXTAUTH_SECRET="your-secret-key-here"
+NEXTAUTH_URL="http://localhost:1234"
+JWT_SECRET="your-jwt-secret-here"
+
+# OpenAI
+OPENAI_API_KEY="sk-your-api-key-here"
+```
+
+For **Vercel PostgreSQL** (Production):
+```bash
+POSTGRES_URL="..."
+POSTGRES_PRISMA_URL="..."
+POSTGRES_URL_NON_POOLING="..."
+```
+
+---
+
+## 📚 Available Scripts
+
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+
+# Database commands
+npm run db:generate  # Generate Prisma Client
+npm run db:push      # Push schema to database
+npm run db:seed      # Seed database with sample data
+npm run db:studio    # Open Prisma Studio (GUI)
+npm run db:migrate   # Create and run migrations
+npm run db:reset     # Reset database (WARNING: deletes all data)
+
+# Legacy (Express.js server - for migration reference)
+npm run legacy:start # Run old Express server
+npm run legacy:build # Build old Parcel bundle
+```
+
+---
+
+## 🗂️ Project Structure
+
+```
+lumina-ai-learning/
+├── prisma/
+│   ├── schema.prisma       # Database schema
+│   ├── seed.ts             # Seed data
+│   └── migrations/         # Migration history
+├── src/
+│   ├── app/                # Next.js App Router
+│   │   ├── api/           # API routes
+│   │   │   ├── auth/      # Authentication endpoints
+│   │   │   ├── agents/    # Agent management
+│   │   │   ├── chat/      # Chat/messaging
+│   │   │   └── db/        # Database utilities
+│   │   ├── layout.tsx     # Root layout
+│   │   ├── page.tsx       # Landing page
+│   │   └── globals.css    # Global styles
+│   ├── components/         # React components (to be added)
+│   ├── lib/               # Utilities & libraries
+│   │   ├── prisma.ts      # Prisma client
+│   │   ├── auth.ts        # Authentication utilities
+│   │   ├── utils.ts       # Helper functions
+│   │   └── agents/        # Multi-agent system
+│   │       ├── orchestrator.ts
+│   │       └── context.ts
+│   └── types/             # TypeScript types (to be added)
+├── public/                # Static assets
+├── .env.example           # Environment template
+├── next.config.mjs        # Next.js configuration
+├── tailwind.config.ts     # Tailwind configuration
+├── tsconfig.json          # TypeScript configuration
+└── package.json           # Dependencies
+```
+
+---
+
+## 🔐 API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `POST /api/auth/logout` - Logout user
+- `GET /api/auth/me` - Get current user
+
+### Agents
+- `GET /api/agents` - List all agents
+- `POST /api/agents` - Create new agent
+- `GET /api/agents/[id]` - Get agent details
+- `PATCH /api/agents/[id]` - Update agent
+- `DELETE /api/agents/[id]` - Delete agent
+- `POST /api/agents/[id]/assign` - Assign task to agent
+
+### Chat
+- `POST /api/chat/send` - Send message
+- `GET /api/chat/history` - Get chat history
+
+### Database
+- `GET /api/db/test` - Test database connectivity
+
+---
+
+## 🚀 Deployment
+
+### Vercel Deployment
+
+1. **Install Vercel CLI** (optional):
+   ```bash
+   npm i -g vercel
+   ```
+
+2. **Push to GitHub**:
+   ```bash
+   git add .
+   git commit -m "Production-ready Lumina v2.0"
+   git push origin main
+   ```
+
+3. **Deploy on Vercel**:
+   - Go to [vercel.com](https://vercel.com)
+   - Import your GitHub repository
+   - Add environment variables in Vercel dashboard
+   - Deploy!
+
+4. **Setup Database**:
+   - In Vercel dashboard, go to Storage → Create Database → Postgres
+   - Copy connection strings to environment variables
+   - Vercel will auto-run `prisma generate` on deploy
+
+5. **Seed Production Database**:
+   ```bash
+   # From local machine with production DB URL
+   DATABASE_URL="<production-url>" npm run db:seed
+   ```
+
+### Environment Variables on Vercel
+
+Add these in Vercel → Project Settings → Environment Variables:
+
+```
+DATABASE_URL=<from Vercel Postgres>
+POSTGRES_PRISMA_URL=<from Vercel Postgres>
+NEXTAUTH_SECRET=<generate strong secret>
+NEXTAUTH_URL=<your-vercel-url>
+JWT_SECRET=<generate strong secret>
+OPENAI_API_KEY=<your-openai-key>
+```
+
+---
+
+## 🧪 Testing the System
+
+### 1. Test Database Connection
+Visit: `https://your-domain.vercel.app/api/db/test`
+
+### 2. Test Authentication
+```bash
+# Register a new user
+curl -X POST https://your-domain/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123","name":"Test User"}'
+
+# Login
+curl -X POST https://your-domain/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123"}'
+```
+
+### 3. Test Agents
+Visit the dashboard or use API:
+```bash
+curl https://your-domain/api/agents
+```
+
+---
+
+## 📖 Documentation
+
+- [Architecture Overview](/.agent/PRODUCTION_UPGRADE_PLAN.md)
+- [Database Schema](/prisma/schema.prisma)
+- API Documentation (see API Endpoints section above)
+
+---
+
+## 🎯 Default Credentials (Development)
+
+After running `npm run db:seed`, use these credentials:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@lumina.ai | password123 |
+| Teacher | teacher@lumina.ai | password123 |
+| Student | student@lumina.ai | password123 |
+
+**⚠️ Change these in production!**
+
+---
+
+## 🐛 Troubleshooting
+
+### Database Connection Issues
+```bash
+# Check if PostgreSQL is running
+psql -U postgres
+
+# Regenerate Prisma Client
+npm run db:generate
+
+# Reset database (WARNING: deletes all data)
+npm run db:reset
+```
+
+### Build Errors
+```bash
+# Clear cache
+rm -rf .next node_modules package-lock.json
+npm install
+npm run dev
+```
+
+### Type Errors
+```bash
+# Run type check
+npm run type-check
+
+# Regenerate Prisma types
+npm run db:generate
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+ISC
+
+---
+
+## 🌟 Upgrade Highlights
+
+### From v1.0 to v2.0
+
+✅ Migrated from Express.js to **Next.js 14**  
+✅ Added **PostgreSQL** database with Prisma ORM  
+✅ Implemented **JWT authentication** system  
+✅ Built **Multi-Agent AI System** (6 agents)  
+✅ Created **Secure Backend APIs**  
+✅ Enhanced UI with **Glass Morphism** & dark mode  
+✅ Added **Real-time features**  
+✅ Optimized for **Vercel deployment**  
+✅ Comprehensive **documentation**  
+
+---
+
+## 📞 Support
+
+For issues and questions:
+- GitHub Issues: [Create an issue](https://github.com/harikiran138/lumina-ai-learning/issues)
+- Documentation: Check the `.agent/` folder for detailed guides
+
+---
+
+**Built with ❤️ by the Lumina Team**

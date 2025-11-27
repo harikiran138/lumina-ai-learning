@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %> - Lumina
+    </title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50 dark:bg-black text-gray-900 dark:text-white transition-colors duration-300">
+    <div id="nprogress-bar" class="htmx-indicator"></div>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Partial -->
+        <%- include('../partials/sidebar', { path: path }) %>
+
+            <!-- Main Content Wrapper -->
+            <div class="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+
+                <!-- Header Partial -->
+                <%- include('../partials/header', { title: title, user: user }) %>
+
+                    <!-- Dynamic Page Content -->
+                    <main id="main-content" class="w-full flex-grow p-6">
+                        <%- body %>
+                    </main>
+
+            </div>
+    </div>
+
+    <!-- Command Palette -->
+    <%- include('../partials/command_palette') %>
+
+        <!-- Toast Notifications -->
+        <%- include('../partials/toast') %>
+
+            <!-- Mobile Overlay -->
+            <div id="sidebar-overlay"
+                class="fixed inset-0 bg-black/50 z-20 hidden lg:hidden glass-overlay backdrop-blur-sm transition-opacity"
+                onclick="toggleSidebar()"></div>
+
+            <script>
+                function toggleSidebar() {
+                    const sidebar = document.getElementById('sidebar');
+                    const overlay = document.getElementById('sidebar-overlay');
+                    sidebar.classList.toggle('-translate-x-full');
+                    overlay.classList.toggle('hidden');
+                }
+            </script>
+</body>
+
+</html>

@@ -1,0 +1,55 @@
+# Node modules
+node_modules
+npm-debug.log
+
+# Next.js
+.next
+out
+
+# Environment variables
+.env
+.env*.local
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+*.log
+
+# Testing
+coverage
+
+# Parcel
+.parcel-cache
+dist
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# IDE
+.vscode
+.idea
+
+# Database
+*.db
+*.db-journal
+
+# Legacy folders
+views
+routes
+controllers
+models
+data
+public/css
+public/js
+src/student
+src/teacher
+src/admin
+src/workspace
+.agent

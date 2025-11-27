@@ -23,10 +23,11 @@
             } ]; %>
 
             <% menuItems.forEach(item=> { %>
-                <a href="<%= item.path %>"
-                    class="flex items-center px-4 py-2.5 font-medium rounded-lg transition-all duration-200 
+                <a href="<%= item.path %>" hx-get="<%= item.path %>" hx-target="#main-content" hx-push-url="true"
+                    onclick="setActiveLink(this)"
+                    class="nav-link flex items-center px-4 py-2.5 font-medium rounded-lg transition-all duration-200 
                <%= path === item.path 
-                   ? 'bg-gradient-to-r from-[#FF6B35]/10 to-[#FF9155]/20 text-[#FF6B35] dark:text-[#FF9155] shadow-sm' 
+                   ? 'bg-gradient-to-r from-[#FF6B35]/10 to-[#FF9155]/20 text-[#FF6B35] dark:text-[#FF9155] shadow-sm active-nav' 
                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white' %>">
                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
@@ -36,6 +37,20 @@
                 </a>
                 <% }); %>
     </nav>
+
+    <script>
+        function setActiveLink(element) {
+            // Remove active class from all links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('bg-gradient-to-r', 'from-[#FF6B35]/10', 'to-[#FF9155]/20', 'text-[#FF6B35]', 'dark:text-[#FF9155]', 'shadow-sm', 'active-nav');
+                link.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-800');
+            });
+
+            // Add active class to clicked link
+            element.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-800');
+            element.classList.add('bg-gradient-to-r', 'from-[#FF6B35]/10', 'to-[#FF9155]/20', 'text-[#FF6B35]', 'dark:text-[#FF9155]', 'shadow-sm', 'active-nav');
+        }
+    </script>
 
     <div class="p-4 border-t border-gray-200 dark:border-gray-800">
         <a href="/login"

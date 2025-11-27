@@ -1,34 +1,79 @@
 {
   "name": "lumina-ai-learning",
-  "version": "1.0.0",
-  "description": "AI-powered learning management system",
+  "version": "2.0.0",
+  "description": "Lumina - Intelligent AI Dashboard with Multi-Agent System",
   "scripts": {
-    "start": "parcel src/index.html",
-    "build": "parcel build src/index.html src/login.html --dist-dir dist --public-url ./",
-    "clean": "rimraf dist .parcel-cache"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "db:migrate": "prisma migrate dev",
+    "db:reset": "prisma migrate reset",
+    "postinstall": "prisma generate",
+    "type-check": "tsc --noEmit",
+    "legacy:start": "nodemon server.js",
+    "legacy:build": "parcel build src/index.html src/login.html --dist-dir dist --public-url ./",
+    "clean": "rimraf .next dist .parcel-cache"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/harikiran138/lumina-ai-learning.git"
   },
-  "keywords": [],
+  "keywords": [
+    "ai",
+    "learning",
+    "multi-agent",
+    "dashboard",
+    "education"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/harikiran138/lumina-ai-learning/issues"
   },
   "homepage": "https://github.com/harikiran138/lumina-ai-learning#readme",
-  "devDependencies": {
-    "parcel": "^2.16.1"
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@tailwindcss/forms": "^0.5.9",
+    "@tailwindcss/typography": "^0.5.15",
     "@vercel/analytics": "^1.5.0",
+    "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
-    "morgan": "^1.10.1"
+    "express-ejs-layouts": "^2.5.1",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "next": "^14.2.21",
+    "openai": "^4.77.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "autoprefixer": "^10.4.20",
+    "nodemon": "^3.1.11",
+    "parcel": "^2.16.1",
+    "postcss": "^8.4.49",
+    "prisma": "^5.22.0",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   }
 }

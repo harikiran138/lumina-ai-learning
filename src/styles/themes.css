@@ -1,0 +1,84 @@
+/* ==============================================
+   LUMINA THEME SYSTEM
+   Specific visual styles for Education and Productivity modes
+   ============================================== */
+
+/* ============= EDUCATION THEME (Default) ============= */
+[data-theme="education"] {
+    --font-heading: 'Inter', sans-serif;
+    --radius-primary: var(--border-radius-xl);
+    --button-padding: var(--space-sm) var(--space-lg);
+}
+
+[data-theme="education"] .theme-bg-pattern {
+    background-image: radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.05) 0%, transparent 20%),
+                      radial-gradient(circle at 90% 80%, rgba(251, 146, 60, 0.05) 0%, transparent 20%);
+}
+
+/* Warmer, softer cards for education */
+[data-theme="education"] .glass-card {
+    border-radius: var(--border-radius-2xl);
+}
+
+/* ============= PRODUCTIVITY THEME ============= */
+[data-theme="productivity"] {
+    --font-heading: 'Inter', sans-serif; /* Could use a more tech font if available */
+    --radius-primary: var(--border-radius-lg); /* Slightly sharper corners */
+    --button-padding: var(--space-sm) var(--space-md); /* More compact */
+}
+
+[data-theme="productivity"] .theme-bg-pattern {
+    background-image: linear-gradient(0deg, transparent 24%, rgba(59, 130, 246, 0.03) 25%, rgba(59, 130, 246, 0.03) 26%, transparent 27%, transparent 74%, rgba(59, 130, 246, 0.03) 75%, rgba(59, 130, 246, 0.03) 76%, transparent 77%, transparent),
+                      linear-gradient(90deg, transparent 24%, rgba(59, 130, 246, 0.03) 25%, rgba(59, 130, 246, 0.03) 26%, transparent 27%, transparent 74%, rgba(59, 130, 246, 0.03) 75%, rgba(59, 130, 246, 0.03) 76%, transparent 77%, transparent);
+    background-size: 50px 50px; /* Grid pattern */
+}
+
+/* More structured, cleaner look for productivity */
+[data-theme="productivity"] .glass-card {
+    border-radius: var(--border-radius-lg);
+    border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+[data-theme="productivity"] .glass-header {
+    backdrop-filter: blur(20px);
+}
+
+/* ============= THEME SWITCHER COMPONENT ============= */
+.theme-switcher-container {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-full);
+}
+
+.theme-toggle-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all var(--transition-fast) var(--ease-out);
+    opacity: 0.5;
+}
+
+.theme-toggle-option:hover {
+    background: var(--bg-card);
+    opacity: 0.8;
+}
+
+.theme-toggle-option.active {
+    background: var(--bg-elevated);
+    opacity: 1;
+    box-shadow: var(--shadow-sm);
+    color: var(--primary);
+}
+
+/* ============= GLOBAL ANIMATIONS ============= */
+.theme-transition {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}

@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: lumina-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lumina_user
+      POSTGRES_PASSWORD: lumina_secure_password_123
+      POSTGRES_DB: lumina_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - lumina-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lumina_user -d lumina_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lumina-app
+    restart: unless-stopped
+    environment:
+      # Database
+      DATABASE_URL: postgresql://lumina_user:lumina_secure_password_123@postgres:5432/lumina_db?schema=public
+      
+      # Authentication
+      JWT_SECRET: lumina-jwt-secret-key-change-in-production-32chars
+      NEXTAUTH_SECRET: lumina-nextauth-secret-change-in-production-32
+      NEXTAUTH_URL: http://localhost:1234
+      JWT_EXPIRES_IN: 7d
+      
+      # OpenAI (Optional - add your key)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      
+      # App Configuration
+      NODE_ENV: production
+      NEXT_PUBLIC_APP_NAME: Lumina AI Learning
+      NEXT_PUBLIC_APP_URL: http://localhost:1234
+    ports:
+      - "1234:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - lumina-network
+    command: sh -c "npx prisma db push && npx prisma db seed && npm start"
+
+  # Prisma Studio (Database GUI) - Optional
+  prisma-studio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lumina-prisma-studio
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://lumina_user:lumina_secure_password_123@postgres:5432/lumina_db?schema=public
+    ports:
+      - "5555:5555"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - lumina-network
+    command: npx prisma studio --port 5555 --hostname 0.0.0.0
+
+networks:
+  lumina-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

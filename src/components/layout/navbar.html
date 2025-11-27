@@ -1,0 +1,94 @@
+<!-- Unified Navigation Bar -->
+<nav class="glass-header fixed top-0 left-0 w-full z-fixed transition-all duration-300" id="main-navbar">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <!-- Logo and Brand -->
+            <div class="flex items-center">
+                <div class="flex-shrink-0 flex items-center gap-3 cursor-pointer" onclick="window.location.href='/'">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold shadow-lg">
+                        L
+                    </div>
+                    <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary hidden sm:block">
+                        Lumina
+                    </span>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden md:ml-10 md:flex md:space-x-4" id="nav-links">
+                    <!-- Links will be injected based on theme by JS -->
+                </div>
+            </div>
+
+            <!-- Right Side Actions -->
+            <div class="flex items-center gap-3">
+                <!-- Command Palette Trigger -->
+                <button class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-glass-border hover:bg-glass-bg transition-colors text-sm text-secondary" onclick="window.dispatchEvent(new CustomEvent('toggle-command-palette'))">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span>Search</span>
+                    <kbd class="hidden lg:inline-block px-1.5 py-0.5 text-xs rounded bg-glass-bg border border-glass-border text-tertiary">⌘K</kbd>
+                </button>
+
+                <!-- Theme Switcher -->
+                <div class="theme-switcher-wrapper hidden sm:block">
+                    <!-- Injected by ThemeManager -->
+                </div>
+
+                <!-- Mode Toggle -->
+                <button class="p-2 rounded-full hover:bg-glass-bg transition-colors text-secondary" id="theme-mode-toggle" aria-label="Toggle Dark Mode">
+                    <!-- Icon handled by ThemeManager -->
+                </button>
+
+                <!-- Notifications -->
+                <button class="p-2 rounded-full hover:bg-glass-bg transition-colors text-secondary relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+
+                <!-- Mobile Menu Button -->
+                <div class="flex items-center md:hidden">
+                    <button type="button" class="p-2 rounded-md text-secondary hover:text-primary hover:bg-glass-bg focus:outline-none" aria-controls="mobile-menu" aria-expanded="false" id="mobile-menu-btn">
+                        <span class="sr-only">Open main menu</span>
+                        <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- User Profile -->
+                <div class="relative ml-2 hidden sm:block">
+                    <button class="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
+                        <span class="sr-only">Open user menu</span>
+                        <img class="h-8 w-8 rounded-full object-cover ring-2 ring-glass-border" src="https://ui-avatars.com/api/?name=User&background=random" alt="User Avatar">
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div class="md:hidden hidden glass-frosted border-t border-glass-border" id="mobile-menu">
+        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3" id="mobile-nav-links">
+            <!-- Links injected by JS -->
+        </div>
+        <div class="pt-4 pb-4 border-t border-glass-border">
+            <div class="flex items-center px-5">
+                <div class="flex-shrink-0">
+                    <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name=User&background=random" alt="">
+                </div>
+                <div class="ml-3">
+                    <div class="text-base font-medium text-primary">Current User</div>
+                    <div class="text-sm font-medium text-secondary">user@lumina.ai</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<script>
+    // Simple inline script to initialize navbar behavior if needed
+    // Main logic should be in a separate JS file (e.g. navigation.js)
+    document.getElementById('mobile-menu-btn')?.addEventListener('click', function() {
+        const menu = document.getElementById('mobile-menu');
+        menu.classList.toggle('hidden');
+    });
+</script>

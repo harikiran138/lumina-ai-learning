@@ -1,0 +1,133 @@
+🗂️ LUMINA AI LEARNING - PROJECT STRUCTURE
+===========================================
+
+lumina-ai-learning/
+│
+├── 📁 .agent/                          # Documentation & Guides
+│   ├── ARCHITECTURE.md                 # System architecture diagrams
+│   ├── DEPLOYMENT_CHECKLIST.md         # Production deployment verification
+│   ├── PRODUCTION_UPGRADE_PLAN.md      # Transformation roadmap
+│   ├── PROJECT_COMPLETE.md             # Completion summary
+│   ├── SETUP_GUIDE.md                  # Step-by-step setup
+│   └── VERCEL_DEPLOYMENT_FIX.md        # Legacy deployment notes
+│
+├── 📁 prisma/                          # Database Configuration
+│   ├── schema.prisma                   # 🔥 Database schema (8 models)
+│   ├── seed.ts                         # Database seed data
+│   └── migrations/                     # Migration history (created on run)
+│
+├── 📁 src/                             # 🔥 Main Application Code
+│   │
+│   ├── 📁 app/                         # Next.js App Router
+│   │   │
+│   │   ├── 📁 api/                     # 🔥 Backend API Routes (12 endpoints)
+│   │   │   │
+│   │   │   ├── 📁 auth/               # Authentication (4 routes)
+│   │   │   │   ├── login/route.ts     # POST /api/auth/login
+│   │   │   │   ├── logout/route.ts    # POST /api/auth/logout
+│   │   │   │   ├── register/route.ts  # POST /api/auth/register
+│   │   │   │   └── me/route.ts        # GET /api/auth/me
+│   │   │   │
+│   │   │   ├── 📁 agents/             # Agent Management (5 routes)
+│   │   │   │   ├── route.ts           # GET/POST /api/agents
+│   │   │   │   └── [id]/             
+│   │   │   │       ├── route.ts       # GET/PATCH/DELETE /api/agents/[id]
+│   │   │   │       └── assign/
+│   │   │   │           └── route.ts   # POST /api/agents/[id]/assign
+│   │   │   │
+│   │   │   ├── 📁 chat/               # Chat System (2 routes)
+│   │   │   │   ├── send/route.ts      # POST /api/chat/send
+│   │   │   │   └── history/route.ts   # GET /api/chat/history
+│   │   │   │
+│   │   │   └── 📁 db/                 # Database Utils (1 route)
+│   │   │       └── test/route.ts      # GET /api/db/test
+│   │   │
+│   │   ├── layout.tsx                  # 🔥 Root layout (metadata, fonts)
+│   │   ├── page.tsx                    # 🔥 Landing page (premium UI)
+│   │   └── globals.css                 # 🔥 Global styles (Tailwind + custom)
+│   │
+│   ├── 📁 lib/                         # 🔥 Shared Libraries
+│   │   ├── prisma.ts                   # Prisma client singleton
+│   │   ├── auth.ts                     # JWT auth, password hashing
+│   │   ├── utils.ts                    # Helper functions
+│   │   └── 📁 agents/                  # Multi-Agent System
+│   │       ├── orchestrator.ts         # 🔥 Task orchestration (6 agents)
+│   │       └── context.ts              # Shared agent memory
+│   │
+│   ├── 📁 components/                  # React Components (ready for expansion)
+│   │
+│   ├── 📁 types/                       # TypeScript Types (ready for expansion)
+│   │
+│   └── middleware.ts                   # 🔥 Next.js auth middleware
+│
+├── 📁 public/                          # Static Assets
+│   ├── css/                            # Legacy CSS
+│   ├── js/                             # Legacy JavaScript
+│   └── images/                         # Images
+│
+├── 📁 views/                           # Legacy EJS Templates (preserved)
+│   ├── layouts/                        # EJS layouts
+│   ├── partials/                       # EJS partials
+│   └── student/                        # Legacy student views
+│
+├── 📁 node_modules/                    # Dependencies (372 packages)
+│
+├── 📁 .next/                           # Next.js build output (auto-generated)
+│
+├── 📄 Configuration Files
+│   ├── package.json                    # 🔥 Dependencies & scripts (v2.0.0)
+│   ├── package-lock.json               # Lockfile
+│   ├── next.config.mjs                 # 🔥 Next.js configuration
+│   ├── tsconfig.json                   # 🔥 TypeScript configuration
+│   ├── tailwind.config.ts              # 🔥 Tailwind CSS config
+│   ├── postcss.config.mjs              # PostCSS config
+│   ├── .gitignore                      # 🔥 Git ignore (updated)
+│   ├── .env.example                    # 🔥 Environment variables template
+│   └── .env.local                      # ⚠️ Local env (create this)
+│
+├── 📄 Documentation Files
+│   ├── README.md                       # 🔥 Main documentation
+│   ├── QUICK_REFERENCE.md              # 🔥 Quick reference card
+│   ├── FOLDER_STRUCTURE.txt            # This file!
+│   ├── BUILD_MANIFEST.md               # Legacy build info
+│   ├── COMPLETION_MANIFEST.md          # Legacy completion info
+│   ├── DEPLOYMENT_GUIDE.md             # Legacy deployment guide
+│   ├── DEVELOPER_GUIDE.md              # Legacy developer guide
+│   └── START_HERE.md                   # Legacy start guide
+│
+└── 📄 Legacy Files (Preserved for Reference)
+    ├── server.js                       # Old Express.js server
+    ├── server.out / server.err         # Server logs
+    ├── routes/                         # Old Express routes
+    ├── controllers/                    # Old controllers
+    ├── models/                         # Old models
+    └── data/                           # Old static data
+
+===========================================
+LEGEND:
+📁 = Folder
+📄 = File
+🔥 = Important/Key file for v2.0
+
+COUNTS:
+- API Routes: 12
+- Database Models: 8
+- AI Agents: 6
+- Documentation Files: 10+
+- Total Packages: 372
+
+PRIORITY FILES TO EDIT:
+1. .env.local - Setup environment variables
+2. src/app/page.tsx - Landing page
+3. src/app/api/* - API routes
+4. prisma/schema.prisma - Database schema
+5. tailwind.config.ts - UI theming
+
+START HERE:
+1. cp .env.example .env.local
+2. Edit .env.local with your credentials
+3. npm run db:push
+4. npm run db:seed
+5. npm run dev
+
+===========================================

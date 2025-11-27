@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        font-feature-settings: "rlig" 1, "calt" 1;
+    }
+}
+
+@layer components {
+
+    /* Glass Morphism Effect - Golden Theme */
+    .glass {
+        @apply bg-gradient-to-br from-black/80 to-lumina-dark-light/90 backdrop-blur-xl border border-lumina-primary/30;
+    }
+
+    .glass-hover {
+        @apply transition-all duration-300 hover:bg-lumina-primary/10 hover:border-lumina-primary/50 hover:shadow-glow;
+    }
+
+    /* Premium Button - Golden */
+    .btn-primary {
+        @apply bg-gradient-to-r from-lumina-primary to-lumina-secondary text-black px-6 py-3 rounded-xl font-bold shadow-gold-glow transition-all duration-300 hover:shadow-[0_0_50px_rgba(255, 215, 0, 1)] hover:scale-105;
+    }
+
+    .btn-secondary {
+        @apply glass glass-hover px-6 py-3 rounded-xl font-semibold transition-all duration-300 text-lumina-primary border-lumina-primary/50;
+    }
+
+    /* Card Styles - Golden Theme */
+    .card {
+        @apply glass rounded-2xl p-6 shadow-glass border-lumina-primary/20;
+    }
+
+    .card-hover {
+        @apply card glass-hover cursor-pointer;
+    }
+
+    /* Input Styles - Golden Theme */
+    .input {
+        @apply glass px-4 py-3 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-lumina-primary/70 focus:border-lumina-primary transition-all text-lumina-accent placeholder-lumina-accent/50;
+    }
+
+    /* Agent Status Colors - Golden Theme */
+    .status-idle {
+        @apply bg-lumina-primary/20 text-lumina-primary border border-lumina-primary/40;
+    }
+
+    .status-busy {
+        @apply bg-lumina-secondary/20 text-lumina-secondary border border-lumina-secondary/40 animate-pulse;
+    }
+
+    .status-error {
+        @apply bg-red-500/20 text-red-400 border border-red-500/40;
+    }
+
+    .status-offline {
+        @apply bg-gray-500/20 text-gray-400 border border-gray-500/40;
+    }
+}
+
+@layer utilities {
+    .text-gradient {
+        @apply bg-gradient-to-r from-lumina-primary via-lumina-secondary to-lumina-primary bg-clip-text text-transparent;
+    }
+
+    .animate-gradient {
+        background-size: 200% 200%;
+        animation: gradient 3s ease infinite;
+    }
+}
+
+@keyframes gradient {
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+/* Custom Scrollbar - Golden Theme */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-black;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-lumina-primary/50 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    @apply bg-lumina-primary;
+}
+
+/* Loading Animation */
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+.loading-shimmer {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(to right,
+            transparent 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 100%);
+    background-size: 1000px 100%;
+}

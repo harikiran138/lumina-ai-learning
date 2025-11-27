@@ -1,0 +1,92 @@
+{
+    "users": [
+        {
+            "id": 1,
+            "name": "Alex Turner",
+            "role": "Student",
+            "email": "alex@lumina.ai",
+            "xp": 850,
+            "streak": 5
+        }
+    ],
+    "courses": [
+        {
+            "id": 1,
+            "title": "Quantum Physics I",
+            "category": "Science",
+            "progress": 75,
+            "color": "blue",
+            "image": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80"
+        },
+        {
+            "id": 2,
+            "title": "Calculus for ML",
+            "category": "Math",
+            "progress": 30,
+            "color": "purple",
+            "image": "https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=800&q=80"
+        },
+        {
+            "id": 3,
+            "title": "React & Node.js",
+            "category": "Programming",
+            "progress": 0,
+            "color": "green",
+            "image": "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=800&q=80"
+        },
+        {
+            "id": 4,
+            "title": "Organic Chemistry",
+            "category": "Science",
+            "progress": 12,
+            "color": "orange",
+            "image": "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80"
+        },
+        {
+            "id": 5,
+            "title": "Data Structures",
+            "category": "CS",
+            "progress": 90,
+            "color": "red",
+            "image": "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&w=800&q=80"
+        },
+        {
+            "id": 6,
+            "title": "World History",
+            "category": "Humanities",
+            "progress": 0,
+            "color": "yellow",
+            "image": "https://images.unsplash.com/photo-1461360370896-922624d12aa1?auto=format&fit=crop&w=800&q=80"
+        }
+    ],
+    "notes": [
+        {
+            "id": 1,
+            "title": "Physics: Newton Laws",
+            "date": "2 mins ago",
+            "preview": "Three laws of motion described by Isaac Newton...",
+            "active": true
+        },
+        {
+            "id": 2,
+            "title": "Calculus Formulas",
+            "date": "Yesterday",
+            "preview": "Derivatives of trigonometric functions...",
+            "active": false
+        },
+        {
+            "id": 3,
+            "title": "History Essay Draft",
+            "date": "Nov 24",
+            "preview": "The impact of industrial revolution on...",
+            "active": false
+        },
+        {
+            "id": 4,
+            "title": "Project Ideas",
+            "date": "Nov 20",
+            "preview": "1. AI Tutor App 2. Weather Predictor...",
+            "active": false
+        }
+    ]
+}

@@ -1,52 +1,92 @@
 <!-- Header Partial -->
 <header
-    class="h-16 flex items-center justify-between px-6 bg-white/80 dark:bg-[#111111]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex-shrink-0 sticky top-0 z-20">
+    class="h-16 flex items-center justify-between px-6 bg-white/80 dark:bg-[#111111]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex-shrink-0 sticky top-0 z-20 transition-colors duration-300">
     <div class="flex items-center">
-        <button id="menu-button"
-            class="lg:hidden mr-4 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-            onclick="toggleSidebar()">
+        <button id="mobile-menu-btn"
+            class="lg:hidden mr-4 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Toggle Menu">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
         </button>
         <div class="flex items-center gap-3">
-            <div class="relative">
+            <div class="relative group cursor-pointer">
                 <div
-                    class="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF9155] flex items-center justify-center text-white font-bold text-lg border-2 border-white dark:border-black">
+                    class="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF9155] flex items-center justify-center text-white font-bold text-lg border-2 border-white dark:border-black shadow-md transition-transform group-hover:scale-105">
                     <%= user.name.charAt(0) %>
                 </div>
                 <span
                     class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-400 border-2 border-white dark:border-[#111111]"></span>
             </div>
-            <div>
-                <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <div class="hidden md:block">
+                <h1 class="text-sm font-bold text-gray-900 dark:text-white leading-tight">
                     <%= title %>
                 </h1>
-                <p class="text-xs text-green-500 dark:text-green-400 font-semibold">Online</p>
+                <p class="text-[10px] text-green-500 dark:text-green-400 font-bold uppercase tracking-wider">Online</p>
             </div>
         </div>
     </div>
-    <div class="flex items-center space-x-4">
+    <div class="flex items-center space-x-3 md:space-x-4">
+        <!-- Theme Toggle -->
         <button id="theme-toggle"
-            class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            class="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/50"
+            aria-label="Toggle Theme">
+            <!-- Sun Icon -->
             <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden dark:block" fill="none"
                 viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
+            <!-- Moon Icon -->
             <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 block dark:hidden" fill="none"
                 viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
         </button>
+
+        <!-- Notifications (Mock) -->
+        <button
+            class="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-[#FF6B35]"></span>
+        </button>
+
+        <!-- User Role Badge -->
         <div
             class="hidden md:flex items-center px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-            <span class="w-2 h-2 rounded-full bg-[#FF6B35] mr-2"></span>
+            <span class="w-2 h-2 rounded-full bg-[#FF6B35] mr-2 animate-pulse"></span>
             <span class="text-xs font-medium text-gray-600 dark:text-gray-300">
                 <%= user.role %>
             </span>
         </div>
     </div>
 </header>
+
+<script>
+    // Mobile Menu Logic
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (menuBtn && sidebar) {
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleSidebar();
+        });
+    }
+
+    // Theme Toggle Logic
+    const themeBtn = document.getElementById('theme-toggle');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+    }
+</script>
