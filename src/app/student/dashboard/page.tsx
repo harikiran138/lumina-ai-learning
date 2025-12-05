@@ -124,47 +124,47 @@ export default function StudentDashboard() {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 hover:border-amber-500/50 transition-colors">
+                <div className="glass-card p-5 hover:border-lumina-primary/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">CURRENT STREAK</span>
+                        <span className="text-xs font-semibold text-gray-400">CURRENT STREAK</span>
                         <span className="text-2xl">🔥</span>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{dashboardData?.currentStreak || 0}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Days in a row</p>
+                    <p className="text-3xl font-bold text-white">{dashboardData?.currentStreak || 0}</p>
+                    <p className="text-xs text-gray-400 mt-1">Days in a row</p>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 hover:border-amber-500/50 transition-colors">
+                <div className="glass-card p-5 hover:border-lumina-primary/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">ENROLLED</span>
+                        <span className="text-xs font-semibold text-gray-400">ENROLLED</span>
                         <span className="text-2xl">📚</span>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{dashboardData?.enrolledCourses?.length || 0}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Active courses</p>
+                    <p className="text-3xl font-bold text-white">{dashboardData?.enrolledCourses?.length || 0}</p>
+                    <p className="text-xs text-gray-400 mt-1">Active courses</p>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 hover:border-amber-500/50 transition-colors">
+                <div className="glass-card p-5 hover:border-lumina-primary/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">TOTAL HOURS</span>
+                        <span className="text-xs font-semibold text-gray-400">TOTAL HOURS</span>
                         <span className="text-2xl">⏱️</span>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">12</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Learning time</p>
+                    <p className="text-3xl font-bold text-white">12</p>
+                    <p className="text-xs text-gray-400 mt-1">Learning time</p>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 hover:border-amber-500/50 transition-colors">
+                <div className="glass-card p-5 hover:border-lumina-primary/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">MASTERY</span>
+                        <span className="text-xs font-semibold text-gray-400">MASTERY</span>
                         <span className="text-2xl">🎯</span>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{dashboardData?.overallMastery || 0}%</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Average %</p>
+                    <p className="text-3xl font-bold text-white">{dashboardData?.overallMastery || 0}%</p>
+                    <p className="text-xs text-gray-400 mt-1">Average %</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Progress Chart */}
-                <div className="lg:col-span-2 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
-                    <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Learning Progress This Month</h2>
+                <div className="lg:col-span-2 glass-card p-6">
+                    <h2 className="text-lg font-semibold mb-4 text-white">Learning Progress This Month</h2>
                     <div className="h-64">
                         <Line
                             data={progressData}
@@ -173,16 +173,16 @@ export default function StudentDashboard() {
                                 maintainAspectRatio: false,
                                 scales: {
                                     y: {
-                                        grid: { color: chartColors?.grid },
-                                        ticks: { color: chartColors?.text }
+                                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                        ticks: { color: 'rgba(255, 255, 255, 0.7)' }
                                     },
                                     x: {
-                                        grid: { color: chartColors?.grid },
-                                        ticks: { color: chartColors?.text }
+                                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                        ticks: { color: 'rgba(255, 255, 255, 0.7)' }
                                     }
                                 },
                                 plugins: {
-                                    legend: { labels: { color: chartColors?.text } }
+                                    legend: { labels: { color: 'rgba(255, 255, 255, 0.7)' } }
                                 }
                             }}
                         />
@@ -190,28 +190,28 @@ export default function StudentDashboard() {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
-                    <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Quick Actions</h2>
+                <div className="glass-card p-6">
+                    <h2 className="text-lg font-semibold mb-4 text-white">Quick Actions</h2>
                     <div className="space-y-3">
-                        <Link href="/student/ai_tutor" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border border-transparent hover:border-amber-500/20">
+                        <Link href="/student/ai_tutor" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-lumina-primary/20">
                             <span className="text-2xl">🤖</span>
                             <div>
-                                <p className="font-semibold text-sm text-gray-900 dark:text-white">Ask AI Tutor</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Get instant help</p>
+                                <p className="font-semibold text-sm text-white">Ask AI Tutor</p>
+                                <p className="text-xs text-gray-400">Get instant help</p>
                             </div>
                         </Link>
-                        <Link href="/student/assessment" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border border-transparent hover:border-amber-500/20">
+                        <Link href="/student/assessment" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-lumina-primary/20">
                             <span className="text-2xl">✏️</span>
                             <div>
-                                <p className="font-semibold text-sm text-gray-900 dark:text-white">Take Quiz</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Test your knowledge</p>
+                                <p className="font-semibold text-sm text-white">Take Quiz</p>
+                                <p className="text-xs text-gray-400">Test your knowledge</p>
                             </div>
                         </Link>
-                        <Link href="/student/my_notes" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border border-transparent hover:border-amber-500/20">
+                        <Link href="/student/my_notes" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-lumina-primary/20">
                             <span className="text-2xl">📝</span>
                             <div>
-                                <p className="font-semibold text-sm text-gray-900 dark:text-white">View Notes</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Review your notes</p>
+                                <p className="font-semibold text-sm text-white">View Notes</p>
+                                <p className="text-xs text-gray-400">Review your notes</p>
                             </div>
                         </Link>
                     </div>
@@ -228,30 +228,30 @@ export default function StudentDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {dashboardData?.enrolledCourses?.length > 0 ? (
                         dashboardData.enrolledCourses.slice(0, 3).map((course: any) => (
-                            <div key={course.id} className="bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-md transition-shadow">
-                                <div className="h-40 bg-gray-200 dark:bg-gray-800 relative">
+                            <div key={course.id} className="glass-card overflow-hidden hover:shadow-gold-glow transition-shadow">
+                                <div className="h-40 bg-white/5 relative">
                                     {/* Placeholder for course image */}
-                                    <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                                    <div className="absolute inset-0 flex items-center justify-center text-gray-500">
                                         <BookOpen className="w-12 h-12" />
                                     </div>
                                 </div>
                                 <div className="p-4">
-                                    <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">{course.name}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{course.description}</p>
+                                    <h3 className="font-bold text-lg mb-2 text-white">{course.name}</h3>
+                                    <p className="text-sm text-gray-400 mb-3 line-clamp-2">{course.description}</p>
                                     <div className="mb-3">
                                         <div className="flex justify-between text-xs mb-1">
-                                            <span className="font-semibold text-gray-500 dark:text-gray-400">Progress</span>
-                                            <span className="text-amber-500">{course.progress || 0}%</span>
+                                            <span className="font-semibold text-gray-400">Progress</span>
+                                            <span className="text-lumina-primary">{course.progress || 0}%</span>
                                         </div>
-                                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                        <div className="w-full bg-white/10 rounded-full h-2">
                                             <div className="bg-gradient-to-r from-amber-400 to-amber-600 h-2 rounded-full" style={{ width: `${course.progress || 0}%` }}></div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-between mb-3 text-sm text-gray-500 dark:text-gray-400">
+                                    <div className="flex items-center justify-between mb-3 text-sm text-gray-400">
                                         <div className="flex items-center gap-2"><span>🎯</span>{course.mastery || 0}% mastery</div>
                                         <div>🔥 {course.streak || 0}</div>
                                     </div>
-                                    <Link href={`/student/course/${course.id}`} className="block text-center px-4 py-2 bg-amber-500 text-white font-bold rounded-lg hover:bg-amber-600 transition-colors">
+                                    <Link href={`/student/course/${course.id}`} className="glass-button block text-center">
                                         Continue Learning
                                     </Link>
                                 </div>
@@ -270,8 +270,8 @@ export default function StudentDashboard() {
 
             {/* Bottom Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
-                    <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Topic Mastery</h3>
+                <div className="glass-card p-6">
+                    <h3 className="text-lg font-semibold mb-4 text-white">Topic Mastery</h3>
                     <div className="h-48 flex justify-center">
                         <Doughnut
                             data={masteryData}
@@ -279,7 +279,7 @@ export default function StudentDashboard() {
                                 responsive: true,
                                 maintainAspectRatio: false,
                                 plugins: {
-                                    legend: { labels: { color: chartColors?.text } }
+                                    legend: { labels: { color: 'rgba(255, 255, 255, 0.7)' } }
                                 }
                             }}
                         />
@@ -289,32 +289,32 @@ export default function StudentDashboard() {
                     </div>
                 </div>
 
-                <div className="lg:col-span-2 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800">
-                    <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Your Achievements</h3>
+                <div className="lg:col-span-2 glass-card p-6">
+                    <h3 className="text-lg font-semibold mb-4 text-white">Your Achievements</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
-                            <div className="w-12 h-12 mx-auto mb-2 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center text-2xl shadow-sm">
+                        <div className="text-center p-4 rounded-lg bg-white/5">
+                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-2xl shadow-sm">
                                 👶
                             </div>
-                            <p className="text-xs font-semibold text-gray-900 dark:text-white">First Step</p>
+                            <p className="text-xs font-semibold text-white">First Step</p>
                         </div>
-                        <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
-                            <div className="w-12 h-12 mx-auto mb-2 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center text-2xl shadow-sm">
+                        <div className="text-center p-4 rounded-lg bg-white/5">
+                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-2xl shadow-sm">
                                 🔥
                             </div>
-                            <p className="text-xs font-semibold text-gray-900 dark:text-white">7-Day Streak</p>
+                            <p className="text-xs font-semibold text-white">7-Day Streak</p>
                         </div>
-                        <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800 opacity-50">
-                            <div className="w-12 h-12 mx-auto mb-2 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center text-2xl shadow-sm grayscale">
+                        <div className="text-center p-4 rounded-lg bg-white/5 opacity-50">
+                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-2xl shadow-sm grayscale">
                                 🏆
                             </div>
-                            <p className="text-xs font-semibold text-gray-900 dark:text-white">Course Master</p>
+                            <p className="text-xs font-semibold text-white">Course Master</p>
                         </div>
-                        <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800 opacity-50">
-                            <div className="w-12 h-12 mx-auto mb-2 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center text-2xl shadow-sm grayscale">
+                        <div className="text-center p-4 rounded-lg bg-white/5 opacity-50">
+                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-2xl shadow-sm grayscale">
                                 🧠
                             </div>
-                            <p className="text-xs font-semibold text-gray-900 dark:text-white">Quiz Whiz</p>
+                            <p className="text-xs font-semibold text-white">Quiz Whiz</p>
                         </div>
                     </div>
                 </div>

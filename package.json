@@ -6,10 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "parcel:start": "parcel src/index.html src/login.html src/admin/*.html src/teacher/*.html src/student/*.html",
-    "parcel:build": "./build.sh",
-    "parcel:clean": "rm -rf dist .parcel-cache"
+    "lint": "next lint"
   },
   "repository": {
     "type": "git",

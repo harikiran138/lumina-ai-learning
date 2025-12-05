@@ -11,8 +11,19 @@ class LuminaAPI {
     // Authentication methods
     async login(email, password, role = null) {
         try {
-            const users = await this.db.getAll('users');
+            let users = await this.db.getAll('users');
             const user = users.find(u => u.email === email && u.status === 'active');
+
+            if (!user) {
+                // Auto-seed if it's a demo account and missing
+                const demoEmails = ['admin@lumina.com', 'teacher@lumina.com', 'student@lumina.com'];
+                if (demoEmails.includes(email)) {
+                    console.log('Demo user not found, attempting to seed...');
+                    await this.db.seedInitialData(true);
+                    users = await this.db.getAll('users');
+                    user = users.find(u => u.email === email && u.status === 'active');
+                }
+            }
 
             if (!user) {
                 throw new Error('User not found or account suspended');
