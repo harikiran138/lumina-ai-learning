@@ -16,3 +16,4 @@ coverage/
 
 # Production
 /build
+dist
