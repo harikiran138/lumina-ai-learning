@@ -6,7 +6,7 @@
 class LuminaDB {
     constructor() {
         this.dbName = 'LuminaDB';
-        this.version = 1;
+        this.version = 3;
         this.db = null;
     }
 

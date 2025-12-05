@@ -81,7 +81,7 @@ export interface SystemHealth {
 
 class LuminaDB {
     private dbName = 'LuminaDB';
-    private version = 1;
+    private version = 3;
     private db: IDBDatabase | null = null;
     private static instance: LuminaDB;
 
