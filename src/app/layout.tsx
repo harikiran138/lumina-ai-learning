@@ -20,9 +20,9 @@ export default function RootLayout({
             <body className={inter.className}>
                 {children}
                 {/* Global Scripts */}
-                <Script src="/js/utils.js?v=3" strategy="beforeInteractive" />
-                <Script src="/js/database.js?v=3" strategy="beforeInteractive" />
-                <Script src="/js/api.js?v=3" strategy="beforeInteractive" />
+                <Script src="/js/utils.js?v=4" strategy="beforeInteractive" />
+                <Script src="/js/database.js?v=4" strategy="beforeInteractive" />
+                <Script src="/js/api.js?v=4" strategy="beforeInteractive" />
             </body>
         </html>
     );
