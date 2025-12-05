@@ -4,7 +4,6 @@ const nextConfig = {
     images: {
         domains: ['placehold.co'], // Allow placeholder images
     },
-    distDir: 'dist',
 };
 
 export default nextConfig;
