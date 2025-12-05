@@ -113,13 +113,14 @@ export default function TeacherDashboard() {
 
     return (
         <>
-            .gradient-text {
-                background: linear-gradient(135deg, #FFD700 0%, #FDB931 100%);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            <style jsx global>{`
+                .gradient-text {
+                    background: linear-gradient(135deg, #FFD700 0%, #FDB931 100%);
+                    background-clip: text;
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
                 }
-            `}</style >
+            `}</style>
 
             <div id="top-nav-container"></div>
             <div className="flex bg-black min-h-screen text-white relative overflow-hidden">
