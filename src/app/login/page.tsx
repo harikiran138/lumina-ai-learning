@@ -102,6 +102,48 @@ export default function LoginPage() {
         await performLogin(email, password);
     };
 
+    const handleSignUp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+
+        try {
+            if ((window as any).luminaAPI && typeof (window as any).luminaAPI.createUser === 'function') {
+                const newUser = {
+                    name,
+                    email,
+                    password,
+                    role,
+                    status: 'active',
+                    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+                    preferences: {
+                        theme: 'dark',
+                        notifications: true
+                    },
+                    createdAt: new Date().toISOString()
+                };
+
+                console.log('Creating new user:', newUser);
+                await (window as any).luminaAPI.createUser(newUser);
+                console.log('User created successfully, logging in...');
+
+                // Auto login after signup
+                await performLogin(email, password);
+            } else {
+                console.error('LuminaAPI not fully initialized');
+                alert('System is initializing, please try again in a moment.');
+                setIsLoading(false);
+            }
+        } catch (error: any) {
+            console.error('Signup failed:', error);
+            if ((window as any).luminaUI) {
+                (window as any).luminaUI.showNotification(error.message || 'Signup failed', 'error');
+            } else {
+                alert(error.message || 'Signup failed');
+            }
+            setIsLoading(false);
+        }
+    };
+
     const quickLogin = async (role: string) => {
         const defaultUsers: any = {
             admin: { email: 'admin@lumina.com', password: 'admin123' },
