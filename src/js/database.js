@@ -262,14 +262,14 @@ class LuminaDB {
             timestamp: new Date().toISOString(),
             type: 'text'
         };
-        
+
         // Update room's last activity
         const room = await this.getChatRoom(roomId);
         if (room) {
             room.lastActivity = new Date().toISOString();
             await this.put('chatRooms', room);
         }
-        
+
         return this.add('messages', message);
     }
 
@@ -408,15 +408,31 @@ class LuminaDB {
     async seedInitialData(force = false) {
         // Check if data already exists
         const users = await this.getAll('users');
-        if (users.length > 0 && !force) return; // Data already seeded
 
-        // If forcing, add demo users even if others exist
-        if (force) {
+        // Check specifically for demo users and add them if missing
+        const demoUsers = [
+            { id: 'admin_demo', email: 'admin@lumina.com' },
+            { id: 'teacher_demo', email: 'teacher@lumina.com' },
+            { id: 'student_demo', email: 'student@lumina.com' }
+        ];
+
+        let needsSeeding = false;
+        for (const demo of demoUsers) {
+            const exists = users.find(u => u.email === demo.email);
+            if (!exists) {
+                needsSeeding = true;
+                break;
+            }
+        }
+
+        // If forcing or if critical demo users are missing
+        if (force || needsSeeding) {
+            console.log('Seeding missing demo users...');
             // Only add demo users if they don't exist
             const existingDemoAdmin = users.find(u => u.email === 'admin@lumina.com');
             const existingDemoTeacher = users.find(u => u.email === 'teacher@lumina.com');
             const existingDemoStudent = users.find(u => u.email === 'student@lumina.com');
-            
+
             if (!existingDemoAdmin) {
                 await this.put('users', {
                     id: 'admin_demo',
@@ -430,7 +446,7 @@ class LuminaDB {
                     createdAt: new Date().toISOString()
                 });
             }
-            
+
             if (!existingDemoTeacher) {
                 await this.put('users', {
                     id: 'teacher_demo',
@@ -444,7 +460,7 @@ class LuminaDB {
                     createdAt: new Date().toISOString()
                 });
             }
-            
+
             if (!existingDemoStudent) {
                 await this.put('users', {
                     id: 'student_demo',
@@ -458,9 +474,11 @@ class LuminaDB {
                     createdAt: new Date().toISOString()
                 });
             }
-            
-            return;
+
+            if (!force && users.length > 0) return;
         }
+
+        if (users.length > 0 && !needsSeeding && !force) return;
 
         // Create default users
         const defaultUsers = [
@@ -675,12 +693,23 @@ window.LuminaDB = LuminaDB;
 window.luminaDB = new LuminaDB();
 
 // Initialize database when DOM is loaded
-document.addEventListener('DOMContentLoaded', async () => {
+// Initialize database helper
+window.initLuminaDB = async () => {
     try {
+        if (!window.luminaDB) {
+            window.luminaDB = new LuminaDB();
+        }
         await window.luminaDB.init();
         await window.luminaDB.seedInitialData();
-        console.log('Lumina Database initialized successfully');
+        console.log('Lumina Database initialized and seeded successfully');
+        return true;
     } catch (error) {
         console.error('Failed to initialize database:', error);
+        return false;
     }
-});
+};
+
+// Auto-initialize when script loads
+if (typeof window !== 'undefined') {
+    window.initLuminaDB();
+}

@@ -9,3 +9,10 @@ build/
 coverage/
 .vscode/
 .parcel-cache/
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
