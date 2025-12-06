@@ -119,6 +119,13 @@ class RealAPI {
         return await getStudentProfile(user.email);
     }
 
+    async getStudentProgress(): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return null;
+        const { getStudentProgress } = await import('@/app/actions/data');
+        return await getStudentProgress(user.email);
+    }
+
     async updateProfile(data: any): Promise<any> {
         const user = await this.getCurrentUser();
         if (!user) return { success: false, error: 'Not authenticated' };
