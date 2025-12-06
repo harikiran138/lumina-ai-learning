@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
+import { CreateMLCEngine } from "@mlc-ai/web-llm";
 import {
     Send,
     Bot,
@@ -13,9 +14,12 @@ import {
     MoreVertical,
     Trash2,
     Copy,
-    Check
+    Check,
+    Loader2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+
+const SELECTED_MODEL = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
 
 export default function AITutorPage() {
     const [messages, setMessages] = useState<any[]>([]);
@@ -23,11 +27,49 @@ export default function AITutorPage() {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    // AI Engine State
+    const engine = useRef<any>(null);
+    const [isEngineReady, setIsEngineReady] = useState(false);
+    const [loadingProgress, setLoadingProgress] = useState('');
+    const [progressPercent, setProgressPercent] = useState(0);
+
     // Session Management
     const [currentSessionId, setCurrentSessionId] = useState<string>('');
     const [sessions, setSessions] = useState<Record<string, any[]>>({});
 
-    // Initial load
+    // Initialize WebLLM Engine
+    useEffect(() => {
+        const initEngine = async () => {
+            if (engine.current) return;
+
+            try {
+                setLoadingProgress('Initializing AI Engine...');
+                engine.current = await CreateMLCEngine(
+                    SELECTED_MODEL,
+                    {
+                        initProgressCallback: (report) => {
+                            setLoadingProgress(report.text);
+                            // Simple heuristic to extract percentage from text if available or based on steps
+                            // Report format usually "[1/3] Loading... 50%"
+                            const match = report.text.match(/(\d+)%/);
+                            if (match) {
+                                setProgressPercent(parseInt(match[1]));
+                            }
+                        },
+                    }
+                );
+                setIsEngineReady(true);
+                setLoadingProgress('');
+            } catch (err) {
+                console.error("Failed to load WebLLM:", err);
+                setLoadingProgress('Failed to load AI. Please check your connection and reload.');
+            }
+        };
+
+        initEngine();
+    }, []);
+
+    // Initial load history
     useEffect(() => {
         // Generate or retrieve session ID
         let sessionId = sessionStorage.getItem('lumina_chat_session_id');
@@ -89,11 +131,15 @@ export default function AITutorPage() {
     // Auto-scroll
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, isLoading]);
+    }, [messages, isLoading, loadingProgress]);
 
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!input.trim()) return;
+        if (!isEngineReady) {
+            alert("AI Engine is still loading. Please wait a moment.");
+            return;
+        }
 
         const userMsg = { sender: 'me', text: input, timestamp: new Date(), sessionId: currentSessionId };
 
@@ -104,41 +150,36 @@ export default function AITutorPage() {
         setInput('');
         setIsLoading(true);
 
-        // Save to DB
-        await api.saveChatMessage({ sender: 'me', text: userMsg.text, sessionId: currentSessionId });
+        // Save to DB (Async)
+        api.saveChatMessage({ sender: 'me', text: userMsg.text, sessionId: currentSessionId });
 
         try {
             // Prepare messages for context
-            const contextMessages = messages.slice(-10).map(m => ({
-                role: m.sender === 'me' ? 'user' : 'assistant',
-                content: m.text
-            }));
-            contextMessages.push({ role: 'user', content: userMsg.text });
+            const contextMessages = [
+                { role: 'system', content: 'You are an AI Tutor for students. Be helpful, concise, and educational.' },
+                ...messages.slice(-10).map(m => ({
+                    role: m.sender === 'me' ? 'user' : 'assistant',
+                    content: m.text
+                })),
+                { role: 'user', content: userMsg.text }
+            ];
 
-            // Call Server Action
-            const response = await (api as any).chatWithAI(contextMessages);
+            // Local Inference
+            const reply = await engine.current.chat.completions.create({
+                messages: contextMessages
+            });
+            const aiText = reply.choices[0].message.content;
 
-            if (response.success) {
-                const aiText = response.message;
-                const aiMsg = { sender: 'AI Tutor', text: aiText, timestamp: new Date(), sessionId: currentSessionId };
-                setMessages(prev => [...prev, aiMsg]);
-                updateSessionsState(currentSessionId, aiMsg);
+            const aiMsg = { sender: 'AI Tutor', text: aiText, timestamp: new Date(), sessionId: currentSessionId };
+            setMessages(prev => [...prev, aiMsg]);
+            updateSessionsState(currentSessionId, aiMsg);
 
-                // Save AI response to DB
-                await api.saveChatMessage({ sender: 'AI Tutor', text: aiText, sessionId: currentSessionId });
-            } else {
-                console.error('AI Error:', response.error);
-                const errorMsg = {
-                    sender: 'AI Tutor',
-                    text: "I'm having trouble connecting right now. Please try again later.",
-                    timestamp: new Date()
-                };
-                setMessages(prev => [...prev, errorMsg]);
-            }
+            // Save AI response to DB
+            await api.saveChatMessage({ sender: 'AI Tutor', text: aiText, sessionId: currentSessionId });
 
         } catch (error) {
             console.error('AI Error:', error);
-            const errorMsg = { sender: 'AI Tutor', text: "Error connecting to AI service.", timestamp: new Date() };
+            const errorMsg = { sender: 'AI Tutor', text: "Error generating response locally.", timestamp: new Date() };
             setMessages(prev => [...prev, errorMsg]);
         } finally {
             setIsLoading(false);
@@ -202,10 +243,12 @@ export default function AITutorPage() {
                             <Bot className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-white font-bold">AI Tutor</h1>
+                            <h1 className="text-white font-bold">AI Tutor (Run Locally)</h1>
                             <div className="flex items-center gap-1.5">
-                                <span className={`w-2 h-2 rounded-full animate-pulse ${isLoading ? 'bg-amber-500' : 'bg-green-500'}`}></span>
-                                <span className="text-xs text-gray-400">{isLoading ? 'Typing...' : 'Online'}</span>
+                                <span className={`w-2 h-2 rounded-full animate-pulse ${isLoading ? 'bg-amber-500' : isEngineReady ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                <span className="text-xs text-gray-400">
+                                    {isLoading ? 'Thinking...' : isEngineReady ? 'Ready (WebGPU)' : 'Loading Model...'}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -213,11 +256,25 @@ export default function AITutorPage() {
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                    {messages.length === 0 ? (
+                    {/* Model Loading Status */}
+                    {!isEngineReady && (
+                        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4 text-center">
+                            <Loader2 className="w-6 h-6 text-blue-400 animate-spin mx-auto mb-2" />
+                            <p className="text-blue-200 font-semibold text-sm mb-1">{loadingProgress || "Initializing..."}</p>
+                            <p className="text-blue-300/60 text-xs">First load will download ~2GB of model data to your browser cache.</p>
+                            {progressPercent > 0 && (
+                                <div className="mt-2 h-1.5 w-full bg-blue-900/50 rounded-full overflow-hidden">
+                                    <div className="h-full bg-blue-400 transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {messages.length === 0 && isEngineReady ? (
                         <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-50">
                             <Sparkles className="w-16 h-16 text-lumina-primary mb-4" />
                             <h3 className="text-xl font-bold text-white mb-2">How can I help you today?</h3>
-                            <p className="text-gray-400 max-w-md">I can explain complex topics, create quizzes, or check your specific questions. Just type below!</p>
+                            <p className="text-gray-400 max-w-md">I am running locally on your device! Ask me anything.</p>
                         </div>
                     ) : (
                         messages.map((msg, idx) => (
@@ -255,11 +312,7 @@ export default function AITutorPage() {
                                 <Bot className="w-5 h-5" />
                             </div>
                             <div className="bg-white/5 px-4 py-3 rounded-2xl rounded-tl-none border border-white/5">
-                                <div className="flex gap-1">
-                                    <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                    <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                    <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                                </div>
+                                <span className="text-gray-400 text-sm animate-pulse">Generating response (local GPU)...</span>
                             </div>
                         </div>
                     )}
@@ -273,19 +326,20 @@ export default function AITutorPage() {
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Type your question..."
-                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3.5 text-white placeholder:text-gray-500 focus:border-lumina-primary focus:bg-white/10 outline-none transition-all"
+                            placeholder={isEngineReady ? "Type your question..." : "Waiting for model to load..."}
+                            disabled={!isEngineReady}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3.5 text-white placeholder:text-gray-500 focus:border-lumina-primary focus:bg-white/10 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                         <button
                             type="submit"
-                            disabled={!input.trim() || isLoading}
+                            disabled={!input.trim() || isLoading || !isEngineReady}
                             className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-lumina-primary text-black rounded-lg hover:bg-lumina-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             <Send className="w-4 h-4" />
                         </button>
                     </form>
                     <p className="text-center text-[10px] text-gray-500 mt-2">
-                        AI Tutor can make mistakes. Consider checking important information.
+                        Running Llama-3.2 (3B) directly on your device via WebLLM.
                     </p>
                 </div>
             </div>
