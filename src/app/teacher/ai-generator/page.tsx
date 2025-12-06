@@ -16,7 +16,8 @@ import {
     Play,
     Edit2,
     Trash2,
-    Plus
+    Plus,
+    Sparkles
 } from 'lucide-react';
 
 const SELECTED_MODEL = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
