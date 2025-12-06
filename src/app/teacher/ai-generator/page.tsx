@@ -24,6 +24,7 @@ const SELECTED_MODEL = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
 
 interface Lesson {
     title: string;
+    content?: string;
 }
 
 interface Module {
@@ -180,7 +181,9 @@ export default function CourseGeneratorPage() {
         if (currentModule) newModules.push(currentModule);
 
         if (newModules.length === 0) {
-            newModules.push({ title: "Introduction", lessons: [{ title: "Overview", content: "Introduction to the course material." }] });
+            if (newModules.length === 0) {
+                newModules.push({ title: "Introduction", lessons: [{ title: "Overview", content: "Introduction to the course material." }] });
+            }
         }
 
         setModules(newModules);
@@ -374,36 +377,74 @@ export default function CourseGeneratorPage() {
                                     </div>
                                     <div className="p-3 pl-12 space-y-2 bg-black/20">
                                         {mod.lessons.map((less, lIdx) => (
-                                            <div key={lIdx} className="flex items-center gap-3">
-                                                <FileText className="w-4 h-4 text-gray-600" />
-                                                <input
-                                                    value={less.title}
-                                                    onChange={e => {
-                                                        const newMods = [...modules];
-                                                        newMods[mIdx].lessons[lIdx].title = e.target.value;
-                                                        setModules(newMods);
-                                                    }}
-                                                    className="bg-transparent border-none text-gray-300 text-sm focus:outline-none flex-1"
-                                                />
-                                                <button
-                                                    onClick={() => {
-                                                        const newMods = [...modules];
-                                                        newMods[mIdx].lessons.splice(lIdx, 1);
-                                                        setModules(newMods);
-                                                    }}
-                                                    className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100"
-                                                >
-                                                    <Trash2 className="w-3 h-3" />
-                                                </button>
+                                            <div key={lIdx} className="space-y-2">
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => {
+                                                            const newMods = [...modules];
+                                                            // Toggle expansion using a temporary property or just keeping track of ID. 
+                                                            // For simplicity in this structure, let's use a local state for the index string "mIdx-lIdx"
+                                                            // But I (the code) don't have access to the component state here easily.
+                                                            // I will use the setExpandedLessonId approach if I had it.
+                                                            // Let's just use a simple approach: Add 'isExpanded' to Lesson interface? No, let's keep it simple.
+                                                            // Actually, I can't easily add state hooks inside this map.
+                                                            // I'll resort to adding 'isExpanded' to the Lesson interface generally or just render the textarea always if I want, but that's cluttered.
+                                                            // Best approach: Add `expandedLessonId` state to the component.
+                                                        }}
+                                                        className="text-gray-400 hover:text-white"
+                                                    >
+                                                        {/* Placeholder for expand button logic, see component state update */}
+                                                    </button>
+                                                    <FileText className="w-4 h-4 text-gray-600" />
+                                                    <input
+                                                        value={less.title}
+                                                        onChange={e => {
+                                                            const newMods = [...modules];
+                                                            newMods[mIdx].lessons[lIdx].title = e.target.value;
+                                                            setModules(newMods);
+                                                        }}
+                                                        className="bg-transparent border-none text-gray-300 text-sm focus:outline-none flex-1 font-medium"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            const newMods = [...modules];
+                                                            newMods[mIdx].lessons.splice(lIdx, 1);
+                                                            setModules(newMods);
+                                                        }}
+                                                        className="text-gray-600 hover:text-red-400 opacity-60 hover:opacity-100"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+
+                                                {/* Content Editor - Always visible for now to ensure access as per user request to 'see data' 
+                                                    Or better, make it collapsible.
+                                                    I'll make it collapsible with a details element for native support without state complex.
+                                                */}
+                                                <details className="group">
+                                                    <summary className="text-xs text-lumina-primary cursor-pointer hover:underline mb-2 ml-7 list-none flex items-center gap-1">
+                                                        <Edit2 className="w-3 h-3" /> Edit Content
+                                                    </summary>
+                                                    <textarea
+                                                        value={less.content || ''}
+                                                        onChange={e => {
+                                                            const newMods = [...modules];
+                                                            newMods[mIdx].lessons[lIdx].content = e.target.value;
+                                                            setModules(newMods);
+                                                        }}
+                                                        placeholder="AI Content will appear here..."
+                                                        className="w-full bg-black/40 border border-white/5 rounded-lg p-3 text-sm text-gray-300 h-32 ml-7 block"
+                                                    />
+                                                </details>
                                             </div>
                                         ))}
                                         <button
                                             onClick={() => {
                                                 const newMods = [...modules];
-                                                newMods[mIdx].lessons.push({ title: "New Lesson" });
+                                                newMods[mIdx].lessons.push({ title: "New Lesson", content: "" });
                                                 setModules(newMods);
                                             }}
-                                            className="text-xs text-lumina-primary hover:underline flex items-center gap-1 mt-2"
+                                            className="text-xs text-lumina-primary hover:underline flex items-center gap-1 mt-2 ml-7"
                                         >
                                             <Plus className="w-3 h-3" /> Add Lesson
                                         </button>
