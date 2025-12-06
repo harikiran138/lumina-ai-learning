@@ -16,8 +16,19 @@ class LuminaAPI {
     // Authentication methods
     async login(email: string, password?: string, role?: string): Promise<User> {
         try {
-            const users = await db.getAll<User>('users');
-            const user = users.find(u => u.email === email && u.status === 'active');
+            let users = await db.getAll<User>('users');
+            let user = users.find(u => u.email === email && u.status === 'active');
+
+            if (!user) {
+                // Auto-seed if it's a demo account and missing (parity with legacy API)
+                const demoEmails = ['admin@lumina.com', 'teacher@lumina.com', 'student@lumina.com'];
+                if (demoEmails.includes(email)) {
+                    console.log('Demo user not found in modern API, attempting to seed...');
+                    await db.seedInitialData(true);
+                    users = await db.getAll<User>('users');
+                    user = users.find(u => u.email === email && u.status === 'active');
+                }
+            }
 
             if (!user) {
                 throw new Error('User not found or account suspended');
@@ -60,6 +71,10 @@ class LuminaAPI {
     // User management
     async getAllUsers(): Promise<User[]> {
         return db.getAll<User>('users');
+    }
+
+    async createUser(userData: Partial<User>): Promise<IDBValidKey> {
+        return db.createUser(userData);
     }
 
     // Course management

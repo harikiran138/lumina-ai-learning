@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api'; // Use modern API
 
 export default function LoginPage() {
     const router = useRouter();
@@ -16,82 +17,46 @@ export default function LoginPage() {
     useEffect(() => {
         // Check for existing session
         const checkSession = async () => {
-            // Robust check for API availability
-            if (typeof window !== 'undefined' && (window as any).luminaAPI && typeof (window as any).luminaAPI.getCurrentUser === 'function') {
-                try {
-                    const user = await (window as any).luminaAPI.getCurrentUser();
-                    if (user) {
-                        // Auto-redirect disabled to prevent loops
-                        // (window as any).luminaUI.redirectToDashboard(user.role);
-                        console.log('User already logged in:', user);
-                    }
-                } catch (e) {
-                    console.error('Session check failed:', e);
+            try {
+                // Use modern API check
+                const user = await api.getCurrentUser();
+                if (user) {
+                    console.log('User already logged in:', user);
+                    const targetPath = `/${user.role}/dashboard`;
+                    window.location.href = targetPath;
                 }
-            } else {
-                // If API not ready, retry once after a short delay
-                console.log('API not ready, retrying checkSession...');
-                setTimeout(checkSession, 500);
+            } catch (e) {
+                console.error('Session check failed:', e);
             }
         };
-        // Wait for scripts to load
-        const timer = setTimeout(checkSession, 500);
-        return () => clearTimeout(timer);
+        checkSession();
     }, []);
 
     const performLogin = async (loginEmail: string, loginPassword: string) => {
         setIsLoading(true);
         try {
-            console.log('Checking for luminaAPI...');
-            if ((window as any).luminaAPI && typeof (window as any).luminaAPI.login === 'function') {
-                console.log('Attempting login with:', loginEmail);
-                const user = await (window as any).luminaAPI.login(loginEmail, loginPassword);
-                console.log('Login successful:', user);
+            console.log('Attempting login with:', loginEmail);
+            // Use modern API login (includes auto-seeding)
+            const user = await api.login(loginEmail, loginPassword);
+            console.log('Login successful:', user);
 
-                if (user && user.role) {
-                    const targetPath = `/${user.role}/dashboard`;
-                    console.log('Redirecting to:', targetPath);
-                    window.location.href = targetPath;
-                } else {
-                    console.error('User role undefined, defaulting to student');
-                    window.location.href = '/student/dashboard';
-                }
+            if (user && user.role) {
+                const targetPath = `/${user.role}/dashboard`;
+                console.log('Redirecting to:', targetPath);
+                window.location.href = targetPath;
             } else {
-                console.error('LuminaAPI not fully initialized');
-                alert('System is initializing, please try again in a moment.');
-                setIsLoading(false);
+                console.error('User role undefined, defaulting to student');
+                window.location.href = '/student/dashboard';
             }
         } catch (error: any) {
             console.error('Login failed:', error);
+            const message = error.message || 'Login failed';
 
-            // Self-healing: If user not found and it's a demo account, try to seed again
-            if (error.message && (error.message.includes('User not found') || error.message.includes('suspended'))) {
-                const demoEmails = ['admin@lumina.com', 'teacher@lumina.com', 'student@lumina.com'];
-                if (demoEmails.includes(loginEmail)) {
-                    console.log('Demo account missing, attempting self-healing (force seeding)...');
-                    try {
-                        if ((window as any).luminaDB) {
-                            await (window as any).luminaDB.seedInitialData(true);
-                            console.log('Force seeding complete, retrying login...');
-
-                            // Retry login once via API directly to avoid recursion loops if logic was simpler
-                            const user = await (window as any).luminaAPI.login(loginEmail, loginPassword);
-                            if (user) {
-                                console.log('Recovery successful!');
-                                window.location.href = `/${user.role}/dashboard`;
-                                return;
-                            }
-                        }
-                    } catch (retryError) {
-                        console.error('Self-healing failed:', retryError);
-                    }
-                }
-            }
-
-            if ((window as any).luminaUI) {
-                (window as any).luminaUI.showNotification(error.message || 'Login failed', 'error');
+            // UI Notification
+            if (typeof window !== 'undefined' && (window as any).luminaUI) {
+                (window as any).luminaUI.showNotification(message, 'error');
             } else {
-                alert(error.message || 'Login failed');
+                alert(message);
             }
             setIsLoading(false);
         }
@@ -107,38 +72,36 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            if ((window as any).luminaAPI && typeof (window as any).luminaAPI.createUser === 'function') {
-                const newUser = {
-                    name,
-                    email,
-                    password,
-                    role,
-                    status: 'active',
-                    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
-                    preferences: {
-                        theme: 'dark',
-                        notifications: true
-                    },
-                    createdAt: new Date().toISOString()
-                };
+            const newUser = {
+                name,
+                email,
+                password,
+                role,
+                status: 'active' as const, // Type assertion for specific string literal
+                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+                preferences: {
+                    theme: 'dark',
+                    notifications: true
+                },
+                createdAt: new Date().toISOString()
+            };
 
-                console.log('Creating new user:', newUser);
-                await (window as any).luminaAPI.createUser(newUser);
-                console.log('User created successfully, logging in...');
+            console.log('Creating new user:', newUser);
+            // Use modern API createUser
+            await api.createUser(newUser);
+            console.log('User created successfully, logging in...');
 
-                // Auto login after signup
-                await performLogin(email, password);
-            } else {
-                console.error('LuminaAPI not fully initialized');
-                alert('System is initializing, please try again in a moment.');
-                setIsLoading(false);
-            }
+            // Auto login after signup
+            await performLogin(email, password);
+
         } catch (error: any) {
             console.error('Signup failed:', error);
-            if ((window as any).luminaUI) {
-                (window as any).luminaUI.showNotification(error.message || 'Signup failed', 'error');
+            const message = error.message || 'Signup failed';
+
+            if (typeof window !== 'undefined' && (window as any).luminaUI) {
+                (window as any).luminaUI.showNotification(message, 'error');
             } else {
-                alert(error.message || 'Signup failed');
+                alert(message);
             }
             setIsLoading(false);
         }
@@ -173,8 +136,6 @@ export default function LoginPage() {
                     <span className="text-xl">🌓</span>
                 </button>
             </div>
-
-
 
             <div className="max-w-md w-full space-y-8 card z-10">
                 <div>
