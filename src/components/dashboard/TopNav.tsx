@@ -3,7 +3,14 @@
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { Bell, Search, Menu } from 'lucide-react';
 
-export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
+
+export default function TopNav({
+    onMenuClick,
+    user = { name: 'Student User', role: 'Student', initial: 'S' }
+}: {
+    onMenuClick?: () => void;
+    user?: { name: string; role: string; initial: string };
+}) {
     return (
         <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 z-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
             <div className="flex items-center">
@@ -35,11 +42,11 @@ export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
                 <ThemeToggle />
                 <div className="flex items-center space-x-3 border-l border-gray-200 dark:border-gray-700 pl-4">
                     <div className="text-right hidden sm:block">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">Student User</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Student</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user.role}</p>
                     </div>
                     <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold">
-                        S
+                        {user.initial}
                     </div>
                 </div>
             </div>
