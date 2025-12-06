@@ -372,7 +372,7 @@ export default function AITutorPage() {
                         </button>
                     </form>
                     <p className="text-center text-[10px] text-gray-500 mt-2">
-                        Running Llama-3.2 (1B) directly on your device via WebLLM.
+                        Running Lumina directly on your device via WebLLM.
                     </p>
                 </div>
             </div>
