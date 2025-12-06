@@ -31,7 +31,10 @@ export async function chatWithAI(messages: any[]) {
         if (!response.ok) {
             const errorText = await response.text();
             console.error('OpenRouter API Error:', errorText);
-            return { success: false, error: 'Failed to get response from AI provider.' };
+            return {
+                success: false,
+                error: `AI Provider Error (${response.status}): ${errorText.substring(0, 100)}...`
+            };
         }
 
         const data = await response.json();
