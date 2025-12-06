@@ -26,6 +26,7 @@
     "parcel": "^2.16.1"
   },
   "dependencies": {
+    "@mlc-ai/web-llm": "^0.2.80",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^24.10.1",
