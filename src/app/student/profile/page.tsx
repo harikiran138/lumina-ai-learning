@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
+import Certificate from '@/components/student/Certificate';
 import {
     User,
     Mail,
@@ -14,11 +15,12 @@ import {
     Link as LinkIcon,
     Github,
     Twitter,
-    Linkedin
+    Linkedin,
+    Sparkles
 } from 'lucide-react';
 
 export default function StudentProfile() {
-    const [isEditing, setIsEditing] = useState(false); // Restore isEditing
+    const [isEditing, setIsEditing] = useState(false);
     const [profile, setProfile] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [editForm, setEditForm] = useState({
@@ -29,172 +31,231 @@ export default function StudentProfile() {
         avatar: ''
     });
 
+    const [certificates, setCertificates] = useState<any[]>([]);
+    const [selectedCertificate, setSelectedCertificate] = useState<any>(null);
+    const [badges, setBadges] = useState<any[]>([]);
+
     useEffect(() => {
-        const fetchProfile = async () => {
-            const data = await api.getStudentProfile();
-            setProfile(data);
-            setEditForm({
-                name: data?.name || '',
-                username: data?.username || '', // Assuming backend returns this now
-                email: data?.email || '',
-                phone: data?.phone || '',
-                avatar: data?.avatar || ''
-            });
-            setIsLoading(false);
+        const fetchData = async () => {
+            try {
+                const [profileData, certificatesData, badgesData] = await Promise.all([
+                    api.getStudentProfile(),
+                    api.getStudentCertificates(),
+                    api.getStudentBadges()
+                ]);
+
+                setProfile(profileData);
+                setCertificates(certificatesData);
+                setBadges(badgesData);
+
+                if (profileData) {
+                    setEditForm({
+                        name: profileData.name || '',
+                        username: profileData.username || '',
+                        email: profileData.email || '',
+                        phone: profileData.phone || '',
+                        avatar: profileData.avatar || ''
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile data", error);
+            } finally {
+                setIsLoading(false);
+            }
         };
-        fetchProfile();
+        fetchData();
     }, []);
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
-        const res = await api.updateProfile(editForm);
-        if (res.success) {
+        try {
+            await api.updateProfile(editForm);
             setProfile({ ...profile, ...editForm });
             setIsEditing(false);
-            // Optionally show toast
-        } else {
-            alert('Failed to update profile');
+        } catch (error) {
+            console.error("Failed to update profile", error);
         }
     };
 
-    if (isLoading) return <div className="text-white text-center p-20">Loading profile...</div>;
+    if (isLoading) {
+        return <div className="p-8 text-center text-white">Loading profile...</div>;
+    }
 
     return (
-        <div className="space-y-6">
-            {/* Header / Cover */}
-            <div className="relative h-48 md:h-64 rounded-xl overflow-hidden bg-gradient-to-r from-lumina-primary/20 via-blue-500/20 to-purple-500/20 border border-white/10">
-                <div className="absolute inset-0 bg-black/20 backdrop-blur-sm"></div>
-                <button
-                    onClick={() => setIsEditing(true)}
-                    className="absolute top-4 right-4 p-2 bg-black/40 text-white rounded-lg hover:bg-black/60 transition-colors backdrop-blur-md border border-white/10"
-                >
-                    <Edit2 className="w-4 h-4" />
-                </button>
-            </div>
-
-            {/* Profile Info Section */}
-            <div className="relative px-4 pb-4 md:px-8 -mt-20">
-                <div className="flex flex-col md:flex-row gap-6 items-end md:items-start">
-                    {/* Avatar */}
-                    <div className="relative group">
-                        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-black bg-gray-800 overflow-hidden relative z-10">
-                            <img src={profile?.avatar || "https://ui-avatars.com/api/?name=User&background=random"} alt="Profile" className="w-full h-full object-cover" />
-                        </div>
-                        <button className="absolute bottom-2 right-2 z-20 p-2 bg-lumina-primary text-black rounded-full hover:bg-lumina-secondary transition-colors shadow-lg">
-                            <Camera className="w-4 h-4" />
-                        </button>
-                    </div>
-
-                    {/* Main Info */}
-                    <div className="flex-1 text-center md:text-left pt-4 md:pt-20">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div>
-                                <h1 className="text-3xl font-bold text-white mb-1">{profile?.name}</h1>
-                                <p className="text-gray-400 text-lg">{profile?.role} • Level {profile?.level || 1}</p>
-                            </div>
-                            <button
-                                onClick={() => setIsEditing(true)}
-                                className="px-6 py-2 bg-white/10 text-white border border-white/20 rounded-lg hover:bg-white/20 transition-colors font-medium flex items-center gap-2 mx-auto md:mx-0"
-                            >
-                                <Edit2 className="w-4 h-4" /> Edit Profile
-                            </button>
-                        </div>
-
-                        <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-6 text-sm text-gray-400">
-                            <div className="flex items-center gap-1.5">
-                                <MapPin className="w-4 h-4" /> San Francisco, CA
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <Mail className="w-4 h-4" /> {profile?.email}
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <Calendar className="w-4 h-4" /> Joined {profile?.joinedDate ? new Date(profile.joinedDate).toLocaleDateString() : 'Recently'}
-                            </div>
-                            <div className="flex items-center gap-1.5 hover:text-white cursor-pointer transition-colors">
-                                <LinkIcon className="w-4 h-4" /> lumina.learning/student
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column - Stats & Bio */}
+        <div className="container mx-auto px-4 py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column - Profile Info */}
                 <div className="space-y-6">
-                    <div className="glass-card p-6">
-                        <h3 className="text-lg font-semibold text-white mb-4">About Me</h3>
-                        <p className="text-gray-400 leading-relaxed text-sm">
-                            Passionate about AI and Machine Learning. Currently focusing on Deep Learning fundamentals and Neural Networks. Always eager to learn new technologies and collaborate on projects.
+                    <div className="glass-card p-6 text-center relative group">
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors"
+                        >
+                            <Edit2 className="w-4 h-4 text-gray-400" />
+                        </button>
+
+                        <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-lumina-primary to-purple-600 p-[2px] mb-4">
+                            <div className="w-full h-full rounded-full overflow-hidden border-2 border-black">
+                                <img
+                                    src={profile?.avatar || `https://ui-avatars.com/api/?name=${profile?.name}`}
+                                    alt="Profile"
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        </div>
+
+                        <h2 className="text-xl font-bold text-white mb-1">{profile?.name}</h2>
+                        <p className="text-sm text-lumina-primary mb-4">{profile?.username || '@student'}</p>
+
+                        <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                            {profile?.bio || 'Passionate learner exploring the world of AI.'}
                         </p>
 
-                        <div className="mt-6 flex gap-3">
-                            <button className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
-                                <Github className="w-5 h-5" />
-                            </button>
-                            <button className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-white/10 transition-colors">
-                                <Twitter className="w-5 h-5" />
-                            </button>
-                            <button className="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-white/10 transition-colors">
-                                <Linkedin className="w-5 h-5" />
-                            </button>
+                        <div className="space-y-3 text-left">
+                            <div className="flex items-center text-sm text-gray-400">
+                                <Mail className="w-4 h-4 mr-3 text-gray-500" />
+                                {profile?.email}
+                            </div>
+                            <div className="flex items-center text-sm text-gray-400">
+                                <MapPin className="w-4 h-4 mr-3 text-gray-500" />
+                                {profile?.location || 'San Francisco, CA'}
+                            </div>
+                            <div className="flex items-center text-sm text-gray-400">
+                                <Calendar className="w-4 h-4 mr-3 text-gray-500" />
+                                Joined {new Date(profile?.joinedDate || Date.now()).toLocaleDateString()}
+                            </div>
                         </div>
                     </div>
 
                     <div className="glass-card p-6">
-                        <h3 className="text-lg font-semibold text-white mb-4">Skills</h3>
+                        <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">Skills</h3>
                         <div className="flex flex-wrap gap-2">
-                            {['React', 'TypeScript', 'Python', 'Machine Learning', 'Data Science', 'UI Design'].map(skill => (
-                                <span key={skill} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-gray-300">
+                            {profile?.skills?.map((skill: string, index: number) => (
+                                <span key={index} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-gray-300">
                                     {skill}
                                 </span>
-                            ))}
+                            )) || <span className="text-gray-500 text-sm">No skills listed</span>}
                         </div>
                     </div>
                 </div>
 
-                {/* Right Column - Activity & Certificates */}
+                {/* Right Column - Activity & Certificates & Badges */}
                 <div className="lg:col-span-2 space-y-6">
+
+                    {/* Badges Section */}
+                    <div className="glass-card p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-semibold text-white">Earned Badges</h3>
+                            <span className="text-sm text-gray-400">{badges.length} Unlocked</span>
+                        </div>
+
+                        {badges.length > 0 ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                {badges.map((badge) => {
+                                    // Dynamic icon selection
+                                    const IconComponent = badge.icon === 'Sparkles' ? Sparkles : Award;
+
+                                    return (
+                                        <div key={badge.id} className="flex flex-col items-center p-3 rounded-xl bg-white/5 border border-white/10 hover:border-lumina-primary/50 transition-colors group">
+                                            <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full flex items-center justify-center text-purple-400 mb-2 group-hover:scale-110 transition-transform">
+                                                <IconComponent className="w-6 h-6" />
+                                            </div>
+                                            <p className="text-sm text-white font-medium text-center line-clamp-1">{badge.name}</p>
+                                            <p className="text-xs text-gray-400 text-center mt-1">{new Date(badge.dateEarned).toLocaleDateString()}</p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="text-center py-6 border border-white/5 rounded-xl bg-white/5">
+                                <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-2 text-gray-600">
+                                    <Award className="w-6 h-6" />
+                                </div>
+                                <p className="text-gray-400 text-sm">No badges yet.</p>
+                                <p className="text-xs text-gray-500">Complete modules to earn them!</p>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="glass-card p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-semibold text-white">Certificates</h3>
-                            <button className="text-sm text-lumina-primary hover:underline">View All</button>
+                            <span className="text-sm text-gray-400">{certificates.length} Earned</span>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {[1, 2].map((cert, i) => (
-                                <div key={i} className="group border border-white/10 rounded-xl p-4 hover:bg-white/5 transition-all cursor-pointer">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="p-2 bg-amber-500/20 rounded-lg text-amber-500">
-                                            <Award className="w-6 h-6" />
+
+                        {certificates.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {certificates.map((cert) => (
+                                    <div
+                                        key={cert.id}
+                                        onClick={() => setSelectedCertificate(cert)}
+                                        className="group border border-white/10 rounded-xl p-4 hover:bg-white/5 transition-all cursor-pointer relative overflow-hidden"
+                                    >
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="p-2 bg-amber-500/20 rounded-lg text-amber-500">
+                                                <Award className="w-6 h-6" />
+                                            </div>
+                                            <span className="text-xs text-gray-500">
+                                                {new Date(cert.issueDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                                            </span>
                                         </div>
-                                        <span className="text-xs text-gray-500">Issued Oct 2024</span>
+                                        <h4 className="text-white font-medium mb-1 group-hover:text-lumina-primary transition-colors line-clamp-1">
+                                            {cert.courseName}
+                                        </h4>
+                                        <p className="text-xs text-gray-400">ID: {cert.certificateId}</p>
+
+                                        <div className="absolute inset-0 border-2 border-transparent group-hover:border-lumina-primary/20 rounded-xl transition-all"></div>
                                     </div>
-                                    <h4 className="text-white font-medium mb-1 group-hover:text-lumina-primary transition-colors">Machine Learning Basics</h4>
-                                    <p className="text-xs text-gray-400">Lumina AI Learning Platform</p>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 border border-white/5 rounded-xl bg-white/5">
+                                <Award className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                                <p className="text-gray-400">No certificates earned yet.</p>
+                                <p className="text-xs text-gray-500 mt-1">Complete courses to earn certificates!</p>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="glass-card p-6">
-                        <h3 className="text-lg font-semibold text-white mb-6">Recent Activity</h3>
-                        <div className="space-y-6">
-                            {[
-                                { icon: BookOpen, color: 'text-blue-400', bg: 'bg-blue-400/20', title: 'Completed Lesson: Neural Networks I', time: '2 hours ago' },
-                                { icon: Award, color: 'text-amber-500', bg: 'bg-amber-500/20', title: 'Earned Badge: Quick Learner', time: '1 day ago' },
-                                { icon: Edit2, color: 'text-green-400', bg: 'bg-green-400/20', title: 'Posted in Community: Help with Python', time: '2 days ago' }
-                            ].map((item, i) => (
-                                <div key={i} className="flex gap-4">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${item.bg} ${item.color}`}>
-                                        <item.icon className="w-5 h-5" />
+                    {/* Certificate Modal */}
+                    {selectedCertificate && (
+                        <Certificate
+                            studentName={profile?.name || 'Student'}
+                            courseName={selectedCertificate.courseName}
+                            issueDate={selectedCertificate.issueDate}
+                            certificateId={selectedCertificate.certificateId}
+                            onClose={() => setSelectedCertificate(null)}
+                        />
+                    )}
+
+                    <h3 className="text-lg font-bold text-white mb-6">Recent Activity</h3>
+
+                    {profile?.recentActivity && profile.recentActivity.length > 0 ? (
+                        <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
+                            {profile.recentActivity.map((activity: any, idx: number) => (
+                                <div key={idx} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white/10 bg-black/50 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 text-gray-400">
+                                        {activity.type === 'quiz' ? <Award className="w-5 h-5 text-amber-500" /> : <BookOpen className="w-5 h-5 text-blue-500" />}
                                     </div>
-                                    <div>
-                                        <p className="text-white text-sm font-medium">{item.title}</p>
-                                        <p className="text-xs text-gray-500 mt-1">{item.time}</p>
+                                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-white/10 bg-white/5 shadow-sm">
+                                        <div className="flex items-center justify-between space-x-2 mb-1">
+                                            <div className="font-bold text-white text-sm">{activity.title}</div>
+                                            <time className="font-caveat font-medium text-amber-500 text-xs">
+                                                {new Date(activity.timestamp).toLocaleDateString()}
+                                            </time>
+                                        </div>
+                                        <div className="text-gray-400 text-xs">
+                                            {activity.description}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    ) : (
+                        <div className="text-center py-10 text-gray-500">
+                            No recent activity found. Start learning to see updates here!
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -213,7 +274,6 @@ export default function StudentProfile() {
                         <p className="text-sm text-gray-400 mb-6">Update your personal information</p>
 
                         <form onSubmit={handleUpdateProfile} className="space-y-4">
-                            {/* Avatar Section */}
                             <div className="flex items-center gap-4 mb-4">
                                 <div className="w-16 h-16 rounded-full bg-gray-800 border border-white/10 overflow-hidden">
                                     <img src={editForm.avatar || profile?.avatar} alt="Avatar" className="w-full h-full object-cover" />

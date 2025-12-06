@@ -56,7 +56,10 @@ export async function getStudentDashboard(email: string) {
 
         return {
             currentStreak,
-            enrolledCourses: enrolledCourses.map((c: any) => ({ ...c, id: c.id.toString() })),
+            enrolledCourses: enrolledCourses.map((c: any) => {
+                const { _id, ...rest } = c;
+                return { ...rest, id: c.id ? c.id.toString() : _id.toString() };
+            }),
             overallMastery: avgMastery,
             totalHours, // Return total hours
             recentActivity: []
@@ -64,6 +67,208 @@ export async function getStudentDashboard(email: string) {
     } catch (e) {
         console.error('Error fetching student dashboard:', e);
         return null;
+    }
+}
+
+export async function updateCourseProgress(email: string, courseId: string, increment: number) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        const user = await db.collection("users").findOne({ email });
+        if (!user) return { success: false };
+
+        const userId = user._id.toString();
+
+        // Use atomic operator to increment progress, capped at 100
+        const updateResult = await db.collection("progress").findOneAndUpdate(
+            { userId: userId, courseId: courseId },
+            [
+                {
+                    $set: {
+                        progress: {
+                            $min: [100, { $add: ["$progress", increment] }]
+                        },
+                        lastAccessed: new Date()
+                    }
+                }
+            ],
+            { returnDocument: 'after' } // Return the updated document
+        );
+
+        if (!updateResult) {
+            return { success: false, error: 'Progress record not found' };
+        }
+
+        const updatedProgress = updateResult.progress || 0;
+
+        // Check for course completion (100%)
+        if (updatedProgress >= 100) {
+            // Check if certificate already exists
+            const existingCert = await db.collection("certificates").findOne({
+                userId: userId,
+                courseId: courseId
+            });
+
+            if (!existingCert) {
+                // Generate new certificate
+                const course = await db.collection("courses").findOne({ _id: new ObjectId(courseId) });
+                const certificateId = `CERT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+                const newCertificate = {
+                    userId: userId,
+                    studentName: user.name,
+                    courseId: courseId,
+                    courseName: course ? course.name : 'Unknown Course',
+                    certificateId: certificateId,
+                    issueDate: new Date(),
+                    score: 100 // Assuming 100 since completed
+                };
+
+                await db.collection("certificates").insertOne(newCertificate);
+                return { success: true, completed: true, certificateId: certificateId };
+            }
+            return { success: true, completed: true, certificateId: existingCert.certificateId };
+        }
+
+        return { success: true, completed: false, progress: updatedProgress };
+    } catch (e) {
+        console.error("Error updating progress", e);
+        return { success: false };
+    }
+}
+
+// New Action: Mark Lesson Complete & Award Badges
+export async function completeLesson(email: string, courseId: string, moduleId: string, lessonId: string) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const user = await db.collection("users").findOne({ email });
+        if (!user) return { success: false, error: 'User not found' };
+        const userId = user._id.toString();
+
+        // 1. Mark Lesson as Complete in Progress
+        const progressUpdate = await db.collection("progress").updateOne(
+            { userId: userId, courseId: courseId },
+            {
+                $addToSet: { completedLessons: lessonId },
+                $set: { lastAccessed: new Date() }
+            } as any
+        );
+
+        // 2. Check if Module is Complete
+        // Fetch course to get module structure
+        const course = await db.collection("courses").findOne({ _id: new ObjectId(courseId) });
+        if (!course) return { success: false, error: 'Course not found' };
+
+        const module = course.modules?.find((m: any) => m.id === moduleId);
+        if (!module) return { success: true, message: 'Lesson completed (Module not found)' };
+
+        // Get user's updated completed lessons
+        const progressRecord = await db.collection("progress").findOne({ userId: userId, courseId: courseId });
+        const completedLessons = progressRecord?.completedLessons || [];
+
+        const allLessonsComplete = module.lessons?.every((l: any) => completedLessons.includes(l.id));
+
+        let badgeEarned = null;
+
+        if (allLessonsComplete && module.lessons && module.lessons.length > 0) {
+            // 3. Award Badge if not already earned
+            const badgeId = `BADGE-${courseId}-${moduleId}`;
+
+            // Check if user already has this badge
+            const existingBadge = user.badges?.find((b: any) => b.id === badgeId);
+
+            if (!existingBadge) {
+                const newBadge = {
+                    id: badgeId,
+                    name: `${module.title} Master`,
+                    description: `Completed the module: ${module.title}`,
+                    icon: 'Award', // Default icon name
+                    dateEarned: new Date(),
+                    courseId: courseId,
+                    moduleId: moduleId
+                };
+
+                await db.collection("users").updateOne(
+                    { _id: user._id },
+                    { $push: { badges: newBadge } } as any
+                );
+
+                badgeEarned = newBadge;
+            }
+        }
+
+        return {
+            success: true,
+            lessonId,
+            isModuleComplete: !!allLessonsComplete,
+            badgeEarned
+        };
+
+    } catch (e) {
+        console.error("Error completing lesson:", e);
+        return { success: false, error: 'Failed to complete lesson' };
+    }
+}
+
+export async function getStudentBadges(email: string) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        const user = await db.collection("users").findOne({ email });
+
+        if (!user) return [];
+
+        // Auto-seed a "Welcome" badge if no badges exist (for verification/sample data)
+        if (!user.badges || user.badges.length === 0) {
+            const welcomeBadge = {
+                id: `BADGE-WELCOME-${Date.now()}`,
+                name: 'Welcome Explorer',
+                description: 'We are glad to have you here! This is your first badge.',
+                icon: 'Sparkles', // Use Sparkles icon
+                dateEarned: new Date(),
+                courseId: 'system',
+                moduleId: 'onboarding'
+            };
+
+            await db.collection("users").updateOne(
+                { _id: user._id },
+                { $push: { badges: welcomeBadge } } as any
+            );
+
+            return [welcomeBadge];
+        }
+
+        return user.badges.sort((a: any, b: any) => new Date(b.dateEarned).getTime() - new Date(a.dateEarned).getTime());
+    } catch (e) {
+        console.error("Error fetching badges:", e);
+        return [];
+    }
+}
+
+export async function getStudentCertificates(email: string) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        const user = await db.collection("users").findOne({ email });
+        if (!user) return [];
+
+        const certificates = await db.collection("certificates")
+            .find({ userId: user._id.toString() })
+            .sort({ issueDate: -1 })
+            .toArray();
+
+        return certificates.map(cert => ({
+            id: cert._id.toString(),
+            certificateId: cert.certificateId,
+            courseName: cert.courseName,
+            issueDate: cert.issueDate,
+            score: cert.score
+        }));
+    } catch (e) {
+        console.error("Error fetching certificates", e);
+        return [];
     }
 }
 
@@ -102,7 +307,10 @@ export async function getEnrolledCourses(email: string) {
             }
         ]).toArray();
 
-        return courses.map((c: any) => ({ ...c, id: c.id.toString() }));
+        return courses.map((c: any) => {
+            const { _id, ...rest } = c;
+            return { ...rest, id: c.id ? c.id.toString() : _id.toString() };
+        });
     } catch (e) {
         console.error('Error fetching enrolled courses:', e);
         return [];
@@ -185,8 +393,16 @@ export async function getStudentProfile(email: string) {
         const user = await db.collection("users").findOne({ email });
         if (!user) return null;
 
+        // Fetch recent activities
+        const activities = await db.collection("activities")
+            .find({ userId: user._id.toString() })
+            .sort({ timestamp: -1 })
+            .limit(5)
+            .toArray();
+
         return {
             name: user.name,
+            username: user.username,
             email: user.email,
             avatar: user.avatar,
             role: user.role,
@@ -194,7 +410,14 @@ export async function getStudentProfile(email: string) {
             bio: user.bio || "Passionate learner on Lumina.",
             skills: user.skills || ['Learning', 'Growth'],
             location: user.location || 'Online',
-            level: 5
+            level: 5,
+            recentActivity: activities.map(a => ({
+                id: a._id.toString(),
+                type: a.type,
+                title: a.title,
+                description: a.description,
+                timestamp: a.timestamp
+            }))
         };
     } catch (e) {
         console.error("Error fetching profile", e);
@@ -279,9 +502,13 @@ export async function getStudentProgress(email: string) {
                 learningTime: 'Mock 48h'
             },
             weeklyActivity,
-            recentCourses: progressWithCourses.sort((a: any, b: any) =>
-                new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()
-            ).slice(0, 3)
+            recentCourses: progressWithCourses
+                .sort((a: any, b: any) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime())
+                .slice(0, 3)
+                .map((c: any) => {
+                    const { _id, ...rest } = c;
+                    return rest;
+                })
         };
     } catch (e) {
         console.error("Error fetching progress", e);

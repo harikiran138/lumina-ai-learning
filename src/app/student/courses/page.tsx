@@ -98,7 +98,7 @@ export default function StudentCourses() {
                                         <Clock className="w-3.5 h-3.5" />
                                         <span>Last accessed 2d ago</span>
                                     </div>
-                                    <Link href={`/student/course/${course.id}`} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-lumina-primary hover:text-black border border-white/10 hover:border-transparent rounded-lg text-sm font-medium transition-all">
+                                    <Link href={`/student/courses/${course.id}`} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-lumina-primary hover:text-black border border-white/10 hover:border-transparent rounded-lg text-sm font-medium transition-all">
                                         <PlayCircle className="w-4 h-4" />
                                         Continue
                                     </Link>
