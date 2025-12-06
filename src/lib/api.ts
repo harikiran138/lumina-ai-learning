@@ -171,6 +171,39 @@ class RealAPI {
         return await createCourse(user.email, courseData);
     }
 
+    async getAllCourses(): Promise<any[]> {
+        const { getAllCourses } = await import('@/app/actions/data');
+        return await getAllCourses();
+    }
+
+    async enrollInCourse(courseId: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { enrollInCourse } = await import('@/app/actions/data');
+        return await enrollInCourse(user.email, courseId);
+    }
+
+    async inviteStudent(studentEmail: string, courseId: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { inviteStudentToCourse } = await import('@/app/actions/data');
+        return await inviteStudentToCourse(user.email, studentEmail, courseId);
+    }
+
+    async addModule(courseId: string, title: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { addModule } = await import('@/app/actions/data');
+        return await addModule(user.email, courseId, title);
+    }
+
+    async addLesson(courseId: string, moduleId: string, title: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { addLesson } = await import('@/app/actions/data');
+        return await addLesson(user.email, courseId, moduleId, title);
+    }
+
     async logout(): Promise<void> {
         this.currentUser = null;
         if (typeof window !== 'undefined') {

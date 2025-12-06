@@ -61,7 +61,7 @@ export default function TeacherCourses() {
             {/* Courses Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCourses.map((course) => (
-                    <div key={course.id} className="group relative bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:border-amber-500/50 transition-all duration-300">
+                    <Link key={course.id} href={`/teacher/courses/${course.id}`} className="group relative bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:border-amber-500/50 transition-all duration-300 block">
                         {/* Course Image */}
                         <div className="aspect-video relative overflow-hidden bg-gray-900">
                             <img
@@ -102,7 +102,7 @@ export default function TeacherCourses() {
                                 </span>
                             </div>
                         </div>
-                    </div>
+                    </Link>
                 ))}
             </div>
         </div>
