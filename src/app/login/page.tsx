@@ -12,7 +12,7 @@ export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
-    const [role, setRole] = useState('student');
+    const [role, setRole] = useState<'student' | 'teacher' | 'admin'>('student');
 
     useEffect(() => {
         // Check for existing session
@@ -289,7 +289,7 @@ export default function LoginPage() {
                                     name="role"
                                     required
                                     value={role}
-                                    onChange={(e) => setRole(e.target.value)}
+                                    onChange={(e) => setRole(e.target.value as 'student' | 'teacher' | 'admin')}
                                     className="input bg-black text-white border border-lumina-primary/30 focus:border-lumina-primary"
                                 >
                                     <option value="" disabled className="bg-black text-gray-400">Select your role</option>
