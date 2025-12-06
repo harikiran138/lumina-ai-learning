@@ -1,0 +1,3 @@
+module.exports=[12122,a=>{"use strict";var b=a.i(87924);function c(){return(0,b.jsxs)("div",{className:"max-w-4xl mx-auto",children:[(0,b.jsx)("h1",{className:"text-3xl font-bold text-white mb-8",children:"System Infrastructure"}),(0,b.jsx)("div",{className:"card p-8 border border-gray-800 text-center text-gray-400",children:(0,b.jsx)("p",{children:"Database logs, server metrics, and cache controls."})})]})}a.s(["default",()=>c])}];
+
+//# sourceMappingURL=src_app_admin_system_page_tsx_8a131d6a._.js.map

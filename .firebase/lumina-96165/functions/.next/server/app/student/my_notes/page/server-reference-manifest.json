@@ -1,0 +1,305 @@
+{
+  "node": {
+    "605ac65cc9dfbd23e44503660fc81311bf8a41eed3": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "authenticateUser",
+      "filename": "src/app/actions/auth.ts"
+    },
+    "40651031abfa44b68323c9e345cde1dcb1af6be20c": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "registerUser",
+      "filename": "src/app/actions/auth.ts"
+    },
+    "40057ca4bcb688404fffb4782f9cbc69af4eb8305d": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "getStudentDashboard",
+      "filename": "src/app/actions/data.ts"
+    },
+    "406484041abc913ae582429b5d7a9c61d77fec10a7": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "getEnrolledCourses",
+      "filename": "src/app/actions/data.ts"
+    },
+    "0026e377043794c93f675b5a76f529fcb859d7f217": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "getAllCourses",
+      "filename": "src/app/actions/data.ts"
+    },
+    "609a30219fe71916d39270a52f0fc832fef210e21c": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "enrollInCourse",
+      "filename": "src/app/actions/data.ts"
+    },
+    "40d383ae01c630cc494f3b811c6cd2b06bfa5fb762": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "getStudentProfile",
+      "filename": "src/app/actions/data.ts"
+    },
+    "6066bf89fc45fa9dc1943a8f259b721cce7bce5191": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "updateStudentProfile",
+      "filename": "src/app/actions/data.ts"
+    },
+    "40805ef5cf85030395b16be83b6f6c01d33cd46481": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "getStudentProgress",
+      "filename": "src/app/actions/data.ts"
+    },
+    "403d4edd74f2167be9045f8e515c1a70876aaee3c7": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "getCommunityData",
+      "filename": "src/app/actions/data.ts"
+    },
+    "40f5ffabd97e9c51ae7abbfb39628e384f093144c3": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "getTeacherDashboard",
+      "filename": "src/app/actions/data.ts"
+    },
+    "401337c47da689ae5e8169cc1907bca1bd2e816ba4": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "getTeacherStudents",
+      "filename": "src/app/actions/data.ts"
+    },
+    "40d714b0a8699ee40cacaf7d2139ef5a5e865fd473": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "getTeacherCourses",
+      "filename": "src/app/actions/data.ts"
+    },
+    "6084225d49e62342930cf057a388710203ebd8089a": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "createCourse",
+      "filename": "src/app/actions/data.ts"
+    },
+    "702795c988fb1b2fe4bd9c8f906f51e44070c39a48": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "inviteStudentToCourse",
+      "filename": "src/app/actions/data.ts"
+    },
+    "70c829dbdf0c5b70a5eb20982d65ac7f4d9c98e0f5": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "addModule",
+      "filename": "src/app/actions/data.ts"
+    },
+    "78f1f8e1fdd3c442cd07ae16d0c95036d0923c7644": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "addLesson",
+      "filename": "src/app/actions/data.ts"
+    },
+    "408bec885feee32d80532fa2c5dacbe5aa7aefd546": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "getAdminDashboard",
+      "filename": "src/app/actions/data.ts"
+    },
+    "008bef5d45ec060a75a79a8b1854ed3bf6c9c82dcc": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "getUsersForAdmin",
+      "filename": "src/app/actions/data.ts"
+    },
+    "40f2122612645433d209903a0a67ee199a8e8e79ef": {
+      "workers": {
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/student/my_notes/page": "action-browser"
+      },
+      "exportedName": "getCourseDetails",
+      "filename": "src/app/actions/data.ts"
+    }
+  },
+  "edge": {}
+}

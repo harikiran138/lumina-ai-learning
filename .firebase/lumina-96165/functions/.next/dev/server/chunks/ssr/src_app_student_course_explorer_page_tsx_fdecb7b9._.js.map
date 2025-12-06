@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/chepuriharikiran/Desktop/github/lumina-ai-learning/src/app/student/course_explorer/page.tsx"],"sourcesContent":["'use client';\n\nexport default function CourseExplorerPage() {\n    return (\n        <div className=\"min-h-screen bg-black text-white p-8\">\n            <h1 className=\"text-3xl font-bold mb-4 text-lumina-primary\">Course Explorer</h1>\n            <p className=\"text-gray-400\">This is a placeholder for the Course Explorer page.</p>\n            <a href=\"/student/dashboard\" className=\"mt-4 inline-block text-lumina-secondary hover:underline\">Back to Dashboard</a>\n        </div>\n    );\n}\n"],"names":[],"mappings":";;;;;AAAA;;AAEe,SAAS;IACpB,qBACI,8OAAC;QAAI,WAAU;;0BACX,8OAAC;gBAAG,WAAU;0BAA8C;;;;;;0BAC5D,8OAAC;gBAAE,WAAU;0BAAgB;;;;;;0BAC7B,8OAAC;gBAAE,MAAK;gBAAqB,WAAU;0BAA0D;;;;;;;;;;;;AAG7G"}}]
+}

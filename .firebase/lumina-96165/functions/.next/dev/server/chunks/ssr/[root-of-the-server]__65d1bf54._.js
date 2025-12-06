@@ -1,0 +1,1931 @@
+module.exports = [
+"[externals]/mongodb [external] (mongodb, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("mongodb", () => require("mongodb"));
+
+module.exports = mod;
+}),
+"[project]/src/lib/mongodb.ts [app-rsc] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "default",
+    ()=>__TURBOPACK__default__export__
+]);
+var __TURBOPACK__imported__module__$5b$externals$5d2f$mongodb__$5b$external$5d$__$28$mongodb$2c$__cjs$29$__ = __turbopack_context__.i("[externals]/mongodb [external] (mongodb, cjs)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$vercel$2f$functions$2f$index$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/@vercel/functions/index.js [app-rsc] (ecmascript)");
+;
+;
+if (!process.env.MONGODB_URI && !process.env.lumina_MONGODB_URI) {
+    throw new Error('Invalid/Missing environment variable: "MONGODB_URI" or "lumina_MONGODB_URI"');
+}
+const uri = process.env.MONGODB_URI || process.env.lumina_MONGODB_URI || "";
+const options = {};
+let client;
+let clientPromise;
+if ("TURBOPACK compile-time truthy", 1) {
+    // In development mode, use a global variable so that the value
+    // is preserved across module reloads caused by HMR (Hot Module Replacement).
+    let globalWithMongo = /*TURBOPACK member replacement*/ __turbopack_context__.g;
+    if (!globalWithMongo._mongoClientPromise) {
+        client = new __TURBOPACK__imported__module__$5b$externals$5d2f$mongodb__$5b$external$5d$__$28$mongodb$2c$__cjs$29$__["MongoClient"](uri, options);
+        // Attach connection pool management for Vercel Functions
+        (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$vercel$2f$functions$2f$index$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["attachDatabasePool"])(client);
+        globalWithMongo._mongoClientPromise = client.connect();
+    }
+    clientPromise = globalWithMongo._mongoClientPromise;
+} else //TURBOPACK unreachable
+;
+const __TURBOPACK__default__export__ = clientPromise;
+}),
+"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+/* __next_internal_action_entry_do_not_use__ [{"40f96f98da9dffa2aeb1f5b30ef940139d42c05b50":"registerUser","6087403c0d53d9e2b79a4755a9fd767a6a93e0aae2":"authenticateUser"},"",""] */ __turbopack_context__.s([
+    "authenticateUser",
+    ()=>authenticateUser,
+    "registerUser",
+    ()=>registerUser
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/build/webpack/loaders/next-flight-loader/server-reference.js [app-rsc] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/mongodb.ts [app-rsc] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$action$2d$validate$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/build/webpack/loaders/next-flight-loader/action-validate.js [app-rsc] (ecmascript)");
+;
+;
+const DB_NAME = 'test'; // Update if using a different DB name
+const COLLECTION_NAME = 'users';
+async function authenticateUser(email, password) {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        // Find user by email
+        const user = await db.collection(COLLECTION_NAME).findOne({
+            email
+        });
+        if (!user) {
+            console.log('User not found:', email);
+            return null;
+        }
+        // Verify password
+        // WARNING: In production, passwords must be hashed (e.g., using bcrypt).
+        // Since we seeded plain text passwords, we compare directly for now.
+        if (user.password !== password) {
+            console.log('Invalid password for:', email);
+            return null;
+        }
+        // Return user object without sensitive data
+        const { password: _, _id, ...userProfile } = user;
+        return {
+            id: _id.toString(),
+            ...userProfile
+        };
+    } catch (error) {
+        console.error('Authentication error:', error);
+        return null;
+    }
+}
+async function registerUser(userData) {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        // Check if user already exists
+        const existingUser = await db.collection(COLLECTION_NAME).findOne({
+            email: userData.email
+        });
+        if (existingUser) {
+            return {
+                error: 'User already exists'
+            };
+        }
+        // Prepare new user document
+        const newUser = {
+            ...userData,
+            createdAt: new Date().toISOString(),
+            status: 'active',
+            // Assign default avatar if missing
+            avatar: userData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name || 'User')}&background=random`
+        };
+        // Insert into DB
+        const result = await db.collection(COLLECTION_NAME).insertOne(newUser);
+        if (!result.acknowledged) {
+            return {
+                error: 'Failed to create user'
+            };
+        }
+        const { password, ...createdUser } = newUser;
+        return {
+            id: result.insertedId.toString(),
+            ...createdUser
+        };
+    } catch (error) {
+        console.error('Registration error:', error);
+        return {
+            error: 'Internal server error'
+        };
+    }
+}
+;
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$action$2d$validate$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["ensureServerEntryExports"])([
+    authenticateUser,
+    registerUser
+]);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(authenticateUser, "6087403c0d53d9e2b79a4755a9fd767a6a93e0aae2", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(registerUser, "40f96f98da9dffa2aeb1f5b30ef940139d42c05b50", null);
+}),
+"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+/* __next_internal_action_entry_do_not_use__ [{"006f1b3e9f4b631a9b7f3b9d9bb5aa3720ab41b3de":"getUsersForAdmin","40148a03047ea7c90cb6db8afd53725a15ff842aa3":"getStudentProfile","4040345a4fde4b5082741e9f62647c3d78547d60c3":"getStudentDashboard","4066569379b0f6ef7cad6f70c5352030ca294cd62c":"getCourseDetails","406753a8737b948cdcefb2c885cafd18b1ad79712c":"getAdminDashboard","40879ea5daf28c7d34d5b992b97e428e0dd797656f":"getCommunityData","40a63d41cb747f89fed0eb5c0c99063fa3f62b9ae5":"getTeacherDashboard","40abaf44a49aed22a32e72d4a052b11eccd7a0c0ce":"getStudentProgress","40b25ba52c5dfcafbe7e4f6be44149066ae0920ccd":"getEnrolledCourses","40d18fff4fd2c17e56e01d7a3220bc8c8cd431e727":"getTeacherStudents","40ed0ba67928b3f8234861508f7313e6880eacb5f8":"getTeacherCourses","606fee9659a96a0750ad94e0579ae31cf12d061252":"updateStudentProfile","60f0de56decd50c9c547d15ff63f1c1c073a9bbad6":"createCourse"},"",""] */ __turbopack_context__.s([
+    "createCourse",
+    ()=>createCourse,
+    "getAdminDashboard",
+    ()=>getAdminDashboard,
+    "getCommunityData",
+    ()=>getCommunityData,
+    "getCourseDetails",
+    ()=>getCourseDetails,
+    "getEnrolledCourses",
+    ()=>getEnrolledCourses,
+    "getStudentDashboard",
+    ()=>getStudentDashboard,
+    "getStudentProfile",
+    ()=>getStudentProfile,
+    "getStudentProgress",
+    ()=>getStudentProgress,
+    "getTeacherCourses",
+    ()=>getTeacherCourses,
+    "getTeacherDashboard",
+    ()=>getTeacherDashboard,
+    "getTeacherStudents",
+    ()=>getTeacherStudents,
+    "getUsersForAdmin",
+    ()=>getUsersForAdmin,
+    "updateStudentProfile",
+    ()=>updateStudentProfile
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/build/webpack/loaders/next-flight-loader/server-reference.js [app-rsc] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/mongodb.ts [app-rsc] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$action$2d$validate$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/build/webpack/loaders/next-flight-loader/action-validate.js [app-rsc] (ecmascript)");
+;
+;
+const DB_NAME = 'test';
+async function getStudentDashboard(email) {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        // Get User
+        const user = await db.collection('users').findOne({
+            email
+        });
+        if (!user) return null;
+        // Get Enrolled Courses (via Progress) with Course Details
+        const progressDocs = await db.collection('progress').aggregate([
+            {
+                $match: {
+                    userId: user._id
+                }
+            },
+            {
+                $lookup: {
+                    from: 'courses',
+                    let: {
+                        courseId: '$courseId'
+                    },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: [
+                                        '$id',
+                                        '$$courseId'
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: 'courseDetails'
+                }
+            },
+            {
+                $unwind: '$courseDetails'
+            },
+            {
+                $project: {
+                    _id: 0,
+                    id: '$courseDetails.id',
+                    name: '$courseDetails.name',
+                    description: '$courseDetails.description',
+                    thumbnail: '$courseDetails.thumbnail',
+                    progress: '$progress',
+                    mastery: '$mastery',
+                    streak: '$streak',
+                    lastAccessed: '$lastAccessed' // Keep track of this
+                }
+            }
+        ]).toArray();
+        // Calculate Streak (Max streak from progress)
+        const currentStreak = progressDocs.reduce((acc, curr)=>Math.max(acc, curr.streak || 0), 0);
+        // Calculate Overall Mastery
+        const avgMastery = progressDocs.length > 0 ? Math.round(progressDocs.reduce((acc, curr)=>acc + (curr.mastery || 0), 0) / progressDocs.length) : 0;
+        return {
+            currentStreak,
+            enrolledCourses: progressDocs,
+            overallMastery: avgMastery,
+            recentActivity: []
+        };
+    } catch (e) {
+        console.error('Error fetching student dashboard:', e);
+        return null;
+    }
+}
+async function getEnrolledCourses(email) {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        const user = await db.collection('users').findOne({
+            email
+        });
+        if (!user) return [];
+        // Aggregate Progress with Course Details
+        const courses = await db.collection('progress').aggregate([
+            {
+                $match: {
+                    userId: user._id
+                }
+            },
+            {
+                $lookup: {
+                    from: 'courses',
+                    let: {
+                        courseId: '$courseId'
+                    },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: [
+                                        '$id',
+                                        '$$courseId'
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: 'courseDetails'
+                }
+            },
+            {
+                $unwind: '$courseDetails'
+            },
+            {
+                $project: {
+                    _id: 0,
+                    id: '$courseDetails.id',
+                    name: '$courseDetails.name',
+                    description: '$courseDetails.description',
+                    thumbnail: '$courseDetails.thumbnail',
+                    progress: '$progress',
+                    mastery: '$mastery',
+                    streak: '$streak',
+                    lastAccessed: '$lastAccessed'
+                }
+            }
+        ]).toArray();
+        return courses;
+    } catch (e) {
+        console.error('Error fetching enrolled courses:', e);
+        return [];
+    }
+}
+async function getStudentProfile(email) {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        const user = await db.collection('users').findOne({
+            email
+        });
+        if (!user) return null;
+        return {
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+            role: user.role,
+            joinedDate: user.createdAt,
+            // Mock extended fields if missing
+            bio: user.bio || "Passionate learner on Lumina.",
+            skills: user.skills || [
+                'Learning',
+                'Growth'
+            ],
+            location: user.location || 'Online',
+            level: 5 // Calculate based on XP/Progress later
+        };
+    } catch (e) {
+        console.error("Error fetching profile", e);
+        return null;
+    }
+}
+async function updateStudentProfile(email, data) {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        const updateData = {
+            name: data.name,
+            username: data.username,
+            phone: data.phone
+        };
+        // Only update avatar if provided (and not empty)
+        if (data.avatar) {
+            updateData.avatar = data.avatar;
+        }
+        await db.collection('users').updateOne({
+            email
+        }, {
+            $set: updateData
+        });
+        return {
+            success: true
+        };
+    } catch (e) {
+        console.error("Error updating profile", e);
+        return {
+            success: false,
+            error: 'Failed to update profile'
+        };
+    }
+}
+async function getStudentProgress(email) {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        const user = await db.collection('users').findOne({
+            email
+        });
+        if (!user) return null;
+        const progressDocs = await db.collection('progress').aggregate([
+            {
+                $match: {
+                    userId: user._id
+                }
+            },
+            {
+                $lookup: {
+                    from: 'courses',
+                    localField: 'courseId',
+                    foreignField: 'id',
+                    as: 'courseDetails'
+                }
+            },
+            {
+                $unwind: '$courseDetails'
+            },
+            {
+                $project: {
+                    _id: 0,
+                    courseName: '$courseDetails.name',
+                    progress: '$progress',
+                    mastery: '$mastery',
+                    streak: '$streak',
+                    lastAccessed: '$lastAccessed'
+                }
+            }
+        ]).toArray();
+        // Calculate Stats
+        const totalCourses = progressDocs.length;
+        const currentStreak = progressDocs.reduce((acc, curr)=>Math.max(acc, curr.streak || 0), 0);
+        const avgAccuracy = totalCourses > 0 ? Math.round(progressDocs.reduce((acc, curr)=>acc + (curr.mastery || 0), 0) / totalCourses) : 0;
+        // Mock XP based on progress
+        const totalXP = progressDocs.reduce((acc, curr)=>acc + (curr.progress || 0) * 10, 0);
+        // Mock Weekly Activity (Random for now)
+        const weeklyActivity = [
+            45,
+            60,
+            30,
+            90,
+            120,
+            60,
+            0
+        ];
+        return {
+            stats: {
+                currentStreak,
+                totalXP,
+                avgAccuracy,
+                level: Math.floor(totalXP / 1000) + 1,
+                learningTime: 'Mock 48h'
+            },
+            weeklyActivity,
+            recentCourses: progressDocs.sort((a, b)=>new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()).slice(0, 3)
+        };
+    } catch (e) {
+        console.error("Error fetching progress", e);
+        return null;
+    }
+}
+async function getCommunityData(channelId = 'general') {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        // Get Channels
+        const channels = await db.collection('community_channels').find({}).toArray();
+        // Get Messages for active channel
+        const messages = await db.collection('community_messages').find({
+            channelId
+        }).sort({
+            createdAt: 1
+        }).limit(50).toArray();
+        // Transform _id to string for client
+        return {
+            channels: channels.map((c)=>({
+                    ...c,
+                    _id: c._id.toString()
+                })),
+            messages: messages.map((m)=>({
+                    ...m,
+                    _id: m._id.toString(),
+                    userId: m.userId.toString()
+                }))
+        };
+    } catch (e) {
+        console.error('Error fetching community data:', e);
+        return {
+            channels: [],
+            messages: []
+        };
+    }
+}
+async function getTeacherDashboard(email) {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        const user = await db.collection('users').findOne({
+            email
+        });
+        if (!user) return null;
+        // Get Courses taught by this teacher
+        const courses = await db.collection('courses').find({
+            instructorId: user._id
+        }).toArray();
+        // Calculate Total Students (Sum of enrolledCount)
+        const totalStudents = courses.reduce((acc, curr)=>acc + (curr.enrolledCount || 0), 0);
+        return {
+            courses: courses.map((c)=>({
+                    id: c.id,
+                    name: c.name,
+                    enrolled: c.enrolledCount,
+                    thumbnail: c.thumbnail
+                })),
+            totalStudents,
+            activeCourses: courses.length,
+            // Mock other stats for now
+            hoursTaught: 120,
+            avgRating: 4.8
+        };
+    } catch (e) {
+        console.error('Error fetching teacher dashboard:', e);
+        return null;
+    }
+}
+async function getTeacherStudents(email) {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        const user = await db.collection('users').findOne({
+            email
+        });
+        if (!user) return [];
+        const courses = await db.collection('courses').find({
+            instructorId: user._id
+        }).toArray();
+        const courseIds = courses.map((c)=>c.id);
+        if (courseIds.length === 0) return [];
+        const progressDocs = await db.collection('progress').find({
+            courseId: {
+                $in: courseIds
+            }
+        }).toArray();
+        const studentIds = [
+            ...new Set(progressDocs.map((p)=>p.userId))
+        ];
+        if (studentIds.length === 0) return [];
+        const students = await db.collection('users').find({
+            _id: {
+                $in: studentIds
+            }
+        }).toArray();
+        return students.map((student)=>{
+            const studentProgress = progressDocs.filter((p)=>p.userId.toString() === student._id.toString());
+            const coursesTaken = courses.filter((c)=>studentProgress.some((p)=>p.courseId === c.id));
+            const avgProgress = studentProgress.length > 0 ? Math.round(studentProgress.reduce((acc, curr)=>acc + (curr.progress || 0), 0) / studentProgress.length) : 0;
+            const lastActive = studentProgress.sort((a, b)=>new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime())[0]?.lastAccessed;
+            return {
+                id: student._id.toString(),
+                name: student.name,
+                email: student.email,
+                avatar: student.avatar,
+                courses: coursesTaken.map((c)=>c.name),
+                progress: avgProgress,
+                lastActive: lastActive || student.createdAt
+            };
+        });
+    } catch (e) {
+        console.error('Error fetching teacher students:', e);
+        return [];
+    }
+}
+async function getTeacherCourses(email) {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        const user = await db.collection('users').findOne({
+            email
+        });
+        if (!user) return [];
+        const courses = await db.collection('courses').find({
+            instructorId: user._id
+        }).toArray();
+        // Calculate student counts dynamically if needed, or rely on enrolledCount
+        return courses.map((course)=>({
+                id: course.id,
+                title: course.name,
+                students: course.enrolledCount || 0,
+                level: course.level || 'Beginner',
+                status: course.status || 'Active',
+                image: course.thumbnail || '/api/placeholder/600/400',
+                lastUpdated: 'Recently' // You might want to store updatedAt in DB
+            }));
+    } catch (e) {
+        console.error('Error fetching teacher courses:', e);
+        return [];
+    }
+}
+async function createCourse(email, courseData) {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        const user = await db.collection('users').findOne({
+            email
+        });
+        if (!user) return {
+            success: false,
+            error: 'User not found'
+        };
+        const newCourse = {
+            id: courseData.id,
+            name: courseData.title,
+            description: courseData.description,
+            instructorId: user._id,
+            thumbnail: courseData.image,
+            level: courseData.level,
+            status: 'Active',
+            enrolledCount: 0,
+            modules: [],
+            createdAt: new Date(),
+            ...courseData
+        };
+        await db.collection('courses').insertOne(newCourse);
+        return {
+            success: true
+        };
+    } catch (e) {
+        console.error('Error creating course:', e);
+        return {
+            success: false,
+            error: 'Failed to create course'
+        };
+    }
+}
+async function getAdminDashboard(email) {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        const usersCount = await db.collection('users').countDocuments();
+        const coursesCount = await db.collection('courses').countDocuments();
+        // Mock revenue/system health
+        return {
+            totalUsers: usersCount,
+            totalCourses: coursesCount,
+            systemHealth: '98%',
+            securityAlerts: 0
+        };
+    } catch (e) {
+        console.error('Error fetching admin dashboard:', e);
+        return null;
+    }
+}
+async function getUsersForAdmin() {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        const users = await db.collection('users').find({}).toArray();
+        return users.map((user)=>({
+                id: user._id.toString(),
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                status: user.status,
+                createdAt: user.createdAt,
+                avatar: user.avatar
+            }));
+    } catch (e) {
+        console.error('Error fetching users for admin:', e);
+        return [];
+    }
+}
+async function getCourseDetails(courseId) {
+    try {
+        const client = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$mongodb$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"];
+        const db = client.db(DB_NAME);
+        const course = await db.collection('courses').findOne({
+            id: courseId
+        });
+        if (!course) return null;
+        // Ensure serialized return
+        return {
+            id: course.id,
+            name: course.name,
+            description: course.description,
+            thumbnail: course.thumbnail,
+            instructorId: course.instructorId ? course.instructorId.toString() : null,
+            expandedDescription: course.expandedDescription || "No detailed description available.",
+            modules: course.modules || [],
+            // Mock dynamic stats if missing
+            rating: 4.8,
+            students: course.enrolledCount || 120,
+            duration: '8 weeks'
+        };
+    } catch (e) {
+        console.error('Error fetching course details:', e);
+        return null;
+    }
+}
+;
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$action$2d$validate$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["ensureServerEntryExports"])([
+    getStudentDashboard,
+    getEnrolledCourses,
+    getStudentProfile,
+    updateStudentProfile,
+    getStudentProgress,
+    getCommunityData,
+    getTeacherDashboard,
+    getTeacherStudents,
+    getTeacherCourses,
+    createCourse,
+    getAdminDashboard,
+    getUsersForAdmin,
+    getCourseDetails
+]);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getStudentDashboard, "4040345a4fde4b5082741e9f62647c3d78547d60c3", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getEnrolledCourses, "40b25ba52c5dfcafbe7e4f6be44149066ae0920ccd", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getStudentProfile, "40148a03047ea7c90cb6db8afd53725a15ff842aa3", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(updateStudentProfile, "606fee9659a96a0750ad94e0579ae31cf12d061252", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getStudentProgress, "40abaf44a49aed22a32e72d4a052b11eccd7a0c0ce", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getCommunityData, "40879ea5daf28c7d34d5b992b97e428e0dd797656f", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getTeacherDashboard, "40a63d41cb747f89fed0eb5c0c99063fa3f62b9ae5", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getTeacherStudents, "40d18fff4fd2c17e56e01d7a3220bc8c8cd431e727", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getTeacherCourses, "40ed0ba67928b3f8234861508f7313e6880eacb5f8", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(createCourse, "60f0de56decd50c9c547d15ff63f1c1c073a9bbad6", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getAdminDashboard, "406753a8737b948cdcefb2c885cafd18b1ad79712c", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getUsersForAdmin, "006f1b3e9f4b631a9b7f3b9d9bb5aa3720ab41b3de", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getCourseDetails, "4066569379b0f6ef7cad6f70c5352030ca294cd62c", null);
+}),
+"[project]/.next-internal/server/app/student/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript) <locals>", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/app/actions/data.ts [app-rsc] (ecmascript)");
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+}),
+"[project]/.next-internal/server/app/student/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "006f1b3e9f4b631a9b7f3b9d9bb5aa3720ab41b3de",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getUsersForAdmin"],
+    "40148a03047ea7c90cb6db8afd53725a15ff842aa3",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getStudentProfile"],
+    "4040345a4fde4b5082741e9f62647c3d78547d60c3",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getStudentDashboard"],
+    "4066569379b0f6ef7cad6f70c5352030ca294cd62c",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getCourseDetails"],
+    "406753a8737b948cdcefb2c885cafd18b1ad79712c",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getAdminDashboard"],
+    "40879ea5daf28c7d34d5b992b97e428e0dd797656f",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getCommunityData"],
+    "40a63d41cb747f89fed0eb5c0c99063fa3f62b9ae5",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getTeacherDashboard"],
+    "40abaf44a49aed22a32e72d4a052b11eccd7a0c0ce",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getStudentProgress"],
+    "40b25ba52c5dfcafbe7e4f6be44149066ae0920ccd",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getEnrolledCourses"],
+    "40d18fff4fd2c17e56e01d7a3220bc8c8cd431e727",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getTeacherStudents"],
+    "40ed0ba67928b3f8234861508f7313e6880eacb5f8",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getTeacherCourses"],
+    "40f96f98da9dffa2aeb1f5b30ef940139d42c05b50",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerUser"],
+    "606fee9659a96a0750ad94e0579ae31cf12d061252",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["updateStudentProfile"],
+    "6087403c0d53d9e2b79a4755a9fd767a6a93e0aae2",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["authenticateUser"],
+    "60f0de56decd50c9c547d15ff63f1c1c073a9bbad6",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createCourse"]
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$student$2f$dashboard$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$src$2f$app$2f$actions$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29222c$__ACTIONS_MODULE1__$3d3e$__$225b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$server__actions__loader$2c$__ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i('[project]/.next-internal/server/app/student/dashboard/page/actions.js { ACTIONS_MODULE0 => "[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)", ACTIONS_MODULE1 => "[project]/src/app/actions/data.ts [app-rsc] (ecmascript)" } [app-rsc] (server actions loader, ecmascript) <locals>');
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$app$2f$actions$2f$data$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/app/actions/data.ts [app-rsc] (ecmascript)");
+}),
+"[project]/node_modules/next/dist/build/webpack/loaders/next-flight-loader/server-reference.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+/* eslint-disable import/no-extraneous-dependencies */ Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "registerServerReference", {
+    enumerable: true,
+    get: function() {
+        return _server.registerServerReference;
+    }
+});
+const _server = __turbopack_context__.r("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/rsc/react-server-dom-turbopack-server.js [app-rsc] (ecmascript)"); //# sourceMappingURL=server-reference.js.map
+}),
+"[project]/node_modules/@vercel/functions/headers.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all)=>{
+    for(var name in all)__defProp(target, name, {
+        get: all[name],
+        enumerable: true
+    });
+};
+var __copyProps = (to, from, except, desc)=>{
+    if (from && typeof from === "object" || typeof from === "function") {
+        for (let key of __getOwnPropNames(from))if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+            get: ()=>from[key],
+            enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+    }
+    return to;
+};
+var __toCommonJS = (mod)=>__copyProps(__defProp({}, "__esModule", {
+        value: true
+    }), mod);
+var headers_exports = {};
+__export(headers_exports, {
+    CITY_HEADER_NAME: ()=>CITY_HEADER_NAME,
+    COUNTRY_HEADER_NAME: ()=>COUNTRY_HEADER_NAME,
+    EMOJI_FLAG_UNICODE_STARTING_POSITION: ()=>EMOJI_FLAG_UNICODE_STARTING_POSITION,
+    IP_HEADER_NAME: ()=>IP_HEADER_NAME,
+    LATITUDE_HEADER_NAME: ()=>LATITUDE_HEADER_NAME,
+    LONGITUDE_HEADER_NAME: ()=>LONGITUDE_HEADER_NAME,
+    POSTAL_CODE_HEADER_NAME: ()=>POSTAL_CODE_HEADER_NAME,
+    REGION_HEADER_NAME: ()=>REGION_HEADER_NAME,
+    REQUEST_ID_HEADER_NAME: ()=>REQUEST_ID_HEADER_NAME,
+    geolocation: ()=>geolocation,
+    ipAddress: ()=>ipAddress
+});
+module.exports = __toCommonJS(headers_exports);
+const CITY_HEADER_NAME = "x-vercel-ip-city";
+const COUNTRY_HEADER_NAME = "x-vercel-ip-country";
+const IP_HEADER_NAME = "x-real-ip";
+const LATITUDE_HEADER_NAME = "x-vercel-ip-latitude";
+const LONGITUDE_HEADER_NAME = "x-vercel-ip-longitude";
+const REGION_HEADER_NAME = "x-vercel-ip-country-region";
+const POSTAL_CODE_HEADER_NAME = "x-vercel-ip-postal-code";
+const REQUEST_ID_HEADER_NAME = "x-vercel-id";
+const EMOJI_FLAG_UNICODE_STARTING_POSITION = 127397;
+function getHeader(headers, key) {
+    return headers.get(key) ?? void 0;
+}
+function getHeaderWithDecode(request, key) {
+    const header = getHeader(request.headers, key);
+    return header ? decodeURIComponent(header) : void 0;
+}
+function getFlag(countryCode) {
+    const regex = new RegExp("^[A-Z]{2}$").test(countryCode);
+    if (!countryCode || !regex) return void 0;
+    return String.fromCodePoint(...countryCode.split("").map((char)=>EMOJI_FLAG_UNICODE_STARTING_POSITION + char.charCodeAt(0)));
+}
+function ipAddress(input) {
+    const headers = "headers" in input ? input.headers : input;
+    return getHeader(headers, IP_HEADER_NAME);
+}
+function getRegionFromRequestId(requestId) {
+    if (!requestId) {
+        return "dev1";
+    }
+    return requestId.split(":")[0];
+}
+function geolocation(request) {
+    return {
+        // city name may be encoded to support multi-byte characters
+        city: getHeaderWithDecode(request, CITY_HEADER_NAME),
+        country: getHeader(request.headers, COUNTRY_HEADER_NAME),
+        flag: getFlag(getHeader(request.headers, COUNTRY_HEADER_NAME)),
+        countryRegion: getHeader(request.headers, REGION_HEADER_NAME),
+        region: getRegionFromRequestId(getHeader(request.headers, REQUEST_ID_HEADER_NAME)),
+        latitude: getHeader(request.headers, LATITUDE_HEADER_NAME),
+        longitude: getHeader(request.headers, LONGITUDE_HEADER_NAME),
+        postalCode: getHeader(request.headers, POSTAL_CODE_HEADER_NAME)
+    };
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+    CITY_HEADER_NAME,
+    COUNTRY_HEADER_NAME,
+    EMOJI_FLAG_UNICODE_STARTING_POSITION,
+    IP_HEADER_NAME,
+    LATITUDE_HEADER_NAME,
+    LONGITUDE_HEADER_NAME,
+    POSTAL_CODE_HEADER_NAME,
+    REGION_HEADER_NAME,
+    REQUEST_ID_HEADER_NAME,
+    geolocation,
+    ipAddress
+});
+}),
+"[project]/node_modules/@vercel/functions/get-env.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all)=>{
+    for(var name in all)__defProp(target, name, {
+        get: all[name],
+        enumerable: true
+    });
+};
+var __copyProps = (to, from, except, desc)=>{
+    if (from && typeof from === "object" || typeof from === "function") {
+        for (let key of __getOwnPropNames(from))if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+            get: ()=>from[key],
+            enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+    }
+    return to;
+};
+var __toCommonJS = (mod)=>__copyProps(__defProp({}, "__esModule", {
+        value: true
+    }), mod);
+var get_env_exports = {};
+__export(get_env_exports, {
+    getEnv: ()=>getEnv
+});
+module.exports = __toCommonJS(get_env_exports);
+const getEnv = (env = process.env)=>({
+        /**
+   * An indicator to show that System Environment Variables have been exposed to your project's Deployments.
+   * @example "1"
+   */ VERCEL: get(env, "VERCEL"),
+        /**
+   * An indicator that the code is running in a Continuous Integration environment.
+   * @example "1"
+   */ CI: get(env, "CI"),
+        /**
+   * The Environment that the app is deployed and running on.
+   * @example "production"
+   */ VERCEL_ENV: get(env, "VERCEL_ENV"),
+        /**
+   * The domain name of the generated deployment URL. The value does not include the protocol scheme https://.
+   * NOTE: This Variable cannot be used in conjunction with Standard Deployment Protection.
+   * @example "*.vercel.app"
+   */ VERCEL_URL: get(env, "VERCEL_URL"),
+        /**
+   * The domain name of the generated Git branch URL. The value does not include the protocol scheme https://.
+   * @example "*-git-*.vercel.app"
+   */ VERCEL_BRANCH_URL: get(env, "VERCEL_BRANCH_URL"),
+        /**
+   * A production domain name of the project. This is useful to reliably generate links that point to production such as OG-image URLs.
+   * The value does not include the protocol scheme https://.
+   * @example "myproject.vercel.app"
+   */ VERCEL_PROJECT_PRODUCTION_URL: get(env, "VERCEL_PROJECT_PRODUCTION_URL"),
+        /**
+   * The ID of the Region where the app is running.
+   *
+   * Possible values:
+   * - arn1 (Stockholm, Sweden)
+   * - bom1 (Mumbai, India)
+   * - cdg1 (Paris, France)
+   * - cle1 (Cleveland, USA)
+   * - cpt1 (Cape Town, South Africa)
+   * - dub1 (Dublin, Ireland)
+   * - fra1 (Frankfurt, Germany)
+   * - gru1 (São Paulo, Brazil)
+   * - hkg1 (Hong Kong)
+   * - hnd1 (Tokyo, Japan)
+   * - iad1 (Washington, D.C., USA)
+   * - icn1 (Seoul, South Korea)
+   * - kix1 (Osaka, Japan)
+   * - lhr1 (London, United Kingdom)
+   * - pdx1 (Portland, USA)
+   * - sfo1 (San Francisco, USA)
+   * - sin1 (Singapore)
+   * - syd1 (Sydney, Australia)
+   * - dev1 (Development Region)
+   *
+   * @example "iad1"
+   */ VERCEL_REGION: get(env, "VERCEL_REGION"),
+        /**
+   * The unique identifier for the deployment, which can be used to implement Skew Protection.
+   * @example "dpl_7Gw5ZMBpQA8h9GF832KGp7nwbuh3"
+   */ VERCEL_DEPLOYMENT_ID: get(env, "VERCEL_DEPLOYMENT_ID"),
+        /**
+   * When Skew Protection is enabled in Project Settings, this value is set to 1.
+   * @example "1"
+   */ VERCEL_SKEW_PROTECTION_ENABLED: get(env, "VERCEL_SKEW_PROTECTION_ENABLED"),
+        /**
+   * The Protection Bypass for Automation value, if the secret has been generated in the project's Deployment Protection settings.
+   */ VERCEL_AUTOMATION_BYPASS_SECRET: get(env, "VERCEL_AUTOMATION_BYPASS_SECRET"),
+        /**
+   * The Git Provider the deployment is triggered from.
+   * @example "github"
+   */ VERCEL_GIT_PROVIDER: get(env, "VERCEL_GIT_PROVIDER"),
+        /**
+   * The origin repository the deployment is triggered from.
+   * @example "my-site"
+   */ VERCEL_GIT_REPO_SLUG: get(env, "VERCEL_GIT_REPO_SLUG"),
+        /**
+   * The account that owns the repository the deployment is triggered from.
+   * @example "acme"
+   */ VERCEL_GIT_REPO_OWNER: get(env, "VERCEL_GIT_REPO_OWNER"),
+        /**
+   * The ID of the repository the deployment is triggered from.
+   * @example "117716146"
+   */ VERCEL_GIT_REPO_ID: get(env, "VERCEL_GIT_REPO_ID"),
+        /**
+   * The git branch of the commit the deployment was triggered by.
+   * @example "improve-about-page"
+   */ VERCEL_GIT_COMMIT_REF: get(env, "VERCEL_GIT_COMMIT_REF"),
+        /**
+   * The git SHA of the commit the deployment was triggered by.
+   * @example "fa1eade47b73733d6312d5abfad33ce9e4068081"
+   */ VERCEL_GIT_COMMIT_SHA: get(env, "VERCEL_GIT_COMMIT_SHA"),
+        /**
+   * The message attached to the commit the deployment was triggered by.
+   * @example "Update about page"
+   */ VERCEL_GIT_COMMIT_MESSAGE: get(env, "VERCEL_GIT_COMMIT_MESSAGE"),
+        /**
+   * The username attached to the author of the commit that the project was deployed by.
+   * @example "johndoe"
+   */ VERCEL_GIT_COMMIT_AUTHOR_LOGIN: get(env, "VERCEL_GIT_COMMIT_AUTHOR_LOGIN"),
+        /**
+   * The name attached to the author of the commit that the project was deployed by.
+   * @example "John Doe"
+   */ VERCEL_GIT_COMMIT_AUTHOR_NAME: get(env, "VERCEL_GIT_COMMIT_AUTHOR_NAME"),
+        /**
+   * The git SHA of the last successful deployment for the project and branch.
+   * NOTE: This Variable is only exposed when an Ignored Build Step is provided.
+   * @example "fa1eade47b73733d6312d5abfad33ce9e4068080"
+   */ VERCEL_GIT_PREVIOUS_SHA: get(env, "VERCEL_GIT_PREVIOUS_SHA"),
+        /**
+   * The pull request id the deployment was triggered by. If a deployment is created on a branch before a pull request is made, this value will be an empty string.
+   * @example "23"
+   */ VERCEL_GIT_PULL_REQUEST_ID: get(env, "VERCEL_GIT_PULL_REQUEST_ID")
+    });
+const get = (env, key)=>{
+    const value = env[key];
+    return value === "" ? void 0 : value;
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+    getEnv
+});
+}),
+"[project]/node_modules/@vercel/functions/get-context.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all)=>{
+    for(var name in all)__defProp(target, name, {
+        get: all[name],
+        enumerable: true
+    });
+};
+var __copyProps = (to, from, except, desc)=>{
+    if (from && typeof from === "object" || typeof from === "function") {
+        for (let key of __getOwnPropNames(from))if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+            get: ()=>from[key],
+            enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+    }
+    return to;
+};
+var __toCommonJS = (mod)=>__copyProps(__defProp({}, "__esModule", {
+        value: true
+    }), mod);
+var get_context_exports = {};
+__export(get_context_exports, {
+    SYMBOL_FOR_REQ_CONTEXT: ()=>SYMBOL_FOR_REQ_CONTEXT,
+    getContext: ()=>getContext
+});
+module.exports = __toCommonJS(get_context_exports);
+const SYMBOL_FOR_REQ_CONTEXT = Symbol.for("@vercel/request-context");
+function getContext() {
+    const fromSymbol = globalThis;
+    return fromSymbol[SYMBOL_FOR_REQ_CONTEXT]?.get?.() ?? {};
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+    SYMBOL_FOR_REQ_CONTEXT,
+    getContext
+});
+}),
+"[project]/node_modules/@vercel/functions/wait-until.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all)=>{
+    for(var name in all)__defProp(target, name, {
+        get: all[name],
+        enumerable: true
+    });
+};
+var __copyProps = (to, from, except, desc)=>{
+    if (from && typeof from === "object" || typeof from === "function") {
+        for (let key of __getOwnPropNames(from))if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+            get: ()=>from[key],
+            enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+    }
+    return to;
+};
+var __toCommonJS = (mod)=>__copyProps(__defProp({}, "__esModule", {
+        value: true
+    }), mod);
+var wait_until_exports = {};
+__export(wait_until_exports, {
+    waitUntil: ()=>waitUntil
+});
+module.exports = __toCommonJS(wait_until_exports);
+var import_get_context = __turbopack_context__.r("[project]/node_modules/@vercel/functions/get-context.js [app-rsc] (ecmascript)");
+const waitUntil = (promise)=>{
+    if (promise === null || typeof promise !== "object" || typeof promise.then !== "function") {
+        throw new TypeError(`waitUntil can only be called with a Promise, got ${typeof promise}`);
+    }
+    return (0, import_get_context.getContext)().waitUntil?.(promise);
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+    waitUntil
+});
+}),
+"[project]/node_modules/@vercel/functions/middleware.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all)=>{
+    for(var name in all)__defProp(target, name, {
+        get: all[name],
+        enumerable: true
+    });
+};
+var __copyProps = (to, from, except, desc)=>{
+    if (from && typeof from === "object" || typeof from === "function") {
+        for (let key of __getOwnPropNames(from))if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+            get: ()=>from[key],
+            enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+    }
+    return to;
+};
+var __toCommonJS = (mod)=>__copyProps(__defProp({}, "__esModule", {
+        value: true
+    }), mod);
+var middleware_exports = {};
+__export(middleware_exports, {
+    next: ()=>next,
+    rewrite: ()=>rewrite
+});
+module.exports = __toCommonJS(middleware_exports);
+function handleMiddlewareField(init, headers) {
+    if (init?.request?.headers) {
+        if (!(init.request.headers instanceof Headers)) {
+            throw new Error("request.headers must be an instance of Headers");
+        }
+        const keys = [];
+        for (const [key, value] of init.request.headers){
+            headers.set("x-middleware-request-" + key, value);
+            keys.push(key);
+        }
+        headers.set("x-middleware-override-headers", keys.join(","));
+    }
+}
+function rewrite(destination, init) {
+    const headers = new Headers(init?.headers ?? {});
+    headers.set("x-middleware-rewrite", String(destination));
+    handleMiddlewareField(init, headers);
+    return new Response(null, {
+        ...init,
+        headers
+    });
+}
+function next(init) {
+    const headers = new Headers(init?.headers ?? {});
+    headers.set("x-middleware-next", "1");
+    handleMiddlewareField(init, headers);
+    return new Response(null, {
+        ...init,
+        headers
+    });
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+    next,
+    rewrite
+});
+}),
+"[project]/node_modules/@vercel/functions/cache/in-memory-cache.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all)=>{
+    for(var name in all)__defProp(target, name, {
+        get: all[name],
+        enumerable: true
+    });
+};
+var __copyProps = (to, from, except, desc)=>{
+    if (from && typeof from === "object" || typeof from === "function") {
+        for (let key of __getOwnPropNames(from))if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+            get: ()=>from[key],
+            enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+    }
+    return to;
+};
+var __toCommonJS = (mod)=>__copyProps(__defProp({}, "__esModule", {
+        value: true
+    }), mod);
+var in_memory_cache_exports = {};
+__export(in_memory_cache_exports, {
+    InMemoryCache: ()=>InMemoryCache
+});
+module.exports = __toCommonJS(in_memory_cache_exports);
+class InMemoryCache {
+    constructor(){
+        this.cache = {};
+    }
+    async get(key) {
+        const entry = this.cache[key];
+        if (entry) {
+            if (entry.ttl && entry.lastModified + entry.ttl * 1e3 < Date.now()) {
+                await this.delete(key);
+                return null;
+            }
+            return entry.value;
+        }
+        return null;
+    }
+    async set(key, value, options) {
+        this.cache[key] = {
+            value,
+            lastModified: Date.now(),
+            ttl: options?.ttl,
+            tags: new Set(options?.tags || [])
+        };
+    }
+    async delete(key) {
+        delete this.cache[key];
+    }
+    async expireTag(tag) {
+        const tags = Array.isArray(tag) ? tag : [
+            tag
+        ];
+        for(const key in this.cache){
+            if (Object.prototype.hasOwnProperty.call(this.cache, key)) {
+                const entry = this.cache[key];
+                if (tags.some((t)=>entry.tags.has(t))) {
+                    delete this.cache[key];
+                }
+            }
+        }
+    }
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+    InMemoryCache
+});
+}),
+"[project]/node_modules/@vercel/functions/cache/build-client.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all)=>{
+    for(var name in all)__defProp(target, name, {
+        get: all[name],
+        enumerable: true
+    });
+};
+var __copyProps = (to, from, except, desc)=>{
+    if (from && typeof from === "object" || typeof from === "function") {
+        for (let key of __getOwnPropNames(from))if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+            get: ()=>from[key],
+            enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+    }
+    return to;
+};
+var __toCommonJS = (mod)=>__copyProps(__defProp({}, "__esModule", {
+        value: true
+    }), mod);
+var build_client_exports = {};
+__export(build_client_exports, {
+    BuildCache: ()=>BuildCache
+});
+module.exports = __toCommonJS(build_client_exports);
+var import_index = __turbopack_context__.r("[project]/node_modules/@vercel/functions/cache/index.js [app-rsc] (ecmascript)");
+class BuildCache {
+    constructor({ endpoint, headers, onError, timeout = 500 }){
+        this.get = async (key)=>{
+            const controller = new AbortController();
+            const timeoutId = setTimeout(()=>controller.abort(), this.timeout);
+            try {
+                const res = await fetch(`${this.endpoint}${key}`, {
+                    headers: this.headers,
+                    method: "GET",
+                    signal: controller.signal
+                });
+                if (res.status === 404) {
+                    clearTimeout(timeoutId);
+                    return null;
+                }
+                if (res.status === 200) {
+                    const cacheState = res.headers.get(import_index.HEADERS_VERCEL_CACHE_STATE);
+                    if (cacheState !== import_index.PkgCacheState.Fresh) {
+                        res.body?.cancel?.();
+                        clearTimeout(timeoutId);
+                        return null;
+                    }
+                    const result = await res.json();
+                    clearTimeout(timeoutId);
+                    return result;
+                } else {
+                    clearTimeout(timeoutId);
+                    throw new Error(`Failed to get cache: ${res.statusText}`);
+                }
+            } catch (error) {
+                clearTimeout(timeoutId);
+                if (error.name === "AbortError") {
+                    const timeoutError = new Error(`Cache request timed out after ${this.timeout}ms`);
+                    timeoutError.stack = error.stack;
+                    this.onError?.(timeoutError);
+                } else {
+                    this.onError?.(error);
+                }
+                return null;
+            }
+        };
+        this.set = async (key, value, options)=>{
+            const controller = new AbortController();
+            const timeoutId = setTimeout(()=>controller.abort(), this.timeout);
+            try {
+                const optionalHeaders = {};
+                if (options?.ttl) {
+                    optionalHeaders[import_index.HEADERS_VERCEL_REVALIDATE] = options.ttl.toString();
+                }
+                if (options?.tags && options.tags.length > 0) {
+                    optionalHeaders[import_index.HEADERS_VERCEL_CACHE_TAGS] = options.tags.join(",");
+                }
+                if (options?.name) {
+                    optionalHeaders[import_index.HEADERS_VERCEL_CACHE_ITEM_NAME] = options.name;
+                }
+                const res = await fetch(`${this.endpoint}${key}`, {
+                    method: "POST",
+                    headers: {
+                        ...this.headers,
+                        ...optionalHeaders
+                    },
+                    body: JSON.stringify(value),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                if (res.status !== 200) {
+                    throw new Error(`Failed to set cache: ${res.status} ${res.statusText}`);
+                }
+            } catch (error) {
+                clearTimeout(timeoutId);
+                if (error.name === "AbortError") {
+                    const timeoutError = new Error(`Cache request timed out after ${this.timeout}ms`);
+                    timeoutError.stack = error.stack;
+                    this.onError?.(timeoutError);
+                } else {
+                    this.onError?.(error);
+                }
+            }
+        };
+        this.delete = async (key)=>{
+            const controller = new AbortController();
+            const timeoutId = setTimeout(()=>controller.abort(), this.timeout);
+            try {
+                const res = await fetch(`${this.endpoint}${key}`, {
+                    method: "DELETE",
+                    headers: this.headers,
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                if (res.status !== 200) {
+                    throw new Error(`Failed to delete cache: ${res.statusText}`);
+                }
+            } catch (error) {
+                clearTimeout(timeoutId);
+                if (error.name === "AbortError") {
+                    const timeoutError = new Error(`Cache request timed out after ${this.timeout}ms`);
+                    timeoutError.stack = error.stack;
+                    this.onError?.(timeoutError);
+                } else {
+                    this.onError?.(error);
+                }
+            }
+        };
+        this.expireTag = async (tag)=>{
+            const controller = new AbortController();
+            const timeoutId = setTimeout(()=>controller.abort(), this.timeout);
+            try {
+                if (Array.isArray(tag)) {
+                    tag = tag.join(",");
+                }
+                const res = await fetch(`${this.endpoint}revalidate?tags=${tag}`, {
+                    method: "POST",
+                    headers: this.headers,
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                if (res.status !== 200) {
+                    throw new Error(`Failed to revalidate tag: ${res.statusText}`);
+                }
+            } catch (error) {
+                clearTimeout(timeoutId);
+                if (error.name === "AbortError") {
+                    const timeoutError = new Error(`Cache request timed out after ${this.timeout}ms`);
+                    timeoutError.stack = error.stack;
+                    this.onError?.(timeoutError);
+                } else {
+                    this.onError?.(error);
+                }
+            }
+        };
+        this.endpoint = endpoint;
+        this.headers = headers;
+        this.onError = onError;
+        this.timeout = timeout;
+    }
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+    BuildCache
+});
+}),
+"[project]/node_modules/@vercel/functions/cache/index.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all)=>{
+    for(var name in all)__defProp(target, name, {
+        get: all[name],
+        enumerable: true
+    });
+};
+var __copyProps = (to, from, except, desc)=>{
+    if (from && typeof from === "object" || typeof from === "function") {
+        for (let key of __getOwnPropNames(from))if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+            get: ()=>from[key],
+            enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+    }
+    return to;
+};
+var __toCommonJS = (mod)=>__copyProps(__defProp({}, "__esModule", {
+        value: true
+    }), mod);
+var cache_exports = {};
+__export(cache_exports, {
+    HEADERS_VERCEL_CACHE_ITEM_NAME: ()=>HEADERS_VERCEL_CACHE_ITEM_NAME,
+    HEADERS_VERCEL_CACHE_STATE: ()=>HEADERS_VERCEL_CACHE_STATE,
+    HEADERS_VERCEL_CACHE_TAGS: ()=>HEADERS_VERCEL_CACHE_TAGS,
+    HEADERS_VERCEL_REVALIDATE: ()=>HEADERS_VERCEL_REVALIDATE,
+    PkgCacheState: ()=>PkgCacheState,
+    getCache: ()=>getCache
+});
+module.exports = __toCommonJS(cache_exports);
+var import_get_context = __turbopack_context__.r("[project]/node_modules/@vercel/functions/get-context.js [app-rsc] (ecmascript)");
+var import_in_memory_cache = __turbopack_context__.r("[project]/node_modules/@vercel/functions/cache/in-memory-cache.js [app-rsc] (ecmascript)");
+var import_build_client = __turbopack_context__.r("[project]/node_modules/@vercel/functions/cache/build-client.js [app-rsc] (ecmascript)");
+const defaultKeyHashFunction = (key)=>{
+    let hash = 5381;
+    for(let i = 0; i < key.length; i++){
+        hash = hash * 33 ^ key.charCodeAt(i);
+    }
+    return (hash >>> 0).toString(16);
+};
+const defaultNamespaceSeparator = "$";
+let inMemoryCacheInstance = null;
+let buildCacheInstance = null;
+const getCache = (cacheOptions)=>{
+    const resolveCache = ()=>{
+        let cache;
+        if ((0, import_get_context.getContext)().cache) {
+            cache = (0, import_get_context.getContext)().cache;
+        } else {
+            cache = getCacheImplementation(process.env.SUSPENSE_CACHE_DEBUG === "true");
+        }
+        return cache;
+    };
+    return wrapWithKeyTransformation(resolveCache, createKeyTransformer(cacheOptions));
+};
+function createKeyTransformer(cacheOptions) {
+    const hashFunction = cacheOptions?.keyHashFunction || defaultKeyHashFunction;
+    return (key)=>{
+        if (!cacheOptions?.namespace) return hashFunction(key);
+        const separator = cacheOptions.namespaceSeparator || defaultNamespaceSeparator;
+        return `${cacheOptions.namespace}${separator}${hashFunction(key)}`;
+    };
+}
+function wrapWithKeyTransformation(resolveCache, makeKey) {
+    return {
+        get: (key)=>{
+            return resolveCache().get(makeKey(key));
+        },
+        set: (key, value, options)=>{
+            return resolveCache().set(makeKey(key), value, options);
+        },
+        delete: (key)=>{
+            return resolveCache().delete(makeKey(key));
+        },
+        expireTag: (tag)=>{
+            return resolveCache().expireTag(tag);
+        }
+    };
+}
+let warnedCacheUnavailable = false;
+function getCacheImplementation(debug) {
+    if (!inMemoryCacheInstance) {
+        inMemoryCacheInstance = new import_in_memory_cache.InMemoryCache();
+    }
+    if (process.env.RUNTIME_CACHE_DISABLE_BUILD_CACHE === "true") {
+        debug && console.log("Using InMemoryCache as build cache is disabled");
+        return inMemoryCacheInstance;
+    }
+    const { RUNTIME_CACHE_ENDPOINT, RUNTIME_CACHE_HEADERS } = process.env;
+    if (debug) {
+        console.log("Runtime cache environment variables:", {
+            RUNTIME_CACHE_ENDPOINT,
+            RUNTIME_CACHE_HEADERS
+        });
+    }
+    if (!RUNTIME_CACHE_ENDPOINT || !RUNTIME_CACHE_HEADERS) {
+        if (!warnedCacheUnavailable) {
+            console.warn("Runtime Cache unavailable in this environment. Falling back to in-memory cache.");
+            warnedCacheUnavailable = true;
+        }
+        return inMemoryCacheInstance;
+    }
+    if (!buildCacheInstance) {
+        let parsedHeaders = {};
+        try {
+            parsedHeaders = JSON.parse(RUNTIME_CACHE_HEADERS);
+        } catch (e) {
+            console.error("Failed to parse RUNTIME_CACHE_HEADERS:", e);
+            return inMemoryCacheInstance;
+        }
+        let timeout = 500;
+        if (process.env.RUNTIME_CACHE_TIMEOUT) {
+            const parsed = parseInt(process.env.RUNTIME_CACHE_TIMEOUT, 10);
+            if (!isNaN(parsed) && parsed > 0) {
+                timeout = parsed;
+            } else {
+                console.warn(`Invalid RUNTIME_CACHE_TIMEOUT value: "${process.env.RUNTIME_CACHE_TIMEOUT}". Using default: ${timeout}ms`);
+            }
+        }
+        buildCacheInstance = new import_build_client.BuildCache({
+            endpoint: RUNTIME_CACHE_ENDPOINT,
+            headers: parsedHeaders,
+            onError: (error)=>console.error(error),
+            timeout
+        });
+    }
+    return buildCacheInstance;
+}
+var PkgCacheState = /* @__PURE__ */ ((PkgCacheState2)=>{
+    PkgCacheState2["Fresh"] = "fresh";
+    PkgCacheState2["Stale"] = "stale";
+    PkgCacheState2["Expired"] = "expired";
+    PkgCacheState2["NotFound"] = "notFound";
+    PkgCacheState2["Error"] = "error";
+    return PkgCacheState2;
+})(PkgCacheState || {});
+const HEADERS_VERCEL_CACHE_STATE = "x-vercel-cache-state";
+const HEADERS_VERCEL_REVALIDATE = "x-vercel-revalidate";
+const HEADERS_VERCEL_CACHE_TAGS = "x-vercel-cache-tags";
+const HEADERS_VERCEL_CACHE_ITEM_NAME = "x-vercel-cache-item-name";
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+    HEADERS_VERCEL_CACHE_ITEM_NAME,
+    HEADERS_VERCEL_CACHE_STATE,
+    HEADERS_VERCEL_CACHE_TAGS,
+    HEADERS_VERCEL_REVALIDATE,
+    PkgCacheState,
+    getCache
+});
+}),
+"[project]/node_modules/@vercel/functions/db-connections/index.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all)=>{
+    for(var name in all)__defProp(target, name, {
+        get: all[name],
+        enumerable: true
+    });
+};
+var __copyProps = (to, from, except, desc)=>{
+    if (from && typeof from === "object" || typeof from === "function") {
+        for (let key of __getOwnPropNames(from))if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+            get: ()=>from[key],
+            enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+    }
+    return to;
+};
+var __toCommonJS = (mod)=>__copyProps(__defProp({}, "__esModule", {
+        value: true
+    }), mod);
+var db_connections_exports = {};
+__export(db_connections_exports, {
+    attachDatabasePool: ()=>attachDatabasePool,
+    experimental_attachDatabasePool: ()=>experimental_attachDatabasePool
+});
+module.exports = __toCommonJS(db_connections_exports);
+var import_get_context = __turbopack_context__.r("[project]/node_modules/@vercel/functions/get-context.js [app-rsc] (ecmascript)");
+const DEBUG = !!process.env.DEBUG;
+function getIdleTimeout(dbPool) {
+    if ("options" in dbPool && dbPool.options) {
+        if ("idleTimeoutMillis" in dbPool.options) {
+            return typeof dbPool.options.idleTimeoutMillis === "number" ? dbPool.options.idleTimeoutMillis : 1e4;
+        }
+        if ("maxIdleTimeMS" in dbPool.options) {
+            return typeof dbPool.options.maxIdleTimeMS === "number" ? dbPool.options.maxIdleTimeMS : 0;
+        }
+        if ("status" in dbPool) {
+            return 5e3;
+        }
+        if ("connect" in dbPool && "execute" in dbPool) {
+            return 3e4;
+        }
+    }
+    if ("config" in dbPool && dbPool.config) {
+        if ("connectionConfig" in dbPool.config && dbPool.config.connectionConfig) {
+            return dbPool.config.connectionConfig.idleTimeout || 6e4;
+        }
+        if ("idleTimeout" in dbPool.config) {
+            return typeof dbPool.config.idleTimeout === "number" ? dbPool.config.idleTimeout : 6e4;
+        }
+    }
+    if ("poolTimeout" in dbPool) {
+        return typeof dbPool.poolTimeout === "number" ? dbPool.poolTimeout : 6e4;
+    }
+    if ("idleTimeout" in dbPool) {
+        return typeof dbPool.idleTimeout === "number" ? dbPool.idleTimeout : 0;
+    }
+    return 1e4;
+}
+let idleTimeout = null;
+let idleTimeoutResolve = ()=>{};
+const bootTime = Date.now();
+const maximumDuration = 15 * 60 * 1e3 - 1e3;
+function waitUntilIdleTimeout(dbPool) {
+    if (!process.env.VERCEL_URL || // This is not set during builds where we don't need to wait for idle connections using the mechanism
+    !process.env.VERCEL_REGION) {
+        return;
+    }
+    if (idleTimeout) {
+        clearTimeout(idleTimeout);
+        idleTimeoutResolve();
+    }
+    const promise = new Promise((resolve)=>{
+        idleTimeoutResolve = resolve;
+    });
+    const waitTime = Math.min(getIdleTimeout(dbPool) + 100, maximumDuration - (Date.now() - bootTime));
+    idleTimeout = setTimeout(()=>{
+        idleTimeoutResolve?.();
+        if (DEBUG) {
+            console.log("Database pool idle timeout reached. Releasing connections.");
+        }
+    }, waitTime);
+    const requestContext = (0, import_get_context.getContext)();
+    if (requestContext?.waitUntil) {
+        requestContext.waitUntil(promise);
+    } else {
+        console.warn("Pool release event triggered outside of request scope.");
+    }
+}
+function attachDatabasePool(dbPool) {
+    if (idleTimeout) {
+        idleTimeoutResolve?.();
+        clearTimeout(idleTimeout);
+    }
+    if ("on" in dbPool && dbPool.on && "options" in dbPool && "idleTimeoutMillis" in dbPool.options) {
+        const pgPool = dbPool;
+        pgPool.on("release", ()=>{
+            if (DEBUG) {
+                console.log("Client released from pool");
+            }
+            waitUntilIdleTimeout(dbPool);
+        });
+        return;
+    } else if ("on" in dbPool && dbPool.on && "config" in dbPool && dbPool.config && "connectionConfig" in dbPool.config) {
+        const mysqlPool = dbPool;
+        mysqlPool.on("release", ()=>{
+            if (DEBUG) {
+                console.log("MySQL client released from pool");
+            }
+            waitUntilIdleTimeout(dbPool);
+        });
+        return;
+    } else if ("on" in dbPool && dbPool.on && "config" in dbPool && dbPool.config && "idleTimeout" in dbPool.config) {
+        const mysql2Pool = dbPool;
+        mysql2Pool.on("release", ()=>{
+            if (DEBUG) {
+                console.log("MySQL2/MariaDB client released from pool");
+            }
+            waitUntilIdleTimeout(dbPool);
+        });
+        return;
+    }
+    if ("on" in dbPool && dbPool.on && "options" in dbPool && dbPool.options && "maxIdleTimeMS" in dbPool.options) {
+        const mongoPool = dbPool;
+        mongoPool.on("connectionCheckedOut", ()=>{
+            if (DEBUG) {
+                console.log("MongoDB connection checked out");
+            }
+            waitUntilIdleTimeout(dbPool);
+        });
+        return;
+    }
+    if ("on" in dbPool && dbPool.on && "options" in dbPool && dbPool.options && "socket" in dbPool.options) {
+        const redisPool = dbPool;
+        redisPool.on("end", ()=>{
+            if (DEBUG) {
+                console.log("Redis connection ended");
+            }
+            waitUntilIdleTimeout(dbPool);
+        });
+        return;
+    }
+    throw new Error("Unsupported database pool type");
+}
+const experimental_attachDatabasePool = attachDatabasePool;
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+    attachDatabasePool,
+    experimental_attachDatabasePool
+});
+}),
+"[project]/node_modules/@vercel/functions/purge/index.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all)=>{
+    for(var name in all)__defProp(target, name, {
+        get: all[name],
+        enumerable: true
+    });
+};
+var __copyProps = (to, from, except, desc)=>{
+    if (from && typeof from === "object" || typeof from === "function") {
+        for (let key of __getOwnPropNames(from))if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+            get: ()=>from[key],
+            enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+    }
+    return to;
+};
+var __toCommonJS = (mod)=>__copyProps(__defProp({}, "__esModule", {
+        value: true
+    }), mod);
+var purge_exports = {};
+__export(purge_exports, {
+    dangerouslyDeleteBySrcImage: ()=>dangerouslyDeleteBySrcImage,
+    dangerouslyDeleteByTag: ()=>dangerouslyDeleteByTag,
+    invalidateBySrcImage: ()=>invalidateBySrcImage,
+    invalidateByTag: ()=>invalidateByTag
+});
+module.exports = __toCommonJS(purge_exports);
+var import_get_context = __turbopack_context__.r("[project]/node_modules/@vercel/functions/get-context.js [app-rsc] (ecmascript)");
+const invalidateByTag = (tag)=>{
+    const api = (0, import_get_context.getContext)().purge;
+    if (api) {
+        return api.invalidateByTag(tag);
+    }
+    return Promise.resolve();
+};
+const dangerouslyDeleteByTag = (tag, options)=>{
+    const api = (0, import_get_context.getContext)().purge;
+    if (api) {
+        return api.dangerouslyDeleteByTag(tag, options);
+    }
+    return Promise.resolve();
+};
+const invalidateBySrcImage = (src)=>{
+    const api = (0, import_get_context.getContext)().purge;
+    return api ? api.invalidateBySrcImage(src) : Promise.resolve();
+};
+const dangerouslyDeleteBySrcImage = (src, options)=>{
+    const api = (0, import_get_context.getContext)().purge;
+    return api ? api.dangerouslyDeleteBySrcImage(src, options) : Promise.resolve();
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+    dangerouslyDeleteBySrcImage,
+    dangerouslyDeleteByTag,
+    invalidateBySrcImage,
+    invalidateByTag
+});
+}),
+"[project]/node_modules/@vercel/functions/addcachetag/index.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all)=>{
+    for(var name in all)__defProp(target, name, {
+        get: all[name],
+        enumerable: true
+    });
+};
+var __copyProps = (to, from, except, desc)=>{
+    if (from && typeof from === "object" || typeof from === "function") {
+        for (let key of __getOwnPropNames(from))if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+            get: ()=>from[key],
+            enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+    }
+    return to;
+};
+var __toCommonJS = (mod)=>__copyProps(__defProp({}, "__esModule", {
+        value: true
+    }), mod);
+var addcachetag_exports = {};
+__export(addcachetag_exports, {
+    addCacheTag: ()=>addCacheTag
+});
+module.exports = __toCommonJS(addcachetag_exports);
+var import_get_context = __turbopack_context__.r("[project]/node_modules/@vercel/functions/get-context.js [app-rsc] (ecmascript)");
+const addCacheTag = (tag)=>{
+    const addCacheTag2 = (0, import_get_context.getContext)().addCacheTag;
+    if (addCacheTag2) {
+        return addCacheTag2(tag);
+    }
+    return Promise.resolve();
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+    addCacheTag
+});
+}),
+"[project]/node_modules/@vercel/functions/index.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all)=>{
+    for(var name in all)__defProp(target, name, {
+        get: all[name],
+        enumerable: true
+    });
+};
+var __copyProps = (to, from, except, desc)=>{
+    if (from && typeof from === "object" || typeof from === "function") {
+        for (let key of __getOwnPropNames(from))if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+            get: ()=>from[key],
+            enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+        });
+    }
+    return to;
+};
+var __toCommonJS = (mod)=>__copyProps(__defProp({}, "__esModule", {
+        value: true
+    }), mod);
+var src_exports = {};
+__export(src_exports, {
+    addCacheTag: ()=>import_addcachetag.addCacheTag,
+    attachDatabasePool: ()=>import_db_connections.attachDatabasePool,
+    dangerouslyDeleteBySrcImage: ()=>import_purge.dangerouslyDeleteBySrcImage,
+    dangerouslyDeleteByTag: ()=>import_purge.dangerouslyDeleteByTag,
+    experimental_attachDatabasePool: ()=>import_db_connections.experimental_attachDatabasePool,
+    geolocation: ()=>import_headers.geolocation,
+    getCache: ()=>import_cache.getCache,
+    getEnv: ()=>import_get_env.getEnv,
+    invalidateBySrcImage: ()=>import_purge.invalidateBySrcImage,
+    invalidateByTag: ()=>import_purge.invalidateByTag,
+    ipAddress: ()=>import_headers.ipAddress,
+    next: ()=>import_middleware.next,
+    rewrite: ()=>import_middleware.rewrite,
+    waitUntil: ()=>import_wait_until.waitUntil
+});
+module.exports = __toCommonJS(src_exports);
+var import_headers = __turbopack_context__.r("[project]/node_modules/@vercel/functions/headers.js [app-rsc] (ecmascript)");
+var import_get_env = __turbopack_context__.r("[project]/node_modules/@vercel/functions/get-env.js [app-rsc] (ecmascript)");
+var import_wait_until = __turbopack_context__.r("[project]/node_modules/@vercel/functions/wait-until.js [app-rsc] (ecmascript)");
+var import_middleware = __turbopack_context__.r("[project]/node_modules/@vercel/functions/middleware.js [app-rsc] (ecmascript)");
+var import_cache = __turbopack_context__.r("[project]/node_modules/@vercel/functions/cache/index.js [app-rsc] (ecmascript)");
+var import_db_connections = __turbopack_context__.r("[project]/node_modules/@vercel/functions/db-connections/index.js [app-rsc] (ecmascript)");
+var import_purge = __turbopack_context__.r("[project]/node_modules/@vercel/functions/purge/index.js [app-rsc] (ecmascript)");
+var import_addcachetag = __turbopack_context__.r("[project]/node_modules/@vercel/functions/addcachetag/index.js [app-rsc] (ecmascript)");
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+    addCacheTag,
+    attachDatabasePool,
+    dangerouslyDeleteBySrcImage,
+    dangerouslyDeleteByTag,
+    experimental_attachDatabasePool,
+    geolocation,
+    getCache,
+    getEnv,
+    invalidateBySrcImage,
+    invalidateByTag,
+    ipAddress,
+    next,
+    rewrite,
+    waitUntil
+});
+}),
+"[project]/node_modules/next/dist/build/webpack/loaders/next-flight-loader/action-validate.js [app-rsc] (ecmascript)", ((__turbopack_context__, module, exports) => {
+"use strict";
+
+// This function ensures that all the exported values are valid server actions,
+// during the runtime. By definition all actions are required to be async
+// functions, but here we can only check that they are functions.
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "ensureServerEntryExports", {
+    enumerable: true,
+    get: function() {
+        return ensureServerEntryExports;
+    }
+});
+function ensureServerEntryExports(actions) {
+    for(let i = 0; i < actions.length; i++){
+        const action = actions[i];
+        if (typeof action !== 'function') {
+            throw Object.defineProperty(new Error(`A "use server" file can only export async functions, found ${typeof action}.\nRead more: https://nextjs.org/docs/messages/invalid-use-server-value`), "__NEXT_ERROR_CODE", {
+                value: "E352",
+                enumerable: false,
+                configurable: true
+            });
+        }
+    }
+} //# sourceMappingURL=action-validate.js.map
+}),
+];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__65d1bf54._.js.map

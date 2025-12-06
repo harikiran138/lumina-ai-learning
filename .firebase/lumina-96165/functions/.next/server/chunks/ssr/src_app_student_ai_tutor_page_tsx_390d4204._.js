@@ -1,0 +1,3 @@
+module.exports=[63618,a=>{"use strict";var b=a.i(87924);function c(){return(0,b.jsxs)("div",{className:"min-h-screen bg-black text-white p-8",children:[(0,b.jsx)("h1",{className:"text-3xl font-bold mb-4 text-lumina-primary",children:"AI Tutor"}),(0,b.jsx)("p",{className:"text-gray-400",children:"This is a placeholder for the AI Tutor page."}),(0,b.jsx)("a",{href:"/student/dashboard",className:"mt-4 inline-block text-lumina-secondary hover:underline",children:"Back to Dashboard"})]})}a.s(["default",()=>c])}];
+
+//# sourceMappingURL=src_app_student_ai_tutor_page_tsx_390d4204._.js.map
