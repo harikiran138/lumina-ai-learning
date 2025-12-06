@@ -20,7 +20,7 @@ import {
     PlayCircle
 } from 'lucide-react';
 import Link from 'next/link';
-import { toast } from 'sonner';
+
 
 export default function CourseManagementPage() {
     const params = useParams();
