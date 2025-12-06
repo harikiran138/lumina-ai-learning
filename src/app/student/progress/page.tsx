@@ -88,7 +88,7 @@ export default function StudentProgress() {
                     </div>
                     <div className="space-y-1">
                         <p className="text-sm text-gray-400">Learning Time</p>
-                        <p className="text-2xl font-bold text-white">48h 20m</p>
+                        <p className="text-2xl font-bold text-white">{data?.stats?.learningTime || '0h 0m'}</p>
                     </div>
                 </div>
             </div>
@@ -105,8 +105,8 @@ export default function StudentProgress() {
                         </h2>
                         {/* Mock Chart Area */}
                         <div className="h-64 bg-white/5 rounded-xl flex items-end justify-between p-4 gap-2">
-                            {[40, 65, 34, 85, 56, 92, 70].map((h, i) => (
-                                <div key={i} className="w-full bg-lumina-primary/20 hover:bg-lumina-primary/40 rounded-t-lg transition-all relative group" style={{ height: `${h}%` }}>
+                            {(data?.weeklyActivity || [0, 0, 0, 0, 0, 0, 0]).map((h: number, i: number) => (
+                                <div key={i} className="w-full bg-lumina-primary/20 hover:bg-lumina-primary/40 rounded-t-lg transition-all relative group" style={{ height: `${h > 100 ? 100 : h}%` }}>
                                     <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded">
                                         {h}m
                                     </div>
@@ -156,50 +156,29 @@ export default function StudentProgress() {
                     </div>
 
                     <div className="space-y-4">
-                        {[
-                            { title: 'Early Riser', desc: 'Completed a lesson before 8 AM', icon: <Star className="w-5 h-5 text-yellow-500" />, unlocked: true },
-                            { title: 'Week Warrior', desc: '7 day streak achieved', icon: <Flame className="w-5 h-5 text-orange-500" />, unlocked: true },
-                            { title: 'Quiz Master', desc: 'Scored 100% on 3 quizzes', icon: <Trophy className="w-5 h-5 text-purple-500" />, unlocked: false },
-                            { title: 'Bookworm', desc: 'Read 50 lesson pages', icon: <BookOpen className="w-5 h-5 text-blue-500" />, unlocked: false },
-                        ].map((ach, i) => (
-                            <div key={i} className={`p-4 rounded-xl border ${ach.unlocked ? 'bg-white/5 border-white/10' : 'bg-white/0 border-white/5 opacity-50'} flex gap-4 transition-all hover:border-lumina-primary/30`}>
-                                <div className={`p-2 rounded-lg ${ach.unlocked ? 'bg-white/10' : 'bg-white/5'}`}>
-                                    {ach.icon}
+                        {data?.achievements?.map((ach: any, i: number) => {
+                            const Icon = ach.icon === 'Star' ? Star :
+                                ach.icon === 'Flame' ? Flame :
+                                    ach.icon === 'Trophy' ? Trophy :
+                                        ach.icon === 'BookOpen' ? BookOpen : Award;
+
+                            return (
+                                <div key={i} className={`p-4 rounded-xl border ${ach.unlocked ? 'bg-white/5 border-white/10' : 'bg-white/0 border-white/5 opacity-50'} flex gap-4 transition-all hover:border-lumina-primary/30`}>
+                                    <div className={`p-2 rounded-lg ${ach.unlocked ? 'bg-white/10' : 'bg-white/5'}`}>
+                                        <Icon className={`w-5 h-5 ${ach.color || 'text-gray-400'}`} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-white text-sm font-medium">{ach.title}</h4>
+                                        <p className="text-xs text-gray-400">{ach.desc}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h4 className="text-white text-sm font-medium">{ach.title}</h4>
-                                    <p className="text-xs text-gray-400">{ach.desc}</p>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
+                        {(!data?.achievements || data.achievements.length === 0) && (
+                            <p className="text-gray-500 text-sm">No achievements data.</p>
+                        )}
                     </div>
                 </div>
-            </div>
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                    <Award className="w-5 h-5 text-amber-500" />
-                    Achievements
-                </h2>
-                <span className="text-sm text-lumina-primary cursor-pointer hover:underline">View All</span>
-            </div>
-
-            <div className="space-y-4">
-                {[
-                    { title: 'Early Riser', desc: 'Completed a lesson before 8 AM', icon: <Star className="w-5 h-5 text-yellow-500" />, unlocked: true },
-                    { title: 'Week Warrior', desc: '7 day streak achieved', icon: <Flame className="w-5 h-5 text-orange-500" />, unlocked: true },
-                    { title: 'Quiz Master', desc: 'Scored 100% on 3 quizzes', icon: <Trophy className="w-5 h-5 text-purple-500" />, unlocked: false },
-                    { title: 'Bookworm', desc: 'Read 50 lesson pages', icon: <BookOpen className="w-5 h-5 text-blue-500" />, unlocked: false },
-                ].map((ach, i) => (
-                    <div key={i} className={`p-4 rounded-xl border ${ach.unlocked ? 'bg-white/5 border-white/10' : 'bg-white/0 border-white/5 opacity-50'} flex gap-4 transition-all hover:border-lumina-primary/30`}>
-                        <div className={`p-2 rounded-lg ${ach.unlocked ? 'bg-white/10' : 'bg-white/5'}`}>
-                            {ach.icon}
-                        </div>
-                        <div>
-                            <h4 className="text-white text-sm font-medium">{ach.title}</h4>
-                            <p className="text-xs text-gray-400">{ach.desc}</p>
-                        </div>
-                    </div>
-                ))}
             </div>
         </div>
     );

@@ -10,7 +10,6 @@ import {
     History,
     FileText,
     Plus,
-    Settings,
     MoreVertical,
     Trash2,
     Copy,
@@ -22,8 +21,6 @@ export default function AITutorPage() {
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [apiKey, setApiKey] = useState('');
-    const [showSettings, setShowSettings] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Initial load
@@ -31,9 +28,6 @@ export default function AITutorPage() {
         const loadData = async () => {
             const history = await api.getChatHistory();
             setMessages(history || []);
-
-            const storedKey = localStorage.getItem('lumina_openrouter_key');
-            if (storedKey) setApiKey(storedKey);
         };
         loadData();
     }, []);
@@ -58,62 +52,41 @@ export default function AITutorPage() {
         await api.saveChatMessage({ sender: 'me', text: userMsg.text });
 
         try {
-            if (!apiKey) {
-                // Simulate response if no key
-                setTimeout(async () => {
-                    const reply = "I can help you better if you set your OpenRouter API key in settings. For now, I'm just a demo bot!";
-                    const aiMsg = { sender: 'AI Tutor', text: reply, timestamp: new Date() };
-                    setMessages(prev => [...prev, aiMsg]);
-                    await api.saveChatMessage({ sender: 'AI Tutor', text: reply });
-                    setIsLoading(false);
-                }, 1000);
-                return;
+            // Prepare messages for context
+            const contextMessages = messages.slice(-10).map(m => ({
+                role: m.sender === 'me' ? 'user' : 'assistant',
+                content: m.text
+            }));
+            contextMessages.push({ role: 'user', content: userMsg.text });
+
+            // Call Server Action
+            const response = await api.chatWithAI(contextMessages);
+
+            if (response.success) {
+                const aiText = response.message;
+                const aiMsg = { sender: 'AI Tutor', text: aiText, timestamp: new Date() };
+                setMessages(prev => [...prev, aiMsg]);
+                // Save AI response to DB
+                await api.saveChatMessage({ sender: 'AI Tutor', text: aiText });
+            } else {
+                console.error('AI Error:', response.error);
+                const errorMsg = {
+                    sender: 'AI Tutor',
+                    text: response.error === 'AI API Key is not configured on the server.'
+                        ? "System Configuration Error: AI API Key is missing. Please contact the administrator."
+                        : "I'm having trouble connecting right now. Please try again later.",
+                    timestamp: new Date()
+                };
+                setMessages(prev => [...prev, errorMsg]);
             }
-
-            // Call OpenRouter
-            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': window.location.origin,
-                    'X-Title': 'Lumina AI Tutor'
-                },
-                body: JSON.stringify({
-                    model: 'meta-llama/llama-3.2-3b-instruct:free',
-                    messages: [
-                        { role: 'system', content: 'You are an AI Tutor for students. Be helpful, concise, and educational.' },
-                        ...messages.slice(-10).map(m => ({
-                            role: m.sender === 'me' ? 'user' : 'assistant',
-                            content: m.text
-                        })),
-                        { role: 'user', content: userMsg.text }
-                    ]
-                })
-            });
-
-            const data = await response.json();
-            const aiText = data.choices?.[0]?.message?.content || "Sorry, I couldn't understand that.";
-
-            const aiMsg = { sender: 'AI Tutor', text: aiText, timestamp: new Date() };
-            setMessages(prev => [...prev, aiMsg]);
-
-            // Save AI response to DB
-            await api.saveChatMessage({ sender: 'AI Tutor', text: aiText });
 
         } catch (error) {
             console.error('AI Error:', error);
-            const errorMsg = { sender: 'AI Tutor', text: "Error connecting to AI service. Please check your internet or API key.", timestamp: new Date() };
+            const errorMsg = { sender: 'AI Tutor', text: "Error connecting to AI service.", timestamp: new Date() };
             setMessages(prev => [...prev, errorMsg]);
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const saveApiKey = (key: string) => {
-        setApiKey(key);
-        localStorage.setItem('lumina_openrouter_key', key);
-        setShowSettings(false);
     };
 
     const addToNotes = async (text: string) => {
@@ -164,34 +137,7 @@ export default function AITutorPage() {
                             </div>
                         </div>
                     </div>
-                    <button
-                        onClick={() => setShowSettings(!showSettings)}
-                        className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
-                    >
-                        <Settings className="w-5 h-5" />
-                    </button>
                 </div>
-
-                {/* Settings Overlay */}
-                {showSettings && (
-                    <div className="absolute top-16 right-4 z-20 w-80 bg-gray-900 border border-white/10 rounded-xl shadow-2xl p-4 animate-in slide-in-from-top-2">
-                        <h3 className="text-white font-semibold mb-2">API Configuration</h3>
-                        <p className="text-xs text-gray-400 mb-4">Enter your OpenRouter API key to enable AI features.</p>
-                        <input
-                            type="password"
-                            placeholder="sk-or-..."
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-3 focus:border-lumina-primary outline-none"
-                        />
-                        <button
-                            onClick={() => saveApiKey(apiKey)}
-                            className="w-full py-2 bg-lumina-primary text-black font-semibold rounded-lg hover:bg-lumina-secondary transition-colors text-sm"
-                        >
-                            Save Key
-                        </button>
-                    </div>
-                )}
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -213,8 +159,8 @@ export default function AITutorPage() {
                                         <span className="text-[10px] text-gray-500">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                     <div className={`p-4 rounded-2xl relative group ${msg.sender === 'me'
-                                            ? 'bg-lumina-primary text-black rounded-tr-none'
-                                            : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'
+                                        ? 'bg-lumina-primary text-black rounded-tr-none'
+                                        : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'
                                         }`}>
                                         <div className="prose prose-invert prose-sm max-w-none">
                                             <ReactMarkdown>{msg.text}</ReactMarkdown>

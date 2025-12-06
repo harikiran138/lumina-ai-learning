@@ -25,7 +25,9 @@ import {
     FileText,
     Trophy,
     Brain,
-    Footprints
+    Footprints,
+    Star,
+    Award
 } from 'lucide-react';
 import { getChartColors } from '@/lib/utils';
 
@@ -310,30 +312,24 @@ export default function StudentDashboard() {
                 <div className="lg:col-span-2 glass-card p-6">
                     <h3 className="text-lg font-semibold mb-4 text-white">Your Achievements</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="text-center p-4 rounded-lg bg-white/5">
-                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-lumina-primary shadow-sm">
-                                <Footprints className="w-6 h-6" />
-                            </div>
-                            <p className="text-xs font-semibold text-white">First Step</p>
-                        </div>
-                        <div className="text-center p-4 rounded-lg bg-white/5">
-                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-amber-500 shadow-sm">
-                                <Flame className="w-6 h-6" />
-                            </div>
-                            <p className="text-xs font-semibold text-white">7-Day Streak</p>
-                        </div>
-                        <div className="text-center p-4 rounded-lg bg-white/5 opacity-50">
-                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-gray-400 shadow-sm">
-                                <Trophy className="w-6 h-6" />
-                            </div>
-                            <p className="text-xs font-semibold text-white">Course Master</p>
-                        </div>
-                        <div className="text-center p-4 rounded-lg bg-white/5 opacity-50">
-                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-gray-400 shadow-sm">
-                                <Brain className="w-6 h-6" />
-                            </div>
-                            <p className="text-xs font-semibold text-white">Quiz Whiz</p>
-                        </div>
+                        {dashboardData?.achievements?.map((ach: any, i: number) => {
+                            const Icon = ach.icon === 'Star' ? Star :
+                                ach.icon === 'Flame' ? Flame :
+                                    ach.icon === 'Trophy' ? Trophy :
+                                        ach.icon === 'BookOpen' ? BookOpen : Award;
+
+                            return (
+                                <div key={i} className={`text-center p-4 rounded-lg bg-white/5 ${!ach.unlocked && 'opacity-50'}`}>
+                                    <div className={`w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center shadow-sm ${ach.unlocked ? 'bg-white/10' : 'bg-white/5'}`}>
+                                        <Icon className={`w-6 h-6 ${ach.unlocked ? (ach.color || 'text-lumina-primary') : 'text-gray-400'}`} />
+                                    </div>
+                                    <p className="text-xs font-semibold text-white">{ach.title}</p>
+                                </div>
+                            );
+                        })}
+                        {(!dashboardData?.achievements || dashboardData.achievements.length === 0) && (
+                            <div className="col-span-4 text-center text-gray-500 text-sm">No achievements data.</div>
+                        )}
                     </div>
                 </div>
             </div>
