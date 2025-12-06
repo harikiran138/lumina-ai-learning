@@ -199,7 +199,7 @@ function CourseItem({ name, level, students, status, image }: any) {
                         </div>
                     </div>
                 </div>
-                <button className="p-2 text-gray-400 hover:text-amber-500 transition-colors">
+                <button className="p-2 text-gray-400 hover:text-amber-500 transition-colors" suppressHydrationWarning>
                     <ArrowDownRight className="w-6 h-6" />
                 </button>
             </div>
@@ -214,7 +214,7 @@ function QuickActionButton({ icon: Icon, color, title, subtitle }: any) {
         purple: 'bg-purple-900/30 text-purple-400',
     };
     return (
-        <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors text-left border border-transparent hover:border-amber-500/20">
+        <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors text-left border border-transparent hover:border-amber-500/20" suppressHydrationWarning>
             <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
                 <Icon size={20} />
             </div>
