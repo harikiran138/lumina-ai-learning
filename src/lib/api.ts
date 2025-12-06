@@ -1,152 +1,158 @@
-import { db, User, Course, Message, ChatRoom, StudentProgress, SystemHealth } from './db';
+// Mock Data API - Optimized for Simple Frontend Demo
+// No database, no local storage, just static JSON.
 
-class LuminaAPI {
-    private static instance: LuminaAPI;
-    private currentUser: User | null = null;
+export interface User {
+    id: string;
+    name: string;
+    email: string;
+    role: 'admin' | 'teacher' | 'student';
+    status: 'active' | 'suspended' | 'inactive';
+    avatar: string;
+    createdAt: string;
+    preferences?: any;
+}
+
+const DEMO_USERS: User[] = [
+    {
+        id: 'student_demo',
+        name: 'Student User',
+        email: 'student@lumina.com',
+        role: 'student',
+        status: 'active',
+        avatar: 'https://ui-avatars.com/api/?name=Student+User&background=0D8ABC&color=fff',
+        createdAt: new Date().toISOString()
+    },
+    {
+        id: 'teacher_demo',
+        name: 'Teacher User',
+        email: 'teacher@lumina.com',
+        role: 'teacher',
+        status: 'active',
+        avatar: 'https://ui-avatars.com/api/?name=Teacher+User&background=27AE60&color=fff',
+        createdAt: new Date().toISOString()
+    },
+    {
+        id: 'admin_demo',
+        name: 'Admin User',
+        email: 'admin@lumina.com',
+        role: 'admin',
+        status: 'active',
+        avatar: 'https://ui-avatars.com/api/?name=Admin+User&background=C0392B&color=fff',
+        createdAt: new Date().toISOString()
+    }
+];
+
+class MockAPI {
+    private static instance: MockAPI;
+    private currentUser: User | null = null; // In-memory session only
 
     private constructor() { }
 
-    public static getInstance(): LuminaAPI {
-        if (!LuminaAPI.instance) {
-            LuminaAPI.instance = new LuminaAPI();
+    public static getInstance(): MockAPI {
+        if (!MockAPI.instance) {
+            MockAPI.instance = new MockAPI();
         }
-        return LuminaAPI.instance;
+        return MockAPI.instance;
     }
 
-    // Authentication methods
     async login(email: string, password?: string, role?: string): Promise<User> {
-        try {
-            let users = await db.getAll<User>('users');
-            let user = users.find(u => u.email === email && u.status === 'active');
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-            if (!user) {
-                // Auto-seed if it's a demo account and missing (parity with legacy API)
-                const demoEmails = ['admin@lumina.com', 'teacher@lumina.com', 'student@lumina.com'];
-                if (demoEmails.includes(email)) {
-                    console.log('Demo user not found in modern API, attempting to seed...');
-                    await db.seedInitialData(true);
-                    users = await db.getAll<User>('users');
-                    user = users.find(u => u.email === email && u.status === 'active');
-                }
-            }
+        const user = DEMO_USERS.find(u => u.email === email);
 
-            if (!user) {
-                throw new Error('User not found or account suspended');
-            }
-
-            // Check password (simple check for demo)
-            if (user.password && user.password !== password) {
-                throw new Error('Invalid password');
-            }
-
-            if (role && user.role !== role) {
-                throw new Error('Invalid role for this user');
-            }
-
-            await db.setCurrentUser(user);
+        if (user) {
             this.currentUser = user;
-
-            // Update last active time
-            await db.put('users', { ...user, lastActive: new Date().toISOString() });
-
+            // Persist to sessionStorage so reload works, but no DB
+            if (typeof window !== 'undefined') {
+                sessionStorage.setItem('lumina_user', JSON.stringify(user));
+            }
             return user;
-        } catch (error) {
-            console.error('Login failed:', error);
-            throw error;
         }
+
+        // Auto-create for any other email to allow easy testing
+        const newUser: User = {
+            id: 'auto_user_' + Date.now(),
+            name: email.split('@')[0],
+            email: email,
+            role: (role as any) || 'student',
+            status: 'active',
+            avatar: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=random`,
+            createdAt: new Date().toISOString()
+        };
+        this.currentUser = newUser;
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('lumina_user', JSON.stringify(newUser));
+        }
+        return newUser;
     }
 
     async getCurrentUser(): Promise<User | null> {
-        if (!this.currentUser) {
-            this.currentUser = await db.getCurrentUser();
+        // Check memory first
+        if (this.currentUser) return this.currentUser;
+
+        // Check session storage
+        if (typeof window !== 'undefined') {
+            const stored = sessionStorage.getItem('lumina_user');
+            if (stored) {
+                this.currentUser = JSON.parse(stored);
+                return this.currentUser;
+            }
         }
-        return this.currentUser;
+        return null;
+    }
+
+    async createUser(userData: Partial<User>): Promise<any> {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Just return success, we don't actually save it in this simple mode
+        return "user_created";
+    }
+
+    // Dashboard Data - Hardcoded Mock Data
+    async getDashboardData(userRole: string, userId?: string): Promise<any> {
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        if (userRole === 'student') {
+            return {
+                overallMastery: 85,
+                currentStreak: 12,
+                enrolledCourses: [
+                    {
+                        id: 'qm_101',
+                        name: 'Quantum Mechanics I',
+                        progress: 75,
+                        mastery: 90,
+                        streak: 5,
+                        thumbnail: '/images/course-qm.jpg',
+                        description: 'Introduction to Quantum Mechanics'
+                    },
+                    {
+                        id: 'bio_101',
+                        name: 'Advanced Biology',
+                        progress: 45,
+                        mastery: 80,
+                        streak: 3,
+                        thumbnail: '/images/course-bio.jpg',
+                        description: 'Cellular processes and genetics'
+                    }
+                ],
+                studentProgress: [], // Can be empty for now
+                recentActivity: [
+                    { id: 1, type: 'lesson', title: 'Wave Function Collapse', time: '2 hours ago' },
+                    { id: 2, type: 'quiz', title: 'Thermodynamics Quiz', time: '1 day ago' }
+                ]
+            };
+        }
+
+        return {};
     }
 
     async logout(): Promise<void> {
-        await db.logout();
         this.currentUser = null;
-    }
-
-    // User management
-    async getAllUsers(): Promise<User[]> {
-        return db.getAll<User>('users');
-    }
-
-    async createUser(userData: Partial<User>): Promise<IDBValidKey> {
-        return db.createUser(userData);
-    }
-
-    // Course management
-    async getCoursesByTeacher(teacherId: string): Promise<Course[]> {
-        return db.getByIndex<Course>('courses', 'teacherId', teacherId);
-    }
-
-    async getAllCourses(): Promise<Course[]> {
-        return db.getAll<Course>('courses');
-    }
-
-    // Dashboard Data
-    async getDashboardData(userRole: string, userId?: string): Promise<any> {
-        const currentUser = userId ? await db.get<User>('users', userId) : await this.getCurrentUser();
-        if (!currentUser) throw new Error('User not found');
-
-        switch (userRole) {
-            case 'student':
-                return this.getStudentDashboardData(currentUser.id);
-            case 'teacher':
-                return this.getTeacherDashboardData(currentUser.id);
-            case 'admin':
-                return this.getAdminDashboardData();
-            default:
-                throw new Error('Invalid user role');
+        if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('lumina_user');
         }
-    }
-
-    private async getStudentDashboardData(studentId: string) {
-        const allProgress = await db.getAll<StudentProgress>('progress');
-        const studentProgress = allProgress.filter(p => p.studentId === studentId);
-
-        const courses = await db.getAll<Course>('courses');
-        const enrolledCourses = courses.filter(c => c.members.includes(studentId));
-
-        // Calculate stats
-        let overallMastery = 0;
-        let currentStreak = 0;
-
-        if (studentProgress.length > 0) {
-            overallMastery = studentProgress.reduce((sum, p) => sum + p.mastery, 0) / studentProgress.length;
-            currentStreak = Math.max(...studentProgress.map(p => p.streak));
-        }
-
-        // Enhance enrolled courses with progress
-        const enhancedCourses = enrolledCourses.map(course => {
-            const progress = studentProgress.find(p => p.courseId === course.id);
-            return {
-                ...course,
-                progress: progress?.progress || 0,
-                mastery: progress?.mastery || 0,
-                streak: progress?.streak || 0
-            };
-        });
-
-        return {
-            enrolledCourses: enhancedCourses,
-            overallMastery: Math.round(overallMastery),
-            currentStreak,
-            studentProgress
-        };
-    }
-
-    private async getTeacherDashboardData(teacherId: string) {
-        // Implementation for teacher dashboard
-        return {};
-    }
-
-    private async getAdminDashboardData() {
-        // Implementation for admin dashboard
-        return {};
     }
 }
 
-export const api = LuminaAPI.getInstance();
+export const api = MockAPI.getInstance();
