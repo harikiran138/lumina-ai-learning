@@ -233,6 +233,26 @@ class RealAPI {
         const { updateCourseProgress } = await import('@/app/actions/data');
         return await updateCourseProgress(user.email, courseId, percentIncrement);
     }
+    async getChatHistory(): Promise<any[]> {
+        const user = await this.getCurrentUser();
+        if (!user) return [];
+        const { getChatHistory } = await import('@/app/actions/data');
+        return await getChatHistory(user.email);
+    }
+
+    async saveChatMessage(message: { sender: string, text: string }): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false };
+        const { saveChatMessage } = await import('@/app/actions/data');
+        return await saveChatMessage(user.email, message);
+    }
+
+    async saveNote(content: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false };
+        const { saveNote } = await import('@/app/actions/data');
+        return await saveNote(user.email, content);
+    }
 }
 
 export const api = RealAPI.getInstance();

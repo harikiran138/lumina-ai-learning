@@ -17,16 +17,13 @@ import {
     ChevronDown,
     ChevronUp,
     Users,
-    LayoutDashboard,
-    Award
+    LayoutDashboard // Added missing import
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-import { use } from 'react';
-
-export default function CourseDetails({ params }: { params: Promise<{ courseId: string }> }) {
-    const { courseId } = use(params);
+export default function CourseDetails({ params }: { params: { courseId: string } }) {
+    const { courseId } = params;
     const [course, setCourse] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [expandedModule, setExpandedModule] = useState<number | null>(0);
@@ -37,9 +34,6 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
     const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
     const [quizSubmitted, setQuizSubmitted] = useState(false);
     const [quizScore, setQuizScore] = useState(0);
-
-    const [showBadgeParams, setShowBadgeParams] = useState<any>(null); // For badge notification
-    const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchCourse = async () => {
@@ -53,8 +47,7 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
     }, [courseId]);
 
 
-    const handleLessonSelect = async (lesson: any, moduleId: string) => {
-        setActiveModuleId(moduleId);
+    const handleLessonSelect = async (lesson: any) => {
         if (lesson.type === 'quiz') {
             setActiveQuiz(lesson);
             setActiveLesson(null);
@@ -69,23 +62,9 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
             setCurrentSlideIndex(0); // Reset slides
             // Scroll to top of content
             window.scrollTo({ top: 400, behavior: 'smooth' });
-        }
-    };
 
-    const handleCompleteLesson = async () => {
-        if (!activeLesson || !activeModuleId) return;
-
-        try {
-            const result = await api.completeLesson(courseId, activeModuleId, activeLesson.id);
-            if (result.success) {
-                // Show success feedback - maybe a small toast
-                // If badge earned, show modal
-                if (result.badgeEarned) {
-                    setShowBadgeParams(result.badgeEarned);
-                }
-            }
-        } catch (error) {
-            console.error("Failed to complete lesson", error);
+            // Mark lesson as started/complete in DB (optional: for now just log locally or simple ping)
+            await api.updateProgress(courseId, 5);
         }
     };
 
@@ -119,7 +98,7 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
     };
 
     const submitQuiz = async () => {
-        if (!activeQuiz || !activeModuleId) return;
+        if (!activeQuiz) return;
         let score = 0;
         activeQuiz.questions.forEach((q: any) => {
             if (quizAnswers[q.id] === q.correctAnswer) {
@@ -130,13 +109,7 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
         setQuizSubmitted(true);
 
         try {
-            // If passed (e.g. > 70%), mark complete
-            if (score / activeQuiz.questions.length >= 0.7) {
-                const result = await api.completeLesson(courseId, activeModuleId, activeQuiz.id);
-                if (result.success && result.badgeEarned) {
-                    setShowBadgeParams(result.badgeEarned);
-                }
-            }
+            await api.updateProgress(courseId, 10);
         } catch (e) {
             console.error("Failed to sync progress");
         }
@@ -313,48 +286,10 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
                         <div className="glass-card p-8 min-h-[400px]">
                             <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
                                 <h1 className="text-2xl font-bold text-white">{activeLesson.title}</h1>
-                                <div className="flex gap-4">
-                                    <button
-                                        onClick={handleCompleteLesson}
-                                        className="px-4 py-2 bg-green-600/20 text-green-400 hover:bg-green-600/30 rounded-lg text-sm font-medium border border-green-600/20 transition-colors flex items-center gap-2"
-                                    >
-                                        <CheckCircle className="w-4 h-4" />
-                                        Mark Complete
-                                    </button>
-                                    <button onClick={() => setActiveLesson(null)} className="text-sm text-gray-400 hover:text-white underline">
-                                        Back to Overview
-                                    </button>
-                                </div>
+                                <button onClick={() => setActiveLesson(null)} className="text-sm text-gray-400 hover:text-white underline">
+                                    Back to Overview
+                                </button>
                             </div>
-
-                            {/* Badge Modal */}
-                            {showBadgeParams && (
-                                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-                                    <div className="glass-card max-w-sm w-full p-8 text-center relative border-amber-500/30">
-                                        <button
-                                            onClick={() => setShowBadgeParams(null)}
-                                            className="absolute top-4 right-4 text-gray-400 hover:text-white"
-                                        >
-                                            <X className="w-5 h-5" />
-                                        </button>
-
-                                        <div className="w-24 h-24 mx-auto bg-gradient-to-br from-amber-400 to-orange-600 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(245,158,11,0.4)] animate-bounce-custom">
-                                            <Award className="w-12 h-12 text-white" />
-                                        </div>
-
-                                        <h2 className="text-2xl font-bold text-white mb-2">Badge Unlocked!</h2>
-                                        <h3 className="text-xl text-lumina-primary font-bold mb-4">{showBadgeParams.name}</h3>
-                                        <p className="text-gray-300 mb-6">{showBadgeParams.description}</p>
-
-                                        <button
-                                            onClick={() => setShowBadgeParams(null)}
-                                            className="w-full py-3 bg-gradient-to-r from-lumina-primary to-amber-500 text-black font-bold rounded-xl hover:scale-105 transition-transform"
-                                        >
-                                            Awesome!
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
 
                             {activeLesson.type === 'video' && (
                                 <div className="aspect-video bg-black rounded-xl flex items-center justify-center border border-white/10 mb-6 relative overflow-hidden group">
@@ -470,7 +405,7 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
                                                 {module.lessons?.map((lesson: any, lIdx: number) => (
                                                     <div
                                                         key={lIdx}
-                                                        onClick={() => handleLessonSelect(lesson, module.id)}
+                                                        onClick={() => handleLessonSelect(lesson)}
                                                         className={`p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0 group ${activeLesson?.id === lesson.id ? 'bg-lumina-primary/10 border-l-2 border-l-lumina-primary' : ''
                                                             }`}
                                                     >
