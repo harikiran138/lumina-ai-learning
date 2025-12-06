@@ -1,6 +1,5 @@
 
 import { Metadata } from 'next';
-import clientPromise from '@/lib/mongodb';
 import { Users, BookOpen, Database, Shield, Activity, Server, AlertTriangle, CheckCircle } from 'lucide-react';
 
 export const metadata: Metadata = {

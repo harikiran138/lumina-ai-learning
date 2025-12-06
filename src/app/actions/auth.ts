@@ -1,81 +1,137 @@
 'use server';
 
-import clientPromise from '@/lib/mongodb';
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    UserCredential
+} from 'firebase/auth';
+import { auth } from '@/lib/firebase-config';
+import {
+    COLLECTIONS,
+    createDocument,
+    findDocumentByField,
+    updateDocument
+} from '@/lib/firebase';
 import { User } from '@/lib/api';
 
-const DB_NAME = 'test'; // Update if using a different DB name
-const COLLECTION_NAME = 'users';
-
+/**
+ * Authenticate user with Firebase Auth
+ * @param email User email
+ * @param password User password
+ * @returns User object or null if authentication fails
+ */
 export async function authenticateUser(email: string, password: string): Promise<User | null> {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
+        // Sign in with Firebase Auth
+        const userCredential: UserCredential = await signInWithEmailAndPassword(auth, email, password);
+        const firebaseUser = userCredential.user;
 
-        // Find user by email
-        const user = await db.collection(COLLECTION_NAME).findOne({ email });
-
-        if (!user) {
-            console.log('User not found:', email);
+        if (!firebaseUser) {
+            console.log('Firebase authentication failed');
             return null;
         }
 
-        // Verify password
-        // WARNING: In production, passwords must be hashed (e.g., using bcrypt).
-        // Since we seeded plain text passwords, we compare directly for now.
-        if (user.password !== password) {
-            console.log('Invalid password for:', email);
+        // Fetch user profile from Firestore
+        const userProfile = await findDocumentByField<User>(
+            COLLECTIONS.USERS,
+            'email',
+            email
+        );
+
+        if (!userProfile) {
+            console.log('User profile not found in Firestore');
             return null;
         }
 
         // Return user object without sensitive data
-        const { password: _, _id, ...userProfile } = user;
-
         return {
-            id: _id.toString(),
-            ...userProfile
+            id: userProfile.id,
+            email: userProfile.email,
+            name: userProfile.name,
+            role: userProfile.role,
+            avatar: userProfile.avatar,
+            status: userProfile.status,
+            createdAt: userProfile.createdAt
         } as User;
 
-    } catch (error) {
-        console.error('Authentication error:', error);
+    } catch (error: any) {
+        console.error('Authentication error:', error.code, error.message);
         return null;
     }
 }
 
+/**
+ * Register a new user with Firebase Auth
+ * @param userData User registration data
+ * @returns User object or error
+ */
 export async function registerUser(userData: Partial<User> & { password: string }): Promise<User | { error: string }> {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
+        // Check if user already exists in Firestore
+        const existingUser = await findDocumentByField(
+            COLLECTIONS.USERS,
+            'email',
+            userData.email
+        );
 
-        // Check if user already exists
-        const existingUser = await db.collection(COLLECTION_NAME).findOne({ email: userData.email });
         if (existingUser) {
             return { error: 'User already exists' };
         }
 
-        // Prepare new user document
-        const newUser = {
-            ...userData,
-            createdAt: new Date().toISOString(),
-            status: 'active',
-            // Assign default avatar if missing
-            avatar: userData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name || 'User')}&background=random`
-        };
+        // Create user in Firebase Auth
+        const userCredential: UserCredential = await createUserWithEmailAndPassword(
+            auth,
+            userData.email!,
+            userData.password
+        );
 
-        // Insert into DB
-        const result = await db.collection(COLLECTION_NAME).insertOne(newUser);
+        const firebaseUser = userCredential.user;
 
-        if (!result.acknowledged) {
-            return { error: 'Failed to create user' };
+        if (!firebaseUser) {
+            return { error: 'Failed to create Firebase user' };
         }
 
-        const { password, ...createdUser } = newUser;
+        // Prepare user profile for Firestore
+        const newUserProfile = {
+            email: userData.email,
+            name: userData.name || 'New User',
+            role: userData.role || 'student',
+            avatar: userData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name || 'User')}&background=random`,
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            bio: userData.bio || '',
+            skills: userData.skills || [],
+            location: userData.location || ''
+        };
+
+        // Store user profile in Firestore using Firebase UID as document ID
+        const result = await createDocument(
+            COLLECTIONS.USERS,
+            newUserProfile,
+            firebaseUser.uid
+        );
+
+        if (!result.success) {
+            return { error: 'Failed to create user profile' };
+        }
+
         return {
-            id: result.insertedId.toString(),
-            ...createdUser
+            id: firebaseUser.uid,
+            ...newUserProfile
         } as User;
 
-    } catch (error) {
-        console.error('Registration error:', error);
+    } catch (error: any) {
+        console.error('Registration error:', error.code, error.message);
+
+        // Handle specific Firebase errors
+        if (error.code === 'auth/email-already-in-use') {
+            return { error: 'Email already in use' };
+        } else if (error.code === 'auth/invalid-email') {
+            return { error: 'Invalid email address' };
+        } else if (error.code === 'auth/weak-password') {
+            return { error: 'Password is too weak' };
+        }
+
         return { error: 'Internal server error' };
     }
 }

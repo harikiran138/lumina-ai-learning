@@ -1,62 +1,62 @@
 'use server';
 
-import clientPromise from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
-
-const DB_NAME = 'test';
+import {
+    COLLECTIONS,
+    getDocuments,
+    getDocumentById,
+    createDocument,
+    updateDocument,
+    findDocumentByField,
+    countDocuments,
+    where,
+    orderBy,
+    limit,
+    increment,
+    Timestamp
+} from '@/lib/firebase';
 
 // --- Student Actions ---
 
 export async function getStudentDashboard(email: string) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
-
         // Get User
-        const user = await db.collection('users').findOne({ email });
+        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
         if (!user) return null;
 
-        // Get Enrolled Courses (via Progress) with Course Details
-        const progressDocs = await db.collection('progress').aggregate([
-            { $match: { userId: user._id } },
-            {
-                $lookup: {
-                    from: 'courses',
-                    let: { courseId: '$courseId' },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ['$id', '$$courseId'] } } }
-                    ],
-                    as: 'courseDetails'
-                }
-            },
-            { $unwind: { path: '$courseDetails', preserveNullAndEmptyArrays: true } },
-            {
-                $project: {
-                    _id: 0,
-                    id: '$courseDetails.id',
-                    name: '$courseDetails.name',
-                    description: '$courseDetails.description',
-                    thumbnail: '$courseDetails.thumbnail',
-                    progress: '$progress',
-                    mastery: '$mastery',
-                    streak: '$streak',
-                    lastAccessed: '$lastAccessed',
-                    courseIdRef: '$courseId' // Return original ID to debug
-                }
-            }
-        ]).toArray();
+        // Get Enrolled Courses with Progress
+        const progressDocs = await getDocuments(
+            COLLECTIONS.PROGRESS,
+            [where('userId', '==', user.id)]
+        );
 
-        // Calculate Streak (Max streak from progress)
-        const currentStreak = progressDocs.reduce((acc, curr) => Math.max(acc, curr.streak || 0), 0);
+        // Fetch course details for each progress
+        const enrolledCourses = await Promise.all(
+            progressDocs.map(async (progress: any) => {
+                const course = await getDocumentById(COLLECTIONS.COURSES, progress.courseId);
+                return {
+                    id: course?.id || progress.courseId,
+                    name: course?.name || 'Unknown Course',
+                    description: course?.description || '',
+                    thumbnail: course?.thumbnail || '',
+                    progress: progress.progress || 0,
+                    mastery: progress.mastery || 0,
+                    streak: progress.streak || 0,
+                    lastAccessed: progress.lastAccessed
+                };
+            })
+        );
+
+        // Calculate Streak  
+        const currentStreak = Math.max(...enrolledCourses.map(c => c.streak || 0), 0);
 
         // Calculate Overall Mastery
-        const avgMastery = progressDocs.length > 0
-            ? Math.round(progressDocs.reduce((acc, curr) => acc + (curr.mastery || 0), 0) / progressDocs.length)
+        const avgMastery = enrolledCourses.length > 0
+            ? Math.round(enrolledCourses.reduce((acc, curr) => acc + (curr.mastery || 0), 0) / enrolledCourses.length)
             : 0;
 
         return {
             currentStreak,
-            enrolledCourses: progressDocs,
+            enrolledCourses,
             overallMastery: avgMastery,
             recentActivity: []
         };
@@ -68,64 +68,51 @@ export async function getStudentDashboard(email: string) {
 
 export async function getEnrolledCourses(email: string) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
-
-        const user = await db.collection('users').findOne({ email });
+        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
         if (!user) return [];
 
-        // Aggregate Progress with Course Details
-        const courses = await db.collection('progress').aggregate([
-            { $match: { userId: user._id } },
-            {
-                $lookup: {
-                    from: 'courses',
-                    let: { courseId: '$courseId' },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ['$id', '$$courseId'] } } }
-                    ],
-                    as: 'courseDetails'
-                }
-            },
-            { $unwind: '$courseDetails' },
-            {
-                $project: {
-                    _id: 0,
-                    id: '$courseDetails.id',
-                    name: '$courseDetails.name',
-                    description: '$courseDetails.description',
-                    thumbnail: '$courseDetails.thumbnail',
-                    progress: '$progress',
-                    mastery: '$mastery',
-                    streak: '$streak',
-                    lastAccessed: '$lastAccessed'
-                }
-            }
-        ]).toArray();
+        const progressDocs = await getDocuments(
+            COLLECTIONS.PROGRESS,
+            [where('userId', '==', user.id)]
+        );
+
+        const courses = await Promise.all(
+            progressDocs.map(async (progress: any) => {
+                const course = await getDocumentById(COLLECTIONS.COURSES, progress.courseId);
+                return {
+                    id: course?.id || progress.courseId,
+                    name: course?.name || 'Unknown Course',
+                    description: course?.description || '',
+                    thumbnail: course?.thumbnail || '',
+                    progress: progress.progress || 0,
+                    mastery: progress.mastery || 0,
+                    streak: progress.streak || 0,
+                    lastAccessed: progress.lastAccessed
+                };
+            })
+        );
 
         return courses;
-
     } catch (e) {
         console.error('Error fetching enrolled courses:', e);
         return [];
     }
 }
 
-
 export async function getAllCourses() {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
+        const courses = await getDocuments(
+            COLLECTIONS.COURSES,
+            [where('status', '==', 'Active')]
+        );
 
-        const courses = await db.collection('courses').find({ status: 'Active' }).toArray();
-
-        return courses.map(course => ({
+        return courses.map((course: any) => ({
             id: course.id,
             name: course.name,
             description: course.description,
             thumbnail: course.thumbnail,
             level: course.level || 'Beginner',
-            instructorId: course.instructorId ? course.instructorId.toString() : null, // Fix: Convert ObjectId to string
+            instructorId: course.instructorId || null,
             enrolledCount: course.enrolledCount || 0
         }));
     } catch (e) {
@@ -136,43 +123,45 @@ export async function getAllCourses() {
 
 export async function enrollInCourse(email: string, courseId: string) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
-
-        const user = await db.collection('users').findOne({ email });
+        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
         if (!user) return { success: false, error: 'User not found' };
 
         // Check if already enrolled
-        const existingProgress = await db.collection('progress').findOne({
-            userId: user._id,
-            courseId: courseId
-        });
+        const existingProgress = await getDocuments(
+            COLLECTIONS.PROGRESS,
+            [
+                where('userId', '==', user.id),
+                where('courseId', '==', courseId),
+                limit(1)
+            ]
+        );
 
-        if (existingProgress) {
+        if (existingProgress.length > 0) {
             return { success: false, error: 'Already enrolled in this course' };
         }
 
         // Create Progress Record
         const newProgress = {
-            userId: user._id,
+            userId: user.id,
             courseId: courseId,
             progress: 0,
-            mastery: 0, // Initial mastery
+            mastery: 0,
             streak: 0,
             lastAccessed: new Date(),
             enrolledAt: new Date()
         };
 
-        await db.collection('progress').insertOne(newProgress);
+        await createDocument(COLLECTIONS.PROGRESS, newProgress);
 
         // Increment Course Enrolled Count
-        await db.collection('courses').updateOne(
-            { id: courseId },
-            { $inc: { enrolledCount: 1 } }
-        );
+        const course = await getDocumentById(COLLECTIONS.COURSES, courseId);
+        if (course) {
+            await updateDocument(COLLECTIONS.COURSES, courseId, {
+                enrolledCount: (course.enrolledCount || 0) + 1
+            });
+        }
 
         return { success: true };
-
     } catch (e) {
         console.error('Error enrolling in course:', e);
         return { success: false, error: 'Failed to enroll in course' };
@@ -183,10 +172,7 @@ export async function enrollInCourse(email: string, courseId: string) {
 
 export async function getStudentProfile(email: string) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
-
-        const user = await db.collection('users').findOne({ email });
+        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
         if (!user) return null;
 
         return {
@@ -195,11 +181,10 @@ export async function getStudentProfile(email: string) {
             avatar: user.avatar,
             role: user.role,
             joinedDate: user.createdAt,
-            // Mock extended fields if missing
             bio: user.bio || "Passionate learner on Lumina.",
             skills: user.skills || ['Learning', 'Growth'],
             location: user.location || 'Online',
-            level: 5 // Calculate based on XP/Progress later
+            level: 5
         };
     } catch (e) {
         console.error("Error fetching profile", e);
@@ -209,26 +194,20 @@ export async function getStudentProfile(email: string) {
 
 export async function updateStudentProfile(email: string, data: any) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
+        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
+        if (!user) return { success: false, error: 'User not found' };
 
         const updateData: any = {
             name: data.name,
-            username: data.username, // New field
-            phone: data.phone,       // New field
-            // Don't update email for now as it identifies the user
-            // email: data.email 
+            username: data.username,
+            phone: data.phone,
         };
 
-        // Only update avatar if provided (and not empty)
         if (data.avatar) {
             updateData.avatar = data.avatar;
         }
 
-        await db.collection('users').updateOne(
-            { email },
-            { $set: updateData }
-        );
+        await updateDocument(COLLECTIONS.USERS, user.id, updateData);
 
         return { success: true };
     } catch (e) {
@@ -239,46 +218,34 @@ export async function updateStudentProfile(email: string, data: any) {
 
 export async function getStudentProgress(email: string) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
-
-        const user = await db.collection('users').findOne({ email });
+        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
         if (!user) return null;
 
-        const progressDocs = await db.collection('progress').aggregate([
-            { $match: { userId: user._id } },
-            {
-                $lookup: {
-                    from: 'courses',
-                    localField: 'courseId',
-                    foreignField: 'id',
-                    as: 'courseDetails'
-                }
-            },
-            { $unwind: '$courseDetails' },
-            {
-                $project: {
-                    _id: 0,
-                    courseName: '$courseDetails.name',
-                    progress: '$progress',
-                    mastery: '$mastery',
-                    streak: '$streak',
-                    lastAccessed: '$lastAccessed'
-                }
-            }
-        ]).toArray();
+        const progressDocs = await getDocuments(
+            COLLECTIONS.PROGRESS,
+            [where('userId', '==', user.id)]
+        );
 
-        // Calculate Stats
-        const totalCourses = progressDocs.length;
-        const currentStreak = progressDocs.reduce((acc, curr) => Math.max(acc, curr.streak || 0), 0);
+        const progressWithCourses = await Promise.all(
+            progressDocs.map(async (progress: any) => {
+                const course = await getDocumentById(COLLECTIONS.COURSES, progress.courseId);
+                return {
+                    courseName: course?.name || 'Unknown Course',
+                    progress: progress.progress || 0,
+                    mastery: progress.mastery || 0,
+                    streak: progress.streak || 0,
+                    lastAccessed: progress.lastAccessed
+                };
+            })
+        );
+
+        const totalCourses = progressWithCourses.length;
+        const currentStreak = Math.max(...progressWithCourses.map(p => p.streak || 0), 0);
         const avgAccuracy = totalCourses > 0
-            ? Math.round(progressDocs.reduce((acc, curr) => acc + (curr.mastery || 0), 0) / totalCourses)
+            ? Math.round(progressWithCourses.reduce((acc, curr) => acc + (curr.mastery || 0), 0) / totalCourses)
             : 0;
 
-        // Mock XP based on progress
-        const totalXP = progressDocs.reduce((acc, curr) => acc + ((curr.progress || 0) * 10), 0);
-
-        // Mock Weekly Activity (Random for now)
+        const totalXP = progressWithCourses.reduce((acc, curr) => acc + ((curr.progress || 0) * 10), 0);
         const weeklyActivity = [45, 60, 30, 90, 120, 60, 0];
 
         return {
@@ -290,9 +257,10 @@ export async function getStudentProgress(email: string) {
                 learningTime: 'Mock 48h'
             },
             weeklyActivity,
-            recentCourses: progressDocs.sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()).slice(0, 3)
+            recentCourses: progressWithCourses.sort((a, b) =>
+                new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()
+            ).slice(0, 3)
         };
-
     } catch (e) {
         console.error("Error fetching progress", e);
         return null;
@@ -303,29 +271,21 @@ export async function getStudentProgress(email: string) {
 
 export async function getCommunityData(channelId: string = 'general') {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
+        const channels = await getDocuments(COLLECTIONS.COMMUNITY_CHANNELS);
 
-        // Get Channels
-        const channels = await db.collection('community_channels').find({}).toArray();
+        const messages = await getDocuments(
+            COLLECTIONS.COMMUNITY_MESSAGES,
+            [
+                where('channelId', '==', channelId),
+                orderBy('createdAt', 'asc'),
+                limit(50)
+            ]
+        );
 
-        // Get Messages for active channel
-        const messages = await db.collection('community_messages')
-            .find({ channelId })
-            .sort({ createdAt: 1 })
-            .limit(50)
-            .toArray();
-
-        // Transform _id to string for client
         return {
-            channels: channels.map(c => ({ ...c, _id: c._id.toString() })),
-            messages: messages.map(m => ({
-                ...m,
-                _id: m._id.toString(),
-                userId: m.userId.toString()
-            }))
+            channels: channels.map((c: any) => ({ ...c })),
+            messages: messages.map((m: any) => ({ ...m }))
         };
-
     } catch (e) {
         console.error('Error fetching community data:', e);
         return { channels: [], messages: [] };
@@ -336,28 +296,25 @@ export async function getCommunityData(channelId: string = 'general') {
 
 export async function getTeacherDashboard(email: string) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
-
-        const user = await db.collection('users').findOne({ email });
+        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
         if (!user) return null;
 
-        // Get Courses taught by this teacher
-        const courses = await db.collection('courses').find({ instructorId: user._id }).toArray();
+        const courses = await getDocuments(
+            COLLECTIONS.COURSES,
+            [where('instructorId', '==', user.id)]
+        );
 
-        // Calculate Total Students (Sum of enrolledCount)
-        const totalStudents = courses.reduce((acc, curr) => acc + (curr.enrolledCount || 0), 0);
+        const totalStudents = courses.reduce((acc, curr: any) => acc + (curr.enrolledCount || 0), 0);
 
         return {
-            courses: courses.map(c => ({
+            courses: courses.map((c: any) => ({
                 id: c.id,
                 name: c.name,
-                enrolled: c.enrolledCount,
+                enrolled: c.enrolledCount || 0,
                 thumbnail: c.thumbnail
             })),
             totalStudents,
             activeCourses: courses.length,
-            // Mock other stats for now
             hoursTaught: 120,
             avgRating: 4.8
         };
@@ -369,71 +326,77 @@ export async function getTeacherDashboard(email: string) {
 
 export async function getTeacherStudents(email: string) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
-
-        const user = await db.collection('users').findOne({ email });
+        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
         if (!user) return [];
 
-        const courses = await db.collection('courses').find({ instructorId: user._id }).toArray();
-        const courseIds = courses.map(c => c.id);
+        const courses = await getDocuments(
+            COLLECTIONS.COURSES,
+            [where('instructorId', '==', user.id)]
+        );
 
+        const courseIds = courses.map((c: any) => c.id);
         if (courseIds.length === 0) return [];
 
-        const progressDocs = await db.collection('progress').find({ courseId: { $in: courseIds } }).toArray();
-        const studentIds = [...new Set(progressDocs.map(p => p.userId))];
+        // Get all progress documents for teacher's courses
+        const allProgress = await getDocuments(COLLECTIONS.PROGRESS);
+        const progressDocs = allProgress.filter((p: any) => courseIds.includes(p.courseId));
 
+        const studentIds = [...new Set(progressDocs.map((p: any) => p.userId))];
         if (studentIds.length === 0) return [];
 
-        const students = await db.collection('users').find({ _id: { $in: studentIds } }).toArray();
+        // Get all students
+        const allUsers = await getDocuments(COLLECTIONS.USERS);
+        const students = allUsers.filter((u: any) => studentIds.includes(u.id));
 
-        return students.map(student => {
-            const studentProgress = progressDocs.filter(p => p.userId.toString() === student._id.toString());
-            const coursesTaken = courses.filter(c => studentProgress.some(p => p.courseId === c.id));
+        return students.map((student: any) => {
+            const studentProgress = progressDocs.filter((p: any) => p.userId === student.id);
+            const coursesTaken = courses.filter((c: any) =>
+                studentProgress.some((p: any) => p.courseId === c.id)
+            );
 
             const avgProgress = studentProgress.length > 0
-                ? Math.round(studentProgress.reduce((acc, curr) => acc + (curr.progress || 0), 0) / studentProgress.length)
+                ? Math.round(studentProgress.reduce((acc, curr: any) => acc + (curr.progress || 0), 0) / studentProgress.length)
                 : 0;
 
-            const lastActive = studentProgress.sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime())[0]?.lastAccessed;
+            const sorted = studentProgress.sort((a: any, b: any) =>
+                new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()
+            );
+            const lastActive = sorted[0]?.lastAccessed || student.createdAt;
 
             return {
-                id: student._id.toString(),
+                id: student.id,
                 name: student.name,
                 email: student.email,
                 avatar: student.avatar,
-                courses: coursesTaken.map(c => c.name),
+                courses: coursesTaken.map((c: any) => c.name),
                 progress: avgProgress,
-                lastActive: lastActive || student.createdAt
+                lastActive
             };
         });
-
     } catch (e) {
         console.error('Error fetching teacher students:', e);
         return [];
     }
 }
 
-
 export async function getTeacherCourses(email: string) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
-
-        const user = await db.collection('users').findOne({ email });
+        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
         if (!user) return [];
 
-        const courses = await db.collection('courses').find({ instructorId: user._id }).toArray();
+        const courses = await getDocuments(
+            COLLECTIONS.COURSES,
+            [where('instructorId', '==', user.id)]
+        );
 
-        // Calculate student counts dynamically if needed, or rely on enrolledCount
-        return courses.map(course => ({
+        return courses.map((course: any) => ({
             id: course.id,
             title: course.name,
             students: course.enrolledCount || 0,
             level: course.level || 'Beginner',
             status: course.status || 'Active',
             image: course.thumbnail || '/api/placeholder/600/400',
-            lastUpdated: 'Recently' // You might want to store updatedAt in DB
+            lastUpdated: 'Recently'
         }));
     } catch (e) {
         console.error('Error fetching teacher courses:', e);
@@ -443,27 +406,24 @@ export async function getTeacherCourses(email: string) {
 
 export async function createCourse(email: string, courseData: any) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
-
-        const user = await db.collection('users').findOne({ email });
+        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
         if (!user) return { success: false, error: 'User not found' };
 
         const newCourse = {
-            id: courseData.id, // Should be unique (slug)
+            id: courseData.id,
             name: courseData.title,
             description: courseData.description,
-            instructorId: user._id,
+            instructorId: user.id,
             thumbnail: courseData.image,
             level: courseData.level,
             status: 'Active',
             enrolledCount: 0,
-            modules: [], // Start empty
+            modules: [],
             createdAt: new Date(),
             ...courseData
         };
 
-        await db.collection('courses').insertOne(newCourse);
+        await createDocument(COLLECTIONS.COURSES, newCourse, courseData.id);
         return { success: true };
     } catch (e) {
         console.error('Error creating course:', e);
@@ -473,82 +433,80 @@ export async function createCourse(email: string, courseData: any) {
 
 export async function inviteStudentToCourse(teacherEmail: string, studentEmail: string, courseId: string) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
-
-        const teacher = await db.collection('users').findOne({ email: teacherEmail });
+        const teacher = await findDocumentByField(COLLECTIONS.USERS, 'email', teacherEmail);
         if (!teacher) return { success: false, error: 'Teacher not found' };
 
-        // Verify Course Ownership
-        const course = await db.collection('courses').findOne({ id: courseId, instructorId: teacher._id });
-        if (!course) return { success: false, error: 'Course not found or access denied' };
+        const course = await getDocumentById(COLLECTIONS.COURSES, courseId);
+        if (!course || course.instructorId !== teacher.id) {
+            return { success: false, error: 'Course not found or access denied' };
+        }
 
-        // Find Student
-        const student = await db.collection('users').findOne({ email: studentEmail, role: 'student' });
-        if (!student) return { success: false, error: 'Student not found with this email' };
+        const student = await findDocumentByField(COLLECTIONS.USERS, 'email', studentEmail);
+        if (!student || student.role !== 'student') {
+            return { success: false, error: 'Student not found with this email' };
+        }
 
         // Check if already enrolled
-        const existingProgress = await db.collection('progress').findOne({
-            userId: student._id,
-            courseId: courseId
-        });
+        const existingProgress = await getDocuments(
+            COLLECTIONS.PROGRESS,
+            [
+                where('userId', '==', student.id),
+                where('courseId', '==', courseId),
+                limit(1)
+            ]
+        );
 
-        if (existingProgress) {
+        if (existingProgress.length > 0) {
             return { success: false, error: 'Student is already enrolled in this course' };
         }
 
-        // Create Progress Record (Enrollment)
+        // Create Progress Record
         const newProgress = {
-            userId: student._id,
+            userId: student.id,
             courseId: courseId,
             progress: 0,
             mastery: 0,
             streak: 0,
             lastAccessed: new Date(),
             enrolledAt: new Date(),
-            invitedBy: teacher._id
+            invitedBy: teacher.id
         };
 
-        await db.collection('progress').insertOne(newProgress);
+        await createDocument(COLLECTIONS.PROGRESS, newProgress);
 
         // Increment Course Enrolled Count
-        await db.collection('courses').updateOne(
-            { id: courseId },
-            { $inc: { enrolledCount: 1 } }
-        );
+        await updateDocument(COLLECTIONS.COURSES, courseId, {
+            enrolledCount: (course.enrolledCount || 0) + 1
+        });
 
         return { success: true, message: `Successfully added ${student.name} to the course.` };
-
     } catch (e) {
         console.error('Error inviting student:', e);
         return { success: false, error: 'Failed to invite student' };
-
     }
 }
 
 export async function addModule(email: string, courseId: string, moduleTitle: string) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
-
-        const teacher = await db.collection('users').findOne({ email });
+        const teacher = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
         if (!teacher) return { success: false, error: 'Teacher not found' };
 
-        // Verify Ownership
-        const course = await db.collection('courses').findOne({ id: courseId, instructorId: teacher._id });
-        if (!course) return { success: false, error: 'Course not found or access denied' };
+        const course = await getDocumentById(COLLECTIONS.COURSES, courseId);
+        if (!course || course.instructorId !== teacher.id) {
+            return { success: false, error: 'Course not found or access denied' };
+        }
 
         const newModule = {
-            id: new ObjectId().toString(),
+            id: Date.now().toString(),
             title: moduleTitle,
-            duration: '0 min', // Calculated from lessons
+            duration: '0 min',
             lessons: []
         };
 
-        await db.collection('courses').updateOne(
-            { id: courseId },
-            { $push: { modules: newModule } as any }
-        );
+        const currentModules = course.modules || [];
+        await updateDocument(COLLECTIONS.COURSES, courseId, {
+            modules: [...currentModules, newModule]
+        });
 
         return { success: true, message: 'Module added successfully' };
     } catch (e) {
@@ -559,45 +517,46 @@ export async function addModule(email: string, courseId: string, moduleTitle: st
 
 export async function addLesson(email: string, courseId: string, moduleId: string, lessonTitle: string) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
-
-        // Security check omitted for brevity but should exist (teacher check)
+        const course = await getDocumentById(COLLECTIONS.COURSES, courseId);
+        if (!course) return { success: false, error: 'Course not found' };
 
         const newLesson = {
-            id: new ObjectId().toString(),
+            id: Date.now().toString(),
             title: lessonTitle,
-            type: 'video', // Default
-            duration: '10 min', // Mock
+            type: 'video',
+            duration: '10 min',
             completed: false
         };
 
-        // Note: Updating nested arrays deeply is tricky. For simplicity, we match by courseId.
-        // In production, we'd be more precise with array filters.
-        await db.collection('courses').updateOne(
-            { id: courseId, "modules.id": moduleId },
-            { $push: { "modules.$.lessons": newLesson } as any }
-        );
+        const modules = course.modules || [];
+        const updatedModules = modules.map((module: any) => {
+            if (module.id === moduleId) {
+                return {
+                    ...module,
+                    lessons: [...(module.lessons || []), newLesson]
+                };
+            }
+            return module;
+        });
+
+        await updateDocument(COLLECTIONS.COURSES, courseId, {
+            modules: updatedModules
+        });
 
         return { success: true, message: 'Lesson added successfully' };
-
     } catch (e) {
         console.error('Error adding lesson:', e);
         return { success: false, error: 'Failed to add lesson' };
     }
 }
 
-
 // --- Admin Actions ---
 
 export async function getAdminDashboard(email: string) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
+        const usersCount = await countDocuments(COLLECTIONS.USERS);
+        const coursesCount = await countDocuments(COLLECTIONS.COURSES);
 
-        const usersCount = await db.collection('users').countDocuments();
-        const coursesCount = await db.collection('courses').countDocuments();
-        // Mock revenue/system health
         return {
             totalUsers: usersCount,
             totalCourses: coursesCount,
@@ -612,13 +571,10 @@ export async function getAdminDashboard(email: string) {
 
 export async function getUsersForAdmin() {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
+        const users = await getDocuments(COLLECTIONS.USERS);
 
-        const users = await db.collection('users').find({}).toArray();
-
-        return users.map(user => ({
-            id: user._id.toString(),
+        return users.map((user: any) => ({
+            id: user.id,
             name: user.name,
             email: user.email,
             role: user.role,
@@ -634,22 +590,17 @@ export async function getUsersForAdmin() {
 
 export async function getCourseDetails(courseId: string) {
     try {
-        const client = await clientPromise;
-        const db = client.db(DB_NAME);
-
-        const course = await db.collection('courses').findOne({ id: courseId });
+        const course = await getDocumentById(COLLECTIONS.COURSES, courseId);
         if (!course) return null;
 
-        // Ensure serialized return
         return {
             id: course.id,
             name: course.name,
             description: course.description,
             thumbnail: course.thumbnail,
-            instructorId: course.instructorId ? course.instructorId.toString() : null,
+            instructorId: course.instructorId || null,
             expandedDescription: course.expandedDescription || "No detailed description available.",
             modules: course.modules || [],
-            // Mock dynamic stats if missing
             rating: 4.8,
             students: course.enrolledCount || 120,
             duration: '8 weeks'
