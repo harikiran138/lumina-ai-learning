@@ -1,19 +1,4 @@
 // Mock Data API - Optimized for Simple Frontend Demo
-// No database, no local storage, just static JSON.
-
-export interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: 'admin' | 'teacher' | 'student';
-    status: 'active' | 'suspended' | 'inactive';
-    avatar: string;
-    createdAt: string;
-    preferences?: any;
-}
-
-// Authentication API - Connected to MongoDB via Server Actions
-import { authenticateUser, registerUser } from '@/app/actions/auth';
 
 export interface User {
     id: string;
@@ -25,7 +10,13 @@ export interface User {
     createdAt: string;
     preferences?: any;
     password?: string; // Optional for internal use
+    bio?: string;
+    skills?: string[];
+    location?: string;
 }
+
+// Authentication API - Connected to Firebase via Server Actions
+import { authenticateUser, registerUser } from '@/app/actions/auth';
 
 class RealAPI {
     private static instance: RealAPI;

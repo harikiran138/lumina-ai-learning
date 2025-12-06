@@ -1,7 +1,6 @@
 
 import { Metadata } from 'next';
 import { Suspense } from 'react';
-import clientPromise from '@/lib/mongodb';
 import { Users, BookOpen, BarChart2, FileText, Upload, PlusCircle, Bell, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -11,20 +10,24 @@ export const metadata: Metadata = {
 
 async function getTeacherStats() {
     try {
-        const client = await clientPromise;
-        const db = client.db('lumina-database');
+        // Use Firebase-backed Server Action
+        const { getTeacherDashboard } = await import('@/app/actions/data');
+        const data = await getTeacherDashboard('teacher@lumina.com'); // Could pass dynamic email if available
 
-        // Mocking aggregation for now until we have real data structure populated
-        // In a real scenario, we would count documents in collections
-        const studentCount = await db.collection('users').countDocuments({ role: 'student' });
-        const courseCount = await db.collection('courses').countDocuments({});
+        if (!data) {
+            return {
+                totalStudents: 0,
+                activeCourses: 0,
+                avgMastery: 0,
+                pendingGrading: 0
+            };
+        }
 
-        // These would be real aggregations
         return {
-            totalStudents: studentCount || 24, // Fallback for demo if DB empty
-            activeCourses: courseCount || 3,
-            avgMastery: 87,
-            pendingGrading: 5
+            totalStudents: data.totalStudents || 0,
+            activeCourses: data.activeCourses || 0,
+            avgMastery: data.avgRating ? Math.round(data.avgRating * 20) : 87, // Convert 5-star to percentage
+            pendingGrading: 5 // This would come from assignments collection
         };
     } catch (e) {
         console.error("Failed to fetch stats", e);

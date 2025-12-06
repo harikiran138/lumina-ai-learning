@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
-    // output: 'export', // Disabled to allow API routes for MongoDB
-    // distDir: 'dist', // Reverted to default (.next) for dynamic serverless deployment
+    // Note: Static export disabled because Firebase Hosting doesn't support Next.js Server Actions
+    // Deploy to Vercel instead for full Next.js support
     trailingSlash: true,
     images: {
         unoptimized: true,
@@ -10,6 +10,10 @@ const nextConfig = {
             {
                 protocol: 'https',
                 hostname: 'placehold.co',
+            },
+            {
+                protocol: 'https',
+                hostname: 'ui-avatars.com',
             },
         ],
     },
