@@ -771,8 +771,8 @@ export async function createCourse(email: string, courseData: any) {
         // Remove id if present to let Mongodb generate _id
         delete newCourse.id;
 
-        await db.collection("courses").insertOne(newCourse);
-        return { success: true };
+        const result = await db.collection("courses").insertOne(newCourse);
+        return { success: true, courseId: result.insertedId.toString() };
     } catch (e) {
         console.error('Error creating course:', e);
         return { success: false, error: 'Failed to create course' };
@@ -856,7 +856,7 @@ export async function addModule(email: string, courseId: string, moduleTitle: st
             return { success: false, error: 'Course not found or access denied' };
         }
 
-        return { success: true, message: 'Module added successfully' };
+        return { success: true, message: 'Module added successfully', moduleId: newModule.id };
     } catch (e) {
         console.error('Error adding module:', e);
         return { success: false, error: 'Failed to add module' };
@@ -888,7 +888,7 @@ export async function addLesson(email: string, courseId: string, moduleId: strin
             return { success: false, error: 'Course/Module not found' };
         }
 
-        return { success: true, message: 'Lesson added successfully' };
+        return { success: true, message: 'Lesson added successfully', lessonId: newLesson.id };
     } catch (e) {
         console.error('Error adding lesson:', e);
         return { success: false, error: 'Failed to add lesson' };
