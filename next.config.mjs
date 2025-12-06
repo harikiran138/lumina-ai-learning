@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
-    output: 'export',
+    // output: 'export', // Disabled to allow API routes for MongoDB
     trailingSlash: true,
     images: {
         unoptimized: true,
