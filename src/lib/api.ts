@@ -247,11 +247,25 @@ class RealAPI {
         return await saveChatMessage(user.email, message);
     }
 
-    async saveNote(content: string): Promise<any> {
+    async getNotes(): Promise<any[]> {
         const user = await this.getCurrentUser();
-        if (!user) return { success: false };
-        const { saveNote } = await import('@/app/actions/data');
-        return await saveNote(user.email, content);
+        if (!user) return [];
+        const { getStudentNotes } = await import('@/app/actions/data');
+        return await getStudentNotes(user.email);
+    }
+
+    async createNote(noteData: any): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { createStudentNote } = await import('@/app/actions/data');
+        return await createStudentNote(user.email, noteData);
+    }
+
+    async deleteNote(noteId: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { deleteStudentNote } = await import('@/app/actions/data');
+        return await deleteStudentNote(user.email, noteId);
     }
 }
 

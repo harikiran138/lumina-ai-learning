@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { api } from '@/lib/api';
 import {
     BookOpen,
@@ -22,8 +22,8 @@ import {
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-export default function CourseDetails({ params }: { params: { courseId: string } }) {
-    const { courseId } = params;
+export default function CourseDetails({ params }: { params: Promise<{ courseId: string }> }) {
+    const { courseId } = use(params);
     const [course, setCourse] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [expandedModule, setExpandedModule] = useState<number | null>(0);

@@ -234,7 +234,7 @@ export default function StudentDashboard() {
             <div>
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Continue Learning</h2>
-                    <Link href="/student/course_explorer" className="text-amber-500 hover:text-amber-600 font-semibold">View All →</Link>
+                    <Link href="/student/courses" className="text-amber-500 hover:text-amber-600 font-semibold">View All →</Link>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -269,7 +269,7 @@ export default function StudentDashboard() {
                                             {course.streak || 0}
                                         </div>
                                     </div>
-                                    <Link href={`/student/course/${course.id}`} className="glass-button block text-center">
+                                    <Link href={`/student/courses/${course.id}`} className="glass-button block text-center">
                                         Continue Learning
                                     </Link>
                                 </div>

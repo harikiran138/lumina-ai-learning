@@ -3,6 +3,38 @@
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
+// Helper to serialize MongoDB objects
+function serializeMongoObject(obj: any): any {
+    if (!obj) return null;
+    if (Array.isArray(obj)) {
+        return obj.map(serializeMongoObject);
+    }
+    if (typeof obj === 'object' && obj !== null) {
+        if (obj instanceof Date) {
+            return obj.toISOString();
+        }
+        if (obj instanceof ObjectId) {
+            return obj.toString();
+        }
+        if (obj._id && obj._id instanceof ObjectId) {
+            obj.id = obj._id.toString();
+            delete obj._id;
+        }
+        const newObj: any = {};
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                if (key === '_id') {
+                    newObj.id = obj[key].toString();
+                } else {
+                    newObj[key] = serializeMongoObject(obj[key]);
+                }
+            }
+        }
+        return newObj;
+    }
+    return obj;
+}
+
 // --- Student Actions ---
 
 export async function getStudentDashboard(email: string) {
@@ -54,16 +86,13 @@ export async function getStudentDashboard(email: string) {
         // Calculate Total Hours
         const totalHours = enrolledCourses.reduce((acc: number, curr: any) => acc + (curr.hoursSpent || 0), 0);
 
-        return {
+        return serializeMongoObject({
             currentStreak,
-            enrolledCourses: enrolledCourses.map((c: any) => {
-                const { _id, ...rest } = c;
-                return { ...rest, id: c.id ? c.id.toString() : _id.toString() };
-            }),
+            enrolledCourses,
             overallMastery: avgMastery,
             totalHours, // Return total hours
             recentActivity: []
-        };
+        });
     } catch (e) {
         console.error('Error fetching student dashboard:', e);
         return null;
@@ -199,12 +228,12 @@ export async function completeLesson(email: string, courseId: string, moduleId: 
             }
         }
 
-        return {
+        return serializeMongoObject({
             success: true,
             lessonId,
             isModuleComplete: !!allLessonsComplete,
             badgeEarned
-        };
+        });
 
     } catch (e) {
         console.error("Error completing lesson:", e);
@@ -237,10 +266,10 @@ export async function getStudentBadges(email: string) {
                 { $push: { badges: welcomeBadge } } as any
             );
 
-            return [welcomeBadge];
+            return [serializeMongoObject(welcomeBadge)];
         }
 
-        return user.badges.sort((a: any, b: any) => new Date(b.dateEarned).getTime() - new Date(a.dateEarned).getTime());
+        return serializeMongoObject(user.badges.sort((a: any, b: any) => new Date(b.dateEarned).getTime() - new Date(a.dateEarned).getTime()));
     } catch (e) {
         console.error("Error fetching badges:", e);
         return [];
@@ -259,13 +288,13 @@ export async function getStudentCertificates(email: string) {
             .sort({ issueDate: -1 })
             .toArray();
 
-        return certificates.map(cert => ({
+        return serializeMongoObject(certificates.map(cert => ({
             id: cert._id.toString(),
             certificateId: cert.certificateId,
             courseName: cert.courseName,
             issueDate: cert.issueDate,
             score: cert.score
-        }));
+        })));
     } catch (e) {
         console.error("Error fetching certificates", e);
         return [];
@@ -307,10 +336,10 @@ export async function getEnrolledCourses(email: string) {
             }
         ]).toArray();
 
-        return courses.map((c: any) => {
+        return serializeMongoObject(courses.map((c: any) => {
             const { _id, ...rest } = c;
             return { ...rest, id: c.id ? c.id.toString() : _id.toString() };
-        });
+        }));
     } catch (e) {
         console.error('Error fetching enrolled courses:', e);
         return [];
@@ -324,7 +353,7 @@ export async function getAllCourses() {
 
         const courses = await db.collection("courses").find({ status: 'Active' }).toArray();
 
-        return courses.map(course => ({
+        return serializeMongoObject(courses.map(course => ({
             id: course._id.toString(),
             name: course.name,
             description: course.description,
@@ -332,7 +361,7 @@ export async function getAllCourses() {
             level: course.level || 'Beginner',
             instructorId: course.instructorId,
             enrolledCount: course.enrolledCount || 0
-        }));
+        })));
     } catch (e) {
         console.error('Error fetching all courses:', e);
         return [];
@@ -400,7 +429,7 @@ export async function getStudentProfile(email: string) {
             .limit(5)
             .toArray();
 
-        return {
+        return serializeMongoObject({
             name: user.name,
             username: user.username,
             email: user.email,
@@ -418,7 +447,7 @@ export async function getStudentProfile(email: string) {
                 description: a.description,
                 timestamp: a.timestamp
             }))
-        };
+        });
     } catch (e) {
         console.error("Error fetching profile", e);
         return null;
@@ -493,7 +522,7 @@ export async function getStudentProgress(email: string) {
         const totalXP = progressWithCourses.reduce((acc: number, curr: any) => acc + ((curr.progress || 0) * 10), 0);
         const weeklyActivity = [45, 60, 30, 90, 120, 60, 0];
 
-        return {
+        return serializeMongoObject({
             stats: {
                 currentStreak,
                 totalXP,
@@ -505,7 +534,7 @@ export async function getStudentProgress(email: string) {
             recentCourses: progressWithCourses.sort((a: any, b: any) =>
                 new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()
             ).slice(0, 3)
-        };
+        });
     } catch (e) {
         console.error("Error fetching progress", e);
         return null;
@@ -527,10 +556,10 @@ export async function getCommunityData(channelId: string = 'general') {
             .limit(50)
             .toArray();
 
-        return {
+        return serializeMongoObject({
             channels: channels.map(c => ({ ...c, id: c._id.toString() })),
             messages: messages.map(m => ({ ...m, id: m._id.toString() }))
-        };
+        });
     } catch (e) {
         console.error('Error fetching community data:', e);
         return { channels: [], messages: [] };
@@ -550,7 +579,7 @@ export async function getTeacherDashboard(email: string) {
         const courses = await db.collection("courses").find({ instructorId: user._id.toString() }).toArray();
         const totalStudents = courses.reduce((acc, curr) => acc + (curr.enrolledCount || 0), 0);
 
-        return {
+        return serializeMongoObject({
             courses: courses.map(c => ({
                 id: c._id.toString(),
                 name: c.name,
@@ -561,7 +590,7 @@ export async function getTeacherDashboard(email: string) {
             activeCourses: courses.length,
             hoursTaught: 120,
             avgRating: 4.8
-        };
+        });
     } catch (e) {
         console.error('Error fetching teacher dashboard:', e);
         return null;
@@ -593,7 +622,7 @@ export async function getTeacherStudents(email: string) {
         const studentObjectIds = studentIds.map(id => new ObjectId(id));
         const students = await db.collection("users").find({ _id: { $in: studentObjectIds } }).toArray();
 
-        return students.map(student => {
+        return serializeMongoObject(students.map(student => {
             const studentId = student._id.toString();
             const studentProgress = progressDocs.filter(p => p.userId === studentId);
             const coursesTaken = courses.filter(c =>
@@ -618,7 +647,7 @@ export async function getTeacherStudents(email: string) {
                 progress: avgProgress,
                 lastActive
             };
-        });
+        }));
     } catch (e) {
         console.error('Error fetching teacher students:', e);
         return [];
@@ -797,6 +826,79 @@ export async function addLesson(email: string, courseId: string, moduleId: strin
     }
 }
 
+// --- Notes Actions ---
+
+export async function getStudentNotes(email: string) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        const user = await db.collection("users").findOne({ email });
+        if (!user) return [];
+
+        const notes = await db.collection("notes")
+            .find({ userId: user._id.toString() })
+            .sort({ updatedAt: -1 })
+            .toArray();
+
+        return notes.map(note => ({
+            id: note._id.toString(),
+            title: note.title,
+            subject: note.subject,
+            content: note.content,
+            attachments: note.attachments || [],
+            createdAt: note.createdAt,
+            updatedAt: note.updatedAt
+        }));
+    } catch (e) {
+        console.error("Error fetching notes:", e);
+        return [];
+    }
+}
+
+export async function createStudentNote(email: string, noteData: any) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        const user = await db.collection("users").findOne({ email });
+        if (!user) return { success: false, error: 'User not found' };
+
+        const newNote = {
+            userId: user._id.toString(),
+            title: noteData.title,
+            subject: noteData.subject || 'General',
+            content: noteData.content,
+            attachments: noteData.attachments || [],
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+
+        const result = await db.collection("notes").insertOne(newNote);
+        return { success: true, id: result.insertedId.toString() };
+    } catch (e) {
+        console.error("Error creating note:", e);
+        return { success: false, error: 'Failed to create note' };
+    }
+}
+
+export async function deleteStudentNote(email: string, noteId: string) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        const user = await db.collection("users").findOne({ email });
+        if (!user) return { success: false, error: 'User not found' };
+
+        await db.collection("notes").deleteOne({
+            _id: new ObjectId(noteId),
+            userId: user._id.toString()
+        });
+
+        return { success: true };
+    } catch (e) {
+        console.error("Error deleting note:", e);
+        return { success: false, error: 'Failed to delete note' };
+    }
+}
+
 // --- Admin Actions ---
 
 export async function getAdminDashboard(email: string) {
@@ -849,7 +951,7 @@ export async function getCourseDetails(courseId: string) {
         const course = await db.collection("courses").findOne({ _id: new ObjectId(courseId) });
         if (!course) return null;
 
-        return {
+        return serializeMongoObject({
             id: course._id.toString(),
             name: course.name,
             description: course.description,
@@ -860,7 +962,7 @@ export async function getCourseDetails(courseId: string) {
             rating: 4.8,
             students: course.enrolledCount || 120,
             duration: '8 weeks'
-        };
+        });
     } catch (e) {
         console.error('Error fetching course details:', e);
         return null;
