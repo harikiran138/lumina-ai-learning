@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 import {
     MessageSquare,
     Users,
@@ -19,23 +20,32 @@ export default function StudentCommunity() {
     const [activeChannel, setActiveChannel] = useState('general');
     const [messageInput, setMessageInput] = useState('');
 
-    const channels = [
-        { id: 'general', name: 'General', type: 'public', unread: 0 },
-        { id: 'announcements', name: 'Announcements', type: 'public', unread: 2 },
-        { id: 'q-and-a', name: 'Q & A', type: 'public', unread: 0 },
-        { id: 'resources', name: 'Study Resources', type: 'public', unread: 5 },
-    ];
+    const [channels, setChannels] = useState<any[]>([]);
+    const [messages, setMessages] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const data = await api.getCommunityData(activeChannel);
+                if (data) {
+                    setChannels(data.channels || []);
+                    setMessages(data.messages || []);
+                }
+            } catch (e) {
+                console.error("Failed to load community data", e);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, [activeChannel]);
+
+    // Mock DMs for now until we have a proper schema
     const directMessages = [
         { id: 'teacher-1', name: 'Dr. Sarah Wilson', status: 'online', avatar: 'https://ui-avatars.com/api/?name=Sarah+Wilson&background=random' },
         { id: 'student-2', name: 'Alex Johnson', status: 'offline', avatar: 'https://ui-avatars.com/api/?name=Alex+Johnson&background=random' },
-        { id: 'student-3', name: 'Maria Garcia', status: 'busy', avatar: 'https://ui-avatars.com/api/?name=Maria+Garcia&background=random' },
-    ];
-
-    const messages = [
-        { id: 1, user: 'Dr. Sarah Wilson', avatar: 'https://ui-avatars.com/api/?name=Sarah+Wilson&background=random', content: 'Welcome everyone to the new semester! Feel free to ask any questions here.', time: '10:30 AM', likes: 12, replies: 3 },
-        { id: 2, user: 'Alex Johnson', avatar: 'https://ui-avatars.com/api/?name=Alex+Johnson&background=random', content: 'Thanks Dr. Wilson! I was wondering about the schedule for the first assignment.', time: '10:32 AM', likes: 2, replies: 0 },
-        { id: 3, user: 'You', avatar: 'https://ui-avatars.com/api/?name=Student+User&background=0D8ABC&color=fff', content: 'Same here, is it due next week?', time: '10:35 AM', likes: 0, replies: 0 },
     ];
 
     return (

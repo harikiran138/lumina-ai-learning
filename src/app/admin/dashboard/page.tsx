@@ -10,17 +10,14 @@ export const metadata: Metadata = {
 
 async function getAdminStats() {
     try {
-        const client = await clientPromise;
-        const db = client.db('lumina-database');
+        // Use Server Action
+        const { getAdminDashboard } = await import('@/app/actions/data');
+        const stats = await getAdminDashboard('admin@lumina.com'); // Could pass dynamic email if available
 
-        // Mocking aggregation for now
-        const userCount = await db.collection('users').countDocuments({});
-        const coursesCount = await db.collection('courses').countDocuments({});
-
-        return {
-            totalUsers: userCount || 156,
-            totalCourses: coursesCount || 12,
-            systemHealth: 98,
+        return stats || {
+            totalUsers: 0,
+            totalCourses: 0,
+            systemHealth: '0%',
             securityAlerts: 0
         };
     } catch (e) {
@@ -28,7 +25,7 @@ async function getAdminStats() {
         return {
             totalUsers: 0,
             totalCourses: 0,
-            systemHealth: 0,
+            systemHealth: '0%',
             securityAlerts: 0
         };
     }

@@ -1,42 +1,27 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, Plus, MoreVertical, BookOpen, Clock, Users } from 'lucide-react';
+import { api } from '@/lib/api';
+import Link from 'next/link';
 
 export default function TeacherCourses() {
     const [searchQuery, setSearchQuery] = useState('');
+    const [courses, setCourses] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Mock data - in a real app this would come from an API/Server Action
-    const courses = [
-        {
-            id: 1,
-            title: 'Advanced Artificial Intelligence',
-            students: 42,
-            level: 'Graduate',
-            status: 'Active',
-            image: 'https://placehold.co/600x400/2a2a2a/FFF?text=AI',
-            lastUpdated: '2 days ago'
-        },
-        {
-            id: 2,
-            title: 'Introduction to Machine Learning',
-            students: 128,
-            level: 'Undergraduate',
-            status: 'Active',
-            image: 'https://placehold.co/600x400/1a1a1a/FFF?text=ML',
-            lastUpdated: '5 days ago'
-        },
-        {
-            id: 3,
-            title: 'Neural Networks Deep Dive',
-            students: 15,
-            level: 'Advanced',
-            status: 'Draft',
-            image: 'https://placehold.co/600x400/333/FFF?text=NN',
-            lastUpdated: '1 week ago'
-        }
-    ];
+    const loadCourses = async () => {
+        setIsLoading(true);
+        const data = await api.getTeacherCourses();
+        setCourses(data || []);
+        setIsLoading(false);
+    };
+
+    // Load on mount
+    useEffect(() => {
+        loadCourses();
+    }, []);
 
     const filteredCourses = courses.filter(course =>
         course.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -49,10 +34,10 @@ export default function TeacherCourses() {
                     <h1 className="text-3xl font-bold text-white mb-2">My Courses</h1>
                     <p className="text-gray-400">Manage and create your curriculum</p>
                 </div>
-                <button className="flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg transition-colors">
+                <Link href="/teacher/create-course" className="flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg transition-colors">
                     <Plus className="w-5 h-5 mr-2" />
                     Create Course
-                </button>
+                </Link>
             </div>
 
             {/* Search and Filters */}
@@ -110,8 +95,8 @@ export default function TeacherCourses() {
                                     <span>{course.students} Students</span>
                                 </div>
                                 <span className={`px-2 py-1 rounded text-xs font-medium ${course.status === 'Active'
-                                        ? 'bg-green-500/10 text-green-400'
-                                        : 'bg-gray-500/10 text-gray-400'
+                                    ? 'bg-green-500/10 text-green-400'
+                                    : 'bg-gray-500/10 text-gray-400'
                                     }`}>
                                     {course.status}
                                 </span>
