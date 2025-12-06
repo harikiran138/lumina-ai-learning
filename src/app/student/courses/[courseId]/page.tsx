@@ -448,7 +448,15 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
                         <div className="text-3xl font-bold text-white mb-2">Free</div>
                         <p className="text-gray-400 text-sm mb-6">Full lifetime access</p>
 
-                        <button className="w-full py-4 bg-lumina-primary text-black font-bold rounded-xl hover:bg-lumina-secondary transition-colors shadow-lg shadow-lumina-primary/20 mb-4 flex items-center justify-center gap-2">
+                        <button
+                            onClick={() => {
+                                if (course.modules?.[0]?.lessons?.[0]) {
+                                    handleLessonSelect(course.modules[0].lessons[0]);
+                                    setExpandedModule(0);
+                                }
+                            }}
+                            className="w-full py-4 bg-lumina-primary text-black font-bold rounded-xl hover:bg-lumina-secondary transition-colors shadow-lg shadow-lumina-primary/20 mb-4 flex items-center justify-center gap-2"
+                        >
                             <PlayCircle className="w-5 h-5" />
                             Start Learning Now
                         </button>
