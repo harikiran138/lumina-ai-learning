@@ -15,6 +15,18 @@ import {
     ArcElement,
 } from 'chart.js';
 import Link from 'next/link';
+import {
+    Flame,
+    BookOpen,
+    Clock,
+    Target,
+    Bot,
+    PenTool,
+    FileText,
+    Trophy,
+    Brain,
+    Footprints
+} from 'lucide-react';
 import { getChartColors } from '@/lib/utils';
 
 // Register ChartJS components
@@ -127,7 +139,7 @@ export default function StudentDashboard() {
                 <div className="glass-card p-5 hover:border-lumina-primary/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-semibold text-gray-400">CURRENT STREAK</span>
-                        <span className="text-2xl">🔥</span>
+                        <Flame className="w-6 h-6 text-amber-500" />
                     </div>
                     <p className="text-3xl font-bold text-white">{dashboardData?.currentStreak || 0}</p>
                     <p className="text-xs text-gray-400 mt-1">Days in a row</p>
@@ -136,7 +148,7 @@ export default function StudentDashboard() {
                 <div className="glass-card p-5 hover:border-lumina-primary/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-semibold text-gray-400">ENROLLED</span>
-                        <span className="text-2xl">📚</span>
+                        <BookOpen className="w-6 h-6 text-blue-500" />
                     </div>
                     <p className="text-3xl font-bold text-white">{dashboardData?.enrolledCourses?.length || 0}</p>
                     <p className="text-xs text-gray-400 mt-1">Active courses</p>
@@ -145,7 +157,7 @@ export default function StudentDashboard() {
                 <div className="glass-card p-5 hover:border-lumina-primary/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-semibold text-gray-400">TOTAL HOURS</span>
-                        <span className="text-2xl">⏱️</span>
+                        <Clock className="w-6 h-6 text-emerald-500" />
                     </div>
                     <p className="text-3xl font-bold text-white">12</p>
                     <p className="text-xs text-gray-400 mt-1">Learning time</p>
@@ -154,7 +166,7 @@ export default function StudentDashboard() {
                 <div className="glass-card p-5 hover:border-lumina-primary/50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-semibold text-gray-400">MASTERY</span>
-                        <span className="text-2xl">🎯</span>
+                        <Target className="w-6 h-6 text-purple-500" />
                     </div>
                     <p className="text-3xl font-bold text-white">{dashboardData?.overallMastery || 0}%</p>
                     <p className="text-xs text-gray-400 mt-1">Average %</p>
@@ -194,21 +206,21 @@ export default function StudentDashboard() {
                     <h2 className="text-lg font-semibold mb-4 text-white">Quick Actions</h2>
                     <div className="space-y-3">
                         <Link href="/student/ai_tutor" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-lumina-primary/20">
-                            <span className="text-2xl">🤖</span>
+                            <Bot className="w-6 h-6 text-lumina-primary" />
                             <div>
                                 <p className="font-semibold text-sm text-white">Ask AI Tutor</p>
                                 <p className="text-xs text-gray-400">Get instant help</p>
                             </div>
                         </Link>
                         <Link href="/student/assessment" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-lumina-primary/20">
-                            <span className="text-2xl">✏️</span>
+                            <PenTool className="w-6 h-6 text-purple-400" />
                             <div>
                                 <p className="font-semibold text-sm text-white">Take Quiz</p>
                                 <p className="text-xs text-gray-400">Test your knowledge</p>
                             </div>
                         </Link>
                         <Link href="/student/my_notes" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-lumina-primary/20">
-                            <span className="text-2xl">📝</span>
+                            <FileText className="w-6 h-6 text-green-400" />
                             <div>
                                 <p className="font-semibold text-sm text-white">View Notes</p>
                                 <p className="text-xs text-gray-400">Review your notes</p>
@@ -248,8 +260,14 @@ export default function StudentDashboard() {
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between mb-3 text-sm text-gray-400">
-                                        <div className="flex items-center gap-2"><span>🎯</span>{course.mastery || 0}% mastery</div>
-                                        <div>🔥 {course.streak || 0}</div>
+                                        <div className="flex items-center gap-2">
+                                            <Target className="w-4 h-4" />
+                                            {course.mastery || 0}% mastery
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Flame className="w-4 h-4" />
+                                            {course.streak || 0}
+                                        </div>
                                     </div>
                                     <Link href={`/student/course/${course.id}`} className="glass-button block text-center">
                                         Continue Learning
@@ -293,26 +311,26 @@ export default function StudentDashboard() {
                     <h3 className="text-lg font-semibold mb-4 text-white">Your Achievements</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="text-center p-4 rounded-lg bg-white/5">
-                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-2xl shadow-sm">
-                                👶
+                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-lumina-primary shadow-sm">
+                                <Footprints className="w-6 h-6" />
                             </div>
                             <p className="text-xs font-semibold text-white">First Step</p>
                         </div>
                         <div className="text-center p-4 rounded-lg bg-white/5">
-                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-2xl shadow-sm">
-                                🔥
+                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-amber-500 shadow-sm">
+                                <Flame className="w-6 h-6" />
                             </div>
                             <p className="text-xs font-semibold text-white">7-Day Streak</p>
                         </div>
                         <div className="text-center p-4 rounded-lg bg-white/5 opacity-50">
-                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-2xl shadow-sm grayscale">
-                                🏆
+                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-gray-400 shadow-sm">
+                                <Trophy className="w-6 h-6" />
                             </div>
                             <p className="text-xs font-semibold text-white">Course Master</p>
                         </div>
                         <div className="text-center p-4 rounded-lg bg-white/5 opacity-50">
-                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-2xl shadow-sm grayscale">
-                                🧠
+                            <div className="w-12 h-12 mx-auto mb-2 bg-white/10 rounded-full flex items-center justify-center text-gray-400 shadow-sm">
+                                <Brain className="w-6 h-6" />
                             </div>
                             <p className="text-xs font-semibold text-white">Quiz Whiz</p>
                         </div>
@@ -320,13 +338,5 @@ export default function StudentDashboard() {
                 </div>
             </div>
         </div>
-    );
-}
-
-function BookOpen({ className }: { className?: string }) {
-    return (
-        <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
     );
 }
