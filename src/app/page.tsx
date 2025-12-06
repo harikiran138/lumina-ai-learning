@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import { DottedSurface } from '@/components/ui/DottedSurface';
 
 export default function Home() {
     return (
-        <div className="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300 min-h-screen">
+        <div className="bg-black text-white min-h-screen">
             {/* Header */}
             <header className="fixed top-0 left-0 right-0 z-20 bg-white/80 dark:bg-black/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -39,8 +40,9 @@ export default function Home() {
 
             <main>
                 {/* Hero Section */}
-                <section className="relative min-h-screen flex items-center">
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-50 via-gray-50/80 to-transparent dark:from-black dark:via-black/80 dark:to-transparent z-10"></div>
+                {/* Hero Section */}
+                <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+                    <DottedSurface />
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center py-16">
                         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white leading-tight">
                             The Future of Learning, <br /> <span className="gradient-text">Personalized for You.</span>
@@ -58,7 +60,6 @@ export default function Home() {
                             </Link>
                         </div>
                     </div>
-                    <div className="absolute inset-0 hero-bg opacity-10 dark:opacity-20 bg-cover bg-center" style={{ backgroundImage: "url('https://placehold.co/1200x800/000000/FFFFFF?text=Lumina+UI')" }}></div>
                 </section>
 
                 {/* Features Section */}
