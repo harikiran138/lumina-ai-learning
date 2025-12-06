@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
@@ -419,6 +420,8 @@ export async function enrollInCourse(email: string, courseId: string) {
             { $inc: { enrolledCount: 1 } }
         );
 
+        revalidatePath('/student/courses');
+        revalidatePath('/student/course_explorer');
         return { success: true };
     } catch (e) {
         console.error('Error enrolling in course:', e);
@@ -772,6 +775,8 @@ export async function createCourse(email: string, courseData: any) {
         delete newCourse.id;
 
         const result = await db.collection("courses").insertOne(newCourse);
+        revalidatePath('/student/course_explorer');
+        revalidatePath('/teacher/courses');
         return { success: true, courseId: result.insertedId.toString() };
     } catch (e) {
         console.error('Error creating course:', e);
@@ -824,6 +829,9 @@ export async function inviteStudentToCourse(teacherEmail: string, studentEmail: 
             { _id: new ObjectId(courseId) },
             { $inc: { enrolledCount: 1 } }
         );
+
+        revalidatePath('/student/courses');
+        revalidatePath('/student/course_explorer');
 
         return { success: true, message: `Successfully added ${student.name} to the course.` };
     } catch (e) {
