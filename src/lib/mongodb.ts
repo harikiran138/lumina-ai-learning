@@ -1,12 +1,12 @@
-
+```typescript
 import { MongoClient } from 'mongodb';
 import { attachDatabasePool } from '@vercel/functions';
 
-if (!process.env.MONGODB_URI) {
-    throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
+if (!process.env.MONGODB_URI && !process.env.lumina_MONGODB_URI) {
+    throw new Error('Invalid/Missing environment variable: "MONGODB_URI" or "lumina_MONGODB_URI"');
 }
 
-const uri = process.env.MONGODB_URI;
+const uri = process.env.MONGODB_URI || process.env.lumina_MONGODB_URI || "";
 const options = {};
 
 let client: MongoClient;
