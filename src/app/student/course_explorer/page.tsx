@@ -30,7 +30,7 @@ export default function CourseExplorerPage() {
         setEnrollingId(courseId);
         try {
             const res = await api.enrollInCourse(courseId);
-            if (res.success) {
+            if (res.success || res.error === 'Already enrolled in this course') {
                 router.push('/student/courses');
             } else {
                 alert(res.error || 'Failed to enroll');
