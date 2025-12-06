@@ -3,13 +3,14 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, BookOpen, Users, FileText, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, FileText, Settings, LogOut, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 
 const navItems = [
     { name: 'Dashboard', href: '/teacher/dashboard', icon: LayoutDashboard },
     { name: 'My Courses', href: '/teacher/courses', icon: BookOpen },
+    { name: 'AI Course Creator', href: '/teacher/ai-generator', icon: Sparkles },
     { name: 'Students', href: '/teacher/students', icon: Users },
     { name: 'Resources', href: '/teacher/resources', icon: FileText },
     { name: 'Settings', href: '/teacher/settings', icon: Settings },
