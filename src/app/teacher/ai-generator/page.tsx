@@ -119,9 +119,9 @@ export default function CourseGeneratorPage() {
             parseAIOutput(content);
             setStep('review');
 
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            alert("Analysis failed. See console.");
+            alert("Analysis failed: " + e.message);
             setStep('upload');
         }
     };
