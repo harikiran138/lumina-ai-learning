@@ -159,7 +159,7 @@ export default function StudentDashboard() {
                         <span className="text-xs font-semibold text-gray-400">TOTAL HOURS</span>
                         <Clock className="w-6 h-6 text-emerald-500" />
                     </div>
-                    <p className="text-3xl font-bold text-white">12</p>
+                    <p className="text-3xl font-bold text-white">{dashboardData?.totalHours || 0}</p>
                     <p className="text-xs text-gray-400 mt-1">Learning time</p>
                 </div>
 

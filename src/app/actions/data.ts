@@ -51,10 +51,14 @@ export async function getStudentDashboard(email: string) {
             ? Math.round(enrolledCourses.reduce((acc: number, curr: any) => acc + (curr.mastery || 0), 0) / enrolledCourses.length)
             : 0;
 
+        // Calculate Total Hours
+        const totalHours = enrolledCourses.reduce((acc: number, curr: any) => acc + (curr.hoursSpent || 0), 0);
+
         return {
             currentStreak,
             enrolledCourses: enrolledCourses.map((c: any) => ({ ...c, id: c.id.toString() })),
             overallMastery: avgMastery,
+            totalHours, // Return total hours
             recentActivity: []
         };
     } catch (e) {
