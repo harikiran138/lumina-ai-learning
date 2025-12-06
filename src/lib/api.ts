@@ -247,6 +247,13 @@ class RealAPI {
         return await saveChatMessage(user.email, message);
     }
 
+    async saveNote(content: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false };
+        const { saveNote } = await import('@/app/actions/data');
+        return await saveNote(user.email, content);
+    }
+
     async getNotes(): Promise<any[]> {
         const user = await this.getCurrentUser();
         if (!user) return [];
