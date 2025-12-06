@@ -1,12 +1,12 @@
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Define the worker src relative to the installed version or use a CDN
-// Using generic CDN for simplicity in this environment
-const WORKER_SRC = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_SRC;
-
+// Use dynamic import to avoid SSR issues with canvas/DOMMatrix
 export async function extractTextFromPDF(file: File): Promise<string> {
+    if (typeof window === 'undefined') return '';
+
+    // Dynamic import
+    const pdfjsLib = await import('pdfjs-dist');
+    const WORKER_SRC = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_SRC;
+
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
