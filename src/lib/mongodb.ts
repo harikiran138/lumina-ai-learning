@@ -1,4 +1,4 @@
-```typescript
+
 import { MongoClient } from 'mongodb';
 import { attachDatabasePool } from '@vercel/functions';
 
