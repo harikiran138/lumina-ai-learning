@@ -1,9 +1,25 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Users, Search, Filter, MoreVertical, Shield, Trash2, Edit } from 'lucide-react';
+import { getUsersForAdmin } from '@/app/actions/data';
 
 export default function AdminUsers() {
+    const [users, setUsers] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            const data = await getUsersForAdmin();
+            setUsers(data);
+            setIsLoading(false);
+        };
+        fetchUsers();
+    }, []);
+
+    if (isLoading) return <div className="p-8 text-center text-white">Loading users...</div>;
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -48,32 +64,36 @@ export default function AdminUsers() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                            <tr key={i} className="hover:bg-white/5 transition-colors">
+                        {users.map((user) => (
+                            <tr key={user.id} className="hover:bg-white/5 transition-colors">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center font-bold text-gray-300">
-                                            U{i}
+                                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center font-bold text-gray-300 overflow-hidden">
+                                            {user.avatar ? <img src={user.avatar} alt={user.name} /> : 'U'}
                                         </div>
                                         <div>
-                                            <div className="font-medium text-white">User Name {i}</div>
-                                            <div className="text-xs text-gray-500">user{i}@lumina.edu</div>
+                                            <div className="font-medium text-white">{user.name}</div>
+                                            <div className="text-xs text-gray-500">{user.email}</div>
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${i % 2 === 0 ? 'bg-amber-900/30 text-amber-400' : 'bg-blue-900/30 text-blue-400'
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.role === 'teacher' ? 'bg-amber-900/30 text-amber-400' :
+                                            user.role === 'admin' ? 'bg-red-900/30 text-red-400' :
+                                                'bg-blue-900/30 text-blue-400'
                                         }`}>
-                                        {i % 2 === 0 ? 'Teacher' : 'Student'}
+                                        {user.role}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className="text-green-400 text-xs flex items-center gap-1">
                                         <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
-                                        Active
+                                        {user.status}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-sm text-gray-400">Dec 0{i}, 2023</td>
+                                <td className="px-6 py-4 text-sm text-gray-400">
+                                    {new Date(user.createdAt).toLocaleDateString()}
+                                </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end gap-2">
                                         <button className="p-2 text-gray-400 hover:text-blue-400 transition-colors">

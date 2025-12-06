@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 import {
     Trophy,
     Flame,
@@ -14,6 +15,19 @@ import {
 
 export default function StudentProgress() {
     const [activeTab, setActiveTab] = useState('overview');
+    const [data, setData] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProgress = async () => {
+            const res = await api.getStudentProgress();
+            setData(res);
+            setIsLoading(false);
+        };
+        fetchProgress();
+    }, []);
+
+    if (isLoading) return <div className="text-white text-center p-10">Loading progress...</div>;
 
     return (
         <div className="space-y-6">
@@ -35,7 +49,7 @@ export default function StudentProgress() {
                     </div>
                     <div className="space-y-1">
                         <p className="text-sm text-gray-400">Current Streak</p>
-                        <p className="text-2xl font-bold text-white">12 Days</p>
+                        <p className="text-2xl font-bold text-white">{data?.stats?.currentStreak || 0} Days</p>
                     </div>
                 </div>
 
@@ -48,7 +62,7 @@ export default function StudentProgress() {
                     </div>
                     <div className="space-y-1">
                         <p className="text-sm text-gray-400">Total XP</p>
-                        <p className="text-2xl font-bold text-white">12,450</p>
+                        <p className="text-2xl font-bold text-white">{data?.stats?.totalXP || 0}</p>
                     </div>
                 </div>
 
@@ -57,11 +71,11 @@ export default function StudentProgress() {
                         <div className="p-2 bg-purple-500/20 rounded-lg">
                             <Target className="w-6 h-6 text-purple-500" />
                         </div>
-                        <span className="text-xs font-semibold text-green-400">92%</span>
+                        <span className="text-xs font-semibold text-green-400">{data?.stats?.avgAccuracy || 0}%</span>
                     </div>
                     <div className="space-y-1">
                         <p className="text-sm text-gray-400">Avg. Accuracy</p>
-                        <p className="text-2xl font-bold text-white">A+</p>
+                        <p className="text-2xl font-bold text-white">{data?.stats?.avgAccuracy > 90 ? 'A+' : 'A'}</p>
                     </div>
                 </div>
 
@@ -110,17 +124,13 @@ export default function StudentProgress() {
                             Recent Courses Interaction
                         </h2>
                         <div className="space-y-4">
-                            {[
-                                { name: 'Quantum Mechanics', progress: 75, last: '2h ago' },
-                                { name: 'Advanced Biology', progress: 42, last: '5h ago' },
-                                { name: 'World History', progress: 88, last: '1d ago' }
-                            ].map((course, i) => (
+                            {data?.recentCourses?.map((course: any, i: number) => (
                                 <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
                                     <div className="w-12 h-12 rounded-lg bg-lumina-primary/20 flex items-center justify-center text-lumina-primary">
                                         <BookOpen className="w-6 h-6" />
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="text-white font-medium">{course.name}</h3>
+                                        <h3 className="text-white font-medium">{course.courseName}</h3>
                                         <div className="flex items-center gap-4 mt-1">
                                             <div className="flex-1 h-1.5 bg-white/10 rounded-full">
                                                 <div className="h-full bg-lumina-primary rounded-full" style={{ width: `${course.progress}%` }}></div>
@@ -128,7 +138,7 @@ export default function StudentProgress() {
                                             <span className="text-xs text-gray-400">{course.progress}%</span>
                                         </div>
                                     </div>
-                                    <span className="text-xs text-gray-500">{course.last}</span>
+                                    <span className="text-xs text-gray-500">Recently</span>
                                 </div>
                             ))}
                         </div>
@@ -164,6 +174,32 @@ export default function StudentProgress() {
                         ))}
                     </div>
                 </div>
+            </div>
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                    <Award className="w-5 h-5 text-amber-500" />
+                    Achievements
+                </h2>
+                <span className="text-sm text-lumina-primary cursor-pointer hover:underline">View All</span>
+            </div>
+
+            <div className="space-y-4">
+                {[
+                    { title: 'Early Riser', desc: 'Completed a lesson before 8 AM', icon: <Star className="w-5 h-5 text-yellow-500" />, unlocked: true },
+                    { title: 'Week Warrior', desc: '7 day streak achieved', icon: <Flame className="w-5 h-5 text-orange-500" />, unlocked: true },
+                    { title: 'Quiz Master', desc: 'Scored 100% on 3 quizzes', icon: <Trophy className="w-5 h-5 text-purple-500" />, unlocked: false },
+                    { title: 'Bookworm', desc: 'Read 50 lesson pages', icon: <BookOpen className="w-5 h-5 text-blue-500" />, unlocked: false },
+                ].map((ach, i) => (
+                    <div key={i} className={`p-4 rounded-xl border ${ach.unlocked ? 'bg-white/5 border-white/10' : 'bg-white/0 border-white/5 opacity-50'} flex gap-4 transition-all hover:border-lumina-primary/30`}>
+                        <div className={`p-2 rounded-lg ${ach.unlocked ? 'bg-white/10' : 'bg-white/5'}`}>
+                            {ach.icon}
+                        </div>
+                        <div>
+                            <h4 className="text-white text-sm font-medium">{ach.title}</h4>
+                            <p className="text-xs text-gray-400">{ach.desc}</p>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );

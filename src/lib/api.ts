@@ -87,43 +87,81 @@ class RealAPI {
         return result;
     }
 
-    // Dashboard Data - Hardcoded Mock Data (Remaining same for now)
+    // Dashboard Data - Connected to MongoDB
     async getDashboardData(userRole: string, userId?: string): Promise<any> {
-        // ... (Keep existing dashboard mock logic as is for now)
-        await new Promise(resolve => setTimeout(resolve, 300));
+        const user = await this.getCurrentUser();
+        if (!user) return {};
 
         if (userRole === 'student') {
-            return {
-                overallMastery: 85,
-                currentStreak: 12,
-                enrolledCourses: [
-                    {
-                        id: 'qm_101',
-                        name: 'Quantum Mechanics I',
-                        progress: 75,
-                        mastery: 90,
-                        streak: 5,
-                        thumbnail: '/images/course-qm.jpg',
-                        description: 'Introduction to Quantum Mechanics'
-                    },
-                    {
-                        id: 'bio_101',
-                        name: 'Advanced Biology',
-                        progress: 45,
-                        mastery: 80,
-                        streak: 3,
-                        thumbnail: '/images/course-bio.jpg',
-                        description: 'Cellular processes and genetics'
-                    }
-                ],
-                studentProgress: [],
-                recentActivity: [
-                    { id: 1, type: 'lesson', title: 'Wave Function Collapse', time: '2 hours ago' },
-                    { id: 2, type: 'quiz', title: 'Thermodynamics Quiz', time: '1 day ago' }
-                ]
-            };
+            // Dynamically import server actions to avoid build issues if mixed
+            const { getStudentDashboard } = await import('@/app/actions/data');
+            const data = await getStudentDashboard(user.email);
+            return data || {};
         }
+
+        if (userRole === 'teacher') {
+            const { getTeacherDashboard } = await import('@/app/actions/data');
+            return await getTeacherDashboard(user.email);
+        }
+
+        if (userRole === 'admin') {
+            const { getAdminDashboard } = await import('@/app/actions/data');
+            return await getAdminDashboard(user.email);
+        }
+
         return {};
+    }
+
+    async getStudentProfile(): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return null;
+        const { getStudentProfile } = await import('@/app/actions/data');
+        return await getStudentProfile(user.email);
+    }
+
+    async updateProfile(data: any): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { updateStudentProfile } = await import('@/app/actions/data');
+        return await updateStudentProfile(user.email, data);
+    }
+
+    async getCourseDetails(courseId: string): Promise<any> {
+        const { getCourseDetails } = await import('@/app/actions/data');
+        return await getCourseDetails(courseId);
+    }
+
+    async getEnrolledCourses(): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return null;
+        const { getStudentProgress } = await import('@/app/actions/data');
+        return await getStudentProgress(user.email);
+    }
+
+    async getCommunityData(channelId?: string): Promise<any> {
+        const { getCommunityData } = await import('@/app/actions/data');
+        return await getCommunityData(channelId);
+    }
+
+    async getTeacherStudents(): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return [];
+        const { getTeacherStudents } = await import('@/app/actions/data');
+        return await getTeacherStudents(user.email);
+    }
+
+    async getTeacherCourses(): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return [];
+        const { getTeacherCourses } = await import('@/app/actions/data');
+        return await getTeacherCourses(user.email);
+    }
+
+    async createCourse(courseData: any): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { createCourse } = await import('@/app/actions/data');
+        return await createCourse(user.email, courseData);
     }
 
     async logout(): Promise<void> {
