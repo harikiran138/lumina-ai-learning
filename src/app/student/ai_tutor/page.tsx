@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-const SELECTED_MODEL = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
+const SELECTED_MODEL = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
 
 export default function AITutorPage() {
     const [messages, setMessages] = useState<any[]>([]);
@@ -294,7 +294,7 @@ export default function AITutorPage() {
                         <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4 text-center">
                             <Loader2 className="w-6 h-6 text-blue-400 animate-spin mx-auto mb-2" />
                             <p className="text-blue-200 font-semibold text-sm mb-1">{loadingProgress || "Initializing..."}</p>
-                            <p className="text-blue-300/60 text-xs">First load will download ~2GB of model data to your browser cache.</p>
+                            <p className="text-blue-300/60 text-xs">First load will download ~600MB of model data to your browser cache.</p>
                             {progressPercent > 0 && (
                                 <div className="mt-2 h-1.5 w-full bg-blue-900/50 rounded-full overflow-hidden">
                                     <div className="h-full bg-blue-400 transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
@@ -372,7 +372,7 @@ export default function AITutorPage() {
                         </button>
                     </form>
                     <p className="text-center text-[10px] text-gray-500 mt-2">
-                        Running Llama-3.2 (3B) directly on your device via WebLLM.
+                        Running Llama-3.2 (1B) directly on your device via WebLLM.
                     </p>
                 </div>
             </div>
