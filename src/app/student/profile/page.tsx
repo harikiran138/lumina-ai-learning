@@ -16,7 +16,8 @@ import {
     Github,
     Twitter,
     Linkedin,
-    Sparkles
+    Sparkles,
+    Bot // Added Bot icon for AI Tutor
 } from 'lucide-react';
 
 export default function StudentProfile() {
@@ -136,6 +137,23 @@ export default function StudentProfile() {
                                 </span>
                             )) || <span className="text-gray-500 text-sm">No skills listed</span>}
                         </div>
+                    </div>
+
+                    {/* AI Tutor Card */}
+                    <div className="glass-card p-6 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-2 relative z-10 flex items-center">
+                            <Bot className="w-4 h-4 mr-2 text-lumina-primary" />
+                            AI Tutor
+                        </h3>
+                        <p className="text-xs text-gray-400 mb-4 relative z-10">Get personalized learning assistance.</p>
+                        <a
+                            href="/student/ai_tutor"
+                            className="flex items-center justify-center w-full py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg font-medium transition-all relative z-10 shadow-lg shadow-purple-900/20"
+                        >
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Open AI Tutor
+                        </a>
                     </div>
                 </div>
 

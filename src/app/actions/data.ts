@@ -502,13 +502,9 @@ export async function getStudentProgress(email: string) {
                 learningTime: 'Mock 48h'
             },
             weeklyActivity,
-            recentCourses: progressWithCourses
-                .sort((a: any, b: any) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime())
-                .slice(0, 3)
-                .map((c: any) => {
-                    const { _id, ...rest } = c;
-                    return rest;
-                })
+            recentCourses: progressWithCourses.sort((a: any, b: any) =>
+                new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()
+            ).slice(0, 3)
         };
     } catch (e) {
         console.error("Error fetching progress", e);
@@ -868,5 +864,73 @@ export async function getCourseDetails(courseId: string) {
     } catch (e) {
         console.error('Error fetching course details:', e);
         return null;
+    }
+}
+
+// --- AI Tutor Actions ---
+
+export async function getChatHistory(email: string) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        const user = await db.collection("users").findOne({ email });
+        if (!user) return [];
+
+        const history = await db.collection("chat_history")
+            .find({ userId: user._id.toString() })
+            .sort({ timestamp: 1 })
+            .toArray();
+
+        return history.map(msg => ({
+            id: msg._id.toString(),
+            sender: msg.sender,
+            text: msg.text,
+            timestamp: msg.timestamp
+        }));
+    } catch (e) {
+        console.error("Error fetching chat history", e);
+        return [];
+    }
+}
+
+export async function saveChatMessage(email: string, message: { sender: string, text: string }) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        const user = await db.collection("users").findOne({ email });
+        if (!user) return { success: false };
+
+        await db.collection("chat_history").insertOne({
+            userId: user._id.toString(),
+            sender: message.sender,
+            text: message.text,
+            timestamp: new Date()
+        });
+
+        return { success: true };
+    } catch (e) {
+        console.error("Error saving chat message", e);
+        return { success: false };
+    }
+}
+
+export async function saveNote(email: string, content: string) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        const user = await db.collection("users").findOne({ email });
+        if (!user) return { success: false };
+
+        await db.collection("notes").insertOne({
+            userId: user._id.toString(),
+            content: content,
+            createdAt: new Date(),
+            tags: ['AI Tutor']
+        });
+
+        return { success: true };
+    } catch (e) {
+        console.error("Error saving note", e);
+        return { success: false };
     }
 }
