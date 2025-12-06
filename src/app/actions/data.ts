@@ -1,62 +1,59 @@
 'use server';
 
-import {
-    COLLECTIONS,
-    getDocuments,
-    getDocumentById,
-    createDocument,
-    updateDocument,
-    findDocumentByField,
-    countDocuments,
-    where,
-    orderBy,
-    limit,
-    increment,
-    Timestamp
-} from '@/lib/firebase';
+import clientPromise from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 // --- Student Actions ---
 
 export async function getStudentDashboard(email: string) {
     try {
-        // Get User
-        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const user = await db.collection("users").findOne({ email });
         if (!user) return null;
 
+        const userId = user._id.toString();
+
         // Get Enrolled Courses with Progress
-        const progressDocs = await getDocuments(
-            COLLECTIONS.PROGRESS,
-            [where('userId', '==', user.id)]
-        );
+        const enrolledCourses = await db.collection("progress").aggregate([
+            { $match: { userId: userId } },
+            {
+                $lookup: {
+                    from: "courses",
+                    let: { courseId: { $toObjectId: "$courseId" } },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$courseId"] } } }
+                    ],
+                    as: "courseDetails"
+                }
+            },
+            { $unwind: "$courseDetails" },
+            {
+                $project: {
+                    id: "$courseDetails._id",
+                    name: "$courseDetails.name",
+                    description: "$courseDetails.description",
+                    thumbnail: "$courseDetails.thumbnail",
+                    progress: "$progress",
+                    mastery: "$mastery",
+                    streak: "$streak",
+                    lastAccessed: "$lastAccessed"
+                }
+            }
+        ]).toArray();
 
-        // Fetch course details for each progress
-        const enrolledCourses = await Promise.all(
-            progressDocs.map(async (progress: any) => {
-                const course = await getDocumentById(COLLECTIONS.COURSES, progress.courseId);
-                return {
-                    id: course?.id || progress.courseId,
-                    name: course?.name || 'Unknown Course',
-                    description: course?.description || '',
-                    thumbnail: course?.thumbnail || '',
-                    progress: progress.progress || 0,
-                    mastery: progress.mastery || 0,
-                    streak: progress.streak || 0,
-                    lastAccessed: progress.lastAccessed
-                };
-            })
-        );
-
-        // Calculate Streak  
-        const currentStreak = Math.max(...enrolledCourses.map(c => c.streak || 0), 0);
+        // Calculate Streak
+        const currentStreak = Math.max(...enrolledCourses.map((c: any) => c.streak || 0), 0);
 
         // Calculate Overall Mastery
         const avgMastery = enrolledCourses.length > 0
-            ? Math.round(enrolledCourses.reduce((acc, curr) => acc + (curr.mastery || 0), 0) / enrolledCourses.length)
+            ? Math.round(enrolledCourses.reduce((acc: number, curr: any) => acc + (curr.mastery || 0), 0) / enrolledCourses.length)
             : 0;
 
         return {
             currentStreak,
-            enrolledCourses,
+            enrolledCourses: enrolledCourses.map((c: any) => ({ ...c, id: c.id.toString() })),
             overallMastery: avgMastery,
             recentActivity: []
         };
@@ -68,31 +65,40 @@ export async function getStudentDashboard(email: string) {
 
 export async function getEnrolledCourses(email: string) {
     try {
-        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const user = await db.collection("users").findOne({ email });
         if (!user) return [];
 
-        const progressDocs = await getDocuments(
-            COLLECTIONS.PROGRESS,
-            [where('userId', '==', user.id)]
-        );
+        const courses = await db.collection("progress").aggregate([
+            { $match: { userId: user._id.toString() } },
+            {
+                $lookup: {
+                    from: "courses",
+                    let: { courseId: { $toObjectId: "$courseId" } },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$courseId"] } } }
+                    ],
+                    as: "courseDetails"
+                }
+            },
+            { $unwind: "$courseDetails" },
+            {
+                $project: {
+                    id: "$courseDetails._id",
+                    name: "$courseDetails.name",
+                    description: "$courseDetails.description",
+                    thumbnail: "$courseDetails.thumbnail",
+                    progress: "$progress",
+                    mastery: "$mastery",
+                    streak: "$streak",
+                    lastAccessed: "$lastAccessed"
+                }
+            }
+        ]).toArray();
 
-        const courses = await Promise.all(
-            progressDocs.map(async (progress: any) => {
-                const course = await getDocumentById(COLLECTIONS.COURSES, progress.courseId);
-                return {
-                    id: course?.id || progress.courseId,
-                    name: course?.name || 'Unknown Course',
-                    description: course?.description || '',
-                    thumbnail: course?.thumbnail || '',
-                    progress: progress.progress || 0,
-                    mastery: progress.mastery || 0,
-                    streak: progress.streak || 0,
-                    lastAccessed: progress.lastAccessed
-                };
-            })
-        );
-
-        return courses;
+        return courses.map((c: any) => ({ ...c, id: c.id.toString() }));
     } catch (e) {
         console.error('Error fetching enrolled courses:', e);
         return [];
@@ -101,18 +107,18 @@ export async function getEnrolledCourses(email: string) {
 
 export async function getAllCourses() {
     try {
-        const courses = await getDocuments(
-            COLLECTIONS.COURSES,
-            [where('status', '==', 'Active')]
-        );
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
 
-        return courses.map((course: any) => ({
-            id: course.id,
+        const courses = await db.collection("courses").find({ status: 'Active' }).toArray();
+
+        return courses.map(course => ({
+            id: course._id.toString(),
             name: course.name,
             description: course.description,
             thumbnail: course.thumbnail,
             level: course.level || 'Beginner',
-            instructorId: course.instructorId || null,
+            instructorId: course.instructorId,
             enrolledCount: course.enrolledCount || 0
         }));
     } catch (e) {
@@ -123,26 +129,25 @@ export async function getAllCourses() {
 
 export async function enrollInCourse(email: string, courseId: string) {
     try {
-        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const user = await db.collection("users").findOne({ email });
         if (!user) return { success: false, error: 'User not found' };
 
         // Check if already enrolled
-        const existingProgress = await getDocuments(
-            COLLECTIONS.PROGRESS,
-            [
-                where('userId', '==', user.id),
-                where('courseId', '==', courseId),
-                limit(1)
-            ]
-        );
+        const existingProgress = await db.collection("progress").findOne({
+            userId: user._id.toString(),
+            courseId: courseId
+        });
 
-        if (existingProgress.length > 0) {
+        if (existingProgress) {
             return { success: false, error: 'Already enrolled in this course' };
         }
 
         // Create Progress Record
         const newProgress = {
-            userId: user.id,
+            userId: user._id.toString(),
             courseId: courseId,
             progress: 0,
             mastery: 0,
@@ -151,15 +156,13 @@ export async function enrollInCourse(email: string, courseId: string) {
             enrolledAt: new Date()
         };
 
-        await createDocument(COLLECTIONS.PROGRESS, newProgress);
+        await db.collection("progress").insertOne(newProgress);
 
         // Increment Course Enrolled Count
-        const course = await getDocumentById(COLLECTIONS.COURSES, courseId);
-        if (course) {
-            await updateDocument(COLLECTIONS.COURSES, courseId, {
-                enrolledCount: (course.enrolledCount || 0) + 1
-            });
-        }
+        await db.collection("courses").updateOne(
+            { _id: new ObjectId(courseId) },
+            { $inc: { enrolledCount: 1 } }
+        );
 
         return { success: true };
     } catch (e) {
@@ -172,7 +175,10 @@ export async function enrollInCourse(email: string, courseId: string) {
 
 export async function getStudentProfile(email: string) {
     try {
-        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const user = await db.collection("users").findOne({ email });
         if (!user) return null;
 
         return {
@@ -194,8 +200,8 @@ export async function getStudentProfile(email: string) {
 
 export async function updateStudentProfile(email: string, data: any) {
     try {
-        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
-        if (!user) return { success: false, error: 'User not found' };
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
 
         const updateData: any = {
             name: data.name,
@@ -207,7 +213,10 @@ export async function updateStudentProfile(email: string, data: any) {
             updateData.avatar = data.avatar;
         }
 
-        await updateDocument(COLLECTIONS.USERS, user.id, updateData);
+        await db.collection("users").updateOne(
+            { email },
+            { $set: updateData }
+        );
 
         return { success: true };
     } catch (e) {
@@ -218,34 +227,43 @@ export async function updateStudentProfile(email: string, data: any) {
 
 export async function getStudentProgress(email: string) {
     try {
-        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const user = await db.collection("users").findOne({ email });
         if (!user) return null;
 
-        const progressDocs = await getDocuments(
-            COLLECTIONS.PROGRESS,
-            [where('userId', '==', user.id)]
-        );
-
-        const progressWithCourses = await Promise.all(
-            progressDocs.map(async (progress: any) => {
-                const course = await getDocumentById(COLLECTIONS.COURSES, progress.courseId);
-                return {
-                    courseName: course?.name || 'Unknown Course',
-                    progress: progress.progress || 0,
-                    mastery: progress.mastery || 0,
-                    streak: progress.streak || 0,
-                    lastAccessed: progress.lastAccessed
-                };
-            })
-        );
+        const progressWithCourses = await db.collection("progress").aggregate([
+            { $match: { userId: user._id.toString() } },
+            {
+                $lookup: {
+                    from: "courses",
+                    let: { courseId: { $toObjectId: "$courseId" } },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$courseId"] } } }
+                    ],
+                    as: "courseDetails"
+                }
+            },
+            { $unwind: "$courseDetails" },
+            {
+                $project: {
+                    courseName: "$courseDetails.name",
+                    progress: "$progress",
+                    mastery: "$mastery",
+                    streak: "$streak",
+                    lastAccessed: "$lastAccessed"
+                }
+            }
+        ]).toArray();
 
         const totalCourses = progressWithCourses.length;
-        const currentStreak = Math.max(...progressWithCourses.map(p => p.streak || 0), 0);
+        const currentStreak = Math.max(...progressWithCourses.map((p: any) => p.streak || 0), 0);
         const avgAccuracy = totalCourses > 0
-            ? Math.round(progressWithCourses.reduce((acc, curr) => acc + (curr.mastery || 0), 0) / totalCourses)
+            ? Math.round(progressWithCourses.reduce((acc: number, curr: any) => acc + (curr.mastery || 0), 0) / totalCourses)
             : 0;
 
-        const totalXP = progressWithCourses.reduce((acc, curr) => acc + ((curr.progress || 0) * 10), 0);
+        const totalXP = progressWithCourses.reduce((acc: number, curr: any) => acc + ((curr.progress || 0) * 10), 0);
         const weeklyActivity = [45, 60, 30, 90, 120, 60, 0];
 
         return {
@@ -257,7 +275,7 @@ export async function getStudentProgress(email: string) {
                 learningTime: 'Mock 48h'
             },
             weeklyActivity,
-            recentCourses: progressWithCourses.sort((a, b) =>
+            recentCourses: progressWithCourses.sort((a: any, b: any) =>
                 new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()
             ).slice(0, 3)
         };
@@ -271,20 +289,20 @@ export async function getStudentProgress(email: string) {
 
 export async function getCommunityData(channelId: string = 'general') {
     try {
-        const channels = await getDocuments(COLLECTIONS.COMMUNITY_CHANNELS);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
 
-        const messages = await getDocuments(
-            COLLECTIONS.COMMUNITY_MESSAGES,
-            [
-                where('channelId', '==', channelId),
-                orderBy('createdAt', 'asc'),
-                limit(50)
-            ]
-        );
+        const channels = await db.collection("community_channels").find().toArray();
+
+        const messages = await db.collection("community_messages")
+            .find({ channelId })
+            .sort({ createdAt: 1 })
+            .limit(50)
+            .toArray();
 
         return {
-            channels: channels.map((c: any) => ({ ...c })),
-            messages: messages.map((m: any) => ({ ...m }))
+            channels: channels.map(c => ({ ...c, id: c._id.toString() })),
+            messages: messages.map(m => ({ ...m, id: m._id.toString() }))
         };
     } catch (e) {
         console.error('Error fetching community data:', e);
@@ -296,19 +314,18 @@ export async function getCommunityData(channelId: string = 'general') {
 
 export async function getTeacherDashboard(email: string) {
     try {
-        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const user = await db.collection("users").findOne({ email });
         if (!user) return null;
 
-        const courses = await getDocuments(
-            COLLECTIONS.COURSES,
-            [where('instructorId', '==', user.id)]
-        );
-
-        const totalStudents = courses.reduce((acc, curr: any) => acc + (curr.enrolledCount || 0), 0);
+        const courses = await db.collection("courses").find({ instructorId: user._id.toString() }).toArray();
+        const totalStudents = courses.reduce((acc, curr) => acc + (curr.enrolledCount || 0), 0);
 
         return {
-            courses: courses.map((c: any) => ({
-                id: c.id,
+            courses: courses.map(c => ({
+                id: c._id.toString(),
                 name: c.name,
                 enrolled: c.enrolledCount || 0,
                 thumbnail: c.thumbnail
@@ -326,49 +343,51 @@ export async function getTeacherDashboard(email: string) {
 
 export async function getTeacherStudents(email: string) {
     try {
-        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const user = await db.collection("users").findOne({ email });
         if (!user) return [];
 
-        const courses = await getDocuments(
-            COLLECTIONS.COURSES,
-            [where('instructorId', '==', user.id)]
-        );
+        const courses = await db.collection("courses").find({ instructorId: user._id.toString() }).toArray();
+        const courseIds = courses.map(c => c._id.toString());
 
-        const courseIds = courses.map((c: any) => c.id);
         if (courseIds.length === 0) return [];
 
-        // Get all progress documents for teacher's courses
-        const allProgress = await getDocuments(COLLECTIONS.PROGRESS);
-        const progressDocs = allProgress.filter((p: any) => courseIds.includes(p.courseId));
+        const progressDocs = await db.collection("progress").find({
+            courseId: { $in: courseIds }
+        }).toArray();
 
-        const studentIds = [...new Set(progressDocs.map((p: any) => p.userId))];
+        const studentIds = [...new Set(progressDocs.map(p => p.userId))];
         if (studentIds.length === 0) return [];
 
-        // Get all students
-        const allUsers = await getDocuments(COLLECTIONS.USERS);
-        const students = allUsers.filter((u: any) => studentIds.includes(u.id));
+        // Convert string IDs to ObjectIds for $in query if they are stored as ObjectIds in users collection
+        // Assuming users store _id as ObjectId
+        const studentObjectIds = studentIds.map(id => new ObjectId(id));
+        const students = await db.collection("users").find({ _id: { $in: studentObjectIds } }).toArray();
 
-        return students.map((student: any) => {
-            const studentProgress = progressDocs.filter((p: any) => p.userId === student.id);
-            const coursesTaken = courses.filter((c: any) =>
-                studentProgress.some((p: any) => p.courseId === c.id)
+        return students.map(student => {
+            const studentId = student._id.toString();
+            const studentProgress = progressDocs.filter(p => p.userId === studentId);
+            const coursesTaken = courses.filter(c =>
+                studentProgress.some(p => p.courseId === c._id.toString())
             );
 
             const avgProgress = studentProgress.length > 0
-                ? Math.round(studentProgress.reduce((acc, curr: any) => acc + (curr.progress || 0), 0) / studentProgress.length)
+                ? Math.round(studentProgress.reduce((acc, curr) => acc + (curr.progress || 0), 0) / studentProgress.length)
                 : 0;
 
-            const sorted = studentProgress.sort((a: any, b: any) =>
+            const sorted = studentProgress.sort((a, b) =>
                 new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()
             );
             const lastActive = sorted[0]?.lastAccessed || student.createdAt;
 
             return {
-                id: student.id,
+                id: studentId,
                 name: student.name,
                 email: student.email,
                 avatar: student.avatar,
-                courses: coursesTaken.map((c: any) => c.name),
+                courses: coursesTaken.map(c => c.name),
                 progress: avgProgress,
                 lastActive
             };
@@ -381,16 +400,16 @@ export async function getTeacherStudents(email: string) {
 
 export async function getTeacherCourses(email: string) {
     try {
-        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const user = await db.collection("users").findOne({ email });
         if (!user) return [];
 
-        const courses = await getDocuments(
-            COLLECTIONS.COURSES,
-            [where('instructorId', '==', user.id)]
-        );
+        const courses = await db.collection("courses").find({ instructorId: user._id.toString() }).toArray();
 
-        return courses.map((course: any) => ({
-            id: course.id,
+        return courses.map(course => ({
+            id: course._id.toString(),
             title: course.name,
             students: course.enrolledCount || 0,
             level: course.level || 'Beginner',
@@ -406,14 +425,16 @@ export async function getTeacherCourses(email: string) {
 
 export async function createCourse(email: string, courseData: any) {
     try {
-        const user = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const user = await db.collection("users").findOne({ email });
         if (!user) return { success: false, error: 'User not found' };
 
         const newCourse = {
-            id: courseData.id,
             name: courseData.title,
             description: courseData.description,
-            instructorId: user.id,
+            instructorId: user._id.toString(),
             thumbnail: courseData.image,
             level: courseData.level,
             status: 'Active',
@@ -422,8 +443,10 @@ export async function createCourse(email: string, courseData: any) {
             createdAt: new Date(),
             ...courseData
         };
+        // Remove id if present to let Mongodb generate _id
+        delete newCourse.id;
 
-        await createDocument(COLLECTIONS.COURSES, newCourse, courseData.id);
+        await db.collection("courses").insertOne(newCourse);
         return { success: true };
     } catch (e) {
         console.error('Error creating course:', e);
@@ -433,51 +456,49 @@ export async function createCourse(email: string, courseData: any) {
 
 export async function inviteStudentToCourse(teacherEmail: string, studentEmail: string, courseId: string) {
     try {
-        const teacher = await findDocumentByField(COLLECTIONS.USERS, 'email', teacherEmail);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const teacher = await db.collection("users").findOne({ email: teacherEmail });
         if (!teacher) return { success: false, error: 'Teacher not found' };
 
-        const course = await getDocumentById(COLLECTIONS.COURSES, courseId);
-        if (!course || course.instructorId !== teacher.id) {
+        const course = await db.collection("courses").findOne({ _id: new ObjectId(courseId) });
+        if (!course || course.instructorId !== teacher._id.toString()) {
             return { success: false, error: 'Course not found or access denied' };
         }
 
-        const student = await findDocumentByField(COLLECTIONS.USERS, 'email', studentEmail);
+        const student = await db.collection("users").findOne({ email: studentEmail });
         if (!student || student.role !== 'student') {
             return { success: false, error: 'Student not found with this email' };
         }
 
-        // Check if already enrolled
-        const existingProgress = await getDocuments(
-            COLLECTIONS.PROGRESS,
-            [
-                where('userId', '==', student.id),
-                where('courseId', '==', courseId),
-                limit(1)
-            ]
-        );
+        // Check enrollment
+        const existingProgress = await db.collection("progress").findOne({
+            userId: student._id.toString(),
+            courseId: courseId
+        });
 
-        if (existingProgress.length > 0) {
-            return { success: false, error: 'Student is already enrolled in this course' };
+        if (existingProgress) {
+            return { success: false, error: 'Student is already enrolled' };
         }
 
-        // Create Progress Record
         const newProgress = {
-            userId: student.id,
+            userId: student._id.toString(),
             courseId: courseId,
             progress: 0,
             mastery: 0,
             streak: 0,
             lastAccessed: new Date(),
             enrolledAt: new Date(),
-            invitedBy: teacher.id
+            invitedBy: teacher._id.toString()
         };
 
-        await createDocument(COLLECTIONS.PROGRESS, newProgress);
+        await db.collection("progress").insertOne(newProgress);
 
-        // Increment Course Enrolled Count
-        await updateDocument(COLLECTIONS.COURSES, courseId, {
-            enrolledCount: (course.enrolledCount || 0) + 1
-        });
+        await db.collection("courses").updateOne(
+            { _id: new ObjectId(courseId) },
+            { $inc: { enrolledCount: 1 } }
+        );
 
         return { success: true, message: `Successfully added ${student.name} to the course.` };
     } catch (e) {
@@ -488,13 +509,11 @@ export async function inviteStudentToCourse(teacherEmail: string, studentEmail: 
 
 export async function addModule(email: string, courseId: string, moduleTitle: string) {
     try {
-        const teacher = await findDocumentByField(COLLECTIONS.USERS, 'email', email);
-        if (!teacher) return { success: false, error: 'Teacher not found' };
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
 
-        const course = await getDocumentById(COLLECTIONS.COURSES, courseId);
-        if (!course || course.instructorId !== teacher.id) {
-            return { success: false, error: 'Course not found or access denied' };
-        }
+        const teacher = await db.collection("users").findOne({ email });
+        if (!teacher) return { success: false, error: 'Teacher not found' };
 
         const newModule = {
             id: Date.now().toString(),
@@ -503,10 +522,14 @@ export async function addModule(email: string, courseId: string, moduleTitle: st
             lessons: []
         };
 
-        const currentModules = course.modules || [];
-        await updateDocument(COLLECTIONS.COURSES, courseId, {
-            modules: [...currentModules, newModule]
-        });
+        const result = await db.collection("courses").updateOne(
+            { _id: new ObjectId(courseId), instructorId: teacher._id.toString() },
+            { $push: { modules: newModule } } as any
+        );
+
+        if (result.modifiedCount === 0) {
+            return { success: false, error: 'Course not found or access denied' };
+        }
 
         return { success: true, message: 'Module added successfully' };
     } catch (e) {
@@ -517,8 +540,8 @@ export async function addModule(email: string, courseId: string, moduleTitle: st
 
 export async function addLesson(email: string, courseId: string, moduleId: string, lessonTitle: string) {
     try {
-        const course = await getDocumentById(COLLECTIONS.COURSES, courseId);
-        if (!course) return { success: false, error: 'Course not found' };
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
 
         const newLesson = {
             id: Date.now().toString(),
@@ -528,20 +551,17 @@ export async function addLesson(email: string, courseId: string, moduleId: strin
             completed: false
         };
 
-        const modules = course.modules || [];
-        const updatedModules = modules.map((module: any) => {
-            if (module.id === moduleId) {
-                return {
-                    ...module,
-                    lessons: [...(module.lessons || []), newLesson]
-                };
-            }
-            return module;
-        });
+        // Aggregation-style update isn't needed if we trust the structure, but we need to find the specific module in the array
+        // simpler to pull, update, push? No, use arrayFilters
 
-        await updateDocument(COLLECTIONS.COURSES, courseId, {
-            modules: updatedModules
-        });
+        const result = await db.collection("courses").updateOne(
+            { _id: new ObjectId(courseId), "modules.id": moduleId },
+            { $push: { "modules.$.lessons": newLesson } } as any
+        );
+
+        if (result.modifiedCount === 0) {
+            return { success: false, error: 'Course/Module not found' };
+        }
 
         return { success: true, message: 'Lesson added successfully' };
     } catch (e) {
@@ -554,8 +574,11 @@ export async function addLesson(email: string, courseId: string, moduleId: strin
 
 export async function getAdminDashboard(email: string) {
     try {
-        const usersCount = await countDocuments(COLLECTIONS.USERS);
-        const coursesCount = await countDocuments(COLLECTIONS.COURSES);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const usersCount = await db.collection("users").countDocuments();
+        const coursesCount = await db.collection("courses").countDocuments();
 
         return {
             totalUsers: usersCount,
@@ -571,10 +594,13 @@ export async function getAdminDashboard(email: string) {
 
 export async function getUsersForAdmin() {
     try {
-        const users = await getDocuments(COLLECTIONS.USERS);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
 
-        return users.map((user: any) => ({
-            id: user.id,
+        const users = await db.collection("users").find().toArray();
+
+        return users.map(user => ({
+            id: user._id.toString(),
             name: user.name,
             email: user.email,
             role: user.role,
@@ -590,15 +616,18 @@ export async function getUsersForAdmin() {
 
 export async function getCourseDetails(courseId: string) {
     try {
-        const course = await getDocumentById(COLLECTIONS.COURSES, courseId);
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const course = await db.collection("courses").findOne({ _id: new ObjectId(courseId) });
         if (!course) return null;
 
         return {
-            id: course.id,
+            id: course._id.toString(),
             name: course.name,
             description: course.description,
             thumbnail: course.thumbnail,
-            instructorId: course.instructorId || null,
+            instructorId: course.instructorId,
             expandedDescription: course.expandedDescription || "No detailed description available.",
             modules: course.modules || [],
             rating: 4.8,

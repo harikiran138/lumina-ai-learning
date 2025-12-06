@@ -1,99 +1,75 @@
 'use server';
 
-import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    UserCredential
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase-config';
-import {
-    COLLECTIONS,
-    createDocument,
-    findDocumentByField,
-    updateDocument
-} from '@/lib/firebase';
+import clientPromise from '@/lib/mongodb';
 import { User } from '@/lib/api';
+import bcrypt from 'bcryptjs';
 
 /**
- * Authenticate user with Firebase Auth
+ * Authenticate user with MongoDB
  * @param email User email
  * @param password User password
  * @returns User object or null if authentication fails
  */
 export async function authenticateUser(email: string, password: string): Promise<User | null> {
     try {
-        // Sign in with Firebase Auth
-        const userCredential: UserCredential = await signInWithEmailAndPassword(auth, email, password);
-        const firebaseUser = userCredential.user;
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
 
-        if (!firebaseUser) {
-            console.log('Firebase authentication failed');
+        const user = await db.collection("users").findOne({ email });
+
+        if (!user) {
+            console.log('User not found');
             return null;
         }
 
-        // Fetch user profile from Firestore
-        const userProfile = await findDocumentByField<User>(
-            COLLECTIONS.USERS,
-            'email',
-            email
-        );
+        const isPasswordValid = await bcrypt.compare(password, user.password);
 
-        if (!userProfile) {
-            console.log('User profile not found in Firestore');
+        if (!isPasswordValid) {
+            console.log('Invalid password');
             return null;
         }
 
         // Return user object without sensitive data
         return {
-            id: userProfile.id,
-            email: userProfile.email,
-            name: userProfile.name,
-            role: userProfile.role,
-            avatar: userProfile.avatar,
-            status: userProfile.status,
-            createdAt: userProfile.createdAt
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            avatar: user.avatar,
+            status: user.status,
+            createdAt: user.createdAt,
+            bio: user.bio,
+            skills: user.skills,
+            location: user.location
         } as User;
 
     } catch (error: any) {
-        console.error('Authentication error:', error.code, error.message);
+        console.error('Authentication error:', error);
         return null;
     }
 }
 
 /**
- * Register a new user with Firebase Auth
+ * Register a new user with MongoDB
  * @param userData User registration data
  * @returns User object or error
  */
 export async function registerUser(userData: Partial<User> & { password: string }): Promise<User | { error: string }> {
     try {
-        // Check if user already exists in Firestore
-        const existingUser = await findDocumentByField(
-            COLLECTIONS.USERS,
-            'email',
-            userData.email
-        );
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const existingUser = await db.collection("users").findOne({ email: userData.email });
 
         if (existingUser) {
             return { error: 'User already exists' };
         }
 
-        // Create user in Firebase Auth
-        const userCredential: UserCredential = await createUserWithEmailAndPassword(
-            auth,
-            userData.email!,
-            userData.password
-        );
+        const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-        const firebaseUser = userCredential.user;
-
-        if (!firebaseUser) {
-            return { error: 'Failed to create Firebase user' };
-        }
-
-        // Prepare user profile for Firestore
         const newUserProfile = {
             email: userData.email,
+            password: hashedPassword,
             name: userData.name || 'New User',
             role: userData.role || 'student',
             avatar: userData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name || 'User')}&background=random`,
@@ -104,34 +80,19 @@ export async function registerUser(userData: Partial<User> & { password: string 
             location: userData.location || ''
         };
 
-        // Store user profile in Firestore using Firebase UID as document ID
-        const result = await createDocument(
-            COLLECTIONS.USERS,
-            newUserProfile,
-            firebaseUser.uid
-        );
+        const result = await db.collection("users").insertOne(newUserProfile);
 
-        if (!result.success) {
-            return { error: 'Failed to create user profile' };
+        if (!result.acknowledged) {
+            return { error: 'Failed to create user' };
         }
 
         return {
-            id: firebaseUser.uid,
+            id: result.insertedId.toString(),
             ...newUserProfile
-        } as User;
+        } as unknown as User;
 
     } catch (error: any) {
-        console.error('Registration error:', error.code, error.message);
-
-        // Handle specific Firebase errors
-        if (error.code === 'auth/email-already-in-use') {
-            return { error: 'Email already in use' };
-        } else if (error.code === 'auth/invalid-email') {
-            return { error: 'Invalid email address' };
-        } else if (error.code === 'auth/weak-password') {
-            return { error: 'Password is too weak' };
-        }
-
+        console.error('Registration error:', error);
         return { error: 'Internal server error' };
     }
 }

@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/teacher/layout,_N_T_/teacher/create-course/layout,_N_T_/teacher/create-course/page,_N_T_/teacher/create-course/"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/teacher/create-course/__PAGE__",
+    "/teacher/create-course",
+    "/teacher",
+    "/_index",
+    "/_head"
+  ]
+}

@@ -1,0 +1,3 @@
+module.exports=[79642,a=>{"use strict";var b=a.i(87924);function c(){return(0,b.jsxs)("div",{className:"min-h-screen bg-black text-white p-8",children:[(0,b.jsx)("h1",{className:"text-3xl font-bold mb-4 text-lumina-primary",children:"Lesson Page"}),(0,b.jsx)("p",{className:"text-gray-400",children:"This is a placeholder for the Lesson page."}),(0,b.jsx)("a",{href:"/student/dashboard",className:"mt-4 inline-block text-lumina-secondary hover:underline",children:"Back to Dashboard"})]})}a.s(["default",()=>c])}];
+
+//# sourceMappingURL=src_app_student_lesson_page_page_tsx_efacaabc._.js.map

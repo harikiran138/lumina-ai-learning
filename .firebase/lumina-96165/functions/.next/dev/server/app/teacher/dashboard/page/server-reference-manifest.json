@@ -1,0 +1,230 @@
+{
+  "node": {
+    "6087403c0d53d9e2b79a4755a9fd767a6a93e0aae2": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "authenticateUser",
+      "filename": "src/app/actions/auth.ts"
+    },
+    "40f96f98da9dffa2aeb1f5b30ef940139d42c05b50": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "registerUser",
+      "filename": "src/app/actions/auth.ts"
+    },
+    "4040345a4fde4b5082741e9f62647c3d78547d60c3": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "getStudentDashboard",
+      "filename": "src/app/actions/data.ts"
+    },
+    "40b25ba52c5dfcafbe7e4f6be44149066ae0920ccd": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "getEnrolledCourses",
+      "filename": "src/app/actions/data.ts"
+    },
+    "40148a03047ea7c90cb6db8afd53725a15ff842aa3": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "getStudentProfile",
+      "filename": "src/app/actions/data.ts"
+    },
+    "606fee9659a96a0750ad94e0579ae31cf12d061252": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "updateStudentProfile",
+      "filename": "src/app/actions/data.ts"
+    },
+    "40abaf44a49aed22a32e72d4a052b11eccd7a0c0ce": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "getStudentProgress",
+      "filename": "src/app/actions/data.ts"
+    },
+    "40879ea5daf28c7d34d5b992b97e428e0dd797656f": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "getCommunityData",
+      "filename": "src/app/actions/data.ts"
+    },
+    "40a63d41cb747f89fed0eb5c0c99063fa3f62b9ae5": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "getTeacherDashboard",
+      "filename": "src/app/actions/data.ts"
+    },
+    "40d18fff4fd2c17e56e01d7a3220bc8c8cd431e727": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "getTeacherStudents",
+      "filename": "src/app/actions/data.ts"
+    },
+    "40ed0ba67928b3f8234861508f7313e6880eacb5f8": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "getTeacherCourses",
+      "filename": "src/app/actions/data.ts"
+    },
+    "60f0de56decd50c9c547d15ff63f1c1c073a9bbad6": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "createCourse",
+      "filename": "src/app/actions/data.ts"
+    },
+    "406753a8737b948cdcefb2c885cafd18b1ad79712c": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "getAdminDashboard",
+      "filename": "src/app/actions/data.ts"
+    },
+    "006f1b3e9f4b631a9b7f3b9d9bb5aa3720ab41b3de": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "getUsersForAdmin",
+      "filename": "src/app/actions/data.ts"
+    },
+    "4066569379b0f6ef7cad6f70c5352030ca294cd62c": {
+      "workers": {
+        "app/teacher/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/teacher/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/actions/auth.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/actions/data.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/teacher/dashboard/page": "action-browser"
+      },
+      "exportedName": "getCourseDetails",
+      "filename": "src/app/actions/data.ts"
+    }
+  },
+  "edge": {}
+}

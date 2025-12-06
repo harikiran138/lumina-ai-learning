@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
-    // Note: Static export disabled because Firebase Hosting doesn't support Next.js Server Actions
-    // Deploy to Vercel instead for full Next.js support
+    // output: 'export', // Disabled for MongoDB dynamic rendering
+    // distDir: 'dist', 
     trailingSlash: true,
     images: {
         unoptimized: true,

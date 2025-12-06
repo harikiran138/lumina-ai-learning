@@ -1,0 +1,3666 @@
+{
+  "node": {
+    "605ac65cc9dfbd23e44503660fc81311bf8a41eed3": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "authenticateUser",
+          "filename": "src/app/actions/auth.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "action-browser",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "action-browser",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/auth.ts",
+      "exportedName": "authenticateUser"
+    },
+    "40651031abfa44b68323c9e345cde1dcb1af6be20c": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "registerUser",
+          "filename": "src/app/actions/auth.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "action-browser",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "action-browser",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/auth.ts",
+      "exportedName": "registerUser"
+    },
+    "40057ca4bcb688404fffb4782f9cbc69af4eb8305d": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "getStudentDashboard",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "getStudentDashboard"
+    },
+    "406484041abc913ae582429b5d7a9c61d77fec10a7": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "getEnrolledCourses",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "getEnrolledCourses"
+    },
+    "0026e377043794c93f675b5a76f529fcb859d7f217": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "getAllCourses",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "getAllCourses"
+    },
+    "609a30219fe71916d39270a52f0fc832fef210e21c": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "enrollInCourse",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "enrollInCourse"
+    },
+    "40d383ae01c630cc494f3b811c6cd2b06bfa5fb762": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "getStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "getStudentProfile"
+    },
+    "6066bf89fc45fa9dc1943a8f259b721cce7bce5191": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "updateStudentProfile",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "updateStudentProfile"
+    },
+    "40805ef5cf85030395b16be83b6f6c01d33cd46481": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "getStudentProgress",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "getStudentProgress"
+    },
+    "403d4edd74f2167be9045f8e515c1a70876aaee3c7": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "getCommunityData",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "getCommunityData"
+    },
+    "40f5ffabd97e9c51ae7abbfb39628e384f093144c3": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "getTeacherDashboard",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "getTeacherDashboard"
+    },
+    "401337c47da689ae5e8169cc1907bca1bd2e816ba4": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "getTeacherStudents",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "getTeacherStudents"
+    },
+    "40d714b0a8699ee40cacaf7d2139ef5a5e865fd473": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "getTeacherCourses",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "getTeacherCourses"
+    },
+    "6084225d49e62342930cf057a388710203ebd8089a": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "createCourse",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "createCourse"
+    },
+    "702795c988fb1b2fe4bd9c8f906f51e44070c39a48": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "inviteStudentToCourse",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "inviteStudentToCourse"
+    },
+    "70c829dbdf0c5b70a5eb20982d65ac7f4d9c98e0f5": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "addModule",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "addModule"
+    },
+    "78f1f8e1fdd3c442cd07ae16d0c95036d0923c7644": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "addLesson",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "addLesson"
+    },
+    "408bec885feee32d80532fa2c5dacbe5aa7aefd546": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "getAdminDashboard",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "getAdminDashboard"
+    },
+    "008bef5d45ec060a75a79a8b1854ed3bf6c9c82dcc": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "getUsersForAdmin",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "getUsersForAdmin"
+    },
+    "40f2122612645433d209903a0a67ee199a8e8e79ef": {
+      "workers": {
+        "app/admin/dashboard/page": {
+          "moduleId": 26209,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/security/page": {
+          "moduleId": 54033,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/settings/page": {
+          "moduleId": 81510,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/system/page": {
+          "moduleId": 10326,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/admin/users/page": {
+          "moduleId": 46698,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/login/page": {
+          "moduleId": 28094,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/ai_tutor/page": {
+          "moduleId": 12613,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/assessment/page": {
+          "moduleId": 96008,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/community/page": {
+          "moduleId": 63883,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/course_explorer/page": {
+          "moduleId": 19977,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/[courseId]/page": {
+          "moduleId": 46049,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/courses/page": {
+          "moduleId": 38892,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/dashboard/page": {
+          "moduleId": 85958,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/lesson_page/page": {
+          "moduleId": 97512,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/my_notes/page": {
+          "moduleId": 64891,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/profile/page": {
+          "moduleId": 77987,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/progress/page": {
+          "moduleId": 8965,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/student/settings/page": {
+          "moduleId": 35840,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/[courseId]/page": {
+          "moduleId": 82079,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/courses/page": {
+          "moduleId": 79709,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/create-course/page": {
+          "moduleId": 46452,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/dashboard/page": {
+          "moduleId": 34271,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/resources/page": {
+          "moduleId": 17275,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/settings/page": {
+          "moduleId": 36721,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        },
+        "app/teacher/students/page": {
+          "moduleId": 85823,
+          "async": false,
+          "exportedName": "getCourseDetails",
+          "filename": "src/app/actions/data.ts"
+        }
+      },
+      "layer": {
+        "app/admin/dashboard/page": "rsc",
+        "app/admin/security/page": "action-browser",
+        "app/admin/settings/page": "action-browser",
+        "app/admin/system/page": "action-browser",
+        "app/admin/users/page": "action-browser",
+        "app/login/page": "action-browser",
+        "app/student/ai_tutor/page": "action-browser",
+        "app/student/assessment/page": "action-browser",
+        "app/student/community/page": "action-browser",
+        "app/student/course_explorer/page": "action-browser",
+        "app/student/courses/[courseId]/page": "action-browser",
+        "app/student/courses/page": "action-browser",
+        "app/student/dashboard/page": "action-browser",
+        "app/student/lesson_page/page": "action-browser",
+        "app/student/my_notes/page": "action-browser",
+        "app/student/profile/page": "action-browser",
+        "app/student/progress/page": "action-browser",
+        "app/student/settings/page": "action-browser",
+        "app/teacher/courses/[courseId]/page": "action-browser",
+        "app/teacher/courses/page": "action-browser",
+        "app/teacher/create-course/page": "action-browser",
+        "app/teacher/dashboard/page": "rsc",
+        "app/teacher/resources/page": "action-browser",
+        "app/teacher/settings/page": "action-browser",
+        "app/teacher/students/page": "action-browser"
+      },
+      "filename": "src/app/actions/data.ts",
+      "exportedName": "getCourseDetails"
+    }
+  },
+  "edge": {},
+  "encryptionKey": "fpClUomICY6A/2eFhtDui9nVc9qCPiOy8sS3ZhONBsY="
+}

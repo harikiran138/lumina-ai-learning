@@ -1,0 +1,22 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/admin/dashboard/page": "app/admin/dashboard/page.js",
+  "/admin/security/page": "app/admin/security/page.js",
+  "/admin/settings/page": "app/admin/settings/page.js",
+  "/admin/system/page": "app/admin/system/page.js",
+  "/admin/users/page": "app/admin/users/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/student/community/page": "app/student/community/page.js",
+  "/student/course_explorer/page": "app/student/course_explorer/page.js",
+  "/student/courses/page": "app/student/courses/page.js",
+  "/student/dashboard/page": "app/student/dashboard/page.js",
+  "/student/profile/page": "app/student/profile/page.js",
+  "/student/progress/page": "app/student/progress/page.js",
+  "/student/settings/page": "app/student/settings/page.js",
+  "/teacher/courses/page": "app/teacher/courses/page.js",
+  "/teacher/dashboard/page": "app/teacher/dashboard/page.js",
+  "/teacher/resources/page": "app/teacher/resources/page.js",
+  "/teacher/settings/page": "app/teacher/settings/page.js",
+  "/teacher/students/page": "app/teacher/students/page.js"
+}
