@@ -26,12 +26,24 @@ export default function StudentCommunity() {
 
     useEffect(() => {
         const fetchData = async () => {
-            setIsLoading(true);
+            // Check cache first
+            const cached = localStorage.getItem(`lumina_community_${activeChannel}`);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                setChannels(parsed.channels || []);
+                setMessages(parsed.messages || []);
+                setIsLoading(false); // Show cached content immediately
+            } else {
+                setIsLoading(true);
+            }
+
             try {
                 const data = await api.getCommunityData(activeChannel);
                 if (data) {
                     setChannels(data.channels || []);
                     setMessages(data.messages || []);
+                    // Update cache
+                    localStorage.setItem(`lumina_community_${activeChannel}`, JSON.stringify(data));
                 }
             } catch (e) {
                 console.error("Failed to load community data", e);
@@ -41,6 +53,39 @@ export default function StudentCommunity() {
         };
         fetchData();
     }, [activeChannel]);
+
+    const handleSendMessage = async () => {
+        if (!messageInput.trim()) return;
+
+        const tempContent = messageInput;
+        setMessageInput(''); // Clear immediately for UX
+
+        try {
+            const res = await api.sendCommunityMessage(activeChannel, tempContent);
+            if (res.success && res.message) {
+                // Optimistically add to list (or re-fetch, but appending is faster)
+                const newMsg = {
+                    ...res.message,
+                    // If backend doesn't format time string, we do it here or rely on raw date
+                    time: 'Just now'
+                };
+                const updatedMessages = [...messages, newMsg];
+                setMessages(updatedMessages);
+
+                // Update cache
+                const currentCache = JSON.parse(localStorage.getItem(`lumina_community_${activeChannel}`) || '{"channels":[], "messages":[]}');
+                currentCache.messages = updatedMessages;
+                localStorage.setItem(`lumina_community_${activeChannel}`, JSON.stringify(currentCache));
+            } else {
+                console.error("Failed to send", res.error);
+                // Ideally show toast
+                setMessageInput(tempContent); // Revert
+            }
+        } catch (e) {
+            console.error("Error sending message", e);
+            setMessageInput(tempContent);
+        }
+    };
 
     // Mock DMs for now until we have a proper schema
     const directMessages = [
@@ -83,6 +128,9 @@ export default function StudentCommunity() {
                                 )}
                             </button>
                         ))}
+                        {channels.length === 0 && !isLoading && (
+                            <div className="text-xs text-gray-500 px-3">No channels found. Defaulting to 'general'.</div>
+                        )}
                     </div>
 
                     <h3 className="text-xs font-semibold text-gray-400 uppercase mb-4 flex items-center gap-2">
@@ -109,7 +157,7 @@ export default function StudentCommunity() {
                     <div className="flex items-center gap-3">
                         <Hash className="w-6 h-6 text-gray-400" />
                         <div>
-                            <h2 className="font-bold text-white leading-tight">General</h2>
+                            <h2 className="font-bold text-white leading-tight">{channels.find(c => c.id === activeChannel)?.name || activeChannel}</h2>
                             <p className="text-xs text-gray-400">128 members • Topic: General Discussion</p>
                         </div>
                     </div>
@@ -132,13 +180,13 @@ export default function StudentCommunity() {
 
                 {/* Messages List */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                    {messages.map(msg => (
-                        <div key={msg.id} className="flex gap-4 group">
+                    {messages.map((msg, index) => (
+                        <div key={msg.id || index} className="flex gap-4 group">
                             <img src={msg.avatar} alt={msg.user} className="w-10 h-10 rounded-full mt-1" />
                             <div className="flex-1">
                                 <div className="flex items-baseline gap-2 mb-1">
                                     <span className="font-bold text-white hover:underline cursor-pointer">{msg.user}</span>
-                                    <span className="text-xs text-gray-500">{msg.time}</span>
+                                    <span className="text-xs text-gray-500">{msg.time || new Date(msg.createdAt).toLocaleTimeString()}</span>
                                 </div>
                                 <p className="text-gray-300 leading-relaxed text-sm">{msg.content}</p>
 
@@ -156,6 +204,9 @@ export default function StudentCommunity() {
                             </div>
                         </div>
                     ))}
+                    {messages.length === 0 && !isLoading && (
+                        <div className="text-center py-10 text-gray-500">No messages yet. Start the conversation!</div>
+                    )}
                 </div>
 
                 {/* Input Area */}
@@ -167,6 +218,7 @@ export default function StudentCommunity() {
                             placeholder={`Message #${activeChannel}`}
                             value={messageInput}
                             onChange={(e) => setMessageInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                         />
                         <div className="absolute left-3 top-1/2 -translate-y-1/2 flex gap-2">
                             <button className="p-1 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors">
@@ -178,7 +230,10 @@ export default function StudentCommunity() {
                                 <Smile className="w-5 h-5" />
                             </button>
                             {messageInput && (
-                                <button className="p-1 bg-lumina-primary text-black rounded-lg hover:bg-lumina-secondary transition-colors">
+                                <button
+                                    onClick={handleSendMessage}
+                                    className="p-1 bg-lumina-primary text-black rounded-lg hover:bg-lumina-secondary transition-colors"
+                                >
                                     <Send className="w-4 h-4" />
                                 </button>
                             )}

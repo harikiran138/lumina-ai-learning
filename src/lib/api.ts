@@ -162,6 +162,13 @@ class RealAPI {
         return await getCommunityData(channelId);
     }
 
+    async sendCommunityMessage(channelId: string, content: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { sendCommunityMessage } = await import('@/app/actions/data');
+        return await sendCommunityMessage(user.email, channelId, content);
+    }
+
     async getTeacherStudents(): Promise<any> {
         const user = await this.getCurrentUser();
         if (!user) return [];
