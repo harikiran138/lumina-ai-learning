@@ -12,79 +12,50 @@ export interface User {
     preferences?: any;
 }
 
-const DEMO_USERS: User[] = [
-    {
-        id: 'student_demo',
-        name: 'Student User',
-        email: 'student@lumina.com',
-        role: 'student',
-        status: 'active',
-        avatar: 'https://ui-avatars.com/api/?name=Student+User&background=0D8ABC&color=fff',
-        createdAt: new Date().toISOString()
-    },
-    {
-        id: 'teacher_demo',
-        name: 'Teacher User',
-        email: 'teacher@lumina.com',
-        role: 'teacher',
-        status: 'active',
-        avatar: 'https://ui-avatars.com/api/?name=Teacher+User&background=27AE60&color=fff',
-        createdAt: new Date().toISOString()
-    },
-    {
-        id: 'admin_demo',
-        name: 'Admin User',
-        email: 'admin@lumina.com',
-        role: 'admin',
-        status: 'active',
-        avatar: 'https://ui-avatars.com/api/?name=Admin+User&background=C0392B&color=fff',
-        createdAt: new Date().toISOString()
-    }
-];
+// Authentication API - Connected to MongoDB via Server Actions
+import { authenticateUser, registerUser } from '@/app/actions/auth';
 
-class MockAPI {
-    private static instance: MockAPI;
-    private currentUser: User | null = null; // In-memory session only
+export interface User {
+    id: string;
+    name: string;
+    email: string;
+    role: 'admin' | 'teacher' | 'student';
+    status: 'active' | 'suspended' | 'inactive';
+    avatar: string;
+    createdAt: string;
+    preferences?: any;
+    password?: string; // Optional for internal use
+}
+
+class RealAPI {
+    private static instance: RealAPI;
+    private currentUser: User | null = null;
 
     private constructor() { }
 
-    public static getInstance(): MockAPI {
-        if (!MockAPI.instance) {
-            MockAPI.instance = new MockAPI();
+    public static getInstance(): RealAPI {
+        if (!RealAPI.instance) {
+            RealAPI.instance = new RealAPI();
         }
-        return MockAPI.instance;
+        return RealAPI.instance;
     }
 
-    async login(email: string, password?: string, role?: string): Promise<User> {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 500));
+    async login(email: string, password?: string): Promise<User> {
+        if (!password) {
+            throw new Error("Password is required for login.");
+        }
 
-        const user = DEMO_USERS.find(u => u.email === email);
+        const user = await authenticateUser(email, password);
 
         if (user) {
             this.currentUser = user;
-            // Persist to sessionStorage so reload works, but no DB
             if (typeof window !== 'undefined') {
                 sessionStorage.setItem('lumina_user', JSON.stringify(user));
             }
             return user;
         }
 
-        // Auto-create for any other email to allow easy testing
-        const newUser: User = {
-            id: 'auto_user_' + Date.now(),
-            name: email.split('@')[0],
-            email: email,
-            role: (role as any) || 'student',
-            status: 'active',
-            avatar: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=random`,
-            createdAt: new Date().toISOString()
-        };
-        this.currentUser = newUser;
-        if (typeof window !== 'undefined') {
-            sessionStorage.setItem('lumina_user', JSON.stringify(newUser));
-        }
-        return newUser;
+        throw new Error("Invalid email or password.");
     }
 
     async getCurrentUser(): Promise<User | null> {
@@ -102,14 +73,23 @@ class MockAPI {
         return null;
     }
 
-    async createUser(userData: Partial<User>): Promise<any> {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // Just return success, we don't actually save it in this simple mode
-        return "user_created";
+    async createUser(userData: Partial<User> & { password?: string }): Promise<any> {
+        if (!userData.password) {
+            throw new Error("Password is required for signup.");
+        }
+        // Call server action
+        const result = await registerUser(userData as Partial<User> & { password: string });
+
+        if ('error' in result) {
+            throw new Error(result.error as string);
+        }
+
+        return result;
     }
 
-    // Dashboard Data - Hardcoded Mock Data
+    // Dashboard Data - Hardcoded Mock Data (Remaining same for now)
     async getDashboardData(userRole: string, userId?: string): Promise<any> {
+        // ... (Keep existing dashboard mock logic as is for now)
         await new Promise(resolve => setTimeout(resolve, 300));
 
         if (userRole === 'student') {
@@ -136,14 +116,13 @@ class MockAPI {
                         description: 'Cellular processes and genetics'
                     }
                 ],
-                studentProgress: [], // Can be empty for now
+                studentProgress: [],
                 recentActivity: [
                     { id: 1, type: 'lesson', title: 'Wave Function Collapse', time: '2 hours ago' },
                     { id: 2, type: 'quiz', title: 'Thermodynamics Quiz', time: '1 day ago' }
                 ]
             };
         }
-
         return {};
     }
 
@@ -155,4 +134,4 @@ class MockAPI {
     }
 }
 
-export const api = MockAPI.getInstance();
+export const api = RealAPI.getInstance();
