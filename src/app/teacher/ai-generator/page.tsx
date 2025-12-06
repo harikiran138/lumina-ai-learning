@@ -93,19 +93,21 @@ export default function CourseGeneratorPage() {
             const truncatedText = text.substring(0, 15000);
 
             // 2. Generate Structure (Streaming)
-            setAiProgress('AI Initializing...');
+            setAiProgress('AI Architecting Course & Content...');
 
             const prompt = `
-            You are a Curriculum Architect.
-            Analyze the following text (which is a textbook table of contents) and structure it into a Course.
-
-            IMPORTANT OUTPUT FORMAT:
-            Use Markdown.
-            - Start Modules with "## Module: [Title]"
-            - Start Lessons with "- Lesson: [Title]"
-
-            Do not add any other conversational text. Just the list.
-
+            You are a Curriculum Architect. 
+            Analyze the provided text.
+            Create a structured course with Modules and Lessons.
+            For EACH Lesson, write a strictly educational summary of the content based on the text provided.
+            
+            IMPORTANT OUTPUT FORMAT (Markdown):
+            ## Module: [Module Title]
+            - Lesson: [Lesson Title]
+            > Content: [Write 2-3 sentences of educational content for this lesson here. Focus on defining key terms or concepts found in the text.]
+            
+            Do not add conversational text.
+            
             TEXT TO ANALYZE:
             ${truncatedText}
             `;
@@ -141,6 +143,7 @@ export default function CourseGeneratorPage() {
         const lines = text.split('\n');
         const newModules: Module[] = [];
         let currentModule: Module | null = null;
+        let currentLesson: { title: string, content?: string } | null = null;
 
         lines.forEach(line => {
             const trimmed = line.trim();
@@ -159,18 +162,25 @@ export default function CourseGeneratorPage() {
                 };
             } else if (trimmed.startsWith('- Lesson:') || trimmed.startsWith('-')) {
                 if (currentModule) {
-                    currentModule.lessons.push({
-                        title: trimmed.replace(/^- Lesson:|-/, '').trim()
-                    });
+                    currentLesson = {
+                        title: trimmed.replace(/^- Lesson:|-/, '').trim(),
+                        content: ""
+                    };
+                    currentModule.lessons.push(currentLesson);
                 }
+            } else if (trimmed.startsWith('> Content:') || trimmed.startsWith('>')) {
+                if (currentLesson) {
+                    currentLesson.content = trimmed.replace(/^> Content:|> /, '').trim();
+                }
+            } else if (currentLesson && trimmed.length > 5 && !trimmed.startsWith('#')) {
+                // Append continuation of content if it's a paragraph
+                currentLesson.content += " " + trimmed;
             }
         });
         if (currentModule) newModules.push(currentModule);
 
         if (newModules.length === 0) {
-            // Fallback: Create one module and dump lines as lessons?
-            // Better to show empty and let user add.
-            newModules.push({ title: "Introduction", lessons: [{ title: "Overview" }] });
+            newModules.push({ title: "Introduction", lessons: [{ title: "Overview", content: "Introduction to the course material." }] });
         }
 
         setModules(newModules);
@@ -219,7 +229,8 @@ export default function CourseGeneratorPage() {
                 updateProgress();
 
                 for (const less of mod.lessons) {
-                    await api.addLesson(courseId, moduleId, less.title);
+                    // Pass content and type 'text'
+                    await api.addLesson(courseId, moduleId, less.title, less.content || "Content generated from textbook.", 'text');
                     updateProgress();
                 }
             }

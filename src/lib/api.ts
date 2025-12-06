@@ -216,11 +216,11 @@ class RealAPI {
         return await addModule(user.email, courseId, title);
     }
 
-    async addLesson(courseId: string, moduleId: string, title: string): Promise<any> {
+    async addLesson(courseId: string, moduleId: string, title: string, content: string = '', type: 'text' | 'video' | 'quiz' = 'text'): Promise<any> {
         const user = await this.getCurrentUser();
         if (!user) return { success: false, error: 'Not authenticated' };
         const { addLesson } = await import('@/app/actions/data');
-        return await addLesson(user.email, courseId, moduleId, title);
+        return await addLesson(user.email, courseId, moduleId, title, content, type);
     }
 
     async logout(): Promise<void> {
