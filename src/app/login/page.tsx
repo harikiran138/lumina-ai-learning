@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api'; // Use modern API
-import { Mail, Lock, User } from 'lucide-react';
+import { Mail, Lock, User, ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -136,6 +136,13 @@ export default function LoginPage() {
                 <button id="theme-toggle" suppressHydrationWarning className="p-2 rounded-lg glass text-lumina-primary hover:bg-lumina-primary/10">
                     <span className="text-xl">🌓</span>
                 </button>
+            </div>
+
+            <div className="absolute top-4 left-4 z-20">
+                <Link href="/" className="p-2 rounded-lg flex items-center text-gray-400 hover:text-white transition-colors hover:bg-white/10">
+                    <ArrowLeft className="w-5 h-5 mr-2" />
+                    <span className="font-medium">Back</span>
+                </Link>
             </div>
 
             <div className="max-w-md w-full space-y-8 relative z-10 backdrop-blur-2xl bg-white/5 p-8 rounded-3xl border border-white/10 shadow-2xl">
