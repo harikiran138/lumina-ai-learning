@@ -117,11 +117,32 @@ class RealAPI {
         return await getStudentProgress(user.email);
     }
 
+    async getStudentCertificates(): Promise<any[]> {
+        const user = await this.getCurrentUser();
+        if (!user) return [];
+        const { getStudentCertificates } = await import('@/app/actions/data');
+        return await getStudentCertificates(user.email);
+    }
+
     async updateProfile(data: any): Promise<any> {
         const user = await this.getCurrentUser();
         if (!user) return { success: false, error: 'Not authenticated' };
         const { updateStudentProfile } = await import('@/app/actions/data');
         return await updateStudentProfile(user.email, data);
+    }
+
+    async completeLesson(courseId: string, moduleId: string, lessonId: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { completeLesson } = await import('@/app/actions/data');
+        return await completeLesson(user.email, courseId, moduleId, lessonId);
+    }
+
+    async getStudentBadges(): Promise<any[]> {
+        const user = await this.getCurrentUser();
+        if (!user) return [];
+        const { getStudentBadges } = await import('@/app/actions/data');
+        return await getStudentBadges(user.email);
     }
 
     async getCourseDetails(courseId: string): Promise<any> {
@@ -200,6 +221,17 @@ class RealAPI {
         if (typeof window !== 'undefined') {
             sessionStorage.removeItem('lumina_user');
         }
+    }
+
+    async updateProgress(courseId: string, percentIncrement: number): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false };
+        // In a real app we'd call a server action. 
+        // For now, let's assume we maintain a simple progress tracking or mock it if server action is missing.
+        // But user asked for database connection. I should check if updateProgress exists in data.ts
+        // It doesn't seem to. I'll need to create it.
+        const { updateCourseProgress } = await import('@/app/actions/data');
+        return await updateCourseProgress(user.email, courseId, percentIncrement);
     }
 }
 

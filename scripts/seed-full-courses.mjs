@@ -33,16 +33,77 @@ const FULL_COURSES = [
                     {
                         id: "les_1_1",
                         title: "Concept: Implicit State Sharing",
-                        type: "video",
+                        type: "text",
                         duration: "10 min",
-                        completed: false
+                        completed: false,
+                        content: `
+# Implicit State Sharing in Compound Components
+
+Compound components are a pattern where components work together to form a complete UI, sharing state implicitly. Think of HTML's \`<select>\` and \`<option>\` elements. They don't need you to pass the state to each option explicitly; they just "know" about each other.
+
+### Why use them?
+- **Cleaner API**: Users of your component don't need to manage internal state.
+- **Flexibility**: Users can rearrange child components (e.g., put the Toggle Button before or after the Label).
+
+### The Magic: React.Context
+The core mechanism usually involves \`React.createContext\`. The parent component (e.g., \`<Toggle>\`) creates a provider, and the children (e.g., \`<Toggle.On>\`) consume that context.
+
+\`\`\`jsx
+const ToggleContext = React.createContext();
+
+function Toggle({ children }) {
+  const [on, setOn] = React.useState(false);
+  const toggle = () => setOn(!on);
+  
+  return (
+    <ToggleContext.Provider value={{ on, toggle }}>
+      {children}
+    </ToggleContext.Provider>
+  );
+}
+\`\`\`
+            `
                     },
                     {
                         id: "les_1_2",
                         title: "Building the Toggle Component",
-                        type: "video",
+                        type: "text",
                         duration: "20 min",
-                        completed: false
+                        completed: false,
+                        content: `
+# Building a Flexible Toggle
+
+Now that we understand the concept, let's build the prompt components.
+
+## The Requirements
+1.  **Toggle**: The wrapper that holds state.
+2.  **Toggle.On**: Displays children only when state is ON.
+3.  **Toggle.Off**: Displays children only when state is OFF.
+4.  **Toggle.Button**: The switch that flips the state.
+
+## Implementation Steps
+
+1.  **Create Context**: As seen in the previous lesson.
+2.  **Create Consumers**:
+    *   \`Toggle.On\` checks \`context.on\`. If true, render children.
+    *   \`Toggle.Off\` checks \`!context.on\`.
+
+\`\`\`jsx
+Toggle.On = ({ children }) => {
+  const { on } = useContext(ToggleContext);
+  return on ? children : null;
+}
+\`\`\`
+
+This pattern allows consumers of your component to write semantic, readable code:
+
+\`\`\`jsx
+<Toggle>
+  <Toggle.On>The light is ON</Toggle.On>
+  <Toggle.Button />
+</Toggle>
+\`\`\`
+            `
                     },
                     {
                         id: "quiz_1",
