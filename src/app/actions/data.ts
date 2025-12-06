@@ -1056,7 +1056,8 @@ export async function getChatHistory(email: string) {
             id: msg._id.toString(),
             sender: msg.sender,
             text: msg.text,
-            timestamp: msg.timestamp
+            timestamp: msg.timestamp,
+            sessionId: msg.sessionId // Return sessionId
         }));
     } catch (e) {
         console.error("Error fetching chat history", e);
@@ -1064,7 +1065,7 @@ export async function getChatHistory(email: string) {
     }
 }
 
-export async function saveChatMessage(email: string, message: { sender: string, text: string }) {
+export async function saveChatMessage(email: string, message: { sender: string, text: string, sessionId?: string }) {
     try {
         const client = await clientPromise;
         const db = client.db("lumina-database");
@@ -1075,6 +1076,7 @@ export async function saveChatMessage(email: string, message: { sender: string, 
             userId: user._id.toString(),
             sender: message.sender,
             text: message.text,
+            sessionId: message.sessionId, // Save sessionId
             timestamp: new Date()
         });
 

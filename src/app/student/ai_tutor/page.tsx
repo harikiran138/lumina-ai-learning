@@ -23,33 +23,89 @@ export default function AITutorPage() {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    // Session Management
+    const [currentSessionId, setCurrentSessionId] = useState<string>('');
+    const [sessions, setSessions] = useState<Record<string, any[]>>({});
+
     // Initial load
     useEffect(() => {
+        // Generate or retrieve session ID
+        let sessionId = sessionStorage.getItem('lumina_chat_session_id');
+        if (!sessionId) {
+            sessionId = Math.random().toString(36).substring(7);
+            sessionStorage.setItem('lumina_chat_session_id', sessionId);
+        }
+        setCurrentSessionId(sessionId);
+
         const loadData = async () => {
             const history = await api.getChatHistory();
-            setMessages(history || []);
+            if (history) {
+                // Group by sessionId
+                const grouped: Record<string, any[]> = {};
+                history.forEach((msg: any) => {
+                    const sId = msg.sessionId || 'legacy';
+                    if (!grouped[sId]) grouped[sId] = [];
+                    grouped[sId].push(msg);
+                });
+                setSessions(grouped);
+
+                // Set messages for current session if it exists in history, else empty (new session)
+                // Actually, if we just created a NEW sessionId, history won't have it.
+                // If we retrieved an existing one from sessionStorage, maybe history has it.
+                if (grouped[sessionId]) {
+                    setMessages(grouped[sessionId]);
+                } else {
+                    setMessages([]);
+                }
+            }
         };
         loadData();
     }, []);
 
+    // Switch session
+    const switchSession = (sessionId: string) => {
+        setCurrentSessionId(sessionId);
+        sessionStorage.setItem('lumina_chat_session_id', sessionId);
+        setMessages(sessions[sessionId] || []);
+    };
+
+    // Start New Chat
+    const startNewChat = () => {
+        const newSessionId = Math.random().toString(36).substring(7);
+        setCurrentSessionId(newSessionId);
+        sessionStorage.setItem('lumina_chat_session_id', newSessionId);
+        setMessages([]);
+        // We don't add to 'sessions' state until a message is sent
+    };
+
+    // Update sessions state helper
+    const updateSessionsState = (sessionId: string, newMsg: any) => {
+        setSessions(prev => {
+            const sessionMsgs = prev[sessionId] ? [...prev[sessionId], newMsg] : [newMsg];
+            return { ...prev, [sessionId]: sessionMsgs };
+        });
+    };
+
     // Auto-scroll
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [messages, isLoading]);
 
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!input.trim()) return;
 
-        const userMsg = { sender: 'me', text: input, timestamp: new Date() };
+        const userMsg = { sender: 'me', text: input, timestamp: new Date(), sessionId: currentSessionId };
 
         // Optimistic update
         setMessages(prev => [...prev, userMsg]);
+        updateSessionsState(currentSessionId, userMsg);
+
         setInput('');
         setIsLoading(true);
 
         // Save to DB
-        await api.saveChatMessage({ sender: 'me', text: userMsg.text });
+        await api.saveChatMessage({ sender: 'me', text: userMsg.text, sessionId: currentSessionId });
 
         try {
             // Prepare messages for context
@@ -60,21 +116,21 @@ export default function AITutorPage() {
             contextMessages.push({ role: 'user', content: userMsg.text });
 
             // Call Server Action
-            const response = await api.chatWithAI(contextMessages);
+            const response = await (api as any).chatWithAI(contextMessages);
 
             if (response.success) {
                 const aiText = response.message;
-                const aiMsg = { sender: 'AI Tutor', text: aiText, timestamp: new Date() };
+                const aiMsg = { sender: 'AI Tutor', text: aiText, timestamp: new Date(), sessionId: currentSessionId };
                 setMessages(prev => [...prev, aiMsg]);
+                updateSessionsState(currentSessionId, aiMsg);
+
                 // Save AI response to DB
-                await api.saveChatMessage({ sender: 'AI Tutor', text: aiText });
+                await api.saveChatMessage({ sender: 'AI Tutor', text: aiText, sessionId: currentSessionId });
             } else {
                 console.error('AI Error:', response.error);
                 const errorMsg = {
                     sender: 'AI Tutor',
-                    text: response.error === 'AI API Key is not configured on the server.'
-                        ? "System Configuration Error: AI API Key is missing. Please contact the administrator."
-                        : "I'm having trouble connecting right now. Please try again later.",
+                    text: "I'm having trouble connecting right now. Please try again later.",
                     timestamp: new Date()
                 };
                 setMessages(prev => [...prev, errorMsg]);
@@ -103,18 +159,34 @@ export default function AITutorPage() {
                         <History className="w-5 h-5 text-lumina-primary" />
                         Chat History
                     </h2>
+                    <button onClick={startNewChat} className="p-1.5 hover:bg-white/10 rounded-lg text-lumina-primary transition-colors" title="New Chat">
+                        <Plus className="w-5 h-5" />
+                    </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {/* Group by Date (Mock grouping for now, just list) */}
                     <div className="space-y-2">
                         <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Previous Chats</p>
-                        {messages.filter(m => m.sender === 'me').slice(-10).reverse().map((msg, idx) => (
-                            <div key={idx} className="p-3 rounded-xl bg-white/5 hover:bg-white/10 cursor-pointer border border-white/5 transition-colors group">
-                                <p className="text-sm text-gray-300 line-clamp-2">{msg.text}</p>
-                                <span className="text-[10px] text-gray-500 mt-2 block">{new Date(msg.timestamp).toLocaleDateString()}</span>
-                            </div>
-                        ))}
-                        {messages.length === 0 && (
+                        {Object.entries(sessions).reverse().map(([sId, msgs]) => {
+                            if (msgs.length === 0) return null;
+                            const firstMsg = msgs[0];
+                            const lastMsg = msgs[msgs.length - 1];
+                            const isActive = sId === currentSessionId;
+
+                            return (
+                                <div
+                                    key={sId}
+                                    onClick={() => switchSession(sId)}
+                                    className={`p-3 rounded-xl cursor-pointer border transition-all group ${isActive ? 'bg-white/10 border-lumina-primary/30' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
+                                >
+                                    <p className="text-sm text-gray-300 line-clamp-1 font-medium">{firstMsg.text}</p>
+                                    <div className="flex justify-between items-center mt-2">
+                                        <span className="text-[10px] text-gray-500">{new Date(lastMsg.timestamp).toLocaleDateString()}</span>
+                                        <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-gray-400">{msgs.length} msgs</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {Object.keys(sessions).length === 0 && (
                             <p className="text-sm text-gray-500 italic text-center py-4">No history yet.</p>
                         )}
                     </div>
@@ -132,8 +204,8 @@ export default function AITutorPage() {
                         <div>
                             <h1 className="text-white font-bold">AI Tutor</h1>
                             <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                                <span className="text-xs text-gray-400">Online</span>
+                                <span className={`w-2 h-2 rounded-full animate-pulse ${isLoading ? 'bg-amber-500' : 'bg-green-500'}`}></span>
+                                <span className="text-xs text-gray-400">{isLoading ? 'Typing...' : 'Online'}</span>
                             </div>
                         </div>
                     </div>
@@ -158,29 +230,16 @@ export default function AITutorPage() {
                                         <span className="text-xs font-semibold text-gray-300">{msg.sender === 'me' ? 'You' : 'AI Tutor'}</span>
                                         <span className="text-[10px] text-gray-500">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
-                                    <div className={`p-4 rounded-2xl relative group ${msg.sender === 'me'
-                                        ? 'bg-lumina-primary text-black rounded-tr-none'
-                                        : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'
-                                        }`}>
+                                    <div className={`p-4 rounded-2xl relative group ${msg.sender === 'me' ? 'bg-lumina-primary text-black rounded-tr-none' : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'}`}>
                                         <div className="prose prose-invert prose-sm max-w-none">
                                             <ReactMarkdown>{msg.text}</ReactMarkdown>
                                         </div>
-
-                                        {/* Actions for Assistant Messages */}
                                         {msg.sender !== 'me' && (
                                             <div className="absolute -bottom-8 left-0 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => addToNotes(msg.text)}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 border border-white/10 rounded-full text-xs text-gray-400 hover:text-white hover:border-white/30 transition-all"
-                                                >
-                                                    <FileText className="w-3 h-3" />
-                                                    Add to Notes
+                                                <button onClick={() => addToNotes(msg.text)} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 border border-white/10 rounded-full text-xs text-gray-400 hover:text-white hover:border-white/30 transition-all">
+                                                    <FileText className="w-3 h-3" /> Add to Notes
                                                 </button>
-                                                <button
-                                                    onClick={() => navigator.clipboard.writeText(msg.text)}
-                                                    className="p-1.5 bg-gray-800 border border-white/10 rounded-full text-gray-400 hover:text-white hover:border-white/30 transition-all"
-                                                    title="Copy"
-                                                >
+                                                <button onClick={() => navigator.clipboard.writeText(msg.text)} className="p-1.5 bg-gray-800 border border-white/10 rounded-full text-gray-400 hover:text-white hover:border-white/30 transition-all" title="Copy">
                                                     <Copy className="w-3 h-3" />
                                                 </button>
                                             </div>

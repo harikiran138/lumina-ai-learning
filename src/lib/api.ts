@@ -247,7 +247,7 @@ class RealAPI {
         return await getChatHistory(user.email);
     }
 
-    async saveChatMessage(message: { sender: string, text: string }): Promise<any> {
+    async saveChatMessage(message: { sender: string, text: string, sessionId?: string }): Promise<any> {
         const user = await this.getCurrentUser();
         if (!user) return { success: false };
         const { saveChatMessage } = await import('@/app/actions/data');
@@ -280,6 +280,11 @@ class RealAPI {
         if (!user) return { success: false, error: 'Not authenticated' };
         const { deleteStudentNote } = await import('@/app/actions/data');
         return await deleteStudentNote(user.email, noteId);
+    }
+
+    async chatWithAI(messages: any[]): Promise<any> {
+        const { chatWithAI } = await import('@/app/actions/ai');
+        return await chatWithAI(messages);
     }
 }
 
