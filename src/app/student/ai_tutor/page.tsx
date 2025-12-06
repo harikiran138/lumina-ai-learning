@@ -33,6 +33,9 @@ export default function AITutorPage() {
     const [loadingProgress, setLoadingProgress] = useState('');
     const [progressPercent, setProgressPercent] = useState(0);
 
+    // Context State
+    const [userContext, setUserContext] = useState<string>('');
+
     // Session Management
     const [currentSessionId, setCurrentSessionId] = useState<string>('');
     const [sessions, setSessions] = useState<Record<string, any[]>>({});
@@ -66,7 +69,35 @@ export default function AITutorPage() {
             }
         };
 
+        const loadContext = async () => {
+            try {
+                const user = await api.getCurrentUser();
+                const dashboard = await api.getDashboardData('student');
+
+                let context = `Current User: ${user?.name || 'Student'}\n`;
+                if (dashboard.enrolledCourses && dashboard.enrolledCourses.length > 0) {
+                    context += "Enrolled Courses:\n";
+                    dashboard.enrolledCourses.forEach((c: any) => {
+                        context += `- ${c.title} (Progress: ${c.progress}%)\n`;
+                    });
+                } else {
+                    context += "No courses enrolled yet.\n";
+                }
+
+                // Add achievements if available
+                if (dashboard.achievements && dashboard.achievements.length > 0) {
+                    context += "Achievements: " + dashboard.achievements.map((a: any) => a.title).join(", ") + "\n";
+                }
+
+                setUserContext(context);
+                console.log("AI Context Loaded:", context);
+            } catch (e) {
+                console.error("Failed to load user context", e);
+            }
+        };
+
         initEngine();
+        loadContext();
     }, []);
 
     // Initial load history
@@ -155,8 +186,10 @@ export default function AITutorPage() {
 
         try {
             // Prepare messages for context
+            const systemMessage = `You are an AI Tutor for students at Lumina AI Learning. Be helpful, concise, and educational.\n\nContext about the student:\n${userContext}`;
+
             const contextMessages = [
-                { role: 'system', content: 'You are an AI Tutor for students. Be helpful, concise, and educational.' },
+                { role: 'system', content: systemMessage },
                 ...messages.slice(-10).map(m => ({
                     role: m.sender === 'me' ? 'user' : 'assistant',
                     content: m.text
