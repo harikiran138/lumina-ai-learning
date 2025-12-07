@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
+import { CreateMLCEngine } from "@mlc-ai/web-llm";
 import {
     Send,
     Bot,
@@ -10,14 +11,12 @@ import {
     History,
     FileText,
     Plus,
-    MoreVertical,
-    Trash2,
     Copy,
-    Check,
     Loader2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
+// Using the requested "Lumina" branding, but pointing to a real model
 const SELECTED_MODEL = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
 
 export default function AITutorPage() {
@@ -27,9 +26,10 @@ export default function AITutorPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // AI Engine State
-    const [isEngineReady, setIsEngineReady] = useState(true); // Always ready for API call
+    const engine = useRef<any>(null);
+    const [isEngineReady, setIsEngineReady] = useState(false);
     const [loadingProgress, setLoadingProgress] = useState('');
-    const [progressPercent, setProgressPercent] = useState(100);
+    const [progressPercent, setProgressPercent] = useState(0);
 
     // Context State
     const [userContext, setUserContext] = useState<string>('');
@@ -38,8 +38,33 @@ export default function AITutorPage() {
     const [currentSessionId, setCurrentSessionId] = useState<string>('');
     const [sessions, setSessions] = useState<Record<string, any[]>>({});
 
-    // Initialize Context
+    // Initialize WebLLM Engine (Restored)
     useEffect(() => {
+        const initEngine = async () => {
+            if (engine.current) return;
+
+            try {
+                setLoadingProgress('Initializing Lumina AI (WebLLM)...');
+                engine.current = await CreateMLCEngine(
+                    SELECTED_MODEL,
+                    {
+                        initProgressCallback: (report) => {
+                            setLoadingProgress(report.text);
+                            const match = report.text.match(/(\d+)%/);
+                            if (match) {
+                                setProgressPercent(parseInt(match[1]));
+                            }
+                        },
+                    }
+                );
+                setIsEngineReady(true);
+                setLoadingProgress('');
+            } catch (err) {
+                console.error("Failed to load WebLLM:", err);
+                setLoadingProgress('Failed to load AI. Please check your connection and reload.');
+            }
+        };
+
         const loadContext = async () => {
             try {
                 const user = await api.getCurrentUser();
@@ -55,7 +80,6 @@ export default function AITutorPage() {
                     context += "No courses enrolled yet.\n";
                 }
 
-                // Add achievements if available
                 if (dashboard.achievements && dashboard.achievements.length > 0) {
                     context += "Achievements: " + dashboard.achievements.map((a: any) => a.title).join(", ") + "\n";
                 }
@@ -66,12 +90,12 @@ export default function AITutorPage() {
             }
         };
 
+        initEngine();
         loadContext();
     }, []);
 
     // Initial load history
     useEffect(() => {
-        // Generate or retrieve session ID
         let sessionId = sessionStorage.getItem('lumina_chat_session_id');
         if (!sessionId) {
             sessionId = Math.random().toString(36).substring(7);
@@ -82,7 +106,6 @@ export default function AITutorPage() {
         const loadData = async () => {
             const history = await api.getChatHistory();
             if (history) {
-                // Group by sessionId
                 const grouped: Record<string, any[]> = {};
                 history.forEach((msg: any) => {
                     const sId = msg.sessionId || 'legacy';
@@ -101,14 +124,12 @@ export default function AITutorPage() {
         loadData();
     }, []);
 
-    // Switch session
     const switchSession = (sessionId: string) => {
         setCurrentSessionId(sessionId);
         sessionStorage.setItem('lumina_chat_session_id', sessionId);
         setMessages(sessions[sessionId] || []);
     };
 
-    // Start New Chat
     const startNewChat = () => {
         const newSessionId = Math.random().toString(36).substring(7);
         setCurrentSessionId(newSessionId);
@@ -116,7 +137,6 @@ export default function AITutorPage() {
         setMessages([]);
     };
 
-    // Update sessions state helper
     const updateSessionsState = (sessionId: string, newMsg: any) => {
         setSessions(prev => {
             const sessionMsgs = prev[sessionId] ? [...prev[sessionId], newMsg] : [newMsg];
@@ -124,7 +144,6 @@ export default function AITutorPage() {
         });
     };
 
-    // Auto-scroll
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isLoading, loadingProgress]);
@@ -132,22 +151,23 @@ export default function AITutorPage() {
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!input.trim()) return;
+        if (!isEngineReady) {
+            alert("Lumina AI is still loading. Please wait a moment.");
+            return;
+        }
 
         const userMsg = { sender: 'me', text: input, timestamp: new Date(), sessionId: currentSessionId };
 
-        // Optimistic update
         setMessages(prev => [...prev, userMsg]);
         updateSessionsState(currentSessionId, userMsg);
 
         setInput('');
         setIsLoading(true);
 
-        // Save to DB (Async)
         api.saveChatMessage({ sender: 'me', text: userMsg.text, sessionId: currentSessionId });
 
         try {
-            // Prepare messages for context
-            const systemMessage = `You are an AI Tutor for students at Lumina AI Learning. Be helpful, concise, and educational.\n\nContext about the student:\n${userContext}`;
+            const systemMessage = `You are Lumina, an AI Tutor for students. Be helpful, concise, and educational.\n\nContext:\n${userContext}`;
 
             const contextMessages = [
                 { role: 'system', content: systemMessage },
@@ -158,40 +178,20 @@ export default function AITutorPage() {
                 { role: 'user', content: userMsg.text }
             ];
 
-            // Direct Call to Ollama
-            const response = await fetch('http://localhost:11434/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: "gpt-oss:120b-cloud", // Using your preferred model
-                    messages: contextMessages,
-                    stream: false
-                })
+            const reply = await engine.current.chat.completions.create({
+                messages: contextMessages
             });
-
-            if (!response.ok) {
-                throw new Error("Failed to fetch");
-            }
-
-            const data = await response.json();
-            const aiText = data.message.content;
+            const aiText = reply.choices[0].message.content;
 
             const aiMsg = { sender: 'AI Tutor', text: aiText, timestamp: new Date(), sessionId: currentSessionId };
             setMessages(prev => [...prev, aiMsg]);
             updateSessionsState(currentSessionId, aiMsg);
 
-            // Save AI response to DB
             await api.saveChatMessage({ sender: 'AI Tutor', text: aiText, sessionId: currentSessionId });
 
-        } catch (error: any) {
+        } catch (error) {
             console.error('AI Error:', error);
-            let errorText = "Error generating response locally.";
-
-            if (error.message.includes('Failed to fetch')) {
-                errorText = "Connection Error: Could not reach Ollama (localhost:11434). Please ensure it is running and CORS is configured (launchctl setenv OLLAMA_ORIGINS \"*\").";
-            }
-
-            const errorMsg = { sender: 'AI Tutor', text: errorText, timestamp: new Date() };
+            const errorMsg = { sender: 'AI Tutor', text: "I'm having trouble thinking right now.", timestamp: new Date() };
             setMessages(prev => [...prev, errorMsg]);
         } finally {
             setIsLoading(false);
@@ -200,7 +200,7 @@ export default function AITutorPage() {
 
     const addToNotes = async (text: string) => {
         await api.saveNote(text);
-        alert("Saved to notes!"); // Replace with toast in real app
+        alert("Saved to notes!");
     };
 
     return (
@@ -224,7 +224,6 @@ export default function AITutorPage() {
                             const firstMsg = msgs[0];
                             const lastMsg = msgs[msgs.length - 1];
                             const isActive = sId === currentSessionId;
-
                             return (
                                 <div
                                     key={sId}
@@ -239,9 +238,6 @@ export default function AITutorPage() {
                                 </div>
                             );
                         })}
-                        {Object.keys(sessions).length === 0 && (
-                            <p className="text-sm text-gray-500 italic text-center py-4">No history yet.</p>
-                        )}
                     </div>
                 </div>
             </div>
@@ -255,11 +251,11 @@ export default function AITutorPage() {
                             <Bot className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-white font-bold">AI Tutor (Run Locally)</h1>
+                            <h1 className="text-white font-bold">Lumina AI Tutor</h1>
                             <div className="flex items-center gap-1.5">
                                 <span className={`w-2 h-2 rounded-full animate-pulse ${isLoading ? 'bg-amber-500' : isEngineReady ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                 <span className="text-xs text-gray-400">
-                                    {isLoading ? 'Thinking...' : isEngineReady ? 'Ready (WebGPU)' : 'Loading Model...'}
+                                    {isLoading ? 'Thinking...' : isEngineReady ? 'Online (WebLLM)' : 'Loading Model...'}
                                 </span>
                             </div>
                         </div>
@@ -268,12 +264,11 @@ export default function AITutorPage() {
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                    {/* Model Loading Status */}
                     {!isEngineReady && (
                         <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4 text-center">
                             <Loader2 className="w-6 h-6 text-blue-400 animate-spin mx-auto mb-2" />
                             <p className="text-blue-200 font-semibold text-sm mb-1">{loadingProgress || "Initializing..."}</p>
-                            <p className="text-blue-300/60 text-xs">First load will download ~600MB of model data to your browser cache.</p>
+                            <p className="text-blue-300/60 text-xs">First load will download model data to your browser.</p>
                             {progressPercent > 0 && (
                                 <div className="mt-2 h-1.5 w-full bg-blue-900/50 rounded-full overflow-hidden">
                                     <div className="h-full bg-blue-400 transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
@@ -285,8 +280,7 @@ export default function AITutorPage() {
                     {messages.length === 0 && isEngineReady ? (
                         <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-50">
                             <Sparkles className="w-16 h-16 text-lumina-primary mb-4" />
-                            <h3 className="text-xl font-bold text-white mb-2">How can I help you today?</h3>
-                            <p className="text-gray-400 max-w-md">I am running locally on your device! Ask me anything.</p>
+                            <h3 className="text-xl font-bold text-white mb-2">How can I help you learn?</h3>
                         </div>
                     ) : (
                         messages.map((msg, idx) => (
@@ -296,7 +290,7 @@ export default function AITutorPage() {
                                 </div>
                                 <div className={`flex flex-col ${msg.sender === 'me' ? 'items-end' : 'items-start'} max-w-[80%]`}>
                                     <div className={`flex items-center gap-2 mb-1 px-1 ${msg.sender === 'me' ? 'flex-row-reverse' : ''}`}>
-                                        <span className="text-xs font-semibold text-gray-300">{msg.sender === 'me' ? 'You' : 'AI Tutor'}</span>
+                                        <span className="text-xs font-semibold text-gray-300">{msg.sender === 'me' ? 'You' : 'Lumina'}</span>
                                         <span className="text-[10px] text-gray-500">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                     <div className={`p-4 rounded-2xl relative group ${msg.sender === 'me' ? 'bg-lumina-primary text-black rounded-tr-none' : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'}`}>
@@ -308,7 +302,7 @@ export default function AITutorPage() {
                                                 <button onClick={() => addToNotes(msg.text)} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 border border-white/10 rounded-full text-xs text-gray-400 hover:text-white hover:border-white/30 transition-all">
                                                     <FileText className="w-3 h-3" /> Add to Notes
                                                 </button>
-                                                <button onClick={() => navigator.clipboard.writeText(msg.text)} className="p-1.5 bg-gray-800 border border-white/10 rounded-full text-gray-400 hover:text-white hover:border-white/30 transition-all" title="Copy">
+                                                <button onClick={() => navigator.clipboard.writeText(msg.text)} className="p-1.5 bg-gray-800 border border-white/10 rounded-full text-gray-400 hover:text-white hover:border-white/30 transition-all">
                                                     <Copy className="w-3 h-3" />
                                                 </button>
                                             </div>
@@ -317,16 +311,6 @@ export default function AITutorPage() {
                                 </div>
                             </div>
                         ))
-                    )}
-                    {isLoading && (
-                        <div className="flex items-start gap-4">
-                            <div className="w-8 h-8 rounded-full bg-lumina-primary/20 flex items-center justify-center shrink-0 text-lumina-primary">
-                                <Bot className="w-5 h-5" />
-                            </div>
-                            <div className="bg-white/5 px-4 py-3 rounded-2xl rounded-tl-none border border-white/5">
-                                <span className="text-gray-400 text-sm animate-pulse">Generating response (local GPU)...</span>
-                            </div>
-                        </div>
                     )}
                     <div ref={messagesEndRef} />
                 </div>
@@ -338,7 +322,7 @@ export default function AITutorPage() {
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder={isEngineReady ? "Type your question..." : "Waiting for model to load..."}
+                            placeholder={isEngineReady ? "Start a conversation..." : "Initializing AI..."}
                             disabled={!isEngineReady}
                             className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3.5 text-white placeholder:text-gray-500 focus:border-lumina-primary focus:bg-white/10 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         />
@@ -351,7 +335,7 @@ export default function AITutorPage() {
                         </button>
                     </form>
                     <p className="text-center text-[10px] text-gray-500 mt-2">
-                        Running Lumina directly on your device via Local Ollama (gpt-oss:120b-cloud).
+                        Running Lumina AI directly in your browser (WebLLM).
                     </p>
                 </div>
             </div>
