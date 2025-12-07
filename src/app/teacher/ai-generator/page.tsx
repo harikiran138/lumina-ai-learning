@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { extractTextFromPDF } from '@/lib/pdf-parser';
 import {
@@ -70,121 +70,100 @@ export default function CourseGeneratorPage() {
         }
     };
 
+    // AI Engine State
+    const engine = useRef<any>(null);
+    const [isEngineReady, setIsEngineReady] = useState(false);
+    const [engineProgress, setEngineProgress] = useState('');
+
+    // Preload WebLLM Engine
+    useEffect(() => {
+        const initEngine = async () => {
+            // Dynamic import to avoid SSR issues
+            const { CreateMLCEngine } = await import("@mlc-ai/web-llm");
+
+            // Using Llama 3.2 3B - Good balance of JSON capability and size (~2GB)
+            // 1B is too weak for complex schema.
+            const selectedModel = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
+
+            try {
+                setEngineProgress('Downloading AI Model (this happens once)...');
+                engine.current = await CreateMLCEngine(
+                    selectedModel,
+                    {
+                        initProgressCallback: (report) => {
+                            setEngineProgress(report.text);
+                        }
+                    }
+                );
+                setIsEngineReady(true);
+                setEngineProgress('AI Model Ready');
+            } catch (err) {
+                console.error("Failed to load WebLLM:", err);
+                setEngineProgress('Failed to load AI Model. Check connection.');
+            }
+        };
+        initEngine();
+    }, []);
+
     const startAnalysis = async () => {
-        if (!file) return;
+        if (!file || !isEngineReady || !engine.current) {
+            if (!isEngineReady) alert("Please wait for the AI Model to finish loading.");
+            return;
+        }
+
         setStep('analyzing');
-        setAiProgress('Reading Document...');
+        setAiProgress('Preparing Document...');
 
         try {
-            // 1. Extract Text
-            let text = '';
+            // Import Pipeline Tools
+            const { chunkPages, extractSectionsFromChunk, mergeSectionsToCourse } = await import('@/lib/ai-pipeline');
+
+            // 1. Robust PDF Extraction (Client Side)
+            let pages: { page: number, text: string }[] = [];
+
             if (file.type === 'application/pdf') {
-                text = await extractTextFromPDF(file);
+                const fullText = await extractTextFromPDF(file);
+                pages = [{ page: 1, text: fullText }];
             } else {
-                text = await file.text();
+                const text = await file.text();
+                pages = [{ page: 1, text: text }];
             }
 
-            setAiProgress('Connecting to Local AI (gpt-oss:120b-cloud)...');
+            // 2. Chunking
+            setAiProgress('Chunking Content...');
+            const chunks = chunkPages(pages, 8000); // 8k chars safe for 3B context
+            console.log(`Created ${chunks.length} chunks.`);
 
-            // 2. Construct Prompt
-            const prompt = `
-You are an expert Curriculum Architect.
-Analyze the provided text content from a textbook.
-Create a comprehensive course structure (Course > Module > Topic > Subtopic > Content).
+            // 3. Pass 1: Extract Sections from Chunks
+            let allSections: any[] = [];
 
-The output must be a valid JSON object match this exact schema:
-{
-    "modules": [
-        {
-            "title": "Module Title",
-            "summary": "Brief summary",
-            "topics": [
-                {
-                    "title": "Topic Title",
-                    "goal": "Learning objective",
-                    "content": [
-                        { "type": "paragraph", "content": "Detailed explanation..." },
-                        { "type": "list", "content": "- Item 1\\n- Item 2" },
-                        { "type": "code", "content": "code snippet" },
-                        { "type": "tip", "content": "Helpful tip" },
-                        { "type": "warning", "content": "Important warning" }
-                    ],
-                    "subtopics": [
-                        {
-                            "title": "Subtopic Title",
-                            "content": [
-                                { "type": "paragraph", "content": "..." }
-                            ]
-                        }
-                    ]
+            for (let i = 0; i < chunks.length; i++) {
+                setAiProgress(`Analyzing Chunk ${i + 1}/${chunks.length} (Pass 1: Structuring)...`);
+                // Using WebLLM engine instance
+                const result = await extractSectionsFromChunk(chunks[i].text, engine.current);
+                if (result && result.sections) {
+                    allSections = [...allSections, ...result.sections];
                 }
-            ]
-        }
-    ]
-}
-
-RULES:
-1. Output ONLY valid JSON. No explanations.
-2. Create at least 2 distinct Modules.
-3. "content" arrays should provide actual educational content summarized from the text.
-
-TEXT CONTENT:
-${text.slice(0, 25000)} 
-`;
-
-            // 3. Call Ollama Directly
-            const response = await fetch('http://localhost:11434/api/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    model: "gpt-oss:120b-cloud", // Updated to requested model (closest match)
-                    prompt: prompt,
-                    stream: false,
-                    format: "json"
-                })
-            });
-
-            if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`Ollama Error (${response.status}): ${errText}`);
             }
 
-            setAiProgress('Parsing AI Response...');
-            const data = await response.json();
-
-            // Parse the JSON string in 'response' field
-            let generatedStructure;
-            try {
-                generatedStructure = JSON.parse(data.response);
-            } catch (jsonError) {
-                console.error("JSON Parse Error:", data.response);
-                // Try to clean markdown
-                const cleanJson = data.response.replace(/```json/g, '').replace(/```/g, '');
-                generatedStructure = JSON.parse(cleanJson);
+            if (allSections.length === 0) {
+                throw new Error("Could not extract any valid content from the document.");
             }
 
-            if (generatedStructure && generatedStructure.modules) {
-                setModules(generatedStructure.modules);
+            // 4. Pass 2: Merge into Course
+            setAiProgress('Merging into Final Course Structure (Pass 2: Organization)...');
+            const courseStructure = await mergeSectionsToCourse(allSections, engine.current);
+
+            if (courseStructure && courseStructure.modules) {
+                setModules(courseStructure.modules);
                 setStep('review');
             } else {
-                throw new Error("AI generated invalid structure.");
+                throw new Error("Failed to merge content into a valid course.");
             }
 
         } catch (e: any) {
             console.error(e);
-            if (e.message.includes('Failed to fetch')) {
-                alert(
-                    "Connection Failed! \n\n" +
-                    "It looks like the browser cannot connect to Ollama. \n" +
-                    "This is usually a CORS issue. Please run this in your terminal:\n\n" +
-                    "launchctl setenv OLLAMA_ORIGINS \"*\"\n" +
-                    "pkill ollama && ollama serve"
-                );
-            } else {
-                alert("Analysis failed: " + e.message);
-            }
+            alert("Analysis failed: " + e.message);
             setStep('upload');
         }
     };
