@@ -393,13 +393,7 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
                                 </button>
                             </div>
 
-                            {activeLesson.type === 'video' && (
-                                <div className="aspect-video bg-black rounded-xl flex items-center justify-center border border-white/10 mb-6 relative overflow-hidden group">
-                                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&q=80')] bg-cover bg-center opacity-30 group-hover:opacity-40 transition-opacity"></div>
-                                    <PlayCircle className="w-20 h-20 text-white opacity-80 group-hover:scale-110 transition-transform relative z-10" />
-                                    <p className="absolute bottom-4 left-4 text-white font-medium z-10">Watching: {activeLesson.title}</p>
-                                </div>
-                            )}
+
 
                             {activeLesson.type === 'slides' && activeLesson.slides && (
                                 <div className="bg-black/40 rounded-2xl border border-white/10 overflow-hidden mb-6">
@@ -458,6 +452,14 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
                                             if (parsed && Array.isArray(parsed.content)) {
                                                 return (
                                                     <div className="space-y-8 animate-in fade-in duration-500">
+                                                        {parsed.pageRef && (
+                                                            <div className="mb-4 flex justify-end">
+                                                                <span className="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded border border-white/10">
+                                                                    Source: Page {parsed.pageRef}
+                                                                </span>
+                                                            </div>
+                                                        )}
+
                                                         {/* Goal Header */}
                                                         {parsed.goal && (
                                                             <div className="bg-lumina-primary/10 border-l-4 border-lumina-primary p-4 rounded-r-xl">
@@ -616,7 +618,7 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
                                                             ) : lesson.type === 'slides' ? (
                                                                 <LayoutDashboard className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
                                                             ) : (
-                                                                <PlayCircle className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                                                                <BookOpen className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
                                                             )}
                                                             <span className={`transition-colors ${activeLesson?.id === lesson.id ? 'text-lumina-primary font-medium' : 'text-gray-300 group-hover:text-white'}`}>
                                                                 {lesson.title}

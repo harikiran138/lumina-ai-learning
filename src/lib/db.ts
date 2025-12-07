@@ -96,7 +96,31 @@ class LuminaDB {
     private db: IDBDatabase | null = null;
     private static instance: LuminaDB;
 
-    // ... (rest of class)
+    public static getInstance(): LuminaDB {
+        if (!LuminaDB.instance) {
+            LuminaDB.instance = new LuminaDB();
+        }
+        return LuminaDB.instance;
+    }
+
+    async init(): Promise<void> {
+        if (typeof window === 'undefined') return; // Server-side safety
+        if (this.db) return;
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, this.version);
+            request.onupgradeneeded = (event) => {
+                const db = (event.target as IDBOpenDBRequest).result;
+                this.createStores(db);
+            };
+            request.onsuccess = (event) => {
+                this.db = (event.target as IDBOpenDBRequest).result;
+                resolve();
+            };
+            request.onerror = (event) => {
+                reject((event.target as IDBOpenDBRequest).error);
+            };
+        });
+    }
 
     private createStores(db: IDBDatabase) {
         // ... (existing stores)

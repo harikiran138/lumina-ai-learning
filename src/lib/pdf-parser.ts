@@ -19,13 +19,16 @@ export async function extractTextFromPDF(file: File): Promise<string> {
         const pdf = await loadingTask.promise;
 
         let fullText = '';
-        const numPages = Math.min(pdf.numPages, 20);
+        const numPages = pdf.numPages; // Process ALL pages
+        console.log(`Extracting text from ${numPages} pages...`);
 
         for (let i = 1; i <= numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
             const pageText = textContent.items.map((item: any) => item.str).join(' ');
-            fullText += pageText + '\n\n';
+
+            // Inject readable page marker
+            fullText += `\n\n[[PAGE_${i}]]\n\n` + pageText;
         }
 
         return fullText;

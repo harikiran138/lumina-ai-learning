@@ -3,94 +3,162 @@
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 
-// OpenRouter API Key provided by user
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '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';
+// Groq API Key provided by user
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-// Initialize the OpenAI provider pointing to OpenRouter
-const openrouter = createOpenAI({
-    apiKey: OPENROUTER_API_KEY,
-    baseURL: 'https://openrouter.ai/api/v1',
+// Initialize the OpenAI provider pointing to Groq
+const groq = createOpenAI({
+    apiKey: GROQ_API_KEY,
+    baseURL: 'https://api.groq.com/openai/v1',
 });
 
+import { ObjectId } from 'mongodb';
+import clientPromise from '@/lib/mongodb';
+
+// Helper for delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 /**
- * Generates a structured course from the provided content using OpenRouter (Gemini).
- * @param content The text content (from PDF or textbook) to analyze.
- * @returns The parsed JSON structure of the course.
+ * Stage 1: Save extracted textbook text to MongoDB (No AI)
  */
-export async function generateCourseStructure(content: string) {
-    if (!OPENROUTER_API_KEY) {
+export async function saveTextbook(title: string, content: string, userId?: string) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        const result = await db.collection("textbooks").insertOne({
+            title,
+            content,
+            userId: userId || 'anonymous',
+            createdAt: new Date(),
+            status: 'raw'
+        });
+
+        return { success: true, id: result.insertedId.toString() };
+    } catch (error: any) {
+        console.error("Save Textbook Error:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Stage 2: Generate course from stored textbook (AI)
+ * Fetches text from DB -> Chunks -> AI -> Course
+ */
+export async function generateCourseFromTextbook(textbookId: string) {
+    if (!GROQ_API_KEY) {
         throw new Error("API Key is required");
     }
 
     try {
-        const prompt = `
-        You are an expert Curriculum Architect and Instructional Designer.
-        Analyze the provided text content from a textbook or document.
-        Create a comprehensive, 5-layer hierarchical course structure (Course > Module > Topic > Subtopic > Content).
-
-        The output must be a valid JSON object matching this exact schema:
-        {
-            "modules": [
-                {
-                    "title": "Module Title",
-                    "summary": "Brief summary",
-                    "topics": [
-                        {
-                            "title": "Topic Title",
-                            "goal": "Learning objective",
-                            "content": [
-                                { "type": "paragraph", "content": "Detailed explanation..." },
-                                { "type": "list", "content": "- Item 1\\n- Item 2" },
-                                { "type": "code", "content": "code snippet if applicable" },
-                                { "type": "tip", "content": "Helpful tip" },
-                                { "type": "warning", "content": "Important warning" }
-                            ],
-                            "subtopics": [
-                                {
-                                    "title": "Subtopic Title",
-                                    "content": [
-                                        { "type": "paragraph", "content": "..." }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        }
-
-        REQUIREMENTS:
-        1. Extract the core structure from the text.
-        2. Create at least 3 distinct Modules.
-        3. Each Module must have at least 2 Topics.
-        4. Populate "subtopics" for complex sections or deep dives.
-        5. "content" arrays should provide actual educational content summarized from the text, not just placeholders.
-        6. Ensure strict JSON validity.
-
-        TEXT CONTENT TO ANALYZE:
-        ${content.substring(0, 30000)}
-        `;
-
-        // Use generateText with OpenRouter model
-        // Verified working model: google/gemini-2.0-flash-001
-        const { text } = await generateText({
-            model: openrouter('google/gemini-2.0-flash-001'),
-            prompt: prompt,
+        // 1. Fetch Text from DB
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        const textbook = await db.collection("textbooks").findOne({
+            _id: new ObjectId(textbookId)
         });
 
-        // Parse JSON safely
-        let jsonStr = text;
-        if (jsonStr.startsWith("```json")) {
-            jsonStr = jsonStr.replace(/^```json\n/, "").replace(/\n```$/, "");
-        } else if (jsonStr.startsWith("```")) {
-            jsonStr = jsonStr.replace(/^```\n/, "").replace(/\n```$/, "");
+        if (!textbook || !textbook.content) {
+            throw new Error("Textbook not found or empty");
         }
 
-        const data = JSON.parse(jsonStr);
-        return { success: true, data };
+        const fullText = textbook.content;
+        console.log(`Fetched textbook "${textbook.title}" (${fullText.length} chars)`);
+
+        // 2. Chunking Strategy with Overlap (To prevent data loss at boundaries)
+        const CHUNK_SIZE = 12000;
+        const OVERLAP = 1000; // Overlap to ensure no sentence is cut off
+        const chunks = [];
+
+        let start = 0;
+        while (start < fullText.length) {
+            const end = Math.min(start + CHUNK_SIZE, fullText.length);
+            chunks.push(fullText.substring(start, end));
+            // Move forward by chunk size minus overlap
+            start += (CHUNK_SIZE - OVERLAP);
+        }
+
+        console.log(`Split text into ${chunks.length} chunks (with overlap).`);
+        let allModules: any[] = [];
+
+        // 3. Sequential Processing
+        for (let i = 0; i < chunks.length; i++) {
+            console.log(`Processing Chunk ${i + 1}/${chunks.length}...`);
+
+            const chunkPrompt = `
+            You are a strict Data Structuring AI.
+            Your ONLY job is to take the provided text and format it into a structured JSON.
+            
+            CRITICAL INSTRUCTIONS (NO DATA LOSS):
+            1. DO NOT Summarize.
+            2. DO NOT Paraphrase.
+            3. DO NOT Omit any information.
+            4. You must include the EXACT verbatim text from the source into the "content" fields.
+            5. If a section is too long, break it into multiple paragraphs, but keep ALL the words.
+            
+            Structure the text into logical "Modules" and "Topics" based on headers.
+            Look for "[[PAGE_X]]" markers to track where content comes from.
+            
+            OUTPUT JSON FORMAT:
+            {
+                "modules": [
+                    {
+                        "title": "Module Title (Found in text)",
+                        "topics": [
+                            {
+                                "title": "Topic Header",
+                                "pageRef": "Page number (e.g. 5)",
+                                "content": [
+                                    { "type": "paragraph", "content": "Exact text from source..." },
+                                    { "type": "list", "content": "- Exact list item 1\\n- Exact list item 2" },
+                                    { "type": "code", "content": "Exact code block" }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+
+            TEXT TO STRUCTURE (PART ${i + 1}):
+            ${chunks[i]}
+            `;
+
+            try {
+                // Call Groq
+                const { text } = await generateText({
+                    model: groq('llama-3.1-8b-instant'),
+                    prompt: chunkPrompt,
+                    temperature: 0.1, // Near zero for exact reproduction
+                });
+
+                // Parse
+                let jsonStr = text;
+                if (jsonStr.includes("```json")) {
+                    jsonStr = jsonStr.split("```json")[1].split("```")[0];
+                } else if (jsonStr.includes("```")) {
+                    jsonStr = jsonStr.split("```")[1].split("```")[0];
+                }
+                const data = JSON.parse(jsonStr.trim());
+
+                if (data.modules) {
+                    allModules = [...allModules, ...data.modules];
+                }
+
+            } catch (err) {
+                console.error(`Error processing chunk ${i} (Data skipped):`, err);
+            }
+
+            // Rate Limit Wait
+            if (i < chunks.length - 1) {
+                console.log("Waiting 20s for Rate Limit cooldown...");
+                await delay(20000);
+            }
+        }
+
+        return { success: true, data: { modules: allModules } };
 
     } catch (error: any) {
-        console.error("OpenRouter AI Generation Error:", error);
+        console.error("Groq Full Course Error:", error);
         return { success: false, error: error.message };
     }
 }
