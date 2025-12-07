@@ -538,62 +538,63 @@ export default function CourseGeneratorPage() {
                             </button>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
-                    {/* Step 4: Saving / Done */}
-                    {(step === 'saving' || step === 'done') && (
-                        <div className="glass-card p-12 text-center">
-                            {step === 'saving' ? (
-                                <>
-                                    <Loader2 className="w-16 h-16 text-lumina-primary animate-spin mx-auto mb-6" />
-                                    <h3 className="text-2xl font-bold text-white mb-2">Saving Draft...</h3>
-                                    <p className="text-gray-400 mb-4">{savingStatus}</p>
+            {/* Step 4: Saving / Done */}
+            {(step === 'saving' || step === 'done') && (
+                <div className="glass-card p-12 text-center">
+                    {step === 'saving' ? (
+                        <>
+                            <Loader2 className="w-16 h-16 text-lumina-primary animate-spin mx-auto mb-6" />
+                            <h3 className="text-2xl font-bold text-white mb-2">Saving Draft...</h3>
+                            <p className="text-gray-400 mb-4">{savingStatus}</p>
 
-                                    <div className="max-w-md mx-auto">
-                                        <div className="flex justify-between text-xs text-blue-300 mb-1">
-                                            <span>Progress</span>
-                                            <span>{creationProgress}%</span>
-                                        </div>
-                                        <div className="h-4 bg-black/40 rounded-full overflow-hidden border border-white/10">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-lumina-primary to-blue-500 transition-all duration-300"
-                                                style={{ width: `${creationProgress}% ` }}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
-                                    <h3 className="text-2xl font-bold text-white mb-2">Draft Saved!</h3>
-                                    <p className="text-gray-400 mb-8">"{courseTitle}" is now a draft.</p>
-                                    <div className="flex gap-4 justify-center">
-                                        <button
-                                            onClick={async () => {
-                                                if (createdCourseId) {
-                                                    setSavingStatus('Publishing...');
-                                                    await api.publishCourse(createdCourseId);
-                                                    alert("Course Published Successfully!");
-                                                    window.location.href = '/teacher/courses';
-                                                }
-                                            }}
-                                            className="px-6 py-3 bg-green-500 text-black font-bold rounded-xl hover:bg-green-400 flex items-center gap-2"
-                                        >
-                                            <BookOpen className="w-4 h-4" />
-                                            Publish Now
-                                        </button>
-                                        <a href="/teacher/courses" className="px-6 py-3 bg-white/10 rounded-xl text-white hover:bg-white/20 border border-white/10">
-                                            Return to Courses
-                                        </a>
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                            <div className="max-w-md mx-auto">
+                                <div className="flex justify-between text-xs text-blue-300 mb-1">
+                                    <span>Progress</span>
+                                    <span>{creationProgress}%</span>
+                                </div>
+                                <div className="h-4 bg-black/40 rounded-full overflow-hidden border border-white/10">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-lumina-primary to-blue-500 transition-all duration-300"
+                                        style={{ width: `${creationProgress}% ` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
+                            <h3 className="text-2xl font-bold text-white mb-2">Draft Saved!</h3>
+                            <p className="text-gray-400 mb-8">"{courseTitle}" is now a draft.</p>
+                            <div className="flex gap-4 justify-center">
+                                <button
+                                    onClick={async () => {
+                                        if (createdCourseId) {
+                                            setSavingStatus('Publishing...');
+                                            await api.publishCourse(createdCourseId);
+                                            alert("Course Published Successfully!");
+                                            window.location.href = '/teacher/courses';
+                                        }
+                                    }}
+                                    className="px-6 py-3 bg-green-500 text-black font-bold rounded-xl hover:bg-green-400 flex items-center gap-2"
+                                >
+                                    <BookOpen className="w-4 h-4" />
+                                    Publish Now
+                                </button>
+                                <a href="/teacher/courses" className="px-6 py-3 bg-white/10 rounded-xl text-white hover:bg-white/20 border border-white/10">
+                                    Return to Courses
+                                </a>
+                            </div>
+                        </>
                     )}
                 </div>
-            );
+            )}
+        </div>
+    );
 }
 
-            function SparklesIcon(props: any) {
+function SparklesIcon(props: any) {
     return <Sparkles {...props} />;
 }
