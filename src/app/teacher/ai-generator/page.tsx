@@ -73,10 +73,10 @@ export default function CourseGeneratorPage() {
     const startAnalysis = async () => {
         if (!file) return;
         setStep('analyzing');
-        setAiProgress('Reading Document (Client-Side)...');
+        setAiProgress('Reading Document...');
 
         try {
-            // 1. Extract Text Client-Side to avoid large upload limits
+            // 1. Extract Text
             let text = '';
             if (file.type === 'application/pdf') {
                 text = await extractTextFromPDF(file);
@@ -84,19 +84,91 @@ export default function CourseGeneratorPage() {
                 text = await file.text();
             }
 
-            setAiProgress('Processing with Local Ollama (this may take a minute)...');
+            setAiProgress('Connecting to Local AI (llama3.1:8b)...');
 
-            // Dynamic import to call server action
-            const { processFileWithLocalAI } = await import('@/app/actions/local-ai');
+            // 2. Construct Prompt
+            const prompt = `
+You are an expert Curriculum Architect.
+Analyze the provided text content from a textbook.
+Create a comprehensive course structure (Course > Module > Topic > Subtopic > Content).
 
-            // Send text content, not the file
-            const result = await processFileWithLocalAI(text);
+The output must be a valid JSON object match this exact schema:
+{
+    "modules": [
+        {
+            "title": "Module Title",
+            "summary": "Brief summary",
+            "topics": [
+                {
+                    "title": "Topic Title",
+                    "goal": "Learning objective",
+                    "content": [
+                        { "type": "paragraph", "content": "Detailed explanation..." },
+                        { "type": "list", "content": "- Item 1\\n- Item 2" },
+                        { "type": "code", "content": "code snippet" },
+                        { "type": "tip", "content": "Helpful tip" },
+                        { "type": "warning", "content": "Important warning" }
+                    ],
+                    "subtopics": [
+                        {
+                            "title": "Subtopic Title",
+                            "content": [
+                                { "type": "paragraph", "content": "..." }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
 
-            if (result.success && result.data && result.data.modules) {
-                setModules(result.data.modules);
+RULES:
+1. Output ONLY valid JSON. No explanations.
+2. Create at least 2 distinct Modules.
+3. "content" arrays should provide actual educational content summarized from the text.
+
+TEXT CONTENT:
+${text.slice(0, 25000)} 
+`;
+
+            // 3. Call Ollama Directly
+            const response = await fetch('http://localhost:11434/api/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: "llama3.1:8b",
+                    prompt: prompt,
+                    stream: false,
+                    format: "json"
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to connect to Ollama. Make sure 'ollama serve' is running and CORS is configured (OLLAMA_ORIGINS='*').");
+            }
+
+            setAiProgress('Parsing AI Response...');
+            const data = await response.json();
+
+            // Parse the JSON string in 'response' field
+            let generatedStructure;
+            try {
+                generatedStructure = JSON.parse(data.response);
+            } catch (jsonError) {
+                console.error("JSON Parse Error:", data.response);
+                // Try to clean markdown
+                const cleanJson = data.response.replace(/```json/g, '').replace(/```/g, '');
+                generatedStructure = JSON.parse(cleanJson);
+            }
+
+            if (generatedStructure && generatedStructure.modules) {
+                setModules(generatedStructure.modules);
                 setStep('review');
             } else {
-                throw new Error(result.error || "Failed to generate valid structure");
+                throw new Error("AI generated invalid structure.");
             }
 
         } catch (e: any) {
