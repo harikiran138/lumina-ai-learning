@@ -45,6 +45,7 @@
     "dotenv": "^17.2.3",
     "framer-motion": "^12.23.25",
     "html2canvas": "^1.4.1",
+    "jsonrepair": "^3.13.1",
     "jspdf": "^3.0.4",
     "lucide-react": "^0.555.0",
     "mongodb": "^7.0.0",
