@@ -202,6 +202,30 @@ class RealAPI {
         return await enrollInCourse(user.email, courseId);
     }
 
+    async getStudentCourses(): Promise<any[]> {
+        const user = await this.getCurrentUser();
+        if (!user) return [];
+        const { getStudentCourses } = await import('@/app/actions/data');
+        return await getStudentCourses(user.email);
+    }
+
+    async getExploreCourses(): Promise<{ enrolled: any[], recommended: any[] }> {
+        const user = await this.getCurrentUser();
+        if (!user) return { enrolled: [], recommended: [] };
+        const { getExploreCourses } = await import('@/app/actions/data');
+        return await getExploreCourses(user.email);
+    }
+
+    async publishCourse(courseId: string): Promise<any> {
+        const { publishCourse } = await import('@/app/actions/data');
+        return await publishCourse(courseId);
+    }
+
+    async updateCourseStructure(courseId: string, modules: any[]): Promise<any> {
+        const { updateCourseStructure } = await import('@/app/actions/data');
+        return await updateCourseStructure(courseId, modules);
+    }
+
     async inviteStudent(studentEmail: string, courseId: string): Promise<any> {
         const user = await this.getCurrentUser();
         if (!user) return { success: false, error: 'Not authenticated' };
