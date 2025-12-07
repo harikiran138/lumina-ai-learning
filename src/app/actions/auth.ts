@@ -5,6 +5,30 @@ import { User } from '@/lib/api';
 import bcrypt from 'bcryptjs';
 
 /**
+ * Helper to serialize MongoDB objects
+ */
+function serializeUser(user: any): User {
+    if (!user) return null as any;
+
+    // Create safe user object
+    const safeUser: any = {
+        id: user._id ? user._id.toString() : user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        avatar: user.avatar,
+        status: user.status,
+        createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
+        bio: user.bio,
+        skills: user.skills,
+        location: user.location
+    };
+
+    // Helper to plain object
+    return JSON.parse(JSON.stringify(safeUser));
+}
+
+/**
  * Authenticate user with MongoDB
  * @param email User email
  * @param password User password
@@ -29,19 +53,7 @@ export async function authenticateUser(email: string, password: string): Promise
             return null;
         }
 
-        // Return user object without sensitive data
-        return {
-            id: user._id.toString(),
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            avatar: user.avatar,
-            status: user.status,
-            createdAt: user.createdAt,
-            bio: user.bio,
-            skills: user.skills,
-            location: user.location
-        } as User;
+        return serializeUser(user);
 
     } catch (error: any) {
         console.error('Authentication error:', error);
@@ -86,10 +98,11 @@ export async function registerUser(userData: Partial<User> & { password: string 
             return { error: 'Failed to create user' };
         }
 
-        return {
-            id: result.insertedId.toString(),
-            ...newUserProfile
-        } as unknown as User;
+        // Return sanitized user object
+        return serializeUser({
+            ...newUserProfile,
+            _id: result.insertedId
+        });
 
     } catch (error: any) {
         console.error('Registration error:', error);

@@ -212,7 +212,7 @@ export default function AITutorPage() {
                         <History className="w-5 h-5 text-lumina-primary" />
                         Chat History
                     </h2>
-                    <button onClick={startNewChat} className="p-1.5 hover:bg-white/10 rounded-lg text-lumina-primary transition-colors" title="New Chat">
+                    <button suppressHydrationWarning onClick={startNewChat} className="p-1.5 hover:bg-white/10 rounded-lg text-lumina-primary transition-colors" title="New Chat">
                         <Plus className="w-5 h-5" />
                     </button>
                 </div>
@@ -320,6 +320,7 @@ export default function AITutorPage() {
                     <form onSubmit={handleSendMessage} className="relative">
                         <input
                             type="text"
+                            suppressHydrationWarning
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder={isEngineReady ? "Start a conversation..." : "Initializing AI..."}

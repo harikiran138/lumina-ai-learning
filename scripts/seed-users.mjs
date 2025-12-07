@@ -10,7 +10,7 @@ for (const k in envConfig) {
     process.env[k] = envConfig[k];
 }
 
-const uri = process.env.MONGODB_URI;
+const uri = process.env.MONGODB_URI || process.env.lumina_MONGODB_URI;
 
 if (!uri) {
     console.error("❌ MONGODB_URI is missing from .env.local");
