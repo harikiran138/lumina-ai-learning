@@ -1,22 +1,24 @@
 'use server';
 
 import { generateText } from 'ai';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDQjD7ak6PO6PNFVFMF-jziQizRx3qG70g';
+// OpenRouter API Key provided by user
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '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';
 
-// Initialize the Google provider with our key
-const google = createGoogleGenerativeAI({
-    apiKey: GEMINI_API_KEY,
+// Initialize the OpenAI provider pointing to OpenRouter
+const openrouter = createOpenAI({
+    apiKey: OPENROUTER_API_KEY,
+    baseURL: 'https://openrouter.ai/api/v1',
 });
 
 /**
- * Generates a structured course from the provided content using Vercel AI SDK.
+ * Generates a structured course from the provided content using OpenRouter (Gemini).
  * @param content The text content (from PDF or textbook) to analyze.
  * @returns The parsed JSON structure of the course.
  */
 export async function generateCourseStructure(content: string) {
-    if (!GEMINI_API_KEY) {
+    if (!OPENROUTER_API_KEY) {
         throw new Error("API Key is required");
     }
 
@@ -69,14 +71,14 @@ export async function generateCourseStructure(content: string) {
         ${content.substring(0, 30000)}
         `;
 
-        // Use generateText for a single response
-        // Using 'models/gemini-3-pro-preview' as it is explicitly available for this key
+        // Use generateText with OpenRouter model
+        // Verified working model: google/gemini-2.0-flash-001
         const { text } = await generateText({
-            model: google('models/gemini-3-pro-preview'),
+            model: openrouter('google/gemini-2.0-flash-001'),
             prompt: prompt,
         });
 
-        // Parse JSON
+        // Parse JSON safely
         let jsonStr = text;
         if (jsonStr.startsWith("```json")) {
             jsonStr = jsonStr.replace(/^```json\n/, "").replace(/\n```$/, "");
@@ -88,7 +90,7 @@ export async function generateCourseStructure(content: string) {
         return { success: true, data };
 
     } catch (error: any) {
-        console.error("Vercel AI SDK Generation Error:", error);
+        console.error("OpenRouter AI Generation Error:", error);
         return { success: false, error: error.message };
     }
 }

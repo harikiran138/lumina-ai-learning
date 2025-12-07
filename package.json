@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.44",
+    "@ai-sdk/openai": "^2.0.77",
     "@google/generative-ai": "^0.24.1",
     "@mlc-ai/web-llm": "^0.2.80",
     "@tailwindcss/postcss": "^4.1.17",
