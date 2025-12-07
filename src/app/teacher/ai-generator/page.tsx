@@ -46,6 +46,7 @@ interface Module {
 export default function CourseGeneratorPage() {
     // AI State
     const [aiProgress, setAiProgress] = useState('');
+    const [analysisProgress, setAnalysisProgress] = useState(0);
 
     // Flow State
     const [step, setStep] = useState<'upload' | 'analyzing' | 'review' | 'saving' | 'done'>('upload');
@@ -58,10 +59,6 @@ export default function CourseGeneratorPage() {
     // API State
     const [savingStatus, setSavingStatus] = useState('');
     const [createdCourseId, setCreatedCourseId] = useState<string | null>(null);
-
-    // Dynamic Import wrapper for server action interaction if needed, but direct import is fine for updated Next.js
-    // We import generateCourseStructure from '@/app/actions/gemini' at top level if not "use server" conflict
-    // But since this is client component, we rely on the import we will add.
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) {
@@ -113,6 +110,7 @@ export default function CourseGeneratorPage() {
 
         setStep('analyzing');
         setAiProgress('Preparing Document...');
+        setAnalysisProgress(5);
 
         try {
             // Import Pipeline Tools
@@ -131,20 +129,26 @@ export default function CourseGeneratorPage() {
 
             // 2. Chunking
             setAiProgress('Chunking Content...');
-            const chunks = chunkPages(pages, 8000); // 8k chars safe for 3B context
+            setAnalysisProgress(10);
+            const chunks = chunkPages(pages, 2000); // 2k chars nice and safe
             console.log(`Created ${chunks.length} chunks.`);
 
             // 3. Pass 1: Extract Sections from Chunks
             let allSections: any[] = [];
+            const progressPerChunk = 80 / chunks.length; // Allocate 80% (10-90) for this loop
 
             for (let i = 0; i < chunks.length; i++) {
                 setAiProgress(`Analyzing Chunk ${i + 1}/${chunks.length} (Pass 1: Structuring)...`);
+                // Smooth updates
+                setAnalysisProgress(10 + (i * progressPerChunk));
+
                 // Using WebLLM engine instance
                 const result = await extractSectionsFromChunk(chunks[i].text, engine.current);
                 if (result && result.sections) {
                     allSections = [...allSections, ...result.sections];
                 }
             }
+            setAnalysisProgress(90);
 
             if (allSections.length === 0) {
                 throw new Error("Could not extract any valid content from the document.");
@@ -152,10 +156,12 @@ export default function CourseGeneratorPage() {
 
             // 4. Pass 2: Merge into Course
             setAiProgress('Merging into Final Course Structure (Pass 2: Organization)...');
+            setAnalysisProgress(95);
             const courseStructure = await mergeSectionsToCourse(allSections, engine.current);
 
             if (courseStructure && courseStructure.modules) {
                 setModules(courseStructure.modules);
+                setAnalysisProgress(100);
                 setStep('review');
             } else {
                 throw new Error("Failed to merge content into a valid course.");
@@ -165,6 +171,7 @@ export default function CourseGeneratorPage() {
             console.error(e);
             alert("Analysis failed: " + e.message);
             setStep('upload');
+            setAnalysisProgress(0);
         }
     };
 
@@ -288,11 +295,14 @@ export default function CourseGeneratorPage() {
                     <p className="text-gray-400 mb-6">{aiProgress}</p>
 
                     <div className="max-w-md mx-auto h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-lumina-primary animate-pulse w-2/3"></div>
+                        <div
+                            className="h-full bg-lumina-primary transition-all duration-300 ease-out"
+                            style={{ width: `${analysisProgress}%` }}
+                        ></div>
                     </div>
 
                     <p className="text-xs text-gray-500 mt-4 max-w-md mx-auto">
-                        Lumina is reading your document and identifying the learning structure...
+                        Progress: {Math.round(analysisProgress)}%
                     </p>
                 </div>
             )}
