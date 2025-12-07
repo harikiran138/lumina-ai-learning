@@ -3,7 +3,7 @@
 import { generateText } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'vck_3QS2kP9Ez4k0xhGnfpJirUmhvOIlDQAEFW2FxOMK8q2tWgvaO900uO4I';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDQjD7ak6PO6PNFVFMF-jziQizRx3qG70g';
 
 // Initialize the Google provider with our key
 const google = createGoogleGenerativeAI({
