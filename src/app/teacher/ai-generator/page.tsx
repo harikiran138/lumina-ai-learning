@@ -83,13 +83,13 @@ export default function CourseGeneratorPage() {
 
         try {
             // Import only PDF parser for client side extraction
-            const { extractTextFromPDF } = await import('@/lib/pdf-parser');
-            const { saveTextbook, getTextbookContent, generateCourseChunk } = await import('@/app/actions/gemini');
+            const { extractTextFromPDF, extractStructuredData } = await import('@/lib/pdf-parser');
+            const { saveTextbook, getTextbookContent } = await import('@/app/actions/gemini');
 
-            // 1. Extract Text (Client Side)
+            // 1. Extract Text (Client Side) for DB Storage
             let fullText = "";
-            setAiProgress('Extracting text from document...');
-            setAnalysisProgress(10);
+            setAiProgress('Reading Document...');
+            setAnalysisProgress(5);
 
             if (file.type === 'application/pdf') {
                 fullText = await extractTextFromPDF(file);
@@ -101,9 +101,9 @@ export default function CourseGeneratorPage() {
                 throw new Error("Could not extract enough text from this file.");
             }
 
-            // 2. Save to MongoDB (Stage 1)
-            setAiProgress('Saving textbook to database...');
-            setAnalysisProgress(15);
+            // 2. Save to MongoDB (Stage 1) - KEEPING THIS for reference/search
+            setAiProgress('Saving raw content...');
+            setAnalysisProgress(10);
             const saveResult = await saveTextbook(file.name, fullText, "teacher-123");
 
             if (!saveResult.success || !saveResult.id) {
@@ -111,58 +111,36 @@ export default function CourseGeneratorPage() {
             }
             const textbookId = saveResult.id;
 
-            // 3. Fetch data back (verification) & Client Side Orchestration (Stage 2)
-            const contentResult = await getTextbookContent(textbookId);
-            if (!contentResult.success || !contentResult.content) {
-                throw new Error("Failed to retrieve textbook content.");
-            }
-            const processText = contentResult.content;
+            // 3. DETERMINISTIC STRUCTURAL IMPORT (No AI = 1-to-1 Fidelity)
+            setAiProgress('Structuring Content (Native PDF Layout Analysis)...');
+            setAnalysisProgress(30);
 
-            // CLIENT SIDE CHUNKING (Prevents Vercel Timeouts)
-            // Reduced to 8000 to ensure fast execution (<10s) per request
-            const CHUNK_SIZE = 8000;
-            const OVERLAP = 500;
-            const chunks: string[] = [];
-            let start = 0;
-            while (start < processText.length) {
-                const end = Math.min(start + CHUNK_SIZE, processText.length);
-                chunks.push(processText.substring(start, end));
-                start += (CHUNK_SIZE - OVERLAP);
-            }
+            let structuredModules: any[] = [];
 
-            let allModules: Module[] = [];
-
-            // Loop through chunks
-            for (let i = 0; i < chunks.length; i++) {
-                setAiProgress(`Analyzing Chunk ${i + 1} of ${chunks.length}... (Please wait)`);
-                // Calculate progress: 20% -> 90% based on chunks
-                const chunkProgress = 20 + ((i / chunks.length) * 70);
-                setAnalysisProgress(chunkProgress);
-
-                try {
-                    const response = await generateCourseChunk(chunks[i], i, chunks.length);
-                    if (response.success && response.modules) {
-                        allModules = [...allModules, ...response.modules];
-                    }
-                } catch (err) {
-                    console.error(`Error on chunk ${i}:`, err);
-                    // Continue to next chunk
-                }
-
-                // Wait 20s if not the last chunk (Client Side Delay)
-                if (i < chunks.length - 1) {
-                    setAiProgress(`Cooling down... (Rate Limit Safety: ${i + 1}/${chunks.length})`);
-                    await new Promise(resolve => setTimeout(resolve, 20000));
-                }
-            }
-
-            if (allModules.length > 0) {
-                setModules(allModules);
-                setAnalysisProgress(100);
-                setStep('review');
+            if (file.type === 'application/pdf') {
+                // Use the new Font-Aware parser
+                structuredModules = await extractStructuredData(file);
             } else {
-                throw new Error("No modules were generated. Check API limits or text content.");
+                // Fallback for TXT files (simple split)
+                structuredModules = [{
+                    title: "Imported Text",
+                    summary: "Raw content",
+                    topics: [{
+                        title: "Content",
+                        goal: "Read text",
+                        content: [{ type: 'paragraph', content: fullText }]
+                    }]
+                }];
             }
+
+            console.log("Extracted Modules:", structuredModules.length);
+
+            setAnalysisProgress(100);
+            setModules(structuredModules);
+            setStep('review');
+
+            // Skip the AI loop entirely. We trusting the PDF layout.
+
 
         } catch (e: any) {
             console.error(e);
