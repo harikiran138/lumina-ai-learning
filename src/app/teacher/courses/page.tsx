@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, Plus, MoreVertical, BookOpen, Clock, Users } from 'lucide-react';
+import { Search, Filter, Plus, MoreVertical, BookOpen, Clock, Users, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import Link from 'next/link';
 
@@ -84,8 +84,17 @@ export default function TeacherCourses() {
                                         <span>Updated {course.lastUpdated}</span>
                                     </div>
                                 </div>
-                                <button className="text-gray-400 hover:text-white">
-                                    <MoreVertical className="w-5 h-5" />
+                                <button
+                                    className="text-gray-400 hover:text-red-400 z-10 relative p-2"
+                                    onClick={async (e) => {
+                                        e.preventDefault();
+                                        if (confirm("Are you sure you want to delete this course? This action cannot be undone.")) {
+                                            await api.deleteCourse(course.id);
+                                            loadCourses();
+                                        }
+                                    }}
+                                >
+                                    <Trash2 className="w-5 h-5" />
                                 </button>
                             </div>
 
@@ -95,8 +104,8 @@ export default function TeacherCourses() {
                                     <span>{course.students} Students</span>
                                 </div>
                                 <span className={`px-2 py-1 rounded text-xs font-medium ${course.status === 'published' || course.status === 'Active'
-                                        ? 'bg-green-500/10 text-green-400'
-                                        : 'bg-yellow-500/10 text-yellow-400'
+                                    ? 'bg-green-500/10 text-green-400'
+                                    : 'bg-yellow-500/10 text-yellow-400'
                                     }`}>
                                     {course.status === 'Active' ? 'Published' : (course.status?.charAt(0).toUpperCase() + course.status?.slice(1) || 'Draft')}
                                 </span>
