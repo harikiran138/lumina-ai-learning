@@ -148,20 +148,19 @@ async function callWebLLM(engine: MLCEngineInterface, prompt: string): Promise<a
 
         let jsonString = content.substring(firstBrace, lastBrace + 1);
 
-        // Sanitize: Fix common bad escapes (e.g., single backslashes in paths or text)
-        // Regex looks for backslash NOT followed by valid escape chars (", \, /, b, f, n, r, t, u)
-        jsonString = jsonString.replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
-
         try {
-            return JSON.parse(jsonString);
-        } catch (parseError) {
-            console.error("JSON Parse Error:", parseError);
-            console.log("Failed JSON:", jsonString);
-
-            // Aggressive Repair attempt:
-            // Sometimes models output newlines as literal \n, sometimes as actual newlines
-            // We can try to strip control chars or aggressive replace if specific error known
-            return {};
+            // Dynamic import to avoid build issues if types are missing
+            const { jsonrepair } = await import('jsonrepair');
+            return JSON.parse(jsonrepair(jsonString));
+        } catch (repairError) {
+            console.warn("jsonrepair failed, falling back to raw parse", repairError);
+            try {
+                return JSON.parse(jsonString);
+            } catch (parseError) {
+                console.error("Final JSON Parse Error:", parseError);
+                console.log("Failed JSON:", jsonString);
+                return {};
+            }
         }
 
     } catch (e: any) {
@@ -220,37 +219,56 @@ ${chunkText}
     }
 }
 
-// Pass 2: Merge into Course
+// Pass 2: Merge into Course (Map-Reduce Strategy with Batching)
 export async function mergeSectionsToCourse(allSections: any[], engine: MLCEngineInterface): Promise<any> {
     // If we have nothing, abort
     if (!allSections || allSections.length === 0) throw new Error("No sections to merge.");
 
-    const prompt = `
+    // 1. Map: Creation - Assign IDs and strip content
+    const sectionMap = new Map<string, any>();
+    const minimizedSections = allSections.map((sec, idx) => {
+        const id = `sec-${idx}`;
+        sectionMap.set(id, sec);
+        return {
+            id: id,
+            title: sec.title,
+            summary: sec.summary || ""
+        };
+    });
+
+    // 2. Batching: Split into chunks of 20 to fit context window
+    const BATCH_SIZE = 20;
+    const batches = [];
+    for (let i = 0; i < minimizedSections.length; i += BATCH_SIZE) {
+        batches.push(minimizedSections.slice(i, i + BATCH_SIZE));
+    }
+
+    let allModules: any[] = [];
+
+    // 3. Reduce: Process each batch
+    // We process sequentially to not overload the single GPU engine instance
+    for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+
+        const prompt = `
 You are a Curriculum Architect.
-Organize the following list of extracted sections into a coherent Course Structure (Modules > Topics > Subtopics).
+Organize the following list of extracted topics into a coherent Course Structure (Modules > Topics).
+You MUST use the provided IDs to reference the content.
 
-Input Sections:
-${JSON.stringify(allSections, null, 2)}
+Input Topics (Batch ${i + 1}/${batches.length}):
+${JSON.stringify(batch, null, 2)}
 
-Output JSON format (Course Schema):
+Output JSON format:
 {
     "modules": [
         {
-            "title": "Module Title",
+            "title": "Module Title", // Group related topics
             "summary": "Module Summary",
             "topics": [
                 {
-                    "title": "Topic Title",
-                    "goal": "Topic Learning Goal",
-                    "subtopics": [
-                        {
-                            "title": "Subtopic Title",
-                            "contentBlocks": [
-                                { "type": "paragraph", "data": "..." } 
-                                // Maintain original content blocks where possible
-                            ]
-                        }
-                    ]
+                    "title": "Topic Title", 
+                    "sourceId": "sec-0", // CRITICAL: Must match Input ID
+                    "goal": "Learning Goal"
                 }
             ]
         }
@@ -258,18 +276,61 @@ Output JSON format (Course Schema):
 }
 
 Rules:
-1. Merge related sections into Modules.
-2. Keep the contentBlocks intact.
-3. Output valid JSON only.
+1. Group related topics into Modules.
+2. If topics don't fit existing modules, create new ones.
+3. EVERY topic from input must be included exactly once.
+4. Output valid JSON.
 `;
-    // Note: If input is too huge, we might need to simplify contentBlocks for the prompt, 
-    // but assuming 128k context window (gpt-oss) or 8k (llama3.1), we try to fit headers first?
-    // For now, let's try sending full structure. If too big, we just send structure and re-map content manually? 
-    // To be safe/simple for now: we blindly send it.
 
-    // Optimization: If payload is massive, we can strip contentBlocks from prompt and ask AI to group by "ID", 
-    // then re-hydrate. But let's trust the large model first.
+        try {
+            const result = await callWebLLM(engine, prompt);
+            if (result && result.modules) {
+                allModules = [...allModules, ...result.modules];
+            }
+        } catch (err) {
+            console.error(`Batch ${i} failed to merge`, err);
+            // Fallback: Create a generic module for this batch to ensure no data loss
+            const fallbackModule = {
+                title: `Unmerged Content (Part ${i + 1})`,
+                summary: "Content that could not be auto-organized.",
+                topics: batch.map(b => ({
+                    title: b.title,
+                    sourceId: b.id,
+                    goal: "Review this content"
+                }))
+            };
+            allModules.push(fallbackModule);
+        }
+    }
 
-    const result = await callWebLLM(engine, prompt);
-    return CourseSchema.parse(result);
+    // 4. Re-hydrate: Merge content back in
+    const hydratedModules = allModules.map((mod: any) => ({
+        ...mod,
+        topics: mod.topics?.map((topic: any) => {
+            const original = sectionMap.get(topic.sourceId);
+
+            // Default content if mapping fails
+            let content = [{ type: 'paragraph', data: 'Content placeholder' }];
+            let subtopics = [];
+
+            if (original) {
+                subtopics = original.subsections || [];
+
+                if (original.summary) {
+                    content = [{ type: 'paragraph', data: original.summary }];
+                } else if (subtopics.length > 0 && subtopics[0].contentBlocks) {
+                    content = [{ type: 'paragraph', data: `Overview of ${original.title}` }];
+                }
+            }
+
+            return {
+                title: topic.title || original?.title || "Untitled",
+                goal: topic.goal || "Learn this topic",
+                content: content,
+                subtopics: subtopics
+            };
+        })
+    }));
+
+    return CourseSchema.parse({ modules: hydratedModules });
 }
