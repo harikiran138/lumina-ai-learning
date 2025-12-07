@@ -73,23 +73,16 @@ export default function CourseGeneratorPage() {
     const startAnalysis = async () => {
         if (!file) return;
         setStep('analyzing');
-        setAiProgress('Reading Document...');
+        setAiProgress('Uploading and Processing with Local Ollama...');
 
         try {
-            // 1. Extract Text
-            let text = '';
-            if (file.type === 'application/pdf') {
-                text = await extractTextFromPDF(file);
-            } else {
-                text = await file.text();
-            }
+            const formData = new FormData();
+            formData.append('file', file);
 
-            setAiProgress('Consulting Gemini AI Architect...');
+            // Dynamic import to call server action
+            const { processFileWithLocalAI } = await import('@/app/actions/local-ai');
 
-            // Dynamic import to avoid build issues if mixed envs
-            const { generateCourseStructure } = await import('@/app/actions/gemini');
-            // No API Key passed from client anymore
-            const result = await generateCourseStructure(text);
+            const result = await processFileWithLocalAI(formData);
 
             if (result.success && result.data && result.data.modules) {
                 setModules(result.data.modules);
@@ -109,10 +102,29 @@ export default function CourseGeneratorPage() {
         setStep('saving');
         setSavingStatus('Creating Course...');
         try {
+            // Transform AI modules to match DB schema (Topic -> Lesson)
+            const dbModules = modules.map((mod, idx) => ({
+                id: `mod-${Date.now()}-${idx}`,
+                title: mod.title,
+                duration: `${mod.topics.length * 10} min`, // Estimate
+                lessons: mod.topics.map((topic, tIdx) => ({
+                    id: `less-${Date.now()}-${tIdx}`,
+                    title: topic.title,
+                    type: 'text', // AI content is text/rich-text
+                    duration: '10 min',
+                    // Serialize the rich content structure so the student view can JSON.parse it
+                    content: JSON.stringify({
+                        goal: topic.goal,
+                        content: topic.content,
+                        subtopics: topic.subtopics
+                    })
+                }))
+            }));
+
             const result = await api.createCourse({
                 title: courseTitle,
                 description: courseDescription,
-                modules: modules,
+                modules: dbModules,
                 image: '/api/placeholder/400/320'
             });
 
