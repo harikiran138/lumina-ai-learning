@@ -3,14 +3,18 @@
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 
-// Groq API Key provided by user
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-
-// Initialize the OpenAI provider pointing to Groq
-const groq = createOpenAI({
-    apiKey: GROQ_API_KEY,
-    baseURL: 'https://api.groq.com/openai/v1',
-});
+// Initialize Groq helper - lazily or safely
+const createGroqClient = () => {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+        console.error("GROQ_API_KEY is missing");
+        return null;
+    }
+    return createOpenAI({
+        apiKey: apiKey,
+        baseURL: 'https://api.groq.com/openai/v1',
+    });
+};
 
 import { ObjectId } from 'mongodb';
 import clientPromise from '@/lib/mongodb';
@@ -46,7 +50,9 @@ export async function saveTextbook(title: string, content: string, userId?: stri
  * Fetches text from DB -> Chunks -> AI -> Course
  */
 export async function generateCourseFromTextbook(textbookId: string) {
-    if (!GROQ_API_KEY) {
+    // Check configuration lazily
+    const groqProvider = createGroqClient();
+    if (!groqProvider) {
         throw new Error("API Key is required");
     }
 
@@ -124,9 +130,13 @@ export async function generateCourseFromTextbook(textbookId: string) {
             `;
 
             try {
+                // Get Client
+                const groqProvider = createGroqClient();
+                if (!groqProvider) throw new Error("Server Misconfiguration: GROQ_API_KEY missing");
+
                 // Call Groq
                 const { text } = await generateText({
-                    model: groq('llama-3.1-8b-instant'),
+                    model: groqProvider('llama-3.1-8b-instant'),
                     prompt: chunkPrompt,
                     temperature: 0.1, // Near zero for exact reproduction
                 });
