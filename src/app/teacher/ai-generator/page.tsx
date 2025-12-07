@@ -119,8 +119,9 @@ export default function CourseGeneratorPage() {
             const processText = contentResult.content;
 
             // CLIENT SIDE CHUNKING (Prevents Vercel Timeouts)
-            const CHUNK_SIZE = 12000;
-            const OVERLAP = 1000;
+            // Reduced to 8000 to ensure fast execution (<10s) per request
+            const CHUNK_SIZE = 8000;
+            const OVERLAP = 500;
             const chunks: string[] = [];
             let start = 0;
             while (start < processText.length) {
