@@ -2,8 +2,6 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-/**
- * Generates a structured course from the provided content using Google Gemini.
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDQjD7ak6PO6PNFVFMF-jziQizRx3qG70g';
 
 /**
