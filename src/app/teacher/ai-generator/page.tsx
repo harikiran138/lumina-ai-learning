@@ -246,17 +246,36 @@ export default function CourseGeneratorPage() {
                         {file && <p className="mt-4 text-lumina-primary font-mono">{file.name}</p>}
                     </div>
 
+                    {/* Model Loading Indicator */}
+                    {!isEngineReady && (
+                        <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl animate-in fade-in duration-500">
+                            <div className="flex items-center justify-center gap-3 mb-2">
+                                <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                                <span className="font-semibold text-blue-300">Initializing AI Model</span>
+                            </div>
+                            <p className="text-sm text-blue-200/80 mb-3">{engineProgress || 'Starting up...'}</p>
+
+                            {/* Simple Progress Bar visualization based on text content roughly */}
+                            <div className="h-1.5 w-full bg-blue-900/30 rounded-full overflow-hidden">
+                                <div className="h-full bg-blue-500/60 animate-pulse w-full origin-left scale-x-50"></div>
+                            </div>
+                            <p className="text-xs text-blue-400/60 mt-2">
+                                This runs entirely in your browser using WebGPU. First load may take a moment (~2GB).
+                            </p>
+                        </div>
+                    )}
+
                     <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-left hidden">
                         {/* API Key managed via server env */}
                     </div>
 
                     <button
                         onClick={startAnalysis}
-                        disabled={!file}
+                        disabled={!file || !isEngineReady}
                         className="w-full py-4 bg-lumina-primary text-black font-bold rounded-xl hover:bg-lumina-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                     >
-                        Analyze Structure
-                        <ArrowRight className="w-5 h-5" />
+                        {!isEngineReady ? 'Waiting for AI...' : 'Analyze Structure'}
+                        {isEngineReady && <ArrowRight className="w-5 h-5" />}
                     </button>
                 </div>
             )}
