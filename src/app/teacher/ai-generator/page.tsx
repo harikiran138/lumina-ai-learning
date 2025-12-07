@@ -22,14 +22,27 @@ import {
 
 const SELECTED_MODEL = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
 
-interface Lesson {
+interface ContentBlock {
+    type: 'paragraph' | 'list' | 'code' | 'warning' | 'tip';
+    content: string;
+}
+
+interface Subtopic {
     title: string;
-    content?: string;
+    content: ContentBlock[];
+}
+
+interface Topic {
+    title: string;
+    goal: string;
+    content: ContentBlock[]; // Main topic content
+    subtopics?: Subtopic[]; // Optional deep dive
 }
 
 interface Module {
     title: string;
-    lessons: Lesson[];
+    summary: string;
+    topics: Topic[];
 }
 
 export default function CourseGeneratorPage() {
@@ -100,15 +113,43 @@ export default function CourseGeneratorPage() {
             const prompt = `
             You are a Curriculum Architect. 
             Analyze the provided text.
-            Create a structured course with Modules and Lessons.
-            For EACH Lesson, write a strictly educational summary of the content based on the text provided.
+            Create a detailed, 5-layer course structure (Course > Module > Topic > Subtopic > Content).
             
-            IMPORTANT OUTPUT FORMAT (Markdown):
-            ## Module: [Module Title]
-            - Lesson: [Lesson Title]
-            > Content: [Write 2-3 sentences of educational content for this lesson here. Focus on defining key terms or concepts found in the text.]
-            
-            Do not add conversational text.
+            Output strictly VALID JSON in the following format:
+            {
+                "modules": [
+                    {
+                        "title": "Module Title",
+                        "summary": "Short summary of module",
+                        "topics": [
+                            {
+                                "title": "Topic Title",
+                                "goal": "Student learning outcome",
+                                "content": [
+                                    { "type": "paragraph", "content": "Main explanation..." },
+                                    { "type": "list", "content": "- Key point 1\\n- Key point 2" }
+                                ],
+                                "subtopics": [
+                                    {
+                                        "title": "Subtopic Title",
+                                        "content": [
+                                            { "type": "code", "content": "console.log('example')" },
+                                            { "type": "tip", "content": "Remember this!" }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+
+            IMPORTANT:
+            - Create at least 3 Modules.
+            - Each Module must have at least 2 Topics.
+            - Use "subtopics" for complex concepts, otherwise keep them empty.
+            - "type" can be: paragraph, list, code, tip, warning.
+            - Do NOT add markdown code blocks (like \`\`\`json). Just return the raw JSON string.
             
             TEXT TO ANALYZE:
             ${truncatedText}
@@ -142,52 +183,28 @@ export default function CourseGeneratorPage() {
     };
 
     const parseAIOutput = (text: string) => {
-        const lines = text.split('\n');
-        const newModules: Module[] = [];
-        let currentModule: Module | null = null;
-        let currentLesson: { title: string, content?: string } | null = null;
+        try {
+            // Clean up potentially messy output
+            let cleanerText = text.trim();
+            // Remove markdown code blocks if present despite instructions
+            if (cleanerText.startsWith('```json')) cleanerText = cleanerText.replace('```json', '').replace('```', '');
+            if (cleanerText.startsWith('```')) cleanerText = cleanerText.replace('```', '').replace('```', '');
 
-        lines.forEach(line => {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('## Module:')) {
-                if (currentModule) newModules.push(currentModule);
-                currentModule = {
-                    title: trimmed.replace('## Module:', '').trim(),
-                    lessons: []
-                };
-            } else if (trimmed.startsWith('##')) {
-                // Fallback for just "## Title"
-                if (currentModule) newModules.push(currentModule);
-                currentModule = {
-                    title: trimmed.replace(/^##\s*/, '').trim(),
-                    lessons: []
-                };
-            } else if (trimmed.startsWith('- Lesson:') || trimmed.startsWith('-')) {
-                if (currentModule) {
-                    currentLesson = {
-                        title: trimmed.replace(/^- Lesson:|-/, '').trim(),
-                        content: ""
-                    };
-                    currentModule.lessons.push(currentLesson);
-                }
-            } else if (trimmed.startsWith('> Content:') || trimmed.startsWith('>')) {
-                if (currentLesson) {
-                    currentLesson.content = trimmed.replace(/^> Content:|> /, '').trim();
-                }
-            } else if (currentLesson && trimmed.length > 5 && !trimmed.startsWith('#')) {
-                // Append continuation of content if it's a paragraph
-                currentLesson.content += " " + trimmed;
-            }
-        });
-        if (currentModule) newModules.push(currentModule);
+            const parsed = JSON.parse(cleanerText);
 
-        if (newModules.length === 0) {
-            if (newModules.length === 0) {
-                newModules.push({ title: "Introduction", lessons: [{ title: "Overview", content: "Introduction to the course material." }] });
+            if (parsed.modules && Array.isArray(parsed.modules)) {
+                setModules(parsed.modules);
+            } else {
+                throw new Error("Invalid schema");
             }
+        } catch (e) {
+            console.error("JSON Parse Error", e);
+            // Fallback: If partial JSON, we might be out of luck with streaming unless we use a robust parser.
+            // For now, let's assume valid JSON or fail gracefully.
+            // setModules([]); // Keep existing if fail
+            // Actually, for streaming, JSON is hard. We might need to wait for full completion or use a stream parser.
+            // Given the complexity, simple JSON.parse at the END (not streaming parse) is safest.
         }
-
-        setModules(newModules);
     };
 
     const saveCourse = async () => {
@@ -216,7 +233,7 @@ export default function CourseGeneratorPage() {
             // I'll optimistically assume it does or I'll fix it.
 
             // Calculate total items (Modules + Lessons)
-            const totalItems = modules.reduce((acc, m) => acc + 1 + m.lessons.length, 0);
+            const totalItems = modules.reduce((acc, m) => acc + 1 + m.topics.length, 0);
             let completedItems = 0;
 
             const updateProgress = () => {
@@ -224,7 +241,7 @@ export default function CourseGeneratorPage() {
                 setCreationProgress(Math.round((completedItems / totalItems) * 100));
             };
 
-            // 2. Add Modules and Lessons
+            // 2. Add Modules and Lessons (Topics)
             for (let i = 0; i < modules.length; i++) {
                 const mod = modules[i];
                 setSavingStatus(`Saving Module: ${mod.title}`);
@@ -233,9 +250,18 @@ export default function CourseGeneratorPage() {
                 const moduleId = modRes.moduleId;
                 updateProgress();
 
-                for (const less of mod.lessons) {
-                    // Pass content and type 'text'
-                    await api.addLesson(courseId, moduleId, less.title, less.content || "Content generated from textbook.", 'text');
+                for (const topic of mod.topics) {
+                    // We serialize the rich structure (goal, blocks, subtopics) into the content field
+                    // This allows the Course Details page to parse it back out if it detects JSON,
+                    // or just show it as text if not.
+                    // Ideally, we'd update the DB schema, but for speed, JSON-in-String is effective.
+                    const richContent = JSON.stringify({
+                        goal: topic.goal,
+                        content: topic.content,
+                        subtopics: topic.subtopics
+                    });
+
+                    await api.addLesson(courseId, moduleId, topic.title, richContent, 'text');
                     updateProgress();
                 }
             }
@@ -287,7 +313,7 @@ export default function CourseGeneratorPage() {
 
                     <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-left">
                         <div className="flex items-center gap-2 text-blue-300 mb-2">
-                            <Loader2 className={`w-4 h-4 ${!isEngineReady ? 'animate-spin' : ''}`} />
+                            <Loader2 className={`w - 4 h - 4 ${!isEngineReady ? 'animate-spin' : ''} `} />
                             <span className="font-semibold text-sm">AI Engine Status</span>
                         </div>
                         <p className="text-blue-200/60 text-xs">{aiProgress}</p>
@@ -378,156 +404,196 @@ export default function CourseGeneratorPage() {
                                         </button>
                                     </div>
                                     <div className="p-3 pl-12 space-y-2 bg-black/20">
-                                        {mod.lessons.map((less, lIdx) => (
-                                            <div key={lIdx} className="space-y-2">
-                                                <div className="flex items-center gap-3">
-                                                    <button
-                                                        onClick={() => {
-                                                            const newMods = [...modules];
-                                                            // Toggle expansion using a temporary property or just keeping track of ID. 
-                                                            // For simplicity in this structure, let's use a local state for the index string "mIdx-lIdx"
-                                                            // But I (the code) don't have access to the component state here easily.
-                                                            // I will use the setExpandedLessonId approach if I had it.
-                                                            // Let's just use a simple approach: Add 'isExpanded' to Lesson interface? No, let's keep it simple.
-                                                            // Actually, I can't easily add state hooks inside this map.
-                                                            // I'll resort to adding 'isExpanded' to the Lesson interface generally or just render the textarea always if I want, but that's cluttered.
-                                                            // Best approach: Add `expandedLessonId` state to the component.
-                                                        }}
-                                                        className="text-gray-400 hover:text-white"
-                                                    >
-                                                        {/* Placeholder for expand button logic, see component state update */}
-                                                    </button>
-                                                    <FileText className="w-4 h-4 text-gray-600" />
-                                                    <input
-                                                        value={less.title}
-                                                        onChange={e => {
-                                                            const newMods = [...modules];
-                                                            newMods[mIdx].lessons[lIdx].title = e.target.value;
-                                                            setModules(newMods);
-                                                        }}
-                                                        className="bg-transparent border-none text-gray-300 text-sm focus:outline-none flex-1 font-medium"
-                                                    />
-                                                    <button
-                                                        onClick={() => {
-                                                            const newMods = [...modules];
-                                                            newMods[mIdx].lessons.splice(lIdx, 1);
-                                                            setModules(newMods);
-                                                        }}
-                                                        className="text-gray-600 hover:text-red-400 opacity-60 hover:opacity-100"
-                                                    >
-                                                        <Trash2 className="w-3 h-3" />
-                                                    </button>
-                                                </div>
+                                        <div className="space-y-4">
+                                            {mod.topics.map((topic, tIdx) => (
+                                                <div key={tIdx} className="bg-black/20 p-4 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
+                                                    {/* Topic Header */}
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <input
+                                                            value={topic.title}
+                                                            onChange={e => {
+                                                                const newMods = [...modules];
+                                                                newMods[mIdx].topics[tIdx].title = e.target.value;
+                                                                setModules(newMods);
+                                                            }}
+                                                            className="bg-transparent border-none text-gray-200 text-sm font-bold focus:outline-none flex-1"
+                                                            placeholder="Topic Title"
+                                                        />
+                                                        <button
+                                                            onClick={() => {
+                                                                const newMods = [...modules];
+                                                                newMods[mIdx].topics.splice(tIdx, 1);
+                                                                setModules(newMods);
+                                                            }}
+                                                            className="text-gray-600 hover:text-red-400 opacity-60 hover:opacity-100"
+                                                        >
+                                                            <Trash2 className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
 
-                                                {/* Content Editor - Always visible for now to ensure access as per user request to 'see data' 
-                                                    Or better, make it collapsible.
-                                                    I'll make it collapsible with a details element for native support without state complex.
-                                                */}
-                                                <details className="group">
-                                                    <summary className="text-xs text-lumina-primary cursor-pointer hover:underline mb-2 ml-7 list-none flex items-center gap-1">
-                                                        <Edit2 className="w-3 h-3" /> Edit Content
-                                                    </summary>
-                                                    <textarea
-                                                        value={less.content || ''}
+                                                    {/* Topic Goal */}
+                                                    <input
+                                                        value={topic.goal || ''}
                                                         onChange={e => {
                                                             const newMods = [...modules];
-                                                            newMods[mIdx].lessons[lIdx].content = e.target.value;
+                                                            newMods[mIdx].topics[tIdx].goal = e.target.value;
                                                             setModules(newMods);
                                                         }}
-                                                        placeholder="AI Content will appear here..."
-                                                        className="w-full bg-black/40 border border-white/5 rounded-lg p-3 text-sm text-gray-300 h-32 ml-7 block"
+                                                        className="w-full bg-transparent text-xs text-lumina-primary mb-3 focus:outline-none"
+                                                        placeholder="Goal: Student will learn..."
                                                     />
-                                                </details>
-                                            </div>
-                                        ))}
-                                        <button
-                                            onClick={() => {
-                                                const newMods = [...modules];
-                                                newMods[mIdx].lessons.push({ title: "New Lesson", content: "" });
-                                                setModules(newMods);
-                                            }}
-                                            className="text-xs text-lumina-primary hover:underline flex items-center gap-1 mt-2 ml-7"
-                                        >
-                                            <Plus className="w-3 h-3" /> Add Lesson
-                                        </button>
+
+                                                    {/* Content Blocks */}
+                                                    <div className="space-y-2 mb-4">
+                                                        {topic.content.map((block, bIdx) => (
+                                                            <div key={bIdx} className="relative group">
+                                                                <textarea
+                                                                    value={block.content}
+                                                                    onChange={e => {
+                                                                        const newMods = [...modules];
+                                                                        newMods[mIdx].topics[tIdx].content[bIdx].content = e.target.value;
+                                                                        setModules(newMods);
+                                                                    }}
+                                                                    className={`w-full bg-transparent border-none text-sm focus:outline-none resize-none overflow-hidden ${block.type === 'code' ? 'font-mono bg-black/40 p-2 rounded text-blue-300' :
+                                                                            block.type === 'list' ? 'pl-4 border-l-2 border-gray-600' :
+                                                                                block.type === 'tip' ? 'bg-blue-500/10 p-2 rounded text-blue-200 italic' :
+                                                                                    'text-gray-300'
+                                                                        }`}
+                                                                    rows={block.type === 'code' || block.type === 'list' ? 4 : 2}
+                                                                />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Subtopics */}
+                                                    {topic.subtopics && topic.subtopics.length > 0 && (
+                                                        <div className="ml-4 pl-4 border-l border-white/10 space-y-3 mt-4">
+                                                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Deep Dive</div>
+                                                            {topic.subtopics.map((sub, sIdx) => (
+                                                                <div key={sIdx} className="bg-white/5 p-3 rounded">
+                                                                    <input
+                                                                        value={sub.title}
+                                                                        onChange={e => {
+                                                                            const newMods = [...modules];
+                                                                            if (newMods[mIdx].topics[tIdx].subtopics) {
+                                                                                newMods[mIdx].topics[tIdx].subtopics![sIdx].title = e.target.value;
+                                                                                setModules(newMods);
+                                                                            }
+                                                                        }}
+                                                                        className="bg-transparent border-none text-gray-300 text-xs font-semibold focus:outline-none w-full"
+                                                                    />
+                                                                    <div className="mt-2 space-y-2">
+                                                                        {sub.content.map((block, bIdx) => (
+                                                                            <textarea
+                                                                                key={bIdx}
+                                                                                value={block.content}
+                                                                                onChange={e => {
+                                                                                    const newMods = [...modules];
+                                                                                    if (newMods[mIdx].topics[tIdx].subtopics) {
+                                                                                        newMods[mIdx].topics[tIdx].subtopics![sIdx].content[bIdx].content = e.target.value;
+                                                                                        setModules(newMods);
+                                                                                    }
+                                                                                }}
+                                                                                className="w-full bg-transparent text-xs text-gray-400 focus:outline-none resize-none"
+                                                                                rows={2}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            <button
+                                                onClick={() => {
+                                                    const newMods = [...modules];
+                                                    newMods[mIdx].topics.push({ title: "New Topic", goal: "Learning Outcome", content: [{ type: 'paragraph', content: "Content here..." }] });
+                                                    setModules(newMods);
+                                                }}
+                                                className="text-xs text-lumina-primary hover:underline flex items-center gap-1 mt-2 ml-1"
+                                            >
+                                                <Plus className="w-3 h-3" /> Add Topic
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
+
                             <button
-                                onClick={() => setModules([...modules, { title: "New Module", lessons: [] }])}
-                                className="w-full py-3 border border-dashed border-white/20 rounded-xl text-gray-400 hover:text-white hover:border-white/40 transition-colors"
+                                onClick={() => setModules([...modules, { title: "New Module", summary: "", topics: [] }])}
+                                className="w-full py-3 border border-dashed border-white/20 rounded-xl text-gray-400 hover:text-white hover:border-white/40 transition-colors mt-4"
                             >
                                 + Add Module
                             </button>
                         </div>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={saveCourse}
+                                className="flex-1 py-4 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-colors flex items-center justify-center gap-2 border border-white/10"
+                            >
+                                <Save className="w-5 h-5" />
+                                Save as Draft
+                            </button>
+                        </div>
                     </div>
+                            )}
 
-                    <div className="flex gap-4">
-                        <button
-                            onClick={saveCourse}
-                            className="flex-1 py-4 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-colors flex items-center justify-center gap-2 border border-white/10"
-                        >
-                            <Save className="w-5 h-5" />
-                            Save as Draft
-                        </button>
-                    </div>
-                </div>
-            )}
+                    {/* Step 4: Saving / Done */}
+                    {(step === 'saving' || step === 'done') && (
+                        <div className="glass-card p-12 text-center">
+                            {step === 'saving' ? (
+                                <>
+                                    <Loader2 className="w-16 h-16 text-lumina-primary animate-spin mx-auto mb-6" />
+                                    <h3 className="text-2xl font-bold text-white mb-2">Saving Draft...</h3>
+                                    <p className="text-gray-400 mb-4">{savingStatus}</p>
 
-            {/* Step 4: Saving / Done */}
-            {(step === 'saving' || step === 'done') && (
-                <div className="glass-card p-12 text-center">
-                    {step === 'saving' ? (
-                        <>
-                            <Loader2 className="w-16 h-16 text-lumina-primary animate-spin mx-auto mb-6" />
-                            <h3 className="text-2xl font-bold text-white mb-2">Saving Draft...</h3>
-                            <p className="text-gray-400 mb-4">{savingStatus}</p>
-
-                            <div className="max-w-md mx-auto">
-                                <div className="flex justify-between text-xs text-blue-300 mb-1">
-                                    <span>Progress</span>
-                                    <span>{creationProgress}%</span>
-                                </div>
-                                <div className="h-4 bg-black/40 rounded-full overflow-hidden border border-white/10">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-lumina-primary to-blue-500 transition-all duration-300"
-                                        style={{ width: `${creationProgress}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
-                            <h3 className="text-2xl font-bold text-white mb-2">Draft Saved!</h3>
-                            <p className="text-gray-400 mb-8">"{courseTitle}" is now a draft.</p>
-                            <div className="flex gap-4 justify-center">
-                                <button
-                                    onClick={async () => {
-                                        if (createdCourseId) {
-                                            setSavingStatus('Publishing...');
-                                            await api.publishCourse(createdCourseId);
-                                            alert("Course Published Successfully!");
-                                            window.location.href = '/teacher/courses';
-                                        }
-                                    }}
-                                    className="px-6 py-3 bg-green-500 text-black font-bold rounded-xl hover:bg-green-400 flex items-center gap-2"
-                                >
-                                    <BookOpen className="w-4 h-4" />
-                                    Publish Now
-                                </button>
-                                <a href="/teacher/courses" className="px-6 py-3 bg-white/10 rounded-xl text-white hover:bg-white/20 border border-white/10">
-                                    Return to Courses
-                                </a>
-                            </div>
-                        </>
+                                    <div className="max-w-md mx-auto">
+                                        <div className="flex justify-between text-xs text-blue-300 mb-1">
+                                            <span>Progress</span>
+                                            <span>{creationProgress}%</span>
+                                        </div>
+                                        <div className="h-4 bg-black/40 rounded-full overflow-hidden border border-white/10">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-lumina-primary to-blue-500 transition-all duration-300"
+                                                style={{ width: `${creationProgress}% ` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
+                                    <h3 className="text-2xl font-bold text-white mb-2">Draft Saved!</h3>
+                                    <p className="text-gray-400 mb-8">"{courseTitle}" is now a draft.</p>
+                                    <div className="flex gap-4 justify-center">
+                                        <button
+                                            onClick={async () => {
+                                                if (createdCourseId) {
+                                                    setSavingStatus('Publishing...');
+                                                    await api.publishCourse(createdCourseId);
+                                                    alert("Course Published Successfully!");
+                                                    window.location.href = '/teacher/courses';
+                                                }
+                                            }}
+                                            className="px-6 py-3 bg-green-500 text-black font-bold rounded-xl hover:bg-green-400 flex items-center gap-2"
+                                        >
+                                            <BookOpen className="w-4 h-4" />
+                                            Publish Now
+                                        </button>
+                                        <a href="/teacher/courses" className="px-6 py-3 bg-white/10 rounded-xl text-white hover:bg-white/20 border border-white/10">
+                                            Return to Courses
+                                        </a>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     )}
                 </div>
-            )}
-        </div>
-    );
+            );
 }
 
-function SparklesIcon(props: any) {
+            function SparklesIcon(props: any) {
     return <Sparkles {...props} />;
 }
