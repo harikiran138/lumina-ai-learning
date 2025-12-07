@@ -1,11 +1,17 @@
 'use server';
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { generateText } from 'ai';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'vck_3QS2kP9Ez4k0xhGnfpJirUmhvOIlDQAEFW2FxOMK8q2tWgvaO900uO4I';
 
+// Initialize the Google provider with our key
+const google = createGoogleGenerativeAI({
+    apiKey: GEMINI_API_KEY,
+});
+
 /**
- * Generates a structured course from the provided content using Google Gemini.
+ * Generates a structured course from the provided content using Vercel AI SDK.
  * @param content The text content (from PDF or textbook) to analyze.
  * @returns The parsed JSON structure of the course.
  */
@@ -15,10 +21,6 @@ export async function generateCourseStructure(content: string) {
     }
 
     try {
-        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        // Using gemini-1.5-flash-001 for stability with v1beta
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001", generationConfig: { responseMimeType: "application/json" } });
-
         const prompt = `
         You are an expert Curriculum Architect and Instructional Designer.
         Analyze the provided text content from a textbook or document.
@@ -64,15 +66,17 @@ export async function generateCourseStructure(content: string) {
         6. Ensure strict JSON validity.
 
         TEXT CONTENT TO ANALYZE:
-        ${content.substring(0, 30000)} // safely truncate to avoid hitting hard limits if extremely large, though Gemini handles large context well.
+        ${content.substring(0, 30000)}
         `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        // Use generateText for a single response (equivalent to the previous behavior)
+        // We use gemini-1.5-flash for speed and large context window
+        const { text } = await generateText({
+            model: google('gemini-1.5-flash'),
+            prompt: prompt,
+        });
 
         // Parse JSON
-        // Gemini with responseMimeType: "application/json" usually returns pure JSON, but we safeguard.
         let jsonStr = text;
         if (jsonStr.startsWith("```json")) {
             jsonStr = jsonStr.replace(/^```json\n/, "").replace(/\n```$/, "");
@@ -84,7 +88,7 @@ export async function generateCourseStructure(content: string) {
         return { success: true, data };
 
     } catch (error: any) {
-        console.error("Gemini Generation Error:", error);
+        console.error("Vercel AI SDK Generation Error:", error);
         return { success: false, error: error.message };
     }
 }
