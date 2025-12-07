@@ -966,7 +966,7 @@ export async function addModule(email: string, courseId: string, moduleTitle: st
     }
 }
 
-export async function addLesson(email: string, courseId: string, moduleId: string, lessonTitle: string) {
+export async function addLesson(email: string, courseId: string, moduleId: string, lessonTitle: string, content: string = '', type: 'text' | 'video' | 'quiz' = 'text') {
     try {
         const client = await clientPromise;
         const db = client.db("lumina-database");
@@ -974,13 +974,11 @@ export async function addLesson(email: string, courseId: string, moduleId: strin
         const newLesson = {
             id: Date.now().toString(),
             title: lessonTitle,
-            type: 'video',
+            type: type,
+            content: content,
             duration: '10 min',
             completed: false
         };
-
-        // Aggregation-style update isn't needed if we trust the structure, but we need to find the specific module in the array
-        // simpler to pull, update, push? No, use arrayFilters
 
         const result = await db.collection("courses").updateOne(
             { _id: new ObjectId(courseId), "modules.id": moduleId },
