@@ -21,7 +21,7 @@ export default function StudentLayout({
                 className="fixed inset-0 z-0 pointer-events-none"
             />
 
-            <Sidebar />
+            <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             <div className="relative z-10">
                 <TopNav onMenuClick={() => setSidebarOpen(!sidebarOpen)} />

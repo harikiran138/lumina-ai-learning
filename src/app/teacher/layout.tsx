@@ -14,7 +14,7 @@ export default function TeacherLayout({
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-black">
-            <TeacherSidebar />
+            <TeacherSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
             <TopNav
                 onMenuClick={() => setSidebarOpen(!sidebarOpen)}
                 user={{ name: 'Teacher User', role: 'Teacher', initial: 'T' }}

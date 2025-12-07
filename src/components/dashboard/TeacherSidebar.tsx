@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, BookOpen, Users, FileText, Settings, LogOut, Sparkles } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, FileText, Settings, LogOut, Sparkles, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 
@@ -16,7 +16,7 @@ const navItems = [
     { name: 'Settings', href: '/teacher/settings', icon: Settings },
 ];
 
-export default function TeacherSidebar() {
+export default function TeacherSidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) {
     const pathname = usePathname();
 
     const router = useRouter();
@@ -27,11 +27,21 @@ export default function TeacherSidebar() {
     };
 
     return (
-        <aside className="fixed left-4 top-4 bottom-4 w-64 backdrop-blur-3xl bg-black/20 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] z-30 hidden lg:flex flex-col rounded-3xl transition-all duration-300">
-            <div className="flex items-center justify-center h-16 border-b border-white/10">
+        <aside className={cn(
+            "fixed left-4 top-4 bottom-4 w-64 backdrop-blur-3xl bg-black/20 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] z-50 rounded-3xl transition-transform duration-300 lg:translate-x-0 lg:flex flex-col",
+            isOpen ? "translate-x-0 bg-black/90" : "-translate-x-[120%] lg:translate-x-0 hidden lg:flex"
+        )}>
+            <div className="flex items-center justify-between h-16 border-b border-white/10 px-6">
                 <Link href="/" className="text-2xl font-bold">
                     <span className="gradient-text">Lumina</span> ✨
                 </Link>
+                {/* Mobile Close Button */}
+                <button
+                    onClick={onClose}
+                    className="lg:hidden text-gray-400 hover:text-white"
+                >
+                    <X className="w-6 h-6" />
+                </button>
             </div>
             <nav className="p-4 space-y-2">
                 {navItems.map((item) => {
@@ -41,6 +51,7 @@ export default function TeacherSidebar() {
                             key={item.name}
                             href={item.href}
                             suppressHydrationWarning
+                            onClick={onClose}
                             className={cn(
                                 "flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300",
                                 isActive
