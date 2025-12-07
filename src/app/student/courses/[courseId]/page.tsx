@@ -17,7 +17,8 @@ import {
     ChevronDown,
     ChevronUp,
     Users,
-    LayoutDashboard // Added missing import
+    LayoutDashboard, // Added missing import
+    Bot
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -34,6 +35,7 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
     const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
     const [quizSubmitted, setQuizSubmitted] = useState(false);
     const [quizScore, setQuizScore] = useState(0);
+    const [showAIHelp, setShowAIHelp] = useState(false); // AI Modal State
 
     useEffect(() => {
         const fetchCourse = async () => {
@@ -279,7 +281,63 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content Area */}
-                <div className="lg:col-span-2 space-y-8">
+                <div className="lg:col-span-2 space-y-8 relative">
+                    {/* Enrollment: Basic check simulated by access. 
+                        To be robust: if (!course.isEnrolled) return <EnrollmentGate /> 
+                     */}
+
+                    {/* Contextual AI Helper Trigger */}
+                    {activeLesson && (
+                        <div className="mb-4 flex justify-end">
+                            <button
+                                onClick={() => setShowAIHelp(true)}
+                                className="text-xs flex items-center gap-2 bg-lumina-primary/10 text-lumina-primary px-3 py-1.5 rounded-full border border-lumina-primary/20 hover:bg-lumina-primary/20 transition-colors"
+                            >
+                                <Bot className="w-4 h-4" />
+                                Ask AI about this lesson
+                            </button>
+                        </div>
+                    )}
+
+                    {/* AI Help Modal */}
+                    {showAIHelp && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                            <div className="bg-gray-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col h-[500px]">
+                                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5 rounded-t-2xl">
+                                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                        <Bot className="w-5 h-5 text-lumina-primary" />
+                                        AI Tutor: {activeLesson?.title}
+                                    </h3>
+                                    <button onClick={() => setShowAIHelp(false)} className="text-gray-400 hover:text-white">
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <div className="flex-1 p-4 overflow-y-auto space-y-4 font-sans text-sm">
+                                    <div className="bg-white/5 p-3 rounded-xl rounded-tl-none">
+                                        <p className="text-gray-300">Hi! I'm your AI tutor for this lesson. I have context about "{activeLesson?.title}". What's confusing you?</p>
+                                    </div>
+                                    {/* Chat History would map here */}
+                                    <div className="bg-lumina-primary/10 p-3 rounded-xl rounded-tr-none ml-auto max-w-[80%] border border-lumina-primary/20">
+                                        <p className="text-white">Can you explain standard deviation again?</p>
+                                    </div>
+                                    <div className="bg-white/5 p-3 rounded-xl rounded-tl-none">
+                                        <p className="text-gray-300">Sure! In the context of this lesson's data set, standard deviation measures how spread out the numbers are...</p>
+                                    </div>
+                                </div>
+                                <div className="p-4 border-t border-white/10 bg-white/5 rounded-b-2xl">
+                                    <div className="flex gap-2">
+                                        <input
+                                            placeholder="Ask a question..."
+                                            className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-lumina-primary/50"
+                                        />
+                                        <button className="p-2 bg-lumina-primary text-black rounded-xl hover:bg-lumina-primary/80 transition-colors">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Dynamic Content Viewer */}
                     {activeLesson ? (
