@@ -48,6 +48,7 @@ export default function CourseGeneratorPage() {
 
     // API State
     const [savingStatus, setSavingStatus] = useState('');
+    const [createdCourseId, setCreatedCourseId] = useState<string | null>(null);
 
     // Init Engine
     useEffect(() => {
@@ -206,6 +207,7 @@ export default function CourseGeneratorPage() {
 
             if (!courseRes.success) throw new Error("Failed to create course");
             const courseId = courseRes.courseId;
+            setCreatedCourseId(courseId);
             // Wait, api.createCourse returns {success: true} usually.
             // I need to check data.ts to see if it returns ID. Default actions usually verify this.
             // If not, I can't proceed. I'll assume current implementation needs checking.
@@ -460,13 +462,15 @@ export default function CourseGeneratorPage() {
                         </div>
                     </div>
 
-                    <button
-                        onClick={saveCourse}
-                        className="w-full py-4 bg-green-500 text-black font-bold rounded-xl hover:bg-green-400 transition-colors flex items-center justify-center gap-2"
-                    >
-                        <Save className="w-5 h-5" />
-                        Create Course in Database
-                    </button>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={saveCourse}
+                            className="flex-1 py-4 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-colors flex items-center justify-center gap-2 border border-white/10"
+                        >
+                            <Save className="w-5 h-5" />
+                            Save as Draft
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -476,7 +480,7 @@ export default function CourseGeneratorPage() {
                     {step === 'saving' ? (
                         <>
                             <Loader2 className="w-16 h-16 text-lumina-primary animate-spin mx-auto mb-6" />
-                            <h3 className="text-2xl font-bold text-white mb-2">Creating Course...</h3>
+                            <h3 className="text-2xl font-bold text-white mb-2">Saving Draft...</h3>
                             <p className="text-gray-400 mb-4">{savingStatus}</p>
 
                             <div className="max-w-md mx-auto">
@@ -495,15 +499,26 @@ export default function CourseGeneratorPage() {
                     ) : (
                         <>
                             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
-                            <h3 className="text-2xl font-bold text-white mb-2">Course Created!</h3>
-                            <p className="text-gray-400 mb-8">"{courseTitle}" has been saved to the database.</p>
+                            <h3 className="text-2xl font-bold text-white mb-2">Draft Saved!</h3>
+                            <p className="text-gray-400 mb-8">"{courseTitle}" is now a draft.</p>
                             <div className="flex gap-4 justify-center">
-                                <a href="/teacher/courses" className="px-6 py-3 bg-white/10 rounded-xl text-white hover:bg-white/20">
-                                    View My Courses
-                                </a>
-                                <button onClick={() => setStep('upload')} className="px-6 py-3 bg-lumina-primary text-black rounded-xl hover:bg-lumina-secondary">
-                                    Create Another
+                                <button
+                                    onClick={async () => {
+                                        if (createdCourseId) {
+                                            setSavingStatus('Publishing...');
+                                            await api.publishCourse(createdCourseId);
+                                            alert("Course Published Successfully!");
+                                            window.location.href = '/teacher/courses';
+                                        }
+                                    }}
+                                    className="px-6 py-3 bg-green-500 text-black font-bold rounded-xl hover:bg-green-400 flex items-center gap-2"
+                                >
+                                    <BookOpen className="w-4 h-4" />
+                                    Publish Now
                                 </button>
+                                <a href="/teacher/courses" className="px-6 py-3 bg-white/10 rounded-xl text-white hover:bg-white/20 border border-white/10">
+                                    Return to Courses
+                                </a>
                             </div>
                         </>
                     )}
