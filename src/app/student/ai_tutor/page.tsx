@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
-import { CreateMLCEngine } from "@mlc-ai/web-llm";
 import {
     Send,
     Bot,
@@ -28,10 +27,9 @@ export default function AITutorPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // AI Engine State
-    const engine = useRef<any>(null);
-    const [isEngineReady, setIsEngineReady] = useState(false);
+    const [isEngineReady, setIsEngineReady] = useState(true); // Always ready for API call
     const [loadingProgress, setLoadingProgress] = useState('');
-    const [progressPercent, setProgressPercent] = useState(0);
+    const [progressPercent, setProgressPercent] = useState(100);
 
     // Context State
     const [userContext, setUserContext] = useState<string>('');
@@ -40,35 +38,8 @@ export default function AITutorPage() {
     const [currentSessionId, setCurrentSessionId] = useState<string>('');
     const [sessions, setSessions] = useState<Record<string, any[]>>({});
 
-    // Initialize WebLLM Engine
+    // Initialize Context
     useEffect(() => {
-        const initEngine = async () => {
-            if (engine.current) return;
-
-            try {
-                setLoadingProgress('Initializing AI Engine...');
-                engine.current = await CreateMLCEngine(
-                    SELECTED_MODEL,
-                    {
-                        initProgressCallback: (report) => {
-                            setLoadingProgress(report.text);
-                            // Simple heuristic to extract percentage from text if available or based on steps
-                            // Report format usually "[1/3] Loading... 50%"
-                            const match = report.text.match(/(\d+)%/);
-                            if (match) {
-                                setProgressPercent(parseInt(match[1]));
-                            }
-                        },
-                    }
-                );
-                setIsEngineReady(true);
-                setLoadingProgress('');
-            } catch (err) {
-                console.error("Failed to load WebLLM:", err);
-                setLoadingProgress('Failed to load AI. Please check your connection and reload.');
-            }
-        };
-
         const loadContext = async () => {
             try {
                 const user = await api.getCurrentUser();
@@ -90,13 +61,11 @@ export default function AITutorPage() {
                 }
 
                 setUserContext(context);
-                console.log("AI Context Loaded:", context);
             } catch (e) {
                 console.error("Failed to load user context", e);
             }
         };
 
-        initEngine();
         loadContext();
     }, []);
 
@@ -122,9 +91,6 @@ export default function AITutorPage() {
                 });
                 setSessions(grouped);
 
-                // Set messages for current session if it exists in history, else empty (new session)
-                // Actually, if we just created a NEW sessionId, history won't have it.
-                // If we retrieved an existing one from sessionStorage, maybe history has it.
                 if (grouped[sessionId]) {
                     setMessages(grouped[sessionId]);
                 } else {
@@ -148,7 +114,6 @@ export default function AITutorPage() {
         setCurrentSessionId(newSessionId);
         sessionStorage.setItem('lumina_chat_session_id', newSessionId);
         setMessages([]);
-        // We don't add to 'sessions' state until a message is sent
     };
 
     // Update sessions state helper
@@ -167,10 +132,6 @@ export default function AITutorPage() {
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!input.trim()) return;
-        if (!isEngineReady) {
-            alert("AI Engine is still loading. Please wait a moment.");
-            return;
-        }
 
         const userMsg = { sender: 'me', text: input, timestamp: new Date(), sessionId: currentSessionId };
 
@@ -197,11 +158,23 @@ export default function AITutorPage() {
                 { role: 'user', content: userMsg.text }
             ];
 
-            // Local Inference
-            const reply = await engine.current.chat.completions.create({
-                messages: contextMessages
+            // Direct Call to Ollama
+            const response = await fetch('http://localhost:11434/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: "gpt-oss:120b-cloud", // Using your preferred model
+                    messages: contextMessages,
+                    stream: false
+                })
             });
-            const aiText = reply.choices[0].message.content;
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch");
+            }
+
+            const data = await response.json();
+            const aiText = data.message.content;
 
             const aiMsg = { sender: 'AI Tutor', text: aiText, timestamp: new Date(), sessionId: currentSessionId };
             setMessages(prev => [...prev, aiMsg]);
@@ -210,9 +183,15 @@ export default function AITutorPage() {
             // Save AI response to DB
             await api.saveChatMessage({ sender: 'AI Tutor', text: aiText, sessionId: currentSessionId });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('AI Error:', error);
-            const errorMsg = { sender: 'AI Tutor', text: "Error generating response locally.", timestamp: new Date() };
+            let errorText = "Error generating response locally.";
+
+            if (error.message.includes('Failed to fetch')) {
+                errorText = "Connection Error: Could not reach Ollama (localhost:11434). Please ensure it is running and CORS is configured (launchctl setenv OLLAMA_ORIGINS \"*\").";
+            }
+
+            const errorMsg = { sender: 'AI Tutor', text: errorText, timestamp: new Date() };
             setMessages(prev => [...prev, errorMsg]);
         } finally {
             setIsLoading(false);
@@ -372,7 +351,7 @@ export default function AITutorPage() {
                         </button>
                     </form>
                     <p className="text-center text-[10px] text-gray-500 mt-2">
-                        Running Lumina directly on your device via WebLLM.
+                        Running Lumina directly on your device via Local Ollama (gpt-oss:120b-cloud).
                     </p>
                 </div>
             </div>
