@@ -53,35 +53,66 @@ export type PageText = {
 
 // --- Logic ---
 
-export function chunkPages(pages: PageText[], maxChars = 50000): { text: string, startPage: number, endPage: number }[] {
-    const chunks = [];
-    let currentText = "";
-    let startPage = pages[0]?.page || 1;
-    let endPage = startPage;
+export function chunkPages(pages: PageText[], maxChars = 12000): { text: string, startPage: number, endPage: number }[] {
+    const chunks: { text: string, startPage: number, endPage: number }[] = [];
+
+    // Flatten all text first since we might have one huge page
+    let fullText = "";
+    // We lose precise page mapping if we just flatten, but for this AI it's fine.
+    // Better strategy: iterate pages, add to buffer. If buffer > max, split.
+
+    let currentChunk = "";
+    let chunkStartPage = pages[0]?.page || 1;
 
     for (const p of pages) {
-        const labeled = `\n=== PAGE ${p.page} ===\n${p.text}\n`;
+        const pageContent = `\n=== PAGE ${p.page} ===\n${p.text}\n`;
 
-        // If single page is huge, we might still chunk, but with 50k limit it's unlikely for normal books
-        if (currentText.length + labeled.length > maxChars && currentText.length > 0) {
-            chunks.push({
-                text: currentText,
-                startPage: startPage,
-                endPage: endPage
-            });
-            currentText = labeled;
-            startPage = p.page;
+        // If adding this page exceeds limit...
+        if (currentChunk.length + pageContent.length > maxChars) {
+            // Check if current chunk has content to push
+            if (currentChunk.length > 0) {
+                chunks.push({
+                    text: currentChunk,
+                    startPage: chunkStartPage,
+                    endPage: p.page - 1
+                });
+                currentChunk = "";
+                chunkStartPage = p.page;
+            }
+
+            // Now, is the NEW page itself too big?
+            if (pageContent.length > maxChars) {
+                // We must split this single page
+                let remaining = pageContent;
+                while (remaining.length > 0) {
+                    const slice = remaining.slice(0, maxChars);
+                    chunks.push({
+                        text: slice,
+                        startPage: p.page,
+                        endPage: p.page
+                    });
+                    remaining = remaining.slice(maxChars);
+                }
+                // Reset for next
+                currentChunk = "";
+                chunkStartPage = p.page + 1; // Approximate
+            } else {
+                // It fits in a fresh chunk
+                currentChunk = pageContent;
+                chunkStartPage = p.page;
+            }
         } else {
-            currentText += labeled;
-            endPage = p.page;
+            // Fits in current chunk
+            if (currentChunk.length === 0) chunkStartPage = p.page;
+            currentChunk += pageContent;
         }
     }
 
-    if (currentText.trim().length > 0) {
+    if (currentChunk.trim().length > 0) {
         chunks.push({
-            text: currentText,
-            startPage: startPage,
-            endPage: endPage
+            text: currentChunk,
+            startPage: chunkStartPage,
+            endPage: pages[pages.length - 1]?.page || chunkStartPage
         });
     }
 
@@ -91,6 +122,11 @@ export function chunkPages(pages: PageText[], maxChars = 50000): { text: string,
 // Logic replaced: Calls specific engine instance provided by the UI
 async function callWebLLM(engine: MLCEngineInterface, prompt: string): Promise<any> {
     try {
+        // Critical: Reset chat history so we don't accumulate tokens across chunks in the loop
+        if (engine.resetChat) {
+            await engine.resetChat();
+        }
+
         const reply = await engine.chat.completions.create({
             messages: [
                 { role: "user", content: prompt }
@@ -102,7 +138,6 @@ async function callWebLLM(engine: MLCEngineInterface, prompt: string): Promise<a
         const content = reply.choices[0].message.content || "{}";
 
         // Robust JSON Extraction
-        // Find the first '{' and the last '}'
         const firstBrace = content.indexOf('{');
         const lastBrace = content.lastIndexOf('}');
 
@@ -111,14 +146,21 @@ async function callWebLLM(engine: MLCEngineInterface, prompt: string): Promise<a
             return {};
         }
 
-        const jsonString = content.substring(firstBrace, lastBrace + 1);
+        let jsonString = content.substring(firstBrace, lastBrace + 1);
+
+        // Sanitize: Fix common bad escapes (e.g., single backslashes in paths or text)
+        // Regex looks for backslash NOT followed by valid escape chars (", \, /, b, f, n, r, t, u)
+        jsonString = jsonString.replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
 
         try {
             return JSON.parse(jsonString);
         } catch (parseError) {
             console.error("JSON Parse Error:", parseError);
-            // Attempt to clean common markdown issues inside the block?
-            // For now, return empty or retry
+            console.log("Failed JSON:", jsonString);
+
+            // Aggressive Repair attempt:
+            // Sometimes models output newlines as literal \n, sometimes as actual newlines
+            // We can try to strip control chars or aggressive replace if specific error known
             return {};
         }
 
