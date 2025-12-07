@@ -33,6 +33,7 @@ interface Subtopic {
 interface Topic {
     title: string;
     goal: string;
+    pageRef?: string; // Optional page reference from AI
     content: ContentBlock[]; // Main topic content
     subtopics?: Subtopic[]; // Optional deep dive
 }
@@ -47,6 +48,7 @@ export default function CourseGeneratorPage() {
     // AI State
     const [aiProgress, setAiProgress] = useState('');
     const [analysisProgress, setAnalysisProgress] = useState(0);
+
 
     // Flow State
     const [step, setStep] = useState<'upload' | 'analyzing' | 'review' | 'saving' | 'done'>('upload');
@@ -67,104 +69,74 @@ export default function CourseGeneratorPage() {
         }
     };
 
-    // AI Engine State
-    const engine = useRef<any>(null);
-    const [isEngineReady, setIsEngineReady] = useState(false);
-    const [engineProgress, setEngineProgress] = useState('');
 
-    // Preload WebLLM Engine
-    useEffect(() => {
-        const initEngine = async () => {
-            // Dynamic import to avoid SSR issues
-            const { CreateMLCEngine } = await import("@mlc-ai/web-llm");
-
-            // Using Llama 3.2 3B - Good balance of JSON capability and size (~2GB)
-            // 1B is too weak for complex schema.
-            const selectedModel = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
-
-            try {
-                setEngineProgress('Downloading AI Model (this happens once)...');
-                engine.current = await CreateMLCEngine(
-                    selectedModel,
-                    {
-                        initProgressCallback: (report) => {
-                            setEngineProgress(report.text);
-                        }
-                    }
-                );
-                setIsEngineReady(true);
-                setEngineProgress('AI Model Ready');
-            } catch (err) {
-                console.error("Failed to load WebLLM:", err);
-                setEngineProgress('Failed to load AI Model. Check connection.');
-            }
-        };
-        initEngine();
-    }, []);
 
     const startAnalysis = async () => {
-        if (!file || !isEngineReady || !engine.current) {
-            if (!isEngineReady) alert("Please wait for the AI Model to finish loading.");
+        if (!file) {
+            alert("Please upload a file first.");
             return;
         }
 
         setStep('analyzing');
         setAiProgress('Preparing Document...');
-        setAnalysisProgress(5);
+        setAnalysisProgress(10);
 
         try {
-            // Import Pipeline Tools
-            const { chunkPages, extractSectionsFromChunk, mergeSectionsToCourse } = await import('@/lib/ai-pipeline');
+            // Import only PDF parser for client side extraction
+            const { extractTextFromPDF } = await import('@/lib/pdf-parser');
+            const { saveTextbook, generateCourseFromTextbook } = await import('@/app/actions/gemini');
 
-            // 1. Robust PDF Extraction (Client Side)
-            let pages: { page: number, text: string }[] = [];
+            // 1. Extract Text (Client Side)
+            let fullText = "";
+            setAiProgress('Extracting text from document...');
+            setAnalysisProgress(10);
 
             if (file.type === 'application/pdf') {
-                const fullText = await extractTextFromPDF(file);
-                pages = [{ page: 1, text: fullText }];
+                fullText = await extractTextFromPDF(file);
             } else {
-                const text = await file.text();
-                pages = [{ page: 1, text: text }];
+                fullText = await file.text();
             }
 
-            // 2. Chunking
-            setAiProgress('Chunking Content...');
-            setAnalysisProgress(10);
-            const chunks = chunkPages(pages, 2000); // 2k chars nice and safe
-            console.log(`Created ${chunks.length} chunks.`);
+            if (!fullText || fullText.trim().length < 50) {
+                throw new Error("Could not extract enough text from this file.");
+            }
 
-            // 3. Pass 1: Extract Sections from Chunks
-            let allSections: any[] = [];
-            const progressPerChunk = 80 / chunks.length; // Allocate 80% (10-90) for this loop
+            // 2. Save to MongoDB (Stage 1)
+            setAiProgress('Saving textbook to database...');
+            setAnalysisProgress(15);
+            const saveResult = await saveTextbook(file.name, fullText, "teacher-123"); // Todo: Use actual user ID
 
-            for (let i = 0; i < chunks.length; i++) {
-                setAiProgress(`Analyzing Chunk ${i + 1}/${chunks.length} (Pass 1: Structuring)...`);
-                // Smooth updates
-                setAnalysisProgress(10 + (i * progressPerChunk));
+            if (!saveResult.success || !saveResult.id) {
+                throw new Error("Failed to save textbook to database.");
+            }
 
-                // Using WebLLM engine instance
-                const result = await extractSectionsFromChunk(chunks[i].text, engine.current);
-                if (result && result.sections) {
-                    allSections = [...allSections, ...result.sections];
+            const textbookId = saveResult.id;
+            console.log("Textbook saved with ID:", textbookId);
+
+            // 3. Generate from ID (Stage 2)
+            setAiProgress('Analyzing Textbook Content (This may take a few minutes for full extraction)...');
+            setAnalysisProgress(20);
+
+            // Simulating progress while waiting for server (slower for detailed extraction)
+            const progressInterval = setInterval(() => {
+                setAnalysisProgress(prev => Math.min(prev + 1, 95));
+            }, 2000);
+
+            try {
+                // Pass ID instead of full text
+                const result = await generateCourseFromTextbook(textbookId);
+                clearInterval(progressInterval);
+
+                if (result.success && result.data && result.data.modules) {
+                    setModules(result.data.modules);
+                    setAnalysisProgress(100);
+                    setStep('review');
+                } else {
+                    throw new Error(result.error || "Failed to generate valid course structure.");
                 }
-            }
-            setAnalysisProgress(90);
-
-            if (allSections.length === 0) {
-                throw new Error("Could not extract any valid content from the document.");
-            }
-
-            // 4. Pass 2: Merge into Course
-            setAiProgress('Merging into Final Course Structure (Pass 2: Organization)...');
-            setAnalysisProgress(95);
-            const courseStructure = await mergeSectionsToCourse(allSections, engine.current);
-
-            if (courseStructure && courseStructure.modules) {
-                setModules(courseStructure.modules);
-                setAnalysisProgress(100);
-                setStep('review');
-            } else {
-                throw new Error("Failed to merge content into a valid course.");
+            } catch (err: any) {
+                clearInterval(progressInterval);
+                throw err;
             }
 
         } catch (e: any) {
@@ -183,15 +155,17 @@ export default function CourseGeneratorPage() {
             const dbModules = modules.map((mod, idx) => ({
                 id: `mod-${Date.now()}-${idx}`,
                 title: mod.title,
-                duration: `${mod.topics.length * 10} min`, // Estimate
+                duration: `${mod.topics.length * 15} min`, // Estimate
                 lessons: mod.topics.map((topic, tIdx) => ({
                     id: `less-${Date.now()}-${tIdx}`,
                     title: topic.title,
                     type: 'text', // AI content is text/rich-text
-                    duration: '10 min',
+                    // FORCE TEXT ONLY as requested
+                    duration: '15 min',
                     // Serialize the rich content structure so the student view can JSON.parse it
                     content: JSON.stringify({
                         goal: topic.goal,
+                        pageRef: topic.pageRef, // Persist page reference
                         content: topic.content,
                         subtopics: topic.subtopics
                     })
@@ -253,36 +227,18 @@ export default function CourseGeneratorPage() {
                         {file && <p className="mt-4 text-lumina-primary font-mono">{file.name}</p>}
                     </div>
 
-                    {/* Model Loading Indicator */}
-                    {!isEngineReady && (
-                        <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl animate-in fade-in duration-500">
-                            <div className="flex items-center justify-center gap-3 mb-2">
-                                <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
-                                <span className="font-semibold text-blue-300">Initializing AI Model</span>
-                            </div>
-                            <p className="text-sm text-blue-200/80 mb-3">{engineProgress || 'Starting up...'}</p>
-
-                            {/* Simple Progress Bar visualization based on text content roughly */}
-                            <div className="h-1.5 w-full bg-blue-900/30 rounded-full overflow-hidden">
-                                <div className="h-full bg-blue-500/60 animate-pulse w-full origin-left scale-x-50"></div>
-                            </div>
-                            <p className="text-xs text-blue-400/60 mt-2">
-                                This runs entirely in your browser using WebGPU. First load may take a moment (~2GB).
-                            </p>
-                        </div>
-                    )}
-
-                    <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-left hidden">
-                        {/* API Key managed via server env */}
+                    {/* Simple Instructions */}
+                    <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl text-sm text-blue-200">
+                        <span className="font-bold">AI Course Generator</span>: Extracts content from your PDF and generates a full course structure.
                     </div>
 
                     <button
                         onClick={startAnalysis}
-                        disabled={!file || !isEngineReady}
-                        className="w-full py-4 bg-lumina-primary text-black font-bold rounded-xl hover:bg-lumina-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                        disabled={!file}
+                        className="w-full py-4 bg-lumina-primary text-black font-bold rounded-xl hover:bg-lumina-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 mt-6"
                     >
-                        {!isEngineReady ? 'Waiting for AI...' : 'Analyze Structure'}
-                        {isEngineReady && <ArrowRight className="w-5 h-5" />}
+                        Analyze Structure
+                        <ArrowRight className="w-5 h-5" />
                     </button>
                 </div>
             )}

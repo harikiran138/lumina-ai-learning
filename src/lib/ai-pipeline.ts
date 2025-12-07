@@ -53,7 +53,7 @@ export type PageText = {
 
 // --- Logic ---
 
-export function chunkPages(pages: PageText[], maxChars = 12000): { text: string, startPage: number, endPage: number }[] {
+export function chunkPages(pages: PageText[], maxChars = 20000): { text: string, startPage: number, endPage: number }[] {
     const chunks: { text: string, startPage: number, endPage: number }[] = [];
 
     // Flatten all text first since we might have one huge page
