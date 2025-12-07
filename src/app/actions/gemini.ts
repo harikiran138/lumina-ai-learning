@@ -70,9 +70,9 @@ export async function generateCourseStructure(content: string) {
         `;
 
         // Use generateText for a single response (equivalent to the previous behavior)
-        // We use gemini-1.5-flash for speed and large context window
+        // We use gemini-1.5-flash-001 for stability as the alias 'gemini-1.5-flash' sometimes 404s
         const { text } = await generateText({
-            model: google('gemini-1.5-flash'),
+            model: google('models/gemini-1.5-flash-001'),
             prompt: prompt,
         });
 
