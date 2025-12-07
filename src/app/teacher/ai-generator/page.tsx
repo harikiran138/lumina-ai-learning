@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
 import { extractTextFromPDF } from '@/lib/pdf-parser';
-import { CreateMLCEngine } from "@mlc-ai/web-llm";
 import {
     Upload,
     FileText,
@@ -17,10 +16,9 @@ import {
     Edit2,
     Trash2,
     Plus,
-    Sparkles
+    Sparkles,
+    Key
 } from 'lucide-react';
-
-const SELECTED_MODEL = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
 
 interface ContentBlock {
     type: 'paragraph' | 'list' | 'code' | 'warning' | 'tip';
@@ -47,8 +45,6 @@ interface Module {
 
 export default function CourseGeneratorPage() {
     // AI State
-    const engine = useRef<any>(null);
-    const [isEngineReady, setIsEngineReady] = useState(false);
     const [aiProgress, setAiProgress] = useState('');
 
     // Flow State
@@ -58,29 +54,15 @@ export default function CourseGeneratorPage() {
     const [courseDescription, setCourseDescription] = useState('');
     const [modules, setModules] = useState<Module[]>([]);
     const [creationProgress, setCreationProgress] = useState(0);
+    const [apiKey, setApiKey] = useState('AIzaSyDQjD7ak6PO6PNFVFMF-jziQizRx3qG70g'); // Default from request
 
     // API State
     const [savingStatus, setSavingStatus] = useState('');
     const [createdCourseId, setCreatedCourseId] = useState<string | null>(null);
 
-    // Init Engine
-    useEffect(() => {
-        const init = async () => {
-            if (engine.current) return;
-            try {
-                setAiProgress('Loading AI Model (~600MB)...');
-                engine.current = await CreateMLCEngine(SELECTED_MODEL, {
-                    initProgressCallback: (report) => setAiProgress(report.text)
-                });
-                setIsEngineReady(true);
-                setAiProgress('AI Ready');
-            } catch (e) {
-                console.error(e);
-                setAiProgress('Failed to load AI');
-            }
-        };
-        init();
-    }, []);
+    // Dynamic Import wrapper for server action interaction if needed, but direct import is fine for updated Next.js
+    // We import generateCourseStructure from '@/app/actions/gemini' at top level if not "use server" conflict
+    // But since this is client component, we rely on the import we will add.
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) {
@@ -90,9 +72,9 @@ export default function CourseGeneratorPage() {
     };
 
     const startAnalysis = async () => {
-        if (!file || !isEngineReady) return;
+        if (!file) return;
         setStep('analyzing');
-        setAiProgress('Reading PDF...');
+        setAiProgress('Reading Document...');
 
         try {
             // 1. Extract Text
@@ -103,107 +85,23 @@ export default function CourseGeneratorPage() {
                 text = await file.text();
             }
 
-            // Truncate to avoid overflow (Llama 1B context is small ~4k-8k usually, safest to keep < 6000 chars of input)
-            // We focus on the beginning which usually has the TOC
-            const truncatedText = text.substring(0, 15000);
+            setAiProgress('Consulting Gemini AI Architect...');
 
-            // 2. Generate Structure (Streaming)
-            setAiProgress('AI Architecting Course & Content...');
+            // Dynamic import to avoid build issues if mixed envs
+            const { generateCourseStructure } = await import('@/app/actions/gemini');
+            const result = await generateCourseStructure(apiKey, text);
 
-            const prompt = `
-            You are a Curriculum Architect. 
-            Analyze the provided text.
-            Create a detailed, 5-layer course structure (Course > Module > Topic > Subtopic > Content).
-            
-            Output strictly VALID JSON in the following format:
-            {
-                "modules": [
-                    {
-                        "title": "Module Title",
-                        "summary": "Short summary of module",
-                        "topics": [
-                            {
-                                "title": "Topic Title",
-                                "goal": "Student learning outcome",
-                                "content": [
-                                    { "type": "paragraph", "content": "Main explanation..." },
-                                    { "type": "list", "content": "- Key point 1\\n- Key point 2" }
-                                ],
-                                "subtopics": [
-                                    {
-                                        "title": "Subtopic Title",
-                                        "content": [
-                                            { "type": "code", "content": "console.log('example')" },
-                                            { "type": "tip", "content": "Remember this!" }
-                                        ]
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ]
+            if (result.success && result.data && result.data.modules) {
+                setModules(result.data.modules);
+                setStep('review');
+            } else {
+                throw new Error(result.error || "Failed to generate valid structure");
             }
-
-            IMPORTANT:
-            - Create at least 3 Modules.
-            - Each Module must have at least 2 Topics.
-            - Use "subtopics" for complex concepts, otherwise keep them empty.
-            - "type" can be: paragraph, list, code, tip, warning.
-            - Do NOT add markdown code blocks (like \`\`\`json). Just return the raw JSON string.
-            
-            TEXT TO ANALYZE:
-            ${truncatedText}
-            `;
-
-            const chunks = await engine.current.chat.completions.create({
-                messages: [{ role: 'user', content: prompt }],
-                stream: true
-            });
-
-            let fullContent = "";
-            let chunkCount = 0;
-
-            for await (const chunk of chunks) {
-                const delta = chunk.choices[0]?.delta?.content || "";
-                fullContent += delta;
-                chunkCount++;
-                if (chunkCount % 5 === 0) {
-                    setAiProgress(`Generating Structure... (${fullContent.length} chars)`);
-                }
-            }
-
-            parseAIOutput(fullContent);
-            setStep('review');
 
         } catch (e: any) {
             console.error(e);
             alert("Analysis failed: " + e.message);
             setStep('upload');
-        }
-    };
-
-    const parseAIOutput = (text: string) => {
-        try {
-            // Clean up potentially messy output
-            let cleanerText = text.trim();
-            // Remove markdown code blocks if present despite instructions
-            if (cleanerText.startsWith('```json')) cleanerText = cleanerText.replace('```json', '').replace('```', '');
-            if (cleanerText.startsWith('```')) cleanerText = cleanerText.replace('```', '').replace('```', '');
-
-            const parsed = JSON.parse(cleanerText);
-
-            if (parsed.modules && Array.isArray(parsed.modules)) {
-                setModules(parsed.modules);
-            } else {
-                throw new Error("Invalid schema");
-            }
-        } catch (e) {
-            console.error("JSON Parse Error", e);
-            // Fallback: If partial JSON, we might be out of luck with streaming unless we use a robust parser.
-            // For now, let's assume valid JSON or fail gracefully.
-            // setModules([]); // Keep existing if fail
-            // Actually, for streaming, JSON is hard. We might need to wait for full completion or use a stream parser.
-            // Given the complexity, simple JSON.parse at the END (not streaming parse) is safest.
         }
     };
 
@@ -313,18 +211,24 @@ export default function CourseGeneratorPage() {
 
                     <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-left">
                         <div className="flex items-center gap-2 text-blue-300 mb-2">
-                            <Loader2 className={`w - 4 h - 4 ${!isEngineReady ? 'animate-spin' : ''} `} />
-                            <span className="font-semibold text-sm">AI Engine Status</span>
+                            <Key className="w-4 h-4" />
+                            <span className="font-semibold text-sm">Gemini API Key</span>
                         </div>
-                        <p className="text-blue-200/60 text-xs">{aiProgress}</p>
+                        <input
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-lumina-primary"
+                            placeholder="Paste your Google Gemini API Key here..."
+                        />
+                        <p className="text-blue-200/60 text-[10px] mt-2">Using "gemini-1.5-flash" for fast, long-context analysis.</p>
                     </div>
 
                     <button
                         onClick={startAnalysis}
-                        disabled={!file || !isEngineReady}
+                        disabled={!file || !apiKey}
                         className="w-full py-4 bg-lumina-primary text-black font-bold rounded-xl hover:bg-lumina-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                     >
-                        {isEngineReady ? 'Analyze Structure' : 'Waiting for AI...'}
+                        Analyze Structure
                         <ArrowRight className="w-5 h-5" />
                     </button>
                 </div>
