@@ -36,6 +36,38 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
     const [quizSubmitted, setQuizSubmitted] = useState(false);
     const [quizScore, setQuizScore] = useState(0);
     const [showAIHelp, setShowAIHelp] = useState(false); // AI Modal State
+    const [aiChatInput, setAiChatInput] = useState('');
+    const [aiChatHistory, setAiChatHistory] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
+    const [aiIsTyping, setAiIsTyping] = useState(false);
+
+    const handleSendAIQuestion = async () => {
+        if (!aiChatInput.trim()) return;
+
+        const userMsg = aiChatInput;
+        setAiChatInput('');
+        setAiChatHistory(prev => [...prev, { role: 'user', content: userMsg }]);
+        setAiIsTyping(true);
+
+        try {
+            // Construct context from active lesson
+            const context = activeLesson ? `Context: You are an AI tutor helping a student with the lesson "${activeLesson.title}". Content: ${activeLesson.content || activeLesson.description || "No text content available."}` : "You are a helpful tutor.";
+
+            const messages = [
+                { role: 'system', content: context },
+                ...aiChatHistory.map(m => ({ role: m.role, content: m.content })),
+                { role: 'user', content: userMsg }
+            ];
+
+            const response = await api.chatWithAI(messages); // Assuming this returns string or { content: string }
+            const aiText = typeof response === 'string' ? response : response.content || "I couldn't understand that.";
+
+            setAiChatHistory(prev => [...prev, { role: 'assistant', content: aiText }]);
+        } catch (e) {
+            setAiChatHistory(prev => [...prev, { role: 'assistant', content: "Sorry, I'm having trouble connecting to my brain right now." }]);
+        } finally {
+            setAiIsTyping(false);
+        }
+    };
 
     useEffect(() => {
         const fetchCourse = async () => {
@@ -316,21 +348,33 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
                                     <div className="bg-white/5 p-3 rounded-xl rounded-tl-none">
                                         <p className="text-gray-300">Hi! I'm your AI tutor for this lesson. I have context about "{activeLesson?.title}". What's confusing you?</p>
                                     </div>
-                                    {/* Chat History would map here */}
-                                    <div className="bg-lumina-primary/10 p-3 rounded-xl rounded-tr-none ml-auto max-w-[80%] border border-lumina-primary/20">
-                                        <p className="text-white">Can you explain standard deviation again?</p>
-                                    </div>
-                                    <div className="bg-white/5 p-3 rounded-xl rounded-tl-none">
-                                        <p className="text-gray-300">Sure! In the context of this lesson's data set, standard deviation measures how spread out the numbers are...</p>
-                                    </div>
+
+                                    {aiChatHistory.map((msg, idx) => (
+                                        <div key={idx} className={`${msg.role === 'user' ? 'bg-lumina-primary/10 ml-auto border-lumina-primary/20 rounded-tr-none' : 'bg-white/5 rounded-tl-none'} p-3 rounded-xl max-w-[80%] border ${msg.role === 'user' ? 'border' : 'border-transparent'}`}>
+                                            <p className={msg.role === 'user' ? 'text-white' : 'text-gray-300'}>{msg.content}</p>
+                                        </div>
+                                    ))}
+
+                                    {aiIsTyping && (
+                                        <div className="bg-white/5 p-3 rounded-xl rounded-tl-none w-fit">
+                                            <span className="animate-pulse text-gray-400">Thinking...</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="p-4 border-t border-white/10 bg-white/5 rounded-b-2xl">
                                     <div className="flex gap-2">
                                         <input
+                                            value={aiChatInput}
+                                            onChange={(e) => setAiChatInput(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleSendAIQuestion()}
                                             placeholder="Ask a question..."
                                             className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-lumina-primary/50"
                                         />
-                                        <button className="p-2 bg-lumina-primary text-black rounded-xl hover:bg-lumina-primary/80 transition-colors">
+                                        <button
+                                            onClick={handleSendAIQuestion}
+                                            disabled={aiIsTyping || !aiChatInput.trim()}
+                                            className="p-2 bg-lumina-primary text-black rounded-xl hover:bg-lumina-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                                         </button>
                                     </div>
