@@ -26,6 +26,7 @@
     "parcel": "^2.16.1"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.44",
     "@google/generative-ai": "^0.24.1",
     "@mlc-ai/web-llm": "^0.2.80",
     "@tailwindcss/postcss": "^4.1.17",
@@ -35,6 +36,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^10.0.0",
     "@vercel/functions": "^3.3.4",
+    "ai": "^5.0.108",
     "autoprefixer": "^10.4.22",
     "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
