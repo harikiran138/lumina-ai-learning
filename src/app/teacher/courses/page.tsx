@@ -94,11 +94,11 @@ export default function TeacherCourses() {
                                     <Users className="w-4 h-4 text-amber-500" />
                                     <span>{course.students} Students</span>
                                 </div>
-                                <span className={`px-2 py-1 rounded text-xs font-medium ${course.status === 'Active'
-                                    ? 'bg-green-500/10 text-green-400'
-                                    : 'bg-gray-500/10 text-gray-400'
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${course.status === 'published' || course.status === 'Active'
+                                        ? 'bg-green-500/10 text-green-400'
+                                        : 'bg-yellow-500/10 text-yellow-400'
                                     }`}>
-                                    {course.status}
+                                    {course.status === 'Active' ? 'Published' : (course.status?.charAt(0).toUpperCase() + course.status?.slice(1) || 'Draft')}
                                 </span>
                             </div>
                         </div>
