@@ -53,7 +53,7 @@ export type PageText = {
 
 // --- Logic ---
 
-export function chunkPages(pages: PageText[], maxChars = 12000): { text: string, startPage: number, endPage: number }[] {
+export function chunkPages(pages: PageText[], maxChars = 50000): { text: string, startPage: number, endPage: number }[] {
     const chunks = [];
     let currentText = "";
     let startPage = pages[0]?.page || 1;
@@ -62,6 +62,7 @@ export function chunkPages(pages: PageText[], maxChars = 12000): { text: string,
     for (const p of pages) {
         const labeled = `\n=== PAGE ${p.page} ===\n${p.text}\n`;
 
+        // If single page is huge, we might still chunk, but with 50k limit it's unlikely for normal books
         if (currentText.length + labeled.length > maxChars && currentText.length > 0) {
             chunks.push({
                 text: currentText,
@@ -94,16 +95,32 @@ async function callWebLLM(engine: MLCEngineInterface, prompt: string): Promise<a
             messages: [
                 { role: "user", content: prompt }
             ],
-            stream: false,
-            // Enforce strict JSON mode if model supports it, but simple prompt engineering is often enough for base models
-            response_format: { type: "json_object" }
+            stream: false
+            // Removed strict response_format as it can confuse smaller quantized models
         });
 
         const content = reply.choices[0].message.content || "{}";
 
-        // Clean JSON
-        let cleanJson = content.replace(/```json/g, '').replace(/```/g, '');
-        return JSON.parse(cleanJson);
+        // Robust JSON Extraction
+        // Find the first '{' and the last '}'
+        const firstBrace = content.indexOf('{');
+        const lastBrace = content.lastIndexOf('}');
+
+        if (firstBrace === -1 || lastBrace === -1) {
+            console.warn("No JSON braces found in AI response:", content.substring(0, 100));
+            return {};
+        }
+
+        const jsonString = content.substring(firstBrace, lastBrace + 1);
+
+        try {
+            return JSON.parse(jsonString);
+        } catch (parseError) {
+            console.error("JSON Parse Error:", parseError);
+            // Attempt to clean common markdown issues inside the block?
+            // For now, return empty or retry
+            return {};
+        }
 
     } catch (e: any) {
         console.error("WebLLM Call Failed", e);
@@ -115,23 +132,20 @@ async function callWebLLM(engine: MLCEngineInterface, prompt: string): Promise<a
 export async function extractSectionsFromChunk(chunkText: string, engine: MLCEngineInterface): Promise<any> {
     const prompt = `
 You are a Course Content Extractor.
-Extract valid educational sections from the text below.
+Analyize the text and extract the educational topics.
 
-Output JSON format:
+Output JSON only:
 {
   "sections": [
     {
-      "title": "Section Title",
-      "summary": "Brief summary",
+      "title": "Exact Section Title",
+      "summary": "One sentence summary",
       "subsections": [
         {
           "title": "Subsection Title",
           "contentBlocks": [
-            { "type": "paragraph", "data": "content..." },
-            { "type": "list", "data": "- item 1\\n- item 2" },
-            { "type": "code", "data": "code snippet" },
-            { "type": "tip", "data": "tip text" },
-             { "type": "warning", "data": "warning text" }
+            { "type": "paragraph", "data": "Main content text..." },
+            { "type": "list", "data": "- Point 1\\n- Point 2" }
           ]
         }
       ]
@@ -139,18 +153,27 @@ Output JSON format:
   ]
 }
 
-Only extract meaningful content.
 TEXT:
 ${chunkText}
 `;
     // Retry logic basic
     try {
         const result = await callWebLLM(engine, prompt);
-        return SectionSchema.parse(result);
+
+        // Validation attempt
+        const parsed = SectionSchema.safeParse(result);
+        if (parsed.success) {
+            return parsed.data;
+        } else {
+            console.warn("Schema validation failed, but using partial data:", parsed.error);
+            // Identify if 'sections' exists at least
+            if (result && Array.isArray(result.sections)) {
+                return result; // Return unvalidated shape if it looks okay-ish
+            }
+            return { sections: [] };
+        }
     } catch (e) {
-        console.warn("Chunk extraction failed validation, retrying once...");
-        // Simple retry could go here, or just fail to let UI handle "partial" data
-        // For now, return empty section to avoid crashing pipeline
+        console.warn("Chunk extraction failed completely:", e);
         return { sections: [] };
     }
 }
