@@ -4,19 +4,22 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
  * Generates a structured course from the provided content using Google Gemini.
- * @param apiKey The Google Gemini API Key.
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDQjD7ak6PO6PNFVFMF-jziQizRx3qG70g';
+
+/**
+ * Generates a structured course from the provided content using Google Gemini.
  * @param content The text content (from PDF or textbook) to analyze.
  * @returns The parsed JSON structure of the course.
  */
-export async function generateCourseStructure(apiKey: string, content: string) {
-    if (!apiKey) {
+export async function generateCourseStructure(content: string) {
+    if (!GEMINI_API_KEY) {
         throw new Error("API Key is required");
     }
 
     try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        // Use flash model for speed and cost efficiency, or pro for better reasoning
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { responseMimeType: "application/json" } });
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        // Using gemini-1.5-flash-001 for stability with v1beta
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001", generationConfig: { responseMimeType: "application/json" } });
 
         const prompt = `
         You are an expert Curriculum Architect and Instructional Designer.
