@@ -247,6 +247,34 @@ class RealAPI {
         return await addLesson(user.email, courseId, moduleId, title, content, type);
     }
 
+    async deleteCourse(courseId: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { deleteCourse } = await import('@/app/actions/data');
+        return await deleteCourse(user.email, courseId);
+    }
+
+    async deleteModule(courseId: string, moduleId: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { deleteModule } = await import('@/app/actions/data');
+        return await deleteModule(user.email, courseId, moduleId);
+    }
+
+    async deleteLesson(courseId: string, moduleId: string, lessonId: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { deleteLesson } = await import('@/app/actions/data');
+        return await deleteLesson(user.email, courseId, moduleId, lessonId);
+    }
+
+    async updateCourseDetails(courseId: string, updates: any): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+        const { updateCourseDetails } = await import('@/app/actions/data');
+        return await updateCourseDetails(user.email, courseId, updates);
+    }
+
     async logout(): Promise<void> {
         this.currentUser = null;
         if (typeof window !== 'undefined') {

@@ -119,6 +119,34 @@ export default function CourseManagementPage() {
         }
     };
 
+    const handleDeleteModule = async (moduleId: string) => {
+        if (!confirm("Are you sure? This will delete all lessons in this module.")) return;
+
+        const res = await api.deleteModule(courseId, moduleId);
+        if (res.success) {
+            const updated = await api.getCourseDetails(courseId);
+            setCourse(updated);
+        }
+    };
+
+    const handleDeleteLesson = async (moduleId: string, lessonId: string) => {
+        if (!confirm("Delete this lesson?")) return;
+
+        const res = await api.deleteLesson(courseId, moduleId, lessonId);
+        if (res.success) {
+            const updated = await api.getCourseDetails(courseId);
+            setCourse(updated);
+        }
+    };
+
+    const handleUpdateTitle = async () => {
+        const newTitle = prompt("Enter new course name:", course.name);
+        if (newTitle && newTitle !== course.name) {
+            await api.updateCourseDetails(courseId, { name: newTitle });
+            setCourse({ ...course, name: newTitle });
+        }
+    };
+
     const toggleModule = (moduleId: string) => {
         if (expandingModuleId === moduleId) {
             setExpandingModuleId(null);
@@ -146,8 +174,9 @@ export default function CourseManagementPage() {
                     <ArrowLeft className="w-6 h-6" />
                 </button>
                 <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-white flex items-center gap-2 group cursor-pointer" onClick={handleUpdateTitle}>
                         {course.name}
+                        <Settings className="w-4 h-4 opacity-0 group-hover:opacity-100 text-gray-400" />
                         <span className="px-2 py-0.5 rounded text-xs bg-green-500/20 text-green-400 border border-green-500/20">Active</span>
                     </h1>
                     <p className="text-gray-400 text-sm">Manage course content and students</p>
@@ -226,6 +255,12 @@ export default function CourseManagementPage() {
                                                 >
                                                     <Plus className="w-4 h-4" />
                                                 </button>
+                                                <button
+                                                    className="p-1 hover:bg-red-500/10 rounded text-gray-400 hover:text-red-400"
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteModule(module.id); }}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                             </div>
                                         </div>
 
@@ -240,7 +275,12 @@ export default function CourseManagementPage() {
                                                         </div>
                                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <span className="text-xs text-gray-500">{lesson.duration || '10 min'}</span>
-                                                            <button className="text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
+                                                            <button
+                                                                className="text-red-400 hover:text-red-300"
+                                                                onClick={() => handleDeleteLesson(module.id, lesson.id)}
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 ))}
