@@ -49,15 +49,11 @@ export async function saveTextbook(title: string, content: string, userId?: stri
  * Stage 2: Generate course from stored textbook (AI)
  * Fetches text from DB -> Chunks -> AI -> Course
  */
-export async function generateCourseFromTextbook(textbookId: string) {
-    // Check configuration lazily
-    const groqProvider = createGroqClient();
-    if (!groqProvider) {
-        throw new Error("API Key is required");
-    }
-
+/**
+ * Fetch the raw content of a textbook from MongoDB
+ */
+export async function getTextbookContent(textbookId: string) {
     try {
-        // 1. Fetch Text from DB
         const client = await clientPromise;
         const db = client.db("lumina-database");
         const textbook = await db.collection("textbooks").findOne({
@@ -65,33 +61,29 @@ export async function generateCourseFromTextbook(textbookId: string) {
         });
 
         if (!textbook || !textbook.content) {
-            throw new Error("Textbook not found or empty");
+            return { success: false, error: "Textbook not found" };
         }
 
-        const fullText = textbook.content;
-        console.log(`Fetched textbook "${textbook.title}" (${fullText.length} chars)`);
+        return { success: true, content: textbook.content, title: textbook.title };
+    } catch (error: any) {
+        console.error("Get Textbook Error:", error);
+        return { success: false, error: error.message };
+    }
+}
 
-        // 2. Chunking Strategy with Overlap (To prevent data loss at boundaries)
-        const CHUNK_SIZE = 12000;
-        const OVERLAP = 1000; // Overlap to ensure no sentence is cut off
-        const chunks = [];
+/**
+ * Process a SINGLE chunk of text with AI.
+ * Called repeatedly by the client to avoid server timeouts.
+ */
+export async function generateCourseChunk(chunkText: string, chunkIndex: number, totalChunks: number) {
+    // Check configuration lazily
+    const groqProvider = createGroqClient();
+    if (!groqProvider) {
+        throw new Error("API Key is required");
+    }
 
-        let start = 0;
-        while (start < fullText.length) {
-            const end = Math.min(start + CHUNK_SIZE, fullText.length);
-            chunks.push(fullText.substring(start, end));
-            // Move forward by chunk size minus overlap
-            start += (CHUNK_SIZE - OVERLAP);
-        }
-
-        console.log(`Split text into ${chunks.length} chunks (with overlap).`);
-        let allModules: any[] = [];
-
-        // 3. Sequential Processing
-        for (let i = 0; i < chunks.length; i++) {
-            console.log(`Processing Chunk ${i + 1}/${chunks.length}...`);
-
-            const chunkPrompt = `
+    try {
+        const chunkPrompt = `
             You are a strict Data Structuring AI.
             Your ONLY job is to take the provided text and format it into a structured JSON.
             
@@ -125,50 +117,30 @@ export async function generateCourseFromTextbook(textbookId: string) {
                 ]
             }
 
-            TEXT TO STRUCTURE (PART ${i + 1}):
-            ${chunks[i]}
+            TEXT TO STRUCTURE (PART ${chunkIndex + 1} of ${totalChunks}):
+            ${chunkText}
             `;
 
-            try {
-                // Get Client
-                const groqProvider = createGroqClient();
-                if (!groqProvider) throw new Error("Server Misconfiguration: GROQ_API_KEY missing");
+        const { text } = await generateText({
+            model: groqProvider('llama-3.1-8b-instant'),
+            prompt: chunkPrompt,
+            temperature: 0.1,
+        });
 
-                // Call Groq
-                const { text } = await generateText({
-                    model: groqProvider('llama-3.1-8b-instant'),
-                    prompt: chunkPrompt,
-                    temperature: 0.1, // Near zero for exact reproduction
-                });
-
-                // Parse
-                let jsonStr = text;
-                if (jsonStr.includes("```json")) {
-                    jsonStr = jsonStr.split("```json")[1].split("```")[0];
-                } else if (jsonStr.includes("```")) {
-                    jsonStr = jsonStr.split("```")[1].split("```")[0];
-                }
-                const data = JSON.parse(jsonStr.trim());
-
-                if (data.modules) {
-                    allModules = [...allModules, ...data.modules];
-                }
-
-            } catch (err) {
-                console.error(`Error processing chunk ${i} (Data skipped):`, err);
-            }
-
-            // Rate Limit Wait
-            if (i < chunks.length - 1) {
-                console.log("Waiting 20s for Rate Limit cooldown...");
-                await delay(20000);
-            }
+        // Parse JSON safely
+        let jsonStr = text;
+        if (jsonStr.includes("```json")) {
+            jsonStr = jsonStr.split("```json")[1].split("```")[0];
+        } else if (jsonStr.includes("```")) {
+            jsonStr = jsonStr.split("```")[1].split("```")[0];
         }
 
-        return { success: true, data: { modules: allModules } };
+        const data = JSON.parse(jsonStr.trim());
+        return { success: true, modules: data.modules || [] };
 
     } catch (error: any) {
-        console.error("Groq Full Course Error:", error);
-        return { success: false, error: error.message };
+        console.error(`Error processing chunk ${chunkIndex}:`, error);
+        // Return empty modules on specific error so we don't break the whole chain
+        return { success: false, modules: [], error: error.message };
     }
 }

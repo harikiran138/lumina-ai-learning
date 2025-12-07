@@ -84,7 +84,7 @@ export default function CourseGeneratorPage() {
         try {
             // Import only PDF parser for client side extraction
             const { extractTextFromPDF } = await import('@/lib/pdf-parser');
-            const { saveTextbook, generateCourseFromTextbook } = await import('@/app/actions/gemini');
+            const { saveTextbook, getTextbookContent, generateCourseChunk } = await import('@/app/actions/gemini');
 
             // 1. Extract Text (Client Side)
             let fullText = "";
@@ -104,39 +104,63 @@ export default function CourseGeneratorPage() {
             // 2. Save to MongoDB (Stage 1)
             setAiProgress('Saving textbook to database...');
             setAnalysisProgress(15);
-            const saveResult = await saveTextbook(file.name, fullText, "teacher-123"); // Todo: Use actual user ID
+            const saveResult = await saveTextbook(file.name, fullText, "teacher-123");
 
             if (!saveResult.success || !saveResult.id) {
                 throw new Error("Failed to save textbook to database.");
             }
-
             const textbookId = saveResult.id;
-            console.log("Textbook saved with ID:", textbookId);
 
-            // 3. Generate from ID (Stage 2)
-            setAiProgress('Analyzing Textbook Content (This may take a few minutes for full extraction)...');
-            setAnalysisProgress(20);
+            // 3. Fetch data back (verification) & Client Side Orchestration (Stage 2)
+            const contentResult = await getTextbookContent(textbookId);
+            if (!contentResult.success || !contentResult.content) {
+                throw new Error("Failed to retrieve textbook content.");
+            }
+            const processText = contentResult.content;
 
-            // Simulating progress while waiting for server (slower for detailed extraction)
-            const progressInterval = setInterval(() => {
-                setAnalysisProgress(prev => Math.min(prev + 1, 95));
-            }, 2000);
+            // CLIENT SIDE CHUNKING (Prevents Vercel Timeouts)
+            const CHUNK_SIZE = 12000;
+            const OVERLAP = 1000;
+            const chunks: string[] = [];
+            let start = 0;
+            while (start < processText.length) {
+                const end = Math.min(start + CHUNK_SIZE, processText.length);
+                chunks.push(processText.substring(start, end));
+                start += (CHUNK_SIZE - OVERLAP);
+            }
 
-            try {
-                // Pass ID instead of full text
-                const result = await generateCourseFromTextbook(textbookId);
-                clearInterval(progressInterval);
+            let allModules: Module[] = [];
 
-                if (result.success && result.data && result.data.modules) {
-                    setModules(result.data.modules);
-                    setAnalysisProgress(100);
-                    setStep('review');
-                } else {
-                    throw new Error(result.error || "Failed to generate valid course structure.");
+            // Loop through chunks
+            for (let i = 0; i < chunks.length; i++) {
+                setAiProgress(`Analyzing Chunk ${i + 1} of ${chunks.length}... (Please wait)`);
+                // Calculate progress: 20% -> 90% based on chunks
+                const chunkProgress = 20 + ((i / chunks.length) * 70);
+                setAnalysisProgress(chunkProgress);
+
+                try {
+                    const response = await generateCourseChunk(chunks[i], i, chunks.length);
+                    if (response.success && response.modules) {
+                        allModules = [...allModules, ...response.modules];
+                    }
+                } catch (err) {
+                    console.error(`Error on chunk ${i}:`, err);
+                    // Continue to next chunk
                 }
-            } catch (err: any) {
-                clearInterval(progressInterval);
-                throw err;
+
+                // Wait 20s if not the last chunk (Client Side Delay)
+                if (i < chunks.length - 1) {
+                    setAiProgress(`Cooling down... (Rate Limit Safety: ${i + 1}/${chunks.length})`);
+                    await new Promise(resolve => setTimeout(resolve, 20000));
+                }
+            }
+
+            if (allModules.length > 0) {
+                setModules(allModules);
+                setAnalysisProgress(100);
+                setStep('review');
+            } else {
+                throw new Error("No modules were generated. Check API limits or text content.");
             }
 
         } catch (e: any) {
