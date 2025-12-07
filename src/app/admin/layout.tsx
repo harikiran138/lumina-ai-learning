@@ -3,6 +3,7 @@
 
 import AdminSidebar from '@/components/dashboard/AdminSidebar';
 import TopNav from '@/components/dashboard/TopNav';
+import { BGPattern } from '@/components/ui/BGPattern';
 import { useState } from 'react';
 
 export default function AdminLayout({
@@ -13,7 +14,14 @@ export default function AdminLayout({
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-black">
+        <div className="min-h-screen relative overflow-hidden bg-white dark:bg-black text-gray-900 dark:text-gray-100">
+            <BGPattern
+                variant="grid"
+                size={32}
+                fill="rgba(100, 100, 100, 0.1)"
+                className="fixed inset-0 z-0 pointer-events-none"
+            />
+
             <AdminSidebar />
             <TopNav
                 onMenuClick={() => setSidebarOpen(!sidebarOpen)}

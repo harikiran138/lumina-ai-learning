@@ -189,6 +189,9 @@ export default function AITutorPage() {
 
             await api.saveChatMessage({ sender: 'AI Tutor', text: aiText, sessionId: currentSessionId });
 
+            // Log interaction for Admin Audit
+            await api.logAIInteraction(userMsg.text, aiMsg.text);
+
         } catch (error) {
             console.error('AI Error:', error);
             const errorMsg = { sender: 'AI Tutor', text: "I'm having trouble thinking right now.", timestamp: new Date() };
