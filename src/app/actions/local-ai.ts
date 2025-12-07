@@ -13,24 +13,20 @@ interface LocalAIResponse {
 }
 
 /**
- * Uploads a file and processes it via local Python + Ollama script.
+ * Receives extracted text and processes it via local Python + Ollama script.
  */
-export async function processFileWithLocalAI(formData: FormData): Promise<LocalAIResponse> {
-    const file = formData.get('file') as File;
-    if (!file) {
-        return { success: false, error: 'No file provided' };
+export async function processFileWithLocalAI(text: string): Promise<LocalAIResponse> {
+    if (!text) {
+        return { success: false, error: 'No text content provided' };
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Save to temp directory
-    const tempFileName = `${uuidv4()}-${file.name}`;
+    // Save to temp directory as .txt
+    const tempFileName = `${uuidv4()}.txt`;
     const tempFilePath = join(tmpdir(), tempFileName);
 
     try {
-        await writeFile(tempFilePath, buffer);
-        console.log(`File saved to ${tempFilePath}, starting Python processing...`);
+        await writeFile(tempFilePath, text);
+        console.log(`Text content saved to ${tempFilePath}, starting Python processing...`);
 
         // Spawn Python process
         // Ensure "python3" matches the environment (or "python" on Windows)
