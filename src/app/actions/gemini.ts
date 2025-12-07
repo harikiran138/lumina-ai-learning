@@ -69,10 +69,10 @@ export async function generateCourseStructure(content: string) {
         ${content.substring(0, 30000)}
         `;
 
-        // Use generateText for a single response (equivalent to the previous behavior)
-        // We use gemini-1.5-flash-001 for stability as the alias 'gemini-1.5-flash' sometimes 404s
+        // Use generateText for a single response
+        // Using 'models/gemini-3-pro-preview' as it is explicitly available for this key
         const { text } = await generateText({
-            model: google('models/gemini-1.5-flash-001'),
+            model: google('models/gemini-3-pro-preview'),
             prompt: prompt,
         });
 
