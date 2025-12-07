@@ -73,16 +73,24 @@ export default function CourseGeneratorPage() {
     const startAnalysis = async () => {
         if (!file) return;
         setStep('analyzing');
-        setAiProgress('Uploading and Processing with Local Ollama...');
+        setAiProgress('Reading Document (Client-Side)...');
 
         try {
-            const formData = new FormData();
-            formData.append('file', file);
+            // 1. Extract Text Client-Side to avoid large upload limits
+            let text = '';
+            if (file.type === 'application/pdf') {
+                text = await extractTextFromPDF(file);
+            } else {
+                text = await file.text();
+            }
+
+            setAiProgress('Processing with Local Ollama (this may take a minute)...');
 
             // Dynamic import to call server action
             const { processFileWithLocalAI } = await import('@/app/actions/local-ai');
 
-            const result = await processFileWithLocalAI(formData);
+            // Send text content, not the file
+            const result = await processFileWithLocalAI(text);
 
             if (result.success && result.data && result.data.modules) {
                 setModules(result.data.modules);

@@ -52,15 +52,24 @@ RULES:
 TEXT CONTENT:
 """
 
-def extract_text(pdf_path):
+def extract_text(file_path):
     text = ""
     try:
-        with pdfplumber.open(pdf_path) as pdf:
-            for page in pdf.pages:
-                text += page.extract_text() + "\n"
+        if file_path.endswith('.txt'):
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                text = f.read()
+        else:
+            with pdfplumber.open(file_path) as pdf:
+                for page in pdf.pages:
+                    text += page.extract_text() + "\n"
     except Exception as e:
-        print(json.dumps({"error": f"Failed to extract text: {str(e)}"}))
-        sys.exit(1)
+        # Fallback: try reading as plain text if PDF fails or if extension is weird
+        try:
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                text = f.read()
+        except:
+            print(json.dumps({"error": f"Failed to extract text: {str(e)}"}))
+            sys.exit(1)
     return text
 
 def chunk_text(text, chunk_size=15000):
