@@ -338,6 +338,57 @@ class RealAPI {
         const { chatWithAI } = await import('@/app/actions/ai');
         return await chatWithAI(messages);
     }
+
+    // --- Admin API Methods ---
+
+    async getAllUsers(): Promise<any[]> {
+        const user = await this.getCurrentUser();
+        if (!user || user.role !== 'admin') return [];
+        const { getAllUsers } = await import('@/app/actions/data');
+        return await getAllUsers();
+    }
+
+    async getAllCoursesAdmin(): Promise<any[]> {
+        const user = await this.getCurrentUser();
+        if (!user || user.role !== 'admin') return [];
+        const { getAllCoursesAdmin } = await import('@/app/actions/data');
+        return await getAllCoursesAdmin();
+    }
+
+    async getAllChatLogs(): Promise<any[]> {
+        const user = await this.getCurrentUser();
+        if (!user || user.role !== 'admin') return [];
+        const { getAllChatLogsAdmin } = await import('@/app/actions/data');
+        return await getAllChatLogsAdmin();
+    }
+
+    async getAllAILogs(): Promise<any[]> {
+        const user = await this.getCurrentUser();
+        if (!user || user.role !== 'admin') return [];
+        const { getAllAILogsAdmin } = await import('@/app/actions/data');
+        return await getAllAILogsAdmin();
+    }
+
+    async updateUserStatus(userId: string, status: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user || user.role !== 'admin') return { success: false };
+        const { updateUserStatus } = await import('@/app/actions/data');
+        return await updateUserStatus(user.email, userId, status);
+    }
+
+    async updateUserRole(userId: string, role: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user || user.role !== 'admin') return { success: false };
+        const { updateUserRole } = await import('@/app/actions/data');
+        return await updateUserRole(user.email, userId, role);
+    }
+
+    async logAIInteraction(prompt: string, response: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false };
+        const { logAIInteraction } = await import('@/app/actions/data');
+        return await logAIInteraction(user.email, prompt, response);
+    }
 }
 
 export const api = RealAPI.getInstance();

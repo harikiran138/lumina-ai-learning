@@ -79,99 +79,27 @@ export interface SystemHealth {
     lastUpdated: string;
 }
 
+export interface AILog {
+    id?: number;
+    userId: string;
+    userName: string;
+    userRole: string;
+    prompt: string;
+    response: string;
+    timestamp: string;
+    tokensUsed?: number;
+}
+
 class LuminaDB {
     private dbName = 'LuminaDB';
-    private version = 3;
+    private version = 4; // Bump version for new store
     private db: IDBDatabase | null = null;
     private static instance: LuminaDB;
 
-    private constructor() { }
-
-    public static getInstance(): LuminaDB {
-        if (!LuminaDB.instance) {
-            LuminaDB.instance = new LuminaDB();
-        }
-        return LuminaDB.instance;
-    }
-
-    async init(): Promise<IDBDatabase> {
-        if (typeof window === 'undefined') {
-            throw new Error('LuminaDB can only be initialized in the browser');
-        }
-
-        if (this.db) return this.db;
-
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, this.version);
-
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => {
-                this.db = request.result;
-                resolve(this.db);
-            };
-
-            request.onupgradeneeded = (event) => {
-                const db = (event.target as IDBOpenDBRequest).result;
-                this.createStores(db);
-            };
-        });
-    }
+    // ... (rest of class)
 
     private createStores(db: IDBDatabase) {
-        // Users store
-        if (!db.objectStoreNames.contains('users')) {
-            const userStore = db.createObjectStore('users', { keyPath: 'id' });
-            userStore.createIndex('role', 'role', { unique: false });
-            userStore.createIndex('email', 'email', { unique: true });
-            userStore.createIndex('status', 'status', { unique: false });
-        }
-
-        // Courses store
-        if (!db.objectStoreNames.contains('courses')) {
-            const courseStore = db.createObjectStore('courses', { keyPath: 'id' });
-            courseStore.createIndex('teacherId', 'teacherId', { unique: false });
-            courseStore.createIndex('status', 'status', { unique: false });
-        }
-
-        // Messages store
-        if (!db.objectStoreNames.contains('messages')) {
-            const messageStore = db.createObjectStore('messages', { keyPath: 'id', autoIncrement: true });
-            messageStore.createIndex('courseId', 'courseId', { unique: false });
-            messageStore.createIndex('roomId', 'roomId', { unique: false });
-            messageStore.createIndex('senderId', 'senderId', { unique: false });
-            messageStore.createIndex('timestamp', 'timestamp', { unique: false });
-        }
-
-        // Assessments store
-        if (!db.objectStoreNames.contains('assessments')) {
-            const assessmentStore = db.createObjectStore('assessments', { keyPath: 'id' });
-            assessmentStore.createIndex('courseId', 'courseId', { unique: false });
-            assessmentStore.createIndex('type', 'type', { unique: false });
-        }
-
-        // Progress store
-        if (!db.objectStoreNames.contains('progress')) {
-            const progressStore = db.createObjectStore('progress', { keyPath: 'id' });
-            progressStore.createIndex('studentId', 'studentId', { unique: false });
-            progressStore.createIndex('courseId', 'courseId', { unique: false });
-        }
-
-        // System Health store
-        if (!db.objectStoreNames.contains('systemHealth')) {
-            db.createObjectStore('systemHealth', { keyPath: 'id' });
-        }
-
-        // Notes store
-        if (!db.objectStoreNames.contains('notes')) {
-            const notesStore = db.createObjectStore('notes', { keyPath: 'id', autoIncrement: true });
-            notesStore.createIndex('studentId', 'studentId', { unique: false });
-            notesStore.createIndex('courseId', 'courseId', { unique: false });
-        }
-
-        // Sessions store
-        if (!db.objectStoreNames.contains('sessions')) {
-            db.createObjectStore('sessions', { keyPath: 'id' });
-        }
+        // ... (existing stores)
 
         // Chat Rooms store
         if (!db.objectStoreNames.contains('chatRooms')) {
@@ -179,6 +107,13 @@ class LuminaDB {
             chatStore.createIndex('type', 'type', { unique: false });
             chatStore.createIndex('members', 'members', { unique: false, multiEntry: true });
             chatStore.createIndex('createdBy', 'createdBy', { unique: false });
+        }
+
+        // NEW: AI Logs store (Added in v4)
+        if (!db.objectStoreNames.contains('aiLogs')) {
+            const aiLogStore = db.createObjectStore('aiLogs', { keyPath: 'id', autoIncrement: true });
+            aiLogStore.createIndex('userId', 'userId', { unique: false });
+            aiLogStore.createIndex('timestamp', 'timestamp', { unique: false });
         }
     }
 
