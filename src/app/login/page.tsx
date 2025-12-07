@@ -211,6 +211,7 @@ export default function LoginPage() {
                                 />
                                 <button
                                     type="button"
+                                    suppressHydrationWarning
                                     onClick={() => setShowPassword(!showPassword)}
                                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-amber-500 transition-colors focus:outline-none"
                                 >
@@ -298,6 +299,7 @@ export default function LoginPage() {
                                 />
                                 <button
                                     type="button"
+                                    suppressHydrationWarning
                                     onClick={() => setShowSignupPassword(!showSignupPassword)}
                                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-amber-500 transition-colors focus:outline-none"
                                 >
