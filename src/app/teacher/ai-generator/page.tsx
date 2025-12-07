@@ -84,7 +84,7 @@ export default function CourseGeneratorPage() {
                 text = await file.text();
             }
 
-            setAiProgress('Connecting to Local AI (llama3.1:8b)...');
+            setAiProgress('Connecting to Local AI (gpt-oss:120b-cloud)...');
 
             // 2. Construct Prompt
             const prompt = `
@@ -139,7 +139,7 @@ ${text.slice(0, 25000)}
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    model: "llama3.1:8b",
+                    model: "gpt-oss:120b-cloud", // Updated to requested model (closest match)
                     prompt: prompt,
                     stream: false,
                     format: "json"
@@ -147,7 +147,8 @@ ${text.slice(0, 25000)}
             });
 
             if (!response.ok) {
-                throw new Error("Failed to connect to Ollama. Make sure 'ollama serve' is running and CORS is configured (OLLAMA_ORIGINS='*').");
+                const errText = await response.text();
+                throw new Error(`Ollama Error (${response.status}): ${errText}`);
             }
 
             setAiProgress('Parsing AI Response...');
@@ -173,7 +174,17 @@ ${text.slice(0, 25000)}
 
         } catch (e: any) {
             console.error(e);
-            alert("Analysis failed: " + e.message);
+            if (e.message.includes('Failed to fetch')) {
+                alert(
+                    "Connection Failed! \n\n" +
+                    "It looks like the browser cannot connect to Ollama. \n" +
+                    "This is usually a CORS issue. Please run this in your terminal:\n\n" +
+                    "launchctl setenv OLLAMA_ORIGINS \"*\"\n" +
+                    "pkill ollama && ollama serve"
+                );
+            } else {
+                alert("Analysis failed: " + e.message);
+            }
             setStep('upload');
         }
     };
