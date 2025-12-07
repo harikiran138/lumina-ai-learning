@@ -448,22 +448,121 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
                             )}
 
                             {activeLesson.type === 'text' && (
-                                activeLesson.content ? (
-                                    <div className="prose prose-invert max-w-none">
-                                        {/* Simple Markdown Rendering */}
-                                        {activeLesson.content.split('\n').map((line: string, i: number) => {
-                                            if (line.startsWith('# ')) return <h1 key={i} className="text-3xl font-bold text-white mb-4 mt-6">{line.replace('# ', '')}</h1>;
-                                            if (line.startsWith('## ')) return <h2 key={i} className="text-2xl font-bold text-white mb-3 mt-5">{line.replace('## ', '')}</h2>;
-                                            if (line.startsWith('### ')) return <h3 key={i} className="text-xl font-bold text-white mb-2 mt-4">{line.replace('### ', '')}</h3>;
-                                            if (line.startsWith('- ')) return <li key={i} className="ml-4 text-gray-300 list-disc">{line.replace('- ', '')}</li>;
-                                            if (line.startsWith('```')) return <div key={i} className="bg-black/50 p-4 rounded-lg my-4 text-sm font-mono text-green-400 border border-white/10 overflow-x-auto">Code Block (See render)</div>;
-                                            if (line.trim() === '') return <br key={i} />;
-                                            return <p key={i} className="text-gray-300 leading-relaxed mb-2">{line}</p>;
-                                        })}
-                                    </div>
-                                ) : (
-                                    <p className="text-gray-400 italic">No text content available for this lesson.</p>
-                                )
+                                <div className="prose prose-invert max-w-none">
+                                    {(() => {
+                                        try {
+                                            // 1. Try to parse as AI-generated JSON
+                                            const parsed = JSON.parse(activeLesson.content);
+
+                                            // Check if it matches our schema
+                                            if (parsed && Array.isArray(parsed.content)) {
+                                                return (
+                                                    <div className="space-y-8 animate-in fade-in duration-500">
+                                                        {/* Goal Header */}
+                                                        {parsed.goal && (
+                                                            <div className="bg-lumina-primary/10 border-l-4 border-lumina-primary p-4 rounded-r-xl">
+                                                                <h4 className="text-lumina-primary font-bold text-sm uppercase tracking-wider mb-1">Learning Goal</h4>
+                                                                <p className="text-white font-medium">{parsed.goal}</p>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Main Content Blocks */}
+                                                        <div className="space-y-6">
+                                                            {parsed.content.map((block: any, idx: number) => (
+                                                                <div key={idx}>
+                                                                    {block.type === 'paragraph' && (
+                                                                        <p className="text-gray-300 leading-relaxed text-lg">{block.content}</p>
+                                                                    )}
+                                                                    {block.type === 'list' && (
+                                                                        <div className="bg-white/5 p-6 rounded-xl border border-white/5">
+                                                                            <ul className="space-y-2">
+                                                                                {block.content.split('\n').map((item: string, i: number) => (
+                                                                                    <li key={i} className="flex gap-3 text-gray-300">
+                                                                                        <span className="text-lumina-primary mt-1.5">•</span>
+                                                                                        <span>{item.replace(/^- /, '').replace(/^\* /, '')}</span>
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        </div>
+                                                                    )}
+                                                                    {block.type === 'code' && (
+                                                                        <div className="relative group">
+                                                                            <div className="absolute -inset-1 bg-gradient-to-r from-lumina-primary/20 to-purple-600/20 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                                                                            <pre className="relative bg-black border border-white/10 p-6 rounded-xl overflow-x-auto">
+                                                                                <code className="text-blue-300 font-mono text-sm">{block.content}</code>
+                                                                            </pre>
+                                                                        </div>
+                                                                    )}
+                                                                    {block.type === 'warning' && (
+                                                                        <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex gap-3 text-red-200">
+                                                                            <div className="mt-1">⚠️</div>
+                                                                            <p>{block.content}</p>
+                                                                        </div>
+                                                                    )}
+                                                                    {block.type === 'tip' && (
+                                                                        <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl flex gap-3 text-emerald-200">
+                                                                            <div className="mt-1">💡</div>
+                                                                            <p>{block.content}</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* Deep Dive Subtopics */}
+                                                        {parsed.subtopics && parsed.subtopics.length > 0 && (
+                                                            <div className="pt-8 mt-12 border-t border-white/10">
+                                                                <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                                                                    <BookOpen className="text-lumina-primary" />
+                                                                    Deep Dive
+                                                                </h3>
+                                                                <div className="grid gap-6">
+                                                                    {parsed.subtopics.map((sub: any, sIdx: number) => (
+                                                                        <div key={sIdx} className="bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-2xl p-6 transition-all">
+                                                                            <h4 className="text-xl font-bold text-white mb-4">{sub.title}</h4>
+                                                                            <div className="space-y-4">
+                                                                                {sub.content.map((b: any, bIdx: number) => (
+                                                                                    <div key={bIdx}>
+                                                                                        {b.type === 'code' ? (
+                                                                                            <pre className="bg-black/50 p-3 rounded-lg text-xs text-gray-400 font-mono border border-white/5">
+                                                                                                {b.content}
+                                                                                            </pre>
+                                                                                        ) : (
+                                                                                            <p className="text-gray-400 text-sm leading-relaxed">{b.content}</p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            }
+                                        } catch (e) {
+                                            // Not JSON, assume string
+                                        }
+
+                                        // Fallback: Legacy Markdown Rendering
+                                        return activeLesson.content ? (
+                                            <div className="prose prose-invert max-w-none">
+                                                {activeLesson.content.split('\n').map((line: string, i: number) => {
+                                                    if (line.startsWith('# ')) return <h1 key={i} className="text-3xl font-bold text-white mb-4 mt-6">{line.replace('# ', '')}</h1>;
+                                                    if (line.startsWith('## ')) return <h2 key={i} className="text-2xl font-bold text-white mb-3 mt-5">{line.replace('## ', '')}</h2>;
+                                                    if (line.startsWith('### ')) return <h3 key={i} className="text-xl font-bold text-white mb-2 mt-4">{line.replace('### ', '')}</h3>;
+                                                    if (line.startsWith('- ')) return <li key={i} className="ml-4 text-gray-300 list-disc">{line.replace('- ', '')}</li>;
+                                                    if (line.startsWith('```')) return <div key={i} className="bg-black/50 p-4 rounded-lg my-4 text-sm font-mono text-green-400 border border-white/10 overflow-x-auto">Code Block (See render)</div>;
+                                                    if (line.trim() === '') return <br key={i} />;
+                                                    return <p key={i} className="text-gray-300 leading-relaxed mb-2">{line}</p>;
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-400 italic">No text content available for this lesson.</p>
+                                        );
+                                    })()}
+                                </div>
                             )}
                         </div>
                     ) : (
