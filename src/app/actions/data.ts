@@ -765,7 +765,7 @@ export async function createCourse(email: string, courseData: any) {
             instructorId: user._id.toString(),
             thumbnail: courseData.image,
             level: courseData.level,
-            status: 'Active',
+            status: 'draft',
             enrolledCount: 0,
             modules: [],
             createdAt: new Date(),
@@ -781,6 +781,101 @@ export async function createCourse(email: string, courseData: any) {
     } catch (e) {
         console.error('Error creating course:', e);
         return { success: false, error: 'Failed to create course' };
+    }
+}
+
+export async function getStudentCourses(email: string) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        const user = await db.collection("users").findOne({ email });
+        if (!user) return [];
+
+        const enrollments = await db.collection("progress").find({ userId: user._id.toString() }).toArray();
+        const courseIds = enrollments.map(e => new ObjectId(e.courseId));
+
+        const courses = await db.collection("courses").find({
+            _id: { $in: courseIds }
+        }).toArray();
+
+        // Merge progress
+        return serializeMongoObject(courses.map(course => {
+            const progress = enrollments.find(e => e.courseId === course._id.toString());
+            return {
+                ...course,
+                id: course._id.toString(),
+                progress: progress?.progress || 0,
+                lastAccessed: progress?.lastAccessed
+            };
+        }));
+    } catch (e) {
+        console.error("Error fetching student courses:", e);
+        return [];
+    }
+}
+
+export async function getExploreCourses(email: string) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        const user = await db.collection("users").findOne({ email });
+
+        let enrolledIds: string[] = [];
+        if (user) {
+            const enrollments = await db.collection("progress").find({ userId: user._id.toString() }).toArray();
+            enrolledIds = enrollments.map(e => e.courseId);
+        }
+
+        // Fetch Published courses NOT in enrolledIds
+        const recommended = await db.collection("courses").find({
+            status: 'published',
+            _id: { $nin: enrolledIds.map(id => new ObjectId(id)) }
+        }).limit(20).toArray();
+
+        // Fetch Enrolled courses for the top section
+        const enrolled = await db.collection("courses").find({
+            _id: { $in: enrolledIds.map(id => new ObjectId(id)) }
+        }).toArray();
+
+        return {
+            enrolled: serializeMongoObject(enrolled.map(c => ({ ...c, id: c._id.toString() }))),
+            recommended: serializeMongoObject(recommended.map(c => ({ ...c, id: c._id.toString() })))
+        };
+
+    } catch (e) {
+        console.error("Error fetching explore courses:", e);
+        return { enrolled: [], recommended: [] };
+    }
+}
+
+export async function publishCourse(courseId: string) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        await db.collection("courses").updateOne(
+            { _id: new ObjectId(courseId) },
+            { $set: { status: 'published', updatedAt: new Date() } }
+        );
+        revalidatePath('/student/course_explorer');
+        return { success: true };
+    } catch (e) {
+        console.error("Error publishing course:", e);
+        return { success: false, error: "Failed to publish" };
+    }
+}
+
+export async function updateCourseStructure(courseId: string, modules: any[]) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+        await db.collection("courses").updateOne(
+            { _id: new ObjectId(courseId) },
+            { $set: { modules: modules, updatedAt: new Date() } }
+        );
+        return { success: true };
+    } catch (e) {
+        console.error("Error updating course structure:", e);
+        return { success: false, error: "Failed to save draft" };
     }
 }
 
