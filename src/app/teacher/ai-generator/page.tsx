@@ -164,24 +164,13 @@ export default function CourseGeneratorPage() {
                         {file && <p className="mt-4 text-lumina-primary font-mono">{file.name}</p>}
                     </div>
 
-                    <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-left">
-                        <div className="flex items-center gap-2 text-blue-300 mb-2">
-                            <Key className="w-4 h-4" />
-                            <span className="font-semibold text-sm">Gemini API Key</span>
-                        </div>
-                        <input
-                            type="password"
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-lumina-primary"
-                            placeholder="Paste your Google Gemini API Key here..."
-                        />
-                        <p className="text-blue-200/60 text-[10px] mt-2">Using "gemini-1.5-flash" for fast, long-context analysis.</p>
+                    <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-left hidden">
+                        {/* API Key managed via server env */}
                     </div>
 
                     <button
                         onClick={startAnalysis}
-                        disabled={!file || !apiKey}
+                        disabled={!file}
                         className="w-full py-4 bg-lumina-primary text-black font-bold rounded-xl hover:bg-lumina-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                     >
                         Analyze Structure

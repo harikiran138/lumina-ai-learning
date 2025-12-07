@@ -2,7 +2,7 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDQjD7ak6PO6PNFVFMF-jziQizRx3qG70g';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'vck_3QS2kP9Ez4k0xhGnfpJirUmhvOIlDQAEFW2FxOMK8q2tWgvaO900uO4I';
 
 /**
  * Generates a structured course from the provided content using Google Gemini.
