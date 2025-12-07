@@ -455,9 +455,9 @@ export default function CourseGeneratorPage() {
                                                                         setModules(newMods);
                                                                     }}
                                                                     className={`w-full bg-transparent border-none text-sm focus:outline-none resize-none overflow-hidden ${block.type === 'code' ? 'font-mono bg-black/40 p-2 rounded text-blue-300' :
-                                                                            block.type === 'list' ? 'pl-4 border-l-2 border-gray-600' :
-                                                                                block.type === 'tip' ? 'bg-blue-500/10 p-2 rounded text-blue-200 italic' :
-                                                                                    'text-gray-300'
+                                                                        block.type === 'list' ? 'pl-4 border-l-2 border-gray-600' :
+                                                                            block.type === 'tip' ? 'bg-blue-500/10 p-2 rounded text-blue-200 italic' :
+                                                                                'text-gray-300'
                                                                         }`}
                                                                     rows={block.type === 'code' || block.type === 'list' ? 4 : 2}
                                                                 />
@@ -538,7 +538,7 @@ export default function CourseGeneratorPage() {
                             </button>
                         </div>
                     </div>
-                            )}
+                )}
 
                     {/* Step 4: Saving / Done */}
                     {(step === 'saving' || step === 'done') && (
