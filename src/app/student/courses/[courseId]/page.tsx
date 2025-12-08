@@ -30,6 +30,8 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
     const [expandedModule, setExpandedModule] = useState<number | null>(0);
     const [activeQuiz, setActiveQuiz] = useState<any>(null);
     const [activeLesson, setActiveLesson] = useState<any>(null);
+    // Track active lesson by unique composite index to handle duplicate IDs in seed data
+    const [activeLessonIndex, setActiveLessonIndex] = useState<{ m: number, l: number } | null>(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0); // Added for slides
     const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
@@ -81,21 +83,28 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
     }, [courseId]);
 
 
-    const handleLessonSelect = async (lesson: any) => {
+    const handleLessonSelect = async (lesson: any, mIdx: number, lIdx: number) => {
         if (lesson.type === 'quiz') {
             setActiveQuiz(lesson);
             setActiveLesson(null);
+            setActiveLessonIndex(null);
             setQuizAnswers({});
             setQuizSubmitted(false);
             setQuizScore(0);
             setCurrentQuestionIndex(0); // Reset to first question
         } else {
+            // Toggle if already active
+            if (activeLessonIndex?.m === mIdx && activeLessonIndex?.l === lIdx) {
+                setActiveLesson(null);
+                setActiveLessonIndex(null);
+                return;
+            }
+
             // Set active text/video lesson
             setActiveLesson(lesson);
+            setActiveLessonIndex({ m: mIdx, l: lIdx });
             setActiveQuiz(null);
             setCurrentSlideIndex(0); // Reset slides
-            // Scroll to top of content
-            window.scrollTo({ top: 400, behavior: 'smooth' });
 
             // Mark lesson as started/complete in DB (optional: for now just log locally or simple ping)
             await api.updateProgress(courseId, 5);
@@ -383,198 +392,7 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
                         </div>
                     )}
 
-                    {/* Dynamic Content Viewer */}
-                    {activeLesson ? (
-                        <div className="glass-card p-8 min-h-[400px]">
-                            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
-                                <h1 className="text-2xl font-bold text-white">{activeLesson.title}</h1>
-                                <button onClick={() => setActiveLesson(null)} className="text-sm text-gray-400 hover:text-white underline">
-                                    Back to Overview
-                                </button>
-                            </div>
 
-
-
-                            {activeLesson.type === 'slides' && activeLesson.slides && (
-                                <div className="bg-black/40 rounded-2xl border border-white/10 overflow-hidden mb-6">
-                                    <div className="aspect-[16/9] relative bg-gray-900 group">
-                                        <img
-                                            src={activeLesson.slides[currentSlideIndex]?.image || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80"}
-                                            alt="Slide"
-                                            className="w-full h-full object-cover opacity-80"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-8">
-                                            <h2 className="text-3xl font-bold text-white mb-2">{activeLesson.slides[currentSlideIndex]?.title}</h2>
-                                            <p className="text-xl text-gray-200 max-w-2xl">{activeLesson.slides[currentSlideIndex]?.text}</p>
-                                        </div>
-
-                                        {/* Navigation Overlay */}
-                                        <button
-                                            onClick={prevSlide}
-                                            disabled={currentSlideIndex === 0}
-                                            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/80 rounded-full text-white disabled:opacity-0 transition-all backdrop-blur-sm"
-                                        >
-                                            <ChevronDown className="w-6 h-6 rotate-90" /> {/* Using Chevron as arrow */}
-                                        </button>
-                                        <button
-                                            onClick={nextSlide}
-                                            disabled={currentSlideIndex === activeLesson.slides.length - 1}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/80 rounded-full text-white disabled:opacity-0 transition-all backdrop-blur-sm"
-                                        >
-                                            <ChevronDown className="w-6 h-6 -rotate-90" />
-                                        </button>
-
-                                        <div className="absolute top-4 right-4 bg-black/60 px-3 py-1 rounded-full text-xs text-white backdrop-blur-md border border-white/10">
-                                            Slide {currentSlideIndex + 1} / {activeLesson.slides.length}
-                                        </div>
-                                    </div>
-                                    <div className="p-4 bg-white/5 border-t border-white/5 flex gap-2 overflow-x-auto">
-                                        {activeLesson.slides.map((_: any, idx: number) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => setCurrentSlideIndex(idx)}
-                                                className={`h-1.5 rounded-full transition-all ${currentSlideIndex === idx ? 'w-8 bg-lumina-primary' : 'w-2 bg-white/20 hover:bg-white/40'
-                                                    }`}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeLesson.type === 'text' && (
-                                <div className="prose prose-invert max-w-none">
-                                    {(() => {
-                                        try {
-                                            // 1. Try to parse as AI-generated JSON
-                                            const parsed = JSON.parse(activeLesson.content);
-
-                                            // Check if it matches our schema
-                                            if (parsed && Array.isArray(parsed.content)) {
-                                                return (
-                                                    <div className="space-y-8 animate-in fade-in duration-500">
-                                                        {parsed.pageRef && (
-                                                            <div className="mb-4 flex justify-end">
-                                                                <span className="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded border border-white/10">
-                                                                    Source: Page {parsed.pageRef}
-                                                                </span>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Goal Header */}
-                                                        {parsed.goal && (
-                                                            <div className="bg-lumina-primary/10 border-l-4 border-lumina-primary p-4 rounded-r-xl">
-                                                                <h4 className="text-lumina-primary font-bold text-sm uppercase tracking-wider mb-1">Learning Goal</h4>
-                                                                <p className="text-white font-medium">{parsed.goal}</p>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Main Content Blocks */}
-                                                        <div className="space-y-6">
-                                                            {parsed.content.map((block: any, idx: number) => (
-                                                                <div key={idx}>
-                                                                    {block.type === 'paragraph' && (
-                                                                        <p className="text-gray-300 leading-relaxed text-lg">{block.content}</p>
-                                                                    )}
-                                                                    {block.type === 'list' && (
-                                                                        <div className="bg-white/5 p-6 rounded-xl border border-white/5">
-                                                                            <ul className="space-y-2">
-                                                                                {block.content.split('\n').map((item: string, i: number) => (
-                                                                                    <li key={i} className="flex gap-3 text-gray-300">
-                                                                                        <span className="text-lumina-primary mt-1.5">•</span>
-                                                                                        <span>{item.replace(/^- /, '').replace(/^\* /, '')}</span>
-                                                                                    </li>
-                                                                                ))}
-                                                                            </ul>
-                                                                        </div>
-                                                                    )}
-                                                                    {block.type === 'code' && (
-                                                                        <div className="relative group">
-                                                                            <div className="absolute -inset-1 bg-gradient-to-r from-lumina-primary/20 to-purple-600/20 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                                                                            <pre className="relative bg-black border border-white/10 p-6 rounded-xl overflow-x-auto">
-                                                                                <code className="text-blue-300 font-mono text-sm">{block.content}</code>
-                                                                            </pre>
-                                                                        </div>
-                                                                    )}
-                                                                    {block.type === 'warning' && (
-                                                                        <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex gap-3 text-red-200">
-                                                                            <div className="mt-1">⚠️</div>
-                                                                            <p>{block.content}</p>
-                                                                        </div>
-                                                                    )}
-                                                                    {block.type === 'tip' && (
-                                                                        <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl flex gap-3 text-emerald-200">
-                                                                            <div className="mt-1">💡</div>
-                                                                            <p>{block.content}</p>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-
-                                                        {/* Deep Dive Subtopics */}
-                                                        {parsed.subtopics && parsed.subtopics.length > 0 && (
-                                                            <div className="pt-8 mt-12 border-t border-white/10">
-                                                                <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                                                                    <BookOpen className="text-lumina-primary" />
-                                                                    Deep Dive
-                                                                </h3>
-                                                                <div className="grid gap-6">
-                                                                    {parsed.subtopics.map((sub: any, sIdx: number) => (
-                                                                        <div key={sIdx} className="bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-2xl p-6 transition-all">
-                                                                            <h4 className="text-xl font-bold text-white mb-4">{sub.title}</h4>
-                                                                            <div className="space-y-4">
-                                                                                {sub.content.map((b: any, bIdx: number) => (
-                                                                                    <div key={bIdx}>
-                                                                                        {b.type === 'code' ? (
-                                                                                            <pre className="bg-black/50 p-3 rounded-lg text-xs text-gray-400 font-mono border border-white/5">
-                                                                                                {b.content}
-                                                                                            </pre>
-                                                                                        ) : (
-                                                                                            <p className="text-gray-400 text-sm leading-relaxed">{b.content}</p>
-                                                                                        )}
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            }
-                                        } catch (e) {
-                                            // Not JSON, assume string
-                                        }
-
-                                        // Fallback: Legacy Markdown Rendering
-                                        return activeLesson.content ? (
-                                            <div className="prose prose-invert max-w-none">
-                                                {activeLesson.content.split('\n').map((line: string, i: number) => {
-                                                    if (line.startsWith('# ')) return <h1 key={i} className="text-3xl font-bold text-white mb-4 mt-6">{line.replace('# ', '')}</h1>;
-                                                    if (line.startsWith('## ')) return <h2 key={i} className="text-2xl font-bold text-white mb-3 mt-5">{line.replace('## ', '')}</h2>;
-                                                    if (line.startsWith('### ')) return <h3 key={i} className="text-xl font-bold text-white mb-2 mt-4">{line.replace('### ', '')}</h3>;
-                                                    if (line.startsWith('- ')) return <li key={i} className="ml-4 text-gray-300 list-disc">{line.replace('- ', '')}</li>;
-                                                    if (line.startsWith('```')) return <div key={i} className="bg-black/50 p-4 rounded-lg my-4 text-sm font-mono text-green-400 border border-white/10 overflow-x-auto">Code Block (See render)</div>;
-                                                    if (line.trim() === '') return <br key={i} />;
-                                                    return <p key={i} className="text-gray-300 leading-relaxed mb-2">{line}</p>;
-                                                })}
-                                            </div>
-                                        ) : (
-                                            <p className="text-gray-400 italic">No text content available for this lesson.</p>
-                                        );
-                                    })()}
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="glass-card p-8">
-                            <h2 className="text-2xl font-bold text-white mb-4">About This Course</h2>
-                            <p className="text-gray-300 leading-relaxed">
-                                {course.expandedDescription}
-                            </p>
-                        </div>
-                    )}
 
                     {/* Module List (Always Visible) */}
                     <div className="glass-card p-8">
@@ -608,25 +426,201 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
                                                 {module.lessons?.map((lesson: any, lIdx: number) => (
                                                     <div
                                                         key={lIdx}
-                                                        onClick={() => handleLessonSelect(lesson)}
-                                                        className={`p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0 group ${activeLesson?.id === lesson.id ? 'bg-lumina-primary/10 border-l-2 border-l-lumina-primary' : ''
-                                                            }`}
+                                                        className="border-b border-white/5 last:border-0"
                                                     >
-                                                        <div className="flex items-center gap-3">
-                                                            {lesson.type === 'quiz' ? (
-                                                                <HelpCircle className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
-                                                            ) : lesson.type === 'slides' ? (
-                                                                <LayoutDashboard className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
-                                                            ) : (
-                                                                <BookOpen className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
-                                                            )}
-                                                            <span className={`transition-colors ${activeLesson?.id === lesson.id ? 'text-lumina-primary font-medium' : 'text-gray-300 group-hover:text-white'}`}>
-                                                                {lesson.title}
+                                                        <div
+                                                            onClick={() => handleLessonSelect(lesson, i, lIdx)}
+                                                            className={`p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer group ${activeLessonIndex?.m === i && activeLessonIndex?.l === lIdx ? 'bg-lumina-primary/10 border-l-2 border-l-lumina-primary' : ''
+                                                                }`}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                {lesson.type === 'quiz' ? (
+                                                                    <HelpCircle className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
+                                                                ) : lesson.type === 'slides' ? (
+                                                                    <LayoutDashboard className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
+                                                                ) : (
+                                                                    <BookOpen className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                                                                )}
+                                                                <span className={`transition-colors ${activeLessonIndex?.m === i && activeLessonIndex?.l === lIdx ? 'text-lumina-primary font-medium' : 'text-gray-300 group-hover:text-white'}`}>
+                                                                    {lesson.title}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded">
+                                                                {lesson.duration}
                                                             </span>
                                                         </div>
-                                                        <span className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded">
-                                                            {lesson.duration}
-                                                        </span>
+
+                                                        {/* Inline Content Viewer */}
+                                                        {activeLessonIndex?.m === i && activeLessonIndex?.l === lIdx && (
+                                                            <div className="p-6 bg-black/30 border-t border-white/5 animate-in slide-in-from-top-2 duration-200">
+                                                                {/* Slides Viewer */}
+                                                                {activeLesson.type === 'slides' && activeLesson.slides && (
+                                                                    <div className="bg-black/40 rounded-2xl border border-white/10 overflow-hidden mb-6">
+                                                                        <div className="aspect-[16/9] relative bg-gray-900 group">
+                                                                            <img
+                                                                                src={activeLesson.slides[currentSlideIndex]?.image || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80"}
+                                                                                alt="Slide"
+                                                                                className="w-full h-full object-cover opacity-80"
+                                                                            />
+                                                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-8">
+                                                                                <h2 className="text-3xl font-bold text-white mb-2">{activeLesson.slides[currentSlideIndex]?.title}</h2>
+                                                                                <p className="text-xl text-gray-200 max-w-2xl">{activeLesson.slides[currentSlideIndex]?.text}</p>
+                                                                            </div>
+
+                                                                            {/* Navigation Overlay */}
+                                                                            <button
+                                                                                onClick={prevSlide}
+                                                                                disabled={currentSlideIndex === 0}
+                                                                                className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/80 rounded-full text-white disabled:opacity-0 transition-all backdrop-blur-sm"
+                                                                            >
+                                                                                <ChevronDown className="w-6 h-6 rotate-90" />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={nextSlide}
+                                                                                disabled={currentSlideIndex === activeLesson.slides.length - 1}
+                                                                                className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/80 rounded-full text-white disabled:opacity-0 transition-all backdrop-blur-sm"
+                                                                            >
+                                                                                <ChevronDown className="w-6 h-6 -rotate-90" />
+                                                                            </button>
+
+                                                                            <div className="absolute top-4 right-4 bg-black/60 px-3 py-1 rounded-full text-xs text-white backdrop-blur-md border border-white/10">
+                                                                                Slide {currentSlideIndex + 1} / {activeLesson.slides.length}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="p-4 bg-white/5 border-t border-white/5 flex gap-2 overflow-x-auto">
+                                                                            {activeLesson.slides.map((_: any, idx: number) => (
+                                                                                <button
+                                                                                    key={idx}
+                                                                                    onClick={() => setCurrentSlideIndex(idx)}
+                                                                                    className={`h-1.5 rounded-full transition-all ${currentSlideIndex === idx ? 'w-8 bg-lumina-primary' : 'w-2 bg-white/20 hover:bg-white/40'
+                                                                                        }`}
+                                                                                />
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Text Content Viewer */}
+                                                                {activeLesson.type === 'text' && (
+                                                                    <div className="prose prose-invert max-w-none">
+                                                                        {(() => {
+                                                                            try {
+                                                                                const parsed = JSON.parse(activeLesson.content);
+                                                                                if (parsed && Array.isArray(parsed.content)) {
+                                                                                    return (
+                                                                                        <div className="space-y-8 animate-in fade-in duration-500">
+                                                                                            {parsed.pageRef && (
+                                                                                                <div className="mb-4 flex justify-end">
+                                                                                                    <span className="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded border border-white/10">
+                                                                                                        Source: Page {parsed.pageRef}
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                            )}
+
+                                                                                            {parsed.goal && (
+                                                                                                <div className="bg-lumina-primary/10 border-l-4 border-lumina-primary p-4 rounded-r-xl">
+                                                                                                    <h4 className="text-lumina-primary font-bold text-sm uppercase tracking-wider mb-1">Learning Goal</h4>
+                                                                                                    <p className="text-white font-medium">{parsed.goal}</p>
+                                                                                                </div>
+                                                                                            )}
+
+                                                                                            <div className="space-y-6">
+                                                                                                {parsed.content.map((block: any, idx: number) => (
+                                                                                                    <div key={idx}>
+                                                                                                        {block.type === 'paragraph' && (
+                                                                                                            <p className="text-gray-300 leading-relaxed text-lg">{block.content}</p>
+                                                                                                        )}
+                                                                                                        {block.type === 'list' && (
+                                                                                                            <div className="bg-white/5 p-6 rounded-xl border border-white/5">
+                                                                                                                <ul className="space-y-2">
+                                                                                                                    {block.content.split('\n').map((item: string, i: number) => (
+                                                                                                                        <li key={i} className="flex gap-3 text-gray-300">
+                                                                                                                            <span className="text-lumina-primary mt-1.5">•</span>
+                                                                                                                            <span>{item.replace(/^- /, '').replace(/^\* /, '')}</span>
+                                                                                                                        </li>
+                                                                                                                    ))}
+                                                                                                                </ul>
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                        {block.type === 'code' && (
+                                                                                                            <div className="relative group">
+                                                                                                                <div className="absolute -inset-1 bg-gradient-to-r from-lumina-primary/20 to-purple-600/20 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                                                                                                                <pre className="relative bg-black border border-white/10 p-6 rounded-xl overflow-x-auto">
+                                                                                                                    <code className="text-blue-300 font-mono text-sm">{block.content}</code>
+                                                                                                                </pre>
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                        {block.type === 'warning' && (
+                                                                                                            <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex gap-3 text-red-200">
+                                                                                                                <div className="mt-1">⚠️</div>
+                                                                                                                <p>{block.content}</p>
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                        {block.type === 'tip' && (
+                                                                                                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl flex gap-3 text-emerald-200">
+                                                                                                                <div className="mt-1">💡</div>
+                                                                                                                <p>{block.content}</p>
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+
+                                                                                            {parsed.subtopics && parsed.subtopics.length > 0 && (
+                                                                                                <div className="pt-8 mt-12 border-t border-white/10">
+                                                                                                    <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                                                                                                        <BookOpen className="text-lumina-primary" />
+                                                                                                        Deep Dive
+                                                                                                    </h3>
+                                                                                                    <div className="grid gap-6">
+                                                                                                        {parsed.subtopics.map((sub: any, sIdx: number) => (
+                                                                                                            <div key={sIdx} className="bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-2xl p-6 transition-all">
+                                                                                                                <h4 className="text-xl font-bold text-white mb-4">{sub.title}</h4>
+                                                                                                                <div className="space-y-4">
+                                                                                                                    {sub.content.map((b: any, bIdx: number) => (
+                                                                                                                        <div key={bIdx}>
+                                                                                                                            {b.type === 'code' ? (
+                                                                                                                                <pre className="bg-black/50 p-3 rounded-lg text-xs text-gray-400 font-mono border border-white/5">
+                                                                                                                                    {b.content}
+                                                                                                                                </pre>
+                                                                                                                            ) : (
+                                                                                                                                <p className="text-gray-400 text-sm leading-relaxed">{b.content}</p>
+                                                                                                                            )}
+                                                                                                                        </div>
+                                                                                                                    ))}
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        ))}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    );
+                                                                                }
+                                                                            } catch (e) {
+                                                                                // Not JSON
+                                                                            }
+                                                                            // Fallback
+                                                                            return activeLesson.content ? (
+                                                                                <div className="prose prose-invert max-w-none">
+                                                                                    {activeLesson.content.split('\n').map((line: string, i: number) => {
+                                                                                        if (line.startsWith('# ')) return <h1 key={i} className="text-3xl font-bold text-white mb-4 mt-6">{line.replace('# ', '')}</h1>;
+                                                                                        if (line.startsWith('## ')) return <h2 key={i} className="text-2xl font-bold text-white mb-3 mt-5">{line.replace('## ', '')}</h2>;
+                                                                                        if (line.startsWith('### ')) return <h3 key={i} className="text-xl font-bold text-white mb-2 mt-4">{line.replace('### ', '')}</h3>;
+                                                                                        if (line.startsWith('- ')) return <li key={i} className="ml-4 text-gray-300 list-disc">{line.replace('- ', '')}</li>;
+                                                                                        if (line.startsWith('```')) return <div key={i} className="bg-black/50 p-4 rounded-lg my-4 text-sm font-mono text-green-400 border border-white/10 overflow-x-auto">Code Block (See render)</div>;
+                                                                                        if (line.trim() === '') return <br key={i} />;
+                                                                                        return <p key={i} className="text-gray-300 leading-relaxed mb-2">{line}</p>;
+                                                                                    })}
+                                                                                </div>
+                                                                            ) : (
+                                                                                <p className="text-gray-400 italic">No text content available for this lesson.</p>
+                                                                            );
+                                                                        })()}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                                 {(!module.lessons || module.lessons.length === 0) && (
@@ -654,7 +648,7 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
                         <button
                             onClick={() => {
                                 if (course.modules?.[0]?.lessons?.[0]) {
-                                    handleLessonSelect(course.modules[0].lessons[0]);
+                                    handleLessonSelect(course.modules[0].lessons[0], 0, 0);
                                     setExpandedModule(0);
                                 }
                             }}

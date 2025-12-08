@@ -944,7 +944,7 @@ export async function addModule(email: string, courseId: string, moduleTitle: st
         if (!teacher) return { success: false, error: 'Teacher not found' };
 
         const newModule = {
-            id: Date.now().toString(),
+            id: new ObjectId().toString(),
             title: moduleTitle,
             duration: '0 min',
             lessons: []
@@ -972,7 +972,7 @@ export async function addLesson(email: string, courseId: string, moduleId: strin
         const db = client.db("lumina-database");
 
         const newLesson = {
-            id: Date.now().toString(),
+            id: new ObjectId().toString(),
             title: lessonTitle,
             type: type,
             content: content,
