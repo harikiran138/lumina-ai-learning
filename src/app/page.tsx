@@ -6,7 +6,7 @@ export default function Home() {
     return (
         <div className="text-white min-h-screen">
             {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-20 bg-black/90 backdrop-blur-sm border-b border-white/10 shadow-lg">
+            <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <div className="flex-shrink-0">
@@ -66,8 +66,8 @@ export default function Home() {
                 <section id="features" className="min-h-screen flex items-center">
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
                         <div className="text-center">
-                            <h2 className="text-3xl font-bold">Why Lumina?</h2>
-                            <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">An all-in-one, ethical, and private education ecosystem.</p>
+                            <h2 className="text-3xl font-bold gradient-text">Why Lumina?</h2>
+                            <p className="mt-4 text-lg text-gray-300">An all-in-one, ethical, and private education ecosystem.</p>
                         </div>
                         <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                             <div className="flex flex-col items-center text-center p-6 rounded-2xl transition-all bg-white/10 dark:bg-white/5 backdrop-blur-lg border border-white/20 shadow-xl">
@@ -76,8 +76,8 @@ export default function Home() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547a2 2 0 01-1.022.547m16.5 0a2 2 0 01.547 1.022l.477 2.387a6 6 0 01-.517 3.86l-.158.318a6 6 0 01-.517 3.86l-2.387.477a2 2 0 01-.547 1.022m-16.5 0a2 2 0 00-.547-1.022l-.477-2.387a6 6 0 00.517-3.86l.158-.318a6 6 0 00.517-3.86l2.387-.477a2 2 0 00.547-1.022m16.5 0l-3.473 3.473m0 0a3 3 0 10-4.243-4.243l-3.473-3.473a3 3 0 00-4.243 4.243l3.473 3.473a3 3 0 004.243 4.243z" />
                                     </svg>
                                 </div>
-                                <h3 className="mt-5 text-xl font-semibold">Adaptive Pathways</h3>
-                                <p className="mt-2 text-gray-600 dark:text-gray-400">AI generates personalized learning roadmaps based on student performance and engagement.</p>
+                                <h3 className="mt-5 text-xl font-semibold gradient-text">Adaptive Pathways</h3>
+                                <p className="mt-2 text-gray-300">AI generates personalized learning roadmaps based on student performance and engagement.</p>
                             </div>
                             <div className="flex flex-col items-center text-center p-6 rounded-2xl transition-all bg-white/10 dark:bg-white/5 backdrop-blur-lg border border-white/20 shadow-xl">
                                 <div className="bg-transparent p-4 rounded-full text-amber-600 dark:text-amber-400">
@@ -85,8 +85,8 @@ export default function Home() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                                     </svg>
                                 </div>
-                                <h3 className="mt-5 text-xl font-semibold">Automated Assessments</h3>
-                                <p className="mt-2 text-gray-600 dark:text-gray-400">Save time with AI-generated questions, auto-grading, and insightful feedback.</p>
+                                <h3 className="mt-5 text-xl font-semibold gradient-text">Automated Assessments</h3>
+                                <p className="mt-2 text-gray-300">Save time with AI-generated questions, auto-grading, and insightful feedback.</p>
                             </div>
                             <div className="flex flex-col items-center text-center p-6 rounded-2xl transition-all bg-white/10 dark:bg-white/5 backdrop-blur-lg border border-white/20 shadow-xl">
                                 <div className="bg-transparent p-4 rounded-full text-amber-600 dark:text-amber-400">
@@ -94,8 +94,8 @@ export default function Home() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                     </svg>
                                 </div>
-                                <h3 className="mt-5 text-xl font-semibold">Self-Hosted & Private</h3>
-                                <p className="mt-2 text-gray-600 dark:text-gray-400">Run Lumina on your own servers. No external APIs, full data sovereignty, and complete privacy.</p>
+                                <h3 className="mt-5 text-xl font-semibold gradient-text">Self-Hosted & Private</h3>
+                                <p className="mt-2 text-gray-300">Run Lumina on your own servers. No external APIs, full data sovereignty, and complete privacy.</p>
                             </div>
                         </div>
                     </div>
@@ -105,8 +105,8 @@ export default function Home() {
                 <section id="for-who" className="min-h-screen flex items-center">
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
                         <div className="text-center">
-                            <h2 className="text-3xl font-bold">Built for Modern Education</h2>
-                            <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Empowering every stakeholder in the learning journey.</p>
+                            <h2 className="text-3xl font-bold gradient-text">Built for Modern Education</h2>
+                            <p className="mt-4 text-lg text-gray-300">Empowering every stakeholder in the learning journey.</p>
                         </div>
                         <div className="mt-12 grid gap-8 md:grid-cols-3">
                             <div className="bg-white/10 dark:bg-white/5 backdrop-blur-lg p-8 rounded-2xl shadow-xl border border-white/20">
@@ -129,26 +129,26 @@ export default function Home() {
                 <section id="how-it-works" className="min-h-screen flex items-center">
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
                         <div className="text-center">
-                            <h2 className="text-3xl font-bold">A Seamless Workflow</h2>
-                            <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">From raw text to personalized education in a few simple steps.</p>
+                            <h2 className="text-3xl font-bold gradient-text">A Seamless Workflow</h2>
+                            <p className="mt-4 text-lg text-gray-300">From raw text to personalized education in a few simple steps.</p>
                         </div>
                         <div className="mt-12 relative">
                             <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gray-300 dark:bg-gray-700 -translate-y-1/2"></div>
                             <div className="grid gap-12 md:grid-cols-3 relative">
                                 <div className="flex flex-col items-center text-center">
                                     <div className="bg-white/10 dark:bg-white/5 backdrop-blur-lg border-2 border-white/20 h-16 w-16 rounded-full flex items-center justify-center text-amber-500 font-bold text-2xl relative z-10">1</div>
-                                    <h3 className="mt-4 text-xl font-semibold">Upload Content</h3>
-                                    <p className="mt-2 text-gray-600 dark:text-gray-400">Teachers upload textbooks, syllabi, or any course document.</p>
+                                    <h3 className="mt-4 text-xl font-semibold gradient-text">Upload Content</h3>
+                                    <p className="mt-2 text-gray-300">Teachers upload textbooks, syllabi, or any course document.</p>
                                 </div>
                                 <div className="flex flex-col items-center text-center">
                                     <div className="bg-white/10 dark:bg-white/5 backdrop-blur-lg border-2 border-white/20 h-16 w-16 rounded-full flex items-center justify-center text-amber-500 font-bold text-2xl relative z-10">2</div>
-                                    <h3 className="mt-4 text-xl font-semibold">AI Generates Pathway</h3>
-                                    <p className="mt-2 text-gray-600 dark:text-gray-400">Lumina processes the content and creates a structured, adaptive course.</p>
+                                    <h3 className="mt-4 text-xl font-semibold gradient-text">AI Generates Pathway</h3>
+                                    <p className="mt-2 text-gray-300">Lumina processes the content and creates a structured, adaptive course.</p>
                                 </div>
                                 <div className="flex flex-col items-center text-center">
                                     <div className="bg-white/10 dark:bg-white/5 backdrop-blur-lg border-2 border-white/20 h-16 w-16 rounded-full flex items-center justify-center text-amber-500 font-bold text-2xl relative z-10">3</div>
-                                    <h3 className="mt-4 text-xl font-semibold">Students Engage & Grow</h3>
-                                    <p className="mt-2 text-gray-600 dark:text-gray-400">Students follow their unique path, take quizzes, and track their progress.</p>
+                                    <h3 className="mt-4 text-xl font-semibold gradient-text">Students Engage & Grow</h3>
+                                    <p className="mt-2 text-gray-300">Students follow their unique path, take quizzes, and track their progress.</p>
                                 </div>
                             </div>
                         </div>
@@ -159,8 +159,8 @@ export default function Home() {
                 <section id="testimonials" className="min-h-screen flex items-center">
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
                         <div className="text-center">
-                            <h2 className="text-3xl font-bold">Loved by Educators & Students</h2>
-                            <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Don't just take our word for it. Here's what people are saying.</p>
+                            <h2 className="text-3xl font-bold gradient-text">Loved by Educators & Students</h2>
+                            <p className="mt-4 text-lg text-gray-300">Don't just take our word for it. Here's what people are saying.</p>
                         </div>
                         <div className="mt-12 grid gap-8 md:grid-cols-2">
                             <div className="bg-white/10 dark:bg-white/5 backdrop-blur-lg p-8 rounded-2xl shadow-xl border border-white/20">
@@ -192,7 +192,7 @@ export default function Home() {
             <footer className="bg-white/5 backdrop-blur-sm border-t border-white/10">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="text-center text-gray-600 dark:text-gray-400">
-                        &copy; 2025 Lumina. All rights reserved.
+                        <span className="gradient-text font-semibold">&copy; 2025 Lumina. All rights reserved.</span>
                     </div>
                 </div>
             </footer>
