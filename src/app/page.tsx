@@ -4,27 +4,27 @@ import { DottedSurface } from '@/components/ui/DottedSurface';
 
 export default function Home() {
     return (
-        <div className="bg-black text-white min-h-screen">
+        <div className="text-white min-h-screen">
             {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-20 bg-white/80 dark:bg-black/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+            <header className="fixed top-0 left-0 right-0 z-20 bg-black/90 backdrop-blur-sm border-b border-white/10 shadow-lg">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <div className="flex-shrink-0">
-                            <Link href="/" className="text-2xl font-bold">
+                            <Link href="/" className="text-2xl font-bold text-white">
                                 <span className="gradient-text">Lumina</span> ✨
                             </Link>
                         </div>
                         <div className="hidden md:flex md:items-center md:space-x-8">
-                            <Link href="#features" className="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+                            <Link href="#features" className="text-gray-300 hover:text-amber-400 transition-colors">
                                 Features
                             </Link>
-                            <Link href="#for-who" className="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+                            <Link href="#for-who" className="text-gray-300 hover:text-amber-400 transition-colors">
                                 For Who?
                             </Link>
-                            <Link href="#testimonials" className="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+                            <Link href="#testimonials" className="text-gray-300 hover:text-amber-400 transition-colors">
                                 Testimonials
                             </Link>
-                            <Link href="/login" className="text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+                            <Link href="/login" className="text-gray-300 hover:text-amber-400 transition-colors">
                                 Sign In
                             </Link>
                         </div>
@@ -44,10 +44,10 @@ export default function Home() {
                 <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
                     <DottedSurface />
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center py-16">
-                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white leading-tight">
+                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
                             The Future of Learning, <br /> <span className="gradient-text">Personalized for You.</span>
                         </h1>
-                        <p className="mt-6 max-w-2xl mx-auto text-lg text-gray-600 dark:text-gray-400">
+                        <p className="mt-6 max-w-2xl mx-auto text-lg text-gray-300">
                             Lumina is an AI-driven, self-hosted platform that transforms your course materials into adaptive
                             learning pathways, automated assessments, and engaging experiences.
                         </p>
