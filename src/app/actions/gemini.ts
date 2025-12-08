@@ -138,6 +138,9 @@ export async function generateCourseChunk(chunkText: string, chunkIndex: number,
         const data = JSON.parse(jsonStr.trim());
         return { success: true, modules: data.modules || [] };
 
+    } catch (error: any) {
+        console.error("Error processing chunk:", error);
+        return { success: false, modules: [], error: error.message };
     }
 }
 
