@@ -21,8 +21,8 @@ export default function RootLayout({
             <body className={inter.className} suppressHydrationWarning>
                 <ThemeProvider
                     attribute="class"
-                    defaultTheme="system"
-                    enableSystem
+                    defaultTheme="dark"
+                    forcedTheme="dark"
                     disableTransitionOnChange
                 >
                     {children}

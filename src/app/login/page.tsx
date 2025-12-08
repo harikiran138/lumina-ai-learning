@@ -150,7 +150,7 @@ export default function LoginPage() {
             <div className="max-w-md w-full space-y-8 relative z-10 backdrop-blur-2xl bg-white/5 p-8 rounded-3xl border border-white/10 shadow-2xl">
                 <div>
                     <Link href="/" className="flex justify-center text-3xl font-bold">
-                        <span className="bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent">Lumina</span> ✨
+                        <span className="gradient-text">Lumina</span> ✨
                     </Link>
                     <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
                         {activeTab === 'signin' ? 'Welcome Back' : 'Create Account'}
@@ -164,24 +164,25 @@ export default function LoginPage() {
                     <button
                         suppressHydrationWarning
                         onClick={() => setActiveTab('signin')}
-                        className={`w-full py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === 'signin' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        className={`w-full py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === 'signin' ? 'bg-lumina-primary text-black shadow-lg shadow-lumina-primary/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                     >
                         Sign In
                     </button>
                     <button
                         suppressHydrationWarning
                         onClick={() => setActiveTab('signup')}
-                        className={`w-full py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === 'signup' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        className={`w-full py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === 'signup' ? 'bg-lumina-primary text-black shadow-lg shadow-lumina-primary/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                     >
                         Sign Up
                     </button>
+
                 </div>
 
                 {activeTab === 'signin' ? (
                     <form id="signin-form" className="mt-8 space-y-6" onSubmit={handleSignIn}>
                         <div className="space-y-5">
                             <div className="relative group">
-                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors w-5 h-5" />
+                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-lumina-primary transition-colors w-5 h-5" />
                                 <input
                                     id="signin-email"
                                     name="email"
@@ -191,12 +192,12 @@ export default function LoginPage() {
                                     suppressHydrationWarning
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all placeholder:text-sm"
+                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-lumina-primary/50 focus:border-lumina-primary outline-none transition-all placeholder:text-sm"
                                     placeholder="Email address"
                                 />
                             </div>
                             <div className="relative group">
-                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors w-5 h-5" />
+                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-lumina-primary transition-colors w-5 h-5" />
                                 <input
                                     id="signin-password"
                                     name="password"
@@ -206,14 +207,14 @@ export default function LoginPage() {
                                     suppressHydrationWarning
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all placeholder:text-sm"
+                                    className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-lumina-primary/50 focus:border-lumina-primary outline-none transition-all placeholder:text-sm"
                                     placeholder="Password"
                                 />
                                 <button
                                     type="button"
                                     suppressHydrationWarning
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-amber-500 transition-colors focus:outline-none"
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-lumina-primary transition-colors focus:outline-none"
                                 >
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
@@ -222,11 +223,11 @@ export default function LoginPage() {
 
                         <div className="flex items-center justify-between">
                             <div className="flex items-center">
-                                <input id="remember-me" name="remember-me" type="checkbox" className="h-4 w-4 rounded border-gray-700 bg-white/5 text-amber-500 focus:ring-amber-500/50" />
+                                <input id="remember-me" name="remember-me" type="checkbox" suppressHydrationWarning className="h-4 w-4 rounded border-gray-700 bg-white/5 text-lumina-primary focus:ring-lumina-primary/50" />
                                 <label htmlFor="remember-me" className="ml-2 block text-xs text-gray-400">Remember me</label>
                             </div>
                             <div className="text-sm">
-                                <a href="#" className="font-medium text-amber-500 hover:text-amber-400 text-xs">
+                                <a href="#" className="font-medium text-lumina-primary hover:text-yellow-400 text-xs">
                                     Forgot password?
                                 </a>
                             </div>
@@ -237,7 +238,7 @@ export default function LoginPage() {
                                 type="submit"
                                 disabled={isLoading}
                                 suppressHydrationWarning
-                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-amber-500/20 text-sm font-bold text-black bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all duration-300 transform hover:scale-[1.02]"
+                                className="glass-button w-full flex justify-center py-3 px-4 text-sm font-bold shadow-lg shadow-lumina-primary/20 transform hover:scale-[1.02]"
                             >
                                 {isLoading ? (
                                     <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -254,7 +255,7 @@ export default function LoginPage() {
                     <form id="signup-form" className="mt-8 space-y-6" onSubmit={handleSignUp}>
                         <div className="space-y-5">
                             <div className="relative group">
-                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors w-5 h-5" />
+                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-lumina-primary transition-colors w-5 h-5" />
                                 <input
                                     id="signup-name"
                                     name="name"
@@ -264,12 +265,12 @@ export default function LoginPage() {
                                     suppressHydrationWarning
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all placeholder:text-sm"
+                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-lumina-primary/50 focus:border-lumina-primary outline-none transition-all placeholder:text-sm"
                                     placeholder="Full Name"
                                 />
                             </div>
                             <div className="relative group">
-                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors w-5 h-5" />
+                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-lumina-primary transition-colors w-5 h-5" />
                                 <input
                                     id="signup-email"
                                     name="email"
@@ -279,12 +280,12 @@ export default function LoginPage() {
                                     suppressHydrationWarning
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all placeholder:text-sm"
+                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-lumina-primary/50 focus:border-lumina-primary outline-none transition-all placeholder:text-sm"
                                     placeholder="Email address"
                                 />
                             </div>
                             <div className="relative group">
-                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors w-5 h-5" />
+                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-lumina-primary transition-colors w-5 h-5" />
                                 <input
                                     id="signup-password"
                                     name="password"
@@ -294,27 +295,27 @@ export default function LoginPage() {
                                     suppressHydrationWarning
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all placeholder:text-sm"
+                                    className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-lumina-primary/50 focus:border-lumina-primary outline-none transition-all placeholder:text-sm"
                                     placeholder="Password"
                                 />
                                 <button
                                     type="button"
                                     suppressHydrationWarning
                                     onClick={() => setShowSignupPassword(!showSignupPassword)}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-amber-500 transition-colors focus:outline-none"
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-lumina-primary transition-colors focus:outline-none"
                                 >
                                     {showSignupPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
                             <div className="relative group">
-                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-amber-500 transition-colors w-5 h-5" />
+                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-lumina-primary transition-colors w-5 h-5" />
                                 <select
                                     id="role"
                                     name="role"
                                     required
                                     value={role}
                                     onChange={(e) => setRole(e.target.value as 'student' | 'teacher' | 'admin')}
-                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none transition-all appearance-none cursor-pointer"
+                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-lumina-primary/50 focus:border-lumina-primary outline-none transition-all appearance-none cursor-pointer"
                                 >
                                     <option value="" disabled className="bg-gray-900 text-gray-400">Select your role</option>
                                     <option value="student" className="bg-gray-900 text-white">Student</option>
@@ -328,7 +329,7 @@ export default function LoginPage() {
                                 type="submit"
                                 disabled={isLoading}
                                 suppressHydrationWarning
-                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-amber-500/20 text-sm font-bold text-black bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all duration-300 transform hover:scale-[1.02]"
+                                className="glass-button w-full flex justify-center py-3 px-4 text-sm font-bold shadow-lg shadow-lumina-primary/20 transform hover:scale-[1.02]"
                             >
                                 {isLoading ? (
                                     <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

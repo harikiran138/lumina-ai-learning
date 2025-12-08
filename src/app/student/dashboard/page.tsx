@@ -148,7 +148,7 @@ export default function StudentDashboard() {
         <div className="space-y-8">
             {/* Welcome Section */}
             <div className="relative z-10">
-                <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900 dark:text-white">
+                <h1 className="text-3xl md:text-4xl font-bold mb-2 text-white">
                     Welcome back, <span className="gradient-text">{dashboardData?.studentName || 'Student'}</span>!
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400">Here's your personalized learning snapshot.</p>
@@ -271,7 +271,7 @@ export default function StudentDashboard() {
             {/* Continue Learning */}
             <div>
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Continue Learning</h2>
+                    <h2 className="text-2xl font-bold text-white">Continue Learning</h2>
                     <Link href="/student/courses" className="text-sm font-bold text-lumina-primary hover:text-amber-400 px-4 py-2 bg-lumina-primary/10 rounded-lg transition-colors">View All →</Link>
                 </div>
 
@@ -399,8 +399,8 @@ export default function StudentDashboard() {
 
                             return (
                                 <div key={i} className={`text-center p-4 rounded-xl border transition-all ${ach.unlocked
-                                        ? 'bg-lumina-primary/5 border-lumina-primary/20 hover:bg-lumina-primary/10'
-                                        : 'bg-white/5 border-transparent opacity-60 grayscale'
+                                    ? 'bg-lumina-primary/5 border-lumina-primary/20 hover:bg-lumina-primary/10'
+                                    : 'bg-white/5 border-transparent opacity-60 grayscale'
                                     }`}>
                                     <div className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center shadow-lg ${ach.unlocked ? 'bg-gradient-to-br from-lumina-primary to-amber-600 text-black' : 'bg-gray-800 text-gray-500'
                                         }`}>
