@@ -8,20 +8,21 @@ export default function DashboardRedirect() {
 
     useEffect(() => {
         const checkSession = async () => {
-            if (typeof window !== 'undefined' && (window as any).luminaAPI) {
-                try {
-                    const user = await (window as any).luminaAPI.getCurrentUser();
-                    if (user) {
-                        (window as any).luminaUI.redirectToDashboard(user.role);
-                    } else {
-                        router.push('/login');
-                    }
-                } catch (e) {
+            try {
+                // Use modern API to get current user
+                // Note: The API currently checks sessionStorage
+                // In a real production app, we would verify the session validy with the server
+                const user = await import('@/lib/api').then(m => m.api.getCurrentUser());
+
+                if (user) {
+                    const targetPath = `/${user.role}/dashboard`;
+                    router.push(targetPath);
+                } else {
                     router.push('/login');
                 }
-            } else {
-                // If API not loaded yet, wait or redirect to login
-                setTimeout(checkSession, 500);
+            } catch (e) {
+                console.error("Dashboard redirect error:", e);
+                router.push('/login');
             }
         };
 

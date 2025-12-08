@@ -56,11 +56,8 @@ export default function LoginPage() {
             const message = error.message || 'Login failed';
 
             // UI Notification
-            if (typeof window !== 'undefined' && (window as any).luminaUI) {
-                (window as any).luminaUI.showNotification(message, 'error');
-            } else {
-                alert(message);
-            }
+            // Simple alert for now
+            alert(message);
             setIsLoading(false);
         }
     };
@@ -101,11 +98,8 @@ export default function LoginPage() {
             console.error('Signup failed:', error);
             const message = error.message || 'Signup failed';
 
-            if (typeof window !== 'undefined' && (window as any).luminaUI) {
-                (window as any).luminaUI.showNotification(message, 'error');
-            } else {
-                alert(message);
-            }
+            // Simple alert for now
+            alert(message);
             setIsLoading(false);
         }
     };

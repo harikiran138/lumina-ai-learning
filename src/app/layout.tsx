@@ -26,10 +26,7 @@ export default function RootLayout({
                     disableTransitionOnChange
                 >
                     {children}
-                    {/* Global Scripts */}
-                    <Script src="/js/utils.js?v=4" strategy="beforeInteractive" />
-                    <Script src="/js/database.js?v=4" strategy="beforeInteractive" />
-                    <Script src="/js/api.js?v=4" strategy="beforeInteractive" />
+
                 </ThemeProvider>
             </body>
         </html>
