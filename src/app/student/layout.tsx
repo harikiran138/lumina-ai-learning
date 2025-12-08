@@ -13,11 +13,11 @@ export default function StudentLayout({
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="min-h-screen relative overflow-hidden bg-white dark:bg-black text-gray-900 dark:text-gray-100">
+        <div className="min-h-screen relative overflow-hidden bg-black text-gray-100">
             <BGPattern
                 variant="grid"
                 size={32}
-                fill="rgba(100, 100, 100, 0.1)"
+                fill="rgba(100, 100, 100, 0.05)"
                 className="fixed inset-0 z-0 pointer-events-none"
             />
 
