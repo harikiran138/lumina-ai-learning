@@ -82,64 +82,110 @@ export default function CourseGeneratorPage() {
         setAnalysisProgress(10);
 
         try {
-            // Import only PDF parser for client side extraction
-            const { extractTextFromPDF, extractStructuredData } = await import('@/lib/pdf-parser');
-            const { saveTextbook, getTextbookContent } = await import('@/app/actions/gemini');
+            // Import Index-Driven tools
+            const { extractTextFromPDF, extractFirstNPages, extractPageRange } = await import('@/lib/pdf-parser');
+            const { saveTextbook, analyzeTableOfContents } = await import('@/app/actions/gemini');
 
-            // 1. Extract Text (Client Side) for DB Storage
-            let fullText = "";
-            setAiProgress('Reading Document...');
+            // 1. Scan Index (TOC)
+            setAiProgress('Scanning Table of Contents (Index Driven Extraction)...');
             setAnalysisProgress(5);
 
+            let tocText = "";
+            let fullTextForBackup = ""; // We still need full text for Stage 1 backup
+
             if (file.type === 'application/pdf') {
-                fullText = await extractTextFromPDF(file);
+                // Get first 20 pages for Index Analysis
+                tocText = await extractFirstNPages(file, 20);
+                // Also kick off full extraction in background/or just do it if fast
+                fullTextForBackup = await extractTextFromPDF(file);
             } else {
-                fullText = await file.text();
+                tocText = await file.text(); // For TXT, just use whole thing
+                fullTextForBackup = tocText;
             }
 
-            if (!fullText || fullText.trim().length < 50) {
-                throw new Error("Could not extract enough text from this file.");
+            // 2. Analyze Structure
+            setAiProgress('Analyzing Textbook Layout & Structure...');
+            setAnalysisProgress(15);
+
+            const tocResult = await analyzeTableOfContents(tocText);
+            if (!tocResult.success || !tocResult.structure) {
+                console.warn("TOC Analysis failed, falling back." + tocResult.error);
+                throw new Error("Could not map textbook structure from Index.");
             }
 
-            // 2. Save to MongoDB (Stage 1) - KEEPING THIS for reference/search
+            const rootNode = tocResult.structure;
+            console.log("Detected Structure Tree:", rootNode);
+
+            // 3. Save Backup (Stage 1)
             setAiProgress('Saving raw content...');
-            setAnalysisProgress(10);
-            const saveResult = await saveTextbook(file.name, fullText, "teacher-123");
+            await saveTextbook(file.name, fullTextForBackup, "teacher-123");
 
-            if (!saveResult.success || !saveResult.id) {
-                throw new Error("Failed to save textbook to database.");
+            // 4. Flatten Recursive Structure -> Linear Modules (UI Compatibility)
+            // We map "Units" -> Modules, "Chapters" -> Topics
+            setAiProgress('Extracting & Mapping Content (1-to-1 Fidelity)...');
+            setAnalysisProgress(25);
+
+            const finalModules: Module[] = [];
+
+            // Recursive helper to find Units/Chapters
+            const traverseAndExtract = async (node: any, parentModule: Module | null) => {
+                // Determine Role
+                const isUnit = node.type === 'unit' || node.type === 'part' || (node.type === 'chapter' && !parentModule);
+                const isTopic = node.type === 'section' || (node.type === 'chapter' && parentModule);
+
+                if (isUnit) {
+                    const newModule: Module = {
+                        title: node.title,
+                        summary: "Unit content",
+                        topics: []
+                    };
+                    finalModules.push(newModule);
+                    // Recurse
+                    if (node.children) {
+                        for (const child of node.children) {
+                            await traverseAndExtract(child, newModule);
+                        }
+                    }
+                } else if (isTopic && parentModule && node.pageRange) {
+                    // It's a topic. Extract its SPECIFIC CONTENT.
+                    const range = node.pageRange;
+                    let contentText = "";
+                    try {
+                        if (file.type === 'application/pdf') {
+                            contentText = await extractPageRange(file, range.start, range.end);
+                        } else {
+                            contentText = "Text content placeholder";
+                        }
+                    } catch (e) {
+                        console.error(`Failed to extract pages ${range.start}-${range.end}`);
+                        contentText = "Content extraction error.";
+                    }
+
+                    // Add as Topic
+                    parentModule.topics.push({
+                        title: node.title,
+                        goal: "Understand " + node.title,
+                        pageRef: `${range.start}-${range.end}`,
+                        content: [{ type: 'paragraph', content: contentText }]
+                    });
+                } else if (node.children) {
+                    // Keep searching down if it's just a wrapper
+                    for (const child of node.children) {
+                        await traverseAndExtract(child, parentModule);
+                    }
+                }
+            };
+
+            await traverseAndExtract(rootNode, null);
+
+            // Fallback if structure didn't map well
+            if (finalModules.length === 0) {
+                throw new Error("No modules extracted. Structure format might be unsupported.");
             }
-            const textbookId = saveResult.id;
 
-            // 3. DETERMINISTIC STRUCTURAL IMPORT (No AI = 1-to-1 Fidelity)
-            setAiProgress('Structuring Content (Native PDF Layout Analysis)...');
-            setAnalysisProgress(30);
-
-            let structuredModules: any[] = [];
-
-            if (file.type === 'application/pdf') {
-                // Use the new Font-Aware parser
-                structuredModules = await extractStructuredData(file);
-            } else {
-                // Fallback for TXT files (simple split)
-                structuredModules = [{
-                    title: "Imported Text",
-                    summary: "Raw content",
-                    topics: [{
-                        title: "Content",
-                        goal: "Read text",
-                        content: [{ type: 'paragraph', content: fullText }]
-                    }]
-                }];
-            }
-
-            console.log("Extracted Modules:", structuredModules.length);
-
+            setModules(finalModules);
             setAnalysisProgress(100);
-            setModules(structuredModules);
             setStep('review');
-
-            // Skip the AI loop entirely. We trusting the PDF layout.
 
 
         } catch (e: any) {

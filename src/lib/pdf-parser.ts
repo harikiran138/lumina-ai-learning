@@ -235,8 +235,79 @@ export async function extractStructuredData(file: File): Promise<StructuredModul
 
         return modules;
 
+        return modules;
+
     } catch (e: any) {
         console.error("Structured Parsing Error:", e);
         throw new Error("Failed to parse PDF structure: " + e.message);
+    }
+}
+
+/**
+ * Extracts text from the first N pages (usually for TOC analysis).
+ */
+export async function extractFirstNPages(file: File, n: number = 20): Promise<string> {
+    if (typeof window === 'undefined') return '';
+
+    try {
+        const pdfjsModule = await import('pdfjs-dist');
+        const pdfjsLib = pdfjsModule.default || pdfjsModule;
+        const version = pdfjsLib.version;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
+
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+
+        let fullText = '';
+        const limit = Math.min(n, pdf.numPages);
+
+        for (let i = 1; i <= limit; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map((item: any) => item.str).join(' ');
+            fullText += `\n\n[[PAGE_${i}]]\n` + pageText;
+        }
+
+        return fullText;
+    } catch (e: any) {
+        console.error("PDF TOC Extraction Error:", e);
+        throw new Error("Failed to read PDF TOC: " + e.message);
+    }
+}
+
+/**
+ * Extracts text from a specific range of pages (inclusive).
+ */
+export async function extractPageRange(file: File, start: number, end: number): Promise<string> {
+    if (typeof window === 'undefined') return '';
+
+    try {
+        const pdfjsModule = await import('pdfjs-dist');
+        const pdfjsLib = pdfjsModule.default || pdfjsModule;
+        const version = pdfjsLib.version;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
+
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+
+        let fullText = '';
+        // Ensure bounds
+        const startPage = Math.max(1, start);
+        const endPage = Math.min(pdf.numPages, end);
+
+        for (let i = startPage; i <= endPage; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            // Basic join for content
+            const pageText = textContent.items.map((item: any) => item.str).join(' ');
+            fullText += `\n` + pageText;
+        }
+
+        return fullText;
+    } catch (e: any) {
+        console.error("PDF Range Extraction Error:", e);
+        throw new Error(`Failed to extract pages ${start}-${end}: ` + e.message);
     }
 }

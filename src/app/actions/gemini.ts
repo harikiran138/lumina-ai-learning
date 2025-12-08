@@ -138,9 +138,65 @@ export async function generateCourseChunk(chunkText: string, chunkIndex: number,
         const data = JSON.parse(jsonStr.trim());
         return { success: true, modules: data.modules || [] };
 
-    } catch (error: any) {
-        console.error(`Error processing chunk ${chunkIndex}:`, error);
-        // Return empty modules on specific error so we don't break the whole chain
-        return { success: false, modules: [], error: error.message };
+    }
+}
+
+/**
+ * INDEX-DRIVEN: Analyzes the Table of Contents text to map out the book structure.
+ */
+export async function analyzeTableOfContents(tocText: string): Promise<{ success: boolean, structure?: any, error?: string }> {
+    // Check configuration lazily
+    const groqProvider = createGroqClient();
+    if (!groqProvider) return { success: false, error: "API Key missing" };
+
+    try {
+        const prompt = `
+        You are an expert Librarian and Data Structuring AI.
+        Your task is to analyze the provided text, which contains the TABLE OF CONTENTS (TOC) of a textbook.
+        
+        GOAL: construct a hierarchical JSON tree of the book's structure.
+        
+        RULES:
+        1. Identify the hierarchy: Parts > Units > Chapters > Sections.
+        2. Extract the START PAGE for each item.
+        3. Infer the END PAGE based on the start of the next item. (For the last item, add 10 pages).
+        4. Return a recursive JSON object matching the 'CourseNode' interface.
+        
+        CourseNode Interface:
+        {
+            "id": "string (unique)",
+            "type": "root" | "unit" | "chapter" | "section",
+            "title": "string",
+            "pageRange": { "start": number, "end": number },
+            "children": [ ...CourseNode[] ]
+        }
+
+        INPUT TEXT (TOC):
+        ${tocText}
+        
+        OUTPUT JSON ONLY.
+        `;
+
+        const { text } = await generateText({
+            model: groqProvider('llama-3.1-8b-instant'),
+            prompt: prompt,
+            temperature: 0.0,
+            format: 'json'
+        });
+
+        // Parse JSON safely
+        let jsonStr = text;
+        if (jsonStr.includes("```json")) {
+            jsonStr = jsonStr.split("```json")[1].split("```")[0];
+        } else if (jsonStr.includes("```")) {
+            jsonStr = jsonStr.split("```")[1].split("```")[0];
+        }
+
+        const structure = JSON.parse(jsonStr.trim());
+        return { success: true, structure };
+
+    } catch (e: any) {
+        console.error("TOC Analysis Error:", e);
+        return { success: false, error: e.message };
     }
 }
