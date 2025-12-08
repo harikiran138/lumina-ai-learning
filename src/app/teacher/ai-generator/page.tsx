@@ -108,84 +108,104 @@ export default function CourseGeneratorPage() {
             setAnalysisProgress(15);
 
             const tocResult = await analyzeTableOfContents(tocText);
-            if (!tocResult.success || !tocResult.structure) {
-                console.warn("TOC Analysis failed, falling back." + tocResult.error);
-                throw new Error("Could not map textbook structure from Index.");
+
+            // Branch: Index-Driven OR Fallback
+            if (tocResult.success && tocResult.structure) {
+                console.log("Index-Driven Success. Mapping tree...");
+                const rootNode = tocResult.structure;
+
+                // 3. Save Backup (Stage 1)
+                setAiProgress('Saving raw content...');
+                await saveTextbook(file.name, fullTextForBackup, "teacher-123");
+
+                // 4. Flatten Recursive Structure
+                setAiProgress('Extracting & Mapping Content (1-to-1 Fidelity)...');
+                setAnalysisProgress(25);
+
+                const finalModules: Module[] = [];
+
+                // ... (The Recursive Helper from before)
+                const traverseAndExtract = async (node: any, parentModule: Module | null) => {
+                    // Determine Role
+                    const isUnit = node.type === 'unit' || node.type === 'part' || (node.type === 'chapter' && !parentModule);
+                    const isTopic = node.type === 'section' || (node.type === 'chapter' && parentModule);
+
+                    if (isUnit) {
+                        const newModule: Module = {
+                            title: node.title,
+                            summary: "Unit content",
+                            topics: []
+                        };
+                        finalModules.push(newModule);
+                        // Recurse
+                        if (node.children) {
+                            for (const child of node.children) {
+                                await traverseAndExtract(child, newModule);
+                            }
+                        }
+                    } else if (isTopic && parentModule && node.pageRange) {
+                        // It's a topic. Extract its SPECIFIC CONTENT.
+                        const range = node.pageRange;
+                        let contentText = "";
+                        try {
+                            if (file.type === 'application/pdf') {
+                                contentText = await extractPageRange(file, range.start, range.end);
+                            } else {
+                                contentText = "Text content placeholder";
+                            }
+                        } catch (e) {
+                            console.error(`Failed to extract pages ${range.start}-${range.end}`);
+                            contentText = "Content extraction error.";
+                        }
+
+                        // Add as Topic
+                        parentModule.topics.push({
+                            title: node.title,
+                            goal: "Understand " + node.title,
+                            pageRef: `${range.start}-${range.end}`,
+                            content: [{ type: 'paragraph', content: contentText }]
+                        });
+                    } else if (node.children) {
+                        // Keep searching down if it's just a wrapper
+                        for (const child of node.children) {
+                            await traverseAndExtract(child, parentModule);
+                        }
+                    }
+                };
+
+                await traverseAndExtract(rootNode, null);
+
+                if (finalModules.length > 0) {
+                    setModules(finalModules);
+                    setAnalysisProgress(100);
+                    setStep('review');
+                    return;
+                }
             }
 
-            const rootNode = tocResult.structure;
-            console.log("Detected Structure Tree:", rootNode);
+            // FALLBACK SYSTEM (If TOC Analysis failed or returned empty)
+            console.warn("TOC Analysis failed or empty. Falling back to Layout Parser.");
+            setAiProgress("Index not clear. Switching to Layout Analysis...");
 
-            // 3. Save Backup (Stage 1)
+            // 3. Save Backup (Stage 1) - If not done yet
             setAiProgress('Saving raw content...');
             await saveTextbook(file.name, fullTextForBackup, "teacher-123");
 
-            // 4. Flatten Recursive Structure -> Linear Modules (UI Compatibility)
-            // We map "Units" -> Modules, "Chapters" -> Topics
-            setAiProgress('Extracting & Mapping Content (1-to-1 Fidelity)...');
-            setAnalysisProgress(25);
+            setAnalysisProgress(40);
 
-            const finalModules: Module[] = [];
-
-            // Recursive helper to find Units/Chapters
-            const traverseAndExtract = async (node: any, parentModule: Module | null) => {
-                // Determine Role
-                const isUnit = node.type === 'unit' || node.type === 'part' || (node.type === 'chapter' && !parentModule);
-                const isTopic = node.type === 'section' || (node.type === 'chapter' && parentModule);
-
-                if (isUnit) {
-                    const newModule: Module = {
-                        title: node.title,
-                        summary: "Unit content",
-                        topics: []
-                    };
-                    finalModules.push(newModule);
-                    // Recurse
-                    if (node.children) {
-                        for (const child of node.children) {
-                            await traverseAndExtract(child, newModule);
-                        }
-                    }
-                } else if (isTopic && parentModule && node.pageRange) {
-                    // It's a topic. Extract its SPECIFIC CONTENT.
-                    const range = node.pageRange;
-                    let contentText = "";
-                    try {
-                        if (file.type === 'application/pdf') {
-                            contentText = await extractPageRange(file, range.start, range.end);
-                        } else {
-                            contentText = "Text content placeholder";
-                        }
-                    } catch (e) {
-                        console.error(`Failed to extract pages ${range.start}-${range.end}`);
-                        contentText = "Content extraction error.";
-                    }
-
-                    // Add as Topic
-                    parentModule.topics.push({
-                        title: node.title,
-                        goal: "Understand " + node.title,
-                        pageRef: `${range.start}-${range.end}`,
-                        content: [{ type: 'paragraph', content: contentText }]
-                    });
-                } else if (node.children) {
-                    // Keep searching down if it's just a wrapper
-                    for (const child of node.children) {
-                        await traverseAndExtract(child, parentModule);
-                    }
-                }
-            };
-
-            await traverseAndExtract(rootNode, null);
-
-            // Fallback if structure didn't map well
-            if (finalModules.length === 0) {
-                throw new Error("No modules extracted. Structure format might be unsupported.");
+            let structuredModules: any[] = [];
+            if (file.type === 'application/pdf') {
+                const { extractStructuredData } = await import('@/lib/pdf-parser');
+                structuredModules = await extractStructuredData(file);
             }
 
-            setModules(finalModules);
-            setAnalysisProgress(100);
-            setStep('review');
+            if (structuredModules.length > 0) {
+                setModules(structuredModules);
+                setAnalysisProgress(100);
+                setStep('review');
+            } else {
+                throw new Error("Analysis failed. improved parser found no content.");
+            }
 
 
         } catch (e: any) {
