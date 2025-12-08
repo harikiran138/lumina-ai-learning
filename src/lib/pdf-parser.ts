@@ -65,25 +65,83 @@ export async function extractStructuredData(file: File): Promise<StructuredModul
         const pdfjsModule = await import('pdfjs-dist');
         const pdfjsLib = pdfjsModule.default || pdfjsModule;
         const version = pdfjsLib.version;
+        // Use standard CDN for worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
 
         const arrayBuffer = await file.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
         const pdf = await loadingTask.promise;
 
-        const allItems: { str: string, h: number, page: number }[] = [];
+        const allLines: { text: string, h: number, y: number, page: number, isBold: boolean }[] = [];
         const heightFreq: { [key: number]: number } = {};
 
-        // 1. Pass 1: Gather all text items and analyze font heights
+        // 1. Pass 1: Extract items and Group by Line (Y-coord)
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
+            // Get font styles to check for 'Bold'
+            const styles = textContent.styles;
 
-            for (const item of textContent.items as any[]) {
-                const h = Math.round(item.transform[3]); // Font Height
-                if (item.str.trim().length > 0) {
-                    allItems.push({ str: item.str, h, page: i });
-                    heightFreq[h] = (heightFreq[h] || 0) + 1;
+            const rawItems = (textContent.items as any[]).map(item => ({
+                str: item.str,
+                h: Math.round(item.transform[3]), // Font Height
+                y: Math.round(item.transform[5]), // Y-coord (0 is bottom)
+                fontName: item.fontName,
+                hasEOL: item.hasEOL
+            }));
+
+            // Sort by Y (descending -> top to bottom), then X (ascending -> left to right)
+            // Note: raw textContent is usually already sorted, but PDF Y is inverted (0 at bottom). 
+            // We group by Y tolerance.
+
+            let currentLineY = -1;
+            let currentLineText: string[] = [];
+            let currentLineMaxH = 0;
+            let currentLineIsBold = false;
+
+            // Simple line grouper
+            for (const item of rawItems) {
+                // If Item is on a new visual line (allow 2px tolerance) or explicitly marked EOL
+                if (currentLineY === -1 || Math.abs(item.y - currentLineY) > 5) {
+                    // Flush old line
+                    if (currentLineText.length > 0) {
+                        allLines.push({
+                            text: currentLineText.join(' ').trim(),
+                            h: currentLineMaxH,
+                            y: currentLineY,
+                            page: i,
+                            isBold: currentLineIsBold
+                        });
+                    }
+                    // Start new line
+                    currentLineY = item.y;
+                    currentLineText = [item.str];
+                    currentLineMaxH = item.h;
+                    currentLineIsBold = styles[item.fontName]?.fontFamily?.includes('Bold') || item.fontName.includes('Bold') || false;
+                } else {
+                    // Append to current line
+                    currentLineText.push(item.str);
+                    currentLineMaxH = Math.max(currentLineMaxH, item.h);
+                    if (!currentLineIsBold) {
+                        currentLineIsBold = styles[item.fontName]?.fontFamily?.includes('Bold') || item.fontName.includes('Bold') || false;
+                    }
+                }
+            }
+            // Flush last line of page
+            if (currentLineText.length > 0) {
+                allLines.push({
+                    text: currentLineText.join(' ').trim(),
+                    h: currentLineMaxH,
+                    y: currentLineY,
+                    page: i,
+                    isBold: currentLineIsBold
+                });
+            }
+
+            // Collect stats for Body Text detection
+            for (const item of rawItems) {
+                if (item.str.trim()) {
+                    heightFreq[item.h] = (heightFreq[item.h] || 0) + 1;
                 }
             }
         }
@@ -99,98 +157,81 @@ export async function extractStructuredData(file: File): Promise<StructuredModul
         }
         console.log(`Detected Body Font Height: ${bodyHeight}`);
 
-        // 3. Build Structure
+        // 3. Build Structure with Strict Rules
         const modules: StructuredModule[] = [];
         let currentModule: StructuredModule | null = null;
         let currentTopic: StructuredTopic | null = null;
 
-        // Default Module if none found initially
-        if (allItems.length > 0) {
-            currentModule = { title: "Introduction", summary: "Imported Content", topics: [] };
-            modules.push(currentModule);
-        }
+        // Regex Patterns
+        const MODULE_PATTERN = /(UNIT|MODULE|CHAPTER)\s+[IVX0-9]+/i; // e.g. "UNIT I", "Chapter 5"
+        const TOPIC_PATTERN = /^\d+\.\d+/; // e.g. "1.2 Types of Networks"
 
-        // Buffer for combining lines into paragraphs
-        let paragraphBuffer: string[] = [];
-
-        const flushParagraph = () => {
-            if (paragraphBuffer.length > 0 && currentTopic) {
-                const text = paragraphBuffer.join(' ');
-                // Detect list items
-                if (text.trim().startsWith('•') || text.trim().startsWith('-') || /^\d+\./.test(text.trim())) {
-                    currentTopic.content.push({ type: 'list', content: text });
-                } else {
-                    currentTopic.content.push({ type: 'paragraph', content: text });
-                }
-                paragraphBuffer = [];
+        // Helper to init structures
+        const ensureModule = (title: string = "Introduction") => {
+            if (!currentModule) {
+                currentModule = { title, summary: "", topics: [] };
+                modules.push(currentModule);
+            }
+        };
+        const ensureTopic = (title: string = "Overview", page: number) => {
+            ensureModule();
+            if (!currentTopic || currentTopic.title !== title) {
+                currentTopic = {
+                    title,
+                    goal: "Learn section content",
+                    pageRef: page.toString(),
+                    content: [],
+                    subtopics: []
+                };
+                currentModule!.topics.push(currentTopic);
             }
         };
 
-        for (const item of allItems) {
-            const isHeading = item.h > bodyHeight * 1.2;
-            const isModuleTitle = item.h > bodyHeight * 1.5; // Bigger heading = Module
+        for (const line of allLines) {
+            if (!line.text) continue;
 
-            if (isModuleTitle) {
-                flushParagraph();
-                // Create New Module
+            const isBig = line.h > bodyHeight * 1.1;
+            const isHuge = line.h > bodyHeight * 1.4;
+
+            // Rule 1: Module Detection (Strict Pattern OR Huge Font)
+            if (MODULE_PATTERN.test(line.text) || isHuge) {
                 currentModule = {
-                    title: item.str,
+                    title: line.text,
                     summary: "",
                     topics: []
                 };
                 modules.push(currentModule);
+                currentTopic = null; // Reset topic
+                continue;
+            }
 
-                // Also create a default topic for this module to catch immediate content
+            // Rule 2: Lesson/Topic Detection (Numbered Pattern OR Big+Bold)
+            if (TOPIC_PATTERN.test(line.text) || (isBig && line.isBold)) {
+                ensureModule();
                 currentTopic = {
-                    title: "Overview",
-                    goal: "Understand segment",
-                    pageRef: item.page.toString(),
+                    title: line.text,
+                    goal: "Section details",
+                    pageRef: line.page.toString(),
                     content: [],
                     subtopics: []
                 };
-                currentModule.topics.push(currentTopic);
+                currentModule!.topics.push(currentTopic);
+                continue;
+            }
 
-            } else if (isHeading) {
-                flushParagraph();
-                // Create New Topic in current Module
-                if (!currentModule) {
-                    currentModule = { title: "General Content", summary: "", topics: [] };
-                    modules.push(currentModule);
-                }
+            // Rule 3: Subtopic / Key Point (Bold but not big, or dashed list)
+            // Just treat as content with special type for now to match UI schema
+            ensureTopic("General Content", line.page);
 
-                currentTopic = {
-                    title: item.str,
-                    goal: "Learn key concepts",
-                    pageRef: item.page.toString(),
-                    content: [],
-                    subtopics: []
-                };
-                currentModule.topics.push(currentTopic);
-
+            if (line.text.trim().startsWith('•') || line.text.trim().startsWith('-')) {
+                currentTopic!.content.push({ type: 'list', content: line.text });
+            } else if (line.isBold && !isBig) {
+                // Inline header / subtopic
+                currentTopic!.content.push({ type: 'paragraph', content: `**${line.text}**` });
             } else {
-                // Body Text
-                if (!currentTopic) {
-                    if (!currentModule) {
-                        currentModule = { title: "Document Start", summary: "", topics: [] };
-                        modules.push(currentModule);
-                    }
-                    currentTopic = {
-                        title: "Introductory Text",
-                        goal: "Introduction",
-                        pageRef: item.page.toString(),
-                        content: [],
-                        subtopics: []
-                    };
-                    currentModule.topics.push(currentTopic);
-                }
-
-                // Check if it's a new line/paragraph break based on implicit logic or simply accumulate
-                // For PDF, simple accumulation is often safest unless position jumps. 
-                // We'll just accumulate for now.
-                paragraphBuffer.push(item.str);
+                currentTopic!.content.push({ type: 'paragraph', content: line.text });
             }
         }
-        flushParagraph(); // Final flush
 
         return modules;
 
