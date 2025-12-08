@@ -183,8 +183,7 @@ export async function analyzeTableOfContents(tocText: string): Promise<{ success
         const { text } = await generateText({
             model: groqProvider('llama-3.1-8b-instant'),
             prompt: prompt,
-            temperature: 0.0,
-            format: 'json'
+            temperature: 0.0
         });
 
         // Parse JSON safely
