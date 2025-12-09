@@ -1,49 +1,51 @@
 'use server';
 
+import { generateText } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
+
+// Initialize Groq helper - lazily or safely
+const createGroqClient = () => {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+        console.error("GROQ_API_KEY is missing");
+        return null;
+    }
+    return createOpenAI({
+        apiKey: apiKey,
+        baseURL: 'https://api.groq.com/openai/v1',
+    });
+};
+
 export async function chatWithAI(messages: any[]) {
     try {
-        const apiKey = process.env.AI_API_KEY;
-
-        if (!apiKey) {
+        const groqProvider = createGroqClient();
+        if (!groqProvider) {
             return {
-                success: false,
-                error: 'AI API Key is not configured on the server.'
+                id: 'error',
+                role: 'assistant',
+                content: "I'm sorry, my AI brain is currently disconnected (API Key missing). Please check the system configuration."
             };
         }
 
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://lumina-learning.com', // Placeholder
-                'X-Title': 'Lumina AI Tutor'
-            },
-            body: JSON.stringify({
-                model: 'meta-llama/llama-3.2-3b-instruct:free', // Default to free model, can be env var too
-                messages: [
-                    { role: 'system', content: 'You are an AI Tutor for students. Be helpful, concise, and educational.' },
-                    ...messages
-                ]
-            })
+        // Convert messages to AI SDK format if needed, but generateText usually takes them directly if they match
+        // Assuming messages are [{ role, content }]
+        const response = await generateText({
+            model: groqProvider('llama-3.1-8b-instant'),
+            messages: messages,
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('OpenRouter API Error:', errorText);
-            return {
-                success: false,
-                error: `AI Provider Error (${response.status}): ${errorText.substring(0, 100)}...`
-            };
-        }
+        return {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: response.text
+        };
 
-        const data = await response.json();
-        const aiText = data.choices?.[0]?.message?.content || "Sorry, I couldn't understand that.";
-
-        return { success: true, message: aiText };
-
-    } catch (error) {
-        console.error('Server AI Action Error:', error);
-        return { success: false, error: 'Internal server error during AI request.' };
+    } catch (e: any) {
+        console.error("Chat AI Error:", e);
+        return {
+            id: 'error',
+            role: 'assistant',
+            content: "I'm having trouble thinking right now. Please try again later."
+        };
     }
 }
