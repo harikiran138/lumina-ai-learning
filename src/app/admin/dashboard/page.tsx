@@ -1,6 +1,6 @@
 
 import { Metadata } from 'next';
-import { Users, BookOpen, Database, Shield, Activity, Server, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Users, BookOpen, Database, Shield, Activity, Server, AlertTriangle, CheckCircle, GraduationCap } from 'lucide-react';
 
 export const metadata: Metadata = {
     title: 'Admin Dashboard | Lumina',
@@ -15,6 +15,8 @@ async function getAdminStats() {
 
         return stats || {
             totalUsers: 0,
+            totalStudents: 0,
+            totalTeachers: 0,
             totalCourses: 0,
             systemHealth: '0%',
             securityAlerts: 0
@@ -23,6 +25,8 @@ async function getAdminStats() {
         console.error("Failed to fetch admin stats", e);
         return {
             totalUsers: 0,
+            totalStudents: 0,
+            totalTeachers: 0,
             totalCourses: 0,
             systemHealth: '0%',
             securityAlerts: 0
@@ -47,10 +51,17 @@ export default async function AdminDashboard() {
                 <StatCard
                     icon={Users}
                     color="blue"
-                    label="Total Users"
-                    value={stats.totalUsers}
-                    subtext="Registered accounts"
+                    label="Total Students"
+                    value={stats.totalStudents || 0}
+                    subtext="Enrolled learners"
                     trend="+12% growth"
+                />
+                <StatCard
+                    icon={GraduationCap}
+                    color="green"
+                    label="Total Teachers"
+                    value={stats.totalTeachers || 0}
+                    subtext="Active instructors"
                 />
                 <StatCard
                     icon={BookOpen}
@@ -60,18 +71,11 @@ export default async function AdminDashboard() {
                     subtext="Active curricula"
                 />
                 <StatCard
-                    icon={Activity}
-                    color="green"
-                    label="System Health"
-                    value={`${stats.systemHealth}%`}
-                    subtext="Operational status"
-                />
-                <StatCard
                     icon={Shield}
                     color="purple"
-                    label="Security"
-                    value={stats.securityAlerts}
-                    subtext="Active alerts"
+                    label="Total Users"
+                    value={stats.totalUsers}
+                    subtext="All accounts"
                     trend="Secure"
                 />
             </div>

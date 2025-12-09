@@ -1077,10 +1077,14 @@ export async function getAdminDashboard(email: string) {
         const db = client.db("lumina-database");
 
         const usersCount = await db.collection("users").countDocuments();
+        const studentCount = await db.collection("users").countDocuments({ role: 'student' });
+        const teacherCount = await db.collection("users").countDocuments({ role: 'teacher' });
         const coursesCount = await db.collection("courses").countDocuments();
 
         return {
             totalUsers: usersCount,
+            totalStudents: studentCount,
+            totalTeachers: teacherCount,
             totalCourses: coursesCount,
             systemHealth: '98%',
             securityAlerts: 0
@@ -1443,8 +1447,106 @@ export async function getAllAILogsAdmin() {
         const db = client.db("lumina-database");
         const logs = await db.collection("ai_logs").find().sort({ timestamp: -1 }).limit(100).toArray();
         return serializeMongoObject(logs);
+        // ... existing code ...
     } catch (e) {
         console.error("Admin: Error fetching AI logs", e);
+        return [];
+    }
+}
+
+
+export async function deleteAILog(email: string, logId: string) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        // Verify admin
+        const admin = await db.collection("users").findOne({ email: email, role: 'admin' });
+        if (!admin) return { success: false, error: 'Unauthorized' };
+
+        await db.collection("ai_logs").deleteOne({ _id: new ObjectId(logId) });
+        return { success: true };
+    } catch (e) {
+        console.error("Admin: Error deleting AI log", e);
+        return { success: false, error: "Failed to delete log" };
+    }
+}
+
+export async function deleteUser(adminEmail: string, userId: string) {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        // Verify admin
+        const admin = await db.collection("users").findOne({ email: adminEmail, role: 'admin' });
+        if (!admin) return { success: false, error: 'Unauthorized' };
+
+        // Delete user
+        await db.collection("users").deleteOne({ _id: new ObjectId(userId) });
+
+        // Cleanup related data
+        await db.collection("progress").deleteMany({ userId: userId });
+        await db.collection("notes").deleteMany({ userId: userId });
+        await db.collection("chat_history").deleteMany({ userId: userId });
+        await db.collection("ai_logs").deleteMany({ userId: userId });
+
+        return { success: true };
+    } catch (e) {
+        console.error("Admin: Error deleting user", e);
+        return { success: false, error: "Failed to delete user" };
+    }
+}
+
+export async function getAllStudentsWithProgress() {
+    try {
+        const client = await clientPromise;
+        const db = client.db("lumina-database");
+
+        // Get all students
+        const students = await db.collection("users").find({ role: 'student' }).toArray();
+        const studentIds = students.map(s => s._id.toString());
+
+        // Get progress for all these students
+        const allProgress = await db.collection("progress").find({
+            userId: { $in: studentIds }
+        }).toArray();
+
+        // Get all courses to map names
+        const allCourses = await db.collection("courses").find().toArray();
+        const courseMap = new Map(allCourses.map(c => [c._id.toString(), c.name]));
+
+        // Combine data
+        return serializeMongoObject(students.map(student => {
+            const sId = student._id.toString();
+            const studentProgressRecords = allProgress.filter(p => p.userId === sId);
+
+            // Calculate stats
+            const coursesEnrolled = studentProgressRecords.length;
+            const avgProgress = coursesEnrolled > 0
+                ? Math.round(studentProgressRecords.reduce((acc, curr) => acc + (curr.progress || 0), 0) / coursesEnrolled)
+                : 0;
+
+            const coursesList = studentProgressRecords.map(p => ({
+                courseId: p.courseId,
+                courseName: courseMap.get(p.courseId) || 'Unknown Course',
+                progress: p.progress || 0,
+                lastAccessed: p.lastAccessed
+            }));
+
+            return {
+                id: sId,
+                name: student.name,
+                email: student.email,
+                avatar: student.avatar,
+                coursesEnrolled,
+                avgProgress,
+                courses: coursesList,
+                lastActive: student.lastActive || student.createdAt
+            };
+        }));
+
+    } catch (e) {
+        console.error("Admin: Error fetching student progress", e);
         return [];
     }
 }

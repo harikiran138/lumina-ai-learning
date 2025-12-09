@@ -369,6 +369,13 @@ class RealAPI {
         return await getAllAILogsAdmin();
     }
 
+    async getAllStudentsWithProgress(): Promise<any[]> {
+        const user = await this.getCurrentUser();
+        if (!user || user.role !== 'admin') return [];
+        const { getAllStudentsWithProgress } = await import('@/app/actions/data');
+        return await getAllStudentsWithProgress();
+    }
+
     async updateUserStatus(userId: string, status: string): Promise<any> {
         const user = await this.getCurrentUser();
         if (!user || user.role !== 'admin') return { success: false };
@@ -388,6 +395,20 @@ class RealAPI {
         if (!user) return { success: false };
         const { logAIInteraction } = await import('@/app/actions/data');
         return await logAIInteraction(user.email, prompt, response);
+    }
+
+    async deleteAILog(logId: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user || user.role !== 'admin') return { success: false };
+        const { deleteAILog } = await import('@/app/actions/data');
+        return await deleteAILog(user.email, logId);
+    }
+
+    async deleteUser(userId: string): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user || user.role !== 'admin') return { success: false };
+        const { deleteUser } = await import('@/app/actions/data');
+        return await deleteUser(user.email, userId);
     }
 }
 

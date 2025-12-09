@@ -314,6 +314,7 @@ export default function LoginPage() {
                                     <option value="" disabled className="bg-gray-900 text-gray-400">Select your role</option>
                                     <option value="student" className="bg-gray-900 text-white">Student</option>
                                     <option value="teacher" className="bg-gray-900 text-white">Teacher</option>
+                                    <option value="admin" className="bg-gray-900 text-white">Admin</option>
                                 </select>
                             </div>
                         </div>
