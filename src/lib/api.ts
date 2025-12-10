@@ -75,6 +75,12 @@ class RealAPI {
             throw new Error(result.error as string);
         }
 
+        // Auto-login on success
+        this.currentUser = result;
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('lumina_user', JSON.stringify(result));
+        }
+
         return result;
     }
 
