@@ -22,8 +22,7 @@
   "homepage": "https://github.com/harikiran138/lumina-ai-learning#readme",
   "devDependencies": {
     "@types/three": "^0.181.0",
-    "buffer": "^6.0.3",
-    "parcel": "^2.16.1"
+    "buffer": "^6.0.3"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.44",
