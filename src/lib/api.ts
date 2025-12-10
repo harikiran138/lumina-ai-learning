@@ -68,8 +68,11 @@ class RealAPI {
         if (!userData.password) {
             throw new Error("Password is required for signup.");
         }
+        if (!userData.email) {
+            throw new Error("Email is required for signup.");
+        }
         // Call server action
-        const result = await registerUser(userData as Partial<User> & { password: string });
+        const result = await registerUser(userData as Partial<User> & { password: string; email: string });
 
         if ('error' in result) {
             throw new Error(result.error as string);
