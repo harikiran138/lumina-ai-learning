@@ -2,21 +2,49 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Search, Filter, MoreVertical, Shield, Trash2, Edit } from 'lucide-react';
+import { Users, Search, Filter, MoreVertical, Shield, Trash2, Edit, X } from 'lucide-react';
 import { getUsersForAdmin } from '@/app/actions/data';
+import { api } from '@/lib/api';
 
 export default function AdminUsers() {
     const [users, setUsers] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        password: '',
+        role: 'student'
+    });
+
+    const fetchUsers = async () => {
+        setIsLoading(true);
+        const data = await getUsersForAdmin();
+        setUsers(data);
+        setIsLoading(false);
+    };
 
     useEffect(() => {
-        const fetchUsers = async () => {
-            const data = await getUsersForAdmin();
-            setUsers(data);
-            setIsLoading(false);
-        };
         fetchUsers();
     }, []);
+
+    const handleAddUser = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await api.createUser({
+                name: formData.name,
+                email: formData.email,
+                password: formData.password,
+                role: formData.role as any
+            });
+            setIsAddModalOpen(false);
+            setFormData({ name: '', email: '', password: '', role: 'student' });
+            fetchUsers(); // Refresh list
+            alert('User created successfully');
+        } catch (error: any) {
+            alert(error.message);
+        }
+    };
 
     if (isLoading) return <div className="p-8 text-center text-white">Loading users...</div>;
 
@@ -27,7 +55,10 @@ export default function AdminUsers() {
                     <h1 className="text-3xl font-bold text-white mb-2">User Management</h1>
                     <p className="text-gray-400">Manage access and roles</p>
                 </div>
-                <button className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+                <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                >
                     Add User
                 </button>
             </div>
@@ -79,8 +110,8 @@ export default function AdminUsers() {
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.role === 'teacher' ? 'bg-amber-900/30 text-amber-400' :
-                                            user.role === 'admin' ? 'bg-red-900/30 text-red-400' :
-                                                'bg-blue-900/30 text-blue-400'
+                                        user.role === 'admin' ? 'bg-red-900/30 text-red-400' :
+                                            'bg-blue-900/30 text-blue-400'
                                         }`}>
                                         {user.role}
                                     </span>
@@ -109,6 +140,74 @@ export default function AdminUsers() {
                     </tbody>
                 </table>
             </div>
+
+            {/* Add User Modal */}
+            {isAddModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-gray-900 border border-white/10 p-6 rounded-2xl w-full max-w-md relative shadow-2xl">
+                        <button
+                            onClick={() => setIsAddModalOpen(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                        <h2 className="text-xl font-bold text-white mb-6">Add New User</h2>
+                        <form onSubmit={handleAddUser} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Full Name</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="John Doe"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Email Address</label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="john@example.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Password</label>
+                                <input
+                                    type="password"
+                                    required
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Role</label>
+                                <select
+                                    value={formData.role}
+                                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                >
+                                    <option value="student">Student</option>
+                                    <option value="teacher">Teacher</option>
+                                    {/* Admin creation intentionally omitted */}
+                                </select>
+                            </div>
+                            <button
+                                type="submit"
+                                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors mt-4"
+                            >
+                                Create User
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

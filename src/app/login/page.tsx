@@ -87,12 +87,16 @@ export default function LoginPage() {
             };
 
             console.log('Creating new user:', newUser);
-            // Use modern API createUser
-            await api.createUser(newUser);
-            console.log('User created successfully, logging in...');
+            // Use modern API createUser (handles session automatically now)
+            const user = await api.createUser(newUser);
+            console.log('User created successfully:', user);
 
-            // Auto login after signup
-            await performLogin(email, password);
+            if (user && user.role) {
+                const targetPath = `/${user.role}/dashboard`;
+                window.location.href = targetPath;
+            } else {
+                window.location.href = '/student/dashboard';
+            }
 
         } catch (error: any) {
             console.error('Signup failed:', error);
@@ -106,7 +110,7 @@ export default function LoginPage() {
 
     const quickLogin = async (role: string) => {
         const defaultUsers: any = {
-            admin: { email: 'admin@lumina.com', password: 'admin123' },
+            admin: { email: 'admin@lumina.com', password: 'Admin@123' },
             teacher: { email: 'teacher@lumina.com', password: 'teacher123' },
             student: { email: 'student@lumina.com', password: 'student123' }
         };
@@ -314,7 +318,7 @@ export default function LoginPage() {
                                     <option value="" disabled className="bg-gray-900 text-gray-400">Select your role</option>
                                     <option value="student" className="bg-gray-900 text-white">Student</option>
                                     <option value="teacher" className="bg-gray-900 text-white">Teacher</option>
-                                    <option value="admin" className="bg-gray-900 text-white">Admin</option>
+
                                 </select>
                             </div>
                         </div>

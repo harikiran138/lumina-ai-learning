@@ -21,18 +21,28 @@ if (process.env.NODE_ENV === 'development') {
     };
 
     if (!globalWithMongo._mongoClientPromise) {
-        client = new MongoClient(uri, options);
-        // Attach connection pool management for Vercel Functions
-        attachDatabasePool(client);
-        globalWithMongo._mongoClientPromise = client.connect();
+        if (uri) {
+            client = new MongoClient(uri, options);
+            // Attach connection pool management for Vercel Functions
+            attachDatabasePool(client);
+            globalWithMongo._mongoClientPromise = client.connect();
+        } else {
+            console.warn("MongoDB URI not found. Database features will be disabled.");
+            globalWithMongo._mongoClientPromise = Promise.reject(new Error("MongoDB URI is not defined"));
+        }
     }
     clientPromise = globalWithMongo._mongoClientPromise;
 } else {
     // In production mode, it's best to not use a global variable.
-    client = new MongoClient(uri, options);
-    // Attach connection pool management for Vercel Functions
-    attachDatabasePool(client);
-    clientPromise = client.connect();
+    if (uri) {
+        client = new MongoClient(uri, options);
+        // Attach connection pool management for Vercel Functions
+        attachDatabasePool(client);
+        clientPromise = client.connect();
+    } else {
+        console.warn("MongoDB URI not found. Database features will be disabled.");
+        clientPromise = Promise.reject(new Error("MongoDB URI is not defined"));
+    }
 }
 
 // Export a module-scoped MongoClient promise. By doing this in a
