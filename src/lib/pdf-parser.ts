@@ -309,6 +309,93 @@ export async function extractFirstNPages(file: File, n: number = 20): Promise<st
         throw new Error("Failed to read PDF TOC: " + e.message);
     }
 }
+/**
+ * Supported File Types for Rich Extraction
+ */
+export interface TextBlock {
+    text: string;
+    bbox: number[]; // [x, y, w, h] - normalized or absolute
+    fontSize: number;
+    fontName: string;
+    hasEOL: boolean;
+}
+
+export interface PageStructure {
+    pageNumber: number;
+    blocks: TextBlock[];
+    rawText: string;
+}
+
+export interface DocumentStructure {
+    title: string;
+    pages: PageStructure[];
+}
+
+/**
+ * Extracts rich metadata (text, bbox, font size) from PDF.
+ * This corresponds to the "Zero Words Lost" requirement.
+ */
+export async function extractRichData(file: File): Promise<DocumentStructure> {
+    if (typeof window === 'undefined') return { title: file.name, pages: [] };
+
+    try {
+        const pdfjsModule = await import('pdfjs-dist');
+        const pdfjsLib = pdfjsModule.default || pdfjsModule;
+        const version = pdfjsLib.version;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
+
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+
+        const pages: PageStructure[] = [];
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const viewport = page.getViewport({ scale: 1.0 });
+
+            const blocks: TextBlock[] = (textContent.items as any[]).map(item => {
+                // Transform: [scaleX, skewY, skewX, scaleY, translateX, translateY]
+                // PDF Y is growing upwards (Cartesian), DOM is downwards.
+                const tx = item.transform;
+                const fontSize = Math.sqrt(tx[0] * tx[0] + tx[1] * tx[1]); // Approx font size from matrix
+
+                // Calculate BBox (Simplified)
+                const x = tx[4];
+                const y = viewport.height - tx[5]; // Flip Y
+                const w = item.width;
+                const h = item.height;
+
+                return {
+                    text: item.str,
+                    bbox: [x, y, w, h],
+                    fontSize: Math.round(fontSize),
+                    fontName: item.fontName,
+                    hasEOL: item.hasEOL
+                };
+            });
+
+            // Reconstruct logic (simple join for raw text)
+            const rawText = blocks.map(b => b.text).join(' ');
+
+            pages.push({
+                pageNumber: i,
+                blocks,
+                rawText
+            });
+        }
+
+        return {
+            title: file.name,
+            pages
+        };
+
+    } catch (e: any) {
+        console.error("Rich parsing error:", e);
+        throw new Error("Failed to extract rich data: " + e.message);
+    }
+}
 
 /**
  * Extracts text from a specific range of pages (inclusive).
