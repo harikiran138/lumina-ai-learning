@@ -98,6 +98,12 @@ export default function CourseGeneratorPage() {
                 tocText = await extractFirstNPages(file, 20);
                 // Also kick off full extraction in background/or just do it if fast
                 fullTextForBackup = await extractTextFromPDF(file);
+                fullTextForBackup = await extractTextFromPDF(file);
+            } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                // DOCX Handling
+                const { extractTextFromDocx } = await import('@/lib/docx-parser');
+                tocText = await extractTextFromDocx(file);
+                fullTextForBackup = tocText;
             } else {
                 tocText = await file.text(); // For TXT, just use whole thing
                 fullTextForBackup = tocText;
@@ -282,7 +288,7 @@ export default function CourseGeneratorPage() {
 
                         <input
                             type="file"
-                            accept=".pdf,.txt"
+                            accept=".pdf,.txt,.docx"
                             onChange={handleFileUpload}
                             className="hidden"
                             id="file-upload"
