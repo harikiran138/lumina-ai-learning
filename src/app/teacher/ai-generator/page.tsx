@@ -98,6 +98,96 @@ export default function CourseGeneratorPage() {
             setAiProgress('Scanning Table of Contents (Index Driven Extraction)...');
             setAnalysisProgress(5);
 
+            // ---------------------------------------------------------
+            // DOCKER / LOCAL BACKEND FLOW
+            // ---------------------------------------------------------
+            // We now prefer the local backend if available for robust processing
+            const USE_LOCAL_BACKEND = true; // Feature flag
+
+            if (USE_LOCAL_BACKEND) {
+                setAiProgress('Uploading to Local Intelligence Engine (Docker)...');
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    // 1. Upload
+                    const uploadRes = await fetch('http://localhost:8000/upload', {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    if (!uploadRes.ok) {
+                        throw new Error(`Backend Upload Failed: ${uploadRes.statusText}`);
+                    }
+
+                    const { job_id, checksum } = await uploadRes.json();
+                    console.log("Job Queued:", job_id, "Checksum:", checksum);
+
+                    // 2. Poll for Status
+                    setAiProgress('Processing in Background Worker (Zero Data Loss)...');
+                    let isProcessing = true;
+
+                    while (isProcessing) {
+                        await new Promise(r => setTimeout(r, 2000)); // Poll every 2s
+
+                        const statusRes = await fetch(`http://localhost:8000/status/${job_id}`);
+                        if (statusRes.ok) {
+                            const statusData = await statusRes.json();
+                            const state = statusData.status;
+                            console.log("Job Status:", state);
+
+                            if (state === 'finished') {
+                                isProcessing = false;
+                                // Get Results
+                                const resultRes = await fetch(`http://localhost:8000/results/${job_id}`);
+                                const resultJson = await resultRes.json();
+
+                                // Map Backend JSON to UI Schema
+                                setAiProgress('Finalizing Course Structure...');
+
+                                const backendModules = resultJson.modules || [];
+                                const uiModules: Module[] = backendModules.map((mod: any, idx: number) => ({
+                                    title: mod.module_title || `Module ${idx + 1}`,
+                                    summary: "Generated via Local Engine",
+                                    topics: (mod.lessons || []).map((lesson: any) => ({
+                                        title: lesson.lesson_title,
+                                        goal: "Master this topic",
+                                        originalContent: lesson.full_content_orig, // VERBATIM
+                                        content: [
+                                            { type: 'paragraph', content: lesson.summary?.[0] || "Summary..." }
+                                        ],
+                                        // Gold Standard Props
+                                        summary: lesson.summary,
+                                        keyPoints: lesson.key_points,
+                                        definitions: lesson.definitions,
+                                        quiz: lesson.quiz
+                                    }))
+                                }));
+
+                                if (uiModules.length > 0) {
+                                    setModules(uiModules);
+                                    setAnalysisProgress(100);
+                                    setStep('review');
+                                    return; // DONE
+                                } else {
+                                    throw new Error("Worker finished but returned no modules.");
+                                }
+
+                            } else if (state === 'failed') {
+                                throw new Error("Processing Worker Reported Failure.");
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Local Backend unavailable, falling back to client-side.", e);
+                    // Fallthrough to client-side logic below...
+                }
+            }
+
+            // ---------------------------------------------------------
+            // CLIENT-SIDE FALLBACK (Legacy / Quick Mode)
+            // ---------------------------------------------------------
             let tocText = "";
             let fullTextForBackup = ""; // We still need full text for Stage 1 backup
             let richData = null;

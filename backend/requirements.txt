@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+python-multipart
+aiofiles
+redis
+rq
+sqlalchemy
+psycopg2-binary
+boto3
+pdfminer.six
+openai
+pgvector
+pydantic
+requests
