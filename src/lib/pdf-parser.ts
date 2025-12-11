@@ -80,6 +80,7 @@ interface StructuredTopic {
     goal: string;
     pageRef?: string;
     content: StructuredContent[];
+    originalContent?: string; // Verbatim text
     subtopics: any[];
 }
 
@@ -212,6 +213,7 @@ export async function extractStructuredData(file: File): Promise<StructuredModul
                     goal: "Learn section content",
                     pageRef: page.toString(),
                     content: [],
+                    originalContent: "", // Init
                     subtopics: []
                 };
                 currentModule!.topics.push(currentTopic);
@@ -261,6 +263,9 @@ export async function extractStructuredData(file: File): Promise<StructuredModul
                 currentTopic!.content.push({ type: 'paragraph', content: `**${line.text}**` });
             } else {
                 currentTopic!.content.push({ type: 'paragraph', content: line.text });
+            }
+            if (currentTopic) {
+                currentTopic.originalContent += line.text + "\n";
             }
         }
 
