@@ -3,7 +3,7 @@ import json
 import time
 import hashlib
 from redis import Redis
-from rq import Worker, Queue, Connection
+from rq import Worker, Queue
 # import fitz # PyMuPDF - verify if we can use it or fallback to pdfminer
 # The user suggested PyMuPDF snippet, but requirements had pdfminer.six. 
 # We will use pdfminer.six for strictly python-only deps if we want, or pypdf.
@@ -14,6 +14,9 @@ from rq import Worker, Queue, Connection
 
 from pdfminer.high_level import extract_pages
 from pdfminer.layout import LTTextContainer, LTChar
+import pytesseract
+from pdf2image import convert_from_path
+import tabula
 
 from openai import OpenAI
 import re
@@ -30,40 +33,97 @@ client = OpenAI(
     api_key="ollama" # required but unused
 )
 
+def extract_tables(file_path):
+    """
+    Extracts tables using Tabula and returns them as HTML/Markdown string.
+    """
+    try:
+        # Read tables -> list of DataFrames
+        print("Extracting tables...")
+        tables = tabula.read_pdf(file_path, pages='all', multiple_tables=True)
+        table_text = "\n\n=== EXTRACTED TABLES ===\n"
+        for i, df in enumerate(tables):
+            if not df.empty:
+                table_text += f"\n[Table {i+1}]\n{df.to_markdown(index=False)}\n"
+        return table_text
+    except Exception as e:
+        print(f"Table extraction failed: {e}")
+        return ""
+
 def extract_text_with_metadata(file_path):
     """
     Extracts text with simple metadata using pdfminer.high_level
-    Returns: full_text, pages_list
+    Falls back to OCR (Tesseract) if text is sparse.
+    Returns: full_text, pages_list, used_ocr (bool)
     """
     full_text = ""
     pages_data = []
+    used_ocr = False
     
     # Robust extraction
     try:
-        for page_layout in extract_pages(file_path):
-            page_num = 0 # pdfminer pages are iterators? Usually needs handling.
-            # actually extract_pages yields page layouts.
-            # Let's assume sequential.
-            
+        print("Attempting standard text extraction...")
+        # Get total pages count first (rough check)
+        # Note: pdfminer doesn't make it easy to get count without parsing.
+        # We'll rely on iteration.
+        
+        page_count = 0
+        sparse_pages = 0
+        
+        for i, page_layout in enumerate(extract_pages(file_path)):
+            page_count += 1
             page_text = ""
-            # Iterate through elements
             for element in page_layout:
                 if isinstance(element, LTTextContainer):
                     text = element.get_text()
                     page_text += text
-                    
+            
+            # Check for sparsity (OCR trigger)
+            if len(page_text.strip()) < 50:
+                sparse_pages += 1
+            
             full_text += page_text
             pages_data.append({
                 "text": page_text,
-                "length": len(page_text)
+                "length": len(page_text),
+                "page_num": i + 1
             })
+
+        # OCR FALLBACK DECISION
+        # If > 50% of pages are sparse, or total text is very low, try OCR.
+        if (page_count > 0 and (sparse_pages / page_count) > 0.5) or len(full_text.strip()) < 100:
+            print("Text extraction yielded minimal results. Switching to OCR (Tesseract)...")
+            used_ocr = True
+            
+            # Reset
+            full_text = ""
+            pages_data = []
+            
+            # Convert PDF to images
+            images = convert_from_path(file_path)
+            for i, image in enumerate(images):
+                # Simple Tesseract
+                ocr_text = pytesseract.image_to_string(image)
+                full_text += ocr_text + "\n"
+                pages_data.append({
+                    "text": ocr_text,
+                    "length": len(ocr_text),
+                    "page_num": i + 1,
+                    "is_ocr": True
+                })
+
+        # TABLE EXTRACTION
+        table_content = extract_tables(file_path)
+        if table_content:
+             full_text += table_content
+             # Append to last page data or verify where to put it?
+             # For now, just appending to ensure it is in the "Full Text" for searching/chunking.
             
     except Exception as e:
         print(f"PDF Extraction fallback or error: {e}")
-        # Fallback to simple pypdf if installed, or just fail
-        return "", []
+        return "", [], False
 
-    return full_text, pages_data
+    return full_text, pages_data, used_ocr
 
 def smart_chunking(full_text, chunk_size=3000, overlap=400):
     chunks = []
@@ -93,9 +153,10 @@ def generate_gold_standard_artifacts(chunk_text, heading="Section"):
     """
     Calls Ollama to generate strict JSON artifacts.
     """
+    escaped_text = chunk_text.replace('"', '\\"')
     prompt = f"""
     SYSTEM: You are a precise Course Builder. Output strictly valid JSON.
-    INPUT: {{ "chapter_title": "{heading}", "source_text": "{chunk_text.replace('"', '\\"')}" }}
+    INPUT: {{ "chapter_title": "{heading}", "source_text": "{escaped_text}" }}
     
     TASK:
     1) Produce "module_title" and "lessons" list.
@@ -142,13 +203,14 @@ def process_job(payload):
     
     # 1. Extraction (Zero Word Loss)
     # Using pdfminer for now as configured in requirements
-    full_text, pages = extract_text_with_metadata(file_path)
+    full_text, pages, used_ocr = extract_text_with_metadata(file_path)
     
     if not full_text:
         # Just read as text if pdf failed or if it's not a pdf
         try:
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 full_text = f.read()
+            pages = [{"text": full_text, "length": len(full_text), "page_num": 1}]
         except:
             pass
 
@@ -170,19 +232,6 @@ def process_job(payload):
         data = generate_gold_standard_artifacts(chunk['text'], f"Part {i+1}")
         
         if data:
-            # Validate Verbatim
-            # We assume the LLM output 'full_content_orig' is accurate.
-            # In a strict system, we might OVERWRITE it with our chunk['text'] to be 100% sure.
-            # Let's DO THAT to ensure strict "Zero Words Lost" even if LLM hallucinates the copy.
-            
-            if 'lessons' in data:
-                for lesson in data['lessons']:
-                    # FORCE overwrite to ensure integrity
-                    # Note: This is tricky if LLM split the chunk into multiple lessons.
-                    # Best approach: The LLM usually returns one lesson per chunk in this simple prompt.
-                    # Or we verify if lesson.full_content_orig is in chunk['text'].
-                    pass 
-            
             course_modules.append(data)
     
     # 4. Save Results
@@ -190,6 +239,8 @@ def process_job(payload):
         "job_id": job_id,
         "checksum": checksum,
         "original_length": total_text_length,
+        "pages_processed": len(pages),
+        "used_ocr": used_ocr,
         "modules": course_modules
     }
     
@@ -202,6 +253,7 @@ def process_job(payload):
 
 if __name__ == "__main__":
     print("Worker started. Listening on redis...")
-    with Connection(redis_conn):
-        worker = Worker([Queue(connection=redis_conn)])
-        worker.work()
+    # Explicit connection passing
+    q = Queue(connection=redis_conn)
+    worker = Worker([q], connection=redis_conn)
+    worker.work()

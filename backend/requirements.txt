@@ -12,3 +12,6 @@ openai
 pgvector
 pydantic
 requests
+pytesseract
+pdf2image
+tabula-py
