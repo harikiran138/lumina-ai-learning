@@ -9,7 +9,8 @@ export async function extractTextFromPDF(file: File): Promise<string> {
         const pdfjsLib = pdfjsModule.default || pdfjsModule;
 
         const version = pdfjsLib.version;
-        const WORKER_SRC = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
+        // Use unpkg as it updates faster than cdnjs for new npm releases
+        const WORKER_SRC = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
 
         console.log(`Setting worker to: ${WORKER_SRC}`);
         pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_SRC;
@@ -98,7 +99,8 @@ export async function extractStructuredData(file: File): Promise<StructuredModul
         const pdfjsLib = pdfjsModule.default || pdfjsModule;
         const version = pdfjsLib.version;
         // Use standard CDN for worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
+        // Use unpkg as it updates faster than cdnjs for new npm releases
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
 
         const arrayBuffer = await file.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -287,7 +289,8 @@ export async function extractFirstNPages(file: File, n: number = 20): Promise<st
         const pdfjsModule = await import('pdfjs-dist');
         const pdfjsLib = pdfjsModule.default || pdfjsModule;
         const version = pdfjsLib.version;
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
+        // Use unpkg as it updates faster than cdnjs for new npm releases
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
 
         const arrayBuffer = await file.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -342,7 +345,8 @@ export async function extractRichData(file: File): Promise<DocumentStructure> {
         const pdfjsModule = await import('pdfjs-dist');
         const pdfjsLib = pdfjsModule.default || pdfjsModule;
         const version = pdfjsLib.version;
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
+        // Use unpkg as it updates faster than cdnjs for new npm releases
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
 
         const arrayBuffer = await file.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -407,7 +411,8 @@ export async function extractPageRange(file: File, start: number, end: number): 
         const pdfjsModule = await import('pdfjs-dist');
         const pdfjsLib = pdfjsModule.default || pdfjsModule;
         const version = pdfjsLib.version;
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
+        // Use unpkg as it updates faster than cdnjs for new npm releases
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
 
         const arrayBuffer = await file.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });

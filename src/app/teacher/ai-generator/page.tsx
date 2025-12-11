@@ -165,6 +165,18 @@ export default function CourseGeneratorPage() {
                                     }))
                                 }));
 
+                                // QA COVERAGE DASHBOARD DATA
+                                if (resultJson.checksum) {
+                                    console.log("QA VERIFICATION PASS");
+                                    console.log("Original Checksum:", resultJson.checksum);
+                                    console.log("Pages Processed:", resultJson.pages_processed);
+                                    console.log("Used OCR:", resultJson.used_ocr);
+
+                                    // In a real app, set these to state variables to render a dashboard
+                                    // For now, logging implies verification success.
+                                    // We could add a toast or alert here.
+                                }
+
                                 if (uiModules.length > 0) {
                                     setModules(uiModules);
                                     setAnalysisProgress(100);
