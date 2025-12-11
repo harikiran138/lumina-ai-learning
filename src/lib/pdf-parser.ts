@@ -9,8 +9,7 @@ export async function extractTextFromPDF(file: File): Promise<string> {
         const pdfjsLib = pdfjsModule.default || pdfjsModule;
 
         const version = pdfjsLib.version;
-        // Use unpkg as it updates faster than cdnjs for new npm releases
-        const WORKER_SRC = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+        const WORKER_SRC = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
 
         console.log(`Setting worker to: ${WORKER_SRC}`);
         pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_SRC;
@@ -32,37 +31,6 @@ export async function extractTextFromPDF(file: File): Promise<string> {
             fullText += `\n\n[[PAGE_${i}]]\n\n` + pageText;
         }
 
-
-
-        // OCR FALLBACK Check
-        if (fullText.trim().length < 50) {
-            console.warn("PDF appears to be scanned/image-based. Attempting OCR...");
-            const tesseract = await import('tesseract.js');
-            const worker = await tesseract.createWorker('eng');
-
-            // Convert PDF pages to images? PDF.js can render to canvas
-            // For simplicity in this environment, Tesseract works best on images.
-            // We will try to render the first few pages to canvas and OCR them.
-
-            for (let i = 1; i <= Math.min(numPages, 10); i++) { // Limit to 10 pages for performance
-                const page = await pdf.getPage(i);
-                const viewport = page.getViewport({ scale: 1.5 });
-
-                // Create off-screen canvas
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-
-                if (context) {
-                    await page.render({ canvasContext: context, viewport: viewport } as any).promise;
-                    const { data: { text } } = await worker.recognize(canvas);
-                    fullText += `\n\n[[PAGE_${i}_OCR]]\n\n` + text;
-                }
-            }
-            await worker.terminate();
-        }
-
         return fullText;
     } catch (e: any) {
         console.error("PDF Parsing Error:", e);
@@ -81,7 +49,6 @@ interface StructuredTopic {
     goal: string;
     pageRef?: string;
     content: StructuredContent[];
-    originalContent?: string; // Verbatim text
     subtopics: any[];
 }
 
@@ -99,8 +66,7 @@ export async function extractStructuredData(file: File): Promise<StructuredModul
         const pdfjsLib = pdfjsModule.default || pdfjsModule;
         const version = pdfjsLib.version;
         // Use standard CDN for worker
-        // Use unpkg as it updates faster than cdnjs for new npm releases
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
 
         const arrayBuffer = await file.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -215,7 +181,6 @@ export async function extractStructuredData(file: File): Promise<StructuredModul
                     goal: "Learn section content",
                     pageRef: page.toString(),
                     content: [],
-                    originalContent: "", // Init
                     subtopics: []
                 };
                 currentModule!.topics.push(currentTopic);
@@ -266,10 +231,9 @@ export async function extractStructuredData(file: File): Promise<StructuredModul
             } else {
                 currentTopic!.content.push({ type: 'paragraph', content: line.text });
             }
-            if (currentTopic) {
-                currentTopic.originalContent += line.text + "\n";
-            }
         }
+
+        return modules;
 
         return modules;
 
@@ -289,8 +253,7 @@ export async function extractFirstNPages(file: File, n: number = 20): Promise<st
         const pdfjsModule = await import('pdfjs-dist');
         const pdfjsLib = pdfjsModule.default || pdfjsModule;
         const version = pdfjsLib.version;
-        // Use unpkg as it updates faster than cdnjs for new npm releases
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
 
         const arrayBuffer = await file.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -312,94 +275,6 @@ export async function extractFirstNPages(file: File, n: number = 20): Promise<st
         throw new Error("Failed to read PDF TOC: " + e.message);
     }
 }
-/**
- * Supported File Types for Rich Extraction
- */
-export interface TextBlock {
-    text: string;
-    bbox: number[]; // [x, y, w, h] - normalized or absolute
-    fontSize: number;
-    fontName: string;
-    hasEOL: boolean;
-}
-
-export interface PageStructure {
-    pageNumber: number;
-    blocks: TextBlock[];
-    rawText: string;
-}
-
-export interface DocumentStructure {
-    title: string;
-    pages: PageStructure[];
-}
-
-/**
- * Extracts rich metadata (text, bbox, font size) from PDF.
- * This corresponds to the "Zero Words Lost" requirement.
- */
-export async function extractRichData(file: File): Promise<DocumentStructure> {
-    if (typeof window === 'undefined') return { title: file.name, pages: [] };
-
-    try {
-        const pdfjsModule = await import('pdfjs-dist');
-        const pdfjsLib = pdfjsModule.default || pdfjsModule;
-        const version = pdfjsLib.version;
-        // Use unpkg as it updates faster than cdnjs for new npm releases
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
-
-        const arrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-        const pdf = await loadingTask.promise;
-
-        const pages: PageStructure[] = [];
-
-        for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const textContent = await page.getTextContent();
-            const viewport = page.getViewport({ scale: 1.0 });
-
-            const blocks: TextBlock[] = (textContent.items as any[]).map(item => {
-                // Transform: [scaleX, skewY, skewX, scaleY, translateX, translateY]
-                // PDF Y is growing upwards (Cartesian), DOM is downwards.
-                const tx = item.transform;
-                const fontSize = Math.sqrt(tx[0] * tx[0] + tx[1] * tx[1]); // Approx font size from matrix
-
-                // Calculate BBox (Simplified)
-                const x = tx[4];
-                const y = viewport.height - tx[5]; // Flip Y
-                const w = item.width;
-                const h = item.height;
-
-                return {
-                    text: item.str,
-                    bbox: [x, y, w, h],
-                    fontSize: Math.round(fontSize),
-                    fontName: item.fontName,
-                    hasEOL: item.hasEOL
-                };
-            });
-
-            // Reconstruct logic (simple join for raw text)
-            const rawText = blocks.map(b => b.text).join(' ');
-
-            pages.push({
-                pageNumber: i,
-                blocks,
-                rawText
-            });
-        }
-
-        return {
-            title: file.name,
-            pages
-        };
-
-    } catch (e: any) {
-        console.error("Rich parsing error:", e);
-        throw new Error("Failed to extract rich data: " + e.message);
-    }
-}
 
 /**
  * Extracts text from a specific range of pages (inclusive).
@@ -411,8 +286,7 @@ export async function extractPageRange(file: File, start: number, end: number): 
         const pdfjsModule = await import('pdfjs-dist');
         const pdfjsLib = pdfjsModule.default || pdfjsModule;
         const version = pdfjsLib.version;
-        // Use unpkg as it updates faster than cdnjs for new npm releases
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
 
         const arrayBuffer = await file.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });

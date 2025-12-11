@@ -35,14 +35,7 @@ interface Topic {
     goal: string;
     pageRef?: string; // Optional page reference from AI
     content: ContentBlock[]; // Main topic content
-    originalContent?: string; // VERBATIM text for validity
     subtopics?: Subtopic[]; // Optional deep dive
-
-    // NEW: Gold Standard Artifacts
-    summary?: string[];
-    keyPoints?: string[];
-    definitions?: { term: string; definition: string }[];
-    quiz?: { question: string; options: string[]; answer: string }[];
 }
 
 interface Module {
@@ -90,135 +83,21 @@ export default function CourseGeneratorPage() {
 
         try {
             // Import Index-Driven tools
-            const { extractTextFromPDF, extractFirstNPages, extractPageRange, extractRichData } = await import('@/lib/pdf-parser');
+            const { extractTextFromPDF, extractFirstNPages, extractPageRange } = await import('@/lib/pdf-parser');
             const { saveTextbook, analyzeTableOfContents } = await import('@/app/actions/gemini');
-            const { smartChunking } = await import('@/lib/text-processing');
 
             // 1. Scan Index (TOC)
             setAiProgress('Scanning Table of Contents (Index Driven Extraction)...');
             setAnalysisProgress(5);
 
-            // ---------------------------------------------------------
-            // DOCKER / LOCAL BACKEND FLOW
-            // ---------------------------------------------------------
-            // We now prefer the local backend if available for robust processing
-            const USE_LOCAL_BACKEND = true; // Feature flag
-
-            if (USE_LOCAL_BACKEND) {
-                setAiProgress('Uploading to Local Intelligence Engine (Docker)...');
-
-                const formData = new FormData();
-                formData.append('file', file);
-
-                try {
-                    // 1. Upload
-                    const uploadRes = await fetch('http://localhost:8000/upload', {
-                        method: 'POST',
-                        body: formData,
-                    });
-
-                    if (!uploadRes.ok) {
-                        throw new Error(`Backend Upload Failed: ${uploadRes.statusText}`);
-                    }
-
-                    const { job_id, checksum } = await uploadRes.json();
-                    console.log("Job Queued:", job_id, "Checksum:", checksum);
-
-                    // 2. Poll for Status
-                    setAiProgress('Processing in Background Worker (Zero Data Loss)...');
-                    let isProcessing = true;
-
-                    while (isProcessing) {
-                        await new Promise(r => setTimeout(r, 2000)); // Poll every 2s
-
-                        const statusRes = await fetch(`http://localhost:8000/status/${job_id}`);
-                        if (statusRes.ok) {
-                            const statusData = await statusRes.json();
-                            const state = statusData.status;
-                            console.log("Job Status:", state);
-
-                            if (state === 'finished') {
-                                isProcessing = false;
-                                // Get Results
-                                const resultRes = await fetch(`http://localhost:8000/results/${job_id}`);
-                                const resultJson = await resultRes.json();
-
-                                // Map Backend JSON to UI Schema
-                                setAiProgress('Finalizing Course Structure...');
-
-                                const backendModules = resultJson.modules || [];
-                                const uiModules: Module[] = backendModules.map((mod: any, idx: number) => ({
-                                    title: mod.module_title || `Module ${idx + 1}`,
-                                    summary: "Generated via Local Engine",
-                                    topics: (mod.lessons || []).map((lesson: any) => ({
-                                        title: lesson.lesson_title,
-                                        goal: "Master this topic",
-                                        originalContent: lesson.full_content_orig, // VERBATIM
-                                        content: [
-                                            { type: 'paragraph', content: lesson.summary?.[0] || "Summary..." }
-                                        ],
-                                        // Gold Standard Props
-                                        summary: lesson.summary,
-                                        keyPoints: lesson.key_points,
-                                        definitions: lesson.definitions,
-                                        quiz: lesson.quiz
-                                    }))
-                                }));
-
-                                // QA COVERAGE DASHBOARD DATA
-                                if (resultJson.checksum) {
-                                    console.log("QA VERIFICATION PASS");
-                                    console.log("Original Checksum:", resultJson.checksum);
-                                    console.log("Pages Processed:", resultJson.pages_processed);
-                                    console.log("Used OCR:", resultJson.used_ocr);
-
-                                    // In a real app, set these to state variables to render a dashboard
-                                    // For now, logging implies verification success.
-                                    // We could add a toast or alert here.
-                                }
-
-                                if (uiModules.length > 0) {
-                                    setModules(uiModules);
-                                    setAnalysisProgress(100);
-                                    setStep('review');
-                                    return; // DONE
-                                } else {
-                                    throw new Error("Worker finished but returned no modules.");
-                                }
-
-                            } else if (state === 'failed') {
-                                throw new Error("Processing Worker Reported Failure.");
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.warn("Local Backend unavailable, falling back to client-side.", e);
-                    // Fallthrough to client-side logic below...
-                }
-            }
-
-            // ---------------------------------------------------------
-            // CLIENT-SIDE FALLBACK (Legacy / Quick Mode)
-            // ---------------------------------------------------------
             let tocText = "";
             let fullTextForBackup = ""; // We still need full text for Stage 1 backup
-            let richData = null;
 
             if (file.type === 'application/pdf') {
-                // RICH EXTRACTION: Metadata + Text
-                setAiProgress('Extracting rich metadata (Zero Words Lost)...');
-                richData = await extractRichData(file);
-
-                // Get first 20 pages for Index Analysis from rich blocks? 
-                // Creating a string for LLM analysis derived from rich data
-                tocText = richData.pages.slice(0, 20).map(p => p.rawText).join('\n');
-                fullTextForBackup = richData.pages.map(p => p.rawText).join('\n'); // Fallback string
-
-            } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-                // DOCX Handling
-                const { extractTextFromDocx } = await import('@/lib/docx-parser');
-                tocText = await extractTextFromDocx(file);
-                fullTextForBackup = tocText;
+                // Get first 20 pages for Index Analysis
+                tocText = await extractFirstNPages(file, 20);
+                // Also kick off full extraction in background/or just do it if fast
+                fullTextForBackup = await extractTextFromPDF(file);
             } else {
                 tocText = await file.text(); // For TXT, just use whole thing
                 fullTextForBackup = tocText;
@@ -284,7 +163,6 @@ export default function CourseGeneratorPage() {
                             title: node.title,
                             goal: "Understand " + node.title,
                             pageRef: `${range.start}-${range.end}`,
-                            originalContent: contentText, // PERSIST VERBATIM
                             content: [{ type: 'paragraph', content: contentText }]
                         });
                     } else if (node.children) {
@@ -316,81 +194,10 @@ export default function CourseGeneratorPage() {
             setAnalysisProgress(40);
 
             let structuredModules: any[] = [];
-
-            if (richData) {
-                // SMART CHUNKING
-                setAiProgress('Smart Chunking & Heuristic Analysis...');
-                // Chunk size: 3000 chars (~750 words) with 400 char overlap
-                const chunks = smartChunking(richData.pages, 4000, 500);
-
-                setAnalysisProgress(50);
-                setAiProgress(`Generating Gold Standard Artifacts for ${chunks.length} sections...`);
-
-                const generatedModules: Module[] = [];
-
-                // Process chunks sequentially or in limited parallel
-                // For safety/rate-limiting, let's do sequential for now
-                const { generateLearningArtifacts } = await import('@/app/actions/gemini');
-
-                for (let i = 0; i < chunks.length; i++) {
-                    setAiProgress(`Analyzing Section ${i + 1}/${chunks.length}...`);
-                    const chunk = chunks[i];
-
-                    const result = await generateLearningArtifacts({
-                        text: chunk.text,
-                        heading: chunk.heading,
-                        source: chunk.source
-                    });
-
-                    if (result.success && result.data) {
-                        const aiData = result.data;
-
-                        // Map AI response to our UI Schema
-                        // aiData should have: module_title, lessons: []
-
-                        // Check if module already exists (by title), else create
-                        let mod = generatedModules.find(m => m.title === aiData.module_title);
-                        if (!mod) {
-                            mod = {
-                                title: aiData.module_title || `Module ${generatedModules.length + 1}`,
-                                summary: "AI Generated Module",
-                                topics: []
-                            };
-                            generatedModules.push(mod);
-                        }
-
-                        // Map Lessons -> Topics
-                        if (aiData.lessons && Array.isArray(aiData.lessons)) {
-                            aiData.lessons.forEach((lesson: any) => {
-                                mod!.topics.push({
-                                    title: lesson.lesson_title,
-                                    goal: "Master this lesson",
-                                    pageRef: "Derived from source", // Could map from chunks
-                                    originalContent: lesson.full_content_orig, // VERBATIM
-                                    content: [
-                                        { type: 'paragraph', content: lesson.summary?.[0] || "No summary" }
-                                    ],
-                                    // Gold Standard Fields
-                                    summary: lesson.summary || [],
-                                    keyPoints: lesson.key_points || [],
-                                    definitions: lesson.definitions || [],
-                                    quiz: lesson.quiz || []
-                                });
-                            });
-                        }
-                    }
-                    // Update progress bar
-                    setAnalysisProgress(50 + ((i + 1) / chunks.length) * 50);
-                }
-
-                structuredModules = generatedModules;
-
-            } else if (file.type === 'application/pdf') {
+            if (file.type === 'application/pdf') {
                 const { extractStructuredData } = await import('@/lib/pdf-parser');
-                // Legacy fallback if richData failed for some reason
                 structuredModules = await extractStructuredData(file);
             }
-            // For TXT/Docx, we could also chunk!
 
             if (structuredModules.length > 0) {
                 setModules(structuredModules);
@@ -428,14 +235,6 @@ export default function CourseGeneratorPage() {
                     content: JSON.stringify({
                         goal: topic.goal,
                         pageRef: topic.pageRef, // Persist page reference
-                        full_content_orig: topic.originalContent, // GUARANTEE 0 WORDS LOST
-
-                        // Persist Gold Standard Artifacts
-                        summary: topic.summary,
-                        key_points: topic.keyPoints,
-                        definitions: topic.definitions,
-                        quiz: topic.quiz,
-
                         content: topic.content,
                         subtopics: topic.subtopics
                     })
@@ -483,7 +282,7 @@ export default function CourseGeneratorPage() {
 
                         <input
                             type="file"
-                            accept=".pdf,.txt,.docx"
+                            accept=".pdf,.txt"
                             onChange={handleFileUpload}
                             className="hidden"
                             id="file-upload"
