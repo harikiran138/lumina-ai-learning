@@ -75,7 +75,7 @@ export async function getTextbookContent(textbookId: string) {
  * Process a SINGLE chunk of text with AI.
  * Called repeatedly by the client to avoid server timeouts.
  */
-export async function generateLearningArtifacts(chunk: { text: string; heading?: string; source?: any[] }) {
+export async function generateCourseChunk(chunkText: string, chunkIndex: number, totalChunks: number) {
     // Check configuration lazily
     const groqProvider = createGroqClient();
     if (!groqProvider) {
@@ -84,29 +84,47 @@ export async function generateLearningArtifacts(chunk: { text: string; heading?:
 
     try {
         const chunkPrompt = `
-            SYSTEM: You are a precise Course Builder. Output strictly valid JSON (no extra text).
-            INPUT: { "chapter_title": "${chunk.heading || 'General Section'}", "source_text": "${chunk.text.replace(/"/g, '\\"')}", "source_pages": ${JSON.stringify(chunk.source || [])} }
-
-            TASK:
-            1) Produce "module_title" and "lessons" list.
-            2) For each lesson create:
-            - lesson_title
-            - full_content_orig: (the verbatim source_text passed in input) <-- MUST be identical to input text
-            - summary: concise 4-6 bullet summary
-            - key_points: 6 bullets
-            - definitions: list of {term, definition} found in text
-            - example_problems: list (if applicable)
-            - quiz: 5 MCQs with answer keys based only on source_text (options array, answer string)
+            You are a strict Data Structuring AI.
+            Your ONLY job is to take the provided text and format it into a structured JSON.
             
-            3) Output only JSON with keys: module_title, lessons (array).
+            CRITICAL INSTRUCTIONS (NO DATA LOSS):
+            1. DO NOT Summarize.
+            2. DO NOT Paraphrase.
+            3. DO NOT Omit any information.
+            4. You must include the EXACT verbatim text from the source into the "content" fields.
+            5. If a section is too long, break it into multiple paragraphs, but keep ALL the words.
+            
+            Structure the text into logical "Modules" and "Topics" based on headers.
+            Look for "[[PAGE_X]]" markers to track where content comes from.
+            
+            OUTPUT JSON FORMAT:
+            {
+                "modules": [
+                    {
+                        "title": "Module Title (Found in text)",
+                        "topics": [
+                            {
+                                "title": "Topic Header",
+                                "pageRef": "Page number (e.g. 5)",
+                                "content": [
+                                    { "type": "paragraph", "content": "Exact text from source..." },
+                                    { "type": "list", "content": "- Exact list item 1\\n- Exact list item 2" },
+                                    { "type": "code", "content": "Exact code block" }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
 
-            DO NOT invent facts outside source_text. If something is not present, leave an empty list.
+            TEXT TO STRUCTURE (PART ${chunkIndex + 1} of ${totalChunks}):
+            ${chunkText}
             `;
 
         const { text } = await generateText({
             model: groqProvider('llama-3.1-8b-instant'),
             prompt: chunkPrompt,
-            temperature: 0.1, // Low temp for precision
+            temperature: 0.1,
         });
 
         // Parse JSON safely
@@ -118,11 +136,11 @@ export async function generateLearningArtifacts(chunk: { text: string; heading?:
         }
 
         const data = JSON.parse(jsonStr.trim());
-        return { success: true, data };
+        return { success: true, modules: data.modules || [] };
 
     } catch (error: any) {
         console.error("Error processing chunk:", error);
-        return { success: false, error: error.message };
+        return { success: false, modules: [], error: error.message };
     }
 }
 

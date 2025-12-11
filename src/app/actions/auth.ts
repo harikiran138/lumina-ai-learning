@@ -114,7 +114,7 @@ export async function authenticateUser(email: string, password: string): Promise
  * @param userData User registration data
  * @returns User object or error
  */
-export async function registerUser(userData: Partial<User> & { password: string; email: string }): Promise<User | { error: string }> {
+export async function registerUser(userData: Partial<User> & { password: string }): Promise<User | { error: string }> {
     try {
         const client = await clientPromise;
         const db = client.db("lumina-database");
