@@ -31,6 +31,37 @@ export async function extractTextFromPDF(file: File): Promise<string> {
             fullText += `\n\n[[PAGE_${i}]]\n\n` + pageText;
         }
 
+
+
+        // OCR FALLBACK Check
+        if (fullText.trim().length < 50) {
+            console.warn("PDF appears to be scanned/image-based. Attempting OCR...");
+            const tesseract = await import('tesseract.js');
+            const worker = await tesseract.createWorker('eng');
+
+            // Convert PDF pages to images? PDF.js can render to canvas
+            // For simplicity in this environment, Tesseract works best on images.
+            // We will try to render the first few pages to canvas and OCR them.
+
+            for (let i = 1; i <= Math.min(numPages, 10); i++) { // Limit to 10 pages for performance
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 1.5 });
+
+                // Create off-screen canvas
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                if (context) {
+                    await page.render({ canvasContext: context, viewport: viewport } as any).promise;
+                    const { data: { text } } = await worker.recognize(canvas);
+                    fullText += `\n\n[[PAGE_${i}_OCR]]\n\n` + text;
+                }
+            }
+            await worker.terminate();
+        }
+
         return fullText;
     } catch (e: any) {
         console.error("PDF Parsing Error:", e);
