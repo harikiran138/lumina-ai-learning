@@ -35,6 +35,7 @@ interface Topic {
     goal: string;
     pageRef?: string; // Optional page reference from AI
     content: ContentBlock[]; // Main topic content
+    originalContent?: string; // VERBATIM text for validity
     subtopics?: Subtopic[]; // Optional deep dive
 }
 
@@ -169,6 +170,7 @@ export default function CourseGeneratorPage() {
                             title: node.title,
                             goal: "Understand " + node.title,
                             pageRef: `${range.start}-${range.end}`,
+                            originalContent: contentText, // PERSIST VERBATIM
                             content: [{ type: 'paragraph', content: contentText }]
                         });
                     } else if (node.children) {
@@ -241,6 +243,7 @@ export default function CourseGeneratorPage() {
                     content: JSON.stringify({
                         goal: topic.goal,
                         pageRef: topic.pageRef, // Persist page reference
+                        full_content_orig: topic.originalContent, // GUARANTEE 0 WORDS LOST
                         content: topic.content,
                         subtopics: topic.subtopics
                     })
