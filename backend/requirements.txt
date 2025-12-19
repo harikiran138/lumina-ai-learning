@@ -1,4 +1,4 @@
-fastapi==0.124.4
+fastapi==0.115.6
 uvicorn
 starlette
 pymongo==4.6.1
