@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Lumina Core Scripts -->
+    <script src="../js/database.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/dashboard-loader.js"></script>
+    <script src="../js/dynamic-dashboard.js"></script>
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        aside nav {
+            min-height: calc(100vh - 128px);
+            overflow-y: auto;
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #f59e0b, #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #light-icon,
+        #dark-icon {
+            display: none;
+        }
+
+        html.dark #dark-icon {
+            display: block;
+        }
+
+        html:not(.dark) #light-icon {
+            display: block;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: #d1d5db;
+            border-radius: 4px;
+        }
+
+        html.dark ::-webkit-scrollbar-thumb {
+            background-color: #4b5563;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: #9ca3af;
+        }
+
+        html.dark ::-webkit-scrollbar-thumb:hover {
+            background-color: #6b7280;
+        }
+    </style>
+    <script>
+        // On page load or when changing themes, best to add inline in `head` to avoid FOUC
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300">
+
+    <div class="relative h-screen overflow-hidden lg:flex">
+        <!-- Sidebar -->
+        <aside id="sidebar"
+            class="w-64 flex-shrink-0 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-30 h-full">
+            <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800">
+                <a href="../index.html" class="text-2xl font-bold">
+                    <span class="gradient-text">Lumina</span> ✨
+                </a>
+            </div>
+            <nav class="flex-1 overflow-y-auto p-4 space-y-2">
+                <a href="dashboard.html"
+                    class="flex items-center px-4 py-2.5 text-sm font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300 rounded-lg">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="ai_tutor.html"
+                    class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M6.343 18.364l-.707.707M19 12h-1M5 12H4M7.636 6.364l.707-.707M16.364 18.364l.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    AI Tutor
+                </a>
+                <a href="course_explorer.html"
+                    class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Explore Courses
+                </a>
+                <a href="my_notes.html"
+                    class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                        </path>
+                    </svg>
+                    My Notes
+                </a>
+                <a href="progress_streaks.html"
+                    class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    My Progress
+                </a>
+                <a href="leaderboard.html"
+                    class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Leaderboard
+                </a>
+                <a href="community.html"
+                    class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Community
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800">
+                <a href="../login.html"
+                    class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="main-content"
+            class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out">
+            <!-- Header -->
+            <header
+                class="h-16 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+                <div class="flex items-center">
+                    <button id="menu-button"
+                        class="lg:hidden mr-4 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        onclick="toggleSidebar()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Student Dashboard</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="theme-toggle"
+                        class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <span id="user-name" class="font-semibold text-sm text-gray-700 dark:text-gray-300">Alex
+                            Turner</span>
+                        <div id="user-avatar"
+                            class="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-lg">
+                            A</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="flex-1 overflow-y-auto p-6 md:p-8">
+                <!-- ... existing page content ... -->
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Welcome back, Alex!</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-8">Here's your personalized learning pathway for today.
+                </p>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- ... existing stats cards ... -->
+                    <div
+                        class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Current Course</p>
+                                <p id="stat-current-course" class="text-lg font-semibold text-gray-900 dark:text-white">
+                                    Physics 101</p>
+                            </div>
+                            <div
+                                class="p-3 rounded-full bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6.253v11.494m-9-5.747h18" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Overall Mastery</p>
+                                <p id="stat-mastery" class="text-lg font-semibold text-gray-900 dark:text-white">82%</p>
+                            </div>
+                            <div
+                                class="p-3 rounded-full bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Learning Streak</p>
+                                <p id="stat-streak" class="text-lg font-semibold text-gray-900 dark:text-white">🔥 5
+                                    days</p>
+                            </div>
+                            <div class="p-3 rounded-full bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7.014A8.003 8.003 0 0122 12c0 3-1 7-6.343 6.657z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Attendance</p>
+                                <p id="stat-attendance" class="text-lg font-semibold text-gray-900 dark:text-white">98%
+                                </p>
+                            </div>
+                            <div
+                                class="p-3 rounded-full bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- ... existing grid content ... -->
+                    <div class="lg:col-span-2 space-y-8">
+
+                        <!-- AI Tutor Analysis Section -->
+                        <div id="ai-tutor-section"
+                            class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-amber-500/30 dark:border-amber-500/50">
+                            <!-- ... content ... -->
+                            <div class="flex items-start space-x-4">
+                                <div
+                                    class="flex-shrink-0 w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M6.343 18.364l-.707.707M19 12h-1M5 12H4M7.636 6.364l.707-.707M16.364 18.364l.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-gray-900 dark:text-white">AI Tutor Analysis</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Based on your recent quiz
+                                        on "Newton's Laws," I've identified a few areas for improvement.</p>
+                                    <div class="mt-4 space-y-3">
+                                        <div
+                                            class="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
+                                            <div>
+                                                <p class="font-medium text-sm text-gray-800 dark:text-gray-200">Weak
+                                                    Area: Third Law of Motion</p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400">Action-reaction
+                                                    pairs seem confusing.</p>
+                                            </div>
+                                            <a href="#"
+                                                class="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-100 rounded-full hover:bg-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:hover:bg-amber-500/30">Review
+                                                Lesson</a>
+                                        </div>
+                                        <div
+                                            class="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
+                                            <div>
+                                                <p class="font-medium text-sm text-gray-800 dark:text-gray-200">
+                                                    Suggestion: Practice Quiz</p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400">Try 5 quick
+                                                    questions to solidify your knowledge.</p>
+                                            </div>
+                                            <a href="#"
+                                                class="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-100 rounded-full hover:bg-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:hover:bg-amber-500/30">Start
+                                                Quiz</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Learning Pathway -->
+                        <div
+                            class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                            <!-- ... content ... -->
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Your Next Steps</h3>
+                            <div class="space-y-6">
+                                <!-- Pathway Item 1: In Progress -->
+                                <div class="flex items-start space-x-4">
+                                    <div
+                                        class="flex-shrink-0 w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-amber-500" xmlns="http://www.w3.org/2000/svg"
+                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Lesson 3.2: In Progress</p>
+                                        <h4 class="font-semibold text-gray-800 dark:text-white">Introduction to
+                                            Mechanics</h4>
+                                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mt-2">
+                                            <div class="bg-amber-500 h-2.5 rounded-full" style="width: 75%"></div>
+                                        </div>
+                                    </div>
+                                    <a href="lesson_page.html"
+                                        class="self-center px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition">Continue</a>
+                                </div>
+
+                                <!-- Pathway Item 2: Up Next -->
+                                <div class="flex items-start space-x-4 opacity-70">
+                                    <div
+                                        class="flex-shrink-0 w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-gray-500" xmlns="http://www.w3.org/2000/svg"
+                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Assessment: Up Next</p>
+                                        <h4 class="font-semibold text-gray-800 dark:text-white">Quiz on Newton's Laws
+                                        </h4>
+                                        <p class="text-xs text-gray-500 mt-1">10 MCQs, 15 mins</p>
+                                    </div>
+                                    <button disabled
+                                        class="self-center px-4 py-2 text-sm font-medium text-gray-500 bg-gray-200 dark:bg-gray-700 rounded-lg cursor-not-allowed">Start</button>
+                                </div>
+
+                                <!-- Pathway Item 3: Locked -->
+                                <div class="flex items-start space-x-4 opacity-40">
+                                    <div
+                                        class="flex-shrink-0 w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-gray-500" xmlns="http://www.w3.org/2000/svg"
+                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Lesson 3.3: Locked</p>
+                                        <h4 class="font-semibold text-gray-800 dark:text-white">Work, Energy, and Power
+                                        </h4>
+                                        <p class="text-xs text-gray-500 mt-1">Complete previous assessment to unlock</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mastery Chart -->
+                    <div
+                        class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Topic Mastery</h3>
+                        <div class="h-64">
+                            <canvas id="masteryChart"></canvas>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <a href="progress_streaks.html"
+                                class="text-sm font-medium text-amber-600 hover:text-amber-500">View Detailed Progress
+                                &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Mobile sidebar overlay -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleSidebar()">
+        </div>
+    </div>
+
+    <script>
+        // Theme toggle logic
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', function () {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Mobile sidebar push logic
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const overlay = document.getElementById('sidebar-overlay');
+
+            if (sidebar.classList.contains('-translate-x-full')) {
+                // Open sidebar
+                sidebar.classList.remove('-translate-x-full');
+                mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
+                overlay.classList.remove('hidden');
+            } else {
+                // Close sidebar
+                sidebar.classList.add('-translate-x-full');
+                mainContent.classList.remove('lg:translate-x-0', 'translate-x-64');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Chart.js implementation for Mastery Chart
+        // ... existing chart code ...
+        const ctx = document.getElementById('masteryChart').getContext('2d');
+        const isDarkMode = document.documentElement.classList.contains('dark');
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+        gradient.addColorStop(0, isDarkMode ? 'rgba(251, 191, 36, 0.4)' : 'rgba(252, 211, 77, 0.6)');
+        gradient.addColorStop(1, isDarkMode ? 'rgba(251, 191, 36, 0.05)' : 'rgba(252, 211, 77, 0.05)');
+
+        const masteryChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Mechanics', 'Thermodynamics', 'Optics', 'Electromagnetism', 'Relativity'],
+                datasets: [{
+                    label: 'Mastery',
+                    data: [90, 65, 75, 85, 50],
+                    backgroundColor: gradient,
+                    borderColor: '#fbbf24',
+                    pointBackgroundColor: '#fbbf24',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#fbbf24',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' },
+                        grid: { color: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)' },
+                        pointLabels: {
+                            color: isDarkMode ? '#d1d5db' : '#4b5563',
+                            font: {
+                                size: 12
+                            }
+                        },
+                        ticks: {
+                            color: isDarkMode ? '#9ca3af' : '#6b7280',
+                            backdropColor: 'transparent',
+                            stepSize: 25
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

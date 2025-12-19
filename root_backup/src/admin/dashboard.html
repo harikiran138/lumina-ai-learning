@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Dynamic Database System Scripts -->
+    <script src="../js/database.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/dashboard-loader.js"></script>
+    <script src="../js/data-manager.js"></script>
+    <script src="../js/dynamic-dashboard.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #f59e0b, #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #light-icon, #dark-icon { display: none; }
+        html.dark #dark-icon { display: block; }
+        html:not(.dark) #light-icon { display: block; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background-color: transparent; }
+        html.dark ::-webkit-scrollbar-track { background-color: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
+        html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
+        ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+        html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
+        
+        aside nav {
+             min-height: calc(100vh - 128px);
+        }
+    </style>
+    <script>
+        // Apply theme based on localStorage or system preference
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300">
+
+    <div class="relative h-screen overflow-hidden lg:flex">
+        <!-- Sidebar (Static) -->
+        <aside id="sidebar" class="w-64 flex-shrink-0 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-40 h-full">
+            <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+                <a href="dashboard.html" class="text-2xl font-bold">
+                    <span class="gradient-text">Lumina</span> ✨
+                </a>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <a href="dashboard.html" id="nav-admin_dashboard" class="flex items-center px-4 py-2.5 text-sm font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    Admin Dashboard
+                </a>
+                <a href="community.html" id="nav-community_hub" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    Community Hub
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 mt-auto">
+                <a href="../login.html" class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <div id="main-content-container" class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out h-screen">
+            <header class="h-16 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 flex-shrink-0 sticky top-0 z-20">
+                 <div class="flex items-center">
+                    <button id="menu-button" class="lg:hidden mr-4 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onclick="toggleSidebar()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <h1 id="main-header-title" class="text-lg font-semibold text-gray-900 dark:text-white">Admin Dashboard</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                     <button id="theme-toggle" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-semibold text-sm text-gray-700 dark:text-gray-300" id="user-name-display">Prof. Evelyn Reed (Admin)</span>
+                        <div class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white font-bold text-lg" id="user-avatar-display">A</div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="main-content" class="flex-1 flex overflow-hidden">
+                <!-- Dynamic Content Container -->
+                <div id="page-content-wrapper" class="flex-1 flex flex-col overflow-y-auto">
+                    <!-- Dashboard content injected here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Member Sidebar - Not used on dashboard but kept for consistent file structure -->
+        <aside id="member-sidebar" class="w-64 bg-white dark:bg-[#1C1C1C] border-l border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out absolute right-0 top-0 h-full z-30 translate-x-full">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 h-16 flex items-center justify-between">
+                <h2 class="font-bold text-lg">Members</h2>
+                <button class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onclick="closeMemberSidebar()">
+                     <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div id="member-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 mt-auto" id="add-member-container"></div>
+        </aside>
+
+        <!-- Overlays (Static) -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
+        <div id="member-sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="closeMemberSidebar()"></div>
+        
+        <!-- MODALS (Hidden by default) -->
+        
+        <!-- Edit User Modal -->
+        <div id="edit-user-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
+            <div id="edit-user-modal-content" class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 w-full max-w-lg transform transition-all scale-95 opacity-0">
+                <form id="edit-user-form">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">Edit User: <span id="edit-user-name" class="font-normal text-amber-500"></span></h3>
+                        <button type="button" class="close-edit-user-modal-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-2xl leading-none">&times;</button>
+                    </div>
+                    <input type="hidden" id="edit-user-id">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="edit-user-role" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Role Assignment</label>
+                            <select id="edit-user-role" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500">
+                                <option value="student">Student</option>
+                                <option value="teacher">Teacher</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="edit-user-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Account Status</label>
+                            <select id="edit-user-status" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500">
+                                <option value="active">Active</option>
+                                <option value="suspended">Suspended</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-4">
+                        <button type="button" class="close-edit-user-modal-btn px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancel</button>
+                        <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-500 rounded-lg hover:bg-indigo-600">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Course Modal -->
+        <div id="edit-course-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
+            <div id="edit-course-modal-content" class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 w-full max-w-lg transform transition-all scale-95 opacity-0">
+                <form id="edit-course-form">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">Manage Course: <span id="edit-course-name" class="font-normal text-amber-500"></span></h3>
+                        <button type="button" class="close-edit-course-modal-btn p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-2xl leading-none">&times;</button>
+                    </div>
+                    <input type="hidden" id="edit-course-id">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="edit-course-title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Course Title</label>
+                            <input type="text" id="edit-course-title" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500" required>
+                        </div>
+                        <div>
+                            <label for="edit-course-desc" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                            <textarea id="edit-course-desc" rows="2" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500"></textarea>
+                        </div>
+                        <div>
+                            <label for="edit-course-teacher" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Lead Teacher</label>
+                            <select id="edit-course-teacher" class="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-800 border-transparent focus:border-amber-500 focus:ring-amber-500">
+                                <option value="er">Prof. Evelyn Reed (Admin)</option>
+                                <option value="jd">Jane Doe (Teacher)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-between gap-4">
+                        <button type="button" id="delete-course-btn" class="px-4 py-2 text-sm font-semibold text-white bg-red-500 rounded-lg hover:bg-red-600">Delete Course</button>
+                        <div class="flex gap-4">
+                            <button type="button" class="close-edit-course-modal-btn px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancel</button>
+                            <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-500 rounded-lg hover:bg-indigo-600">Save Changes</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATA (Copied from source for self-containment) ---
+        const currentUser = { name: "Prof. Evelyn Reed (Admin)", avatar: "A", color: "bg-red-600", role: 'admin', id: 'er', status: 'active' }; 
+        
+        const allStudents = [
+            { name: "Sophia Chen", avatar: "S", color: "bg-teal-500", role: "student", id: "sc", status: 'active' },
+            { name: "Liam Harris", avatar: "L", color: "bg-purple-500", role: "student", id: "lh", status: 'suspended' },
+            { name: "Alex Turner", avatar: "A", color: "bg-amber-500", role: "student", id: "at", status: 'active' },
+            { name: "Maria Rodriguez", avatar: "M", color: "bg-red-500", role: "student", id: "mr", status: 'active' },
+            { name: "Kenji Tanaka", avatar: "K", color: "bg-blue-500", role: "student", id: "kt", status: 'active' },
+            { name: "Jane Doe (Teacher)", avatar: "J", color: "bg-green-600", role: "teacher", id: "jd", status: 'active' },
+        ];
+        
+        let chatData = {
+            "qm": {
+                id: "qm",
+                name: "Quantum Mechanics",
+                description: "Discussion on Chapter 1: Core Principles",
+                teacherId: "er",
+                contentStatus: { vectorDB: '100%', pathways: '95%' },
+                members: [currentUser, allStudents[0], allStudents[1], allStudents[2]].filter(Boolean),
+                unread: 0,
+                messages: []
+            },
+            "thermo": {
+                id: "thermo",
+                name: "Thermodynamics",
+                description: "Midterm study group",
+                teacherId: "jd",
+                contentStatus: { vectorDB: '80%', pathways: '75%' },
+                members: [currentUser, allStudents[2], allStudents[1], allStudents[5]].filter(Boolean),
+                unread: 1,
+                messages: []
+            }
+        };
+
+        let systemHealth = {
+            storage: '1.2 GB',
+            storagePercent: 80,
+            dbConnections: 45,
+            totalUsers: 0,
+            newUsers: 1,
+            llm: { status: 'Operational', latency: '400ms', model: 'LLaMA-3-8B' },
+            vectorDb: { status: 'Healthy', latency: '12ms', size: '1.5M vectors' },
+            workers: { status: 'Processing', queue: 5, pendingEmbeddings: 2 }
+        };
+
+        let allUsers = [...allStudents, { name: currentUser.name, avatar: currentUser.avatar, color: currentUser.color, role: currentUser.role, id: currentUser.id, status: currentUser.status }]
+             .filter(Boolean)
+             .filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i);
+        systemHealth.totalUsers = allUsers.length;
+
+        // --- GLOBAL DOM ELEMENTS (Copied) ---
+        const pageContentWrapper = document.getElementById('page-content-wrapper');
+        const mainHeaderTitle = document.getElementById('main-header-title');
+        const userNameDisplay = document.getElementById('user-name-display');
+        const userAvatarDisplay = document.getElementById('user-avatar-display');
+
+        // Static Modals
+        const editUserModal = document.getElementById('edit-user-modal');
+        const editUserModalContent = document.getElementById('edit-user-modal-content');
+        const editUserForm = document.getElementById('edit-user-form');
+        const editCourseModal = document.getElementById('edit-course-modal');
+        const editCourseModalContent = document.getElementById('edit-course-modal-content');
+        const editCourseForm = document.getElementById('edit-course-form');
+        
+        // --- HELPERS ---
+        function openModal(modalEl, contentEl) {
+            modalEl.classList.remove('hidden');
+            setTimeout(() => contentEl.classList.remove('scale-95', 'opacity-0'), 10);
+        }
+
+        function closeModal(modalEl, contentEl) {
+            contentEl.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modalEl.classList.add('hidden'), 200);
+        }
+
+        function findUserById(id) {
+            return allUsers.find(u => u.id === id) || null;
+        }
+        
+        function findCourseById(id) {
+            return chatData[id] || null;
+        }
+
+        function updateUserData(userId, updates) {
+            const index = allUsers.findIndex(u => u.id === userId);
+            if (index !== -1) {
+                allUsers[index] = { ...allUsers[index], ...updates };
+                const studentIndex = allStudents.findIndex(s => s.id === userId);
+                if (studentIndex !== -1) {
+                    allStudents[studentIndex] = allUsers[index];
+                }
+            }
+            if (userId === currentUser.id) {
+                 if (updates.status === 'suspended') {
+                    console.error("Admin cannot suspend their own session via this interface.");
+                    return;
+                 }
+                 Object.assign(currentUser, updates);
+                 const baseName = currentUser.name.split(' (')[0];
+                 userNameDisplay.textContent = baseName + (currentUser.role === 'admin' ? ' (Admin)' : ` (${currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)})`);
+            }
+        }
+
+        function mockAction(action) {
+            console.log("Mock Admin Action:", action);
+            const messageBox = document.createElement('div');
+            messageBox.className = 'fixed top-4 right-4 bg-green-500 text-white p-3 rounded-lg shadow-xl z-50 transition-all';
+            messageBox.textContent = `SUCCESS: ${action} (Simulated)`;
+            document.body.appendChild(messageBox);
+            setTimeout(() => messageBox.remove(), 3000);
+        }
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+            document.getElementById('sidebar-overlay').classList.add('hidden');
+        }
+        
+        function closeMemberSidebar() {
+             document.getElementById('member-sidebar').classList.add('translate-x-full');
+             document.getElementById('member-sidebar-overlay').classList.add('hidden');
+        }
+
+        // --- DASHBOARD CORE LOGIC (Admin Specific) ---
+
+        window.adminActiveTab = 'overview';
+
+        function renderAdminDashboard(initialTab = 'overview') {
+            window.adminActiveTab = initialTab;
+
+            const tabs = [
+                { id: 'overview', name: 'Overview' },
+                { id: 'user_management', name: 'Users & Roles' },
+                { id: 'course_management', name: 'Courses & Ingestion' },
+                { id: 'system_health', name: 'System Health' },
+            ];
+
+            const tabsHtml = tabs.map(tab => `
+                <button 
+                    onclick="renderAdminDashboard('${tab.id}')" 
+                    class="py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
+                        window.adminActiveTab === tab.id 
+                        ? 'text-amber-600 border-amber-500 dark:text-amber-400' 
+                        : 'text-gray-500 border-transparent hover:border-gray-300 dark:hover:border-gray-700'
+                    }"
+                >
+                    ${tab.name}
+                </button>
+            `).join('');
+
+            pageContentWrapper.innerHTML = `
+                <div class="p-6">
+                    <div class="border-b border-gray-200 dark:border-gray-800 mb-6 flex space-x-4">
+                        ${tabsHtml}
+                    </div>
+                    <div id="admin-tab-content"></div>
+                </div>
+            `;
+            
+            const tabContentEl = document.getElementById('admin-tab-content');
+
+            if (window.adminActiveTab === 'overview') {
+                tabContentEl.innerHTML = renderAdminOverview();
+            } else if (window.adminActiveTab === 'user_management') {
+                tabContentEl.innerHTML = renderAdminUserManagement();
+            } else if (window.adminActiveTab === 'course_management') {
+                tabContentEl.innerHTML = renderAdminCourseManagement();
+            } else if (window.adminActiveTab === 'system_health') {
+                tabContentEl.innerHTML = renderAdminSystemHealth();
+            }
+        }
+
+        function renderAdminOverview() {
+            const activeUsers = allUsers.filter(u => u.status === 'active').length;
+            const teachers = allUsers.filter(u => u.role === 'teacher').length;
+            
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Users</h3>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">${systemHealth.totalUsers}</p>
+                        <span class="text-xs text-green-500">Active: ${activeUsers}</span>
+                    </div>
+                    <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Courses</h3>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">${Object.keys(chatData).length}</p>
+                        <span class="text-xs text-amber-500">Teachers: ${teachers}</span>
+                    </div>
+                    <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Storage Usage</h3>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">${systemHealth.storage}</p>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
+                            <div class="h-2.5 rounded-full ${systemHealth.storagePercent > 70 ? 'bg-red-500' : 'bg-green-500'}" style="width: ${systemHealth.storagePercent}%"></div>
+                        </div>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">${systemHealth.storagePercent}% capacity</span>
+                    </div>
+                    <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">LLM Status</h3>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">${systemHealth.llm.status}</p>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Latency: ${systemHealth.llm.latency}</span>
+                    </div>
+                </div>
+
+                <div class="mt-8 p-6 bg-white dark:bg-[#1C1C1C] rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                    <h3 class="text-xl font-bold mb-4">Pending Tasks (Celery Workers)</h3>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-4xl font-semibold text-amber-500">${systemHealth.workers.queue}</div>
+                        <p class="text-gray-600 dark:text-gray-400">${systemHealth.workers.queue} tasks currently queued. Status: ${systemHealth.workers.status}</p>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-600 mt-2">Check the System Health tab for detailed monitoring.</p>
+                </div>
+            `;
+        }
+
+        function renderAdminUserManagement() {
+            return `
+                <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                    <h2 class="text-xl font-bold mb-4">User & Role Management</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-800">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                ${allUsers.map(user => `
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                            <div class="flex items-center">
+                                                <div class="w-8 h-8 rounded-full ${user.color} flex-shrink-0 flex items-center justify-center text-white font-bold text-xs">${user.avatar}</div>
+                                                <span class="ml-3">${user.name}</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100' : user.role === 'teacher' ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' : 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'}">
+                                                ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'}">
+                                                ${user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button onclick="openEditUserModal('${user.id}')" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors mr-3">Edit Role</button>
+                                            ${user.id !== currentUser.id ? 
+                                                (user.status === 'active' ? 
+                                                    `<button onclick="updateUserStatus('${user.id}', 'suspended')" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors">Suspend</button>` : 
+                                                    `<button onclick="updateUserStatus('${user.id}', 'active')" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 transition-colors">Activate</button>`)
+                                                : `<span class="text-gray-400 dark:text-gray-600">N/A</span>`
+                                            }
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAdminCourseManagement() {
+            const courses = Object.values(chatData);
+            
+            return `
+                <div class="space-y-6">
+                    <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Course Management (${courses.length})</h2>
+                            <button onclick="openEditCourseModal('new')" class="px-4 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600">
+                                + Create New Course
+                            </button>
+                        </div>
+                        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                            ${courses.map(course => {
+                                const teacher = findUserById(course.teacherId);
+                                const teacherName = teacher ? teacher.name.split(' (')[0] : 'Unassigned';
+                                return `
+                                    <div class="flex items-center justify-between py-3">
+                                        <div>
+                                            <p class="font-semibold">${course.name}</p>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">Lead: ${teacherName} | Students: ${course.members.length}</p>
+                                        </div>
+                                        <button onclick="openEditCourseModal('${course.id}')" class="px-3 py-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">
+                                            Edit/Manage
+                                        </button>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <h2 class="text-xl font-bold mb-4">Content Ingestion Status (RAG Knowledge Base)</h2>
+                        <div class="space-y-4">
+                            ${courses.map(course => `
+                                <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                    <p class="font-medium text-sm">${course.name} Textbooks</p>
+                                    <div class="mt-1 space-y-1">
+                                        <div class="text-xs flex justify-between">
+                                            <span>Vector DB Embedding:</span>
+                                            <span class="${course.contentStatus.vectorDB === '100%' ? 'text-green-500' : 'text-amber-500'} font-semibold">${course.contentStatus.vectorDB}</span>
+                                        </div>
+                                        <div class="text-xs flex justify-between">
+                                            <span>AI Pathway Generation:</span>
+                                            <span class="${course.contentStatus.pathways === '100%' ? 'text-green-500' : 'text-amber-500'} font-semibold">${course.contentStatus.pathways}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="mt-4 flex justify-between items-center">
+                            <input type="file" id="content-upload" class="hidden" onchange="mockAction('Uploaded file: ' + this.files[0].name)">
+                            <label for="content-upload" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-500 rounded-lg hover:bg-indigo-600 cursor-pointer">
+                                Upload New Textbooks (.pdf, .txt)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAdminSystemHealth() {
+            const isHealthy = (status) => status === 'Healthy' || status === 'Operational' || status === 'Processing';
+            const statusClass = (status) => isHealthy(status) ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
+
+            return `
+                <div class="space-y-6">
+                    <h2 class="text-xl font-bold">Core Infrastructure Status (Technology Stack Monitoring)</h2>
+
+                    <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <h3 class="font-semibold text-lg flex justify-between items-center">
+                            LLM Inference Engine (vLLM/Ollama)
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass(systemHealth.llm.status)}">${systemHealth.llm.status}</span>
+                        </h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Model: ${systemHealth.llm.model}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Average Latency: ${systemHealth.llm.latency}</p>
+                        <button onclick="mockAction('Restarted LLM Engine')" class="mt-3 text-sm text-red-500 hover:text-red-700">Force Restart</button>
+                    </div>
+
+                    <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <h3 class="font-semibold text-lg flex justify-between items-center">
+                            Vector Database (Milvus/Weaviate)
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass(systemHealth.vectorDb.status)}">${systemHealth.vectorDb.status}</span>
+                        </h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Total Embeddings: ${systemHealth.vectorDb.size}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Query Latency: ${systemHealth.vectorDb.latency}</p>
+                    </div>
+
+                    <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
+                        <h3 class="font-semibold text-lg flex justify-between items-center">
+                            Workers (Celery + Redis)
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass(systemHealth.workers.status)}">${systemHealth.workers.status}</span>
+                        </h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Active Tasks: ${systemHealth.workers.queue}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Pending Embeddings Jobs: ${systemHealth.workers.pendingEmbeddings}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- USER AND COURSE MODAL HANDLERS ---
+        
+        function openEditUserModal(userId) {
+            const user = findUserById(userId);
+            if (!user) return;
+
+            document.getElementById('edit-user-id').value = userId;
+            document.getElementById('edit-user-name').textContent = user.name;
+            document.getElementById('edit-user-role').value = user.role;
+            document.getElementById('edit-user-status').value = user.status;
+
+            const isSelf = userId === currentUser.id;
+            document.getElementById('edit-user-role').disabled = isSelf;
+            document.getElementById('edit-user-status').disabled = isSelf;
+            document.getElementById('edit-user-status').querySelector('option[value="suspended"]').disabled = isSelf;
+
+            openModal(editUserModal, editUserModalContent);
+        }
+
+        function closeEditUserModal() {
+            closeModal(editUserModal, editUserModalContent);
+        }
+        
+        function handleEditUserFormSubmit(e) {
+            e.preventDefault();
+            const userId = document.getElementById('edit-user-id').value;
+            const newRole = document.getElementById('edit-user-role').value;
+            const newStatus = document.getElementById('edit-user-status').value;
+            
+            updateUserData(userId, { role: newRole, status: newStatus });
+            
+            closeEditUserModal();
+            renderAdminDashboard('user_management');
+            mockAction(`Updated ${findUserById(userId)?.name}'s permissions.`);
+        }
+
+        function updateUserStatus(userId, newStatus) {
+            updateUserData(userId, { status: newStatus });
+            renderAdminDashboard('user_management');
+            mockAction(`${findUserById(userId)?.name} account ${newStatus}d.`);
+        }
+        
+        function openEditCourseModal(courseId) {
+            const isNew = courseId === 'new';
+            const course = isNew ? { id: 'new', name: '', description: '', teacherId: 'er' } : findCourseById(courseId);
+
+            if (!course && !isNew) return;
+
+            document.getElementById('edit-course-id').value = course.id;
+            document.getElementById('edit-course-name').textContent = isNew ? 'New Course' : course.name;
+            document.getElementById('edit-course-title').value = course.name;
+            document.getElementById('edit-course-desc').value = course.description;
+            document.getElementById('edit-course-teacher').value = course.teacherId;
+
+            const deleteBtn = document.getElementById('delete-course-btn');
+            deleteBtn.style.display = isNew ? 'none' : 'block';
+            if (!isNew) {
+                deleteBtn.replaceWith(deleteBtn.cloneNode(true));
+                document.getElementById('delete-course-btn').addEventListener('click', handleDeleteCourse);
+            }
+
+            openModal(editCourseModal, editCourseModalContent);
+        }
+
+        function closeEditCourseModal() {
+            closeModal(editCourseModal, editCourseModalContent);
+        }
+
+        function handleDeleteCourse() {
+             const courseId = document.getElementById('edit-course-id').value;
+             const courseName = findCourseById(courseId)?.name;
+             
+             delete chatData[courseId];
+             closeEditCourseModal();
+             renderAdminDashboard('course_management');
+             mockAction(`Deleted course: ${courseName}`);
+        }
+        
+        function handleEditCourseFormSubmit(e) {
+            e.preventDefault();
+            const courseId = document.getElementById('edit-course-id').value;
+            const courseTitle = document.getElementById('edit-course-title').value;
+            const courseDesc = document.getElementById('edit-course-desc').value;
+            const courseTeacher = document.getElementById('edit-course-teacher').value;
+            
+            const isNew = courseId === 'new';
+
+            if (isNew) {
+                const newId = courseTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                chatData[newId] = {
+                    id: newId,
+                    name: courseTitle,
+                    description: courseDesc,
+                    teacherId: courseTeacher,
+                    contentStatus: { vectorDB: '0%', pathways: '0%' },
+                    members: [findUserById(courseTeacher)],
+                    unread: 0,
+                    messages: []
+                };
+                mockAction(`Created new course: ${courseTitle}`);
+            } else {
+                chatData[courseId] = {
+                    ...chatData[courseId],
+                    name: courseTitle,
+                    description: courseDesc,
+                    teacherId: courseTeacher
+                };
+                mockAction(`Updated course: ${courseTitle}`);
+            }
+            
+            closeEditCourseModal();
+            renderAdminDashboard('course_management');
+        }
+
+        // --- DYNAMIC INITIALIZATION ---
+        
+        document.getElementById('theme-toggle').addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Data Management button (if exists)
+        const dataManagementBtn = document.getElementById('data-management-btn');
+        if (dataManagementBtn) {
+            dataManagementBtn.addEventListener('click', function() {
+                if (window.dataManager) {
+                    window.dataManager.openDataModal();
+                } else {
+                    console.error('Data Manager not loaded');
+                }
+            });
+        }
+
+        // Setup dynamic dashboard using database data
+        async function initDynamicDashboard() {
+            try {
+                console.log('Initializing dynamic admin dashboard...');
+                
+                // Wait for API and dashboard loader to be ready
+                let attempts = 0;
+                while (!window.luminaAPI && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (window.luminaAPI && window.dashboardLoader && window.dashboardLoader.currentUser) {
+                    console.log('Loading dynamic admin data...');
+                    
+                    // Load real data from database
+                    const adminData = await window.dashboardLoader.loadAdminData();
+                    console.log('Admin data loaded:', adminData);
+                    
+                    // Replace static data with dynamic data
+                    if (adminData && adminData.courses) {
+                        // Update chatData with real course data
+                        const newChatData = {};
+                        adminData.courses.forEach(course => {
+                            newChatData[course.id] = {
+                                id: course.id,
+                                name: course.name || course.title,
+                                description: course.description,
+                                teacherId: course.teacherId,
+                                contentStatus: course.contentStatus || { vectorDB: '0%', pathways: '0%' },
+                                members: course.members || [],
+                                unread: course.unread || 0,
+                                messages: course.messages || []
+                            };
+                        });
+                        
+                        // Replace global chatData
+                        chatData = newChatData;
+                        console.log('Updated chatData with dynamic data:', Object.keys(chatData).length, 'courses');
+                    }
+                    
+                    // Re-render dashboard with dynamic data
+                    renderAdminDashboard();
+                    console.log('Dynamic admin dashboard initialized successfully');
+                } else {
+                    console.warn('Dashboard loader not ready, using static data');
+                    renderAdminDashboard();
+                }
+            } catch (error) {
+                console.error('Failed to initialize dynamic dashboard:', error);
+                // Fallback to static dashboard
+                renderAdminDashboard();
+            }
+        }
+
+        editUserForm.addEventListener('submit', handleEditUserFormSubmit);
+        editUserModal.querySelectorAll('.close-edit-user-modal-btn').forEach(btn => btn.addEventListener('click', closeEditUserModal));
+        
+        editCourseForm.addEventListener('submit', handleEditCourseFormSubmit);
+        editCourseModal.querySelectorAll('.close-edit-course-modal-btn').forEach(btn => btn.addEventListener('click', closeEditCourseModal));
+
+        // Initialize dashboard when everything is ready
+        setTimeout(initDynamicDashboard, 1500);
+    </script>
+</body>
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Assessment - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Dynamic Database System Scripts -->
+    <script src="../js/database.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/dashboard-loader.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #f59e0b, #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #light-icon, #dark-icon { display: none; }
+        html.dark #dark-icon { display: block; }
+        html:not(.dark) #light-icon { display: block; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background-color: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
+        html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
+        ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+        html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
+        
+        aside nav {
+             min-height: calc(100vh - 128px);
+        }
+    </style>
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300">
+
+    <div class="relative min-h-screen lg:flex">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 flex-shrink-0 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-40 h-full">
+            <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+                <a href="../index.html" class="text-2xl font-bold">
+                    <span class="gradient-text">Lumina</span> ✨
+                </a>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <a href="dashboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    Dashboard
+                </a>
+                <a href="course_explorer.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    Explore Courses
+                </a>
+                <a href="my_notes.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    My Notes
+                </a>
+                <a href="progress_streaks.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    My Progress
+                </a>
+                 <a href="leaderboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    Leaderboard
+                </a>
+                <a href="community.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    Community
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 mt-auto">
+                <a href="../login.html" class="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="main-content" class="flex-1 flex flex-col w-full lg:w-auto transition-transform duration-300 ease-in-out h-screen overflow-y-auto">
+            <header class="h-16 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 flex-shrink-0 sticky top-0 z-20">
+                 <div class="flex items-center">
+                    <button id="menu-button" class="lg:hidden mr-4 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" onclick="toggleSidebar()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <div>
+                        <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Final Assessment</h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Quantum Mechanics</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                     <button id="theme-toggle" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <svg id="light-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-semibold text-sm text-gray-700 dark:text-gray-300">Alex Turner</span>
+                        <div class="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-lg">A</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Assessment Content -->
+            <main class="flex-1 p-4 md:p-6 lg:p-8">
+                <div class="max-w-4xl mx-auto">
+                    
+                    <div id="quiz-container" class="bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 lg:p-8">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Final Assessment</h2>
+                            <span id="question-counter" class="text-sm font-semibold text-gray-500 dark:text-gray-400">Question 1 / 5</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-8">
+                            <div id="progress-bar" class="bg-amber-500 h-2 rounded-full transition-all duration-300" style="width: 20%"></div>
+                        </div>
+
+                        <form id="assessment-form">
+                            <!-- Questions will be dynamically inserted here -->
+                        </form>
+                    </div>
+
+                    <div id="results-container" class="hidden bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 lg:p-8 text-center">
+                        <h2 class="text-2xl font-bold mb-2">Assessment Complete!</h2>
+                        <p class="text-gray-600 dark:text-gray-400 mb-6">Here's how you did:</p>
+                        
+                        <div class="mb-8">
+                            <span id="score-text" class="text-5xl font-bold gradient-text">5/5</span>
+                            <p id="score-feedback" class="font-semibold mt-1">Excellent Work!</p>
+                        </div>
+                        
+                        <div id="results-feedback-list" class="text-left space-y-4 mb-8">
+                            <!-- Feedback for each question will be inserted here -->
+                        </div>
+
+                        <div class="flex justify-center gap-4">
+                            <a href="lesson_page.html" class="px-6 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-[#222222] rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">Review Course</a>
+                            <a href="dashboard.html" class="px-6 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors">Back to Dashboard</a>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+        
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
+    </div>
+
+    <script>
+        // --- DATA (This would be fetched from the backend) ---
+        const quizData = {
+            id: 'qm_final_exam',
+            title: 'Final Assessment',
+            questions: [
+                { id: 1, type: 'mcq', text: 'Which core principle is demonstrated by the double-slit experiment?', options: ['Entanglement', 'Superposition', 'Wave-Particle Duality', 'Quantization'], answer: 'Wave-Particle Duality' },
+                { id: 2, type: 'short_answer', text: "Heisenberg's Uncertainty Principle states that you cannot simultaneously know a particle's exact position and what other property?", answer: "Momentum" },
+                { id: 3, type: 'mcq', text: 'Which equation is central to quantum mechanics, describing the wave function of a system?', options: ["Einstein's Field Equations", "Maxwell's Equations", "Newton's Second Law", "The Schrödinger Equation"], answer: 'The Schrödinger Equation' },
+                { id: 4, type: 'short_answer', text: "What is the name for a quantum bit, the basic unit of quantum information?", answer: "Qubit" },
+                { id: 5, type: 'mcq', text: 'The phenomenon where two particles are linked and instantaneously affect each other, regardless of distance, is called:', options: ['Superposition', 'Quantum Tunneling', 'Quantum Entanglement', 'Wave Collapse'], answer: 'Quantum Entanglement' }
+            ]
+        };
+
+        // --- DOM ELEMENTS ---
+        const form = document.getElementById('assessment-form');
+        const quizContainer = document.getElementById('quiz-container');
+        const resultsContainer = document.getElementById('results-container');
+        const questionCounter = document.getElementById('question-counter');
+        const progressBar = document.getElementById('progress-bar');
+        
+        // --- STATE ---
+        let currentQuestionIndex = 0;
+        let userAnswers = new Array(quizData.questions.length).fill(null);
+
+        // --- FUNCTIONS ---
+
+        function renderQuestion() {
+            const questionData = quizData.questions[currentQuestionIndex];
+            form.innerHTML = ''; // Clear previous question
+
+            let questionHTML = `<div class="mb-8">
+                <p class="font-semibold text-lg mb-4">${currentQuestionIndex + 1}. ${questionData.text}</p>`;
+
+            if (questionData.type === 'mcq') {
+                questionHTML += `<div class="space-y-3">`;
+                questionData.options.forEach(option => {
+                    const isChecked = userAnswers[currentQuestionIndex] === option;
+                    questionHTML += `
+                        <label class="flex items-center p-4 rounded-lg bg-gray-100 dark:bg-gray-800/50 hover:bg-gray-200 dark:hover:bg-gray-700/50 cursor-pointer border-2 border-transparent has-[:checked]:border-amber-500 transition-colors">
+                            <input type="radio" name="q${currentQuestionIndex}" value="${option}" class="form-radio text-amber-500 focus:ring-amber-500 h-5 w-5" ${isChecked ? 'checked' : ''}>
+                            <span class="ml-4 text-md">${option}</span>
+                        </label>`;
+                });
+                questionHTML += `</div>`;
+            } else if (questionData.type === 'short_answer') {
+                const prevAnswer = userAnswers[currentQuestionIndex] || '';
+                questionHTML += `
+                    <input type="text" name="q${currentQuestionIndex}" placeholder="Type your answer here..." class="w-full px-4 py-3 bg-white dark:bg-[#222222] border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none transition-shadow" value="${prevAnswer}">`;
+            }
+
+            questionHTML += `<div id="error-message" class="text-red-500 text-sm mt-4 text-center font-semibold h-5"></div></div>`;
+
+            // Navigation buttons
+            questionHTML += `<div class="flex justify-between items-center mt-4">`;
+            if (currentQuestionIndex > 0) {
+                questionHTML += `<button type="button" id="prev-btn" class="px-6 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-[#222222] rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">Previous</button>`;
+            } else {
+                 questionHTML += `<div></div>`; // Placeholder for alignment
+            }
+
+            if (currentQuestionIndex < quizData.questions.length - 1) {
+                questionHTML += `<button type="submit" class="px-6 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors">Next</button>`;
+            } else {
+                questionHTML += `<button type="submit" class="px-6 py-2 text-sm font-semibold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors">Submit Quiz</button>`;
+            }
+            questionHTML += `</div>`;
+
+            form.innerHTML = questionHTML;
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const progressPercent = ((currentQuestionIndex + 1) / quizData.questions.length) * 100;
+            progressBar.style.width = `${progressPercent}%`;
+            questionCounter.textContent = `Question ${currentQuestionIndex + 1} / ${quizData.questions.length}`;
+        }
+
+        function showResults() {
+            quizContainer.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+
+            let score = 0;
+            const resultsFeedbackList = document.getElementById('results-feedback-list');
+            resultsFeedbackList.innerHTML = '';
+
+            quizData.questions.forEach((question, index) => {
+                const userAnswer = userAnswers[index];
+                let isCorrect = false;
+                if (question.type === 'mcq') {
+                    isCorrect = userAnswer && userAnswer.toLowerCase() === question.answer.toLowerCase();
+                } else if (question.type === 'short_answer') {
+                    isCorrect = userAnswer && userAnswer.toLowerCase().trim() === question.answer.toLowerCase();
+                }
+                
+                if (isCorrect) score++;
+
+                const feedbackColor = isCorrect ? 'border-green-500' : 'border-red-500';
+                const icon = isCorrect 
+                    ? `<svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`
+                    : `<svg class="w-5 h-5 text-red-500 mr-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>`;
+
+                resultsFeedbackList.innerHTML += `
+                    <div class="p-4 bg-gray-100 dark:bg-gray-800/50 rounded-lg border-l-4 ${feedbackColor} flex items-start">
+                        ${icon}
+                        <div>
+                            <p class="font-semibold">${index + 1}. ${question.text}</p>
+                            <p class="text-sm mt-1">Your answer: <span class="font-medium">${userAnswer || "No answer"}</span></p>
+                            ${!isCorrect ? `<p class="text-sm text-green-600 dark:text-green-400 mt-1">Correct answer: ${question.answer}</p>` : ''}
+                        </div>
+                    </div>`;
+            });
+            
+            document.getElementById('score-text').textContent = `${score} / ${quizData.questions.length}`;
+            const scoreFeedback = document.getElementById('score-feedback');
+            if(score === quizData.questions.length) {
+                scoreFeedback.textContent = "Excellent Work!";
+            } else if (score >= quizData.questions.length / 2) {
+                scoreFeedback.textContent = "Good Job!";
+            } else {
+                scoreFeedback.textContent = "Keep Practicing!";
+            }
+        }
+        
+        function saveCurrentAnswer() {
+            const formData = new FormData(form);
+            const answer = formData.get(`q${currentQuestionIndex}`);
+            userAnswers[currentQuestionIndex] = answer;
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveCurrentAnswer();
+
+            if (!userAnswers[currentQuestionIndex]) {
+                const errorDiv = document.getElementById('error-message');
+                if (errorDiv) {
+                    errorDiv.textContent = 'Please select an answer before proceeding.';
+                    setTimeout(() => { errorDiv.textContent = ''; }, 3000);
+                }
+                return;
+            }
+
+            if (currentQuestionIndex < quizData.questions.length - 1) {
+                currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                showResults();
+            }
+        });
+
+        form.addEventListener('click', (e) => {
+             if (e.target.id === 'prev-btn') {
+                saveCurrentAnswer();
+                currentQuestionIndex--;
+                renderQuestion();
+             }
+        });
+
+
+        // Initial render
+        renderQuestion();
+
+
+        // --- THEME & SIDEBAR LOGIC ---
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                mainContent.classList.remove('lg:translate-x-0', 'translate-x-64');
+                overlay.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
+

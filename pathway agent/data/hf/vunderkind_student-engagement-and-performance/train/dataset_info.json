@@ -1,0 +1,98 @@
+{
+  "builder_name": "arrow",
+  "citation": "",
+  "config_name": "default",
+  "dataset_name": "student-engagement-and-performance",
+  "dataset_size": 6811,
+  "description": "",
+  "download_checksums": {
+    "hf://datasets/vunderkind/student-engagement-and-performance@f93690fe09768e5e4a8edba6d577c278934f7268/data-00000-of-00001.arrow": {
+      "num_bytes": 9848,
+      "checksum": null
+    }
+  },
+  "download_size": 9848,
+  "features": {
+    "student_id": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "subject": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "total_units": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "units_completed": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "total_study_time": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "avg_study_time_per_week": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "avg_study_sessions_per_week": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "attendance_rate": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "assignment_completion_rate": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "participation_score": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "total_quizzes": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "quizzes_score_percentage": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "last_access_days_ago": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "perceived_engagement": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "final_exam_score": {
+      "dtype": "int64",
+      "_type": "Value"
+    },
+    "date_collected": {
+      "dtype": "string",
+      "_type": "Value"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 16659,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 6811,
+      "num_examples": 50,
+      "dataset_name": "student-engagement-and-performance"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}

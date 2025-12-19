@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pathway Agent Decision Output",
+  "description": "The decision made by the Pathway Agent regarding the learner's next action.",
+  "type": "object",
+  "required": ["decisionId", "timestamp", "action", "targetConcept", "priority", "reasoning"],
+  "properties": {
+    "decisionId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique ID for this specific decision."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "action": {
+      "type": "string",
+      "enum": ["continue", "review", "advance", "rest"],
+      "description": "The high-level action directive."
+    },
+    "targetConcept": {
+      "type": "string",
+      "description": "The specific concept ID or topic to focus on next. Null if action is 'rest'."
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "description": "Urgency of this action (e.g., critical for spaced repetition reviews)."
+    },
+    "reasoning": {
+      "type": "string",
+      "description": "Human-readable explanation of why this action was chosen (for explainability)."
+    },
+    "meta": {
+      "type": "object",
+      "description": "Internal metrics used for the decision (for debugging/logging).",
+      "properties": {
+        "predictedReward": { "type": "number" },
+        "explorationFactor": { "type": "number" }
+      }
+    }
+  }
+}

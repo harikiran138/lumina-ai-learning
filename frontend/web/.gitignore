@@ -1,0 +1,20 @@
+node_modules/
+.venv/
+venv/
+.DS_Store
+dist/
+build/
+.env
+*.log
+coverage/
+.vscode/
+.parcel-cache/
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
+dist
+.vercel
