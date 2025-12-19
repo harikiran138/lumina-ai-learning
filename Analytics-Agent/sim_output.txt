@@ -1,0 +1,20 @@
+--- Starting 100-Iteration Simulation ---
+Processed 20/100 simulations...
+Processed 40/100 simulations...
+Processed 60/100 simulations...
+Processed 80/100 simulations...
+Processed 100/100 simulations...
+
+
+--- Simulation Complete in 0.02s ---
+
+Aggregate Metrics:
+Total Simulations: 100
+Interventions Triggered: 0 (0%)
+------------------------------
+Scenario        | Count | Avg Engagement 
+------------------------------
+flow            | 24    | 0.411
+struggle        | 32    | 0.995
+idle            | 17    | 0.100
+mixed           | 27    | 0.182

@@ -18,3 +18,9 @@ coverage/
 /build
 dist
 .vercel
+
+# Local RAG DB
+backend/db/
+*.pyc
+__pycache__/
+debug_rag.py

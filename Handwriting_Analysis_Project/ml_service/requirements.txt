@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+python-multipart
+torch
+transformers
+datasets
+pillow
+jiwer
+scikit-learn
+pandas
+kaggle
+sentence-transformers
+numpy
+tqdm
+requests
