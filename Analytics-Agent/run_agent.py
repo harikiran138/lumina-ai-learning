@@ -29,10 +29,9 @@ def main():
     print(json.dumps(output.model_dump(exclude_none=True), indent=2))
     
     # Display MCP Actions
-    actions = agent.decide_mcp_actions(output)
-    print(f"\n--- MCP Actions Triggered ({len(actions)}) ---")
-    for action in actions:
-        print(f"[{action.type.upper()}] {action.model_dump_json()}")
+    print(f"\n--- MCP Actions Triggered ({len(output.mcp_actions)}) ---")
+    for action in output.mcp_actions:
+        print(f"[ACTION] {json.dumps(action)}")
 
     # --- Scenario 2: Flow State Learner ---
     print("\n\n" + "="*50)
@@ -58,10 +57,10 @@ def main():
     print("\n--- Agent Analysis Output (Flow) ---")
     print(json.dumps(output_flow.model_dump(exclude_none=True), indent=2))
     
-    actions_flow = agent.decide_mcp_actions(output_flow)
-    print(f"\n--- MCP Actions Triggered ({len(actions_flow)}) ---")
-    for action in actions_flow:
-        print(f"[{action.type.upper()}] {action.model_dump_json()}")
+    # Display MCP Actions
+    print(f"\n--- MCP Actions Triggered ({len(output_flow.mcp_actions)}) ---")
+    for action in output_flow.mcp_actions:
+        print(f"[ACTION] {json.dumps(action)}")
 
 if __name__ == "__main__":
     main()
