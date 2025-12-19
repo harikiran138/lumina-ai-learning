@@ -5,9 +5,10 @@
     "scripts": {
         "dev": "cd frontend/web && npm run dev",
         "start": "cd frontend/web && npm run start",
-        "vercel-build": "cd frontend/web && npm install && npm run build"
-    },
-    "engines": {
-        "node": ">=18.0.0"
+        "vercel-build": "cd frontend/web && npm install && npm run build""devDependencies": {
+            "next": "^15.1.0"
+        },
+        "engines": {
+            "node": ">=18.0.0"
+        }
     }
-}
