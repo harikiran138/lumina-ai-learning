@@ -3,6 +3,8 @@
     "version": "1.0.0",
     "description": "Root build script for Vercel deployment",
     "scripts": {
+        "dev": "cd frontend/web && npm run dev",
+        "start": "cd frontend/web && npm run start",
         "vercel-build": "cd frontend/web && npm install && npm run build"
     },
     "engines": {
