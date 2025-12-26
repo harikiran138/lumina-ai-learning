@@ -17,6 +17,10 @@ class CourseGenerationRequest(BaseModel):
     level: str = "Beginning"
     modules: int = 4
 
+class IngestRequest(BaseModel):
+    text: str
+    metadata: Optional[Dict[str, Any]] = None
+
 
 class AssignmentCourseRequest(BaseModel):
     """Generate a course personalized to an assignment and optional submission.
@@ -37,6 +41,7 @@ class CourseGenerationResponse(BaseModel):
 class TutorChatRequest(BaseModel):
     message: str
     user_id: str = "guest"
+    session_id: Optional[str] = "default-session"
     context_filters: Optional[dict] = None
     provider: str = "auto"
 
@@ -179,16 +184,12 @@ async def tutor_chat(request: TutorChatRequest):
         # Dynamic LLM Provider selection
         llm_instance = get_llm_provider(request.provider)
         
-        # [NEW] Check Tutor State for avoid context
-        state_manager = get_tutor_state()
-        avoid_context = state_manager.get_avoid_context(request.session_id)
+        # [NEW] Pathway Integration (Architecture Upgrade)
+        pathway = get_pathway_agent()
         
-        avoid_instruction = ""
-        if avoid_context:
-             avoid_instruction = (
-                 "\n\n[SYSTEM CONSTRAINT: You must NOT repeat the following concepts or questions exactly as before. "
-                 "Generate FRESH, UNIQUE content:]\n" + avoid_context
-             )
+        # 1. Get Constraints (Deduplication & Difficulty)
+        constraints = pathway.get_session_constraints(request.session_id)
+        avoid_instruction = constraints.get("avoid_text", "")
 
         # 0. Guardrails Check
         from ai_engine.swarm.guardian import GuardianAgent
@@ -206,12 +207,13 @@ async def tutor_chat(request: TutorChatRequest):
                  "personalization": {"behavior": "blocked", "recommendation": "review_guidelines"}
              }
 
-        # 1. Retrieve Context
+        # 2. Retrieve Context (Truncated for Token Limit)
         rag_engine = get_rag_engine()
         relevant_docs = rag_engine.query(clean_message)
-        context_str = "\n\n".join(relevant_docs)
+        # Limit context to approx 2000 chars (~500 tokens)
+        context_str = "\n\n".join(relevant_docs)[:2000] 
         
-        # 2. Retrieve Learner State & Pathway Recommendation
+        # 3. Retrieve Learner State & Pathway Recommendation
         # Initialize store if not global (or import and use singular instance)
         from learner_profile.store.state import StateStore
         store = StateStore()
@@ -219,15 +221,16 @@ async def tutor_chat(request: TutorChatRequest):
         
         behavior = state.get("behavior_label", "neutral")
         # Get recommendation (pass empty graph for now/default)
-        recommendation = get_pathway_agent().recommend_next_node(state, {})
+        recommendation = pathway.recommend_next_node(state, {})
         
-        # 0.5 Fetch Available Courses from DB
+        # 0.5 Fetch Available Courses from DB (Simplified)
         from store.course_store import CourseStore
         course_store = CourseStore()
         all_courses = course_store.list_courses()
-        course_list_str = "\n".join([f"- {c['name']} ({c['code']}): {c['description']}" for c in all_courses])
+        # Limit to top 10 and only name/code to save tokens
+        course_list_str = "\n".join([f"- {c['name']} ({c['code']})" for c in all_courses[:10]])
 
-        # 3. Construct Prompt with Personalization
+        # 4. Construct Prompt with Personalization
         
         system_prompt = (
             "You are a helpful and safe AI Tutor for the Lumina Learning Platform. \n"
@@ -245,7 +248,7 @@ async def tutor_chat(request: TutorChatRequest):
             f"- Pathway Recommendation: {recommendation} (If 'review', emphasize basics. If 'advance', challenge them).\n"
             "If the answer is not in the context, use your general knowledge but mention that it's outside the course material.\n"
             f"{A2UI_SYSTEM_PROMPT}\n" # [NEW] Inject Schema
-            f"{avoid_instruction}"     # [NEW] Inject Deduplication
+            f"{avoid_instruction}"     # [NEW] Inject Deduplication (from Pathway)
         )
         
         user_prompt = f"""
@@ -255,23 +258,11 @@ async def tutor_chat(request: TutorChatRequest):
         Question: {request.message}
         """
         
-        # 4. Generate Answer
+        # 5. Generate Answer
         response = await llm_instance.agenerate(user_prompt, system_prompt)
         
-        # [NEW] Post-Processing: Register generated questions
-        # Simple heuristic: If response contains "Quiz" or "Flashcard" JSON, extract key text and register it.
-        # Ideally we parse A2UI here, but regex is faster and safer for this simple tracking.
-        import re
-        if "Quiz" in response or "Flashcard" in response:
-             # Try to extract "question": "..." or "front": "..."
-             # Extract all quotes values after "question":
-             questions = re.findall(r'"question":\s*"([^"]+)"', response)
-             fronts = re.findall(r'"front":\s*"([^"]+)"', response)
-             
-             for q in questions:
-                 state_manager.add_question(request.session_id, q)
-             for f in fronts:
-                 state_manager.add_question(request.session_id, f)
+        # 6. [NEW] Log Interaction to Pathway Memory
+        pathway.log_interaction(request.session_id, response)
 
         return {"response": response, "context_used": relevant_docs, "personalization": {"behavior": behavior, "recommendation": recommendation}}
         

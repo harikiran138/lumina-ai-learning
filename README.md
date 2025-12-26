@@ -36,7 +36,7 @@
 
 ---
 
-##  Overview
+## Overview
 
 **Lumina** is a revolutionary, self-hosted AI-powered learning platform that fundamentally reimagines digital education. Unlike traditional Learning Management Systems (LMS) that deliver static content to all learners identically, Lumina creates truly personalized, adaptive learning journeys that evolve in real-time based on each learner's unique cognitive profile, behavior patterns, and mastery state.
 
@@ -388,17 +388,15 @@ Training:
 ### **Frontend**
 ```yaml
 Web Application:
-  Framework: Next.js 14 (React 18)
+  Framework: Next.js 14 (React 18) -- [Hybrid Support]
   Styling: TailwindCSS, shadcn/ui
-  State Management: Zustand, TanStack Query
-  Real-time: Socket.io, WebRTC
-  Visualization: D3.js, Recharts, Plotly
-  Accessibility: Radix UI primitives
+  Run: "npm run dev"
 
 Mobile Application:
-  Framework: React Native 0.73
-  Navigation: React Navigation
-  Offline: WatermelonDB
+  Framework: Flutter 3.x -- [Primary Mobile Experience]
+  Features: A2UI, Offline Support
+  Run: "flutter run"
+```
   
 Desktop Application:
   Framework: Electron
