@@ -1,13 +1,15 @@
 from typing import Dict, List
 from app.assessment.models.schemas import MasteryState, QuestionMetadata
 
+
 class KnowledgeTracingEngine:
-    """
-    Implements Bayesian Knowledge Tracing (BKT) to track concept mastery.
+    """Bayesian Knowledge Tracing (BKT) to track concept mastery.
+
     P(L_t) = P(L_{t-1} | Evidence)
     """
 
-    def __init__(self, default_p_init=0.3, p_transit=0.1, p_slip=0.1, p_guess=0.2):
+    def __init__(self, default_p_init: float = 0.5, p_transit: float = 0.1, p_slip: float = 0.1, p_guess: float = 0.2):
+        # Default prior matches tests and common BKT practice
         self.p_init = default_p_init   # Initial probability of knowing the concept
         self.p_transit = p_transit     # Prob of learning the concept after an opportunity
         self.p_slip = p_slip           # Prob of making a mistake even if known
