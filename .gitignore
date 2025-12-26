@@ -5,6 +5,9 @@ venv/
 dist/
 build/
 .env
+.env.local
+.env.*
+
 *.log
 coverage/
 .vscode/
