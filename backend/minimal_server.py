@@ -174,9 +174,26 @@ Your uploaded content has been saved to your notes.
         print(f"❌ Upload failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
-@handwriting_router.get("/health")
-def handwriting_health():
-    return {"status": "healthy", "pdf_extraction": "enabled"}
+# Courses endpoints
+@app.get("/api/courses/list")
+async def list_courses():
+    return [
+        {"name": "Introduction to Calculus", "code": "math101", "description": "Basic derivatives and integrals"},
+        {"name": "Intro to Programming", "code": "cs101", "description": "Python basics"},
+        {"name": "Neural Networks", "code": "ai202", "description": "Deep learning fundamentals"},
+    ]
+
+# Tutor endpoints
+@app.post("/api/tutor/chat")
+async def tutor_chat(data: dict):
+    message = data.get("message", "")
+    # Simple echo/mock response
+    return {"response": f"I received your message: '{message}'. This is a mock response from the local server."}
+
+# Assessment endpoints
+@app.post("/api/assessment/quick-log")
+async def quick_log(data: dict):
+    return {"status": "success", "message": "Quick log saved"}
 
 # Mount routers
 app.include_router(handwriting_router, prefix="/api/handwriting", tags=["Handwriting"])

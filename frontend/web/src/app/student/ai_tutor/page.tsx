@@ -45,6 +45,12 @@ export default function AITutorPage() {
 
     // Context State
     const [userContext, setUserContext] = useState<string>('');
+    const [studentStats, setStudentStats] = useState({
+        attendance: [90, 85, 92, 88, 95], // Last 5 weeks
+        moduleScores: { "Python": 85, "React": 70, "SQL": 92, "Data Structures": 60 } as Record<string, number>,
+        weeklyActivity: [2, 4, 1, 3, 5, 2, 0], // Hours per day (Mon-Sun)
+        averageScore: 78
+    });
 
     // Session Management
     const [currentSessionId, setCurrentSessionId] = useState<string>('');
@@ -64,79 +70,73 @@ export default function AITutorPage() {
         "Code Snippet for API Fetch"
     ];
 
-    // Load Context & Fake Data Injection
+    const generateContext = (user: any, dashboard: any, profile: any, notes: any, allCourses: any, stats: any) => {
+        let context = `Current User: ${user?.name || 'Student'}\n`;
+
+        // Inject Data for Visualization
+        context += `\n[REAL-TIME STUDENT DATA FOR VISUALIZATION]\n`;
+        context += `Module Scores: ${JSON.stringify(stats.moduleScores)}\n`;
+        context += `Weekly Activity (Hours): ${JSON.stringify(stats.weeklyActivity)}\n`;
+        context += `Attendance Trends: ${JSON.stringify(stats.attendance)}\n`;
+        context += `Average Score: ${stats.averageScore}%\n`;
+        context += `[INSTRUCTION: If asked about progress/stats, use the 'Chart' component to visualize this data.]\n`;
+
+        if (allCourses.length > 0) {
+            context += "\nOfficial Course Catalog (Only recommend or discuss courses from this list):\n";
+            allCourses.forEach((c: any) => {
+                context += `- ${c.name} (${c.code}): ${c.description}\n`;
+            });
+        }
+
+        if (profile) {
+            if (profile.bio) context += `\nBio: ${profile.bio}\n`;
+            if (profile.skills && profile.skills.length > 0) context += `Skills: ${profile.skills.join(', ')}\n`;
+            if (profile.preferences) {
+                context += `Learning Style: ${profile.preferences.learningStyle || 'Visual'}\n`;
+                context += `Interests: ${profile.preferences.interests?.join(', ') || 'General'}\n`;
+            }
+        }
+
+        if (dashboard.enrolledCourses && dashboard.enrolledCourses.length > 0) {
+            context += "\nEnrolled Courses (User is currently taking):\n";
+            dashboard.enrolledCourses.forEach((c: any) => {
+                context += `- ${c.title} (Progress: ${c.progress}%)\n`;
+            });
+        }
+
+        if (notes && notes.length > 0) {
+            context += "\nUser Notes (Knowledge Base):\n";
+            notes.slice(0, 3).forEach((n: any) => {
+                context += `- [${new Date(n.createdAt).toLocaleDateString()}] ${n.content.substring(0, 100)}...\n`;
+            });
+        }
+
+        return context.substring(0, 1200);
+    };
+
+    // Load user context initial
     useEffect(() => {
         const loadContext = async () => {
             try {
-                const user = await api.getCurrentUser();
-                const dashboard = await api.getDashboardData('student');
-                const profile = await api.getStudentProfile();
-                const notes = await api.getNotes();
-
-                // Mock Real-time stats (In production, fetch from analytics API)
-                const studentStats = {
-                   attendance: [90, 85, 92, 88, 95], // Last 5 weeks
-                   moduleScores: { "Python": 85, "React": 70, "SQL": 92, "Data Structures": 60 },
-                   weeklyActivity: [2, 4, 1, 3, 5, 2, 0], // Hours per day (Mon-Sun)
-                   averageScore: 78
-                };
+                const [user, dashboard, profile, notes] = await Promise.all([
+                    api.getCurrentUser(),
+                    api.getDashboardData('student'),
+                    api.getStudentProfile(),
+                    api.getNotes()
+                ]);
 
                 let allCourses = [];
                 try {
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000'}/api/courses/list`);
-                    if (res.ok) {
-                        allCourses = await res.json();
-                    }
-                } catch (ce) {
-                    console.error("Failed to fetch course catalog", ce);
-                }
-
-                let context = `Current User: ${user?.name || 'Student'}\n`;
-
-                // Inject Data for Visualization
-                context += `\n[REAL-TIME STUDENT DATA FOR VISUALIZATION]\n`;
-                context += `Module Scores: ${JSON.stringify(studentStats.moduleScores)}\n`;
-                context += `Weekly Activity (Hours): ${JSON.stringify(studentStats.weeklyActivity)}\n`;
-                context += `Attendance Trends: ${JSON.stringify(studentStats.attendance)}\n`;
-                context += `Average Score: ${studentStats.averageScore}%\n`;
-                context += `[INSTRUCTION: If asked about progress/stats, use the 'Chart' component to visualize this data.]\n`;
-
-                if (allCourses.length > 0) {
-                    context += "\nOfficial Course Catalog (Only recommend or discuss courses from this list):\n";
-                    allCourses.forEach((c: any) => {
-                        context += `- ${c.name} (${c.code}): ${c.description}\n`;
+                    const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000';
+                    const res = await fetch(`${apiBase}/api/courses/list`, { 
+                        method: 'GET',
+                        headers: { 'Accept': 'application/json' },
+                        cache: 'no-store'
                     });
-                }
+                    if (res.ok) allCourses = await res.json();
+                } catch (ce) {}
 
-                if (profile) {
-                    if (profile.bio) context += `\nBio: ${profile.bio}\n`;
-                    if (profile.skills && profile.skills.length > 0) context += `Skills: ${profile.skills.join(', ')}\n`;
-                    if (profile.preferences) {
-                        context += `Learning Style: ${profile.preferences.learningStyle || 'Visual'}\n`;
-                        context += `Interests: ${profile.preferences.interests?.join(', ') || 'General'}\n`;
-                    }
-                }
-
-                if (dashboard.enrolledCourses && dashboard.enrolledCourses.length > 0) {
-                    context += "\nEnrolled Courses (User is currently taking):\n";
-                    dashboard.enrolledCourses.forEach((c: any) => {
-                        context += `- ${c.title} (Progress: ${c.progress}%)\n`;
-                    });
-                } else {
-                    context += "\nNo courses enrolled yet.\n";
-                }
-
-                if (notes && notes.length > 0) {
-                    context += "\nUser Notes (Knowledge Base):\n";
-                    notes.slice(0, 5).forEach((n: any) => {
-                        context += `- [${new Date(n.createdAt).toLocaleDateString()}] ${n.content}\n`;
-                    });
-                }
-
-                if (dashboard.achievements && dashboard.achievements.length > 0) {
-                    context += "Achievements: " + dashboard.achievements.map((a: any) => a.title).join(", ") + "\n";
-                }
-
+                const context = generateContext(user, dashboard, profile, notes, allCourses, studentStats);
                 setUserContext(context);
             } catch (e) {
                 console.error("Failed to load user context", e);
@@ -144,6 +144,26 @@ export default function AITutorPage() {
         };
         loadContext();
     }, []);
+
+    // Update context when stats change
+    useEffect(() => {
+        if (userContext) {
+            // Re-generate context with updated stats for the NEXT AI call
+            // Since we don't store full profile/dashboard in state, we just replace the stats block
+            setUserContext(prev => {
+                const statsBlock = `\n[REAL-TIME STUDENT DATA FOR VISUALIZATION]\nModule Scores: ${JSON.stringify(studentStats.moduleScores)}\nWeekly Activity (Hours): ${JSON.stringify(studentStats.weeklyActivity)}\nAttendance Trends: ${JSON.stringify(studentStats.attendance)}\nAverage Score: ${studentStats.averageScore}%\n`;
+                const startMarker = `\n[REAL-TIME STUDENT DATA FOR VISUALIZATION]\n`;
+                const endMarker = `[INSTRUCTION: If asked about progress/stats, use the 'Chart' component to visualize this data.]\n`;
+                
+                if (prev.includes(startMarker) && prev.includes(endMarker)) {
+                    const before = prev.split(startMarker)[0];
+                    const after = prev.split(endMarker)[1] || "";
+                    return before + statsBlock + `[INSTRUCTION: If asked about progress/stats, use the 'Chart' component to visualize this data.]\n` + after;
+                }
+                return prev;
+            });
+        }
+    }, [studentStats]);
 
     // Initial load history
     useEffect(() => {
@@ -322,7 +342,7 @@ IMPORTANT:
             let finalUserContent = textInput;
             const lowerInput = textInput.toLowerCase();
             if (lowerInput.includes('quiz')) {
-                finalUserContent += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Quiz' component. IMPORTANT: Generate ONLY ONE question. Do NOT generate multiple questions in one response. Wait for the user to answer before generating the next one.]`;
+                finalUserContent += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Quiz' component. IMPORTANT: Generate ONLY ONE question. Ensure 'options' is a list of exactly 4 clear distinct choices. Do NOT generate multiple questions in one response. Wait for the user to answer before generating the next one.]`;
             } else if (lowerInput.includes('flashcard')) {
                 finalUserContent += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Flashcard' component. If the user asked for a specific number (e.g. '5 flashcards'), you MUST generate exactly that many separate Flashcard blocks.]`;
             } else if (lowerInput.includes('compare') || lowerInput.includes('vs')) {
@@ -371,7 +391,7 @@ IMPORTANT:
                  const fullMessage = `[User Context]\n${userContext}\n\n[Message]\n${finalUserContent}`;
 
                  try {
-                     const res = await fetch(`${apiBase}/api/assessment/tutor/chat`, {
+                     const res = await fetch(`${apiBase}/api/tutor/chat`, { // [FIX] Correct endpoint
                          method: 'POST',
                          headers: { 'Content-Type': 'application/json' },
                          body: JSON.stringify({ 
@@ -512,8 +532,6 @@ IMPORTANT:
             } catch (e) {
                 console.error("Failed to log answer", e);
             }
-        } else if (action === 'quiz_next') {
-            // Trigger AI to generate next question
         } else if (action === 'quiz_next') {
             // Trigger AI to generate next question
             const usedList = Array.from(usedQuestionsRef.current).slice(-10); // Check last 10

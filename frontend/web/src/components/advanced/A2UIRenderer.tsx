@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlayCircle, GraduationCap, ChevronRight, RotateCcw, Youtube, Copy, BarChart3, Table as TableIcon, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { PlayCircle, GraduationCap, ChevronRight, RotateCcw, Youtube, Copy, BarChart3, Table as TableIcon, Loader2, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Chart as ChartJS,
@@ -92,7 +92,34 @@ interface TableProps {
 
 // --- Specific Components ---
 
-const QuizComponent: React.FC<QuizProps & { onAction?: (action: string, data: any) => void }> = ({ question, options, correctIndex, explanation, onAction }) => {
+const QuizComponent = ({ question, options, answers, choices, correctIndex, explanation, onAction }: any) => {
+    // [FIX] robust normalization of LLM output
+    let finalOptions = options || answers || choices || [];
+    let displayQuestion = question;
+
+    // [SELF-HEALING] If no options, try to parse from question string
+    if (finalOptions.length === 0 && typeof question === 'string') {
+        // Look for patterns like "A) Option" or "1. Option" separated by newlines
+        const lines = question.split('\n');
+        const extractedOptions: string[] = [];
+        const cleanQuestionLines: string[] = [];
+
+        lines.forEach(line => {
+            // Support: A) Option, A. Option, 1) Option, 1. Option, - Option, * Option
+            const match = line.match(/^([A-D]|[1-4]|-|\*|•)[.)\s-]*\s*(.+)$/i);
+            if (match && extractedOptions.length < 10) {
+                extractedOptions.push(match[2].trim());
+            } else {
+                cleanQuestionLines.push(line);
+            }
+        });
+
+        if (extractedOptions.length >= 2) {
+            finalOptions = extractedOptions;
+            displayQuestion = cleanQuestionLines.join('\n').trim();
+        }
+    }
+    
     const [selected, setSelected] = useState<number | null>(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isActionTaken, setIsActionTaken] = useState(false);
@@ -107,7 +134,7 @@ const QuizComponent: React.FC<QuizProps & { onAction?: (action: string, data: an
             if (onAction) {
                 onAction('quiz_answer', {
                     question,
-                    selectedOption: options[selected],
+                    selectedOption: finalOptions[selected],
                     isCorrect: selected === correctIndex
                 });
             }
@@ -135,17 +162,21 @@ const QuizComponent: React.FC<QuizProps & { onAction?: (action: string, data: an
         return (
             <motion.div 
                 initial={{ opacity: 1, height: 'auto' }}
-                animate={{ opacity: 0.6 }}
-                className="my-4 p-4 rounded-xl border border-white/5 bg-white/5 flex items-center justify-between"
+                animate={{ opacity: 0.8 }}
+                className={`my-4 p-4 rounded-xl border ${isCorrect ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'} flex items-center justify-between`}
             >
                 <div className="flex items-center gap-3">
                     {isCorrect ? <CheckCircle className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
                     <div>
                         <p className="text-sm font-medium text-gray-300 line-clamp-1">{question}</p>
-                        <p className="text-xs text-gray-500">Answered: {options[selected || 0]}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                            You chose: <span className={isCorrect ? "text-green-400" : "text-red-400"}>{finalOptions[selected ?? -1] || "Skipped"}</span>
+                        </p>
                     </div>
                 </div>
-                <Badge variant="outline" className="text-xs border-white/10 text-gray-500">Completed</Badge>
+                <Badge variant="outline" className={`text-xs ${isCorrect ? 'border-green-500/30 text-green-500' : 'border-red-500/30 text-red-500'}`}>
+                    {isCorrect ? 'Correct' : 'Incorrect'}
+                </Badge>
             </motion.div>
         );
     }
@@ -169,40 +200,50 @@ const QuizComponent: React.FC<QuizProps & { onAction?: (action: string, data: an
                 {!isSubmitted && <span className="text-xs text-gray-500 font-mono">Select the best answer</span>}
             </div>
             
-            <h3 className="text-xl font-bold text-white mb-8 leading-relaxed tracking-tight">{question}</h3>
+            <h3 className="text-xl font-bold text-white mb-8 leading-relaxed tracking-tight whitespace-pre-line">{displayQuestion}</h3>
 
             <div className="space-y-3 relative z-10">
-                {options.map((opt, i) => {
-                    let btnClass = "w-full text-left p-4 rounded-xl text-sm border transition-all duration-300 relative overflow-hidden group ";
-                    
-                    if (isSubmitted) {
-                        if (i === correctIndex) btnClass += "bg-green-500/10 border-green-500/40 text-green-100 ring-1 ring-green-500/50"; 
-                        else if (i === selected) btnClass += "bg-red-500/10 border-red-500/40 text-red-100 ring-1 ring-red-500/50"; 
-                        else btnClass += "bg-white/5 border-white/5 text-gray-500 opacity-40 grayscale"; 
-                    } else {
-                        if (i === selected) btnClass += "bg-lumina-primary/10 border-lumina-primary/50 text-white ring-1 ring-lumina-primary/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]";
-                        else btnClass += "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20 hover:pl-5"; // Indent on hover
-                    }
+                {finalOptions.length === 0 ? (
+                    <div className="p-5 rounded-xl border border-white/10 bg-white/5 text-gray-400">
+                        <p className="text-sm italic mb-4">I couldn't generate interactive options for this specific question. Feel free to answer in the chat!</p>
+                        <details className="text-[10px] font-mono opacity-30 mt-4 border-t border-white/5 pt-2">
+                            <summary className="cursor-pointer">Technical Details</summary>
+                            {JSON.stringify({ question, options, answers, choices }, null, 2)}
+                        </details>
+                    </div>
+                ) : (
+                    finalOptions.map((opt: any, i: number) => {
+                        let btnClass = "w-full text-left p-4 rounded-xl text-sm border transition-all duration-300 relative overflow-hidden group ";
+                        
+                        if (isSubmitted) {
+                            if (i === correctIndex) btnClass += "bg-green-500/10 border-green-500/40 text-green-100 ring-1 ring-green-500/50"; 
+                            else if (i === selected) btnClass += "bg-red-500/10 border-red-500/40 text-red-100 ring-1 ring-red-500/50"; 
+                            else btnClass += "bg-white/5 border-white/5 text-gray-500 opacity-40 grayscale"; 
+                        } else {
+                            if (i === selected) btnClass += "bg-lumina-primary/10 border-lumina-primary/50 text-white ring-1 ring-lumina-primary/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]";
+                            else btnClass += "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20 hover:pl-5"; // Indent on hover
+                        }
 
-                    return (
-                        <button key={i} onClick={() => handleSelect(i)} disabled={isSubmitted} className={btnClass}>
-                            <div className="flex items-center gap-4 relative z-10">
-                                <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold border transition-colors ${
-                                    isSubmitted && i === correctIndex ? 'bg-green-500 border-green-500 text-black' : 
-                                    isSubmitted && i === selected ? 'bg-red-500 border-red-500 text-white' : 
-                                    i === selected ? 'bg-lumina-primary border-lumina-primary text-black' :
-                                    'border-white/20 text-gray-500 bg-white/5'
-                                }`}>
-                                    {String.fromCharCode(65 + i)}
-                                </span>
-                                <span className="font-medium">{opt}</span>
-                                
-                                {isSubmitted && i === correctIndex && <CheckCircle className="w-5 h-5 text-green-500 absolute right-0" />}
-                                {isSubmitted && i === selected && i !== correctIndex && <XCircle className="w-5 h-5 text-red-500 absolute right-0" />}
-                            </div>
-                        </button>
-                    );
-                })}
+                        return (
+                            <button key={i} onClick={() => handleSelect(i)} disabled={isSubmitted} className={btnClass}>
+                                <div className="flex items-center gap-4 relative z-10">
+                                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold border transition-colors ${
+                                        isSubmitted && i === correctIndex ? 'bg-green-500 border-green-500 text-black' : 
+                                        isSubmitted && i === selected ? 'bg-red-500 border-red-500 text-white' : 
+                                        i === selected ? 'bg-lumina-primary border-lumina-primary text-black' :
+                                        'border-white/20 text-gray-500 bg-white/5'
+                                    }`}>
+                                        {String.fromCharCode(65 + i)}
+                                    </span>
+                                    <span className="font-medium">{opt}</span>
+                                    
+                                    {isSubmitted && i === correctIndex && <CheckCircle className="w-5 h-5 text-green-500 absolute right-0" />}
+                                    {isSubmitted && i === selected && i !== correctIndex && <XCircle className="w-5 h-5 text-red-500 absolute right-0" />}
+                                </div>
+                            </button>
+                        );
+                    })
+                )}
             </div>
 
             <AnimatePresence>
@@ -251,13 +292,14 @@ const QuizComponent: React.FC<QuizProps & { onAction?: (action: string, data: an
 
 const FlashcardComponent: React.FC<FlashcardProps> = ({ front, back }) => {
   const [isFlipped, setIsFlipped] = useState(false);
+  if (!front && !back) return null;
   
   // Safe render helper
-  const safeRender = (val: any) => {
-      if (typeof val === 'object' && val !== null) {
-          return val.value || val.name || JSON.stringify(val);
+  const safeRender = (content: any) => {
+      if (typeof content === 'object' && content !== null) {
+          return content.value || content.name || JSON.stringify(content);
       }
-      return val;
+      return content;
   };
 
   return (
@@ -393,6 +435,7 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({ code, language, filename
 // --- Specific Components ---
 
 const MermaidComponent: React.FC<{ chart: string }> = ({ chart }) => {
+    if (!chart) return null;
     const [svg, setSvg] = useState<string>('');
     const id = React.useId().replace(/:/g, ''); // Unique ID for multiple charts
 
@@ -426,7 +469,9 @@ const MermaidComponent: React.FC<{ chart: string }> = ({ chart }) => {
 
 // ... (Quiz, Flashcard, etc. remain)
 
-const TimelineComponent: React.FC<TimelineProps> = ({ events }) => (
+const TimelineComponent: React.FC<TimelineProps> = ({ events = [] }) => {
+    if (!events || events.length === 0) return null;
+    return (
     <div className="my-8 relative">
         {/* Center Line */}
         <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-lumina-primary/50 to-transparent" />
@@ -454,16 +499,19 @@ const TimelineComponent: React.FC<TimelineProps> = ({ events }) => (
             })}
         </div>
     </div>
-);
+)};
 
-const ComparisonTableComponent: React.FC<ComparisonTableProps> = ({ title, headers, rows }) => {
+const ComparisonTableComponent: React.FC<ComparisonTableProps> = ({ title, headers = [], rows = [] }) => {
     const safeRender = (val: any) => {
-        if (typeof val === 'object' && val !== null) {
-            // Handle specific case mentioned in error, or generic fallback
-            return val.value || val.name || JSON.stringify(val);
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'object') {
+            return val.value || val.text || val.name || JSON.stringify(val);
         }
-        return val;
+        return String(val);
     };
+
+    const headerLeft = headers[0] || 'Left';
+    const headerRight = headers[1] || 'Right';
 
     return (
     <div className="my-4 rounded-xl border border-white/10 overflow-hidden bg-white/5">
@@ -471,9 +519,9 @@ const ComparisonTableComponent: React.FC<ComparisonTableProps> = ({ title, heade
             {title}
         </div>
         <div className="grid grid-cols-3 bg-white/5 text-xs font-bold text-gray-400 uppercase tracking-wider">
-             <div className="p-3 border-r border-white/5">{safeRender(headers[0])}</div>
+             <div className="p-3 border-r border-white/5">{safeRender(headerLeft)}</div>
              <div className="p-3 border-r border-white/5 text-center">Feature</div>
-             <div className="p-3">{safeRender(headers[1])}</div>
+             <div className="p-3">{safeRender(headerRight)}</div>
         </div>
         <div className="divide-y divide-white/5">
             {rows.map((row, i) => (
@@ -487,7 +535,7 @@ const ComparisonTableComponent: React.FC<ComparisonTableProps> = ({ title, heade
     </div>
 )};
 
-const ChartComponent: React.FC<ChartProps> = ({ type, title, labels, data, label, colors }) => {
+const ChartComponent: React.FC<ChartProps> = ({ type, title, labels = [], data = [], label, colors }) => {
     const chartData = {
         labels,
         datasets: [
@@ -556,6 +604,14 @@ const ChartComponent: React.FC<ChartProps> = ({ type, title, labels, data, label
 };
 
 const TableComponent: React.FC<TableProps> = ({ title, headers, rows }) => {
+    const safeRender = (val: any) => {
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'object') {
+            return val.value || val.text || val.name || JSON.stringify(val);
+        }
+        return String(val);
+    };
+
     return (
         <div className="my-4 rounded-xl border border-white/10 overflow-hidden bg-white/5">
             {title && (
@@ -569,7 +625,7 @@ const TableComponent: React.FC<TableProps> = ({ title, headers, rows }) => {
                     <thead className="text-xs text-gray-400 uppercase bg-white/5">
                         <tr>
                             {headers.map((h, i) => (
-                                <th key={i} className="px-6 py-3">{h}</th>
+                                <th key={i} className="px-6 py-3">{safeRender(h)}</th>
                             ))}
                         </tr>
                     </thead>
@@ -577,7 +633,7 @@ const TableComponent: React.FC<TableProps> = ({ title, headers, rows }) => {
                         {rows.map((row, i) => (
                             <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                                 {row.map((cell, j) => (
-                                    <td key={j} className="px-6 py-4 text-gray-300 font-medium whitespace-pre-wrap">{cell}</td>
+                                    <td key={j} className="px-6 py-4 text-gray-300 font-medium whitespace-pre-wrap">{safeRender(cell)}</td>
                                 ))}
                             </tr>
                         ))}
