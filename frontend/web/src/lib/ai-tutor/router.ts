@@ -39,7 +39,7 @@ export const processMessage = async (question: string, userContext?: string): Pr
                 // We will append context to prompt for local as well.
                 const fullMessage = userContext ? `Context:\n${userContext}\n\nQuestion: ${cleanQuestion}` : cleanQuestion;
 
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000'}/chat`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000'}/api/tutor/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: fullMessage }),

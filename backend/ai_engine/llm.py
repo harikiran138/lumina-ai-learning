@@ -22,13 +22,19 @@ class OllamaProvider(LLMProvider):
         full_prompt = prompt
         if system_prompt:
             full_prompt = f"System: {system_prompt}\n\nUser: {prompt}"
+            
+        # [FIX] Hard Truncation to prevent overflow (Safety Net)
+        # Limit to ~6000 tokens (approx 24000 chars) to stay under 8192 limit
+        if len(full_prompt) > 24000:
+            full_prompt = full_prompt[:24000] + "...\n[TRUNCATED]"
 
         payload = {
             "model": self.model,
             "prompt": full_prompt,
             "stream": False,
             "options": {
-                "temperature": 0.7
+                "temperature": 0.7,
+                "num_ctx": 8192 # [FIX] Increase context window to handle large RAG prompts
             }
         }
 
