@@ -1,0 +1,2 @@
+This is my AI project submission. It uses LLMs to generate art.
+Documentation involved.

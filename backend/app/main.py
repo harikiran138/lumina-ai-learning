@@ -2,6 +2,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import ai, handwriting_simple as handwriting, assignments
 
+import asyncio
+import functools
+import contextvars
+
+# Polyfill for python 3.8
+if not hasattr(asyncio, "to_thread"):
+    async def to_thread(func, /, *args, **kwargs):
+        loop = asyncio.get_running_loop()
+        ctx = contextvars.copy_context()
+        func_call = functools.partial(ctx.run, func, *args, **kwargs)
+        return await loop.run_in_executor(None, func_call)
+    asyncio.to_thread = to_thread
+
+
 from app.database.manager import db
 from app.core.config import settings
 
@@ -42,6 +56,9 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 
 from app.assessment.api.router import router as assessment_router
 app.include_router(assessment_router, prefix="/api/assessment", tags=["Assessment"])
+
+from routers import hybrid
+app.include_router(hybrid.router, prefix="/api/ai", tags=["Hybrid AI"])
 
 @app.get("/")
 def read_root():

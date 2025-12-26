@@ -94,8 +94,23 @@ class SimulatedStudent:
         prob = max(0.05, min(0.95, prob))
         return random.random() < prob
 
+
+def summarize_mastery_map(mastery_map):
+    """Return a sorted list of (concept, mastery, level) from weakest to strongest."""
+    summary = []
+    for concept, p in mastery_map.items():
+        if p < 0.4:
+            level = "weak"
+        elif p < 0.7:
+            level = "developing"
+        else:
+            level = "strong"
+        summary.append((concept, round(p, 2), level))
+    summary.sort(key=lambda x: x[1])
+    return summary
+
+
 def main():
-    print("Starting 50 Assessment Simulations (Direct Engine Mode)...")
     runner = SimulationRunner()
     results = []
     
