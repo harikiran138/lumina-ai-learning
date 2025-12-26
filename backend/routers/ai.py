@@ -1,17 +1,32 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from pydantic import BaseModel
-from typing import List, Optional
-from ai_engine.llm import get_llm_provider
-from ai_engine.rag import get_rag_engine
 
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends, Request
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
+import os
+from ai_engine.llm import get_llm_provider # Corrected import
+from ai_engine.rag import get_rag_engine
+from ai_engine.tutor_state import get_tutor_state
+from ai_engine.prompts import A2UI_SYSTEM_PROMPT
 
 
 router = APIRouter()
-llm = get_llm_provider()
+# llm = get_llm() # Standard LLM not needed globally if we use dynamic instantiation per request
 
 class CourseGenerationRequest(BaseModel):
     topic: str
     level: str = "Beginning"
+    modules: int = 4
+
+
+class AssignmentCourseRequest(BaseModel):
+    """Generate a course personalized to an assignment and optional submission.
+
+    Uses the assignment description and the learner's score (if provided)
+    to set difficulty and focus areas.
+    """
+
+    assignment_id: str
+    submission_id: Optional[str] = None
     modules: int = 4
 
 class CourseGenerationResponse(BaseModel):
@@ -23,16 +38,22 @@ class TutorChatRequest(BaseModel):
     message: str
     user_id: str = "guest"
     context_filters: Optional[dict] = None
+    provider: str = "auto"
 
-class IngestRequest(BaseModel):
-    text: str
-    metadata: Optional[dict] = None
+# ... (IngestRequest remains same)
+
+# Note: We need to instantiate LLM per request to support dynamic provider switching, 
+# or use the factory inside the route.
+# The global 'llm' variable at line 10 is static. We should stop using it for dynamic requests.
 
 @router.post("/generate-course", response_model=CourseGenerationResponse)
 async def generate_course(request: CourseGenerationRequest):
     """
-    Generate a course outline using local Ollama instance.
+    Generate a course outline using local Ollama instance (default) or specified provider.
     """
+    # For course generation, we default to auto (likely gemini if key exists)
+    llm_instance = get_llm_provider("auto")
+    
     system_prompt = "You are an expert curriculum designer. Create a structured course outline."
     user_prompt = f"""
     Create a {request.level} level course about "{request.topic}".
@@ -52,7 +73,7 @@ async def generate_course(request: CourseGenerationRequest):
     """
     
     try:
-        raw_response = await llm.agenerate(user_prompt, system_prompt)
+        raw_response = await llm_instance.agenerate(user_prompt, system_prompt)
         # Simple cleanup
         clean_response = raw_response.replace("```json", "").replace("```", "").strip()
         import json
@@ -67,12 +88,108 @@ async def generate_course(request: CourseGenerationRequest):
         print(f"Generation Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.post("/generate-course-from-assignment", response_model=CourseGenerationResponse)
+async def generate_course_from_assignment(request: AssignmentCourseRequest):
+    """Generate a course outline based on an assignment and optional submission.
+
+    - If submission_id is provided and graded, uses the score to set level.
+    - Uses the assignment title/description as the topic/context.
+    """
+    from store.assignment_store import AssignmentStore
+    
+    # Instantiate LLM (Default auto)
+    llm_instance = get_llm_provider("auto")
+
+    store = AssignmentStore()
+    assignment = store.get_assignment(request.assignment_id)
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+
+    title = assignment.get("title", "AI-generated course")
+    description = assignment.get("description", "")
+
+    # Default level
+    level_label = "Beginning"
+
+    score = None
+    if request.submission_id:
+        submissions = store.get_submissions(request.assignment_id)
+        submission = next((s for s in submissions if s["id"] == request.submission_id), None)
+        if submission and submission.get("grade") is not None:
+            score = float(submission["grade"])
+
+    if score is not None:
+        # Simple mapping: 0–100 numeric grade
+        if score < 40:
+            level_label = "Remedial / Beginner"
+        elif score < 70:
+            level_label = "Intermediate"
+        else:
+            level_label = "Advanced / Enrichment"
+
+    system_prompt = "You are an expert curriculum designer. Create a structured course outline tailored to a specific assignment and learner performance."
+    user_prompt = f"""
+    Assignment Title: {title}
+    Assignment Description: {description}
+
+    Learner Performance:
+    - Score: {score if score is not None else 'N/A'}
+    - Level: {level_label}
+
+    Design a {request.modules}-module course that helps the learner master the skills needed for this assignment.
+    Emphasize remediation where the score is low, and extension where the score is high.
+
+    Return the response in strictly valid JSON format with the following structure:
+    {{
+        "title": "Course Title",
+        "description": "Brief summary of the course",
+        "outline": [
+            "Module 1: Title - Brief Description",
+            "Module 2: Title - Brief Description",
+            ...
+        ]
+    }}
+    Do not include any explanation, only the JSON.
+    """
+
+    try:
+        raw_response = await llm_instance.agenerate(user_prompt, system_prompt)
+        clean_response = raw_response.replace("```json", "").replace("```", "").strip()
+        import json
+        data = json.loads(clean_response)
+
+        return CourseGenerationResponse(
+            title=data.get("title", f"Course for {title}"),
+            description=data.get("description", "Generated by AI"),
+            outline=data.get("outline", []),
+        )
+    except Exception as e:
+        print(f"Assignment Course Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/tutor/chat")
 async def tutor_chat(request: TutorChatRequest):
     """
     Chat with the AI Tutor using RAG context and Pathway personalization.
+    Supports provider switching (gemini vs ollama).
+    Includes [NEW] Deduplication Logic.
     """
     try:
+        # Dynamic LLM Provider selection
+        llm_instance = get_llm_provider(request.provider)
+        
+        # [NEW] Check Tutor State for avoid context
+        state_manager = get_tutor_state()
+        avoid_context = state_manager.get_avoid_context(request.session_id)
+        
+        avoid_instruction = ""
+        if avoid_context:
+             avoid_instruction = (
+                 "\n\n[SYSTEM CONSTRAINT: You must NOT repeat the following concepts or questions exactly as before. "
+                 "Generate FRESH, UNIQUE content:]\n" + avoid_context
+             )
+
         # 0. Guardrails Check
         from ai_engine.swarm.guardian import GuardianAgent
         guardian = GuardianAgent()
@@ -111,6 +228,7 @@ async def tutor_chat(request: TutorChatRequest):
         course_list_str = "\n".join([f"- {c['name']} ({c['code']}): {c['description']}" for c in all_courses])
 
         # 3. Construct Prompt with Personalization
+        
         system_prompt = (
             "You are a helpful and safe AI Tutor for the Lumina Learning Platform. \n"
             "Your Goal: Use the provided Context and Course List to answer the user's question accurately.\n"
@@ -125,7 +243,9 @@ async def tutor_chat(request: TutorChatRequest):
             f"Adapt your response to the learner's profile:\n"
             f"- Behavior: {behavior} (If 'frustrated', be encouraging. If 'focused', be concise).\n"
             f"- Pathway Recommendation: {recommendation} (If 'review', emphasize basics. If 'advance', challenge them).\n"
-            "If the answer is not in the context, use your general knowledge but mention that it's outside the course material."
+            "If the answer is not in the context, use your general knowledge but mention that it's outside the course material.\n"
+            f"{A2UI_SYSTEM_PROMPT}\n" # [NEW] Inject Schema
+            f"{avoid_instruction}"     # [NEW] Inject Deduplication
         )
         
         user_prompt = f"""
@@ -136,7 +256,23 @@ async def tutor_chat(request: TutorChatRequest):
         """
         
         # 4. Generate Answer
-        response = await llm.agenerate(user_prompt, system_prompt)
+        response = await llm_instance.agenerate(user_prompt, system_prompt)
+        
+        # [NEW] Post-Processing: Register generated questions
+        # Simple heuristic: If response contains "Quiz" or "Flashcard" JSON, extract key text and register it.
+        # Ideally we parse A2UI here, but regex is faster and safer for this simple tracking.
+        import re
+        if "Quiz" in response or "Flashcard" in response:
+             # Try to extract "question": "..." or "front": "..."
+             # Extract all quotes values after "question":
+             questions = re.findall(r'"question":\s*"([^"]+)"', response)
+             fronts = re.findall(r'"front":\s*"([^"]+)"', response)
+             
+             for q in questions:
+                 state_manager.add_question(request.session_id, q)
+             for f in fronts:
+                 state_manager.add_question(request.session_id, f)
+
         return {"response": response, "context_used": relevant_docs, "personalization": {"behavior": behavior, "recommendation": recommendation}}
         
     except Exception as e:

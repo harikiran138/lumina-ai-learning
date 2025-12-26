@@ -159,3 +159,88 @@ async def get_assignment_submissions(assignment_id: str):
     Get all submissions for a specific assignment.
     """
     return store.get_submissions(assignment_id)
+
+
+@router.get("/{assignment_id}/analytics")
+async def get_assignment_analytics(assignment_id: str):
+    """Return basic analytics for an assignment (scores, counts, averages)."""
+    submissions = store.get_submissions(assignment_id)
+    if not submissions:
+        return {
+            "assignment_id": assignment_id,
+            "submission_count": 0,
+            "graded_count": 0,
+            "ungraded_count": 0,
+            "avg_grade": None,
+            "min_grade": None,
+            "max_grade": None,
+        }
+
+    grades = [s.get("grade") for s in submissions if s.get("grade") is not None]
+    graded_count = len(grades)
+    ungraded_count = len(submissions) - graded_count
+
+    if grades:
+        avg_grade = sum(grades) / len(grades)
+        min_grade = min(grades)
+        max_grade = max(grades)
+    else:
+        avg_grade = min_grade = max_grade = None
+
+    return {
+        "assignment_id": assignment_id,
+        "submission_count": len(submissions),
+        "graded_count": graded_count,
+        "ungraded_count": ungraded_count,
+        "avg_grade": avg_grade,
+        "min_grade": min_grade,
+        "max_grade": max_grade,
+    }
+
+
+@router.get("/{assignment_id}/submissions/{submission_id}/report")
+async def get_submission_report(assignment_id: str, submission_id: str):
+    """Detailed report for a single submission (score, feedback, OCR text)."""
+    # Get assignment and submission
+    assignment = store.get_assignment(assignment_id)
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+
+    submissions = store.get_submissions(assignment_id)
+    submission = next((s for s in submissions if s["id"] == submission_id), None)
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    grade = submission.get("grade")
+    feedback = submission.get("feedback")
+    ocr_text = submission.get("ocr_text")
+
+    # Derive simple level label from numeric grade if present (0–100 assumed)
+    level = None
+    if isinstance(grade, (int, float)):
+        if grade < 40:
+            level = "weak"
+        elif grade < 70:
+            level = "developing"
+        else:
+            level = "strong"
+
+    return {
+        "assignment": {
+            "id": assignment.get("id"),
+            "title": assignment.get("title"),
+            "course_id": assignment.get("course_id"),
+            "description": assignment.get("description"),
+            "due_date": assignment.get("due_date"),
+        },
+        "submission": {
+            "id": submission.get("id"),
+            "student_id": submission.get("student_id"),
+            "submitted_at": submission.get("submitted_at"),
+            "status": submission.get("status"),
+        },
+        "score": grade,
+        "level": level,
+        "feedback": feedback,
+        "ocr_text": ocr_text,
+    }

@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8000
+    ASSESSMENT_API_KEY: str = "AIzaSyCyggfn8Kg8sD9QWCb-mifvunpVKskHNVQ"
     
     class Config:
         env_file = ".env"

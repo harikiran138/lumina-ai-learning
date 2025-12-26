@@ -14,6 +14,9 @@ export default function AssessmentPage() {
     const [selectedOptionId, setSelectedOptionId] = useState<string>("");
     const [feedback, setFeedback] = useState<any>(null);
     const [completionReason, setCompletionReason] = useState<string>("");
+    const [report, setReport] = useState<any>(null);
+    const [topic, setTopic] = useState<string>("Python Programming");
+    const [numQuestions, setNumQuestions] = useState<number>(5);
 
     // API Base URL - fallback to 8001 if env not set
     const API_BASE = process.env.NEXT_PUBLIC_API_BASE
@@ -29,7 +32,8 @@ export default function AssessmentPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     student_id: "demo_student",
-                    topic: "Python Programming" // Default topic for demo
+                    topic: topic,
+                    num_questions: numQuestions
                 })
             });
 
@@ -48,6 +52,26 @@ export default function AssessmentPage() {
         }
     };
 
+    const fetchReport = async (sid: string) => {
+        try {
+            const res = await fetch(`${API_BASE}/report/${sid}`);
+            if (!res.ok) {
+                const txt = await res.text();
+                throw new Error(`Report error: ${res.status} ${txt}`);
+            }
+            const data = await res.json();
+            setReport(data);
+            setCompletionReason(data.summary ?? "Assessment finished.");
+        } catch (err) {
+            console.error("Failed to load report:", err);
+            setCompletionReason("Assessment finished. (Could not load detailed report.)");
+        } finally {
+            setStatus('completed');
+        }
+    };
+
+    const [startTime, setStartTime] = useState<number>(0);
+
     const loadNextQuestion = async (sid: string) => {
         setStatus('loading');
         try {
@@ -64,14 +88,20 @@ export default function AssessmentPage() {
 
             if (!data) {
                 // Assessment complete
-                setCompletionReason("Assessment Finished!");
-                setStatus('completed');
+                if (sid) {
+                    await fetchReport(sid);
+                } else {
+                    setCompletionReason("Assessment Finished!");
+                    setStatus('completed');
+                }
                 return;
             }
 
             setQuestion(data);
+            setStartTime(Date.now());
             setSelectedOptionId("");
             setFeedback(null);
+            setReport(null);
             setStatus('question');
         } catch (err) {
             console.error(err);
@@ -86,24 +116,34 @@ export default function AssessmentPage() {
 
         // Determine correctness on client side for this demo flow
         const isCorrect = selectedOptionId === question.correct_option_id;
+        const timeTaken = (Date.now() - startTime) / 1000;
 
         try {
-            const res = await fetch(`${API_BASE}/submit_answer`, {
+            const res = await fetch(`${API_BASE}/submit`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     session_id: sessionId,
                     question_id: question.id,
                     selected_option_id: selectedOptionId,
-                    is_correct: isCorrect
+                    is_correct: isCorrect,
+                    time_taken: timeTaken
                 })
             });
+
+            if (!res.ok) {
+                 const errText = await res.text();
+                 throw new Error(`Submit failed: ${res.status} ${errText}`);
+            }
+
             const data = await res.json();
 
-            // Mock feedback based on correctness
+            // Use the real explanation if available, fallback to generic
+            const explanationText = question.explanation || (isCorrect ? "Great job! That's the correct answer." : "Incorrect. Keep trying!");
+
             const feedbackData = {
                 is_correct: isCorrect,
-                explanation: isCorrect ? "Great job! That's the correct answer." : "Incorrect. Keep trying!",
+                explanation: explanationText,
                 mastery_update: { current_difficulty: data.current_difficulty }
             };
 
@@ -111,6 +151,22 @@ export default function AssessmentPage() {
             setStatus('feedback');
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    const finishAssessment = async () => {
+        if (!sessionId) return;
+        if (confirm("Are you sure you want to end the assessment early?")) {
+            setStatus('loading');
+            try {
+                 await fetch(`${API_BASE}/complete/${sessionId}`, { method: 'POST' });
+                 // After manual completion, load the summary report
+                 await fetchReport(sessionId);
+            } catch (err) {
+                 console.error("Failed to finish:", err);
+                 // Force complete
+                 setStatus('completed');
+            }
         }
     };
 
@@ -134,13 +190,30 @@ export default function AssessmentPage() {
                                     </div>
                                     <CardTitle className="text-2xl text-white">Ready for your assessment?</CardTitle>
                                 </CardHeader>
-                                <CardContent className="text-gray-400">
-                                    <p>This intelligent assessment will adapt to your skill level in real-time.</p>
-                                    <ul className="list-disc list-inside mt-4 space-y-2">
-                                        <li>Questions get harder if you answer correctly</li>
-                                        <li>We'll identify gaps if you struggle</li>
-                                        <li>Mastery is tracked per concept</li>
-                                    </ul>
+                                <CardContent className="text-gray-400 space-y-4">
+                                    <p>Configure your adaptive assessment session:</p>
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label>Topic</Label>
+                                            <input 
+                                                className="w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-white"
+                                                value={topic}
+                                                onChange={(e) => setTopic(e.target.value)}
+                                                placeholder="e.g. Quantum Physics, History, Python"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Number of Questions</Label>
+                                            <input 
+                                                type="number"
+                                                min="1"
+                                                max="20"
+                                                className="w-full bg-black/20 border border-white/10 rounded px-3 py-2 text-white"
+                                                value={numQuestions}
+                                                onChange={(e) => setNumQuestions(parseInt(e.target.value) || 5)}
+                                            />
+                                        </div>
+                                    </div>
                                 </CardContent>
                                 <CardFooter>
                                     <Button onClick={startAssessment} className="bg-white text-black hover:bg-gray-200">
@@ -178,8 +251,11 @@ export default function AssessmentPage() {
                                     </RadioGroup>
                                 </CardContent>
                                 <CardFooter className="flex justify-end pt-4">
-                                    <Button onClick={submitAnswer} disabled={!selectedOptionId} className="bg-purple-600 hover:bg-purple-700">
+                                    <Button onClick={submitAnswer} disabled={!selectedOptionId} className="bg-purple-600 hover:bg-purple-700 ml-4">
                                         Submit Answer
+                                    </Button>
+                                    <Button onClick={finishAssessment} variant="ghost" className="text-gray-400 hover:text-white mr-auto">
+                                        End Test
                                     </Button>
                                 </CardFooter>
                             </Card>
@@ -206,7 +282,7 @@ export default function AssessmentPage() {
                                         <p className="text-gray-300">{feedback.explanation}</p>
                                     </div>
                                     <div className="text-xs text-gray-500 font-mono">
-                                        New Difficulty Level: {feedback.mastery_update.current_difficulty.toFixed(2)}
+                                        New Difficulty Level: {feedback?.mastery_update?.current_difficulty?.toFixed(2) ?? "N/A"}
                                     </div>
                                 </CardContent>
                                 <CardFooter>
@@ -219,15 +295,24 @@ export default function AssessmentPage() {
                     )}
 
                     {status === 'completed' && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20 space-y-6">
                             <div className="w-24 h-24 bg-gradient-to-tr from-yellow-400 to-orange-500 rounded-full mx-auto flex items-center justify-center mb-6 shadow-glow">
                                 <Brain className="w-12 h-12 text-white" />
                             </div>
-                            <h2 className="text-3xl font-bold text-white mb-2">Assessment Completed</h2>
-                            <p className="text-gray-400 max-w-md mx-auto mb-8">
-                                {completionReason}
-                            </p>
-                            <Button onClick={() => setStatus('idle')} variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                            <div>
+                                <h2 className="text-3xl font-bold text-white mb-2">Assessment Completed</h2>
+                                <p className="text-gray-400 max-w-md mx-auto mb-4">
+                                    {completionReason}
+                                </p>
+                                {report && (
+                                    <div className="max-w-md mx-auto text-sm text-left bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
+                                        <p className="text-gray-300"><span className="font-semibold">Accuracy:</span> {(report.accuracy * 100).toFixed(0)}%</p>
+                                        <p className="text-gray-300"><span className="font-semibold">Correct:</span> {report.correct_answers} / {report.total_questions}</p>
+                                        <p className="text-gray-300"><span className="font-semibold">Level:</span> {report.level}</p>
+                                    </div>
+                                )}
+                            </div>
+                            <Button onClick={() => { setStatus('idle'); setReport(null); }} variant="outline" className="border-white/20 text-white hover:bg-white/10">
                                 Return to Dashboard
                             </Button>
                         </motion.div>
