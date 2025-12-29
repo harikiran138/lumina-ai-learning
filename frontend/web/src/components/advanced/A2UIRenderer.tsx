@@ -116,6 +116,16 @@ const PPTDownloadSchema = z.object({
   slideTitles: z.array(z.string()).optional(),
 });
 
+const ScoreCardSchema = z.object({
+  title: z.string(),
+  score: z.string(),
+  percentage: z.number(),
+  correctCount: z.number(),
+  totalCount: z.number(),
+  topic: z.string(),
+  message: z.string().optional(),
+});
+
 // --- Component Interfaces (Derived from Zod) ---
 // Using specific interfaces for props usage in components
 
@@ -308,7 +318,14 @@ const QuizComponent = ({ question, options, correctIndex, explanation, topic, di
                                     {isCorrect ? 'Correct!' : 'Incorrect'}
                                 </span>
                             </div>
-                            <p className="text-sm text-gray-300 leading-relaxed pl-7 border-l-2 border-white/10 ml-0.5">{explanation}</p>
+                            <p className="text-sm text-gray-300 leading-relaxed pl-7 border-l-2 border-white/10 ml-0.5">
+                                {!isCorrect && (
+                                    <span className="block mb-2 font-medium text-green-400">
+                                        Correct Answer: {options[correctIndex]}
+                                    </span>
+                                )}
+                                {explanation}
+                            </p>
                         </div>
                         
                         <div className="flex gap-4">
@@ -759,6 +776,66 @@ const PPTDownloadComponent = ({ topic, slideCount, downloadUrl, filename, fileSi
     );
 };
 
+const ScoreCardComponent = ({ title, score, percentage, correctCount, totalCount, topic, message }: z.infer<typeof ScoreCardSchema>) => {
+    return (
+        <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="my-6 p-6 bg-[#1a1b26] rounded-xl border border-white/10 relative overflow-hidden"
+        >
+             {/* Background Glow */}
+             <div className="absolute top-0 right-0 w-32 h-32 bg-lumina-primary/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+
+            <div className="flex items-center gap-4 mb-6 relative z-10">
+                <div className="w-16 h-16 rounded-full bg-lumina-primary/20 flex items-center justify-center shrink-0 border border-lumina-primary/20">
+                    <span className="text-3xl">🏆</span>
+                </div>
+                <div>
+                    <h3 className="text-2xl font-bold text-white mb-1">{title}</h3>
+                    <div className="flex gap-2">
+                        <Badge variant="outline" className="text-gray-400 border-white/10">{topic}</Badge>
+                        <Badge className="bg-lumina-primary/20 text-lumina-primary border-lumina-primary/20">Score: {score}</Badge>
+                    </div>
+                </div>
+            </div>
+
+            <div className="mb-6 relative z-10">
+                <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gray-400">Performance</span>
+                    <span className="text-lumina-primary font-bold">{percentage}%</span>
+                </div>
+                <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden">
+                    <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${percentage}%` }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className={`h-full rounded-full ${
+                            percentage >= 80 ? 'bg-green-500' :
+                            percentage >= 50 ? 'bg-yellow-500' :
+                            'bg-red-500'
+                        }`}
+                    />
+                </div>
+            </div>
+
+            <div className="bg-white/5 rounded-xl p-4 mb-4 grid grid-cols-2 gap-4 relative z-10">
+                <div className="text-center p-2 border-r border-white/5">
+                    <div className="text-3xl font-bold text-green-500 mb-1">{correctCount}</div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wider">Correct</div>
+                </div>
+                <div className="text-center p-2">
+                    <div className="text-3xl font-bold text-red-500 mb-1">{totalCount - correctCount}</div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wider">Incorrect</div>
+                </div>
+            </div>
+
+            <p className="text-gray-300 text-sm text-center italic relative z-10">
+                {message || "Great job completing the quiz! Keep learning to improve your score."}
+            </p>
+        </motion.div>
+    );
+};
+
 // --- Main Renderer ---
 
 export const A2UIRenderer = ({ content, onAction }: { content: string; onAction?: (action: string, data: any) => void }) => {
@@ -817,6 +894,10 @@ export const A2UIRenderer = ({ content, onAction }: { content: string; onAction?
               case 'PPTDownload':
                   const pptParsed = PPTDownloadSchema.safeParse(props);
                   if (pptParsed.success) component = <PPTDownloadComponent key={uniqueKey} {...pptParsed.data} />;
+                  break;
+              case 'ScoreCard':
+                  const scParsed = ScoreCardSchema.safeParse(props);
+                  if (scParsed.success) component = <ScoreCardComponent key={uniqueKey} {...scParsed.data} />;
                   break;
               default:
                 component = (

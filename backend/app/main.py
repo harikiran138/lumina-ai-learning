@@ -38,6 +38,9 @@ import os
 os.makedirs("data/uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="data/uploads"), name="uploads")
 
+os.makedirs("static/presentations", exist_ok=True)
+app.mount("/api/tutor/download-ppt", StaticFiles(directory="static/presentations"), name="presentations")
+
 
 app.add_middleware(
     CORSMiddleware,
