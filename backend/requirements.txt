@@ -19,3 +19,4 @@ aiofiles
 Pillow
 pydantic-settings
 google-generativeai
+python-pptx>=0.6.21

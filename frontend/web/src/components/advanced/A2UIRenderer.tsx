@@ -2,7 +2,7 @@ import React, { useState, Component, ErrorInfo, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PlayCircle, GraduationCap, ChevronRight, RotateCcw, Youtube, Copy, BarChart3, Table as TableIcon, Loader2, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { PlayCircle, GraduationCap, ChevronRight, RotateCcw, Youtube, Copy, BarChart3, Table as TableIcon, Loader2, CheckCircle, XCircle, AlertTriangle, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Chart as ChartJS,
@@ -105,6 +105,15 @@ const TableSchema = z.object({
 const MermaidSchema = z.object({
   chart: z.string(),
   title: z.string().optional().default("Diagram"),
+});
+
+const PPTDownloadSchema = z.object({
+  topic: z.string(),
+  slideCount: z.number(),
+  downloadUrl: z.string(),
+  filename: z.string(),
+  fileSize: z.string().optional(),
+  slideTitles: z.array(z.string()).optional(),
 });
 
 // --- Component Interfaces (Derived from Zod) ---
@@ -655,6 +664,101 @@ const TableComponent = ({ title, headers, rows }: z.infer<typeof TableSchema>) =
     );
 };
 
+const PPTDownloadComponent = ({ topic, slideCount, downloadUrl, filename, fileSize, slideTitles }: z.infer<typeof PPTDownloadSchema>) => {
+    const [isDownloading, setIsDownloading] = useState(false);
+    
+    const handleDownload = async () => {
+        setIsDownloading(true);
+        try {
+            const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000';
+            const fullUrl = `${apiBase}${downloadUrl}`;
+            
+            // Create a temporary link and trigger download
+            const link = document.createElement('a');
+            link.href = fullUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Download error:', error);
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+    
+    return (
+        <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="my-6 p-6 bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-2xl border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.3)] overflow-hidden relative"
+        >
+            {/* Background Glow */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-lumina-primary/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+            
+            {/* Header */}
+            <div className="flex items-center gap-4 mb-4 relative z-10">
+                <div className="w-16 h-16 rounded-xl bg-lumina-primary/20 flex items-center justify-center shrink-0">
+                    <FileText className="w-8 h-8 text-lumina-primary" />
+                </div>
+                <div className="flex-1">
+                    <h3 className="text-xl font-bold text-white mb-1">📊 Presentation Ready</h3>
+                    <p className="text-gray-400 text-sm">{topic}</p>
+                </div>
+            </div>
+            
+            {/* Metadata */}
+            <div className="flex gap-4 mb-4 relative z-10">
+                <Badge className="bg-white/10 text-gray-300 border-white/20">
+                    📄 {slideCount} slides
+                </Badge>
+                {fileSize && (
+                    <Badge className="bg-white/10 text-gray-300 border-white/20">
+                        💾 {fileSize}
+                    </Badge>
+                )}
+            </div>
+            
+            {/* Slide Titles Preview */}
+            {slideTitles && slideTitles.length > 0 && (
+                <div className="mb-4 p-4 bg-black/20 rounded-xl relative z-10">
+                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Slide Titles</p>
+                    <ul className="space-y-1">
+                        {slideTitles.slice(0, 5).map((title, i) => (
+                            <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
+                                <span className="text-lumina-primary mt-0.5">•</span>
+                                <span className="line-clamp-1">{title}</span>
+                            </li>
+                        ))}
+                        {slideTitles.length > 5 && (
+                            <li className="text-xs text-gray-500 italic">+ {slideTitles.length - 5} more slides...</li>
+                        )}
+                    </ul>
+                </div>
+            )}
+            
+            {/* Download Button */}
+            <button
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="w-full py-3.5 bg-lumina-primary text-black font-bold rounded-xl hover:bg-lumina-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-lumina-primary/20 flex items-center justify-center gap-2 group relative z-10"
+            >
+                {isDownloading ? (
+                    <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Downloading...
+                    </>
+                ) : (
+                    <>
+                        <FileText className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        Download PowerPoint
+                    </>
+                )}
+            </button>
+        </motion.div>
+    );
+};
+
 // --- Main Renderer ---
 
 export const A2UIRenderer = ({ content, onAction }: { content: string; onAction?: (action: string, data: any) => void }) => {
@@ -709,6 +813,10 @@ export const A2UIRenderer = ({ content, onAction }: { content: string; onAction?
               case 'Table':
                   const tbParsed = TableSchema.safeParse(props);
                   if (tbParsed.success) component = <TableComponent key={uniqueKey} {...tbParsed.data} />;
+                  break;
+              case 'PPTDownload':
+                  const pptParsed = PPTDownloadSchema.safeParse(props);
+                  if (pptParsed.success) component = <PPTDownloadComponent key={uniqueKey} {...pptParsed.data} />;
                   break;
               default:
                 component = (
