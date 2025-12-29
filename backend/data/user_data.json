@@ -17,6 +17,18 @@
                     "question": "What is the primary difference between a list and a tuple in Python?"
                 },
                 "timestamp": "2025-12-29T06:42:44.263880"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "Indian Freedom Struggle",
+                "score": 0.0,
+                "total_questions": 1,
+                "correct_count": 0,
+                "difficulty": "medium",
+                "details": {
+                    "question": "Which pivotal act of civil disobedience, led by Mahatma Gandhi in 1930, challenged the British salt tax and mobilized nationwide resistance?"
+                },
+                "timestamp": "2025-12-29T20:05:07.362471"
             }
         ]
     }

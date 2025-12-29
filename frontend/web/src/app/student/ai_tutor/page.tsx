@@ -317,6 +317,9 @@ IMPORTANT:
             enhanced += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Table' component.]`;
         } else if (lower.includes('flow') || lower.includes('diagram')) {
             enhanced += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Mermaid' component.]`;
+        } else if (lower.includes('ppt') || lower.includes('powerpoint') || lower.includes('presentation') || lower.includes('slides')) {
+            // PPT requests are handled separately via API
+            enhanced += `\n\n[SYSTEM: User is requesting a PowerPoint presentation. This will be handled by the backend API.]`;
         }
         
         return enhanced;
@@ -324,6 +327,65 @@ IMPORTANT:
 
     const processAIResponse = async (textInput: string, userMsg: any) => {
          try {
+            // Check if this is a PPT request
+            const lower = textInput.toLowerCase();
+            const isPPTRequest = lower.includes('ppt') || lower.includes('powerpoint') || 
+                                 lower.includes('presentation') || lower.includes('slides');
+            
+            if (isPPTRequest) {
+                // Extract topic from request
+                const topicMatch = textInput.match(/(?:ppt|powerpoint|presentation|slides)\s+(?:on|about|for)\s+([\w\s]+)/i);
+                const topic = topicMatch ? topicMatch[1].trim() : textInput.replace(/(?:create|make|generate|ppt|powerpoint|presentation|slides|on|about|for)/gi, '').trim();
+                
+                setIsLoading(true);
+                
+                try {
+                    const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000';
+                    const res = await fetch(`${apiBase}/api/tutor/generate-ppt`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ topic, slides_count: 8, user_id: "current-user" })
+                    });
+                    
+                    if (!res.ok) throw new Error("PPT generation failed");
+                    const data = await res.json();
+                    
+                    // Create A2UI response
+                    const pptComponent = `\`\`\`a2ui\n${JSON.stringify({
+                        component: "PPTDownload",
+                        props: {
+                            topic: data.message.replace("Presentation '", "").replace("' generated successfully!", "") || topic,
+                            slideCount: data.slide_count,
+                            downloadUrl: data.download_url,
+                            filename: data.filename,
+                            fileSize: data.file_size,
+                            slideTitles: data.slide_titles
+                        }
+                    })}\n\`\`\``;
+                    
+                    const aiMsg = {
+                        sender: 'AI Tutor',
+                        text: `I've created a professional PowerPoint presentation on "${topic}" for you! 📊\n\n${pptComponent}`,
+                        timestamp: new Date(),
+                        sessionId: currentSessionId,
+                        source: 'ppt-generator'
+                    };
+                    
+                    setMessages(prev => [...prev, aiMsg]);
+                    updateSessionsState(currentSessionId, aiMsg);
+                    await api.saveChatMessage({ sender: 'AI Tutor', text: aiMsg.text, sessionId: currentSessionId });
+                    
+                    setIsLoading(false);
+                    return;
+                } catch (error) {
+                    console.error('PPT Generation Error:', error);
+                    const errorMsg = { sender: 'AI Tutor', text: "Sorry, I couldn't generate the presentation. Please try again.", timestamp: new Date() };
+                    setMessages(prev => [...prev, errorMsg]);
+                    setIsLoading(false);
+                    return;
+                }
+            }
+            
             let replyText = "";
             let source = "api";
             const enhancedContext = getEnhancedContext(textInput) + `\n\nUser Context:\n${userContext}`;
