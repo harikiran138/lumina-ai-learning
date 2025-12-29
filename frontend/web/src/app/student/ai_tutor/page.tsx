@@ -61,6 +61,8 @@ export default function AITutorPage() {
     const currentTopicRef = useRef<string>("General");
     const usedQuestionsRef = useRef<Set<string>>(new Set());
     
+    // Track current quiz session stats
+    const [quizSessionStats, setQuizSessionStats] = useState({ total: 0, correct: 0 });
     const CAPABILITY_TAGS = [
         "Create Quiz on React",
         "Make Flashcards for SQL",
@@ -510,6 +512,7 @@ IMPORTANT:
         if (quizMatch) {
             currentTopicRef.current = quizMatch[1].trim();
             usedQuestionsRef.current.clear();
+            setQuizSessionStats({ total: 0, correct: 0 }); // Reset stats for new quiz
         }
 
         setMessages(prev => [...prev, userMsg]);
@@ -537,6 +540,12 @@ IMPORTANT:
                 const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
                 return { ...prev, moduleScores: newScores, averageScore: avg };
             });
+            
+            // Update current session stats
+            setQuizSessionStats(prev => ({
+                total: prev.total + 1,
+                correct: prev.correct + (data.isCorrect ? 1 : 0)
+            }));
 
             api.saveQuizResult({
                 user_id: "current_student", // In real app, fetch from auth context
@@ -556,9 +565,52 @@ IMPORTANT:
                 true
             );
         } else if (action === 'quiz_end') {
-            await sendMessageInternal("I'm done with the quiz. Show me my updated Progress Chart.", false);
+            // Forcefully show the quiz summary card
+            const percentage = quizSessionStats.total > 0 
+                ? Math.round((quizSessionStats.correct / quizSessionStats.total) * 100) 
+                : 0;
+
+            const scoreCardData = {
+                component: "ScoreCard",
+                props: {
+                    title: "Quiz Complete!",
+                    score: `${quizSessionStats.correct}/${quizSessionStats.total}`,
+                    percentage: percentage,
+                    correctCount: quizSessionStats.correct,
+                    totalCount: quizSessionStats.total,
+                    topic: currentTopicRef.current || 'General',
+                    message: percentage >= 80 ? "Outstanding performance! You've mastered this topic." :
+                             percentage >= 50 ? "Good effort! A little more practice and you'll be a pro." :
+                             "Keep practicing! Review the material and try again."
+                }
+            };
+            
+            const aiMsg = {
+                sender: 'AI Tutor',
+                text: `You've finished the quiz! Here is your summary:\n\n\`\`\`a2ui\n${JSON.stringify(scoreCardData)}\n\`\`\``,
+                timestamp: new Date(),
+                sessionId: currentSessionId,
+                source: 'system'
+            };
+
+            const userMsg = { 
+                sender: 'me', 
+                text: "I'm done with the quiz.", 
+                timestamp: new Date(), 
+                sessionId: currentSessionId 
+            };
+
+            setMessages(prev => [...prev, userMsg, aiMsg]);
+            updateSessionsState(currentSessionId, userMsg);
+            updateSessionsState(currentSessionId, aiMsg);
+            
+            await api.saveChatMessage({ sender: 'me', text: userMsg.text, sessionId: currentSessionId });
+            await api.saveChatMessage({ sender: 'AI Tutor', text: aiMsg.text, sessionId: currentSessionId });
+            
+            // Reset stats after showing summary
+            setQuizSessionStats({ total: 0, correct: 0 });
         }
-    }, [sendMessageInternal]);
+    }, [sendMessageInternal, studentStats, currentSessionId, quizSessionStats]);
 
     const addToNotes = async (text: string) => {
         await api.saveNote(text);
