@@ -1,12 +1,16 @@
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends, Request
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import os
+import json
+import google.generativeai as genai
 from ai_engine.llm import get_llm_provider # Corrected import
 from ai_engine.rag import get_rag_engine
 from ai_engine.tutor_state import get_tutor_state
 from ai_engine.prompts import A2UI_SYSTEM_PROMPT
+from services.ppt_generator import PPTGenerator
 
 
 router = APIRouter()
@@ -362,3 +366,136 @@ async def classify_behavior(request: BehaviorRequest):
     score = model.calculate_engagement_score(request.session_data)
     return {"behavior": label, "engagement_score": score}
 
+
+# --- PowerPoint Generation ---
+
+class PPTGenerationRequest(BaseModel):
+    """Request model for PPT generation."""
+    topic: str
+    slides_count: int = 8
+    user_id: str = "guest"
+
+class PPTGenerationResponse(BaseModel):
+    """Response model for PPT generation."""
+    success: bool
+    message: str
+    download_url: Optional[str] = None
+    filename: Optional[str] = None
+    file_size: Optional[str] = None
+    slide_count: Optional[int] = None
+    slide_titles: Optional[List[str]] = None
+
+# Initialize Gemini API
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyDvj8WavmD-t5p0fRl2kM-974JI7LaNcEE")
+genai.configure(api_key=GEMINI_API_KEY)
+
+@router.post("/tutor/generate-ppt", response_model=PPTGenerationResponse)
+async def generate_ppt(request: PPTGenerationRequest):
+    """
+    Generate a PowerPoint presentation on a given topic using Gemini API.
+    
+    Args:
+        request: PPT generation request with topic and slide count
+        
+    Returns:
+        PPTGenerationResponse with download URL and metadata
+    """
+    try:
+        # Step 1: Generate content structure using Gemini API
+        model = genai.GenerativeModel('gemini-pro')
+        
+        prompt = f"""Create a professional PowerPoint presentation outline on the topic: {request.topic}
+
+Generate exactly {request.slides_count} slides with the following structure:
+1. Title Slide: Main title and engaging subtitle
+2-{request.slides_count}: Content slides with:
+   - Clear, concise heading
+   - 3-5 bullet points per slide
+   - Each bullet should be informative but brief (1-2 sentences max)
+
+Return the response in STRICTLY VALID JSON format (no markdown, no code blocks):
+{{
+  "title": "Presentation Title",
+  "subtitle": "Engaging subtitle",
+  "slides": [
+    {{
+      "title": "Slide Title",
+      "bullets": ["Point 1", "Point 2", "Point 3"]
+    }}
+  ]
+}}
+
+IMPORTANT: Return ONLY the JSON object, no additional text or formatting."""
+
+        response = model.generate_content(prompt)
+        content_text = response.text.strip()
+        
+        # Clean up response (remove markdown code blocks if present)
+        if content_text.startswith("```json"):
+            content_text = content_text.replace("```json", "").replace("```", "").strip()
+        elif content_text.startswith("```"):
+            content_text = content_text.replace("```", "").strip()
+        
+        # Parse JSON response
+        try:
+            content_structure = json.loads(content_text)
+        except json.JSONDecodeError as e:
+            print(f"JSON Parse Error: {e}")
+            print(f"Response text: {content_text[:500]}")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to parse AI response. Please try again."
+            )
+        
+        # Step 2: Generate PowerPoint using PPTGenerator
+        ppt_gen = PPTGenerator()
+        filepath = ppt_gen.create_presentation(request.topic, content_structure)
+        
+        # Step 3: Get file metadata
+        filename = os.path.basename(filepath)
+        file_size = ppt_gen.get_file_size(filepath)
+        slide_titles = [slide.get("title", "") for slide in content_structure.get("slides", [])]
+        
+        # Step 4: Create download URL
+        download_url = f"/api/tutor/download-ppt/{filename}"
+        
+        return PPTGenerationResponse(
+            success=True,
+            message=f"Presentation '{request.topic}' generated successfully!",
+            download_url=download_url,
+            filename=filename,
+            file_size=file_size,
+            slide_count=len(content_structure.get("slides", [])) + 1,  # +1 for title slide
+            slide_titles=slide_titles
+        )
+        
+    except Exception as e:
+        print(f"PPT Generation Error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate presentation: {str(e)}"
+        )
+
+@router.get("/tutor/download-ppt/{filename}")
+async def download_ppt(filename: str):
+    """
+    Download a generated PowerPoint file.
+    
+    Args:
+        filename: Name of the PPTX file to download
+        
+    Returns:
+        FileResponse with the PPTX file
+    """
+    filepath = os.path.join("static/presentations", filename)
+    
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(
+        path=filepath,
+        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        filename=filename
+    )
