@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, Component, ErrorInfo, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PlayCircle, GraduationCap, ChevronRight, RotateCcw, Youtube, Copy, BarChart3, Table as TableIcon, Loader2, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,6 +18,7 @@ import {
 } from 'chart.js';
 import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 import { jsonrepair } from 'jsonrepair';
+import { z } from 'zod';
 
 // Register ChartJS
 ChartJS.register(
@@ -33,93 +33,124 @@ ChartJS.register(
   ArcElement
 );
 
-// --- A2UI Component Interfaces ---
+// --- Zod Schemas for Validation ---
 
-interface QuizProps {
-  question: string;
-  options: string[];
-  correctIndex: number;
-  explanation: string;
+const QuizSchema = z.object({
+  question: z.string(),
+  options: z.array(z.string()).length(4),
+  correctIndex: z.number().int().min(0).max(3),
+  explanation: z.string().min(1),
+  topic: z.string(),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+});
+
+const FlashcardSchema = z.object({
+  front: z.string(),
+  back: z.string(),
+  subject: z.string(),
+});
+
+const CourseCardSchema = z.object({
+  title: z.string(),
+  code: z.string(),
+  description: z.string(),
+  matchScore: z.number().optional(),
+});
+
+const YoutubeVideoSchema = z.object({
+  videoId: z.string(),
+  title: z.string().optional(),
+});
+
+const CodeBlockSchema = z.object({
+  code: z.string(),
+  language: z.string().default("text"),
+  filename: z.string().optional(),
+  explanation: z.string().optional().default(""), // Optional default for backward compat, but encouraged
+});
+
+const TimelineSchema = z.object({
+  title: z.string(),
+  events: z.array(z.object({
+    date: z.string(),
+    title: z.string(),
+    description: z.string(),
+  })),
+});
+
+const ComparisonTableSchema = z.object({
+  title: z.string(),
+  headers: z.array(z.string()).min(2),
+  rows: z.array(z.object({
+    feature: z.string(),
+    values: z.array(z.string()),
+  })),
+});
+
+const ChartSchema = z.object({
+  type: z.enum(['bar', 'line', 'pie', 'doughnut']),
+  title: z.string(),
+  labels: z.array(z.string()),
+  data: z.array(z.number()),
+  datasetLabel: z.string().default("Data"),
+  colors: z.array(z.string()).optional(),
+});
+
+const TableSchema = z.object({
+  title: z.string().optional(),
+  headers: z.array(z.string()),
+  rows: z.array(z.array(z.string())),
+});
+
+const MermaidSchema = z.object({
+  chart: z.string(),
+  title: z.string().optional().default("Diagram"),
+});
+
+// --- Component Interfaces (Derived from Zod) ---
+// Using specific interfaces for props usage in components
+
+// --- Error Boundary ---
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  fallback?: ReactNode;
 }
 
-interface FlashcardProps {
-  front: string;
-  back: string;
+interface ErrorBoundaryState {
+  hasError: boolean;
 }
 
-interface CourseCardProps {
-  title: string;
-  code: string;
-  description: string;
-  matchScore?: number;
-}
+class A2UIErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
-interface YoutubeVideoProps {
-  videoId: string;
-  title?: string;
-}
+  static getDerivedStateFromError(_: Error): ErrorBoundaryState {
+    return { hasError: true };
+  }
 
-interface CodeBlockProps {
-    code: string;
-    language: string;
-    filename?: string;
-}
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("A2UI Component Error:", error, errorInfo);
+  }
 
-interface TimelineProps {
-    events: { date: string; title: string; description: string }[];
-}
-
-interface ComparisonTableProps {
-    title: string;
-    headers: [string, string];
-    rows: { left: string; right: string; feature: string }[];
-}
-
-interface ChartProps {
-    type: 'bar' | 'line' | 'pie' | 'doughnut';
-    title: string;
-    labels: string[];
-    data: number[];
-    label: string; // Dataset label e.g., "Sales"
-    colors?: string[]; // Optional override
-}
-
-interface TableProps {
-    title?: string;
-    headers: string[];
-    rows: string[][];
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="p-4 border border-red-500/20 bg-red-500/10 rounded-xl flex items-center gap-2 text-red-300 text-sm">
+          <AlertTriangle className="w-4 h-4" />
+          Failed to render component.
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 // --- Specific Components ---
 
-const QuizComponent = ({ question, options, answers, choices, correctIndex, explanation, onAction }: any) => {
-    // [FIX] robust normalization of LLM output
-    let finalOptions = options || answers || choices || [];
-    let displayQuestion = question;
-
-    // [SELF-HEALING] If no options, try to parse from question string
-    if (finalOptions.length === 0 && typeof question === 'string') {
-        // Look for patterns like "A) Option" or "1. Option" separated by newlines
-        const lines = question.split('\n');
-        const extractedOptions: string[] = [];
-        const cleanQuestionLines: string[] = [];
-
-        lines.forEach(line => {
-            // Support: A) Option, A. Option, 1) Option, 1. Option, - Option, * Option
-            const match = line.match(/^([A-D]|[1-4]|-|\*|•)[.)\s-]*\s*(.+)$/i);
-            if (match && extractedOptions.length < 10) {
-                extractedOptions.push(match[2].trim());
-            } else {
-                cleanQuestionLines.push(line);
-            }
-        });
-
-        if (extractedOptions.length >= 2) {
-            finalOptions = extractedOptions;
-            displayQuestion = cleanQuestionLines.join('\n').trim();
-        }
-    }
-    
+const QuizComponent = ({ question, options, correctIndex, explanation, topic, difficulty, onAction }: z.infer<typeof QuizSchema> & { onAction?: any }) => {
     const [selected, setSelected] = useState<number | null>(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isActionTaken, setIsActionTaken] = useState(false);
@@ -134,8 +165,10 @@ const QuizComponent = ({ question, options, answers, choices, correctIndex, expl
             if (onAction) {
                 onAction('quiz_answer', {
                     question,
-                    selectedOption: finalOptions[selected],
-                    isCorrect: selected === correctIndex
+                    selectedOption: options[selected],
+                    isCorrect: selected === correctIndex,
+                    topic,
+                    difficulty
                 });
             }
         }
@@ -165,13 +198,19 @@ const QuizComponent = ({ question, options, answers, choices, correctIndex, expl
                 animate={{ opacity: 0.8 }}
                 className={`my-4 p-4 rounded-xl border ${isCorrect ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'} flex items-center justify-between`}
             >
-                <div className="flex items-center gap-3">
-                    {isCorrect ? <CheckCircle className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
-                    <div>
-                        <p className="text-sm font-medium text-gray-300 line-clamp-1">{question}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            You chose: <span className={isCorrect ? "text-green-400" : "text-red-400"}>{finalOptions[selected ?? -1] || "Skipped"}</span>
-                        </p>
+                <div>
+                     <div className="flex gap-2 mb-1">
+                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-white/10 text-gray-400">{topic}</Badge>
+                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-white/10 text-gray-400 capitalize">{difficulty}</Badge>
+                     </div>
+                     <div className="flex items-center gap-3">
+                        {isCorrect ? <CheckCircle className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
+                        <div>
+                            <p className="text-sm font-medium text-gray-300 line-clamp-1">{question}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                You chose: <span className={isCorrect ? "text-green-400" : "text-red-400"}>{options[selected ?? -1] || "Skipped"}</span>
+                            </p>
+                        </div>
                     </div>
                 </div>
                 <Badge variant="outline" className={`text-xs ${isCorrect ? 'border-green-500/30 text-green-500' : 'border-red-500/30 text-red-500'}`}>
@@ -192,58 +231,53 @@ const QuizComponent = ({ question, options, answers, choices, correctIndex, expl
             <div className="absolute top-0 right-0 w-32 h-32 bg-lumina-primary/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
 
             {/* Header */}
-            <div className="flex items-center justify-between mb-6 relative z-10">
-                <Badge className="bg-lumina-primary/10 text-lumina-primary hover:bg-lumina-primary/20 border-lumina-primary/20 gap-1.5 py-1 px-3">
-                    <GraduationCap className="w-3.5 h-3.5" />
-                    Knowledge Check
-                </Badge>
+            <div className="flex items-center justify-between mb-4 relative z-10">
+                <div className="flex gap-2">
+                    <Badge className="bg-lumina-primary/10 text-lumina-primary hover:bg-lumina-primary/20 border-lumina-primary/20 gap-1.5 py-1 px-3">
+                        <GraduationCap className="w-3.5 h-3.5" />
+                        {topic}
+                    </Badge>
+                    <Badge variant="outline" className="border-white/10 text-gray-400 capitalize">
+                        {difficulty}
+                    </Badge>
+                </div>
                 {!isSubmitted && <span className="text-xs text-gray-500 font-mono">Select the best answer</span>}
             </div>
             
-            <h3 className="text-xl font-bold text-white mb-8 leading-relaxed tracking-tight whitespace-pre-line">{displayQuestion}</h3>
+            <h3 className="text-xl font-bold text-white mb-8 leading-relaxed tracking-tight whitespace-pre-line">{question}</h3>
 
             <div className="space-y-3 relative z-10">
-                {finalOptions.length === 0 ? (
-                    <div className="p-5 rounded-xl border border-white/10 bg-white/5 text-gray-400">
-                        <p className="text-sm italic mb-4">I couldn't generate interactive options for this specific question. Feel free to answer in the chat!</p>
-                        <details className="text-[10px] font-mono opacity-30 mt-4 border-t border-white/5 pt-2">
-                            <summary className="cursor-pointer">Technical Details</summary>
-                            {JSON.stringify({ question, options, answers, choices }, null, 2)}
-                        </details>
-                    </div>
-                ) : (
-                    finalOptions.map((opt: any, i: number) => {
-                        let btnClass = "w-full text-left p-4 rounded-xl text-sm border transition-all duration-300 relative overflow-hidden group ";
-                        
-                        if (isSubmitted) {
-                            if (i === correctIndex) btnClass += "bg-green-500/10 border-green-500/40 text-green-100 ring-1 ring-green-500/50"; 
-                            else if (i === selected) btnClass += "bg-red-500/10 border-red-500/40 text-red-100 ring-1 ring-red-500/50"; 
-                            else btnClass += "bg-white/5 border-white/5 text-gray-500 opacity-40 grayscale"; 
-                        } else {
-                            if (i === selected) btnClass += "bg-lumina-primary/10 border-lumina-primary/50 text-white ring-1 ring-lumina-primary/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]";
-                            else btnClass += "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20 hover:pl-5"; // Indent on hover
-                        }
+                {options.map((opt, i) => {
+                    let btnClass = "w-full text-left p-4 rounded-xl text-sm border transition-all duration-300 relative overflow-hidden group ";
+                    
+                    if (isSubmitted) {
+                        if (i === correctIndex) btnClass += "bg-green-500/10 border-green-500/40 text-green-100 ring-1 ring-green-500/50"; 
+                        else if (i === selected) btnClass += "bg-red-500/10 border-red-500/40 text-red-100 ring-1 ring-red-500/50"; 
+                        else btnClass += "bg-white/5 border-white/5 text-gray-500 opacity-40 grayscale"; 
+                    } else {
+                        if (i === selected) btnClass += "bg-lumina-primary/10 border-lumina-primary/50 text-white ring-1 ring-lumina-primary/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]";
+                        else btnClass += "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20 hover:pl-5"; // Indent on hover
+                    }
 
-                        return (
-                            <button key={i} onClick={() => handleSelect(i)} disabled={isSubmitted} className={btnClass}>
-                                <div className="flex items-center gap-4 relative z-10">
-                                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold border transition-colors ${
-                                        isSubmitted && i === correctIndex ? 'bg-green-500 border-green-500 text-black' : 
-                                        isSubmitted && i === selected ? 'bg-red-500 border-red-500 text-white' : 
-                                        i === selected ? 'bg-lumina-primary border-lumina-primary text-black' :
-                                        'border-white/20 text-gray-500 bg-white/5'
-                                    }`}>
-                                        {String.fromCharCode(65 + i)}
-                                    </span>
-                                    <span className="font-medium">{opt}</span>
-                                    
-                                    {isSubmitted && i === correctIndex && <CheckCircle className="w-5 h-5 text-green-500 absolute right-0" />}
-                                    {isSubmitted && i === selected && i !== correctIndex && <XCircle className="w-5 h-5 text-red-500 absolute right-0" />}
-                                </div>
-                            </button>
-                        );
-                    })
-                )}
+                    return (
+                        <button key={i} onClick={() => handleSelect(i)} disabled={isSubmitted} className={btnClass}>
+                            <div className="flex items-center gap-4 relative z-10">
+                                <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold border transition-colors ${
+                                    isSubmitted && i === correctIndex ? 'bg-green-500 border-green-500 text-black' : 
+                                    isSubmitted && i === selected ? 'bg-red-500 border-red-500 text-white' : 
+                                    i === selected ? 'bg-lumina-primary border-lumina-primary text-black' :
+                                    'border-white/20 text-gray-500 bg-white/5'
+                                }`}>
+                                    {String.fromCharCode(65 + i)}
+                                </span>
+                                <span className="font-medium">{opt}</span>
+                                
+                                {isSubmitted && i === correctIndex && <CheckCircle className="w-5 h-5 text-green-500 absolute right-0" />}
+                                {isSubmitted && i === selected && i !== correctIndex && <XCircle className="w-5 h-5 text-red-500 absolute right-0" />}
+                            </div>
+                        </button>
+                    );
+                })}
             </div>
 
             <AnimatePresence>
@@ -290,18 +324,9 @@ const QuizComponent = ({ question, options, answers, choices, correctIndex, expl
     );
 };
 
-const FlashcardComponent: React.FC<FlashcardProps> = ({ front, back }) => {
+const FlashcardComponent = ({ front, back, subject }: z.infer<typeof FlashcardSchema>) => {
   const [isFlipped, setIsFlipped] = useState(false);
-  if (!front && !back) return null;
   
-  // Safe render helper
-  const safeRender = (content: any) => {
-      if (typeof content === 'object' && content !== null) {
-          return content.value || content.name || JSON.stringify(content);
-      }
-      return content;
-  };
-
   return (
     <div 
         className="my-6 h-64 w-full max-w-md mx-auto cursor-pointer group perspective-1000" 
@@ -316,19 +341,19 @@ const FlashcardComponent: React.FC<FlashcardProps> = ({ front, back }) => {
       >
         {/* Front */}
         <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-gradient-to-br from-[#1a1a2e] to-[#16213e]">
-             {/* Decorative Elements */}
              <div className="absolute top-0 right-0 w-32 h-32 bg-lumina-primary/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
              <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl -ml-12 -mb-12 pointer-events-none"></div>
 
              <div className="h-full flex flex-col p-8 relative z-10">
                  <div className="flex justify-between items-center mb-6">
                      <span className="text-[10px] font-bold tracking-[0.2em] text-lumina-primary uppercase border border-lumina-primary/30 px-2 py-1 rounded">Question</span>
+                     <span className="text-[10px] text-gray-500 uppercase">{subject}</span>
                      <RotateCcw className="w-4 h-4 text-gray-500 opacity-50 block sm:hidden" />
                  </div>
                  
                  <div className="flex-1 flex items-center justify-center">
                     <h3 className="text-2xl md:text-3xl font-bold text-white text-center leading-tight drop-shadow-md">
-                        {safeRender(front)}
+                        {front}
                     </h3>
                  </div>
 
@@ -345,7 +370,6 @@ const FlashcardComponent: React.FC<FlashcardProps> = ({ front, back }) => {
             className="absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-[#0f0f1a]"
             style={{ transform: 'rotateY(180deg)' }}
         >
-             {/* Decorative Background */}
              <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:20px_20px]"></div>
              
              <div className="h-full flex flex-col p-8 relative z-10">
@@ -355,7 +379,7 @@ const FlashcardComponent: React.FC<FlashcardProps> = ({ front, back }) => {
                  
                  <div className="flex-1 flex items-center justify-center">
                     <p className="text-lg md:text-xl text-gray-100 text-center leading-relaxed font-medium">
-                        {safeRender(back)}
+                        {back}
                     </p>
                  </div>
              </div>
@@ -365,7 +389,7 @@ const FlashcardComponent: React.FC<FlashcardProps> = ({ front, back }) => {
   );
 };
 
-const CourseCardComponent: React.FC<CourseCardProps> = ({ title, code, description, matchScore }) => {
+const CourseCardComponent = ({ title, code, description, matchScore }: z.infer<typeof CourseCardSchema>) => {
     return (
         <Card className="my-4 bg-white/5 border-white/10 hover:border-purple-500/50 transition-colors group cursor-pointer">
             <CardContent className="p-4 flex gap-4">
@@ -390,7 +414,7 @@ const CourseCardComponent: React.FC<CourseCardProps> = ({ title, code, descripti
     )
 }
 
-const YoutubeVideoComponent: React.FC<YoutubeVideoProps> = ({ videoId, title }) => {
+const YoutubeVideoComponent = ({ videoId, title }: z.infer<typeof YoutubeVideoSchema>) => {
     return (
         <div className="my-4 rounded-xl overflow-hidden border border-white/10 bg-black/40">
             {title && <div className="p-2 px-3 text-sm text-gray-300 bg-white/5 border-b border-white/5 flex items-center gap-2">
@@ -410,7 +434,7 @@ const YoutubeVideoComponent: React.FC<YoutubeVideoProps> = ({ videoId, title }) 
     )
 }
 
-const CodeBlockComponent: React.FC<CodeBlockProps> = ({ code, language, filename }) => {
+const CodeBlockComponent = ({ code, language, filename, explanation }: z.infer<typeof CodeBlockSchema>) => {
     const handleCopy = () => {
         navigator.clipboard.writeText(code);
     };
@@ -428,21 +452,22 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({ code, language, filename
                     <code>{code}</code>
                 </pre>
             </div>
+            {explanation && (
+                <div className="p-3 bg-white/5 border-t border-white/10 text-xs text-gray-400 italic">
+                    {explanation}
+                </div>
+            )}
         </div>
     );
 };
 
-// --- Specific Components ---
-
-const MermaidComponent: React.FC<{ chart: string }> = ({ chart }) => {
-    if (!chart) return null;
+const MermaidComponent = ({ chart, title }: z.infer<typeof MermaidSchema>) => {
     const [svg, setSvg] = useState<string>('');
-    const id = React.useId().replace(/:/g, ''); // Unique ID for multiple charts
+    const id = React.useId().replace(/:/g, ''); 
 
     React.useEffect(() => {
         const renderChart = async () => {
             try {
-                // Dynamic import to avoid SSR issues
                 const mermaid = (await import('mermaid')).default;
                 mermaid.initialize({ 
                     startOnLoad: false, 
@@ -461,20 +486,23 @@ const MermaidComponent: React.FC<{ chart: string }> = ({ chart }) => {
     }, [chart, id]);
 
     return (
-        <div className="my-6 p-4 bg-[#0d1117] rounded-xl border border-white/10 overflow-x-auto flex justify-center">
-            <div dangerouslySetInnerHTML={{ __html: svg }} />
+        <div className="my-6 rounded-xl border border-white/10 overflow-hidden bg-[#0d1117]">
+             <div className="p-2 px-3 text-sm text-gray-300 bg-white/5 border-b border-white/10 flex items-center gap-2 font-mono">
+                 <RotateCcw className="w-3 h-3 text-lumina-primary" /> {title}
+            </div>
+            <div className="p-4 overflow-x-auto flex justify-center">
+                <div dangerouslySetInnerHTML={{ __html: svg }} />
+            </div>
         </div>
     );
 };
 
-// ... (Quiz, Flashcard, etc. remain)
-
-const TimelineComponent: React.FC<TimelineProps> = ({ events = [] }) => {
-    if (!events || events.length === 0) return null;
+const TimelineComponent = ({ title, events }: z.infer<typeof TimelineSchema>) => {
     return (
     <div className="my-8 relative">
-        {/* Center Line */}
-        <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-lumina-primary/50 to-transparent" />
+        <h3 className="text-center text-lg font-bold text-white mb-8 border-b border-white/10 pb-2 inline-block mx-auto px-8 relative left-1/2 -translate-x-1/2">{title}</h3>
+        
+        <div className="absolute left-4 md:left-1/2 top-12 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-lumina-primary/50 to-transparent" />
         
         <div className="space-y-8">
             {events.map((ev, i) => {
@@ -482,13 +510,10 @@ const TimelineComponent: React.FC<TimelineProps> = ({ events = [] }) => {
                 return (
                     <div key={i} className={`relative flex items-center md:justify-between ${isLeft ? 'flex-row-reverse' : ''}`}>
                         
-                        {/* Empty Space for alignment */}
                         <div className="hidden md:block w-5/12" />
 
-                        {/* Dot */}
                         <div className="absolute left-4 md:left-1/2 -ml-[5px] w-3 h-3 rounded-full bg-lumina-primary border-2 border-black z-10 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
 
-                        {/* Content Card */}
                         <div className={`ml-10 md:ml-0 w-full md:w-5/12 p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all group ${isLeft ? 'md:text-right' : 'md:text-left'}`}>
                             <span className="text-xs font-mono text-lumina-primary/80 block mb-1">{ev.date}</span>
                             <h4 className="text-base font-bold text-white group-hover:text-lumina-primary transition-colors">{ev.title}</h4>
@@ -501,46 +526,40 @@ const TimelineComponent: React.FC<TimelineProps> = ({ events = [] }) => {
     </div>
 )};
 
-const ComparisonTableComponent: React.FC<ComparisonTableProps> = ({ title, headers = [], rows = [] }) => {
-    const safeRender = (val: any) => {
-        if (val === null || val === undefined) return '';
-        if (typeof val === 'object') {
-            return val.value || val.text || val.name || JSON.stringify(val);
-        }
-        return String(val);
-    };
 
-    const headerLeft = headers[0] || 'Left';
-    const headerRight = headers[1] || 'Right';
-
+const ComparisonTableComponent = ({ title, headers, rows }: z.infer<typeof ComparisonTableSchema>) => {
+    // headers[0] is the feature column name
+    // headers[1..n] are the item names
+    
     return (
     <div className="my-4 rounded-xl border border-white/10 overflow-hidden bg-white/5">
         <div className="p-3 bg-white/5 border-b border-white/10 text-center font-semibold text-white">
             {title}
         </div>
-        <div className="grid grid-cols-3 bg-white/5 text-xs font-bold text-gray-400 uppercase tracking-wider">
-             <div className="p-3 border-r border-white/5">{safeRender(headerLeft)}</div>
-             <div className="p-3 border-r border-white/5 text-center">Feature</div>
-             <div className="p-3">{safeRender(headerRight)}</div>
+        <div className="grid bg-white/5 text-xs font-bold text-gray-400 uppercase tracking-wider" style={{ gridTemplateColumns: `repeat(${headers.length}, minmax(0, 1fr))` }}>
+             {headers.map((h, i) => (
+                 <div key={i} className={`p-3 border-r border-white/5 last:border-r-0 ${i === 0 ? 'text-center' : 'text-center'}`}>{h}</div>
+             ))}
         </div>
         <div className="divide-y divide-white/5">
             {rows.map((row, i) => (
-                <div key={i} className="grid grid-cols-3 text-sm hover:bg-white/5 transition-colors">
-                    <div className="p-3 border-r border-white/5 text-gray-300">{safeRender(row.left)}</div>
-                    <div className="p-3 border-r border-white/5 text-center text-gray-500 text-xs font-mono flex items-center justify-center">{safeRender(row.feature)}</div>
-                    <div className="p-3 text-gray-300">{safeRender(row.right)}</div>
+                <div key={i} className="grid text-sm hover:bg-white/5 transition-colors" style={{ gridTemplateColumns: `repeat(${headers.length}, minmax(0, 1fr))` }}>
+                    <div className="p-3 border-r border-white/5 text-gray-500 text-xs font-mono flex items-center justify-center font-bold uppercase">{row.feature}</div>
+                    {row.values.map((val, j) => (
+                        <div key={j} className="p-3 border-r border-white/5 last:border-r-0 text-gray-300 text-center flex items-center justify-center">{val}</div>
+                    ))}
                 </div>
             ))}
         </div>
     </div>
 )};
 
-const ChartComponent: React.FC<ChartProps> = ({ type, title, labels = [], data = [], label, colors }) => {
+const ChartComponent = ({ type, title, labels, data, datasetLabel, colors }: z.infer<typeof ChartSchema>) => {
     const chartData = {
         labels,
         datasets: [
             {
-                label: label,
+                label: datasetLabel,
                 data: data,
                 backgroundColor: colors || [
                     'rgba(255, 99, 132, 0.5)',
@@ -603,15 +622,7 @@ const ChartComponent: React.FC<ChartProps> = ({ type, title, labels = [], data =
     );
 };
 
-const TableComponent: React.FC<TableProps> = ({ title, headers, rows }) => {
-    const safeRender = (val: any) => {
-        if (val === null || val === undefined) return '';
-        if (typeof val === 'object') {
-            return val.value || val.text || val.name || JSON.stringify(val);
-        }
-        return String(val);
-    };
-
+const TableComponent = ({ title, headers, rows }: z.infer<typeof TableSchema>) => {
     return (
         <div className="my-4 rounded-xl border border-white/10 overflow-hidden bg-white/5">
             {title && (
@@ -625,7 +636,7 @@ const TableComponent: React.FC<TableProps> = ({ title, headers, rows }) => {
                     <thead className="text-xs text-gray-400 uppercase bg-white/5">
                         <tr>
                             {headers.map((h, i) => (
-                                <th key={i} className="px-6 py-3">{safeRender(h)}</th>
+                                <th key={i} className="px-6 py-3">{h}</th>
                             ))}
                         </tr>
                     </thead>
@@ -633,7 +644,7 @@ const TableComponent: React.FC<TableProps> = ({ title, headers, rows }) => {
                         {rows.map((row, i) => (
                             <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                                 {row.map((cell, j) => (
-                                    <td key={j} className="px-6 py-4 text-gray-300 font-medium whitespace-pre-wrap">{safeRender(cell)}</td>
+                                    <td key={j} className="px-6 py-4 text-gray-300 font-medium whitespace-pre-wrap">{cell}</td>
                                 ))}
                             </tr>
                         ))}
@@ -651,34 +662,75 @@ export const A2UIRenderer = ({ content, onAction }: { content: string; onAction?
 
   const renderComponent = (data: any, index: number, subIndex: number = 0) => {
         const uniqueKey = `${index}-${subIndex}`;
-        switch (data.component) {
-          case 'Quiz':
-            return <QuizComponent key={uniqueKey} {...data.props} onAction={onAction} />;
-          case 'Flashcard':
-            return <FlashcardComponent key={uniqueKey} {...data.props} />;
-          case 'CourseCard':
-            return <CourseCardComponent key={uniqueKey} {...data.props} />;
-          case 'YoutubeVideo':
-              return <YoutubeVideoComponent key={uniqueKey} {...data.props} />;
-          case 'CodeBlock':
-              return <CodeBlockComponent key={uniqueKey} {...data.props} />;
-          case 'Mermaid':
-              return <MermaidComponent key={uniqueKey} {...data.props} />;
-          case 'Timeline':
-              return <TimelineComponent key={uniqueKey} {...data.props} />;
-          case 'ComparisonTable':
-              return <ComparisonTableComponent key={uniqueKey} {...data.props} />;
-          case 'Chart':
-              return <ChartComponent key={uniqueKey} {...data.props} />;
-          case 'Table':
-              return <TableComponent key={uniqueKey} {...data.props} />;
-          default:
-            return (
-                <div key={uniqueKey} className="p-2 border border-yellow-500/50 bg-yellow-500/10 rounded text-xs text-yellow-200 font-mono">
-                    Unknown A2UI Component: {data.component}
+        
+        let component = null;
+        let props = data.props;
+        
+        try {
+            switch (data.component) {
+              case 'Quiz':
+                const quizParsed = QuizSchema.safeParse(props);
+                if (quizParsed.success) component = <QuizComponent key={uniqueKey} {...quizParsed.data} onAction={onAction} />;
+                else throw new Error(`Invalid Quiz Props: ${quizParsed.error.message}`);
+                break;
+              case 'Flashcard':
+                const fcParsed = FlashcardSchema.safeParse(props);
+                if (fcParsed.success) component = <FlashcardComponent key={uniqueKey} {...fcParsed.data} />;
+                else throw new Error(`Invalid Flashcard Props: ${fcParsed.error.message}`);
+                break;
+              case 'CourseCard':
+                const ccParsed = CourseCardSchema.safeParse(props);
+                if (ccParsed.success) component = <CourseCardComponent key={uniqueKey} {...ccParsed.data} />;
+                break;
+              case 'YoutubeVideo':
+                  const ytParsed = YoutubeVideoSchema.safeParse(props);
+                  if (ytParsed.success) component = <YoutubeVideoComponent key={uniqueKey} {...ytParsed.data} />;
+                  break;
+              case 'CodeBlock':
+                  const cbParsed = CodeBlockSchema.safeParse(props);
+                  if (cbParsed.success) component = <CodeBlockComponent key={uniqueKey} {...cbParsed.data} />;
+                  break;
+              case 'Mermaid':
+                  const mmParsed = MermaidSchema.safeParse(props);
+                  if (mmParsed.success) component = <MermaidComponent key={uniqueKey} {...mmParsed.data} />;
+                  break;
+              case 'Timeline':
+                  const tlParsed = TimelineSchema.safeParse(props);
+                  if (tlParsed.success) component = <TimelineComponent key={uniqueKey} {...tlParsed.data} />;
+                  break;
+              case 'ComparisonTable':
+                  const ctParsed = ComparisonTableSchema.safeParse(props);
+                  if (ctParsed.success) component = <ComparisonTableComponent key={uniqueKey} {...ctParsed.data} />;
+                  break;
+              case 'Chart':
+                  const chParsed = ChartSchema.safeParse(props);
+                  if (chParsed.success) component = <ChartComponent key={uniqueKey} {...chParsed.data} />;
+                  break;
+              case 'Table':
+                  const tbParsed = TableSchema.safeParse(props);
+                  if (tbParsed.success) component = <TableComponent key={uniqueKey} {...tbParsed.data} />;
+                  break;
+              default:
+                component = (
+                    <div key={uniqueKey} className="p-2 border border-yellow-500/50 bg-yellow-500/10 rounded text-xs text-yellow-200 font-mono">
+                        Unknown A2UI Component: {data.component}
+                    </div>
+                );
+            }
+        } catch (e: any) {
+            console.warn("Schema Validation Failed", e);
+             component = (
+                <div key={uniqueKey} className="p-2 border border-red-500/50 bg-red-500/10 rounded text-xs text-red-200 font-mono">
+                    Schema Error: {e.message}
                 </div>
             );
         }
+
+        return (
+            <A2UIErrorBoundary key={uniqueKey}>
+                {component}
+            </A2UIErrorBoundary>
+        );
   };
 
   return (

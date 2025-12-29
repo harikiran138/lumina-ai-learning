@@ -48,25 +48,61 @@ class OllamaProvider(LLMProvider):
             return f"Error generating content: {str(e)}"
 
 # Factory
-class GeminiProvider(LLMProvider):
-    def __init__(self, api_key: str, model: str = "gemini-pro"):
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(model)
+class GeminiRestProvider(LLMProvider):
+    def __init__(self, api_keys: list, model: str = "gemini-flash-latest"):
+        self.api_keys = api_keys
+        self.model = model
+        self.current_key_index = 0
+
+    def _get_url(self, key):
+        return f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={key}"
 
     def generate(self, prompt: str, system_prompt: str = "") -> str:
-        # Gemini Pro doesn't strictly separate system prompt in the simplest API, 
-        # but we can prepend it.
         full_prompt = prompt
         if system_prompt:
-            full_prompt = f"System Instruction: {system_prompt}\n\nTask: {prompt}"
+             full_prompt = f"System Instruction: {system_prompt}\n\nTask: {prompt}"
+
+        payload = {
+            "contents": [{
+                "parts": [{"text": full_prompt}]
+            }]
+        }
+
+        # Try keys with rotation and failover
+        attempts = 0
+        max_attempts = len(self.api_keys) * 2 # Allow retries across keys
+        
+        last_error = None
+
+        while attempts < max_attempts:
+            current_key = self.api_keys[self.current_key_index]
+            url = self._get_url(current_key)
             
-        try:
-            response = self.model.generate_content(full_prompt)
-            return response.text
-        except Exception as e:
-            print(f"Gemini Error: {e}")
-            return f"Error generating content: {str(e)}"
+            try:
+                # Rotate for next call immediately (Round Robin)
+                self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
+                
+                response = requests.post(url, json=payload, headers={"Content-Type": "application/json"})
+                
+                # Check for Rate Limit (429) specifically
+                if response.status_code == 429:
+                    print(f"Gemini Rate Limit on Key ending in ...{current_key[-4:]}. Switching...")
+                    attempts += 1
+                    continue # Try next key in loop
+
+                response.raise_for_status()
+                data = response.json()
+                
+                if "candidates" in data and data["candidates"]:
+                    return data["candidates"][0]["content"]["parts"][0]["text"]
+                return ""
+
+            except Exception as e:
+                print(f"Gemini REST Error (Key ...{current_key[-4:]}): {e}")
+                last_error = e
+                attempts += 1
+        
+        return f"Error generating content after retries: {str(last_error)}"
 
 def get_llm_provider(provider: str = "auto") -> LLMProvider:
     # Explicit provider selection
@@ -75,9 +111,19 @@ def get_llm_provider(provider: str = "auto") -> LLMProvider:
     
     # Auto mode or explicit gemini checks
     if provider == "gemini" or provider == "auto":
-        gemini_key = os.getenv("GEMINI_API_KEY")
-        if gemini_key:
-            return GeminiProvider(api_key=gemini_key)
+        keys = []
+        
+        # Primary Key
+        key1 = os.getenv("GEMINI_API_KEY")
+        if key1: keys.append(key1)
+        
+        # Secondary Key
+        key2 = os.getenv("GEMINI_API_KEY_SECONDARY")
+        if key2: keys.append(key2)
+        
+        if keys:
+            return GeminiRestProvider(api_keys=keys)
         
     # Fallback to Ollama if auto and no key, or default
+    print("Warning: No Gemini API Key found. Falling back to Ollama.")
     return OllamaProvider()

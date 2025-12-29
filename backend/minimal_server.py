@@ -186,9 +186,59 @@ async def list_courses():
 # Tutor endpoints
 @app.post("/api/tutor/chat")
 async def tutor_chat(data: dict):
-    message = data.get("message", "")
-    # Simple echo/mock response
-    return {"response": f"I received your message: '{message}'. This is a mock response from the local server."}
+    message = data.get("message", "").lower()
+    
+    # Dynamic Topic Detection for Quiz
+    import re
+    quiz_match = re.search(r"quiz on ([\w\s]+)", message)
+    if quiz_match:
+        topic = quiz_match.group(1).strip().capitalize()
+        return {
+            "response": f"""Here is a quiz on {topic}:
+```a2ui
+{{
+  "component": "Quiz",
+  "props": {{
+    "question": "What is a primary concept in {topic}?",
+    "options": ["Concept A", "Concept B", "The Right Answer", "Concept D"],
+    "correctIndex": 2,
+    "explanation": "This is a fundamental part of {topic}."
+  }}
+}}
+```"""
+        }
+    
+    if "progress" in message or "chart" in message:
+        import json
+        scores = {"Python": 85, "React": 75, "SQL": 92, "Data Structures": 60}
+        
+        # Look for stats block in user content (which we inject in userContext)
+        if "module scores:" in message:
+            try:
+                # Extract the JSON block
+                stats_str = message.split("module scores:")[1].split("]")[0].split("\n")[0].strip()
+                scores = json.loads(stats_str)
+            except Exception as e:
+                print(f"Stats parsing failed: {e}")
+
+        return {
+            "response": f"""Here is your performance chart:
+```a2ui
+{{
+  "component": "Chart",
+  "props": {{
+    "type": "bar",
+    "title": "Topic Mastery",
+    "labels": {list(scores.keys())},
+    "data": {list(scores.values())},
+    "label": "Score %"
+  }}
+}}
+```"""
+        }
+
+    # Default echo
+    return {"response": f"I received your message: '{message}'. Try asking for a 'Quiz on [Topic]'!"}
 
 # Assessment endpoints
 @app.post("/api/assessment/quick-log")
