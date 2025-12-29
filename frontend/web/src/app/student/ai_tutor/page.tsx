@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { processMessage } from '@/lib/ai-tutor/router'; // Integrated Router
 import { CreateMLCEngine, MLCEngine } from "@mlc-ai/web-llm"; // WebLLM
@@ -16,18 +16,15 @@ import {
     Loader2,
     Cpu,
     Globe,
-    Zap,
     Cloud,
-    AlertTriangle,
-    ChevronRight,
     SidebarClose,
-    SidebarOpen
+    SidebarOpen,
+    Menu
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 import { A2UIRenderer } from '@/components/advanced/A2UIRenderer';
 
-// Switched to Llama-3.2-1B (Tiny) to prevent "Device Lost" GPU crashes
-const SELECTED_MODEL = "Llama-3.2-1B-Instruct-q4f32_1-MLC";
+// Switched to q4f16_1 for better memory stability
+const SELECTED_MODEL = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
 
 export default function AITutorPage() {
     const [messages, setMessages] = useState<any[]>([]);
@@ -40,8 +37,8 @@ export default function AITutorPage() {
     const [progress, setProgress] = useState<string>('');
     const [isModelLoading, setIsModelLoading] = useState(false);
 
-    // AI Provider State
-    const [provider, setProvider] = useState<'lumina' | 'gemini' | 'local' | 'chrome' | 'ollama'>('lumina');
+    // AI Provider State - Default to 'gemini' for stability
+    const [provider, setProvider] = useState<'lumina' | 'gemini' | 'local' | 'chrome' | 'ollama'>('gemini');
 
     // Context State
     const [userContext, setUserContext] = useState<string>('');
@@ -60,7 +57,10 @@ export default function AITutorPage() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [dynamicSuggestions, setDynamicSuggestions] = useState<string[]>([]);
     
-    // Capability Tags (Action-oriented)
+    // Topic & Quiz Tracking
+    const currentTopicRef = useRef<string>("General");
+    const usedQuestionsRef = useRef<Set<string>>(new Set());
+    
     const CAPABILITY_TAGS = [
         "Create Quiz on React",
         "Make Flashcards for SQL",
@@ -70,7 +70,7 @@ export default function AITutorPage() {
         "Code Snippet for API Fetch"
     ];
 
-    const generateContext = (user: any, dashboard: any, profile: any, notes: any, allCourses: any, stats: any) => {
+    const generateContext = useCallback((user: any, dashboard: any, profile: any, notes: any, allCourses: any, stats: any) => {
         let context = `Current User: ${user?.name || 'Student'}\n`;
 
         // Inject Data for Visualization
@@ -111,8 +111,8 @@ export default function AITutorPage() {
             });
         }
 
-        return context.substring(0, 1200);
-    };
+        return context.substring(0, 1500); // Increased limit slightly
+    }, []);
 
     // Load user context initial
     useEffect(() => {
@@ -143,22 +143,22 @@ export default function AITutorPage() {
             }
         };
         loadContext();
-    }, []);
+    }, [generateContext]);
 
     // Update context when stats change
     useEffect(() => {
         if (userContext) {
-            // Re-generate context with updated stats for the NEXT AI call
-            // Since we don't store full profile/dashboard in state, we just replace the stats block
             setUserContext(prev => {
                 const statsBlock = `\n[REAL-TIME STUDENT DATA FOR VISUALIZATION]\nModule Scores: ${JSON.stringify(studentStats.moduleScores)}\nWeekly Activity (Hours): ${JSON.stringify(studentStats.weeklyActivity)}\nAttendance Trends: ${JSON.stringify(studentStats.attendance)}\nAverage Score: ${studentStats.averageScore}%\n`;
                 const startMarker = `\n[REAL-TIME STUDENT DATA FOR VISUALIZATION]\n`;
                 const endMarker = `[INSTRUCTION: If asked about progress/stats, use the 'Chart' component to visualize this data.]\n`;
                 
                 if (prev.includes(startMarker) && prev.includes(endMarker)) {
-                    const before = prev.split(startMarker)[0];
-                    const after = prev.split(endMarker)[1] || "";
-                    return before + statsBlock + `[INSTRUCTION: If asked about progress/stats, use the 'Chart' component to visualize this data.]\n` + after;
+                    const parts = prev.split(startMarker);
+                    const afterParts = parts[1].split(endMarker);
+                    if (afterParts.length > 1) {
+                        return parts[0] + startMarker + statsBlock + endMarker + afterParts[1];
+                    }
                 }
                 return prev;
             });
@@ -199,6 +199,7 @@ export default function AITutorPage() {
         setCurrentSessionId(sessionId);
         sessionStorage.setItem('lumina_chat_session_id', sessionId);
         setMessages(sessions[sessionId] || []);
+        if (window.innerWidth < 1024) setIsSidebarOpen(false); // Close sidebar on mobile
     };
 
     const startNewChat = () => {
@@ -206,6 +207,7 @@ export default function AITutorPage() {
         setCurrentSessionId(newSessionId);
         sessionStorage.setItem('lumina_chat_session_id', newSessionId);
         setMessages([]);
+        if (window.innerWidth < 1024) setIsSidebarOpen(false);
     };
 
     const updateSessionsState = (sessionId: string, newMsg: any) => {
@@ -219,7 +221,7 @@ export default function AITutorPage() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isLoading]);
 
-    // Initialize WebLLM when 'lumina' or 'local' mode is selected
+    // Initialize WebLLM
     useEffect(() => {
         const initWebLLM = async () => {
             if ((provider === 'lumina' || provider === 'local') && !engine && !isModelLoading) {
@@ -245,159 +247,114 @@ export default function AITutorPage() {
         initWebLLM();
     }, [provider, engine, isModelLoading]);
 
-    // Auto-send function (Internal)
-    const sendMessageInternal = async (text: string, isHidden: boolean = false) => {
-        const userMsg = { sender: 'me', text: text, timestamp: new Date(), sessionId: currentSessionId, isHidden };
-        // If not hidden, show in UI
-        if (!isHidden) {
-             setMessages(prev => [...prev, userMsg]);
-        }
-        updateSessionsState(currentSessionId, userMsg);
-        setIsLoading(true);
+    // A2UI System Prompt - STRICT
+    const A2UI_SYSTEM_PROMPT = `
+You are Lumina, a helpful AI assistant.
+You have access to a special UI rendering protocol called A2UI.
+Instead of just text, you can render rich components by outputting a code block starting with \`\`\`a2ui.
 
-        // ... Reuse core logic or call handleSendMessage with fake event 
-        // For simplicity, we just call the core API/Logic here since handleSendMessage is tied to UI state 'input'
+A2UI COMPONENT SCHEMAS (Strict JSON):
+
+1. Quiz
+\`\`\`a2ui
+{ "component": "Quiz", "props": { "question": "Question text?", "options": ["Option A", "Option B", "Option C", "Option D"], "correctIndex": 0, "explanation": "Why correct...", "topic": "Topic Name", "difficulty": "easy" } }
+\`\`\`
+CONSTRAINT: Exactly 4 options. 'difficulty' must be "easy", "medium", or "hard".
+
+2. Flashcard
+\`\`\`a2ui
+{ "component": "Flashcard", "props": { "front": "Front text", "back": "Back text", "subject": "Subject Area" } }
+\`\`\`
+CONSTRAINT: Use a JSON Array \`[{...}, {...}]\` for multiple cards.
+
+3. Chart
+\`\`\`a2ui
+{ "component": "Chart", "props": { "type": "bar", "title": "Chart Title", "labels": ["Lab1", "Lab2"], "data": [10, 20], "datasetLabel": "Metric Name", "colors": ["#ff0000"] } }
+\`\`\`
+Valid types: "bar", "line", "pie", "doughnut".
+
+4. Timeline
+\`\`\`a2ui
+{ "component": "Timeline", "props": { "title": "Timeline Title", "events": [{ "date": "1990", "title": "Event", "description": "Details..." }] } }
+\`\`\`
+
+5. ComparisonTable
+\`\`\`a2ui
+{ "component": "ComparisonTable", "props": { "title": "Comparison Title", "headers": ["Feature", "Item A", "Item B"], "rows": [{ "feature": "Speed", "values": ["Fast", "Slow"] }] } }
+\`\`\`
+
+6. CodeBlock
+\`\`\`a2ui
+{ "component": "CodeBlock", "props": { "code": "print('hi')", "language": "python", "filename": "script.py", "explanation": "Code explanation..." } }
+\`\`\`
+
+7. Mermaid
+\`\`\`a2ui
+{ "component": "Mermaid", "props": { "chart": "graph TD; A-->B;", "title": "Diagram Title" } }
+\`\`\`
+
+IMPORTANT:
+- ONLY use the components listed above.
+- If you want to create a quiz with multiple questions, output multiple separate \`Quiz\` blocks.
+- If no component fits, just use standard Markdown text.
+`;
+
+    const getEnhancedContext = (textInput: string) => {
+        let enhanced = A2UI_SYSTEM_PROMPT;
+        const lower = textInput.toLowerCase();
         
-        try {
-            await processAIResponse(text, userMsg);
-        } catch (e) {
-            console.error(e);
-            setIsLoading(false);
+        if (lower.includes('quiz')) {
+            enhanced += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Quiz' component. ONE question only.]`;
+        } else if (lower.includes('flashcard')) {
+            enhanced += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Flashcard' component.]`;
+        } else if (lower.includes('compare') || lower.includes('vs')) {
+            enhanced += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'ComparisonTable' component.]`;
+        } else if (lower.includes('timeline')) {
+            enhanced += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Timeline' component.]`;
+        } else if (lower.includes('chart') || lower.includes('graph')) {
+            enhanced += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Chart' component.]`;
+        } else if (lower.includes('table')) {
+            enhanced += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Table' component.]`;
+        } else if (lower.includes('flow') || lower.includes('diagram')) {
+            enhanced += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Mermaid' component.]`;
         }
+        
+        return enhanced;
     };
 
-    // Core AI Logic extracted
     const processAIResponse = async (textInput: string, userMsg: any) => {
          try {
             let replyText = "";
             let source = "api";
-
-            // A2UI System Prompt
-            const a2uiPrompt = `You are Lumina, a helpful AI assistant.
-You have access to a special UI rendering protocol called A2UI.
-Instead of just text, you can render rich components by outputting a code block starting with \`\`\`a2ui.
-
-Supported Components:
-1. Quiz:
-\`\`\`a2ui
-{ "component": "Quiz", "props": { "question": "...", "options": ["Option A", "Option B", "Option C", "Option D"], "correctIndex": 0, "explanation": "..." } }
-\`\`\`
-CONSTRAINT: For 'Quiz', provide EXACTLY 4 options. Never more, never less.
-
-2. Flashcard:
-\`\`\`a2ui
-{ "component": "Flashcard", "props": { "front": "Term", "back": "Definition" } }
-\`\`\`
-
-3. CourseCard:
-\`\`\`a2ui
-{ "component": "CourseCard", "props": { "title": "...", "code": "...", "description": "..." } }
-\`\`\`
-
-4. YoutubeVideo:
-\`\`\`a2ui
-{ "component": "YoutubeVideo", "props": { "videoId": "...", "title": "..." } }
-\`\`\`
-
-5. CodeBlock (Use this for code snippets):
-\`\`\`a2ui
-{ "component": "CodeBlock", "props": { "code": "print('hello')", "language": "python", "filename": "hello.py" } }
-\`\`\`
-
-6. Timeline (Use this for history or sequences):
-\`\`\`a2ui
-{ "component": "Timeline", "props": { "events": [{ "date": "1991", "title": "Python Released", "description": "Guido van Rossum released Python 0.9.0" }] } }
-\`\`\`
-
-7. ComparisonTable (Use this to compare two things):
-\`\`\`a2ui
-{ "component": "ComparisonTable", "props": { "title": "TCP vs UDP", "headers": ["TCP", "UDP"], "rows": [{ "feature": "Reliability", "left": "High", "right": "Low" }] } }
-\`\`\`
-CONSTRAINT: For 'ComparisonTable', provide comprehensive details. Include at least 5-7 rows covering key differences like Performance, Usage, Syntax, Pros, and Cons.
-
-8. Chart (Use this for visualizing data):
-\`\`\`a2ui
-{ "component": "Chart", "props": { "type": "bar", "title": "Python Usage", "labels": ["2020", "2021", "2022"], "data": [40, 60, 80], "label": "Users (M)" } }
-\`\`\`
-
-9. Table (Use this for general data lists):
-\`\`\`a2ui
-{ "component": "Table", "props": { "title": "Top Presidents", "headers": ["Name", "Years"], "rows": [["George Washington", "1789-1797"], ["Abraham Lincoln", "1861-1865"]] } }
-\`\`\`
-
-Use these whenever valid to make learning interactive.
-
-10. Mermaid (Use this for flowcharts, sequence diagrams, class diagrams):
-\`\`\`a2ui
-{ "component": "Mermaid", "props": { "chart": "graph TD; A[Start] --> B{Is it working?}; B -- Yes --> C[Great!]; B -- No --> D[Debug];" } }
-\`\`\`
-
-IMPORTANT:
-- ONLY use the components listed above. DO NOT invent new components like "Question", "Answer", or "List".
-- If you want to create a quiz with multiple questions, output multiple separate \`Quiz\` blocks.
-- If you want to create multiple flashcards, output multiple separate \`Flashcard\` blocks.
-- If no component fits, just use standard Markdown text.`;
-
-            // FORCE A2UI usage for specific keywords
-            let finalUserContent = textInput;
-            const lowerInput = textInput.toLowerCase();
-            if (lowerInput.includes('quiz')) {
-                finalUserContent += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Quiz' component. IMPORTANT: Generate ONLY ONE question. Ensure 'options' is a list of exactly 4 clear distinct choices. Do NOT generate multiple questions in one response. Wait for the user to answer before generating the next one.]`;
-            } else if (lowerInput.includes('flashcard')) {
-                finalUserContent += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Flashcard' component. If the user asked for a specific number (e.g. '5 flashcards'), you MUST generate exactly that many separate Flashcard blocks.]`;
-            } else if (lowerInput.includes('compare') || lowerInput.includes('vs')) {
-                finalUserContent += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'ComparisonTable' component. Ensure the table is detailed (5+ rows) and comprehensive, covering all major differences.]`;
-            } else if (lowerInput.includes('timeline') || lowerInput.includes('history')) {
-                finalUserContent += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Timeline' component. Ensure dates are HISTORICALLY ACCURATE. Descriptions must be specific to that event, NOT generic repeated text.]`;
-            } else if (lowerInput.includes('chart') || lowerInput.includes('graph') || lowerInput.includes('progress')) {
-                finalUserContent += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Chart' component based on available data.]`;
-            } else if (lowerInput.includes('table') || lowerInput.includes('list')) {
-                finalUserContent += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Table' component.]`;
-            } else if (lowerInput.includes('flow') || lowerInput.includes('diagram') || lowerInput.includes('structure') || lowerInput.includes('process')) {
-                finalUserContent += `\n\n[SYSTEM: You MUST return a JSON \`\`\`a2ui block using the 'Mermaid' component to visualize this process/structure.]`;
-            }
+            const enhancedContext = getEnhancedContext(textInput) + `\n\nUser Context:\n${userContext}`;
 
             if (provider === 'chrome') {
-                 // Experimental Chrome AI (Gemini Nano)
-                 const ai = (window as any).ai; 
-                 
-                 if (!ai) {
-                     replyText = "⚠️ **Chrome AI Not Detected**\n\nTo use Google Edge mode, you need Chrome Canary/Dev/Beta with the 'Prompt API' enabled in `chrome://flags`.\n\n*Falling back to Standard Mode...*";
-                     // Optional: Auto-switch provider here if we have access to setProvider, 
-                     // but processAIResponse is outside component scope mostly or complicated.
-                     // Just returning text is safe.
+                 try {
+                     const ai = (window as any).ai; 
+                     if (!ai) throw new Error("Chrome AI Not Detected");
+                     const session = await ai.createTextSession(); 
+                     const systemPrompt = `You are Lumina Edge (Chrome Native).\n` + enhancedContext;
+                     const response = await session.prompt(systemPrompt + "\n\nUser: " + textInput);
+                     replyText = response;
+                     source = "chrome-nano";
+                     session.destroy();
+                 } catch (e) {
+                     console.warn("Chrome AI Interaction Failed", e);
+                     replyText = "⚠️ **Chrome AI Error**: Failed to generate response. Please try a different provider.";
                      source = "system";
-                 } else {
-                    try {
-                        const session = await ai.createTextSession(); // Or languageModel.create() depending on version
-                        const systemPrompt = `You are Lumina Edge (Chrome Native).\n` + a2uiPrompt + `\n\nUser Context:\n${userContext}`;
-                        const response = await session.prompt(systemPrompt + "\n\nUser: " + finalUserContent);
-                        
-                        replyText = response;
-                        source = "chrome-nano";
-                        session.destroy();
-                    } catch (e) {
-                        console.warn("Chrome AI Interaction Failed", e);
-                        replyText = "⚠️ **Chrome AI Error**: Failed to generate response. Please try a different provider.";
-                        source = "system";
-                    }
                  }
-
             } else if (provider === 'ollama') {
-                 // Local Backend (Ollama)
                  const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000';
-                 
-                 // Prepend context to message since we are bypassing standard RAG or augmenting it
-                 const fullMessage = `[User Context]\n${userContext}\n\n[Message]\n${finalUserContent}`;
+                 const fullMessage = `[User Context]\n${userContext}\n\n[Message]\n${textInput}\n\n${enhancedContext}`; // Injected prompt
 
                  try {
-                     const res = await fetch(`${apiBase}/api/tutor/chat`, { // [FIX] Correct endpoint
+                     const res = await fetch(`${apiBase}/api/tutor/chat`, {
                          method: 'POST',
                          headers: { 'Content-Type': 'application/json' },
                          body: JSON.stringify({ 
                              message: fullMessage, 
                              user_id: "current-user",
-                             session_id: currentSessionId, // [NEW] Pass Session ID
+                             session_id: currentSessionId, 
                              provider: 'ollama' 
                          })
                      });
@@ -413,37 +370,27 @@ IMPORTANT:
                  }
 
             } else if ((provider === 'lumina' || provider === 'local') && engine) {
+                const identityPrompt = provider === 'local' 
+                    ? `You are Lumina Edge, a private, on-device AI Tutor.` 
+                    : `You are Lumina, a helpful AI assistant.`;
                 
-                let identityPrompt = a2uiPrompt;
-                if (provider === 'local') {
-                    // PREPEND identity but KEEP rules
-                    identityPrompt = `You are Lumina Edge, a private, on-device AI Tutor.\n` + a2uiPrompt;
-                }
-
-                const systemPrompt = `${identityPrompt}\nUser Context:\n${userContext}`;
+                const systemPrompt = `${identityPrompt}\n${enhancedContext}`;
 
                 const completion = await engine.chat.completions.create({
                     messages: [
                         { role: "system", content: systemPrompt },
                         ...messages.map(m => ({
-                            role: (m.sender === 'me' ? 'user' : 'assistant') as "user" | "assistant" | "system",
+                            role: (m.sender === 'me' ? 'user' : 'assistant') as any,
                             content: m.text
                         })),
-                        { role: "user", content: finalUserContent }
+                        { role: "user", content: textInput }
                     ],
                     temperature: 0.7,
                 });
                 replyText = completion.choices[0].message.content || "";
                 source = "webllm";
             } else {
-                // Cloud / Gemini Router
-                let enhancedContext = `${a2uiPrompt}\n\n${userContext}`;
-                // Also inject system instruction for cloud if needed, though they are usually smarter
-                const lowerInput = textInput.toLowerCase();
-                if (lowerInput.includes('quiz') || lowerInput.includes('flashcard')) {
-                     enhancedContext += `\n\n[SYSTEM: If the user asks for a quiz or flashcard, strictly use the A2UI JSON protocol. Do not output plain text.]`;
-                }
-                
+                // Cloud Router
                 const result = await processMessage(textInput, enhancedContext);
                 replyText = result.text;
                 source = result.source;
@@ -457,23 +404,18 @@ IMPORTANT:
                 source: source
             };
 
-            // Generate Dynamic Suggestions based on response content
+            // Suggestions
             const newSuggestions: string[] = [];
-            const text = replyText.toLowerCase();
-            if (text.includes('python')) newSuggestions.push("Quiz me on Python");
-            if (text.includes('react') || text.includes('javascript')) newSuggestions.push("Explain React Hooks");
-            if (text.includes('database') || text.includes('sql')) newSuggestions.push("Create a SQL Flashcard");
-            
-            // Only update if we have new suggestions
-            if (newSuggestions.length > 0) {
-                 setDynamicSuggestions(newSuggestions);
-            }
+            const lowerText = replyText.toLowerCase();
+            if (lowerText.includes('python')) newSuggestions.push("Quiz me on Python");
+            if (lowerText.includes('react') || lowerText.includes('javascript')) newSuggestions.push("Explain React Hooks");
+            if (lowerText.includes('database') || lowerText.includes('sql')) newSuggestions.push("Create a SQL Flashcard");
+            if (newSuggestions.length > 0) setDynamicSuggestions(newSuggestions);
 
             setMessages(prev => [...prev, aiMsg]);
             updateSessionsState(currentSessionId, aiMsg);
 
             await api.saveChatMessage({ sender: 'AI Tutor', text: replyText, sessionId: currentSessionId });
-            // Only log if not hidden message
             if (!userMsg.isHidden) {
                 await api.logAIInteraction(userMsg.text, aiMsg.text);
             }
@@ -487,70 +429,74 @@ IMPORTANT:
         }
     };
 
+    const sendMessageInternal = useCallback(async (text: string, isHidden: boolean = false) => {
+        const userMsg = { sender: 'me', text: text, timestamp: new Date(), sessionId: currentSessionId, isHidden };
+        if (!isHidden) setMessages(prev => [...prev, userMsg]);
+        updateSessionsState(currentSessionId, userMsg);
+        setIsLoading(true);
+        await processAIResponse(text, userMsg);
+    }, [currentSessionId, userContext, provider, engine]);
+
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!input.trim()) return;
 
         const userMsg = { sender: 'me', text: input, timestamp: new Date(), sessionId: currentSessionId };
+        
+        // Detect Quiz Topic
+        const quizMatch = input.match(/(?:quiz|test|exam) (?:me )?(?:on|about|for) ([\w\s]+)/i);
+        if (quizMatch) {
+            currentTopicRef.current = quizMatch[1].trim();
+            usedQuestionsRef.current.clear();
+        }
+
         setMessages(prev => [...prev, userMsg]);
         updateSessionsState(currentSessionId, userMsg);
         setInput('');
         setIsLoading(true);
 
         await api.saveChatMessage({ sender: 'me', text: userMsg.text, sessionId: currentSessionId });
-
         await processAIResponse(input, userMsg);
     };
 
-    // Track used questions to prevent repeats
-    const usedQuestionsRef = useRef<Set<string>>(new Set());
-    // Clear used questions when session or topic changes (optional, for now just clear on hard reset)
-    // We could add logic to detect topic change, but relying on unique set is robust enough for a session.
-
-    const handleAction = async (action: string, data: any) => {
-        console.log("Action Triggered:", action, data);
+    const handleAction = useCallback(async (action: string, data: any) => {
         if (action === 'quiz_answer') {
-            // Store this question to avoid repetition
-            if (data.question) {
-                usedQuestionsRef.current.add(data.question);
-            }
+            if (data.question) usedQuestionsRef.current.add(data.question);
 
-            try {
-                // 1. Log to Backend
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000'}/api/assessment/quick-log`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: "current-user", 
-                        topic: "General", 
-                        is_correct: data.isCorrect
-                    })
-                });
-                if (response.ok) {
-                    console.log("Mastery Updated");
+            setStudentStats(prev => {
+                const matchedTopic = currentTopicRef.current || "General";
+                const newScores = { ...prev.moduleScores };
+                if (data.isCorrect) {
+                     newScores[matchedTopic] = Math.min(100, (newScores[matchedTopic] || 50) + 5);
+                } else {
+                     newScores[matchedTopic] = Math.max(0, (newScores[matchedTopic] || 50) - 3);
                 }
-            } catch (e) {
-                console.error("Failed to log answer", e);
-            }
-        } else if (action === 'quiz_next') {
-            // Trigger AI to generate next question
-            const usedList = Array.from(usedQuestionsRef.current).slice(-10); // Check last 10
-            const avoidContext = usedList.length > 0 
-                ? `\n\n[SYSTEM CONSTRAINT: You are STRICTLY FORBIDDEN from asking any of the following questions again:\n${JSON.stringify(usedList)}.\nGenerate a NEW, UNIQUE question on a similar but DISTINCT sub-topic.]` 
-                : "";
-            
-            // Add randomness to prompt to prevent caching
-            const randomSeed = Math.floor(Math.random() * 10000);
+                const scores = Object.values(newScores);
+                const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+                return { ...prev, moduleScores: newScores, averageScore: avg };
+            });
 
+            api.saveQuizResult({
+                user_id: "current_student", // In real app, fetch from auth context
+                topic: data.topic || currentTopicRef.current || "General",
+                score: data.isCorrect ? 100 : 0,
+                total_questions: 1,
+                correct_count: data.isCorrect ? 1 : 0,
+                difficulty: data.difficulty || "medium",
+                details: { question: data.question }
+            }).catch(console.error);
+
+        } else if (action === 'quiz_next') {
+            const usedList = Array.from(usedQuestionsRef.current).slice(-10);
+            const avoidContext = usedList.length > 0 ? `\n\n[SYSTEM CONSTRAINT: DO NOT repeat: ${JSON.stringify(usedList)}.]` : "";
             await sendMessageInternal(
-                `Generate the next multiple-choice question. ${avoidContext}\n\nEnsure variety in difficulty and concept coverage. (Request ID: ${randomSeed})`, 
+                `Generate the next multiple-choice question on ${currentTopicRef.current || 'General'}. Use the 'Quiz' component. ${avoidContext}\n\nSTRICT: Respond ONLY with the A2UI JSON code block. No conversational filler.`, 
                 true
             );
         } else if (action === 'quiz_end') {
-            // Trigger AI to show summary
             await sendMessageInternal("I'm done with the quiz. Show me my updated Progress Chart.", false);
         }
-    };
+    }, [sendMessageInternal]);
 
     const addToNotes = async (text: string) => {
         await api.saveNote(text);
@@ -567,47 +513,51 @@ IMPORTANT:
 
     return (
         <div className="flex h-[calc(100vh-6rem)] gap-6">
-            {/* Sidebar - History */}
-            {isSidebarOpen && (
-                <div className="w-80 glass-card flex flex-col hidden lg:flex">
-                    <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                        <h2 className="text-white font-semibold flex items-center gap-2">
-                            <History className="w-5 h-5 text-lumina-primary" />
-                            Chat History
-                        </h2>
-                        <button suppressHydrationWarning onClick={startNewChat} className="p-1.5 hover:bg-white/10 rounded-lg text-lumina-primary transition-colors" title="New Chat">
+            {/* Sidebar */}
+            <div className={`
+                ${isSidebarOpen ? 'w-80 translate-x-0' : 'w-0 -translate-x-full opacity-0 pointer-events-none'} 
+                glass-card flex flex-col transition-all duration-300 ease-in-out absolute lg:relative z-20 h-full bg-[#0a0a0f]/95 backdrop-blur-xl lg:bg-transparent
+            `}>
+                <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                    <h2 className="text-white font-semibold flex items-center gap-2">
+                        <History className="w-5 h-5 text-lumina-primary" />
+                        Chat History
+                    </h2>
+                    <div className="flex gap-2">
+                        <button onClick={startNewChat} className="p-1.5 hover:bg-white/10 rounded-lg text-lumina-primary transition-colors" title="New Chat" aria-label="New Chat">
                             <Plus className="w-5 h-5" />
                         </button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                        <div className="space-y-2">
-                            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Previous Chats</p>
-                            {Object.entries(sessions).reverse().map(([sId, msgs]) => {
-                                if (msgs.length === 0) return null;
-                                const firstMsg = msgs[0];
-                                const lastMsg = msgs[msgs.length - 1];
-                                const isActive = sId === currentSessionId;
-                                return (
-                                    <div
-                                        key={sId}
-                                        onClick={() => switchSession(sId)}
-                                        className={`p-3 rounded-xl cursor-pointer border transition-all group ${isActive ? 'bg-white/10 border-lumina-primary/30' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
-                                    >
-                                        <p className="text-sm text-gray-300 line-clamp-1 font-medium">{firstMsg.text}</p>
-                                        <div className="flex justify-between items-center mt-2">
-                                            <span className="text-[10px] text-gray-500">{new Date(lastMsg.timestamp).toLocaleDateString()}</span>
-                                            <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-gray-400">{msgs.length} msgs</span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-1.5 hover:bg-white/10 rounded-lg text-gray-400" aria-label="Close Sidebar">
+                            <SidebarClose className="w-5 h-5" />
+                        </button>
                     </div>
                 </div>
-            )}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div className="space-y-2">
+                        <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Previous Chats</p>
+                        {Object.entries(sessions).reverse().map(([sId, msgs]) => {
+                            if (msgs.length === 0) return null;
+                            const isActive = sId === currentSessionId;
+                            return (
+                                <div
+                                    key={sId}
+                                    onClick={() => switchSession(sId)}
+                                    className={`p-3 rounded-xl cursor-pointer border transition-all ${isActive ? 'bg-white/10 border-lumina-primary/30' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
+                                >
+                                    <p className="text-sm text-gray-300 line-clamp-1 font-medium">{msgs[0].text}</p>
+                                    <div className="flex justify-between items-center mt-2">
+                                        <span className="text-[10px] text-gray-500">{new Date(msgs[msgs.length - 1].timestamp).toLocaleDateString()}</span>
+                                        <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-gray-400">{msgs.length} msgs</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
 
             {/* Main Chat Area */}
-            <div className="flex-1 glass-card flex flex-col relative overflow-hidden">
+            <div className="flex-1 glass-card flex flex-col relative overflow-hidden min-w-0">
                 {/* Header */}
                 <div className="p-4 border-b border-white/10 flex items-center justify-between bg-black/20">
                     <div className="flex items-center gap-3">
@@ -615,39 +565,34 @@ IMPORTANT:
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                             className="p-2 hover:bg-white/10 rounded-lg text-gray-400 transition-colors mr-1"
                             title={isSidebarOpen ? "Maximize Chat" : "Show History"}
+                            aria-label="Toggle Sidebar"
                         >
-                            {isSidebarOpen ? <SidebarClose className="w-5 h-5"/> : <SidebarOpen className="w-5 h-5"/>}
+                            {isSidebarOpen ? <SidebarClose className="w-5 h-5"/> : <Menu className="w-5 h-5"/>}
                         </button>
 
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-lumina-primary to-purple-600 flex items-center justify-center shadow-lg shadow-lumina-primary/20">
                             <Bot className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-white font-bold">Lumina AI Tutor</h1>
+                            <h1 className="text-white font-bold text-sm md:text-base">Lumina AI Tutor</h1>
                             <div className="flex items-center gap-1.5">
                                 <span className={`w-2 h-2 rounded-full animate-pulse ${isLoading ? 'bg-amber-500' : 'bg-green-500'}`}></span>
-                                <span className="text-xs text-gray-400">
+                                <span className="text-[10px] md:text-xs text-gray-400">
                                     {isLoading ? 'Thinking...' : `Online (${getProviderName(provider)})`}
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center bg-white/5 rounded-lg p-1 border border-white/10">
-                        <button suppressHydrationWarning onClick={() => setProvider('lumina')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${provider === 'lumina' ? 'bg-lumina-primary text-black' : 'text-gray-400 hover:text-white'}`}>
+                    <div className="flex items-center bg-white/5 rounded-lg p-1 border border-white/10 overflow-x-auto scrollbar-hide max-w-[50%] md:max-w-none">
+                        <button onClick={() => setProvider('lumina')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${provider === 'lumina' ? 'bg-lumina-primary text-black' : 'text-gray-400 hover:text-white'}`}>
                             <Sparkles className="w-3.5 h-3.5" /> <span className="hidden md:inline">Lumina Fast</span>
                         </button>
-                        <button suppressHydrationWarning onClick={() => setProvider('gemini')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${provider === 'gemini' ? 'bg-blue-500 text-white' : 'text-gray-400 hover:text-white'}`}>
+                        <button onClick={() => setProvider('gemini')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${provider === 'gemini' ? 'bg-blue-500 text-white' : 'text-gray-400 hover:text-white'}`}>
                             <Cloud className="w-3.5 h-3.5" /> <span className="hidden md:inline">Pro</span>
                         </button>
-                        <button suppressHydrationWarning onClick={() => setProvider('ollama')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${provider === 'ollama' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+                        <button onClick={() => setProvider('ollama')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${provider === 'ollama' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>
                             <Cpu className="w-3.5 h-3.5" /> <span className="hidden md:inline">Ollama</span>
-                        </button>
-                        <button suppressHydrationWarning onClick={() => setProvider('local')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${provider === 'local' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
-                            <Cpu className="w-3.5 h-3.5" /> <span className="hidden md:inline">Lumina Edge</span>
-                        </button>
-                         <button suppressHydrationWarning onClick={() => setProvider('chrome')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${provider === 'chrome' ? 'bg-yellow-600 text-white' : 'text-gray-400 hover:text-white'}`}>
-                            <Globe className="w-3.5 h-3.5" /> <span className="hidden md:inline">Google Edge</span>
                         </button>
                     </div>
                 </div>
@@ -656,7 +601,7 @@ IMPORTANT:
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
                     {messages.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-50">
-                            <Sparkles className="w-16 h-16 text-lumina-primary mb-4" />
+                            <Sparkles className="w-16 h-16 text-lumina-primary mb-4 animate-pulse" />
                             <h3 className="text-xl font-bold text-white mb-2">How can I help you learn?</h3>
                             <p className="text-sm text-gray-400">Current Mode: {getProviderName(provider)}</p>
                         </div>
@@ -666,37 +611,54 @@ IMPORTANT:
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.sender === 'me' ? 'bg-gray-700' : 'bg-lumina-primary/20 text-lumina-primary'}`}>
                                     {msg.sender === 'me' ? <User className="w-5 h-5 text-gray-300" /> : <Bot className="w-5 h-5" />}
                                 </div>
-                                <div className={`flex flex-col ${msg.sender === 'me' ? 'items-end' : 'items-start'} max-w-[80%]`}>
-                                    <div className={`p-4 rounded-2xl relative group ${msg.sender === 'me' ? 'bg-lumina-primary text-black rounded-tr-none' : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'}`}>
+                                <div className={`flex flex-col ${msg.sender === 'me' ? 'items-end' : 'items-start'} max-w-[85%] md:max-w-[75%]`}>
+                                    <div className={`p-4 rounded-2xl relative group ${msg.sender === 'me' ? 'bg-lumina-primary text-black rounded-tr-none shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'}`}>
                                         <A2UIRenderer content={msg.text} onAction={handleAction} />
                                         
                                         {msg.sender !== 'me' && (
                                             <div className="absolute -bottom-8 left-0 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => addToNotes(msg.text)} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 border border-white/10 rounded-full text-xs text-gray-400 hover:text-white">
+                                                <button onClick={() => addToNotes(msg.text)} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 border border-white/10 rounded-full text-xs text-gray-400 hover:text-white transition-colors" aria-label="Add to Notes">
                                                     <FileText className="w-3 h-3" /> Add to Notes
                                                 </button>
-                                                <button onClick={() => navigator.clipboard.writeText(msg.text)} className="p-1.5 bg-gray-800 border border-white/10 rounded-full text-gray-400 hover:text-white">
+                                                <button onClick={() => navigator.clipboard.writeText(msg.text)} className="p-1.5 bg-gray-800 border border-white/10 rounded-full text-gray-400 hover:text-white transition-colors" aria-label="Copy to Clipboard">
                                                     <Copy className="w-3 h-3" />
                                                 </button>
                                             </div>
                                         )}
                                     </div>
+                                    <span className="text-[10px] text-gray-600 mt-1 px-1">
+                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        {msg.source && ` • ${msg.source}`}
+                                    </span>
                                 </div>
                             </div>
                         ))
+                    )}
+                    
+                    {isLoading && (
+                        <div className="flex items-start gap-4">
+                             <div className="w-8 h-8 rounded-full bg-lumina-primary/20 text-lumina-primary flex items-center justify-center shrink-0">
+                                <Bot className="w-5 h-5" />
+                            </div>
+                            <div className="flex flex-col items-start bg-white/5 rounded-2xl p-4 rounded-tl-none border border-white/5">
+                                <div className="flex items-center gap-2">
+                                    <Loader2 className="w-4 h-4 text-lumina-primary animate-spin" />
+                                    <span className="text-sm text-gray-400">Thinking...</span>
+                                </div>
+                            </div>
+                        </div>
                     )}
                     <div ref={messagesEndRef} />
                 </div>
 
                 {/* Input Area + Suggestions */}
-                <div className="p-4 bg-black/20 border-t border-white/10 flex flex-col gap-3">
-                     
+                <div className="p-4 bg-black/20 border-t border-white/10 flex flex-col gap-3 relative z-10 backdrop-blur-md">
                     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                         {(dynamicSuggestions.length > 0 ? dynamicSuggestions : CAPABILITY_TAGS).map((s, i) => (
                             <button 
                                 key={i} 
                                 onClick={() => setInput(s)} 
-                                className="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300 hover:bg-white/10 hover:border-lumina-primary/50 transition-all shadow-sm"
+                                className="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300 hover:bg-white/10 hover:border-lumina-primary/50 transition-all shadow-sm active:scale-95"
                             >
                                 {s}
                             </button>
@@ -706,16 +668,23 @@ IMPORTANT:
                     <form onSubmit={handleSendMessage} className="relative">
                         <input
                             type="text"
-                            suppressHydrationWarning
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Start a conversation..."
-                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3.5 text-white placeholder:text-gray-500 focus:border-lumina-primary focus:bg-white/10 outline-none transition-all"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendMessage();
+                                }
+                            }}
+                            placeholder="Ask me anything about your courses..."
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3.5 text-white placeholder:text-gray-500 focus:border-lumina-primary focus:bg-white/10 outline-none transition-all focus:shadow-[0_0_15px_rgba(34,197,94,0.1)]"
+                            aria-label="Chat Input"
                         />
                         <button
                             type="submit"
                             disabled={!input.trim() || isLoading}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-lumina-primary text-black rounded-lg hover:bg-lumina-secondary disabled:opacity-50"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-lumina-primary text-black rounded-lg hover:bg-lumina-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
+                            aria-label="Send Message"
                         >
                             <Send className="w-4 h-4" />
                         </button>

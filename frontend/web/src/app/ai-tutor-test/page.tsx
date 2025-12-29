@@ -7,7 +7,7 @@ import { clearHistory } from '@/lib/ai-tutor/cache';
 interface Message {
     role: 'user' | 'model';
     text: string;
-    source?: 'cache' | 'api' | 'rule';
+    source?: 'cache' | 'api' | 'rule' | 'fallback';
 }
 
 export default function AITutorTestPage() {
@@ -110,7 +110,8 @@ export default function AITutorTestPage() {
                                     {m.source && (
                                         <div className="mt-1 text-[10px] uppercase tracking-wider opacity-50 flex items-center gap-1">
                                             <span className={`w-2 h-2 rounded-full ${m.source === 'cache' ? 'bg-green-400' :
-                                                m.source === 'api' ? 'bg-purple-400' : 'bg-yellow-400'
+                                                m.source === 'api' ? 'bg-purple-400' : 
+                                                m.source === 'fallback' ? 'bg-red-400' : 'bg-yellow-400'
                                                 }`}></span>
                                             {m.source}
                                         </div>

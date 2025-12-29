@@ -423,6 +423,23 @@ class RealAPI {
         return await logAIInteraction(user.email, prompt, response);
     }
 
+    async saveQuizResult(data: { user_id: string; topic: string; score: number; total_questions: number; correct_count: number; difficulty: string; details?: any }): Promise<any> {
+        const user = await this.getCurrentUser();
+        if (!user) return { success: false };
+        try {
+            const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000';
+            const res = await fetch(`${apiBase}/api/student/quiz-result`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            return await res.json();
+        } catch (e) {
+            console.error("Failed to save quiz result", e);
+            return { success: false, error: e };
+        }
+    }
+
     async deleteAILog(logId: string): Promise<any> {
         const user = await this.getCurrentUser();
         if (!user || user.role !== 'admin') return { success: false };

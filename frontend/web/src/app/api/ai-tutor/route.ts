@@ -11,8 +11,7 @@ export async function POST(req: NextRequest) {
             console.error("GEMINI_API_KEY is missing in environment variables");
             return NextResponse.json({ error: 'Server Authorization Error: Missing API Key' }, { status: 500 });
         }
-        console.log("API Key loaded:", apiKey.substring(0, 5) + "...");
-
+        
         const genAI = new GoogleGenerativeAI(apiKey);
         const { question, userContext } = await req.json();
 
@@ -21,44 +20,71 @@ export async function POST(req: NextRequest) {
         }
 
         // 1. Retrieve Context (RAG)
-        console.log("Step 1: Retrieve Context");
         const ragContext = await retrieveContext(question);
-        console.log("Context retrieved:", ragContext ? "Yes" : "No");
 
-        // 2. Construct System Instructions
+        // 2. Construct System Instructions - STRICT A2UI COMPLIANCE
         const systemInstruction = `You are Lumina, a helpful AI tutor.
 You have access to a special UI rendering protocol called A2UI.
 Instead of just text, you can render rich interactive components by outputting a code block starting with \`\`\`a2ui.
 
-### A2UI COMPONENTS & SCHEMAS:
+Supported Components:
 1. Quiz:
 \`\`\`a2ui
-{ 
-  "component": "Quiz", 
-  "props": { 
-    "question": "The question text", 
-    "options": ["Option A", "Option B", "Option C", "Option D"], 
-    "correctIndex": 0, 
-    "explanation": "Brief explanation" 
-  } 
-}
+{ "component": "Quiz", "props": { "question": "...", "options": ["Option A", "Option B", "Option C", "Option D"], "correctIndex": 0, "explanation": "..." } }
 \`\`\`
-CRITICAL: THE "options" ARRAY IS MANDATORY AND MUST HAVE EXACTLY 4 STRINGS.
+CONSTRAINT: For 'Quiz', provide EXACTLY 4 options. Never more, never less.
 
 2. Flashcard:
 \`\`\`a2ui
 { "component": "Flashcard", "props": { "front": "Term", "back": "Definition" } }
 \`\`\`
 
-3. ComparisonTable:
+3. CourseCard:
 \`\`\`a2ui
-{ "component": "ComparisonTable", "props": { "title": "Topic", "headers": ["Col 1", "Col 2"], "rows": [{ "feature": "F1", "left": "val1", "right": "val2" }] } }
+{ "component": "CourseCard", "props": { "title": "...", "code": "...", "description": "..." } }
 \`\`\`
 
-### RULES:
-- Use these components to make learning interactive.
-- ALWAYS provide the 'options' property for a Quiz.
-- Keep standard text answers concise.`;
+4. YoutubeVideo:
+\`\`\`a2ui
+{ "component": "YoutubeVideo", "props": { "videoId": "...", "title": "..." } }
+\`\`\`
+
+5. CodeBlock:
+\`\`\`a2ui
+{ "component": "CodeBlock", "props": { "code": "print('hello')", "language": "python", "filename": "hello.py" } }
+\`\`\`
+
+6. Timeline:
+\`\`\`a2ui
+{ "component": "Timeline", "props": { "events": [{ "date": "1991", "title": "Python Released", "description": "Guido van Rossum released Python 0.9.0" }] } }
+\`\`\`
+
+7. ComparisonTable:
+\`\`\`a2ui
+{ "component": "ComparisonTable", "props": { "title": "TCP vs UDP", "headers": ["TCP", "UDP"], "rows": [{ "feature": "Reliability", "left": "High", "right": "Low" }] } }
+\`\`\`
+
+8. Chart:
+\`\`\`a2ui
+{ "component": "Chart", "props": { "type": "bar", "title": "Python Usage", "labels": ["2020", "2021", "2022"], "data": [40, 60, 80], "label": "Users (M)" } }
+\`\`\`
+
+9. Table:
+\`\`\`a2ui
+{ "component": "Table", "props": { "title": "Top Presidents", "headers": ["Name", "Years"], "rows": [["George Washington", "1789-1797"], ["Abraham Lincoln", "1861-1865"]] } }
+\`\`\`
+
+10. Mermaid:
+\`\`\`a2ui
+{ "component": "Mermaid", "props": { "chart": "graph TD; A[Start] --> B{Is it working?}; B -- Yes --> C[Great!]; B -- No --> D[Debug];" } }
+\`\`\`
+
+IMPORTANT:
+- ONLY use the components listed above.
+- If you want to create a quiz with multiple questions, output multiple separate \`Quiz\` blocks.
+- If no component fits, just use standard Markdown text.
+- If asked about progress, scores, or attendance, use the 'Chart' component to visualize the data provided in the User Context.
+`;
 
         const userContextString = userContext ? `\nUser Context:\n${userContext}` : "";
         const ragContextString = ragContext ? `\nKnowledge Context:\n${ragContext}` : "";
@@ -66,14 +92,12 @@ CRITICAL: THE "options" ARRAY IS MANDATORY AND MUST HAVE EXACTLY 4 STRINGS.
         const finalUserPrompt = `${userContextString}${ragContextString}\n\nStudent Request: ${question}`;
 
         // 3. Call Gemini Flash with System Instructions
-        console.log("Step 3: Call Gemini with System Instructions");
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-flash-latest",
+            model: "gemini-flash-latest", 
             systemInstruction: systemInstruction 
         });
         
         const result = await model.generateContent(finalUserPrompt);
-        console.log("Step 4: Response received");
         const answer = result.response.text();
 
         return NextResponse.json({ answer });

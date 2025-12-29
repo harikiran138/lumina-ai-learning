@@ -1,0 +1,23 @@
+{
+    "current_student": {
+        "progress": {
+            "completed_modules": [],
+            "current_score": 0.0
+        },
+        "notes": [],
+        "quiz_history": [
+            {
+                "user_id": "current_student",
+                "topic": "Python Data Structures",
+                "score": 0.0,
+                "total_questions": 1,
+                "correct_count": 0,
+                "difficulty": "medium",
+                "details": {
+                    "question": "What is the primary difference between a list and a tuple in Python?"
+                },
+                "timestamp": "2025-12-29T06:42:44.263880"
+            }
+        ]
+    }
+}

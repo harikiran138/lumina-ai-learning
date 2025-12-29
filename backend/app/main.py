@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import ai, handwriting_simple as handwriting, assignments
@@ -59,6 +62,9 @@ app.include_router(assessment_router, prefix="/api/assessment", tags=["Assessmen
 
 from routers import hybrid
 app.include_router(hybrid.router, prefix="/api/ai", tags=["Hybrid AI"])
+
+from routers import student
+app.include_router(student.router, prefix="/api/student", tags=["Student Data"])
 
 @app.get("/")
 def read_root():
