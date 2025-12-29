@@ -180,6 +180,15 @@ async def tutor_chat(request: TutorChatRequest):
     Supports provider switching (gemini vs ollama).
     Includes [NEW] Deduplication Logic.
     """
+    import re
+    # 0. Fast Path (Rule-based)
+    if re.match(r"^(hello|hi|greetings|hey)\b", request.message.lower().strip()):
+        return {
+            "response": "Hello! I am Lumina, your AI Tutor. How can I help you master a new topic today?",
+            "context_used": [],
+            "personalization": {"behavior": "friendly", "recommendation": "explore"}
+        }
+
     try:
         # Dynamic LLM Provider selection
         llm_instance = get_llm_provider(request.provider)
@@ -232,6 +241,11 @@ async def tutor_chat(request: TutorChatRequest):
 
         # 4. Construct Prompt with Personalization
         
+        # [NEW] Fetch Real User Data
+        from store.user_data_store import UserDataStore
+        user_ds = UserDataStore()
+        profile_str = user_ds.get_full_profile_string(request.user_id)
+
         system_prompt = (
             "You are a helpful and safe AI Tutor for the Lumina Learning Platform. \n"
             "Your Goal: Use the provided Context and Course List to answer the user's question accurately.\n"
@@ -246,6 +260,7 @@ async def tutor_chat(request: TutorChatRequest):
             f"Adapt your response to the learner's profile:\n"
             f"- Behavior: {behavior} (If 'frustrated', be encouraging. If 'focused', be concise).\n"
             f"- Pathway Recommendation: {recommendation} (If 'review', emphasize basics. If 'advance', challenge them).\n"
+            f"\n{profile_str}\n"  # Inject Profile
             "If the answer is not in the context, use your general knowledge but mention that it's outside the course material.\n"
             f"{A2UI_SYSTEM_PROMPT}\n" # [NEW] Inject Schema
             f"{avoid_instruction}"     # [NEW] Inject Deduplication (from Pathway)
@@ -259,6 +274,27 @@ async def tutor_chat(request: TutorChatRequest):
         """
         
         # 5. Generate Answer
+        
+        # [DEBUG] Log Context to File for Validation
+        try:
+            import json
+            from datetime import datetime
+            log_entry = {
+                "timestamp": datetime.now().isoformat(),
+                "session_id": request.session_id,
+                "message": request.message,
+                "constraints": constraints,
+                "behavior": behavior,
+                "rag_context_length": len(context_str),
+                "system_prompt": system_prompt,
+                "user_prompt": user_prompt
+            }
+            os.makedirs("data", exist_ok=True)
+            with open("data/context_injection_log.jsonl", "a") as f:
+                f.write(json.dumps(log_entry) + "\n")
+        except Exception as log_err:
+            print(f"Logging Error: {log_err}")
+
         response = await llm_instance.agenerate(user_prompt, system_prompt)
         
         # 6. [NEW] Log Interaction to Pathway Memory
