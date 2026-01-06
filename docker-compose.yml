@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # --- Database Services ---
   db:
     image: postgres:16-alpine
     restart: always
@@ -12,12 +13,28 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lumina -d lumina_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     restart: always
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   mongo:
     image: mongo:latest
@@ -26,7 +43,10 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    networks:
+      - app-network
 
+  # --- Application Services ---
   backend:
     build: 
       context: ./backend
@@ -34,25 +54,43 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./backend:/app
+      - chroma_data:/app/db/chroma # Persist ChromaDB
     ports:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://lumina:lumina_password@db:5432/lumina_db
       - REDIS_URL=redis://redis:6379/0
+      - MONGO_URL=mongodb://mongo:27017
+      - CHROMA_DB_PATH=/app/db/chroma
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_started
+    networks:
+      - app-network
 
   frontend:
     build:
       context: ./frontend/web
+      dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "8001:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
       - backend
+    networks:
+      - app-network
 
 volumes:
   postgres_data:
   mongo_data:
+  redis_data:
+  chroma_data:
+
+networks:
+  app-network:
+    driver: bridge

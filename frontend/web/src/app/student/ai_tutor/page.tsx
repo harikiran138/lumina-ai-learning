@@ -361,7 +361,8 @@ IMPORTANT:
                             downloadUrl: data.download_url,
                             filename: data.filename,
                             fileSize: data.file_size,
-                            slideTitles: data.slide_titles
+                            slideTitles: data.slide_titles,
+                            slideData: data.content_structure
                         }
                     })}\n\`\`\``;
                     

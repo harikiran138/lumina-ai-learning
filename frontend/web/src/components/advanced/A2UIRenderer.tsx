@@ -114,6 +114,14 @@ const PPTDownloadSchema = z.object({
   filename: z.string(),
   fileSize: z.string().optional(),
   slideTitles: z.array(z.string()).optional(),
+  slideData: z.object({
+    title: z.string(),
+    subtitle: z.string().optional(),
+    slides: z.array(z.object({
+      title: z.string(),
+      bullets: z.array(z.string())
+    }))
+  }).optional()
 });
 
 const ScoreCardSchema = z.object({
@@ -681,16 +689,24 @@ const TableComponent = ({ title, headers, rows }: z.infer<typeof TableSchema>) =
     );
 };
 
-const PPTDownloadComponent = ({ topic, slideCount, downloadUrl, filename, fileSize, slideTitles }: z.infer<typeof PPTDownloadSchema>) => {
+const PPTDownloadComponent = ({ topic, slideCount, downloadUrl, filename, fileSize, slideData }: z.infer<typeof PPTDownloadSchema>) => {
     const [isDownloading, setIsDownloading] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
+    const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     
+    // Combine title slide + content slides for carousel
+    type Slide = { title: string; bullets: string[]; isTitleSlide?: boolean };
+    
+    const allSlides: Slide[] = slideData ? [
+        { title: slideData.title, bullets: [slideData.subtitle || ''] as string[], isTitleSlide: true },
+        ...slideData.slides.map(s => ({ ...s, isTitleSlide: false }))
+    ] : [];
+
     const handleDownload = async () => {
         setIsDownloading(true);
         try {
             const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000';
             const fullUrl = `${apiBase}${downloadUrl}`;
-            
-            // Create a temporary link and trigger download
             const link = document.createElement('a');
             link.href = fullUrl;
             link.download = filename;
@@ -708,70 +724,109 @@ const PPTDownloadComponent = ({ topic, slideCount, downloadUrl, filename, fileSi
         <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="my-6 p-6 bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-2xl border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.3)] overflow-hidden relative"
+            className="my-6 p-1 bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-2xl border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.3)] overflow-hidden relative"
         >
-            {/* Background Glow */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-lumina-primary/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
             
-            {/* Header */}
-            <div className="flex items-center gap-4 mb-4 relative z-10">
-                <div className="w-16 h-16 rounded-xl bg-lumina-primary/20 flex items-center justify-center shrink-0">
-                    <FileText className="w-8 h-8 text-lumina-primary" />
+            <div className="p-6">
+                <div className="flex items-center gap-4 mb-4 relative z-10">
+                    <div className="w-16 h-16 rounded-xl bg-lumina-primary/20 flex items-center justify-center shrink-0">
+                        <FileText className="w-8 h-8 text-lumina-primary" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-xl font-bold text-white mb-1">📊 Presentation Ready</h3>
+                        <p className="text-gray-400 text-sm">{topic}</p>
+                    </div>
                 </div>
-                <div className="flex-1">
-                    <h3 className="text-xl font-bold text-white mb-1">📊 Presentation Ready</h3>
-                    <p className="text-gray-400 text-sm">{topic}</p>
+                
+                <div className="flex gap-4 mb-4 relative z-10">
+                    <Badge className="bg-white/10 text-gray-300 border-white/20">📄 {slideCount} slides</Badge>
+                    {fileSize && <Badge className="bg-white/10 text-gray-300 border-white/20">💾 {fileSize}</Badge>}
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex gap-3 relative z-10">
+                    <button
+                        onClick={handleDownload}
+                        disabled={isDownloading}
+                        className="flex-1 py-3 bg-lumina-primary text-black font-bold rounded-xl hover:bg-lumina-secondary transition-all flex items-center justify-center gap-2 group"
+                    >
+                        {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                        {isDownloading ? 'Downloading...' : 'Download PPT'}
+                    </button>
+                    
+                    {slideData && (
+                        <button
+                            onClick={() => setShowPreview(!showPreview)}
+                            className="flex-1 py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-all flex items-center justify-center gap-2 border border-white/10"
+                        >
+                            <PlayCircle className="w-4 h-4" />
+                            {showPreview ? 'Hide Slides' : 'View Slides'}
+                        </button>
+                    )}
                 </div>
             </div>
-            
-            {/* Metadata */}
-            <div className="flex gap-4 mb-4 relative z-10">
-                <Badge className="bg-white/10 text-gray-300 border-white/20">
-                    📄 {slideCount} slides
-                </Badge>
-                {fileSize && (
-                    <Badge className="bg-white/10 text-gray-300 border-white/20">
-                        💾 {fileSize}
-                    </Badge>
+
+            {/* Slide Preview Carousel */}
+            <AnimatePresence>
+                {showPreview && allSlides.length > 0 && (
+                    <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="border-t border-white/10 bg-black/20 overflow-hidden"
+                    >
+                        <div className="p-4">
+                            <div className="bg-white rounded-xl aspect-[16/9] w-full relative overflow-hidden shadow-2xl flex flex-col">
+                                {/* Slide Header */}
+                                <div className={`p-4 border-b-4 ${allSlides[currentSlideIndex].isTitleSlide ? 'bg-lumina-primary h-full flex flex-col justify-center items-center text-center border-none' : 'bg-white border-lumina-primary'}`}>
+                                    <h2 className={`${allSlides[currentSlideIndex].isTitleSlide ? 'text-4xl text-white' : 'text-2xl text-black'} font-bold`}>
+                                        {allSlides[currentSlideIndex].title}
+                                    </h2>
+                                    {allSlides[currentSlideIndex].isTitleSlide && (
+                                        <p className="text-xl text-white/90 mt-4">{allSlides[currentSlideIndex].bullets[0]}</p>
+                                    )}
+                                </div>
+
+                                {/* Slide Content (Non-Title) */}
+                                {!allSlides[currentSlideIndex].isTitleSlide && (
+                                    <div className="p-8 flex-1 bg-gray-50">
+                                        <ul className="space-y-4">
+                                            {allSlides[currentSlideIndex].bullets.map((bullet, i) => (
+                                                <li key={i} className="flex items-start gap-3 text-lg text-gray-800">
+                                                    <span className="w-2 h-2 rounded-full bg-lumina-primary mt-2.5 shrink-0" />
+                                                    {bullet}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                
+                                {/* Slide Footer / Controls */}
+                                <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-between items-center bg-gradient-to-t from-black/50 to-transparent pointer-events-none">
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1)); }}
+                                        disabled={currentSlideIndex === 0}
+                                        className="pointer-events-auto p-2 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-0 transition-opacity"
+                                    >
+                                        <ChevronRight className="w-6 h-6 rotate-180" />
+                                    </button>
+                                    <span className="px-3 py-1 bg-black/50 rounded-full text-white text-xs font-mono">
+                                        {currentSlideIndex + 1} / {allSlides.length}
+                                    </span>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); setCurrentSlideIndex(Math.min(allSlides.length - 1, currentSlideIndex + 1)); }}
+                                        disabled={currentSlideIndex === allSlides.length - 1}
+                                        className="pointer-events-auto p-2 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-0 transition-opacity"
+                                    >
+                                        <ChevronRight className="w-6 h-6" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
                 )}
-            </div>
-            
-            {/* Slide Titles Preview */}
-            {slideTitles && slideTitles.length > 0 && (
-                <div className="mb-4 p-4 bg-black/20 rounded-xl relative z-10">
-                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Slide Titles</p>
-                    <ul className="space-y-1">
-                        {slideTitles.slice(0, 5).map((title, i) => (
-                            <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
-                                <span className="text-lumina-primary mt-0.5">•</span>
-                                <span className="line-clamp-1">{title}</span>
-                            </li>
-                        ))}
-                        {slideTitles.length > 5 && (
-                            <li className="text-xs text-gray-500 italic">+ {slideTitles.length - 5} more slides...</li>
-                        )}
-                    </ul>
-                </div>
-            )}
-            
-            {/* Download Button */}
-            <button
-                onClick={handleDownload}
-                disabled={isDownloading}
-                className="w-full py-3.5 bg-lumina-primary text-black font-bold rounded-xl hover:bg-lumina-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-lumina-primary/20 flex items-center justify-center gap-2 group relative z-10"
-            >
-                {isDownloading ? (
-                    <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Downloading...
-                    </>
-                ) : (
-                    <>
-                        <FileText className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                        Download PowerPoint
-                    </>
-                )}
-            </button>
+            </AnimatePresence>
         </motion.div>
     );
 };

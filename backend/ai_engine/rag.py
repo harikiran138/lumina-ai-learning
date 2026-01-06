@@ -8,6 +8,7 @@ import uuid
 import torch
 from typing import List, Dict, Any
 from sentence_transformers import SentenceTransformer, CrossEncoder
+import os
 
 class TextChunker:
     """
@@ -39,7 +40,8 @@ class TextChunker:
 class RAGEngine:
     def __init__(self, collection_name: str = "course_content"):
         # 1. Vector DB
-        self.client = chromadb.PersistentClient(path="./backend/db/chroma")
+        chroma_path = os.getenv("CHROMA_DB_PATH", "./backend/db/chroma")
+        self.client = chromadb.PersistentClient(path=chroma_path)
         self.collection = self.client.get_or_create_collection(name=collection_name)
         
         # 2. Embedding Model (Small HF Model)
