@@ -53,6 +53,8 @@ class GeminiRestProvider(LLMProvider):
         self.api_keys = api_keys
         self.model = model
         self.current_key_index = 0
+        # [OPTIMIZATION] Reuse TCP connections
+        self.session = requests.Session()
 
     def _get_url(self, key):
         return f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={key}"
@@ -82,7 +84,7 @@ class GeminiRestProvider(LLMProvider):
                 # Rotate for next call immediately (Round Robin)
                 self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
                 
-                response = requests.post(url, json=payload, headers={"Content-Type": "application/json"})
+                response = self.session.post(url, json=payload, headers={"Content-Type": "application/json"})
                 
                 # Check for Rate Limit (429) specifically
                 if response.status_code == 429:
