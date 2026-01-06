@@ -4,7 +4,7 @@ const nextConfig = {
 
     compress: true,
     poweredByHeader: false,
-    // output: 'export', // Disabled for MongoDB dynamic rendering
+    output: 'standalone', // Enabled for Docker
     // distDir: 'dist', 
     trailingSlash: true,
     images: {

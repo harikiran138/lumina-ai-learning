@@ -11,6 +11,7 @@ from ai_engine.rag import get_rag_engine
 from ai_engine.tutor_state import get_tutor_state
 from ai_engine.prompts import A2UI_SYSTEM_PROMPT
 from services.ppt_generator import PPTGenerator
+from datetime import datetime
 
 
 router = APIRouter()
@@ -384,6 +385,7 @@ class PPTGenerationResponse(BaseModel):
     file_size: Optional[str] = None
     slide_count: Optional[int] = None
     slide_titles: Optional[List[str]] = None
+    content_structure: Optional[Dict[str, Any]] = None
 
 # Initialize Gemini API
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyDvj8WavmD-t5p0fRl2kM-974JI7LaNcEE")
@@ -401,34 +403,54 @@ async def generate_ppt(request: PPTGenerationRequest):
         PPTGenerationResponse with download URL and metadata
     """
     try:
-        # Step 1: Generate content structure using Gemini API
-        model = genai.GenerativeModel('gemini-pro')
+        # [OPTIMIZATION] Step 0: Check Cache
+        cache_dir = "static/presentations"
+        safe_topic_key = request.topic.lower().strip().replace(" ", "_")
+        # Find if any file starts with this topic key and is recent (optional)
+        # For now, simple strict caching: look for a cache map or just check existing files
+        # We'll implement a simple JSON-based cache map for better tracking
         
-        prompt = f"""Create a professional PowerPoint presentation outline on the topic: {request.topic}
+        cache_file = "data/ppt_cache.json"
+        os.makedirs("data", exist_ok=True)
+        try:
+            if os.path.exists(cache_file):
+                with open(cache_file, "r") as f:
+                    cache = json.load(f)
+            else:
+                cache = {}
+                
+            cache_key = f"{safe_topic_key}_{request.slides_count}"
+            if cache_key in cache:
+                cached_data = cache[cache_key]
+                if os.path.exists(cached_data["filepath"]):
+                    print(f"Serving cached PPT for {request.topic}")
+                    return PPTGenerationResponse(**cached_data["response"])
+        except Exception as e:
+            print(f"Cache Read Error: {e}")
+            cache = {}
 
-Generate exactly {request.slides_count} slides with the following structure:
-1. Title Slide: Main title and engaging subtitle
-2-{request.slides_count}: Content slides with:
-   - Clear, concise heading
-   - 3-5 bullet points per slide
-   - Each bullet should be informative but brief (1-2 sentences max)
+        # Step 1: Generate content structure using Gemini API
+        # Use GeminiRestProvider via get_llm_provider for Python 3.8 compatibility
+        llm = get_llm_provider("gemini")
+        
+        # [OPTIMIZATION] Reduced verbosity in prompt to save output tokens and time
+        prompt = f"""Topic: {request.topic}
+Slides: {request.slides_count}
 
-Return the response in STRICTLY VALID JSON format (no markdown, no code blocks):
+Generate a JSON structure for a PowerPoint presentation.
+Format:
 {{
-  "title": "Presentation Title",
-  "subtitle": "Engaging subtitle",
+  "title": "Main Title",
+  "subtitle": "Subtitle",
   "slides": [
-    {{
-      "title": "Slide Title",
-      "bullets": ["Point 1", "Point 2", "Point 3"]
-    }}
+    {{ "title": "Slide 1", "bullets": ["A", "B", "C"] }}
   ]
 }}
+Strict JSON only."""
 
-IMPORTANT: Return ONLY the JSON object, no additional text or formatting."""
-
-        response = model.generate_content(prompt)
-        content_text = response.text.strip()
+        # Generate content
+        content_text = await llm.agenerate(prompt)
+        content_text = content_text.strip()
         
         # Clean up response (remove markdown code blocks if present)
         if content_text.startswith("```json"):
@@ -459,15 +481,31 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting."""
         # Step 4: Create download URL
         download_url = f"/api/tutor/download-ppt/{filename}"
         
-        return PPTGenerationResponse(
-            success=True,
-            message=f"Presentation '{request.topic}' generated successfully!",
-            download_url=download_url,
-            filename=filename,
-            file_size=file_size,
-            slide_count=len(content_structure.get("slides", [])) + 1,  # +1 for title slide
-            slide_titles=slide_titles
-        )
+        response_data = {
+            "success": True,
+            "message": f"Presentation '{request.topic}' generated successfully!",
+            "download_url": download_url,
+            "filename": filename,
+            "file_size": file_size,
+            "slide_count": len(content_structure.get("slides", [])) + 1,  # +1 for title slide
+            "slide_titles": slide_titles,
+            "content_structure": content_structure
+        }
+
+        # [OPTIMIZATION] Save to Cache
+        try:
+            cache_key = f"{safe_topic_key}_{request.slides_count}"
+            cache[cache_key] = {
+                "filepath": filepath,
+                "response": response_data,
+                "timestamp": datetime.now().isoformat()
+            }
+            with open(cache_file, "w") as f:
+                json.dump(cache, f)
+        except Exception as e:
+            print(f"Cache Write Error: {e}")
+        
+        return PPTGenerationResponse(**response_data)
         
     except Exception as e:
         print(f"PPT Generation Error: {e}")

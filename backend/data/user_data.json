@@ -2,7 +2,7 @@
     "current_student": {
         "progress": {
             "completed_modules": [],
-            "current_score": 0.0
+            "current_score": 25.0
         },
         "notes": [],
         "quiz_history": [
@@ -29,6 +29,30 @@
                     "question": "Which pivotal act of civil disobedience, led by Mahatma Gandhi in 1930, challenged the British salt tax and mobilized nationwide resistance?"
                 },
                 "timestamp": "2025-12-29T20:05:07.362471"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "React Fundamentals",
+                "score": 0.0,
+                "total_questions": 1,
+                "correct_count": 0,
+                "difficulty": "medium",
+                "details": {
+                    "question": "What is the primary architectural purpose of the Virtual DOM (VDOM) in React?"
+                },
+                "timestamp": "2026-01-02T14:37:41.237757"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "React Hooks",
+                "score": 100.0,
+                "total_questions": 1,
+                "correct_count": 1,
+                "difficulty": "medium",
+                "details": {
+                    "question": "Which standard React Hook is primarily used for adding state management capabilities (holding and updating local data) to functional components?"
+                },
+                "timestamp": "2026-01-02T14:37:50.887020"
             }
         ]
     }
