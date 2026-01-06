@@ -156,7 +156,10 @@ class RealAPI {
         if (!user) return {};
         // Direct fetch to FastAPI backend for assessment data
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000'}/api/assessment/student/${user.id || user.email}/mastery`);
+            const apiBase = (typeof window === 'undefined' && process.env.API_URL)
+                ? process.env.API_URL
+                : (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000');
+            const res = await fetch(`${apiBase}/api/assessment/student/${user.id || user.email}/mastery`);
             return await res.json();
         } catch (err) {
             console.error("Failed to fetch mastery", err);
@@ -427,7 +430,9 @@ class RealAPI {
         const user = await this.getCurrentUser();
         if (!user) return { success: false };
         try {
-            const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000';
+            const apiBase = (typeof window === 'undefined' && process.env.API_URL)
+                ? process.env.API_URL
+                : (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000');
             const res = await fetch(`${apiBase}/api/student/quiz-result`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

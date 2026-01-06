@@ -2,7 +2,7 @@
     "current_student": {
         "progress": {
             "completed_modules": [],
-            "current_score": 25.0
+            "current_score": 58.82
         },
         "notes": [],
         "quiz_history": [
@@ -53,6 +53,162 @@
                     "question": "Which standard React Hook is primarily used for adding state management capabilities (holding and updating local data) to functional components?"
                 },
                 "timestamp": "2026-01-02T14:37:50.887020"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "React Hooks",
+                "score": 0.0,
+                "total_questions": 1,
+                "correct_count": 0,
+                "difficulty": "medium",
+                "details": {
+                    "question": "What is the primary purpose of the `useState` hook in React?"
+                },
+                "timestamp": "2026-01-06T11:55:41.273058"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "React",
+                "score": 0.0,
+                "total_questions": 1,
+                "correct_count": 0,
+                "difficulty": "medium",
+                "details": {
+                    "question": "What core mechanism does React use to optimize rendering performance by minimizing direct manipulation of the browser's Document Object Model (DOM)?"
+                },
+                "timestamp": "2026-01-06T11:56:05.519549"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "Indian History",
+                "score": 100.0,
+                "total_questions": 1,
+                "correct_count": 1,
+                "difficulty": "medium",
+                "details": {
+                    "question": "Which empire was primarily responsible for the construction of the Taj Mahal in Agra?"
+                },
+                "timestamp": "2026-01-06T12:00:34.866804"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "india history",
+                "score": 100.0,
+                "total_questions": 1,
+                "correct_count": 1,
+                "difficulty": "medium",
+                "details": {
+                    "question": "Which Mauryan Emperor, known for his vast empire, embraced Buddhism after witnessing the devastation of the Kalinga War?"
+                },
+                "timestamp": "2026-01-06T12:00:44.787689"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "india history",
+                "score": 100.0,
+                "total_questions": 1,
+                "correct_count": 1,
+                "difficulty": "medium",
+                "details": {
+                    "question": "Who was the first (and only) Indian Governor-General of independent India?"
+                },
+                "timestamp": "2026-01-06T12:00:52.921745"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "india history",
+                "score": 100.0,
+                "total_questions": 1,
+                "correct_count": 1,
+                "difficulty": "medium",
+                "details": {
+                    "question": "What pivotal event in 1930, led by Mahatma Gandhi, involved marching to the sea to illegally produce salt, challenging the oppressive British salt tax?"
+                },
+                "timestamp": "2026-01-06T12:01:03.239897"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "india history",
+                "score": 0.0,
+                "total_questions": 1,
+                "correct_count": 0,
+                "difficulty": "medium",
+                "details": {
+                    "question": "What significant event in 1857 marked a major turning point in the relationship between the British East India Company and the Indian populace, leading to the direct rule of the British Crown?"
+                },
+                "timestamp": "2026-01-06T12:01:15.848836"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "india history",
+                "score": 0.0,
+                "total_questions": 1,
+                "correct_count": 0,
+                "difficulty": "medium",
+                "details": {
+                    "question": "What was the primary characteristic of the cities of the Indus Valley Civilization, such as Mohenjo-daro and Harappa?"
+                },
+                "timestamp": "2026-01-06T12:01:26.286346"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "USA Civics/Geography",
+                "score": 100.0,
+                "total_questions": 1,
+                "correct_count": 1,
+                "difficulty": "easy",
+                "details": {
+                    "question": "What city serves as the official capital of the United States?"
+                },
+                "timestamp": "2026-01-06T12:01:42.908264"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "USA Geography/History",
+                "score": 100.0,
+                "total_questions": 1,
+                "correct_count": 1,
+                "difficulty": "easy",
+                "details": {
+                    "question": "Which of these famous landmarks, located in New York City, was a gift from France?"
+                },
+                "timestamp": "2026-01-06T12:01:51.474486"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "USA Geography",
+                "score": 100.0,
+                "total_questions": 1,
+                "correct_count": 1,
+                "difficulty": "easy",
+                "details": {
+                    "question": "Which river is the longest in the United States, flowing primarily through the central part of the country?"
+                },
+                "timestamp": "2026-01-06T12:01:58.993453"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "US History",
+                "score": 100.0,
+                "total_questions": 1,
+                "correct_count": 1,
+                "difficulty": "easy",
+                "details": {
+                    "question": "Which major conflict led to the United States declaring and securing its independence from Great Britain?"
+                },
+                "timestamp": "2026-01-06T12:02:07.057221"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "USA History",
+                "score": 100.0,
+                "total_questions": 1,
+                "correct_count": 1,
+                "difficulty": "medium",
+                "details": {
+                    "question": "In what year did the United States complete the Louisiana Purchase from France?"
+                },
+                "timestamp": "2026-01-06T12:02:16.555594"
             }
         ]
     }
