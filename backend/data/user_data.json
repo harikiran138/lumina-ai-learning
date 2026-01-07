@@ -2,7 +2,7 @@
     "current_student": {
         "progress": {
             "completed_modules": [],
-            "current_score": 25.0
+            "current_score": 20.0
         },
         "notes": [],
         "quiz_history": [
@@ -53,7 +53,27 @@
                     "question": "Which standard React Hook is primarily used for adding state management capabilities (holding and updating local data) to functional components?"
                 },
                 "timestamp": "2026-01-02T14:37:50.887020"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "AI Assistant Capabilities",
+                "score": 0.0,
+                "total_questions": 1,
+                "correct_count": 0,
+                "difficulty": "easy",
+                "details": {
+                    "question": "As an AI assistant, I can _______________, allowing me to help users in various ways."
+                },
+                "timestamp": "2026-01-06T14:58:48.435751"
             }
         ]
+    },
+    "current-user": {
+        "progress": {
+            "completed_modules": [],
+            "current_score": 0
+        },
+        "notes": [],
+        "quiz_history": []
     }
 }
