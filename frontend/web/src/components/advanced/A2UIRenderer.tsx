@@ -37,11 +37,11 @@ ChartJS.register(
 
 const QuizSchema = z.object({
   question: z.string(),
-  options: z.array(z.string()).length(4),
-  correctIndex: z.number().int().min(0).max(3),
-  explanation: z.string().min(1),
-  topic: z.string(),
-  difficulty: z.enum(["easy", "medium", "hard"]),
+  options: z.array(z.string()).min(2), // Relaxed from length(4)
+  correctIndex: z.number().int().min(0).optional().default(0), // Made optional with default
+  explanation: z.string().optional().default("No explanation provided."), // Made optional
+  topic: z.string().optional().default("General"), // Made optional
+  difficulty: z.string().transform(val => val.toLowerCase()).pipe(z.enum(["easy", "medium", "hard"])).optional().default("medium"), // Case insensitive & optional
 });
 
 const FlashcardSchema = z.object({
@@ -88,10 +88,10 @@ const ComparisonTableSchema = z.object({
 });
 
 const ChartSchema = z.object({
-  type: z.enum(['bar', 'line', 'pie', 'doughnut']),
-  title: z.string(),
-  labels: z.array(z.string()),
-  data: z.array(z.number()),
+  type: z.enum(['bar', 'line', 'pie', 'doughnut']).default('bar'),
+  title: z.string().default('Chart'),
+  labels: z.array(z.string()).default([]),
+  data: z.array(z.number()).default([]),
   datasetLabel: z.string().default("Data"),
   colors: z.array(z.string()).optional(),
 });
@@ -146,6 +146,7 @@ interface ErrorBoundaryProps {
 
 interface ErrorBoundaryState {
   hasError: boolean;
+  error?: Error;
 }
 
 class A2UIErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -154,8 +155,8 @@ class A2UIErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(_: Error): ErrorBoundaryState {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -165,9 +166,12 @@ class A2UIErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState
   render() {
     if (this.state.hasError) {
       return this.props.fallback || (
-        <div className="p-4 border border-red-500/20 bg-red-500/10 rounded-xl flex items-center gap-2 text-red-300 text-sm">
-          <AlertTriangle className="w-4 h-4" />
-          Failed to render component.
+        <div className="p-4 border border-red-500/20 bg-red-500/10 rounded-xl flex flex-col gap-2 text-red-300 text-sm">
+          <div className="flex items-center gap-2 font-bold">
+            <AlertTriangle className="w-4 h-4" />
+            Failed to render component
+          </div>
+          {this.state.error && <div className="text-xs font-mono opacity-80 whitespace-pre-wrap">{this.state.error.toString()}</div>}
         </div>
       );
     }
@@ -527,6 +531,13 @@ const MermaidComponent = ({ chart, title }: z.infer<typeof MermaidSchema>) => {
             <div className="p-4 overflow-x-auto flex justify-center">
                 <div dangerouslySetInnerHTML={{ __html: svg }} />
             </div>
+             {/* Show raw code if failed (heuristically check if svg contains error div) */}
+             {svg.includes('text-red-500') && (
+                <details className="p-2 border-t border-white/10">
+                     <summary className="text-[10px] text-gray-500 cursor-pointer hover:text-white">Debug: Raw Mermaid Code</summary>
+                     <pre className="text-[10px] text-gray-500 mt-2 whitespace-pre-wrap font-mono">{chart}</pre>
+                </details>
+             )}
         </div>
     );
 };
@@ -1001,7 +1012,20 @@ export const A2UIRenderer = ({ content, onAction }: { content: string; onAction?
                 return renderComponent(parsed, index);
             }
 
-          } catch (e) {
+          } catch (e: any) {
+             console.error("[A2UI] Global Block Error:", e);
+             
+             // If the block ends with ``` token, it means it's complete but failed to parse.
+             // We should show an error instead of loading spinner forever.
+             if (part.trim().endsWith("```")) {
+                 return (
+                    <div key={index} className="p-2 border border-red-500/30 bg-red-500/10 rounded text-xs text-red-200 font-mono my-2">
+                        Failed to render component: {e.message}
+                        <br/>
+                        <span className="opacity-50 text-[10px]">Check console for details.</span>
+                    </div>
+                 );
+             }
             return (
                 <div key={index} className="p-2 border border-blue-500/30 bg-blue-500/10 rounded text-xs text-blue-200 font-mono my-2 flex items-center gap-2">
                     <Loader2 className="w-3 h-3 animate-spin" /> Generating UI...
@@ -1011,7 +1035,7 @@ export const A2UIRenderer = ({ content, onAction }: { content: string; onAction?
         } else {
           if (!part.trim()) return null;
           return (
-             <div key={index} className="prose prose-invert prose-sm max-w-none">
+             <div key={index} className={`prose prose-sm max-w-none break-words ${isUser ? 'prose-black text-black' : 'prose-invert text-gray-200'}`}>
                 <ReactMarkdown>{part}</ReactMarkdown>
              </div>
           );

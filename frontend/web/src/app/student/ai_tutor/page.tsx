@@ -292,11 +292,15 @@ Valid types: "bar", "line", "pie", "doughnut".
 
 7. Mermaid
 \`\`\`a2ui
-{ "component": "Mermaid", "props": { "chart": "graph TD; A-->B;", "title": "Diagram Title" } }
+{ "component": "Mermaid", "props": { "chart": "graph TD;\\n  A-->B;\\n  B-->C;", "title": "Diagram Title" } }
 \`\`\`
+CONSTRAINT: The 'chart' prop MUST be a valid Mermaid syntax string. Newlines MUST be escaped as \\n.
 
-IMPORTANT:
-- ONLY use the components listed above.
+IMPORTANT RULES FOR A2UI:
+- Output MUST be valid JSON inside the code block.
+- ESCAPE ALL NEWLINES in string content (e.g., "line 1\\nline 2").
+- ESCAPE ALL DOUBLE QUOTES inside strings (e.g., "content": "She said \\"Hello\\"").
+- Do NOT add comments inside the JSON.
 - If you want to create a quiz with multiple questions, output multiple separate \`Quiz\` blocks.
 - If no component fits, just use standard Markdown text.
 `;
@@ -728,7 +732,7 @@ IMPORTANT:
                                 </div>
                                 <div className={`flex flex-col ${msg.sender === 'me' ? 'items-end' : 'items-start'} max-w-[85%] md:max-w-[75%]`}>
                                     <div className={`p-4 rounded-2xl relative group ${msg.sender === 'me' ? 'bg-lumina-primary text-black rounded-tr-none shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'}`}>
-                                        <A2UIRenderer content={msg.text} onAction={handleAction} />
+                                        <A2UIRenderer content={msg.text} onAction={handleAction} isUser={msg.sender === 'me'} />
                                         
                                         {msg.sender !== 'me' && (
                                             <div className="absolute -bottom-8 left-0 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

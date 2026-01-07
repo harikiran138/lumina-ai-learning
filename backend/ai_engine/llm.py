@@ -12,9 +12,9 @@ class LLMProvider:
         return await run_in_threadpool(self.generate, prompt, system_prompt)
 
 class OllamaProvider(LLMProvider):
-    def __init__(self, model: str = "llama3", host: str = "http://localhost:11434"):
+    def __init__(self, model: str = "mannix/llama3.1-8b-abliterated:latest", host: str = None):
         self.model = model
-        self.host = host
+        self.host = host or os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
 
     def generate(self, prompt: str, system_prompt: str = "") -> str:
         url = f"{self.host}/api/generate"
