@@ -1,73 +1,4 @@
 {
-    "current_student": {
-        "progress": {
-            "completed_modules": [],
-            "current_score": 20.0
-        },
-        "notes": [],
-        "quiz_history": [
-            {
-                "user_id": "current_student",
-                "topic": "Python Data Structures",
-                "score": 0.0,
-                "total_questions": 1,
-                "correct_count": 0,
-                "difficulty": "medium",
-                "details": {
-                    "question": "What is the primary difference between a list and a tuple in Python?"
-                },
-                "timestamp": "2025-12-29T06:42:44.263880"
-            },
-            {
-                "user_id": "current_student",
-                "topic": "Indian Freedom Struggle",
-                "score": 0.0,
-                "total_questions": 1,
-                "correct_count": 0,
-                "difficulty": "medium",
-                "details": {
-                    "question": "Which pivotal act of civil disobedience, led by Mahatma Gandhi in 1930, challenged the British salt tax and mobilized nationwide resistance?"
-                },
-                "timestamp": "2025-12-29T20:05:07.362471"
-            },
-            {
-                "user_id": "current_student",
-                "topic": "React Fundamentals",
-                "score": 0.0,
-                "total_questions": 1,
-                "correct_count": 0,
-                "difficulty": "medium",
-                "details": {
-                    "question": "What is the primary architectural purpose of the Virtual DOM (VDOM) in React?"
-                },
-                "timestamp": "2026-01-02T14:37:41.237757"
-            },
-            {
-                "user_id": "current_student",
-                "topic": "React Hooks",
-                "score": 100.0,
-                "total_questions": 1,
-                "correct_count": 1,
-                "difficulty": "medium",
-                "details": {
-                    "question": "Which standard React Hook is primarily used for adding state management capabilities (holding and updating local data) to functional components?"
-                },
-                "timestamp": "2026-01-02T14:37:50.887020"
-            },
-            {
-                "user_id": "current_student",
-                "topic": "AI Assistant Capabilities",
-                "score": 0.0,
-                "total_questions": 1,
-                "correct_count": 0,
-                "difficulty": "easy",
-                "details": {
-                    "question": "As an AI assistant, I can _______________, allowing me to help users in various ways."
-                },
-                "timestamp": "2026-01-06T14:58:48.435751"
-            }
-        ]
-    },
     "current-user": {
         "progress": {
             "completed_modules": [],
@@ -75,5 +6,62 @@
         },
         "notes": [],
         "quiz_history": []
+    },
+    "current_student": {
+        "progress": {
+            "completed_modules": [],
+            "current_score": 50.0
+        },
+        "notes": [],
+        "quiz_history": [
+            {
+                "user_id": "current_student",
+                "topic": "React Basics",
+                "score": 0.0,
+                "total_questions": 1,
+                "correct_count": 0,
+                "difficulty": "medium",
+                "details": {
+                    "question": "Which of the following is a fundamental concept in React?"
+                },
+                "timestamp": "2026-01-09T10:48:39.848543"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "React Basics",
+                "score": 0.0,
+                "total_questions": 1,
+                "correct_count": 0,
+                "difficulty": "easy",
+                "details": {
+                    "question": "What is the primary purpose of a React component?"
+                },
+                "timestamp": "2026-01-09T10:49:29.340262"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "Intro to Programming (cs101)",
+                "score": 100.0,
+                "total_questions": 1,
+                "correct_count": 1,
+                "difficulty": "medium",
+                "details": {
+                    "question": "What is the primary use of a React component?"
+                },
+                "timestamp": "2026-01-10T02:44:03.945136"
+            },
+            {
+                "user_id": "current_student",
+                "topic": "Web Development",
+                "score": 100.0,
+                "total_questions": 1,
+                "correct_count": 1,
+                "difficulty": "medium",
+                "details": {
+                    "question": "What does React primarily allow developers to do?"
+                },
+                "timestamp": "2026-01-10T02:44:35.507575"
+            }
+        ]
     }
 }
