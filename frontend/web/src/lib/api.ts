@@ -85,7 +85,7 @@ class RealAPI {
     }
 
     // Dashboard Data - Connected to MongoDB
-    async getDashboardData(userRole: string, userId?: string): Promise<any> {
+    async getDashboardData(userRole: string): Promise<any> {
         const user = await this.getCurrentUser();
         if (!user) return {};
 

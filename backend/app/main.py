@@ -1,9 +1,10 @@
+import sys
 from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import ai, handwriting_simple as handwriting, assignments
+from .routers import ai, handwriting_simple as handwriting, assignments
 
 import asyncio
 import functools
@@ -26,7 +27,11 @@ app = FastAPI(title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/o
 
 @app.on_event("startup")
 async def startup_db_client():
-    await db.connect()
+    try:
+        await db.connect()
+    except Exception as e:
+        print(f"WARNING: Could not connect to database: {e}")
+        print("Starting in limited functionality mode.")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
@@ -54,19 +59,19 @@ app.include_router(ai.router, prefix="/api", tags=["AI"])
 app.include_router(handwriting.router, prefix="/api/handwriting", tags=["Handwriting"])
 app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignments"])
 
-from routers import courses
+from .routers import courses
 app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
 
-from routers import auth
+from .routers import auth
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 
 from app.assessment.api.router import router as assessment_router
 app.include_router(assessment_router, prefix="/api/assessment", tags=["Assessment"])
 
-from routers import hybrid
+from .routers import hybrid
 app.include_router(hybrid.router, prefix="/api/ai", tags=["Hybrid AI"])
 
-from routers import student
+from .routers import student
 app.include_router(student.router, prefix="/api/student", tags=["Student Data"])
 
 @app.get("/")

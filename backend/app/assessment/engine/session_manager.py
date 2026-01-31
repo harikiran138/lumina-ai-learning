@@ -3,7 +3,7 @@ from app.assessment.models.schemas import AssessmentSession, StudentResponse, Qu
 # Switch to Gemini Generator
 from app.assessment.llm.gemini_generator import gemini_generator as question_generator
 from app.assessment.engine.adaptive_logic import adaptive_logic
-from store.database import db
+from app.store.database import db
 from datetime import datetime
 import logging
 

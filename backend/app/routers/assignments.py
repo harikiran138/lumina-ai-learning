@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Form, File, UploadFile, Depends
 from typing import List, Optional
-from store.assignment_store import AssignmentStore
+from app.store.assignment_store import AssignmentStore
 from pydantic import BaseModel
 import shutil
 import os
@@ -65,7 +65,7 @@ async def submit_assignment(
         raise HTTPException(status_code=500, detail=str(e))
 
 from app.services.ocr_service import ocr_service
-from services.grader_service import grader_service
+from app.services.grader_service import grader_service
 
 # ... (existing imports)
 

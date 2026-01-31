@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { extractTextFromPDF } from '@/lib/pdf-parser';
 import {
@@ -568,9 +569,9 @@ export default function CourseGeneratorPage() {
                                     <BookOpen className="w-4 h-4" />
                                     Publish Now
                                 </button>
-                                <a href="/teacher/courses" className="px-6 py-3 bg-white/10 rounded-xl text-white hover:bg-white/20 border border-white/10">
+                                <Link href="/teacher/courses" className="px-6 py-3 bg-white/10 rounded-xl text-white hover:bg-white/20 border border-white/10">
                                     Return to Courses
-                                </a>
+                                </Link>
                             </div>
                         </>
                     )}
