@@ -21,20 +21,29 @@ async def get_student_mastery(student_id: str):
     Get the aggregate mastery for a student across all sessions.
     """
     from app.database.manager import db
-    # Find latest session for student
-    cursor = db.get_collection("assessment_sessions").find(
-        {"student_id": student_id}
-    ).sort("timestamp", -1).limit(1)
     
-    # Async cursor
-    latest_session = None
-    async for doc in cursor:
-        latest_session = doc
-        break
+    # Safety Check: If DB is not connected (e.g. missing ENV), return empty dict
+    if not db.db: 
+        return {}
+
+    try:
+        # Find latest session for student
+        cursor = db.get_collection("assessment_sessions").find(
+            {"student_id": student_id}
+        ).sort("timestamp", -1).limit(1)
         
-    if latest_session:
-        return latest_session.get("mastery_state", {}).get("concept_mastery", {})
-    return {}
+        # Async cursor
+        latest_session = None
+        async for doc in cursor:
+            latest_session = doc
+            break
+            
+        if latest_session:
+            return latest_session.get("mastery_state", {}).get("concept_mastery", {})
+        return {}
+    except Exception as e:
+        print(f"Error fetching mastery: {e}")
+        return {}
 
 @router.get("/stats/teacher")
 async def get_teacher_stats():
@@ -43,26 +52,33 @@ async def get_teacher_stats():
     """
     from app.database.manager import db
     
-    # Simplified approach: Just get all sessions and avg in python for MVP
-    cursor = db.get_collection("assessment_sessions").find({})
-    
-    total_mastery = 0
-    count = 0
-    
-    async for session in cursor:
-        mastery_map = session.get("mastery_state", {}).get("concept_mastery", {})
-        if mastery_map:
-             avg_session = sum(mastery_map.values()) / len(mastery_map)
-             total_mastery += avg_session
-             count += 1
-             
-    if count == 0:
-        return {"avg_mastery": 0, "total_students": 0}
+    if not db.db:
+        return {"avg_mastery": 0, "total_students": 0, "error": "Database not connected"}
+
+    try:
+        # Simplified approach: Just get all sessions and avg in python for MVP
+        cursor = db.get_collection("assessment_sessions").find({})
         
-    return {
-        "avg_mastery": (total_mastery / count) * 100, # Return percentage
-        "total_students": count
-    }
+        total_mastery = 0
+        count = 0
+        
+        async for session in cursor:
+            mastery_map = session.get("mastery_state", {}).get("concept_mastery", {})
+            if mastery_map:
+                 avg_session = sum(mastery_map.values()) / len(mastery_map)
+                 total_mastery += avg_session
+                 count += 1
+                 
+        if count == 0:
+            return {"avg_mastery": 0, "total_students": 0}
+            
+        return {
+            "avg_mastery": (total_mastery / count) * 100, # Return percentage
+            "total_students": count
+        }
+    except Exception as e:
+        print(f"Error fetching teacher stats: {e}")
+        return {"avg_mastery": 0, "total_students": 0}
 # -----------------------------------------------------------
 
 

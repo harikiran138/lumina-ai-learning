@@ -79,5 +79,7 @@ def read_root():
     return {"message": "Welcome to Lumina API"}
 
 @app.get("/health")
-def health_check():
-    return {"status": "healthy"}
+async def health_check():
+    from app.database.manager import db
+    db_status = "connected" if db.db else "disconnected"
+    return {"status": "ok", "database": db_status}

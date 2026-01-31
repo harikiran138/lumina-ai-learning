@@ -21,7 +21,7 @@ class GeminiGenerator:
         return cls._instance
 
     def __init__(self):
-        self.model_name = "gemini-flash-latest"
+        self.model_name = "gemini-1.5-flash"
         self.api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent"
 
     def generate_question(self, topic: str, difficulty: float) -> Optional[Question]:
