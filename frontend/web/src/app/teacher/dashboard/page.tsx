@@ -1,12 +1,13 @@
-
 import { Metadata } from 'next';
-import { Suspense } from 'react';
+import Link from 'next/link';
 import { Users, BookOpen, BarChart2, FileText, Upload, PlusCircle, Bell, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 export const metadata: Metadata = {
     title: 'Teacher Dashboard | Lumina',
     description: 'Manage your classes and students',
 };
+
+export const dynamic = 'force-dynamic';
 
 async function getTeacherStats() {
     try {
@@ -107,7 +108,7 @@ export default async function TeacherDashboard() {
                     <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
                         <div className="p-6 border-b border-white/10 flex justify-between items-center">
                             <h2 className="text-xl font-bold text-white">Your Courses</h2>
-                            <a href="/teacher/courses" className="text-sm text-amber-500 hover:text-amber-400 font-medium">View All</a>
+                            <Link href="/teacher/courses" className="text-sm text-amber-500 hover:text-amber-400 font-medium">View All</Link>
                         </div>
                         <div className="divide-y divide-white/10">
                             {/* Placeholder Course Items */}

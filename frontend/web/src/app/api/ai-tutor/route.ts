@@ -61,12 +61,12 @@ CONSTRAINT: For 'Quiz', provide EXACTLY 4 options. Never more, never less.
 
 7. ComparisonTable:
 \`\`\`a2ui
-{ "component": "ComparisonTable", "props": { "title": "TCP vs UDP", "headers": ["TCP", "UDP"], "rows": [{ "feature": "Reliability", "left": "High", "right": "Low" }] } }
+{ "component": "ComparisonTable", "props": { "title": "TCP vs UDP", "headers": ["Feature", "TCP", "UDP"], "rows": [{ "feature": "Reliability", "values": ["High", "Low"] }] } }
 \`\`\`
 
 8. Chart:
 \`\`\`a2ui
-{ "component": "Chart", "props": { "type": "bar", "title": "Python Usage", "labels": ["2020", "2021", "2022"], "data": [40, 60, 80], "label": "Users (M)" } }
+{ "component": "Chart", "props": { "type": "bar", "title": "Python Usage", "labels": ["2020", "2021", "2022"], "data": [40, 60, 80], "datasetLabel": "Users (M)" } }
 \`\`\`
 
 9. Table:

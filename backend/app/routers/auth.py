@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from datetime import timedelta
 from app.core.security import create_access_token, verify_password, get_password_hash
 from app.core.config import settings
-from store.user_store import UserStore
+from app.store.user_store import UserStore
 
 router = APIRouter()
 user_store = UserStore()

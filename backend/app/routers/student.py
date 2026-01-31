@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-from store.user_data_store import UserDataStore
+from app.store.user_data_store import UserDataStore
 
 router = APIRouter()
 store = UserDataStore()

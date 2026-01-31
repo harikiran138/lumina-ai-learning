@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Form, Depends
 from typing import List
-from store.course_store import CourseStore
+from app.store.course_store import CourseStore
 from .auth import get_current_user
 
 router = APIRouter()
