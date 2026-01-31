@@ -20,15 +20,15 @@ def test_ai_tutor_endpoint(client):
     with patch("app.routers.ai.get_llm_provider", return_value=mock_llm) as mock_provider:
         
         # Test 1: Generate PPT
+        import uuid
+        topic = f"Artificial Intelligence {uuid.uuid4()}"
         response = client.post("/api/tutor/generate-ppt", json={
-            "topic": "Artificial Intelligence",
+            "topic": topic,
             "audience": "Students"
         })
         
         # Check if it called the model
         assert mock_llm.agenerate.called
-        if response.status_code != 200:
-            print(f"FAILED Response: {response.text}")
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
