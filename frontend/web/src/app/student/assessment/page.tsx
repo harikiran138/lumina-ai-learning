@@ -77,17 +77,20 @@ export default function AssessmentPage() {
         try {
             const res = await fetch(`${API_BASE}/next-question/${sid}`);
 
-            if (res.status === 404 || res.status === 500) {
-                // Check if it returned null in body? 
-                // My backend returns null if complete ??? 
-                // Actually router returns Optional[Question]. 
-                // If null, it means no question -> likely complete.
+            if (!res.ok) {
+                 if (res.status === 404) {
+                     setCompletionReason("Session not found or expired.");
+                 } else {
+                     setCompletionReason(`Server error (${res.status})`);
+                 }
+                 setStatus('completed');
+                 return;
             }
 
             const data = await res.json();
 
             if (!data) {
-                // Assessment complete
+                // Assessment complete (Backend returned null which means no more questions)
                 if (sid) {
                     await fetchReport(sid);
                 } else {

@@ -63,6 +63,13 @@ class AssessmentSession(BaseModel):
     start_time: datetime = Field(default_factory=datetime.utcnow)
     end_time: Optional[datetime] = None
     final_score: Optional[float] = None
+    
+    # Fields expected by assessment_routes.py
+    mastery_state: Optional[MasteryState] = None
+    current_question: Optional[Question] = None
+    seen_question_ids: List[str] = []
+    # history is implicitly responses, but routes use 'history' expecting list of dicts.
+    # We will update routes to use 'responses' list of objects.
 
 
 class QuestionRequest(BaseModel):
