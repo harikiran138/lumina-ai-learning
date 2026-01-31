@@ -5,7 +5,7 @@
 class GeminiAI {
     constructor(apiKey = null) {
         // Default API key - replace this with your actual Gemini API key
-        this.defaultApiKey = 'AIzaSyAJ60XQx9GlorX46Y17SrKlxhDnLvH46Wo'; // Replace with your actual API key
+        this.defaultApiKey = 'AIzaSyD9s7cP6JLB92xkPG_zhXduyYSjSIA001g'; // Replace with your actual API key
 
         this.apiKey = apiKey || this.getStoredApiKey() || this.defaultApiKey;
         this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';

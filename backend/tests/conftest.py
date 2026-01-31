@@ -4,6 +4,7 @@ from app.main import app
 from app.dependencies import get_user_store, get_course_store, get_user_data_store
 from app.store.user_store import UserStore
 from app.store.course_store import CourseStore
+from app.store.user_data_store import UserDataStore
 from typing import Optional, Dict, List
 
 # --- Mocks ---
@@ -18,7 +19,7 @@ class MockUserStore:
         user = {
             "id": "mock_id_" + email,
             "email": email,
-            "hashed_password": "hashed_" + password, # Dummy hash logic for mock
+            "hashed_password": "hashed_" + password, 
             "full_name": full_name,
             "role": role,
             "created_at": "2023-01-01"
@@ -51,8 +52,27 @@ class MockCourseStore:
         return course
 
 class MockUserDataStore:
-    # Minimal mock for dependencies if needed
-    pass
+    def __init__(self):
+        self.quiz_attempts = {} # user_id -> list
+        self.notes = {} # user_id -> list
+
+    def add_quiz_attempt(self, user_id, result):
+        if user_id not in self.quiz_attempts:
+            self.quiz_attempts[user_id] = []
+        self.quiz_attempts[user_id].append(result)
+
+    def get_recent_quiz_stats(self, user_id):
+        # Mock logic
+        attempts = self.quiz_attempts.get(user_id, [])
+        return {"total_attempts": len(attempts), "average_score": 85 if attempts else 0}
+
+    def add_note(self, user_id, content):
+        if user_id not in self.notes:
+            self.notes[user_id] = []
+        self.notes[user_id].append(content)
+
+    def get_notes(self, user_id):
+        return self.notes.get(user_id, [])
 
 # --- Fixtures ---
 @pytest.fixture(scope="module")
@@ -64,22 +84,17 @@ def mock_course_store():
     return MockCourseStore()
 
 @pytest.fixture(scope="module")
-def client(mock_user_store, mock_course_store):
+def mock_user_data_store():
+    return MockUserDataStore()
+
+@pytest.fixture(scope="module")
+def client(mock_user_store, mock_course_store, mock_user_data_store):
     # Override dependencies
     app.dependency_overrides[get_user_store] = lambda: mock_user_store
     app.dependency_overrides[get_course_store] = lambda: mock_course_store
-    # We also need to patch verify_password because our mock store stores "hashed_password" as "hashed_..." 
-    # and the real verify_password expects a bcrypt hash.
-    # We can mock verify_password in the auth router, OR just make our mock store store real helper compatible data.
-    # Easier: Mock `verify_password` in `app.routers.auth` (or core.security).
+    app.dependency_overrides[get_user_data_store] = lambda: mock_user_data_store
     
-    # Actually, simpler: The auth router calls `verify_password(plain, hashed)`.
-    # If we set hashed to be just the plain text (or something known), we need to patch `verify_password`.
-    
-    # Let's verify how `verify_password` is imported in `auth.py`. 
-    # `from app.core.security import ... verify_password`
-    # We will MonkeyPatch it.
-    
+    # Patch verify_password
     from app.routers import auth
     original_verify = auth.verify_password
     auth.verify_password = lambda plain, hashed: hashed == "hashed_" + plain

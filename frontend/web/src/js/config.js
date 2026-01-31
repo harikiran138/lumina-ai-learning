@@ -7,7 +7,7 @@ window.LuminaConfig = {
     // Gemini API Configuration
     gemini: {
         // Get your free API key from: https://aistudio.google.com/app/apikey
-        apiKey: 'AIzaSyAJ60XQx9GlorX46Y17SrKlxhDnLvH46Wo', // Replace this with your real API key
+        apiKey: 'AIzaSyD9s7cP6JLB92xkPG_zhXduyYSjSIA001g', // Replace this with your real API key
 
         // Optional: Model configuration
         model: 'gemini-2.0-flash',
