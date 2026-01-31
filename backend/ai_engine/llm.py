@@ -49,7 +49,7 @@ class OllamaProvider(LLMProvider):
 
 # Factory
 class GeminiRestProvider(LLMProvider):
-    def __init__(self, api_keys: list, model: str = "gemini-flash-latest"):
+    def __init__(self, api_keys: list, model: str = "gemini-1.5-flash"):
         self.api_keys = api_keys
         self.model = model
         self.current_key_index = 0
