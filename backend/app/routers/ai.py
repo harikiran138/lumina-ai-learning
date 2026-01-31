@@ -10,7 +10,7 @@ from ai_engine.llm import get_llm_provider # Corrected import
 from ai_engine.rag import get_rag_engine
 from ai_engine.tutor_state import get_tutor_state
 from ai_engine.prompts import A2UI_SYSTEM_PROMPT
-from services.ppt_generator import PPTGenerator
+from app.services.ppt_generator import PPTGenerator
 from datetime import datetime
 
 
@@ -106,7 +106,7 @@ async def generate_course_from_assignment(request: AssignmentCourseRequest):
     - If submission_id is provided and graded, uses the score to set level.
     - Uses the assignment title/description as the topic/context.
     """
-    from store.assignment_store import AssignmentStore
+    from app.store.assignment_store import AssignmentStore
     
     # Instantiate LLM (Default auto)
     llm_instance = get_llm_provider("auto")
@@ -238,7 +238,7 @@ async def tutor_chat(request: TutorChatRequest):
         recommendation = pathway.recommend_next_node(state, {})
         
         # 0.5 Fetch Available Courses from DB (Simplified)
-        from store.course_store import CourseStore
+        from app.store.course_store import CourseStore
         course_store = CourseStore()
         all_courses = course_store.list_courses()
         # Limit to top 10 and only name/code to save tokens
@@ -247,7 +247,7 @@ async def tutor_chat(request: TutorChatRequest):
         # 4. Construct Prompt with Personalization
         
         # [NEW] Fetch Real User Data
-        from store.user_data_store import UserDataStore
+        from app.store.user_data_store import UserDataStore
         user_ds = UserDataStore()
         profile_str = user_ds.get_full_profile_string(request.user_id)
 

@@ -8,7 +8,7 @@ export async function extractTextFromPDF(file: File): Promise<string> {
         // Handle ESM/CommonJS module difference
         const pdfjsLib = pdfjsModule.default || pdfjsModule;
 
-        const version = pdfjsLib.version;
+        // const version = pdfjsLib.version;
         const WORKER_SRC = '/pdf.worker.min.mjs';
 
         console.log(`Setting worker to: ${WORKER_SRC}`);

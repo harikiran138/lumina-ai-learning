@@ -1,0 +1,102 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.8.18, pytest-7.4.4, pluggy-1.5.0 -- /Users/chepuriharikiran/.pyenv/versions/3.8.18/bin/python3
+cachedir: .pytest_cache
+hypothesis profile 'default' -> database=DirectoryBasedExampleDatabase(PosixPath('/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/.hypothesis/examples'))
+rootdir: /Users/chepuriharikiran/Desktop/github/lumina-ai-learning
+plugins: time-machine-2.15.0, hypothesis-6.113.0, asyncio-0.23.3, cov-4.1.0, anyio-3.7.1
+asyncio: mode=strict
+collecting ... collected 2 items
+
+backend/tests/test_assessment_api.py::test_assessment_flow FAILED        [ 50%]
+backend/tests/test_assessment_api.py::test_assessment_not_found FAILED   [100%]
+
+=================================== FAILURES ===================================
+_____________________________ test_assessment_flow _____________________________
+
+    def test_assessment_flow():
+        # 1. Start Assessment
+>       response = client.post("/api/assessment/start", json={"student_id": "test_student"})
+
+backend/tests/test_assessment_api.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <httpx.Client object at 0x10cdaa310>
+request = <Request('POST', 'http://test/api/assessment/start')>
+
+    def _send_single_request(self, request: Request) -> Response:
+        """
+        Sends a single request, without handling any redirections.
+        """
+        transport = self._transport_for_url(request.url)
+        start = time.perf_counter()
+    
+        if not isinstance(request.stream, SyncByteStream):
+            raise RuntimeError(
+                "Attempted to send an async request with a sync Client instance."
+            )
+    
+        with request_context(request=request):
+>           response = transport.handle_request(request)
+E           AttributeError: 'ASGITransport' object has no attribute 'handle_request'
+
+../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1014: AttributeError
+__________________________ test_assessment_not_found ___________________________
+
+    def test_assessment_not_found():
+>       response = client.get("/api/assessment/bad_id/next-question")
+
+backend/tests/test_assessment_api.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1053: in get
+    return self.request(
+../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <httpx.Client object at 0x10cdaa310>
+request = <Request('GET', 'http://test/api/assessment/bad_id/next-question')>
+
+    def _send_single_request(self, request: Request) -> Response:
+        """
+        Sends a single request, without handling any redirections.
+        """
+        transport = self._transport_for_url(request.url)
+        start = time.perf_counter()
+    
+        if not isinstance(request.stream, SyncByteStream):
+            raise RuntimeError(
+                "Attempted to send an async request with a sync Client instance."
+            )
+    
+        with request_context(request=request):
+>           response = transport.handle_request(request)
+E           AttributeError: 'ASGITransport' object has no attribute 'handle_request'
+
+../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1014: AttributeError
+=============================== warnings summary ===============================
+../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/pydantic/_internal/_config.py:271
+  /Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/pydantic/_internal/_config.py:271: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_assessment_api.py::test_assessment_flow - Attribute...
+FAILED backend/tests/test_assessment_api.py::test_assessment_not_found - Attr...
+======================== 2 failed, 1 warning in 10.91s =========================

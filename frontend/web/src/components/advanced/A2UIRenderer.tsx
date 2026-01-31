@@ -904,14 +904,14 @@ const ScoreCardComponent = ({ title, score, percentage, correctCount, totalCount
 
 // --- Main Renderer ---
 
-export const A2UIRenderer = ({ content, onAction }: { content: string; onAction?: (action: string, data: any) => void }) => {
+export const A2UIRenderer = ({ content, onAction, isUser }: { content: string; onAction?: (action: string, data: any) => void; isUser?: boolean }) => {
   const parts = content.split(/(```a2ui[\s\S]*?```)/g);
 
   const renderComponent = (data: any, index: number, subIndex: number = 0) => {
         const uniqueKey = `${index}-${subIndex}`;
         
         let component = null;
-        let props = data.props;
+        const props = data.props;
         
         try {
             switch (data.component) {

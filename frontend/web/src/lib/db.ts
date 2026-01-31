@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid';
 
 export interface User {
     id: string;
@@ -286,7 +286,7 @@ class LuminaDB {
         for (const user of defaultUsers) {
             try {
                 await this.createUser(user);
-            } catch (e) {
+            } catch {
                 // Ignore if exists
             }
         }

@@ -57,7 +57,8 @@ export function chunkPages(pages: PageText[], maxChars = 20000): { text: string,
     const chunks: { text: string, startPage: number, endPage: number }[] = [];
 
     // Flatten all text first since we might have one huge page
-    let fullText = "";
+
+    // Flatten all text first since we might have one huge page
     // We lose precise page mapping if we just flatten, but for this AI it's fine.
     // Better strategy: iterate pages, add to buffer. If buffer > max, split.
 
@@ -146,7 +147,7 @@ async function callWebLLM(engine: MLCEngineInterface, prompt: string): Promise<a
             return {};
         }
 
-        let jsonString = content.substring(firstBrace, lastBrace + 1);
+        const jsonString = content.substring(firstBrace, lastBrace + 1);
 
         try {
             // Dynamic import to avoid build issues if types are missing
