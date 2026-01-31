@@ -6,9 +6,9 @@ from datetime import timedelta
 from app.core.security import create_access_token, verify_password, get_password_hash
 from app.core.config import settings
 from app.store.user_store import UserStore
+from app.dependencies import get_user_store
 
 router = APIRouter()
-user_store = UserStore()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 class UserCreate(BaseModel):
@@ -29,7 +29,7 @@ class UserResponse(BaseModel):
     created_at: str
 
 @router.post("/register", response_model=UserResponse)
-async def register(user: UserCreate):
+async def register(user: UserCreate, user_store: UserStore = Depends(get_user_store)):
     try:
         # Check if user exists
         if user_store.get_user_by_email(user.email):
@@ -46,7 +46,10 @@ async def register(user: UserCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/token", response_model=Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    user_store: UserStore = Depends(get_user_store)
+):
     user = user_store.get_user_by_email(form_data.username) # username field is email in our case
     if not user:
         raise HTTPException(
@@ -67,7 +70,10 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    user_store: UserStore = Depends(get_user_store)
+):
     try:
         from jose import jwt, JWTError
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
