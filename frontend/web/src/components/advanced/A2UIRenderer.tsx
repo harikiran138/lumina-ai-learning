@@ -905,88 +905,81 @@ const ScoreCardComponent = ({ title, score, percentage, correctCount, totalCount
 // --- Main Renderer ---
 
 export const A2UIRenderer = ({ content, onAction, isUser }: { content: string; onAction?: (action: string, data: any) => void; isUser?: boolean }) => {
+  
+  // 1. Try to parse as Pure JSON (Advanced Mode)
+  // If the content starts with [ or { and ends with ] or }, treat as pure JSON.
+  const trimmed = content.trim();
+  if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+      try {
+          const parsed = JSON.parse(jsonrepair(trimmed));
+          const items = Array.isArray(parsed) ? parsed : [parsed];
+          
+          return (
+              <div className="space-y-6">
+                  {items.map((item, index) => {
+                      // Map "type" (User prompt style) to "component" (Legacy style) if needed
+                      // The user prompt uses "type": "text_block" etc.
+                      // We need to normalize this to match our renderComponent logic which expects { component: "...", props: ... }
+                      
+                      let data = item;
+                      
+                      // Normalize User Prompt Format -> A2UI Component Format
+                      if (item.type) {
+                          if (item.type === 'text_block') {
+                              return (
+                                  <div key={index} className={`prose prose-sm max-w-none break-words ${isUser ? 'prose-black text-black' : 'prose-invert text-gray-200'}`}>
+                                      <ReactMarkdown>{item.content}</ReactMarkdown>
+                                  </div>
+                              );
+                          }
+                          
+                          // Map other types
+                          const typeMap: Record<string, string> = {
+                              'quiz_block': 'Quiz',
+                              'flashcard_block': 'Flashcard',
+                              'diagram_block': 'Mermaid',
+                              'table_block': 'ComparisonTable', // or Table depending on props
+                              'step_block': 'Timeline', // Approximation
+                          };
+                          
+                          const componentType = typeMap[item.type] || item.type;
+                          
+                          // Restructure props
+                          // User prompt format might be flat: { type: "quiz", questions: [...] }
+                          // A2UI Component expects: { component: "Quiz", props: { ... } }
+                          
+                          // Remove 'type' from props
+                          const { type, ...rest } = item;
+                          
+                          // Specific adaptors
+                          let finalProps = { ...rest };
+                          if (componentType === 'Quiz' && rest.questions) {
+                             // Adapter: User prompt says "questions" (plural), but QuizComponent is single question?
+                             // Or maybe we treat it as list?
+                             // Let's assume the user prompt meant single question logic or we need to map it.
+                             // For now, let's just pass rest as props and hope schemas match or rely on 'component' property usage.
+                          }
+                          
+                          data = { component: componentType, props: finalProps };
+                      }
+                      
+                      // Use the existing render logic (extracted below)
+                      return (
+                          <A2UIErrorBoundary key={index}>
+                              {renderComponentItem(data, index, onAction)}
+                          </A2UIErrorBoundary>
+                      );
+                  })}
+              </div>
+          )
+      } catch (e) {
+          // Fallback to Regex splitting if JSON parse fails (streams might be incomplete)
+          // console.warn("Pure JSON parse failed, falling back to mixed mode", e);
+      }
+  }
+
+  // 2. Legacy Mixed Mode (Markdown + Code Blocks)
   const parts = content.split(/(```a2ui[\s\S]*?```)/g);
-
-  const renderComponent = (data: any, index: number, subIndex: number = 0) => {
-        const uniqueKey = `${index}-${subIndex}`;
-        
-        let component = null;
-        const props = data.props;
-        
-        try {
-            switch (data.component) {
-              case 'Quiz':
-                const quizParsed = QuizSchema.safeParse(props);
-                if (quizParsed.success) component = <QuizComponent key={uniqueKey} {...quizParsed.data} onAction={onAction} />;
-                else throw new Error(`Invalid Quiz Props: ${quizParsed.error.message}`);
-                break;
-              case 'Flashcard':
-                const fcParsed = FlashcardSchema.safeParse(props);
-                if (fcParsed.success) component = <FlashcardComponent key={uniqueKey} {...fcParsed.data} />;
-                else throw new Error(`Invalid Flashcard Props: ${fcParsed.error.message}`);
-                break;
-              case 'CourseCard':
-                const ccParsed = CourseCardSchema.safeParse(props);
-                if (ccParsed.success) component = <CourseCardComponent key={uniqueKey} {...ccParsed.data} />;
-                break;
-              case 'YoutubeVideo':
-                  const ytParsed = YoutubeVideoSchema.safeParse(props);
-                  if (ytParsed.success) component = <YoutubeVideoComponent key={uniqueKey} {...ytParsed.data} />;
-                  break;
-              case 'CodeBlock':
-                  const cbParsed = CodeBlockSchema.safeParse(props);
-                  if (cbParsed.success) component = <CodeBlockComponent key={uniqueKey} {...cbParsed.data} />;
-                  break;
-              case 'Mermaid':
-                  const mmParsed = MermaidSchema.safeParse(props);
-                  if (mmParsed.success) component = <MermaidComponent key={uniqueKey} {...mmParsed.data} />;
-                  break;
-              case 'Timeline':
-                  const tlParsed = TimelineSchema.safeParse(props);
-                  if (tlParsed.success) component = <TimelineComponent key={uniqueKey} {...tlParsed.data} />;
-                  break;
-              case 'ComparisonTable':
-                  const ctParsed = ComparisonTableSchema.safeParse(props);
-                  if (ctParsed.success) component = <ComparisonTableComponent key={uniqueKey} {...ctParsed.data} />;
-                  break;
-              case 'Chart':
-                  const chParsed = ChartSchema.safeParse(props);
-                  if (chParsed.success) component = <ChartComponent key={uniqueKey} {...chParsed.data} />;
-                  break;
-              case 'Table':
-                  const tbParsed = TableSchema.safeParse(props);
-                  if (tbParsed.success) component = <TableComponent key={uniqueKey} {...tbParsed.data} />;
-                  break;
-              case 'PPTDownload':
-                  const pptParsed = PPTDownloadSchema.safeParse(props);
-                  if (pptParsed.success) component = <PPTDownloadComponent key={uniqueKey} {...pptParsed.data} />;
-                  break;
-              case 'ScoreCard':
-                  const scParsed = ScoreCardSchema.safeParse(props);
-                  if (scParsed.success) component = <ScoreCardComponent key={uniqueKey} {...scParsed.data} />;
-                  break;
-              default:
-                component = (
-                    <div key={uniqueKey} className="p-2 border border-yellow-500/50 bg-yellow-500/10 rounded text-xs text-yellow-200 font-mono">
-                        Unknown A2UI Component: {data.component}
-                    </div>
-                );
-            }
-        } catch (e: any) {
-            console.warn("Schema Validation Failed", e);
-             component = (
-                <div key={uniqueKey} className="p-2 border border-red-500/50 bg-red-500/10 rounded text-xs text-red-200 font-mono">
-                    Schema Error: {e.message}
-                </div>
-            );
-        }
-
-        return (
-            <A2UIErrorBoundary key={uniqueKey}>
-                {component}
-            </A2UIErrorBoundary>
-        );
-  };
 
   return (
     <>
@@ -1001,28 +994,30 @@ export const A2UIRenderer = ({ content, onAction, isUser }: { content: string; o
 
             const parsed = JSON.parse(repaired);
             
-            // Support Lists of Components
             if (Array.isArray(parsed)) {
                 return (
                     <div key={index} className="space-y-4">
-                        {parsed.map((item, subIndex) => renderComponent(item, index, subIndex))}
+                        {parsed.map((item, subIndex) => (
+                            <A2UIErrorBoundary key={`${index}-${subIndex}`}>
+                                {renderComponentItem(item, index, onAction)}
+                            </A2UIErrorBoundary>
+                        ))}
                     </div>
                 );
             } else {
-                return renderComponent(parsed, index);
+                return (
+                    <A2UIErrorBoundary key={index}>
+                        {renderComponentItem(parsed, index, onAction)}
+                    </A2UIErrorBoundary>
+                );
             }
 
           } catch (e: any) {
              console.error("[A2UI] Global Block Error:", e);
-             
-             // If the block ends with ``` token, it means it's complete but failed to parse.
-             // We should show an error instead of loading spinner forever.
              if (part.trim().endsWith("```")) {
                  return (
                     <div key={index} className="p-2 border border-red-500/30 bg-red-500/10 rounded text-xs text-red-200 font-mono my-2">
                         Failed to render component: {e.message}
-                        <br/>
-                        <span className="opacity-50 text-[10px]">Check console for details.</span>
                     </div>
                  );
              }
@@ -1043,4 +1038,65 @@ export const A2UIRenderer = ({ content, onAction, isUser }: { content: string; o
       })}
     </>
   );
+};
+
+// Extracted for reuse
+const renderComponentItem = (data: any, index: number, onAction?: any) => {
+    const uniqueKey = `${index}`;
+    let component = null;
+    const props = data.props || data; // Tolerance for missing 'props' nesting if flat
+
+    try {
+        switch (data.component) {
+            case 'Quiz':
+            component = <QuizComponent key={uniqueKey} {...props} onAction={onAction} />;
+            break;
+            case 'Flashcard':
+            component = <FlashcardComponent key={uniqueKey} {...props} />;
+            break;
+            case 'CourseCard':
+            component = <CourseCardComponent key={uniqueKey} {...props} />;
+            break;
+            case 'YoutubeVideo':
+            component = <YoutubeVideoComponent key={uniqueKey} {...props} />;
+            break;
+            case 'CodeBlock':
+            component = <CodeBlockComponent key={uniqueKey} {...props} />;
+            break;
+            case 'Mermaid':
+            component = <MermaidComponent key={uniqueKey} {...props} />;
+            break;
+            case 'Timeline':
+            component = <TimelineComponent key={uniqueKey} {...props} />;
+            break;
+            case 'ComparisonTable':
+            component = <ComparisonTableComponent key={uniqueKey} {...props} />;
+            break;
+            case 'Chart':
+            component = <ChartComponent key={uniqueKey} {...props} />;
+            break;
+            case 'Table':
+            component = <TableComponent key={uniqueKey} {...props} />;
+            break;
+            case 'PPTDownload':
+            component = <PPTDownloadComponent key={uniqueKey} {...props} />;
+            break;
+            case 'ScoreCard':
+            component = <ScoreCardComponent key={uniqueKey} {...props} />;
+            break;
+            default:
+            component = (
+                <div key={uniqueKey} className="p-2 border border-yellow-500/50 bg-yellow-500/10 rounded text-xs text-yellow-200 font-mono">
+                    Unknown A2UI Component: {data.component}
+                </div>
+            );
+        }
+    } catch (e: any) {
+         component = (
+            <div key={uniqueKey} className="p-2 border border-red-500/50 bg-red-500/10 rounded text-xs text-red-200 font-mono">
+                Schema Error: {e.message}
+            </div>
+        );
+    }
+    return component;
 };

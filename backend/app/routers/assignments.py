@@ -50,13 +50,14 @@ async def submit_assignment(
     Submit an assignment.
     """
     try:
-        # Save the file
+        # Save the file using Storage Service (S3 or Local)
+        from app.services.storage import storage_service
+        
         file_ext = file.filename.split(".")[-1]
         file_name = f"{uuid.uuid4()}.{file_ext}"
-        file_path = os.path.join(UPLOAD_DIR, file_name)
         
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        # Returns either local path or s3:// key
+        file_path = storage_service.upload_file(file, file_name)
             
         # Create submission record
         submission = store.submit_assignment(assignment_id, current_user["id"], file_path)
@@ -90,29 +91,22 @@ async def grade_submission(assignment_id: str, submission_id: str):
 
     description = assignment.get("description", "")
 
-    # 3. Perform OCR
-    file_path = submission["file_path"]
-    full_path = os.path.abspath(file_path)
+    # 3. Dispatch Async Task
+    # We no longer wait for OCR/Grading here. We return "Accepted" immediately.
+    from app.worker import task_grade_submission
     
-    print(f"Processing OCR for: {full_path}")
+    # Pass file_path (which is either local path or s3:// key)
+    # The worker will handle downloading.
+    print(f"Dispatching grading task for {submission['id']}")
     
-    # Use asyncio.to_thread to run optimized OCR without blocking
-    import asyncio
-    # Note: digitize_image expects raw bytes or path, here passing path
-    extracted_text = await asyncio.to_thread(ocr_service.digitize_image, full_path)
+    task = task_grade_submission.delay(assignment_id, submission_id, description, submission["file_path"])
     
-    # 4. Grade
-    print(f"Grading submission against description...")
-    # Use asyncio.to_thread for grading as well
-    result = await asyncio.to_thread(grader_service.grade_submission, extracted_text, description)
-    
-    # Add OCR text to result for reference
-    result["ocr_text"] = extracted_text
-
-    # 5. Save Grade to DB
-    store.update_submission_grade(submission_id, result["score"], result["feedback"], extracted_text)
-    
-    return result
+    return {
+        "status": "accepted",
+        "message": "Grading queued",
+        "task_id": task.id,
+        "submission_id": submission_id
+    }
 
 @router.put("/{assignment_id}/submissions/{submission_id}/score")
 async def update_submission_score(

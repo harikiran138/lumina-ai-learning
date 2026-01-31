@@ -21,3 +21,6 @@ pydantic-settings
 google-generativeai
 python-pptx>=0.6.21
 huggingface_hub
+boto3
+python-multipart
+celery==5.3.6

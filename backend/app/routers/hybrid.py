@@ -32,31 +32,13 @@ async def hybrid_generate(request: HybridGenerateRequest):
         # Stage 2: Cloud Gemini (Structure & Formatting)
         cloud_llm = get_llm_provider("gemini")
         
-        system_prompt_2 = """
-        You are an expert educational content formatter using the A2UI protocol.
-        Your goal is to take raw text and convert it into a rich, interactive lesson using JSON components.
+        # Use the shared Orchestrator Prompt
+        from ai_engine.prompts import A2UI_SYSTEM_PROMPT
         
-        Supported Components:
-        - Mermaid: For processes, flows, or sequences.
-        - Timeline: For dates and history.
-        - Flashcard: For key terms.
-        - ComparisonTable: For comparing concepts.
-        - Quiz: For checking understanding.
-        
-        Format the output purely as A2UI JSON blocks (```a2ui ... ```) and Markdown text.
-        """
-        
-        user_prompt_2 = f"""
-        Raw Content:
-        {raw_content}
-        
-        Task:
-        Convert the above content into a structured lesson about '{request.topic}'.
-        If the content describes a process, use a Mermaid flowchart.
-        If it has dates, use a Timeline.
-        """
-        
-        final_response = await cloud_llm.agenerate(user_prompt_2, system_prompt_2)
+        final_response = await cloud_llm.agenerate(
+            f"Raw Content to Structure:\n{raw_content}\n\nTask: Create a COMPLETE LEARNING MODULE for '{request.topic}' based on the above content.", 
+            A2UI_SYSTEM_PROMPT
+        )
         
         return HybridGenerateResponse(response=final_response)
 
