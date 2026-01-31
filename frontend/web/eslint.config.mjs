@@ -20,6 +20,13 @@ const eslintConfig = [
       "@next/next/no-img-element": "off"
     },
   },
+  {
+    files: ["**/*.js"],
+    rules: {
+        "@typescript-eslint/no-unused-vars": "off",
+        "no-unused-vars": "off"
+    }
+  }
 ];
 
 export default eslintConfig;

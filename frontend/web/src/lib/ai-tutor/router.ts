@@ -48,13 +48,24 @@ export const processMessage = async (question: string, userContext?: string): Pr
     // Retry logic: 1 Retry
     let attempts = 0;
     const maxAttempts = 2;
+    
+    // Determine API Base URL
+    const API_BASE = (typeof window !== 'undefined' && window.location.hostname === 'localhost') 
+        ? 'http://localhost:8000' 
+        : (process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000');
 
     while (attempts < maxAttempts) {
         try {
-            const response = await fetch('/api/ai-tutor', {
+            // Updated to match backend 'ai.py' endpoint /api/tutor/chat
+            const response = await fetch(`${API_BASE}/api/tutor/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question, userContext }),
+                body: JSON.stringify({ 
+                    message: question, 
+                    user_id: "guest", // TODO: Pass real user ID if available
+                    session_id: "default-session", 
+                    context_filters: userContext ? { context: userContext } : undefined
+                }),
             });
 
             if (!response.ok) {
@@ -68,14 +79,18 @@ export const processMessage = async (question: string, userContext?: string): Pr
             const latency = Math.round(performance.now() - startTime);
             sendTelemetry('ai_response_time', latency, { source: 'api', attempt: (attempts + 1).toString() });
             
-            // Cache the result
-            cacheResponse(question, data.answer).catch(e => console.warn("Cache write failed", e));
+            // Backend returns 'response', frontend library likely expects 'answer' based on cache line below
+            const answerText = data.response; 
 
-            return { text: data.answer, source: 'api', latency };
+            // Cache the result
+            cacheResponse(question, answerText).catch(e => console.warn("Cache write failed", e));
+
+            return { text: answerText, source: 'api', latency };
 
         } catch (e: any) {
             attempts++;
-            console.warn(`API Attempt ${attempts} failed:`, e.message);
+            console.warn(`API Attempt ${attempts} failed:`, e); // Log full error for debugging
+
             
             if (attempts >= maxAttempts) {
                 const latency = Math.round(performance.now() - startTime);
