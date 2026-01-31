@@ -37,10 +37,23 @@ class TextChunker:
             
         return chunks
 
+class MockRAGEngine:
+    """Fallback engine when RAG dependencies are missing."""
+    def ingest_text(self, text, metadata=None):
+        print("Mock RAG: Ingestion simulated (Dependencies missing)")
+        
+    def query(self, query_text, n_results=5):
+        print("Mock RAG: Query simulated (Dependencies missing)")
+        return []
+
 class RAGEngine:
     def __init__(self, collection_name: str = "course_content"):
+        if not CHROMADB_AVAILABLE:
+            raise ImportError("ChromaDB not installed")
+            
         # 1. Vector DB
         chroma_path = os.getenv("CHROMA_DB_PATH", "./backend/db/chroma")
+        os.makedirs(chroma_path, exist_ok=True)
         self.client = chromadb.PersistentClient(path=chroma_path)
         self.collection = self.client.get_or_create_collection(name=collection_name)
         
@@ -114,5 +127,12 @@ _rag_engine = None
 def get_rag_engine():
     global _rag_engine
     if _rag_engine is None:
-        _rag_engine = RAGEngine()
+        try:
+            if CHROMADB_AVAILABLE:
+                _rag_engine = RAGEngine()
+            else:
+                _rag_engine = MockRAGEngine()
+        except Exception as e:
+            print(f"RAG Initialization Failed: {e}. using Mock.")
+            _rag_engine = MockRAGEngine()
     return _rag_engine
