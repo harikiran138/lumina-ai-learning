@@ -27,6 +27,6 @@ def test_prompt_constraints():
     """
     Verify the system prompt contains critical instruction keywords.
     """
-    assert "JSON array" in A2UI_SYSTEM_PROMPT
-    assert "max 120 words" in A2UI_SYSTEM_PROMPT
-    assert "prioritize interaction" in A2UI_SYSTEM_PROMPT
+    assert "A2UI JSON format" in A2UI_SYSTEM_PROMPT
+    assert "120 words" in A2UI_SYSTEM_PROMPT
+    assert "Interaction > Explanation" in A2UI_SYSTEM_PROMPT
