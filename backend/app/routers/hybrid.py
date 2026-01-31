@@ -21,11 +21,17 @@ async def hybrid_generate(request: HybridGenerateRequest):
     2. Cloud Gemini formats it into structured A2UI (JSON).
     """
     try:
-        # Stage 1: Local Llama (Raw Knowledge)
+        # Stage 1: Retrieval (RAG)
+        from app.rag.retrieval import RetrievalService
+        retriever = RetrievalService()
+        context_docs = retriever.hybrid_search(request.topic, top_k=3)
+        context_str = "\n".join(context_docs)
+
+        # Stage 2: Local Llama (Raw Knowledge with Context)
         local_llm = get_llm_provider("ollama")
         
-        system_prompt_1 = "You are a knowledgeable professor. Provide a detailed, comprehensive explanation."
-        user_prompt_1 = f"Explain '{request.topic}' in depth. Include key dates, process flows, and concepts."
+        system_prompt_1 = "You are a knowledgeable professor. Provide a detailed, comprehensive explanation using the provided context."
+        user_prompt_1 = f"Context:\n{context_str}\n\nQuestion: Explain '{request.topic}' in depth. Include key dates, process flows, and concepts."
         
         raw_content = await local_llm.agenerate(user_prompt_1, system_prompt_1)
         

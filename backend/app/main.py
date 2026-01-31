@@ -23,19 +23,50 @@ if not hasattr(asyncio, "to_thread"):
 from app.database.manager import db
 from app.core.config import settings
 
-app = FastAPI(title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/openapi.json")
+# --- Observability & Production ---
+import sentry_sdk
+from app.core.logging import configure_logging
+from app.core.limiter import limiter
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
-@app.on_event("startup")
-async def startup_db_client():
+# 1. Configure JSON Logging
+configure_logging()
+
+# 2. Configure Sentry (if DSN provided)
+if settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        traces_sample_rate=1.0,
+    )
+
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
     try:
         await db.connect()
+        print("Connected to MongoDB")
     except Exception as e:
         print(f"WARNING: Could not connect to database: {e}")
         print("Starting in limited functionality mode.")
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
+    
+    yield
+    
+    # Shutdown
     await db.close()
+    print("Closed MongoDB connection")
+
+app = FastAPI(
+    title=settings.PROJECT_NAME, 
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    lifespan=lifespan
+)
+
+# 3. Add Rate Limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 from fastapi.staticfiles import StaticFiles
 import os
