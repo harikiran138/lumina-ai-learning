@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Form, Depends
 from typing import List
 from app.store.course_store import CourseStore
+from app.dependencies import get_course_store
 from .auth import get_current_user
 
 router = APIRouter()
-store = CourseStore()
 
 DEFAULT_COURSES = [
     {"name": "Introduction to Calculus", "code": "math101", "description": "Basic derivatives and integrals", "teacher_id": "teacher1"},
@@ -14,7 +14,7 @@ DEFAULT_COURSES = [
 ]
 
 @router.get("/list")
-async def list_courses():
+async def list_courses(store: CourseStore = Depends(get_course_store)):
     """
     List all available courses. Seeds default courses if empty.
     """
@@ -31,7 +31,8 @@ async def create_course(
     name: str = Form(...),
     code: str = Form(...),
     description: str = Form(""),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    store: CourseStore = Depends(get_course_store)
 ):
     if current_user["role"] != "teacher":
         raise HTTPException(status_code=403, detail="Only teachers can create courses")
