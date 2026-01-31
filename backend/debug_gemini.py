@@ -2,7 +2,7 @@ import requests
 import os
 
 # Hardcode the key for debugging or read from env if I can sourcing it
-API_KEY = "AIzaSyCyggfn8Kg8sD9QWCb-mifvunpVKskHNVQ"
+API_KEY = "AIzaSyD9s7cP6JLB92xkPG_zhXduyYSjSIA001g"
 
 def list_models():
     url = f"https://generativelanguage.googleapis.com/v1beta/models?key={API_KEY}"

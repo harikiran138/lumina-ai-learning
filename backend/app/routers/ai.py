@@ -388,7 +388,7 @@ class PPTGenerationResponse(BaseModel):
     content_structure: Optional[Dict[str, Any]] = None
 
 # Initialize Gemini API
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyDvj8WavmD-t5p0fRl2kM-974JI7LaNcEE")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyD9s7cP6JLB92xkPG_zhXduyYSjSIA001g")
 genai.configure(api_key=GEMINI_API_KEY)
 
 @router.post("/tutor/generate-ppt", response_model=PPTGenerationResponse)

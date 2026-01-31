@@ -14,7 +14,8 @@ class Settings(BaseSettings):
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8000
-    ASSESSMENT_API_KEY: str = "AIzaSyCyggfn8Kg8sD9QWCb-mifvunpVKskHNVQ"
+    ASSESSMENT_API_KEY: str = "AIzaSyD9s7cP6JLB92xkPG_zhXduyYSjSIA001g"
+    SENTRY_DSN: Optional[str] = None
     
     class Config:
         env_file = ".env"
