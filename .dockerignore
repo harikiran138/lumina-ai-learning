@@ -1,0 +1,40 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[co]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.tox/
+
+# Node
+node_modules/
+.next/
+out/
+build/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Artifacts & Data
+/Users/chepuriharikiran/.gemini/antigravity/brain/*
+data/
+static/presentations/
+.env*
+! .env.example
+
+# OS
+.DS_Store
+Thumbs.db
