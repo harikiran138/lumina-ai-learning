@@ -14,9 +14,15 @@ except ImportError:
 
 # Mock torch and submodules for legacy tests/embeddings
 mocks = [
-    "torch", "torch.nn", "torch.optim", "torch.utils", "torch.utils.data",
-    "sentence_transformers", "sentence_transformers.cross_encoder", "sentence_transformers.cross_encoder.CrossEncoder",
-    "transformers"
+    "torch",
+    "torch.nn",
+    "torch.optim",
+    "torch.utils",
+    "torch.utils.data",
+    "sentence_transformers",
+    "sentence_transformers.cross_encoder",
+    "sentence_transformers.cross_encoder.CrossEncoder",
+    "transformers",
 ]
 for m in mocks:
     mock_mod = MagicMock()
@@ -32,6 +38,7 @@ from app.store.course_store import CourseStore
 from app.store.user_data_store import UserDataStore
 from typing import Optional, Dict, List
 
+
 # --- Mocks ---
 class MockUserStore:
     def __init__(self):
@@ -44,13 +51,14 @@ class MockUserStore:
         user = {
             "id": "mock_id_" + email,
             "email": email,
-            "hashed_password": "hashed_" + password, 
+            "hashed_password": "hashed_" + password,
             "full_name": full_name,
             "role": role,
-            "created_at": "2023-01-01"
+            "created_at": "2023-01-01",
         }
         self.users[email] = user
         return user
+
 
 class MockCourseStore:
     def __init__(self):
@@ -71,15 +79,16 @@ class MockCourseStore:
             "name": name,
             "code": code,
             "description": description,
-            "teacher_id": teacher_id
+            "teacher_id": teacher_id,
         }
         self.courses.append(course)
         return course
 
+
 class MockUserDataStore:
     def __init__(self):
-        self.quiz_attempts = {} # user_id -> list
-        self.notes = {} # user_id -> list
+        self.quiz_attempts = {}  # user_id -> list
+        self.notes = {}  # user_id -> list
 
     def add_quiz_attempt(self, user_id, result):
         if user_id not in self.quiz_attempts:
@@ -99,18 +108,22 @@ class MockUserDataStore:
     def get_notes(self, user_id):
         return self.notes.get(user_id, [])
 
+
 # --- Fixtures ---
 @pytest.fixture(scope="module")
 def mock_user_store():
     return MockUserStore()
 
+
 @pytest.fixture(scope="module")
 def mock_course_store():
     return MockCourseStore()
 
+
 @pytest.fixture(scope="module")
 def mock_user_data_store():
     return MockUserDataStore()
+
 
 @pytest.fixture(scope="module")
 def client(mock_user_store, mock_course_store, mock_user_data_store):
@@ -118,15 +131,16 @@ def client(mock_user_store, mock_course_store, mock_user_data_store):
     app.dependency_overrides[get_user_store] = lambda: mock_user_store
     app.dependency_overrides[get_course_store] = lambda: mock_course_store
     app.dependency_overrides[get_user_data_store] = lambda: mock_user_data_store
-    
+
     # Patch verify_password
     from app.routers import auth
+
     original_verify = auth.verify_password
     auth.verify_password = lambda plain, hashed: hashed == "hashed_" + plain
-    
+
     with TestClient(app) as c:
         yield c
-    
+
     # Restores
     app.dependency_overrides.clear()
     auth.verify_password = original_verify
