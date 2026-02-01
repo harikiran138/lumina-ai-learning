@@ -2,30 +2,35 @@
 
 # Default target
 help:
-	@echo "Lumina Project Command Center"
-	@echo "----------------------------"
-	@echo "make test          - Run backend pytest suite with 100% mocked dependencies"
-	@echo "make security      - Run Bandit static analysis and update security report"
-	@echo "make ai-eval       - Run Promptfoo and Ragas evaluations for AI quality"
-	@echo "make ui-fix        - Apply aesthetic improvements to the A2UI renderer"
-	@echo "make dev-local     - Setup local AI (Ollama) and configure environment"
+	@echo "Lumina Project Command Center (Pro Target)"
+	@echo "----------------------------------------"
+	@echo "make test          - Run backend pytest suite"
+	@echo "make security      - Run SAST (Semgrep) & Secret scanning"
+	@echo "make security-py   - Run Bandit security analysis (Backend)"
+	@echo "make test-api      - Run Newman API lifecycle tests"
+	@echo "make eval-rag      - Run RAGAS quality evaluation (Faithfulness/Relevancy)"
+	@echo "make docker-build  - Validate container images locally"
 	@echo "make report        - View terminal summary of all audits"
 
 test:
 	@echo "🚀 Running Backend Tests..."
-	@cd backend && pytest
+	@cd backend && python -m pytest tests
 
 security:
-	@echo "🛡️ Running Security Scan..."
-	@bandit -r backend/ -f json -o bandit_report.json
-	@echo "Security Scan Complete. See bandit_report.json"
+	@echo "🛡️ Running Semgrep Security Scan..."
+	@semgrep scan --config auto
 
-ai-eval:
-	@echo "🧠 Running AI Evaluations..."
-	@echo "1. Promptfoo (Prompt Quality Check)"
-	@npx promptfoo eval -c backend/ai_tests/promptfoo.yaml --no-cache
-	@echo "2. Ragas (Search Quality Check)"
-	@python backend/ai_tests/ragas_eval.py
+security-py:
+	@echo "🐍 Running Bandit Security Scan..."
+	@bandit -r backend/ -ll
+
+test-api:
+	@echo "📡 Running Newman API Tests..."
+	@newman run backend/tests/api_tests.json
+
+eval-rag:
+	@echo "🧠 Running RAGAS Evaluation..."
+	@python backend/tests/rag_eval.py
 
 dev-local:
 	@echo "⚙️ Setting up Local AI Environment..."
@@ -50,3 +55,11 @@ monitor:
 load-test:
 	@echo "📈 Starting Locust Load Test (100 Jobs)..."
 	@locust -f stress_worker.py --host http://localhost:8000 --users 10 --spawn-rate 2
+
+seed:
+	@echo "🌱 Seeding Database..."
+	@cd backend && python -m app.seed
+
+seed-clear:
+	@echo "🧹 Clearing and Seeding Database..."
+	@cd backend && python -m app.seed --clear

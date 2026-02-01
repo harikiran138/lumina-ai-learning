@@ -175,22 +175,22 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if request.auth.uid == userId;
     }
-    
+
     match /courses/{courseId} {
       allow read: if true;
-      allow write: if request.auth != null && 
+      allow write: if request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
     }
-    
+
     match /progress/{progressId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null;
     }
-    
+
     match /community_channels/{channelId} {
       allow read: if request.auth != null;
     }
-    
+
     match /community_messages/{messageId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
