@@ -11,13 +11,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install Vercel CLI
         run: npm install -g vercel
-      
+
       - name: Deploy to Vercel
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -28,7 +28,7 @@ jobs:
           vercel pull --yes --environment=production
           vercel build --prod
           vercel deploy --prod --prebuilt
-      
+
       - name: Comment on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7

@@ -115,7 +115,7 @@ class ProfileManager {
         const notes = await window.luminaDB.getByIndex('notes', 'studentId', userId);
         const enrolledCourses = progressData.length;
         const totalHoursLearned = progressData.reduce((sum, p) => sum + (p.progress || 0), 0);
-        const averageMastery = progressData.length > 0 
+        const averageMastery = progressData.length > 0
             ? Math.round(progressData.reduce((sum, p) => sum + (p.mastery || 0), 0) / progressData.length)
             : 0;
 
@@ -156,7 +156,7 @@ class ProfileManager {
         const progressData = await window.luminaDB.getByIndex('progress', 'studentId', userId);
         const courseIds = progressData.map(p => p.courseId);
         const courses = [];
-        
+
         for (const courseId of courseIds) {
             const course = getAllCourses().find(c => c.id === courseId);
             if (course) {
@@ -169,7 +169,7 @@ class ProfileManager {
                 });
             }
         }
-        
+
         return courses;
     }
 
@@ -179,7 +179,7 @@ class ProfileManager {
     async verifyCredentials(email, password) {
         const users = await window.luminaDB.getByIndex('users', 'email', email);
         if (users.length === 0) return null;
-        
+
         const user = users[0];
         // In a real app, use proper password hashing
         if (user.password === password) {

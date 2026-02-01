@@ -38,11 +38,11 @@ def test_grading_flow():
             "student_id": "student_123"
         }
         res = requests.post(f"{BASE_URL}/submit", data=data, files=files)
-    
+
     if res.status_code != 200:
         print("Failed to submit assignment:", res.text)
         return
-    
+
     submission_id = res.json()["submission"]["id"]
     print(f"   Submission ID: {submission_id}")
 
@@ -50,11 +50,11 @@ def test_grading_flow():
     print("3. Grading Assignment...")
     grade_url = f"{BASE_URL}/{assignment_id}/submissions/{submission_id}/grade"
     res = requests.post(grade_url)
-    
+
     if res.status_code != 200:
         print("Failed to grade assignment:", res.text)
         return
-    
+
     result = res.json()
     print("\n=== GRADING RESULT ===")
     print(f"Score: {result.get('score')}")
