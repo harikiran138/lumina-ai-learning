@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "deploy": "firebase deploy",
-    "test": "vitest"
+    "test": "vitest",
+    "test:e2e:playwright": "playwright test",
+    "test:e2e:cypress": "cypress run"
   },
   "repository": {
     "type": "git",

@@ -109,9 +109,34 @@ app.include_router(assessment_router, prefix="/api/assessment", tags=["Assessmen
 
 from .routers import hybrid
 app.include_router(hybrid.router, prefix="/api/ai", tags=["Hybrid AI"])
-
 from .routers import student
 app.include_router(student.router, prefix="/api/student", tags=["Student Data"])
+
+# --- Performance & Security Polish ---
+
+import time
+from fastapi import Request
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class TimingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        response.headers["X-Process-Time"] = str(process_time)
+        return response
+
+app.add_middleware(TimingMiddleware)
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # Log the full exception for developers
+    print(f"CRITICAL ERROR: {exc}")
+    return {
+        "error": "Internal Server Error",
+        "message": "An unexpected error occurred. Please try again later.",
+        "path": request.url.path
+    }
 
 @app.get("/")
 def read_root():
