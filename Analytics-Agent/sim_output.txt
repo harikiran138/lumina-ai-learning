@@ -12,7 +12,7 @@ Aggregate Metrics:
 Total Simulations: 100
 Interventions Triggered: 0 (0%)
 ------------------------------
-Scenario        | Count | Avg Engagement 
+Scenario        | Count | Avg Engagement
 ------------------------------
 flow            | 24    | 0.411
 struggle        | 32    | 0.995

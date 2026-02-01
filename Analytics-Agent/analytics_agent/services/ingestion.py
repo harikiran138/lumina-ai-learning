@@ -13,7 +13,7 @@ class IngestionService:
     Handles the ingestion of raw behavioral streams.
     Validates data and persists it to storage.
     """
-    
+
     def __init__(self, db_client: TimescaleClient):
         self.db_client = db_client
 
@@ -23,7 +23,7 @@ class IngestionService:
         """
         valid_events = []
         errors = []
-        
+
         for item in payload:
             try:
                 # 1. Validate against schema

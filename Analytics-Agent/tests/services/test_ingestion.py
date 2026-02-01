@@ -28,13 +28,13 @@ def test_ingest_valid_batch(ingestion_service, mock_db):
             "payload": {"duration": 1500}
         }
     ]
-    
+
     result = ingestion_service.ingest_batch(payload)
-    
+
     assert result["status"] == "success"
     assert result["processed"] == 2
     assert result["dropped"] == 0
-    
+
     # Verify DB storage
     stored = mock_db.get_recent_events("user_123")
     assert len(stored) == 2
@@ -47,9 +47,9 @@ def test_ingest_invalid_schema(ingestion_service):
             "payload": {}
         }
     ]
-    
+
     result = ingestion_service.ingest_batch(payload)
-    
+
     assert result["status"] == "success" # It allows partial success
     assert result["processed"] == 0
     assert result["dropped"] == 1

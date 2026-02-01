@@ -8,7 +8,9 @@
 
 **Transform Static Content into Intelligent, Adaptive Learning Experiences**
 
-[Features](#-key-features) • [Architecture](#-system-architecture) • [Installation](#-installation) • [Documentation](#-documentation) • [Contributing](#-contributing)
+**🚀 Now optimized for local development with instant startup!**
+
+[Features](#-key-features) • [Quick Start](#-quick-start) • [Architecture](#-system-architecture) • [Documentation](#-documentation) • [Contributing](#-contributing)
 
 </div>
 
@@ -56,34 +58,34 @@
 Current educational technology fails learners, educators, and institutions across 14 critical dimensions:
 
 ### For Learners
- **One-size-fits-all content** ignoring individual learning styles  
- **Binary assessments** measuring correctness, not understanding  
- **Reactive support** arriving after failure  
- **Focus only on weaknesses**, ignoring strengths and talents  
- **Short-term cramming** leading to 70% forgetting within a year  
+ **One-size-fits-all content** ignoring individual learning styles
+ **Binary assessments** measuring correctness, not understanding
+ **Reactive support** arriving after failure
+ **Focus only on weaknesses**, ignoring strengths and talents
+ **Short-term cramming** leading to 70% forgetting within a year
 
 ### For Educators
- **15-20 hours/week** on administrative tasks  
- **Manual grading** preventing personalized feedback at scale  
- **Data fragmentation** across 15-30 disconnected tools  
- **No actionable insights** from learning analytics  
+ **15-20 hours/week** on administrative tasks
+ **Manual grading** preventing personalized feedback at scale
+ **Data fragmentation** across 15-30 disconnected tools
+ **No actionable insights** from learning analytics
 
 ### For Institutions
- **$250K-$600K/year** in external AI API costs  
- **Privacy violations** with student data sent to third parties  
- **Vendor lock-in** with no control over AI models  
- **Unreliable attendance** based on logins, not engagement  
+ **$250K-$600K/year** in external AI API costs
+ **Privacy violations** with student data sent to third parties
+ **Vendor lock-in** with no control over AI models
+ **Unreliable attendance** based on logins, not engagement
 
 ### Lumina's Solution
 
- **Hyper-personalized learning pathways** adapting to cognitive profiles  
- **Continuous diagnostic assessment** measuring understanding, not just correctness  
- **Predictive intervention** preventing 70% of failures before they occur  
- **Balanced development** nurturing both strengths and weaknesses  
- **Long-term retention** through spaced repetition and retrieval practice  
- **AI-augmented teaching** saving educators 15-20 hours/week  
- **Unified platform** replacing 15-30 fragmented tools  
- **Complete AI sovereignty** with 80% cost savings and zero privacy concerns  
+ **Hyper-personalized learning pathways** adapting to cognitive profiles
+ **Continuous diagnostic assessment** measuring understanding, not just correctness
+ **Predictive intervention** preventing 70% of failures before they occur
+ **Balanced development** nurturing both strengths and weaknesses
+ **Long-term retention** through spaced repetition and retrieval practice
+ **AI-augmented teaching** saving educators 15-20 hours/week
+ **Unified platform** replacing 15-30 fragmented tools
+ **Complete AI sovereignty** with 80% cost savings and zero privacy concerns
 
 ---
 
@@ -326,7 +328,7 @@ Advantages:
 
 ### 5. **Graph Neural Networks (GNNs)**
 - **Architecture**: GraphSAGE, Graph Attention Networks (GAT)
-- **Application**: 
+- **Application**:
   - Knowledge graph reasoning
   - Concept dependency modeling
   - Learner similarity graphs
@@ -397,7 +399,7 @@ Mobile Application:
   Features: A2UI, Offline Support
   Run: "flutter run"
 ```
-  
+
 Desktop Application:
   Framework: Electron
   Updates: electron-updater
@@ -415,7 +417,7 @@ Microservices:
   API Documentation: OpenAPI 3.1, Swagger UI
   Async: asyncio, aiohttp
   Validation: Pydantic v2
-  
+
 Background Workers:
   Queue: Celery + Redis
   Scheduler: Celery Beat
@@ -430,35 +432,35 @@ WebSocket Server:
 ```yaml
 LLM Inference:
   Serving: vLLM (NVIDIA GPUs), TGI, Ollama
-  Models: 
+  Models:
     - LLaMA 3.1 (8B, 70B, 405B)
     - Mistral Large 2 (123B)
     - Mixtral 8x22B
     - Qwen 2.5 (72B)
   Optimization: Flash Attention 2, GPTQ, AWQ quantization
-  
+
 Embedding Models:
   Text: instructor-xl, e5-mistral-7b, all-mpnet-base-v2
   Multimodal: CLIP ViT-L/14, BLIP-2, ImageBind
   Code: StarEncoder, CodeBERT
   Math: Minerva embeddings
-  
+
 Vector Database:
   Primary: Milvus 2.3+ (GPU acceleration)
   Alternatives: Weaviate, Qdrant, Chroma
   Features: Hybrid search, multi-tenancy, filtering
-  
+
 ML Frameworks:
   Deep Learning: PyTorch 2.0+, HuggingFace Transformers
   Traditional ML: scikit-learn, XGBoost, LightGBM
   Reinforcement Learning: Stable-Baselines3, Ray RLlib
   Graph ML: PyTorch Geometric, DGL
   Quantum: Qiskit, PennyLane (simulation)
-  
+
 Fine-Tuning:
   Methods: LoRA, QLoRA, Prefix Tuning
   Frameworks: HuggingFace PEFT, Axolotl, LLaMA-Factory
-  
+
 Federated Learning:
   Framework: NVIDIA FLARE, Flower
   Privacy: PySyft (Differential Privacy)
@@ -470,7 +472,7 @@ Frameworks:
   - Guardrails AI (input/output validation)
   - NeMo Guardrails (NVIDIA)
   - Constitutional AI principles
-  
+
 Detection:
   - Hallucination: RAG-only responses, fact-checking
   - Bias: Fairlearn, AIF360
@@ -485,25 +487,25 @@ Primary Database:
   Extensions: pgvector, TimescaleDB, PostGIS
   Connection Pooling: PgBouncer
   Backup: WAL-G, pg_dump
-  
+
 Cache & Queue:
   System: Redis 7+ (Cluster mode)
   Use Cases: Session, cache, rate limiting, queues
   Persistence: RDB + AOF
-  
+
 Graph Database:
   System: Neo4j 5+ (Enterprise)
   Use Case: Knowledge graphs, concept dependencies
   Query: Cypher
-  
+
 Time-Series:
   System: TimescaleDB (PostgreSQL extension)
   Use Case: Learning analytics, behavior tracking
-  
+
 Search:
   System: Elasticsearch 8+ / OpenSearch
   Use Case: Full-text search, log aggregation
-  
+
 Object Storage:
   System: MinIO (S3-compatible)
   Use Case: Content files, media, backups
@@ -516,24 +518,24 @@ Containerization:
   Runtime: Docker 24+
   Orchestration: Kubernetes 1.28+
   Service Mesh: Istio (optional)
-  
+
 Infrastructure as Code:
   Provisioning: Terraform
   Configuration: Ansible
   Secrets: HashiCorp Vault
-  
+
 CI/CD:
   Pipeline: GitHub Actions, GitLab CI
   Registry: Harbor, GitHub Container Registry
   Deployment: ArgoCD (GitOps)
-  
+
 Monitoring & Observability:
   Metrics: Prometheus + Grafana
   Logging: ELK Stack (Elasticsearch, Logstash, Kibana)
   Tracing: Jaeger, Tempo
   APM: OpenTelemetry
   Alerting: Alertmanager, PagerDuty
-  
+
 Security:
   WAF: ModSecurity, NAXSI
   SSL/TLS: Let's Encrypt, cert-manager
@@ -1072,7 +1074,7 @@ Data at Rest:
   - Database: Transparent Data Encryption (TDE)
   - Object Storage: AES-256 encryption
   - Backups: Encrypted before storage
-  
+
 Data in Transit:
   - TLS 1.3 for all connections
   - mTLS for service-to-service communication
@@ -1105,7 +1107,7 @@ Techniques:
   - Federated Learning: No raw data sharing
   - Secure Multi-Party Computation: Collaborative analysis
   - K-anonymity: Minimum group sizes for reports
-  
+
 Tools:
   - PySyft: Privacy-preserving ML
   - Opacus: Differential privacy for PyTorch
@@ -1187,18 +1189,18 @@ Cost per Student per Year       | $8.00          | $1.80   | -78%
 ```
 Metric                          | Target          | Actual  | Status
 --------------------------------|-----------------|---------|----------
-API Response Time (p95)         | <200ms          | 145ms   | 
-LLM Inference Time (70B)        | <2s             | 1.3s    | 
-Concurrent Users                | 50,000          | 75,000  | 
-Uptime                          | 99.9%           | 99.95%  | 
-GPU Utilization                 | >80%            | 87%     | 
+API Response Time (p95)         | <200ms          | 145ms   |
+LLM Inference Time (70B)        | <2s             | 1.3s    |
+Concurrent Users                | 50,000          | 75,000  |
+Uptime                          | 99.9%           | 99.95%  |
+GPU Utilization                 | >80%            | 87%     |
 ```
 
 ---
 
 ##  Roadmap
 
-### Current Version: 1.0.0 
+### Current Version: 1.0.0
 -  Core adaptive learning engine
 -  Multi-agent AI system with MCP
 -  RAG pipeline with advanced chunking
@@ -1209,7 +1211,7 @@ GPU Utilization                 | >80%            | 87%     |
 -  Engagement verification
 -  Educator dashboards
 
-### Version 1.5.0 (Q2 2025) 
+### Version 1.5.0 (Q2 2025)
 -  VR/AR content support
 -  Advanced gamification (badges, leaderboards)
 -  Peer learning AI matchmaking
@@ -1218,7 +1220,7 @@ GPU Utilization                 | >80%            | 87%     |
 -  Jupyter notebook integration
 -  Enhanced accessibility (WCAG 2.2 AAA)
 
-### Version 2.0.0 (Q4 2025) 
+### Version 2.0.0 (Q4 2025)
 -  Quantum machine learning integration
 -  Brain-computer interface support (research)
 -  Holographic content delivery
@@ -1227,7 +1229,7 @@ GPU Utilization                 | >80%            | 87%     |
 -  Cross-institutional federated learning network
 -  Blockchain-based credentials
 
-### Version 3.0.0 (2026) 
+### Version 3.0.0 (2026)
 -  AGI-powered personalized tutors
 -  Real-time brain state monitoring
 -  Quantum-enhanced optimization
