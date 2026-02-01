@@ -2,6 +2,7 @@ import pytest
 import json
 from ai_engine.prompts import A2UI_SYSTEM_PROMPT
 
+
 def test_a2ui_json_structure():
     """
     This test verifies that our System Prompt guidelines produce valid A2UI JSON.
@@ -19,9 +20,10 @@ def test_a2ui_json_structure():
         data = json.loads(sample_response)
         assert isinstance(data, list)
         assert data[0]["type"] == "header"
-        assert len(data[1]["content"].split()) < 120 # Check word limit rule compliance assumption
+        assert len(data[1]["content"].split()) < 120  # Check word limit rule compliance assumption
     except json.JSONDecodeError:
         pytest.fail("A2UI Sample is not valid JSON")
+
 
 def test_prompt_constraints():
     """
