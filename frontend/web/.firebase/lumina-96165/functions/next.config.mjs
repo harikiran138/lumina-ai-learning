@@ -9,16 +9,14 @@ var nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "placehold.co"
+        hostname: "placehold.co",
       },
       {
         protocol: "https",
-        hostname: "ui-avatars.com"
-      }
-    ]
-  }
+        hostname: "ui-avatars.com",
+      },
+    ],
+  },
 };
 var next_config_default = nextConfig;
-export {
-  next_config_default as default
-};
+export { next_config_default as default };

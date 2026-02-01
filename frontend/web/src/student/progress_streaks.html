@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <!-- Dynamic Database System Scripts -->
     <script src="../js/database.js"></script>
     <script src="../js/api.js"></script>
@@ -41,7 +41,7 @@
             min-height: calc(100vh - 128px);
             overflow-y: auto;
         }
-        
+
     </style>
     <script>
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -138,7 +138,7 @@
                             <p class="font-semibold text-lg text-gray-800 dark:text-white mt-1">Day Streak!</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Keep up the great work. You're on fire!</p>
                         </div>
-                        
+
                         <!-- Current Courses -->
                         <div class="bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
                             <h3 class="font-bold text-lg mb-4">Current Courses</h3>
@@ -204,7 +204,7 @@
                 </main>
             </div>
         </div>
-        
+
         <!-- Mobile sidebar overlay -->
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleSidebar()"></div>
     </div>
@@ -215,13 +215,13 @@
         function initializeChart() {
             const ctx = document.getElementById('masteryChart');
             if (!ctx) return;
-            
+
             if (masteryChart) {
                 masteryChart.destroy();
             }
 
             const isDarkMode = document.documentElement.classList.contains('dark');
-            
+
             const chartData = {
                 labels: ['Mechanics', 'Thermodynamics', 'Electromagnetism', 'Relativity', 'Quantum Physics', 'Optics'],
                 datasets: [{
@@ -247,7 +247,7 @@
                         r: {
                             angleLines: { color: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.2)' },
                             grid: { color: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.2)' },
-                            pointLabels: { 
+                            pointLabels: {
                                 color: isDarkMode ? '#d1d5db' : '#d1d5db',
                                 font: {
                                     size: 12
@@ -282,7 +282,7 @@
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
             const overlay = document.getElementById('sidebar-overlay');
-            
+
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
@@ -300,4 +300,3 @@
     </script>
 </body>
 </html>
-

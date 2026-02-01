@@ -5,25 +5,25 @@
 
 // Get all HTML files that need CSS fixes
 const htmlFiles = [
-    'student/ai_tutor.html',
-    'student/assessment.html',
-    'student/assessment_result.html',
-    'student/community.html',
-    'student/course_explorer.html',
-    'student/leaderboard.html',
-    'student/lesson_page.html',
-    'student/my_notes.html',
-    'student/progress_streaks.html',
-    'teacher/assessment_management.html',
-    'teacher/community.html',
-    'teacher/content_upload.html',
-    'teacher/reports.html'
+  "student/ai_tutor.html",
+  "student/assessment.html",
+  "student/assessment_result.html",
+  "student/community.html",
+  "student/course_explorer.html",
+  "student/leaderboard.html",
+  "student/lesson_page.html",
+  "student/my_notes.html",
+  "student/progress_streaks.html",
+  "teacher/assessment_management.html",
+  "teacher/community.html",
+  "teacher/content_upload.html",
+  "teacher/reports.html",
 ];
 
 // Fix function that adds the standard background-clip property
 function fixBackgroundClip() {
-    const style = document.createElement('style');
-    style.textContent = `
+  const style = document.createElement("style");
+  style.textContent = `
         .gradient-text {
             background: linear-gradient(to right, #f59e0b, #fbbf24);
             background-clip: text !important;
@@ -31,14 +31,14 @@ function fixBackgroundClip() {
             -webkit-text-fill-color: transparent;
         }
     `;
-    document.head.appendChild(style);
+  document.head.appendChild(style);
 }
 
 // Apply fix when DOM loads
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', fixBackgroundClip);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", fixBackgroundClip);
 } else {
-    fixBackgroundClip();
+  fixBackgroundClip();
 }
 
-console.log('CSS compatibility fix applied for webkit-background-clip');
+console.log("CSS compatibility fix applied for webkit-background-clip");

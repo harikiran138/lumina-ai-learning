@@ -251,7 +251,7 @@ https://nextjs.org/docs/messages/module-not-found
 Module not found: Can't resolve 'zod'
 > 1 | import { z } from "zod";
     | ^^^^^^^^^^^^^^^^^^^^^^^^
-  2 | // Import type for safety - usually available from the library, 
+  2 | // Import type for safety - usually available from the library,
   3 | // using 'any' for simplicity if types conflict, but prefer interface.
   4 | import { type MLCEngineInterface } from "@mlc-ai/web-llm";
 
