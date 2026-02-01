@@ -47,7 +47,7 @@ def download_hf_datasets():
             # passing streaming=True to check access without full heavy download immediately
             dataset = load_dataset(ds_name, streaming=True)
             logging.info(f"Successfully connected to {ds_name}")
-            
+
             # To actually save to disk for training:
             # dataset['train'].to_json(f"{DATA_DIR}/{ds_name.replace('/', '_')}_train.json")
             # For demonstration in this environment, we just verify access.

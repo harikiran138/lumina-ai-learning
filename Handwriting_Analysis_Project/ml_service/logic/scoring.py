@@ -19,26 +19,26 @@ class QAScorer:
 
         # Compute cosine similarity
         cosine_score = util.pytorch_cos_sim(embedding_1, embedding_2)
-        
+
         return cosine_score.item()
 
     def grade_submission(self, extracted_text: str, questions: list) -> dict:
         """
-        Grades a submission. 
+        Grades a submission.
         Assuming questions list contains dicts with {'question': '...', 'answer_key': '...'}
-        
+
         This simple version assumes `extracted_text` is the full blob and checks if answers appear.
         A smarter version would need to segment the text by question.
-        
+
         For now, let's assume we extract answers per question via some heuristic/LLM.
         """
         # Placeholder for LLM extraction logic
         # extracted_answers = extract_answers_llm(extracted_text, [q['question'] for q in questions])
-        
+
         # Mock extracted answers for demonstration
         results = []
         total_score = 0
-        
+
         for q in questions:
             key = q.get('answer_key', '')
             # Heuristic: check if key works roughly match
@@ -49,7 +49,7 @@ class QAScorer:
                 "feedback": "Good match" if score > 0.7 else "Review needed"
             })
             total_score += score
-            
+
         return {
             "results": results,
             "average_score": total_score / len(questions) if questions else 0

@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
         const prompt = `
       Please analyze this handwritten document.
-      
+
       1. Transcribe the handwritten text exactly as it appears.
       2. Evaluate the text and provide a score from 0 to 100 based on clarity, legibility, and content quality.
       3. Provide brief, constructive feedback.
