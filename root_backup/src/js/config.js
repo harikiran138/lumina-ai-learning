@@ -8,10 +8,10 @@ window.LuminaConfig = {
     gemini: {
         // Get your free API key from: https://aistudio.google.com/app/apikey
         apiKey: 'AIzaSyDw3gXYit00XFm2YpQ1bE9SuQ3oVtPzudI', // Replace this with your real API key
-        
+
         // Optional: Model configuration
         model: 'gemini-2.0-flash',
-        
+
         // Optional: Generation settings
         generationConfig: {
             temperature: 0.7,
@@ -20,14 +20,14 @@ window.LuminaConfig = {
             topK: 40
         }
     },
-    
+
     // AI Tutor Settings
     aiTutor: {
         maxHistoryLength: 10,
         typingDelay: 1000, // ms delay for typing indicator
         enableQuickActions: true
     },
-    
+
     // Educational Context
     education: {
         studentLevel: 'high school', // or 'middle school', 'college', etc.

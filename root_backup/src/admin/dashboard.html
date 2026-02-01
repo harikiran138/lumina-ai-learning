@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Dynamic Database System Scripts -->
     <script src="../js/database.js"></script>
     <script src="../js/api.js"></script>
@@ -39,7 +39,7 @@
         html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
         ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
         html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
-        
+
         aside nav {
              min-height: calc(100vh - 128px);
         }
@@ -63,7 +63,7 @@
                     <span class="gradient-text">Lumina</span> ✨
                 </a>
             </div>
-            
+
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
                 <a href="dashboard.html" id="nav-admin_dashboard" class="flex items-center px-4 py-2.5 text-sm font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300 rounded-lg transition-colors">
                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -113,7 +113,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Member Sidebar - Not used on dashboard but kept for consistent file structure -->
         <aside id="member-sidebar" class="w-64 bg-white dark:bg-[#1C1C1C] border-l border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out absolute right-0 top-0 h-full z-30 translate-x-full">
             <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 h-16 flex items-center justify-between">
@@ -129,9 +129,9 @@
         <!-- Overlays (Static) -->
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
         <div id="member-sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="closeMemberSidebar()"></div>
-        
+
         <!-- MODALS (Hidden by default) -->
-        
+
         <!-- Edit User Modal -->
         <div id="edit-user-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
             <div id="edit-user-modal-content" class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 w-full max-w-lg transform transition-all scale-95 opacity-0">
@@ -207,8 +207,8 @@
 
     <script>
         // --- DATA (Copied from source for self-containment) ---
-        const currentUser = { name: "Prof. Evelyn Reed (Admin)", avatar: "A", color: "bg-red-600", role: 'admin', id: 'er', status: 'active' }; 
-        
+        const currentUser = { name: "Prof. Evelyn Reed (Admin)", avatar: "A", color: "bg-red-600", role: 'admin', id: 'er', status: 'active' };
+
         const allStudents = [
             { name: "Sophia Chen", avatar: "S", color: "bg-teal-500", role: "student", id: "sc", status: 'active' },
             { name: "Liam Harris", avatar: "L", color: "bg-purple-500", role: "student", id: "lh", status: 'suspended' },
@@ -217,7 +217,7 @@
             { name: "Kenji Tanaka", avatar: "K", color: "bg-blue-500", role: "student", id: "kt", status: 'active' },
             { name: "Jane Doe (Teacher)", avatar: "J", color: "bg-green-600", role: "teacher", id: "jd", status: 'active' },
         ];
-        
+
         let chatData = {
             "qm": {
                 id: "qm",
@@ -270,7 +270,7 @@
         const editCourseModal = document.getElementById('edit-course-modal');
         const editCourseModalContent = document.getElementById('edit-course-modal-content');
         const editCourseForm = document.getElementById('edit-course-form');
-        
+
         // --- HELPERS ---
         function openModal(modalEl, contentEl) {
             modalEl.classList.remove('hidden');
@@ -285,7 +285,7 @@
         function findUserById(id) {
             return allUsers.find(u => u.id === id) || null;
         }
-        
+
         function findCourseById(id) {
             return chatData[id] || null;
         }
@@ -318,11 +318,11 @@
             document.body.appendChild(messageBox);
             setTimeout(() => messageBox.remove(), 3000);
         }
-        
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
-            
+
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
@@ -335,7 +335,7 @@
             document.getElementById('sidebar').classList.add('-translate-x-full');
             document.getElementById('sidebar-overlay').classList.add('hidden');
         }
-        
+
         function closeMemberSidebar() {
              document.getElementById('member-sidebar').classList.add('translate-x-full');
              document.getElementById('member-sidebar-overlay').classList.add('hidden');
@@ -356,11 +356,11 @@
             ];
 
             const tabsHtml = tabs.map(tab => `
-                <button 
-                    onclick="renderAdminDashboard('${tab.id}')" 
+                <button
+                    onclick="renderAdminDashboard('${tab.id}')"
                     class="py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
-                        window.adminActiveTab === tab.id 
-                        ? 'text-amber-600 border-amber-500 dark:text-amber-400' 
+                        window.adminActiveTab === tab.id
+                        ? 'text-amber-600 border-amber-500 dark:text-amber-400'
                         : 'text-gray-500 border-transparent hover:border-gray-300 dark:hover:border-gray-700'
                     }"
                 >
@@ -376,7 +376,7 @@
                     <div id="admin-tab-content"></div>
                 </div>
             `;
-            
+
             const tabContentEl = document.getElementById('admin-tab-content');
 
             if (window.adminActiveTab === 'overview') {
@@ -393,7 +393,7 @@
         function renderAdminOverview() {
             const activeUsers = allUsers.filter(u => u.status === 'active').length;
             const teachers = allUsers.filter(u => u.role === 'teacher').length;
-            
+
             return `
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
@@ -467,9 +467,9 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <button onclick="openEditUserModal('${user.id}')" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors mr-3">Edit Role</button>
-                                            ${user.id !== currentUser.id ? 
-                                                (user.status === 'active' ? 
-                                                    `<button onclick="updateUserStatus('${user.id}', 'suspended')" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors">Suspend</button>` : 
+                                            ${user.id !== currentUser.id ?
+                                                (user.status === 'active' ?
+                                                    `<button onclick="updateUserStatus('${user.id}', 'suspended')" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors">Suspend</button>` :
                                                     `<button onclick="updateUserStatus('${user.id}', 'active')" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 transition-colors">Activate</button>`)
                                                 : `<span class="text-gray-400 dark:text-gray-600">N/A</span>`
                                             }
@@ -485,7 +485,7 @@
 
         function renderAdminCourseManagement() {
             const courses = Object.values(chatData);
-            
+
             return `
                 <div class="space-y-6">
                     <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
@@ -513,7 +513,7 @@
                             }).join('')}
                         </div>
                     </div>
-                    
+
                     <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800">
                         <h2 class="text-xl font-bold mb-4">Content Ingestion Status (RAG Knowledge Base)</h2>
                         <div class="space-y-4">
@@ -584,7 +584,7 @@
         }
 
         // --- USER AND COURSE MODAL HANDLERS ---
-        
+
         function openEditUserModal(userId) {
             const user = findUserById(userId);
             if (!user) return;
@@ -605,15 +605,15 @@
         function closeEditUserModal() {
             closeModal(editUserModal, editUserModalContent);
         }
-        
+
         function handleEditUserFormSubmit(e) {
             e.preventDefault();
             const userId = document.getElementById('edit-user-id').value;
             const newRole = document.getElementById('edit-user-role').value;
             const newStatus = document.getElementById('edit-user-status').value;
-            
+
             updateUserData(userId, { role: newRole, status: newStatus });
-            
+
             closeEditUserModal();
             renderAdminDashboard('user_management');
             mockAction(`Updated ${findUserById(userId)?.name}'s permissions.`);
@@ -624,7 +624,7 @@
             renderAdminDashboard('user_management');
             mockAction(`${findUserById(userId)?.name} account ${newStatus}d.`);
         }
-        
+
         function openEditCourseModal(courseId) {
             const isNew = courseId === 'new';
             const course = isNew ? { id: 'new', name: '', description: '', teacherId: 'er' } : findCourseById(courseId);
@@ -654,20 +654,20 @@
         function handleDeleteCourse() {
              const courseId = document.getElementById('edit-course-id').value;
              const courseName = findCourseById(courseId)?.name;
-             
+
              delete chatData[courseId];
              closeEditCourseModal();
              renderAdminDashboard('course_management');
              mockAction(`Deleted course: ${courseName}`);
         }
-        
+
         function handleEditCourseFormSubmit(e) {
             e.preventDefault();
             const courseId = document.getElementById('edit-course-id').value;
             const courseTitle = document.getElementById('edit-course-title').value;
             const courseDesc = document.getElementById('edit-course-desc').value;
             const courseTeacher = document.getElementById('edit-course-teacher').value;
-            
+
             const isNew = courseId === 'new';
 
             if (isNew) {
@@ -692,13 +692,13 @@
                 };
                 mockAction(`Updated course: ${courseTitle}`);
             }
-            
+
             closeEditCourseModal();
             renderAdminDashboard('course_management');
         }
 
         // --- DYNAMIC INITIALIZATION ---
-        
+
         document.getElementById('theme-toggle').addEventListener('click', function() {
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
@@ -720,21 +720,21 @@
         async function initDynamicDashboard() {
             try {
                 console.log('Initializing dynamic admin dashboard...');
-                
+
                 // Wait for API and dashboard loader to be ready
                 let attempts = 0;
                 while (!window.luminaAPI && attempts < 50) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                     attempts++;
                 }
-                
+
                 if (window.luminaAPI && window.dashboardLoader && window.dashboardLoader.currentUser) {
                     console.log('Loading dynamic admin data...');
-                    
+
                     // Load real data from database
                     const adminData = await window.dashboardLoader.loadAdminData();
                     console.log('Admin data loaded:', adminData);
-                    
+
                     // Replace static data with dynamic data
                     if (adminData && adminData.courses) {
                         // Update chatData with real course data
@@ -751,12 +751,12 @@
                                 messages: course.messages || []
                             };
                         });
-                        
+
                         // Replace global chatData
                         chatData = newChatData;
                         console.log('Updated chatData with dynamic data:', Object.keys(chatData).length, 'courses');
                     }
-                    
+
                     // Re-render dashboard with dynamic data
                     renderAdminDashboard();
                     console.log('Dynamic admin dashboard initialized successfully');
@@ -773,7 +773,7 @@
 
         editUserForm.addEventListener('submit', handleEditUserFormSubmit);
         editUserModal.querySelectorAll('.close-edit-user-modal-btn').forEach(btn => btn.addEventListener('click', closeEditUserModal));
-        
+
         editCourseForm.addEventListener('submit', handleEditCourseFormSubmit);
         editCourseModal.querySelectorAll('.close-edit-course-modal-btn').forEach(btn => btn.addEventListener('click', closeEditCourseModal));
 

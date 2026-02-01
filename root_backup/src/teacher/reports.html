@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Dynamic Database System Scripts -->
     <script src="../js/database.js"></script>
     <script src="../js/api.js"></script>
@@ -37,7 +37,7 @@
         html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
         ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
         html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
-        
+
         aside nav {
              min-height: calc(100vh - 128px);
         }
@@ -60,7 +60,7 @@
                     <span class="gradient-text">Lumina</span> ✨
                 </a>
             </div>
-            
+
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
                 <a href="dashboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -114,7 +114,7 @@
                     </div>
                 </div>
             </header>
-            
+
             <main class="flex-1 p-4 md:p-6 lg:p-8">
                 <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
                     <!-- Left Panel: Filters & Student List -->
@@ -140,7 +140,7 @@
                 </div>
             </main>
         </div>
-        
+
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
     </div>
 
@@ -193,11 +193,11 @@
                 courseSelect.appendChild(option);
             }
         }
-        
+
         function renderStudentList(courseId) {
             const course = reportsData[courseId];
             studentList.innerHTML = '';
-            
+
             // Add Class Overview link
             const isClassActive = currentStudentId === null;
             studentList.innerHTML += `
@@ -209,7 +209,7 @@
             if (!course || course.students.length === 0) {
                 return;
             }
-            
+
             course.students.forEach(student => {
                  const isStudentActive = currentStudentId === student.id;
                  studentList.innerHTML += `
@@ -220,20 +220,20 @@
                 `;
             });
         }
-        
+
         function renderReport(courseId, studentId) {
             currentCourseId = courseId;
             currentStudentId = studentId;
 
             renderStudentList(courseId); // Re-render to update active state
-            
+
             if (studentId === null) {
                 renderClassOverview(courseId);
             } else {
                 renderStudentReport(courseId, studentId);
             }
         }
-        
+
         function renderClassOverview(courseId) {
             const overview = reportsData[courseId].class_overview;
             const isDarkMode = document.documentElement.classList.contains('dark');
@@ -261,7 +261,7 @@
                         <div class="h-64"><canvas id="gradeDistributionChart"></canvas></div>
                     </div>
                 </div>`;
-            
+
             // Init Chart
             if(gradeChart) gradeChart.destroy();
             const ctx = document.getElementById('gradeDistributionChart').getContext('2d');
@@ -288,12 +288,12 @@
                 }
             });
         }
-        
+
         function renderStudentReport(courseId, studentId) {
             const student = reportsData[courseId].students.find(s => s.id === studentId);
             if (!student) return;
             const isDarkMode = document.documentElement.classList.contains('dark');
-            
+
             let assessmentsHTML = '';
             student.assessments.forEach(a => {
                 assessmentsHTML += `<li class="flex justify-between items-center py-2"><span>${a.title}</span><span class="font-bold">${a.score}</span></li>`;
@@ -332,7 +332,7 @@
                         </div>
                     </div>
                  </div>`;
-            
+
              // Init Chart
             if(topicChart) topicChart.destroy();
             const ctx = document.getElementById('topicMasteryChart').getContext('2d');
@@ -357,7 +357,7 @@
                 }
             });
         }
-        
+
         // --- EVENT LISTENERS ---
         courseSelect.addEventListener('change', (e) => {
             currentStudentId = null; // Reset to class overview when course changes
@@ -386,7 +386,7 @@
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
             const overlay = document.getElementById('sidebar-overlay');
-            
+
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
@@ -397,7 +397,7 @@
                 overlay.classList.add('hidden');
             }
         }
-        
+
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             populateCourseSelect();
@@ -406,4 +406,3 @@
     </script>
 </body>
 </html>
-

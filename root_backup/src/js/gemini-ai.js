@@ -6,7 +6,7 @@ class GeminiAI {
     constructor(apiKey = null) {
         // Default API key - replace this with your actual Gemini API key
         this.defaultApiKey = 'AIzaSyDw3gXYit00XFm2YpQ1bE9SuQ3oVtPzudI'; // Replace with your actual API key
-        
+
         this.apiKey = apiKey || this.getStoredApiKey() || this.defaultApiKey;
         this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
         this.conversationHistory = [];
@@ -32,7 +32,7 @@ class GeminiAI {
 
     // Add educational context to the system prompt
     getSystemPrompt() {
-        return `You are an AI Tutor for the Lumina educational platform. You are knowledgeable, friendly, and helpful. 
+        return `You are an AI Tutor for the Lumina educational platform. You are knowledgeable, friendly, and helpful.
 
 Your role is to:
 - Help students understand concepts across various subjects
@@ -54,7 +54,7 @@ Student Context: You are currently helping a student in their learning journey. 
     // Add message to conversation history
     addToHistory(role, content) {
         this.conversationHistory.push({ role, content });
-        
+
         // Keep only recent messages to stay within API limits
         if (this.conversationHistory.length > this.maxHistoryLength) {
             this.conversationHistory = this.conversationHistory.slice(-this.maxHistoryLength);
@@ -64,10 +64,10 @@ Student Context: You are currently helping a student in their learning journey. 
     // Prepare conversation context for API
     prepareConversationContext() {
         const systemPrompt = this.getSystemPrompt();
-        
+
         // Format conversation for Gemini API
         const parts = [{ text: systemPrompt }];
-        
+
         // Add conversation history
         this.conversationHistory.forEach(msg => {
             if (msg.role === 'user') {
@@ -84,7 +84,7 @@ Student Context: You are currently helping a student in their learning journey. 
     async generateResponse(userMessage) {
         console.log('🤖 Generating response for:', userMessage);
         console.log('🔑 Using API key:', this.apiKey ? (this.apiKey.substring(0, 10) + '...') : 'Not set');
-        
+
         if (!this.apiKey) {
             throw new Error('Gemini API key not configured. Please set your API key first.');
         }
@@ -96,7 +96,7 @@ Student Context: You are currently helping a student in their learning journey. 
             // Prepare the request with educational context
             const systemPrompt = this.getSystemPrompt();
             const fullMessage = `${systemPrompt}\n\nStudent: ${userMessage}\n\nAI Tutor:`;
-            
+
             const requestBody = {
                 contents: [{
                     parts: [{
@@ -132,10 +132,10 @@ Student Context: You are currently helping a student in their learning journey. 
 
             const data = await response.json();
             console.log('✅ API Response received:', data);
-            
+
             // Extract the response text
             const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            
+
             if (!aiResponse) {
                 throw new Error('No response generated from Gemini API');
             }
@@ -147,7 +147,7 @@ Student Context: You are currently helping a student in their learning journey. 
 
         } catch (error) {
             console.error('Gemini AI Error:', error);
-            
+
             // Handle specific error cases
             if (error.message.includes('API key not valid')) {
                 this.clearApiKey();
@@ -157,7 +157,7 @@ Student Context: You are currently helping a student in their learning journey. 
             } else if (error.message.includes('safety')) {
                 throw new Error('Response blocked by safety filters. Please rephrase your question.');
             }
-            
+
             throw error;
         }
     }
@@ -172,7 +172,7 @@ Student Context: You are currently helping a student in their learning journey. 
             language: `Help with ${topic} in language learning. ${question ? `Question: ${question}` : 'Provide examples and practice.'}`,
         };
 
-        const prompt = subjectPrompts[subject.toLowerCase()] || 
+        const prompt = subjectPrompts[subject.toLowerCase()] ||
                       `Help the student understand ${topic}. ${question ? `Their question: ${question}` : ''}`;
 
         return await this.generateResponse(prompt);
@@ -180,30 +180,30 @@ Student Context: You are currently helping a student in their learning journey. 
 
     // Generate practice problems
     async generatePracticeProblems(subject, topic, difficulty = 'medium', count = 3) {
-        const prompt = `Generate ${count} ${difficulty} difficulty practice problems for ${topic} in ${subject}. 
+        const prompt = `Generate ${count} ${difficulty} difficulty practice problems for ${topic} in ${subject}.
                        Include the problems and their solutions. Format them clearly for a student to practice with.`;
-        
+
         return await this.generateResponse(prompt);
     }
 
     // Explain a concept step by step
     async explainConcept(concept, level = 'high school') {
-        const prompt = `Explain the concept of "${concept}" at a ${level} level. 
-                       Break it down step by step with examples and analogies where helpful. 
+        const prompt = `Explain the concept of "${concept}" at a ${level} level.
+                       Break it down step by step with examples and analogies where helpful.
                        Make it easy to understand and engaging.`;
-        
+
         return await this.generateResponse(prompt);
     }
 
     // Review and provide feedback on student work
     async reviewWork(workContent, subject = null) {
-        const prompt = `Please review this student work${subject ? ` in ${subject}` : ''}: 
-                       
+        const prompt = `Please review this student work${subject ? ` in ${subject}` : ''}:
+
                        ${workContent}
-                       
-                       Provide constructive feedback, highlight strengths, and suggest improvements. 
+
+                       Provide constructive feedback, highlight strengths, and suggest improvements.
                        Be encouraging and educational.`;
-        
+
         return await this.generateResponse(prompt);
     }
 

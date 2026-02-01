@@ -91,7 +91,7 @@ export async function extractStructuredData(file: File): Promise<StructuredModul
             }));
 
             // Sort by Y (descending -> top to bottom), then X (ascending -> left to right)
-            // Note: raw textContent is usually already sorted, but PDF Y is inverted (0 at bottom). 
+            // Note: raw textContent is usually already sorted, but PDF Y is inverted (0 at bottom).
             // We group by Y tolerance.
 
             let currentLineY = -1;

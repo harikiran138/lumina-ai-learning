@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Dynamic Database System Scripts -->
     <script src="../js/database.js"></script>
     <script src="../js/api.js"></script>
@@ -133,7 +133,7 @@
                 </div>
             </main>
         </div>
-        
+
         <!-- Mobile sidebar overlay -->
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleSidebar()"></div>
     </div>
@@ -165,7 +165,7 @@
 
             const { score, userAnswers } = JSON.parse(storedResults);
             let scorePercentage = Math.round((score / quizData.length) * 100);
-            
+
             // --- AI TUTOR FEEDBACK (SIMULATED) ---
             let aiFeedbackHTML = '';
             const incorrectAnswers = userAnswers.map((ans, i) => ({ ans, i })).filter((item, i) => {
@@ -198,7 +198,7 @@
                 const userAnswer = userAnswers[index] || "No Answer";
                 const isCorrect = userAnswer.toLowerCase().trim() === question.answer.toLowerCase();
                 const feedbackColor = isCorrect ? 'border-green-500' : 'border-red-500';
-                const icon = isCorrect 
+                const icon = isCorrect
                     ? `<svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`
                     : `<svg class="w-5 h-5 text-red-500 mr-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>`;
 
@@ -256,7 +256,7 @@
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
             const overlay = document.getElementById('sidebar-overlay');
-            
+
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
@@ -270,4 +270,3 @@
     </script>
 </body>
 </html>
-

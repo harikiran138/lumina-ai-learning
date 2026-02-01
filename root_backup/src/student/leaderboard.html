@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Dynamic Database System Scripts -->
     <script src="../js/database.js"></script>
     <script src="../js/api.js"></script>
@@ -36,7 +36,7 @@
         html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
         ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
         html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
-        
+
         aside nav {
              min-height: calc(100vh - 128px);
         }
@@ -59,7 +59,7 @@
                     <span class="gradient-text">Lumina</span> ✨
                 </a>
             </div>
-            
+
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
                 <a href="dashboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -142,7 +142,7 @@
                 </div>
             </main>
         </div>
-        
+
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleSidebar()"></div>
     </div>
 
@@ -179,15 +179,15 @@
 
             data.forEach(player => {
                 const isCurrentUser = player.name === currentUser.name;
-                
+
                 let rankStyles = '';
                 let rankColor = 'text-gray-400 dark:text-gray-500';
                 if (player.rank === 1) { rankStyles = 'border-amber-400'; rankColor = 'text-amber-400'; }
                 if (player.rank === 2) { rankStyles = 'border-gray-400 dark:border-gray-600'; rankColor = 'text-gray-500 dark:text-gray-400'; }
                 if (player.rank === 3) { rankStyles = 'border-amber-700'; rankColor = 'text-amber-700'; }
-                
+
                 const userHighlight = isCurrentUser ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-500' : 'bg-white dark:bg-[#1C1C1C] border-gray-200 dark:border-gray-800';
-                
+
                 rankingsList.innerHTML += `
                     <div class="flex items-center p-4 rounded-xl shadow-sm border-2 ${isCurrentUser ? userHighlight : rankStyles}">
                         <span class="text-2xl font-bold w-8 ${rankColor}">${player.rank}</span>
@@ -224,7 +224,7 @@
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
             const overlay = document.getElementById('sidebar-overlay');
-            
+
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
@@ -235,10 +235,9 @@
                 overlay.classList.add('hidden');
             }
         }
-        
+
         // --- INITIAL RENDER ---
         renderLeaderboard('weekly');
     </script>
 </body>
 </html>
-

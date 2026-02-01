@@ -10,26 +10,26 @@ class FallbackAI {
                 "Hi there! What subject can I help you with today?",
                 "Welcome! I'm ready to answer your questions."
             ],
-            
+
             math: [
                 "Mathematics is fascinating! It's the language of patterns and logic. What specific math topic interests you?",
                 "Math helps us understand the world around us. From basic arithmetic to advanced calculus, I'm here to help!",
                 "Great question about math! Let me break this down step by step for you."
             ],
-            
+
             science: [
                 "Science is all about discovery and understanding how things work! What area of science are you curious about?",
                 "The scientific method helps us learn about our universe. What would you like to explore?",
                 "Science connects everything - from tiny atoms to massive galaxies. What interests you most?"
             ],
-            
+
             general: [
                 "That's an interesting question! Let me think about the best way to explain this concept.",
                 "Great question! Understanding this topic will help build your knowledge foundation.",
                 "I love curious minds! Let's explore this topic together.",
                 "That's a thoughtful question. Here's how I'd approach explaining this concept..."
             ],
-            
+
             encouragement: [
                 "You're asking great questions - that's how we learn!",
                 "Keep up the curiosity! Learning is a journey, and you're on the right path.",
@@ -41,30 +41,30 @@ class FallbackAI {
     async generateResponse(userMessage) {
         // Simulate thinking time
         await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200));
-        
+
         const message = userMessage.toLowerCase();
-        
+
         // Pattern matching for different types of questions
         if (this.containsWords(message, ['hello', 'hi', 'hey', 'greetings'])) {
             return this.getRandomResponse('greetings');
         }
-        
+
         if (this.containsWords(message, ['math', 'algebra', 'calculus', 'geometry', 'arithmetic', 'equation'])) {
             return this.getMathResponse(message);
         }
-        
+
         if (this.containsWords(message, ['science', 'physics', 'chemistry', 'biology', 'experiment'])) {
             return this.getScienceResponse(message);
         }
-        
+
         if (this.containsWords(message, ['what is', 'explain', 'define', 'meaning'])) {
             return this.getDefinitionResponse(message);
         }
-        
+
         if (this.containsWords(message, ['help', 'confused', 'don\'t understand', 'difficult'])) {
             return this.getRandomResponse('encouragement') + "\n\n" + this.getRandomResponse('general');
         }
-        
+
         // Default educational response
         return this.getRandomResponse('general') + "\n\nCould you be more specific about what you'd like to learn? I can help with math, science, history, literature, and many other subjects!";
     }

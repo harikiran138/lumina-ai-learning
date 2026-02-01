@@ -86,17 +86,17 @@ export async function generateCourseChunk(chunkText: string, chunkIndex: number,
         const chunkPrompt = `
             You are a strict Data Structuring AI.
             Your ONLY job is to take the provided text and format it into a structured JSON.
-            
+
             CRITICAL INSTRUCTIONS (NO DATA LOSS):
             1. DO NOT Summarize.
             2. DO NOT Paraphrase.
             3. DO NOT Omit any information.
             4. You must include the EXACT verbatim text from the source into the "content" fields.
             5. If a section is too long, break it into multiple paragraphs, but keep ALL the words.
-            
+
             Structure the text into logical "Modules" and "Topics" based on headers.
             Look for "[[PAGE_X]]" markers to track where content comes from.
-            
+
             OUTPUT JSON FORMAT:
             {
                 "modules": [
@@ -156,15 +156,15 @@ export async function analyzeTableOfContents(tocText: string): Promise<{ success
         const prompt = `
         You are an expert Librarian and Data Structuring AI.
         Your task is to analyze the provided text, which contains the TABLE OF CONTENTS (TOC) of a textbook.
-        
+
         GOAL: construct a hierarchical JSON tree of the book's structure.
-        
+
         RULES:
         1. Identify the hierarchy: Parts > Units > Chapters > Sections.
         2. Extract the START PAGE for each item.
         3. Infer the END PAGE based on the start of the next item. (For the last item, add 10 pages).
         4. Return a recursive JSON object matching the 'CourseNode' interface.
-        
+
         CourseNode Interface:
         {
             "id": "string (unique)",
@@ -176,7 +176,7 @@ export async function analyzeTableOfContents(tocText: string): Promise<{ success
 
         INPUT TEXT (TOC):
         ${tocText}
-        
+
         OUTPUT JSON ONLY.
         `;
 

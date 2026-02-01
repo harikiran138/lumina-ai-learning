@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Dynamic Database System Scripts -->
     <script src="../js/database.js"></script>
     <script src="../js/api.js"></script>
@@ -38,7 +38,7 @@
         html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }aside nav {
             min-height: calc(100vh - 128px);
             overflow-y: auto;
-        
+
         }
     </style>
     <script>
@@ -150,7 +150,7 @@
                 </div>
             </main>
         </div>
-        
+
         <!-- Mobile sidebar overlay -->
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleSidebar()"></div>
     </div>
@@ -175,7 +175,7 @@
         // --- STATE ---
         let currentCategory = 'All';
         let currentSearchTerm = '';
-        
+
         // --- FUNCTIONS ---
 
         /**
@@ -234,7 +234,7 @@
             // Filter by search term
             if (currentSearchTerm) {
                 const lowerCaseSearch = currentSearchTerm.toLowerCase();
-                filteredCourses = filteredCourses.filter(course => 
+                filteredCourses = filteredCourses.filter(course =>
                     course.title.toLowerCase().includes(lowerCaseSearch) ||
                     course.description.toLowerCase().includes(lowerCaseSearch)
                 );
@@ -259,7 +259,7 @@
             });
             button.classList.add('bg-amber-500', 'text-white');
             button.classList.remove('bg-gray-200', 'dark:bg-[#1C1C1C]', 'text-gray-700', 'dark:text-gray-300');
-            
+
             filterAndRender();
         };
 
@@ -271,7 +271,7 @@
             currentSearchTerm = e.target.value;
             filterAndRender();
         };
-        
+
         /**
          * Handles clicks on enroll/continue buttons.
          * @param {Event} e - The click event.
@@ -282,7 +282,7 @@
 
             const courseId = parseInt(button.dataset.courseId);
             const course = courses.find(c => c.id === courseId);
-            
+
             if (course) {
                 if (course.progress === 0) { // If not enrolled
                     course.progress = 1; // Simulate starting the course
@@ -303,7 +303,7 @@
         filterContainer.addEventListener('click', handleFilterClick);
         searchInput.addEventListener('input', handleSearchInput);
         courseGrid.addEventListener('click', handleEnrollClick);
-        
+
 
         // --- THEME & SIDEBAR LOGIC (No changes needed) ---
         const themeToggle = document.getElementById('theme-toggle');
@@ -316,7 +316,7 @@
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
             const overlay = document.getElementById('sidebar-overlay');
-            
+
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
@@ -330,4 +330,3 @@
     </script>
 </body>
 </html>
-

@@ -323,8 +323,8 @@ export default function CourseDetails({ params }: { params: Promise<{ courseId: 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content Area */}
                 <div className="lg:col-span-2 space-y-8 relative">
-                    {/* Enrollment: Basic check simulated by access. 
-                        To be robust: if (!course.isEnrolled) return <EnrollmentGate /> 
+                    {/* Enrollment: Basic check simulated by access.
+                        To be robust: if (!course.isEnrolled) return <EnrollmentGate />
                      */}
 
                     {/* Contextual AI Helper Trigger */}

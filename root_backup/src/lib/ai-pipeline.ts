@@ -1,5 +1,5 @@
 import { z } from "zod";
-// Import type for safety - usually available from the library, 
+// Import type for safety - usually available from the library,
 // using 'any' for simplicity if types conflict, but prefer interface.
 import { type MLCEngineInterface } from "@mlc-ai/web-llm";
 
@@ -266,7 +266,7 @@ Output JSON format:
             "summary": "Module Summary",
             "topics": [
                 {
-                    "title": "Topic Title", 
+                    "title": "Topic Title",
                     "sourceId": "sec-0", // CRITICAL: Must match Input ID
                     "goal": "Learning Goal"
                 }

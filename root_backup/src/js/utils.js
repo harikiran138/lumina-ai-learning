@@ -33,11 +33,11 @@ class LuminaUI {
     updateUserDisplay() {
         const userNameEl = document.getElementById('user-name-display');
         const userAvatarEl = document.getElementById('user-avatar-display');
-        
+
         if (userNameEl && this.currentUser) {
             userNameEl.textContent = this.currentUser.name;
         }
-        
+
         if (userAvatarEl && this.currentUser) {
             userAvatarEl.textContent = this.currentUser.avatar;
             userAvatarEl.className = `w-10 h-10 rounded-full ${this.currentUser.color} flex items-center justify-center text-white font-bold text-lg`;
@@ -52,7 +52,7 @@ class LuminaUI {
                 document.documentElement.classList.toggle('dark');
                 const isDark = document.documentElement.classList.contains('dark');
                 localStorage.setItem('theme', isDark ? 'dark' : 'light');
-                
+
                 // Dispatch custom event for theme change
                 window.dispatchEvent(new CustomEvent('themeChanged', { detail: { isDark } }));
             });
@@ -80,7 +80,7 @@ class LuminaUI {
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('main-content') || document.getElementById('main-content-container');
         const overlay = document.getElementById('sidebar-overlay');
-        
+
         if (sidebar.classList.contains('-translate-x-full')) {
             sidebar.classList.remove('-translate-x-full');
             if (mainContent) mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
@@ -96,7 +96,7 @@ class LuminaUI {
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('main-content') || document.getElementById('main-content-container');
         const overlay = document.getElementById('sidebar-overlay');
-        
+
         sidebar.classList.add('-translate-x-full');
         if (mainContent) mainContent.classList.remove('lg:translate-x-0', 'translate-x-64');
         overlay.classList.add('hidden');
@@ -123,7 +123,7 @@ class LuminaUI {
     showNotification(message, type = 'info', duration = 3000) {
         const notification = document.createElement('div');
         notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-xl z-50 transition-all transform translate-x-full opacity-0`;
-        
+
         // Set colors based on type
         switch (type) {
             case 'success':
@@ -138,7 +138,7 @@ class LuminaUI {
             default:
                 notification.className += ' bg-blue-500 text-white';
         }
-        
+
         notification.innerHTML = `
             <div class="flex items-center space-x-2">
                 <span>${message}</span>
@@ -149,15 +149,15 @@ class LuminaUI {
                 </button>
             </div>
         `;
-        
+
         document.body.appendChild(notification);
-        
+
         // Animate in
         setTimeout(() => {
             notification.classList.remove('translate-x-full', 'opacity-0');
             notification.classList.add('translate-x-0', 'opacity-100');
         }, 10);
-        
+
         // Auto remove
         setTimeout(() => {
             notification.classList.add('translate-x-full', 'opacity-0');
@@ -167,7 +167,7 @@ class LuminaUI {
                 }
             }, 300);
         }, duration);
-        
+
         return notification;
     }
 
@@ -182,7 +182,7 @@ class LuminaUI {
             </svg>
             ${text}
         `;
-        
+
         element.innerHTML = '';
         element.appendChild(loader);
         return loader;
@@ -199,7 +199,7 @@ class LuminaUI {
     validateForm(formElement) {
         const errors = [];
         const inputs = formElement.querySelectorAll('input[required], textarea[required], select[required]');
-        
+
         inputs.forEach(input => {
             if (!input.value.trim()) {
                 errors.push(`${input.placeholder || input.name || 'Field'} is required`);
@@ -207,7 +207,7 @@ class LuminaUI {
             } else {
                 input.classList.remove('border-red-500');
             }
-            
+
             // Email validation
             if (input.type === 'email' && input.value) {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -217,7 +217,7 @@ class LuminaUI {
                 }
             }
         });
-        
+
         return errors;
     }
 
@@ -241,10 +241,10 @@ class LuminaUI {
     createProgressBar(percentage, className = '') {
         const progressBar = document.createElement('div');
         progressBar.className = `w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 ${className}`;
-        
+
         const progressFill = document.createElement('div');
         progressFill.className = 'h-2.5 rounded-full transition-all duration-300';
-        
+
         if (percentage >= 80) {
             progressFill.className += ' bg-green-500';
         } else if (percentage >= 60) {
@@ -252,10 +252,10 @@ class LuminaUI {
         } else {
             progressFill.className += ' bg-red-500';
         }
-        
+
         progressFill.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
         progressBar.appendChild(progressFill);
-        
+
         return progressBar;
     }
 
@@ -291,12 +291,12 @@ class LuminaUI {
     createSearchInput(placeholder, onSearch) {
         const searchContainer = document.createElement('div');
         searchContainer.className = 'relative';
-        
+
         const searchInput = document.createElement('input');
         searchInput.type = 'text';
         searchInput.placeholder = placeholder;
         searchInput.className = 'w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-amber-500 focus:border-transparent';
-        
+
         const searchIcon = document.createElement('div');
         searchIcon.className = 'absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400';
         searchIcon.innerHTML = `
@@ -304,10 +304,10 @@ class LuminaUI {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
         `;
-        
+
         searchContainer.appendChild(searchIcon);
         searchContainer.appendChild(searchInput);
-        
+
         // Debounced search
         let searchTimeout;
         searchInput.addEventListener('input', (e) => {
@@ -316,7 +316,7 @@ class LuminaUI {
                 onSearch(e.target.value);
             }, 300);
         });
-        
+
         return searchContainer;
     }
 
@@ -339,7 +339,7 @@ class LuminaUI {
         // Prevent multiple redirects
         if (this._redirecting) return;
         this._redirecting = true;
-        
+
         console.log('Redirecting to login page');
         const currentPath = window.location.pathname;
         if (currentPath.includes('/admin/') || currentPath.includes('/teacher/') || currentPath.includes('/student/')) {
@@ -353,24 +353,24 @@ class LuminaUI {
         // Prevent multiple redirects
         if (this._redirecting) return;
         this._redirecting = true;
-        
+
         console.log('Redirecting to dashboard for role:', role);
         const currentPath = window.location.pathname;
         let basePath = '';
-        
+
         // Determine the base path based on current location
         if (currentPath.includes('/admin/') || currentPath.includes('/teacher/') || currentPath.includes('/student/')) {
             basePath = '../';
         } else {
             basePath = '';
         }
-        
+
         const dashboardPaths = {
             admin: `${basePath}admin/dashboard.html`,
             teacher: `${basePath}teacher/dashboard.html`,
             student: `${basePath}student/dashboard.html`
         };
-        
+
         const targetPath = dashboardPaths[role];
         if (targetPath) {
             console.log(`Redirecting ${role} to: ${targetPath}`);
@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 100));
             attempts++;
         }
-        
+
         if (window.luminaDB) {
             await window.luminaUI.init();
         } else {

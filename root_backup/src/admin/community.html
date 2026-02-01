@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Lumina Core Scripts -->
     <script src="../js/database.js"></script>
     <script src="../js/api.js"></script>
@@ -37,7 +37,7 @@
         html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
         ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
         html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
-        
+
         aside nav {
              min-height: calc(100vh - 128px);
         }
@@ -64,7 +64,7 @@
                     <span class="gradient-text">Lumina</span> ✨
                 </a>
             </div>
-            
+
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
                 <a href="dashboard.html" id="nav-admin_dashboard" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -111,7 +111,7 @@
                 <!-- Community Hub Content will be injected here -->
             </div>
         </div>
-        
+
         <!-- Member Sidebar (Static) -->
         <aside id="member-sidebar" class="w-64 bg-white dark:bg-[#1C1C1C] border-l border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out absolute right-0 top-0 h-full z-30 translate-x-full">
             <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 h-16 flex items-center justify-between">
@@ -132,9 +132,9 @@
         <!-- Overlays (Static) -->
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
         <div id="member-sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden" onclick="toggleMemberSidebar()"></div>
-        
+
         <!-- MODALS (Hidden by default) -->
-        
+
         <!-- Create Group Modal -->
         <div id="create-group-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
             <div id="create-group-modal-content" class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 w-full max-w-lg transform transition-all scale-95 opacity-0">
@@ -210,7 +210,7 @@
                 // Load courses as chat data
                 const courses = await luminaAPI.getAllCourses();
                 chatData = {};
-                
+
                 for (const course of courses) {
                     // Get course members with full user data
                     const members = [];
@@ -253,10 +253,10 @@
         const createGroupForm = document.getElementById('create-group-form');
         const addMembersModal = document.getElementById('add-members-modal');
         const addMembersModalContent = document.getElementById('add-members-modal-content');
-        
+
         // These variables are re-mapped inside initializeCommunityHub
         let groupList, chatHeader, messagesContainer, messageInputForm, messageInput;
-        
+
         // --- HELPERS ---
         function openModal(modalEl, contentEl) {
             luminaUI.openModal(modalEl, contentEl);
@@ -351,14 +351,14 @@
 
 
         // --- CHAT SPECIFIC LOGIC ---
-        
+
         function renderGroupList() {
             groupList.innerHTML = '';
             for (const groupId in chatData) {
                 const group = chatData[groupId];
                 const isActive = groupId === window.activeChatId;
                 const activeClasses = isActive ? 'text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-500/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800';
-                
+
                 groupList.innerHTML += `
                     <a href="#" data-group-id="${groupId}" class="group-link flex items-center justify-between px-3 py-2 text-sm font-semibold rounded-md ${activeClasses}">
                         <div class="flex items-center">
@@ -370,7 +370,7 @@
                 `;
             }
         }
-        
+
         function renderMemberList(groupId) {
             const group = chatData[groupId];
             memberList.innerHTML = '';
@@ -382,7 +382,7 @@
             `;
             const openAddMemberBtn = document.getElementById('open-add-member-btn');
             if (openAddMemberBtn) openAddMemberBtn.addEventListener('click', openAddMembersModal);
-            
+
             const teachers = group.members.filter(m => m.role === 'teacher' || m.role === 'admin');
             const students = group.members.filter(m => m.role === 'student');
 
@@ -404,11 +404,11 @@
                 }
             });
         }
-        
+
         function renderChat(groupId) {
             window.activeChatId = groupId;
             const group = chatData[groupId];
-            
+
             chatHeader.innerHTML = `
                 <button class="flex items-center justify-between w-full text-left p-1 -m-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50" onclick="toggleMemberSidebar()">
                     <div class="flex-1">
@@ -464,7 +464,7 @@
             renderGroupList();
             renderMemberList(groupId);
         }
-        
+
         function handleGroupLinkClick(e) {
             const link = e.target.closest('.group-link');
             if (link) {
@@ -521,7 +521,7 @@
                 const alreadyInGroup = currentMemberIds.includes(user.id);
                 const disabledAttr = alreadyInGroup ? 'disabled' : '';
                 const opacityClass = alreadyInGroup ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800';
-                
+
                 return `
                     <label class="flex items-center justify-between p-3 rounded-lg ${opacityClass}">
                         <div class="flex items-center">
@@ -548,7 +548,7 @@
                     </div>
                 </form>
             `;
-            
+
             // Attach listeners to the dynamically created content immediately
             document.getElementById('add-members-form').addEventListener('submit', handleAddMembersFormSubmit);
             addMembersModalContent.querySelectorAll('.close-add-members-modal-btn').forEach(btn => btn.addEventListener('click', closeAddMembersModal));
@@ -571,16 +571,16 @@
             e.preventDefault();
             const form = e.target;
             const selectedUserIds = Array.from(form.querySelectorAll('input[name="member"]:checked')).map(input => input.value);
-            
+
             if (selectedUserIds.length > 0) {
                 try {
                     const currentGroup = chatData[window.activeChatId];
-                    
+
                     // Add members to the course in database
                     for (const userId of selectedUserIds) {
                         await luminaAPI.addUserToCourse(window.activeChatId, userId);
                     }
-                    
+
                     // Reload course data
                     const updatedCourse = await luminaAPI.getCourseById(window.activeChatId);
                     const members = [];
@@ -588,9 +588,9 @@
                         const member = allUsers.find(u => u.id === memberId);
                         if (member) members.push(member);
                     }
-                    
+
                     chatData[window.activeChatId].members = members;
-                    
+
                     renderChat(window.activeChatId);
                     closeAddMembersModal();
                     luminaUI.showNotification(`Added ${selectedUserIds.length} user(s) to ${currentGroup.name}`, 'success');
@@ -602,9 +602,9 @@
                 luminaUI.showNotification("Please select at least one user to add", 'warning');
             }
         }
-        
+
         // --- INITIALIZATION ---
-        
+
         async function initializeCommunityHub() {
             // Load data from database first
             await loadData();
@@ -644,7 +644,7 @@
                     </div>
                 </div>
             `;
-            
+
             pageContentWrapper.innerHTML = contentHTML;
 
             // RE-MAP CRITICAL GLOBAL CHAT ELEMENTS after injection
@@ -653,27 +653,27 @@
             messagesContainer = document.getElementById('messages-container');
             messageInputForm = document.getElementById('message-input-form');
             messageInput = document.getElementById('message-input');
-            
+
             // Re-attach listeners to the new elements
             document.getElementById('create-group-btn').addEventListener('click', () => openModal(createGroupModal, createGroupModalContent));
             groupList.addEventListener('click', handleGroupLinkClick);
             if (messageInputForm) messageInputForm.addEventListener('submit', handleMessageFormSubmit);
-            
+
             // Determine active chat and render
             if (!window.activeChatId || !chatData[window.activeChatId]) window.activeChatId = Object.keys(chatData)[0];
-            
+
             if (groupList) renderChat(window.activeChatId);
         }
 
         // --- Initialization Execution ---
-        
+
         // Modal Listeners
         createGroupModal.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => closeModal(createGroupModal, createGroupModalContent)));
         createGroupForm.addEventListener('submit', async (e) => {
              e.preventDefault();
              const groupName = document.getElementById('group-name').value;
              const groupDesc = document.getElementById('group-description').value;
-             
+
              try {
                  // Create course in database
                  const courseData = {
@@ -683,9 +683,9 @@
                      members: [currentUser.id],
                      contentStatus: { vectorDB: '0%', pathways: '0%' }
                  };
-                 
+
                  await luminaAPI.createCourse(courseData);
-                 
+
                  // Send welcome message
                  const courses = await luminaAPI.getAllCourses();
                  const newCourse = courses.find(c => c.name === groupName);
@@ -693,11 +693,11 @@
                      await luminaAPI.sendMessage(newCourse.id, "Group created! Welcome everyone.");
                      window.activeChatId = newCourse.id;
                  }
-                 
+
                  // Reload and re-render
                  await initializeCommunityHub();
                  closeModal(createGroupModal, createGroupModalContent);
-                 
+
                  luminaUI.showNotification(`Course "${groupName}" created successfully`, 'success');
              } catch (error) {
                  console.error('Failed to create course:', error);

@@ -2,7 +2,7 @@
 const nextConfig = {
     reactStrictMode: true,
     // output: 'export', // Disabled for MongoDB dynamic rendering
-    // distDir: 'dist', 
+    // distDir: 'dist',
     trailingSlash: true,
     images: {
         unoptimized: true,
