@@ -77,4 +77,3 @@ This document defines 50+ distinct behavioral and learning patterns that the **P
 | **BP49** | **The Mobile-First** | 100% usage on mobile device. | **Optimize**: Mobile-native UI. No complex typing/coding tasks. |
 | **BP50** | **The Desktop-First** | 100% usage on large screen. | **Expand**: richer dashboards, multi-column views. |
 | **BP51** | **The Cross-Platform** | Starts on mobile, finishes on desktop. | **Sync**: "Continue where you left off" handoff is critical. |
-

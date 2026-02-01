@@ -21,14 +21,14 @@ def generate_synthetic_data(num_students=100, max_seq_len=50, num_skills=20):
         for skill in skills:
             if skill not in mastery:
                 mastery[skill] = 0.3 # Initial probability
-            
+
             p = mastery[skill]
             outcome = 1 if np.random.random() < p else 0
             outcomes.append(outcome)
-            
+
             # Learn update
             mastery[skill] = min(0.95, mastery[skill] + 0.1)
-            
+
         data.append({
             "student_id": s_id,
             "skill_seq": skills.tolist(),
@@ -48,7 +48,7 @@ class KTDataset(Dataset):
         row = self.data.iloc[idx]
         skills = row['skill_seq']
         correct = row['correct_seq']
-        
+
         # Truncate or Pad
         seq_len = len(skills)
         if seq_len > self.max_len:
@@ -60,7 +60,7 @@ class KTDataset(Dataset):
             mask = [1] * seq_len + [0] * (self.max_len - seq_len)
             skills = skills + pad
             correct = correct + pad
-            
+
         return {
             "skills": torch.tensor(skills, dtype=torch.long),
             "correct": torch.tensor(correct, dtype=torch.long),
@@ -78,12 +78,12 @@ def load_kt_data(dataset_name="assistments", num_skills=100):
         # Example: dataset = load_dataset("nicolas-hbt/assistments-2009-10")
         # For now, we default to synthetic to ensure the script RUNS out of the box.
         raise ImportError("Direct HF download requires specific dataset ID provided by user.")
-        
+
     except Exception as e:
         print(f"Could not load HF dataset '{dataset_name}': {e}")
         print("Falling back to SYNTHETIC data creation.")
         df = generate_synthetic_data(num_students=500, num_skills=num_skills)
-        
+
     return KTDataset(df)
 
 if __name__ == "__main__":

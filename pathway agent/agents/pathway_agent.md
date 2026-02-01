@@ -28,18 +28,18 @@ The **Pathway Agent** runs the main control loop. It is designed as a distinct s
 def run_decision_cycle(learner_id):
     # 1. Gather Context
     raw_context = mcp_hub.get_context(learner_id)
-    
+
     # 2. Normalize
     state_vector = state_builder.build(raw_context)
-    
+
     # 3. Policy Execution
     action_logits = policy_model.forward(state_vector)
     valid_mask = constraint_engine.get_mask(state_vector)
     final_action = sample_action(action_logits * valid_mask)
-    
+
     # 4. Explain
     reasoning = explainer.generate(state_vector, final_action)
-    
+
     # 5. Emit
     return PathwayOutput(
         action=final_action.type,

@@ -6,14 +6,14 @@ from pathway.inference_engine import PathwayInferenceEngine
 def test_inference():
     print("Initializing Inference Engine...")
     engine = PathwayInferenceEngine(model_path="models/tkt_v1.pt", num_skills=20)
-    
+
     # Test 1: Good student history
     # Repeating same skill, correct every time
     skills = [1, 1, 1, 1, 1]
     correct = [1, 1, 1, 1, 1]
     pred = engine.predict_mastery(skills, correct)
     print(f"History (All Correct): {correct} -> Prediction: {pred:.4f}")
-    
+
     # Test 2: Struggling student
     # Repeating same skill, incorrect
     skills_bad = [1, 1, 1, 1, 1]
