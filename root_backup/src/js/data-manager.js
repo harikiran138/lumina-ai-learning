@@ -13,7 +13,7 @@ class DataManager {
         try {
             this.ui.showNotification('Exporting data...', 'info');
             const jsonData = await this.api.exportData();
-            
+
             // Create and download file
             const blob = new Blob([jsonData], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -24,7 +24,7 @@ class DataManager {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            
+
             this.ui.showNotification('Data exported successfully', 'success');
         } catch (error) {
             console.error('Export failed:', error);
@@ -36,17 +36,17 @@ class DataManager {
     async importData(file) {
         try {
             this.ui.showNotification('Importing data...', 'info');
-            
+
             const text = await this.readFileAsText(file);
             await this.api.importData(text);
-            
+
             this.ui.showNotification('Data imported successfully. Please refresh the page.', 'success');
-            
+
             // Refresh after a delay
             setTimeout(() => {
                 window.location.reload();
             }, 2000);
-            
+
         } catch (error) {
             console.error('Import failed:', error);
             this.ui.showNotification('Import failed: ' + error.message, 'error');
@@ -67,7 +67,7 @@ class DataManager {
     setupAutoBackup(intervalHours = 24) {
         console.log(`Auto backup scheduled every ${intervalHours} hours`);
         // In a real app, this would set up a service worker or server-side job
-        
+
         this.ui.showNotification(`Auto backup enabled (every ${intervalHours}h)`, 'success', 2000);
     }
 
@@ -76,9 +76,9 @@ class DataManager {
         const confirmed = confirm(
             'WARNING: This will delete ALL data including users, courses, messages, and progress. This action cannot be undone. Are you sure?'
         );
-        
+
         if (!confirmed) return;
-        
+
         const doubleConfirmed = confirm('Are you ABSOLUTELY sure? This will erase everything!');
         if (!doubleConfirmed) return;
 
@@ -87,21 +87,21 @@ class DataManager {
             if (window.luminaDB && window.luminaDB.db) {
                 window.luminaDB.db.close();
             }
-            
+
             // Delete the database
             const deleteReq = indexedDB.deleteDatabase('LuminaDB');
-            
+
             deleteReq.onsuccess = () => {
                 this.ui.showNotification('All data cleared. Redirecting to login...', 'success');
                 setTimeout(() => {
                     window.location.href = '../login.html';
                 }, 2000);
             };
-            
+
             deleteReq.onerror = () => {
                 this.ui.showNotification('Failed to clear data', 'error');
             };
-            
+
         } catch (error) {
             console.error('Clear data failed:', error);
             this.ui.showNotification('Failed to clear data', 'error');
@@ -112,7 +112,7 @@ class DataManager {
     async generateSampleData() {
         try {
             this.ui.showNotification('Generating sample data...', 'info');
-            
+
             // Create additional sample users
             const sampleUsers = [
                 { name: 'Emma Watson', email: 'emma.watson@student.lumina.edu', role: 'student' },
@@ -174,7 +174,7 @@ class DataManager {
             }
 
             this.ui.showNotification('Sample data generated successfully', 'success');
-            
+
         } catch (error) {
             console.error('Sample data generation failed:', error);
             this.ui.showNotification('Failed to generate sample data', 'error');
@@ -205,14 +205,14 @@ class DataManager {
         const modal = document.createElement('div');
         modal.id = 'data-management-modal';
         modal.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden';
-        
+
         modal.innerHTML = `
             <div class="bg-white dark:bg-[#1C1C1C] rounded-2xl p-6 w-full max-w-lg transform transition-all scale-95 opacity-0">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-xl font-bold">Data Management</h3>
                     <button id="close-data-modal" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-2xl leading-none">&times;</button>
                 </div>
-                
+
                 <div class="space-y-4">
                     <div class="p-4 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
                         <h4 class="font-semibold text-blue-800 dark:text-blue-300 mb-2">Export & Backup</h4>
@@ -225,7 +225,7 @@ class DataManager {
                             </button>
                         </div>
                     </div>
-                    
+
                     <div class="p-4 bg-green-50 dark:bg-green-500/10 rounded-lg">
                         <h4 class="font-semibold text-green-800 dark:text-green-300 mb-2">Import Data</h4>
                         <input type="file" id="import-file-input" accept=".json" class="hidden">
@@ -233,14 +233,14 @@ class DataManager {
                             Import from File
                         </button>
                     </div>
-                    
+
                     <div class="p-4 bg-yellow-50 dark:bg-yellow-500/10 rounded-lg">
                         <h4 class="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">Development Tools</h4>
                         <button id="generate-sample-btn" class="w-full px-4 py-2 text-sm font-semibold text-yellow-700 bg-yellow-100 dark:bg-yellow-500/20 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-500/30">
                             Generate Sample Data
                         </button>
                     </div>
-                    
+
                     <div class="p-4 bg-red-50 dark:bg-red-500/10 rounded-lg">
                         <h4 class="font-semibold text-red-800 dark:text-red-300 mb-2">Danger Zone</h4>
                         <button id="clear-data-btn" class="w-full px-4 py-2 text-sm font-semibold text-white bg-red-500 rounded-lg hover:bg-red-600">
@@ -251,10 +251,10 @@ class DataManager {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
         this.setupDataModalEventListeners(modal);
-        
+
         return modal;
     }
 
@@ -272,7 +272,7 @@ class DataManager {
         autoBackupBtn.addEventListener('click', () => this.setupAutoBackup());
         generateBtn.addEventListener('click', () => this.generateSampleData());
         clearBtn.addEventListener('click', () => this.clearAllData());
-        
+
         importBtn.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (e) => {
             if (e.target.files[0]) {
@@ -293,7 +293,7 @@ class DataManager {
         if (!modal) {
             modal = this.createDataManagementModal();
         }
-        
+
         this.ui.openModal(modal, modal.querySelector('div'));
     }
 

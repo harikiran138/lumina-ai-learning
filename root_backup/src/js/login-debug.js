@@ -11,33 +11,33 @@ class LoginDebugger {
 
     async debugLoginFlow() {
         console.log('🔍 Login Flow Debug Started...');
-        
+
         // Check current page
         const currentPath = window.location.pathname;
         const currentDir = this.getCurrentDirectory();
         console.log(`📍 Current Page: ${currentPath}`);
         console.log(`📁 Current Directory: ${currentDir}`);
-        
+
         // Check API availability
         if (!this.api) {
             console.error('❌ LuminaAPI not available');
             return;
         }
-        
+
         if (!this.ui) {
             console.error('❌ LuminaUI not available');
             return;
         }
-        
+
         console.log('✅ API and UI available');
-        
+
         // Check current user session
         try {
             const currentUser = await this.api.getCurrentUser();
             if (currentUser) {
                 console.log('👤 Current User:', currentUser);
                 console.log(`🔐 User Role: ${currentUser.role}`);
-                
+
                 // Test redirect paths
                 this.testRedirectPaths(currentUser.role);
             } else {
@@ -46,10 +46,10 @@ class LoginDebugger {
         } catch (error) {
             console.log('👤 No current user:', error.message);
         }
-        
+
         // Test login with demo accounts
         await this.testDemoLogins();
-        
+
         // Test redirect function
         this.testRedirectFunction();
     }
@@ -64,28 +64,28 @@ class LoginDebugger {
 
     testRedirectPaths(role) {
         console.log('🔄 Testing redirect paths...');
-        
+
         const currentPath = window.location.pathname;
         let basePath = '';
-        
+
         if (currentPath.includes('/admin/') || currentPath.includes('/teacher/') || currentPath.includes('/student/')) {
             basePath = '../';
         } else {
             basePath = '';
         }
-        
+
         const dashboardPaths = {
             admin: `${basePath}admin/dashboard.html`,
             teacher: `${basePath}teacher/dashboard.html`,
             student: `${basePath}student/dashboard.html`
         };
-        
+
         console.log(`📋 Expected redirect for ${role}: ${dashboardPaths[role]}`);
-        
+
         // Test if the path exists (basic check)
         const testPath = dashboardPaths[role];
         console.log(`🔗 Testing path: ${testPath}`);
-        
+
         // Create a test link to validate path
         const testLink = document.createElement('a');
         testLink.href = testPath;
@@ -95,22 +95,22 @@ class LoginDebugger {
 
     async testDemoLogins() {
         console.log('🧪 Testing demo login accounts...');
-        
+
         const demoAccounts = [
             { email: 'admin@lumina.edu', password: 'admin', expectedRole: 'admin' },
             { email: 'teacher@lumina.edu', password: 'teacher', expectedRole: 'teacher' },
             { email: 'student@lumina.edu', password: 'student', expectedRole: 'student' }
         ];
-        
+
         for (const account of demoAccounts) {
             try {
                 console.log(`🔐 Testing login: ${account.email}`);
-                
+
                 // Don't actually login (to avoid changing current state)
                 // Just check if user exists
                 const users = await this.api.getAllUsers();
                 const user = users.find(u => u.email === account.email);
-                
+
                 if (user) {
                     console.log(`✅ Account exists: ${account.email} (${user.role})`);
                     if (user.role !== account.expectedRole) {
@@ -119,7 +119,7 @@ class LoginDebugger {
                 } else {
                     console.error(`❌ Account not found: ${account.email}`);
                 }
-                
+
             } catch (error) {
                 console.error(`❌ Failed to check account ${account.email}:`, error.message);
             }
@@ -128,30 +128,30 @@ class LoginDebugger {
 
     testRedirectFunction() {
         console.log('🔄 Testing redirect function...');
-        
+
         if (typeof this.ui.redirectToDashboard === 'function') {
             console.log('✅ redirectToDashboard function exists');
-            
+
             // Test path generation without actually redirecting
             const testRoles = ['admin', 'teacher', 'student'];
             testRoles.forEach(role => {
                 console.log(`📍 Testing redirect path for ${role}:`);
-                
+
                 const currentPath = window.location.pathname;
                 let basePath = '';
-                
+
                 if (currentPath.includes('/admin/') || currentPath.includes('/teacher/') || currentPath.includes('/student/')) {
                     basePath = '../';
                 } else {
                     basePath = '';
                 }
-                
+
                 const dashboardPaths = {
                     admin: `${basePath}admin/dashboard.html`,
                     teacher: `${basePath}teacher/dashboard.html`,
                     student: `${basePath}student/dashboard.html`
                 };
-                
+
                 console.log(`   → ${dashboardPaths[role]}`);
             });
         } else {
@@ -162,25 +162,25 @@ class LoginDebugger {
     // Test manual redirect to see if it works
     async testManualRedirect(role) {
         console.log(`🚀 Testing manual redirect for role: ${role}`);
-        
+
         const currentPath = window.location.pathname;
         let basePath = '';
-        
+
         if (currentPath.includes('/admin/') || currentPath.includes('/teacher/') || currentPath.includes('/student/')) {
             basePath = '../';
         } else {
             basePath = '';
         }
-        
+
         const dashboardPaths = {
             admin: `${basePath}admin/dashboard.html`,
             teacher: `${basePath}teacher/dashboard.html`,
             student: `${basePath}student/dashboard.html`
         };
-        
+
         const targetPath = dashboardPaths[role];
         console.log(`🎯 Target path: ${targetPath}`);
-        
+
         // Confirm before redirecting
         if (confirm(`Redirect to ${targetPath}?`)) {
             window.location.href = targetPath;
@@ -194,21 +194,21 @@ class LoginDebugger {
             teacher: { email: 'teacher@lumina.edu', password: 'teacher' },
             student: { email: 'student@lumina.edu', password: 'student' }
         };
-        
+
         const account = accounts[role];
         if (!account) {
             console.error(`❌ Unknown role: ${role}`);
             return;
         }
-        
+
         try {
             console.log(`🔐 Attempting login as ${role}...`);
             const user = await this.api.login(account.email, account.password);
             console.log('✅ Login successful:', user);
-            
+
             // Test redirect path generation
             this.testRedirectPaths(user.role);
-            
+
             return user;
         } catch (error) {
             console.error(`❌ Login failed:`, error.message);

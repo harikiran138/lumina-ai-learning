@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Dynamic Database System Scripts -->
     <script src="../js/database.js"></script>
     <script src="../js/api.js"></script>
@@ -36,7 +36,7 @@
         html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
         ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
         html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
-        
+
         aside nav {
              min-height: calc(100vh - 128px);
         }
@@ -59,7 +59,7 @@
                     <span class="gradient-text">Lumina</span> ✨
                 </a>
             </div>
-            
+
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
                 <a href="dashboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -113,7 +113,7 @@
                     </div>
                 </div>
             </header>
-            
+
             <main class="flex-1 p-4 md:p-6 lg:p-8">
                 <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
                     <!-- Left Panel: Assessments List -->
@@ -141,7 +141,7 @@
                 </div>
             </main>
         </div>
-        
+
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
 
         <!-- Add/Edit Question Modal -->
@@ -157,7 +157,7 @@
                     <input type="hidden" id="modal-course-id">
                     <input type="hidden" id="modal-assessment-id">
                     <input type="hidden" id="modal-question-id">
-                    
+
                     <div class="space-y-4">
                         <div>
                             <label for="question-text" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Question Text</label>
@@ -285,7 +285,7 @@
                 link.classList.toggle('bg-amber-50', link.dataset.assessmentId === assessmentId);
                 link.classList.toggle('dark:bg-amber-500/10', link.dataset.assessmentId === assessmentId);
             });
-            
+
             const assessment = assessmentData[courseId].assessments.find(a => a.id === assessmentId);
             if (!assessment) return;
 
@@ -297,7 +297,7 @@
                 <button data-action="add-question" class="px-4 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600">Add Question</button>
             </div>
             <div class="space-y-6">`;
-            
+
             if (assessment.questions.length === 0) {
                 questionsHTML += `<p class="text-center py-12 text-gray-500">This assessment has no questions yet.</p>`;
             }
@@ -338,7 +338,7 @@
             const modalTitle = document.getElementById('modal-title');
             const courseId = currentCourseId;
             const assessmentId = currentAssessmentId;
-            
+
             document.getElementById('modal-course-id').value = courseId;
             document.getElementById('modal-assessment-id').value = assessmentId;
             document.getElementById('modal-question-id').value = questionId;
@@ -353,7 +353,7 @@
                 modalTitle.textContent = 'Add New Question';
                 updateModalForm('mcq', ['Option 1', 'Option 2'], 'Option 1');
             }
-            
+
             modal.classList.remove('hidden');
             setTimeout(() => modalContent.classList.remove('scale-95', 'opacity-0'), 10);
         }
@@ -367,7 +367,7 @@
             const mcqContainer = document.getElementById('mcq-options-container');
             const answerContainer = document.getElementById('answer-container');
             const mcqOptionsList = document.getElementById('mcq-options-list');
-            
+
             mcqContainer.classList.toggle('hidden', type !== 'mcq');
             answerContainer.classList.toggle('hidden', type !== 'short_answer');
 
@@ -385,7 +385,7 @@
                 document.getElementById('short-answer-text').value = answer;
             }
         }
-        
+
         // --- EVENT LISTENERS ---
         courseSelect.addEventListener('change', (e) => renderAssessmentList(e.target.value));
         assessmentList.addEventListener('click', (e) => {
@@ -399,7 +399,7 @@
         assessmentDetails.addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (!button) return;
-            
+
             const action = button.dataset.action;
             const questionId = parseInt(button.dataset.questionId);
 
@@ -435,7 +435,7 @@
                 e.target.closest('div').remove();
             }
         });
-        
+
         questionForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const courseId = document.getElementById('modal-course-id').value;
@@ -447,14 +447,14 @@
                 text: document.getElementById('question-text').value,
                 type: type,
             };
-            
+
             if(type === 'mcq') {
                 newQuestionData.options = Array.from(document.querySelectorAll('#mcq-options-list input[type="text"]')).map(input => input.value);
                 newQuestionData.answer = document.querySelector('#mcq-options-list input[type="radio"]:checked').value;
             } else {
                 newQuestionData.answer = document.getElementById('short-answer-text').value;
             }
-            
+
             const assessment = assessmentData[courseId].assessments.find(a => a.id === assessmentId);
             if(questionId) { // Editing
                 const qIndex = assessment.questions.findIndex(q => q.id === questionId);
@@ -463,7 +463,7 @@
                 newQuestionData.id = Date.now(); // Simple unique ID
                 assessment.questions.push(newQuestionData);
             }
-            
+
             renderAssessmentDetails(courseId, assessmentId);
             closeQuestionModal();
         });
@@ -483,7 +483,7 @@
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
             const overlay = document.getElementById('sidebar-overlay');
-            
+
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
@@ -494,7 +494,7 @@
                 overlay.classList.add('hidden');
             }
         }
-        
+
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             populateCourseSelect();
@@ -503,4 +503,3 @@
     </script>
 </body>
 </html>
-
