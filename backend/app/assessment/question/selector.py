@@ -157,7 +157,9 @@ class QuestionSelector:
     def __init__(self, questions: Optional[List[Question]] = None):
         self.questions = questions if questions is not None else MOCK_QUESTIONS
 
-    def select_question(self, decision: PolicyDecision, seen_question_ids: List[str]) -> Optional[Question]:
+    def select_question(
+        self, decision: PolicyDecision, seen_question_ids: List[str]
+    ) -> Optional[Question]:
         if decision.action == AssessmentAction.STOP:
             return None
 
@@ -190,4 +192,3 @@ class QuestionSelector:
         # Take the top 3 closest and pick one randomly (slightly stochastic)
         top_candidates = available[:3]
         return random.choice(top_candidates) if top_candidates else None
-
