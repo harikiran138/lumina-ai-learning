@@ -16,12 +16,12 @@ def test_agent_initialization():
 
 def test_process_signals_mock():
     agent = AnalyticsAgent(agent_id="test_agent", learner_id="test_learner")
-    
+
     # Mock input signals (valid schema)
     signals = [{"event_type": "scroll", "payload": {"velocity": 100}}]
-    
+
     output = agent.process_signals(signals)
-    
+
     assert isinstance(output, AnalyticsOutput)
     # Engagement model return > 0.1 for active events
     assert output.engagement_score > 0.1
@@ -32,7 +32,7 @@ def test_process_signals_mock():
 
 def test_mcp_decision():
     agent = AnalyticsAgent(agent_id="test_agent", learner_id="test_learner")
-    
+
     # Manually trigger a high load state in the schema to test logic
     output = AnalyticsOutput(
         engagement_score=0.5,
@@ -41,10 +41,10 @@ def test_mcp_decision():
         fatigue_detected=True,
         confidence=0.9
     )
-    
+
     # Update internal state to match the output scenario (since logic uses internal state)
     agent.cognitive_state.load_index = 0.9
-    
+
     # Define mock features causing overload
     mock_features = {"error_rate": 0.5, "success_rate": 0.5}
 

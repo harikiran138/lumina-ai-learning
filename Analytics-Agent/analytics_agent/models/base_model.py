@@ -5,7 +5,7 @@ class AnalyticsModel(ABC):
     """
     Abstract Base Class for all analytics models in the Lumina agent.
     """
-    
+
     @abstractmethod
     def predict(self, features: Dict[str, Any], context: Dict[str, Any] = None) -> Dict[str, Any]:
         """

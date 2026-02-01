@@ -7,13 +7,13 @@ class RiskModel(AnalyticsModel):
         engagement_score = context.get("engagement_score", 0.5)
         mastery_avg = context.get("avg_mastery", 0.5)
         time_since_last = context.get("time_since_last_interaction", 0.0)
-        
+
         # Heuristic Logic
         # 1. Base risk from low mastery (performance decline)
         dropout_risk = 0.0
         if mastery_avg < 0.4:
             dropout_risk += 0.3
-            
+
         # 2. Engagement Risk - Only if persistent or very low
         if engagement_score < 0.2:
              # Idle behavior
@@ -38,5 +38,5 @@ class StrategyDetector(AnalyticsModel):
             strategy = "active_recall"
         else:
             strategy = "passive_reading"
-            
+
         return {"strategy": strategy}

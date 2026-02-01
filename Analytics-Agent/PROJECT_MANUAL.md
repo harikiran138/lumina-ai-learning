@@ -28,14 +28,14 @@ graph LR
     B --> C{Signal Processor};
     C -- Normalize & Filter --> D[Feature Aggregator];
     D --> E[Inference Engine];
-    
+
     subgraph Inference Engine
         E1[Engagement Model]
         E2[Cognitive Load Model]
         E3[Knowledge Tracer BKT]
         E4[Risk & Strategy Model]
     end
-    
+
     E --> F[AnalyticsAgent Logic];
     F --> G[MCP Action Decisions];
 ```
