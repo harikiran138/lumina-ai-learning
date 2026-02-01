@@ -4,159 +4,159 @@
  */
 
 class NotificationsManager {
-    constructor() {
-        this.notifications = [];
-        this.listeners = [];
-        this.nextId = 1;
+  constructor() {
+    this.notifications = [];
+    this.listeners = [];
+    this.nextId = 1;
+  }
+
+  /**
+   * Add notification
+   */
+  addNotification(notification) {
+    const id = this.nextId++;
+    const notif = {
+      id,
+      type: notification.type || "info", // info, success, warning, error
+      title: notification.title,
+      message: notification.message,
+      timestamp: new Date().toISOString(),
+      read: false,
+      action: notification.action || null,
+      actionLabel: notification.actionLabel || null,
+      duration: notification.duration || 5000, // auto-dismiss in 5 seconds
+    };
+
+    this.notifications.unshift(notif);
+    this.notifyListeners(notif);
+
+    // Auto-remove after duration
+    if (notif.duration) {
+      setTimeout(() => {
+        this.removeNotification(id);
+      }, notif.duration);
     }
 
-    /**
-     * Add notification
-     */
-    addNotification(notification) {
-        const id = this.nextId++;
-        const notif = {
-            id,
-            type: notification.type || 'info', // info, success, warning, error
-            title: notification.title,
-            message: notification.message,
-            timestamp: new Date().toISOString(),
-            read: false,
-            action: notification.action || null,
-            actionLabel: notification.actionLabel || null,
-            duration: notification.duration || 5000 // auto-dismiss in 5 seconds
-        };
+    return notif;
+  }
 
-        this.notifications.unshift(notif);
-        this.notifyListeners(notif);
+  /**
+   * Remove notification
+   */
+  removeNotification(id) {
+    this.notifications = this.notifications.filter((n) => n.id !== id);
+  }
 
-        // Auto-remove after duration
-        if (notif.duration) {
-            setTimeout(() => {
-                this.removeNotification(id);
-            }, notif.duration);
-        }
+  /**
+   * Get all notifications
+   */
+  getNotifications() {
+    return this.notifications;
+  }
 
-        return notif;
+  /**
+   * Get unread notifications
+   */
+  getUnreadNotifications() {
+    return this.notifications.filter((n) => !n.read);
+  }
+
+  /**
+   * Mark notification as read
+   */
+  markAsRead(id) {
+    const notif = this.notifications.find((n) => n.id === id);
+    if (notif) {
+      notif.read = true;
     }
+  }
 
-    /**
-     * Remove notification
-     */
-    removeNotification(id) {
-        this.notifications = this.notifications.filter(n => n.id !== id);
-    }
+  /**
+   * Mark all as read
+   */
+  markAllAsRead() {
+    this.notifications.forEach((n) => {
+      n.read = true;
+    });
+  }
 
-    /**
-     * Get all notifications
-     */
-    getNotifications() {
-        return this.notifications;
-    }
+  /**
+   * Clear all notifications
+   */
+  clearAll() {
+    this.notifications = [];
+  }
 
-    /**
-     * Get unread notifications
-     */
-    getUnreadNotifications() {
-        return this.notifications.filter(n => !n.read);
-    }
+  /**
+   * Subscribe to notifications
+   */
+  subscribe(callback) {
+    this.listeners.push(callback);
+  }
 
-    /**
-     * Mark notification as read
-     */
-    markAsRead(id) {
-        const notif = this.notifications.find(n => n.id === id);
-        if (notif) {
-            notif.read = true;
-        }
-    }
+  /**
+   * Unsubscribe from notifications
+   */
+  unsubscribe(callback) {
+    this.listeners = this.listeners.filter((l) => l !== callback);
+  }
 
-    /**
-     * Mark all as read
-     */
-    markAllAsRead() {
-        this.notifications.forEach(n => {
-            n.read = true;
-        });
-    }
+  /**
+   * Notify listeners
+   */
+  notifyListeners(notification) {
+    this.listeners.forEach((callback) => callback(notification));
+  }
 
-    /**
-     * Clear all notifications
-     */
-    clearAll() {
-        this.notifications = [];
-    }
+  /**
+   * Success notification
+   */
+  success(title, message, options = {}) {
+    return this.addNotification({
+      ...options,
+      type: "success",
+      title,
+      message,
+    });
+  }
 
-    /**
-     * Subscribe to notifications
-     */
-    subscribe(callback) {
-        this.listeners.push(callback);
-    }
+  /**
+   * Error notification
+   */
+  error(title, message, options = {}) {
+    return this.addNotification({
+      ...options,
+      type: "error",
+      title,
+      message,
+      duration: 7000,
+    });
+  }
 
-    /**
-     * Unsubscribe from notifications
-     */
-    unsubscribe(callback) {
-        this.listeners = this.listeners.filter(l => l !== callback);
-    }
+  /**
+   * Warning notification
+   */
+  warning(title, message, options = {}) {
+    return this.addNotification({
+      ...options,
+      type: "warning",
+      title,
+      message,
+      duration: 6000,
+    });
+  }
 
-    /**
-     * Notify listeners
-     */
-    notifyListeners(notification) {
-        this.listeners.forEach(callback => callback(notification));
-    }
-
-    /**
-     * Success notification
-     */
-    success(title, message, options = {}) {
-        return this.addNotification({
-            ...options,
-            type: 'success',
-            title,
-            message
-        });
-    }
-
-    /**
-     * Error notification
-     */
-    error(title, message, options = {}) {
-        return this.addNotification({
-            ...options,
-            type: 'error',
-            title,
-            message,
-            duration: 7000
-        });
-    }
-
-    /**
-     * Warning notification
-     */
-    warning(title, message, options = {}) {
-        return this.addNotification({
-            ...options,
-            type: 'warning',
-            title,
-            message,
-            duration: 6000
-        });
-    }
-
-    /**
-     * Info notification
-     */
-    info(title, message, options = {}) {
-        return this.addNotification({
-            ...options,
-            type: 'info',
-            title,
-            message
-        });
-    }
+  /**
+   * Info notification
+   */
+  info(title, message, options = {}) {
+    return this.addNotification({
+      ...options,
+      type: "info",
+      title,
+      message,
+    });
+  }
 }
 
 // Global instance

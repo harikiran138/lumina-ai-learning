@@ -1,3 +1,3 @@
-declare module 'jsonrepair' {
-    export function jsonrepair(json: string): string;
+declare module "jsonrepair" {
+  export function jsonrepair(json: string): string;
 }

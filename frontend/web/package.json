@@ -5,12 +5,15 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "next lint",
     "deploy": "firebase deploy",
     "test": "vitest",
     "test:e2e:playwright": "playwright test",
-    "test:e2e:cypress": "cypress run"
+    "test:e2e:cypress": "cypress run",
+    "analyze": "ANALYZE=true npm run build",
+    "lighthouse": "lighthouse http://localhost:3000 --output=json --output-path=./lighthouse-report.json --chrome-flags='--headless'"
   },
   "repository": {
     "type": "git",
@@ -30,11 +33,14 @@
     "@types/three": "^0.181.0",
     "@vitejs/plugin-react": "^5.1.2",
     "buffer": "^6.0.3",
+    "critters": "^0.0.23",
     "cypress": "^15.9.0",
     "eslint": "^9.17.0",
     "eslint-config-next": "15.1.0",
     "jsdom": "^27.4.0",
-    "vitest": "^4.0.18"
+    "lighthouse": "^12.8.2",
+    "vitest": "^4.0.18",
+    "webpack-bundle-analyzer": "^4.10.2"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.44",

@@ -3,7 +3,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Dynamic Database System Scripts -->
     <script src="../js/database.js"></script>
     <script src="../js/api.js"></script>
@@ -40,7 +40,7 @@
         html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
         ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
         html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
-        
+
         aside nav {
              min-height: calc(100vh - 128px);
         }
@@ -63,7 +63,7 @@
                     <span class="gradient-text">Lumina</span> ✨
                 </a>
             </div>
-            
+
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
                 <a href="dashboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -117,7 +117,7 @@
                     </div>
                 </div>
             </header>
-            
+
             <main class="flex-1 p-4 md:p-6 lg:p-8">
                  <div class="max-w-7xl mx-auto">
                     <!-- Upload Section -->
@@ -162,7 +162,7 @@
                 </div>
             </main>
         </div>
-        
+
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
     </div>
 
@@ -185,8 +185,8 @@
         // --- FUNCTIONS ---
         function renderLibrary(filter = '') {
             libraryTableBody.innerHTML = '';
-            const filteredLibrary = contentLibrary.filter(item => 
-                item.name.toLowerCase().includes(filter.toLowerCase()) || 
+            const filteredLibrary = contentLibrary.filter(item =>
+                item.name.toLowerCase().includes(filter.toLowerCase()) ||
                 item.course.toLowerCase().includes(filter.toLowerCase())
             );
 
@@ -197,7 +197,7 @@
 
             filteredLibrary.forEach(item => {
                 const row = document.createElement('tr');
-                
+
                 let statusBadge;
                 switch(item.status) {
                     case 'Completed':
@@ -219,7 +219,7 @@
                         </span>`;
                         break;
                 }
-                
+
                 row.innerHTML = `
                     <td class="py-3 pr-4 font-semibold">${item.name}</td>
                     <td class="py-3 px-4 text-gray-600 dark:text-gray-400">${item.course}</td>
@@ -233,11 +233,11 @@
                 libraryTableBody.appendChild(row);
             });
         }
-        
+
         function handleFiles(files) {
             uploadFeedback.innerHTML = '';
             if (files.length === 0) return;
-            
+
             const fileNames = Array.from(files).map(file => file.name).join(', ');
             uploadFeedback.innerHTML = `<p class="text-green-600 dark:text-green-400 font-semibold">Successfully uploaded: ${fileNames}</p>
             <p class="text-sm text-gray-500">AI processing has been initiated.</p>`;
@@ -287,7 +287,7 @@
         dropZone.addEventListener('drop', e => {
             handleFiles(e.dataTransfer.files);
         });
-        
+
         fileUpload.addEventListener('change', (e) => {
             handleFiles(e.target.files);
         });
@@ -307,7 +307,7 @@
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
             const overlay = document.getElementById('sidebar-overlay');
-            
+
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
@@ -318,7 +318,7 @@
                 overlay.classList.add('hidden');
             }
         }
-        
+
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             renderLibrary();
@@ -327,4 +327,3 @@
     </script>
 </body>
 </html>
-

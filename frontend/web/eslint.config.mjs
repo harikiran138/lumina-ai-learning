@@ -17,16 +17,16 @@ const eslintConfig = [
       "@typescript-eslint/no-unused-vars": "warn",
       "react/no-unescaped-entities": "off",
       "react/display-name": "off",
-      "@next/next/no-img-element": "off"
+      "@next/next/no-img-element": "off",
     },
   },
   {
     files: ["**/*.js"],
     rules: {
-        "@typescript-eslint/no-unused-vars": "off",
-        "no-unused-vars": "off"
-    }
-  }
+      "@typescript-eslint/no-unused-vars": "off",
+      "no-unused-vars": "off",
+    },
+  },
 ];
 
 export default eslintConfig;

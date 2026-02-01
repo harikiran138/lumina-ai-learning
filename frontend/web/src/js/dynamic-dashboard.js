@@ -4,102 +4,114 @@
  */
 
 class DynamicDashboard {
-    constructor() {
-        this.api = window.luminaAPI;
-        this.ui = window.luminaUI;
-        this.loader = window.dashboardLoader;
-        this.currentUser = null;
-        this.dashboardData = null;
-        this.masteryChart = null;
+  constructor() {
+    this.api = window.luminaAPI;
+    this.ui = window.luminaUI;
+    this.loader = window.dashboardLoader;
+    this.currentUser = null;
+    this.dashboardData = null;
+    this.masteryChart = null;
+  }
+
+  async initialize() {
+    try {
+      // Wait for database to be ready
+      await this.waitForDatabase();
+
+      // Get current user and role
+      this.currentUser = await this.api.getCurrentUser();
+
+      if (!this.currentUser) {
+        window.location.href = "../login.html";
+        return;
+      }
+
+      // Load role-specific dashboard
+      await this.loadDashboard();
+    } catch (error) {
+      console.error("Dashboard initialization failed:", error);
+      if (this.ui) {
+        this.ui.showNotification("Failed to load dashboard", "error");
+      }
+    }
+  }
+
+  async waitForDatabase() {
+    let attempts = 0;
+    const maxAttempts = 50;
+
+    while (!window.luminaAPI || !window.luminaDB || attempts >= maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      attempts++;
     }
 
-    async initialize() {
-        try {
-            // Wait for database to be ready
-            await this.waitForDatabase();
+    if (attempts >= maxAttempts) {
+      throw new Error("Database initialization timeout");
+    }
+  }
 
-            // Get current user and role
-            this.currentUser = await this.api.getCurrentUser();
+  async loadDashboard() {
+    // Get dashboard data based on user role
+    this.dashboardData = await this.api.getDashboardData(
+      this.currentUser.role,
+      this.currentUser.id,
+    );
 
-            if (!this.currentUser) {
-                window.location.href = '../login.html';
-                return;
-            }
+    // Update user display
+    this.updateUserDisplay();
 
-            // Load role-specific dashboard
-            await this.loadDashboard();
+    // Render role-specific content
+    switch (this.currentUser.role) {
+      case "admin":
+        await this.renderAdminDashboard();
+        break;
+      case "teacher":
+        await this.renderTeacherDashboard();
+        break;
+      case "student":
+        await this.renderStudentDashboard();
+        break;
+      default:
+        throw new Error("Unknown user role: " + this.currentUser.role);
+    }
+  }
 
-        } catch (error) {
-            console.error('Dashboard initialization failed:', error);
-            if (this.ui) {
-                this.ui.showNotification('Failed to load dashboard', 'error');
-            }
-        }
+  updateUserDisplay() {
+    const userNameDisplay =
+      document.getElementById("user-name-display") ||
+      document.getElementById("user-name");
+    const userAvatarDisplay =
+      document.getElementById("user-avatar-display") ||
+      document.getElementById("user-avatar");
+
+    if (userNameDisplay) {
+      const roleTitle =
+        this.currentUser.role === "admin"
+          ? "Admin"
+          : this.currentUser.role === "teacher"
+            ? "Teacher"
+            : "Student";
+
+      // Only append role if it's the admin dashboard style (user-name-display)
+      if (document.getElementById("user-name-display")) {
+        userNameDisplay.textContent = `${this.currentUser.name} (${roleTitle})`;
+      } else {
+        userNameDisplay.textContent = this.currentUser.name;
+      }
     }
 
-    async waitForDatabase() {
-        let attempts = 0;
-        const maxAttempts = 50;
-
-        while (!window.luminaAPI || !window.luminaDB || attempts >= maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-
-        if (attempts >= maxAttempts) {
-            throw new Error('Database initialization timeout');
-        }
+    if (userAvatarDisplay) {
+      userAvatarDisplay.textContent = this.currentUser.name
+        .charAt(0)
+        .toUpperCase();
     }
+  }
 
-    async loadDashboard() {
-        // Get dashboard data based on user role
-        this.dashboardData = await this.api.getDashboardData(this.currentUser.role, this.currentUser.id);
+  async renderAdminDashboard() {
+    const container = document.getElementById("page-content-wrapper");
+    if (!container) return;
 
-        // Update user display
-        this.updateUserDisplay();
-
-        // Render role-specific content
-        switch (this.currentUser.role) {
-            case 'admin':
-                await this.renderAdminDashboard();
-                break;
-            case 'teacher':
-                await this.renderTeacherDashboard();
-                break;
-            case 'student':
-                await this.renderStudentDashboard();
-                break;
-            default:
-                throw new Error('Unknown user role: ' + this.currentUser.role);
-        }
-    }
-
-    updateUserDisplay() {
-        const userNameDisplay = document.getElementById('user-name-display') || document.getElementById('user-name');
-        const userAvatarDisplay = document.getElementById('user-avatar-display') || document.getElementById('user-avatar');
-
-        if (userNameDisplay) {
-            const roleTitle = this.currentUser.role === 'admin' ? 'Admin' :
-                this.currentUser.role === 'teacher' ? 'Teacher' : 'Student';
-
-            // Only append role if it's the admin dashboard style (user-name-display)
-            if (document.getElementById('user-name-display')) {
-                userNameDisplay.textContent = `${this.currentUser.name} (${roleTitle})`;
-            } else {
-                userNameDisplay.textContent = this.currentUser.name;
-            }
-        }
-
-        if (userAvatarDisplay) {
-            userAvatarDisplay.textContent = this.currentUser.name.charAt(0).toUpperCase();
-        }
-    }
-
-    async renderAdminDashboard() {
-        const container = document.getElementById('page-content-wrapper');
-        if (!container) return;
-
-        container.innerHTML = `
+    container.innerHTML = `
             <div class="p-6 space-y-6">
                 <!-- Header Stats -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -107,7 +119,9 @@ class DynamicDashboard {
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
-                                <p class="text-3xl font-bold text-gray-900 dark:text-white">${this.dashboardData.totalUsers}</p>
+                                <p class="text-3xl font-bold text-gray-900 dark:text-white">${
+                                  this.dashboardData.totalUsers
+                                }</p>
                             </div>
                             <div class="p-3 bg-blue-100 dark:bg-blue-500/10 rounded-lg">
                                 <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,7 +135,9 @@ class DynamicDashboard {
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Users</p>
-                                <p class="text-3xl font-bold text-gray-900 dark:text-white">${this.dashboardData.activeUsers}</p>
+                                <p class="text-3xl font-bold text-gray-900 dark:text-white">${
+                                  this.dashboardData.activeUsers
+                                }</p>
                             </div>
                             <div class="p-3 bg-green-100 dark:bg-green-500/10 rounded-lg">
                                 <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,7 +151,9 @@ class DynamicDashboard {
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Courses</p>
-                                <p class="text-3xl font-bold text-gray-900 dark:text-white">${this.dashboardData.totalCourses}</p>
+                                <p class="text-3xl font-bold text-gray-900 dark:text-white">${
+                                  this.dashboardData.totalCourses
+                                }</p>
                             </div>
                             <div class="p-3 bg-purple-100 dark:bg-purple-500/10 rounded-lg">
                                 <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,7 +167,9 @@ class DynamicDashboard {
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Teachers</p>
-                                <p class="text-3xl font-bold text-gray-900 dark:text-white">${this.dashboardData.teachers}</p>
+                                <p class="text-3xl font-bold text-gray-900 dark:text-white">${
+                                  this.dashboardData.teachers
+                                }</p>
                             </div>
                             <div class="p-3 bg-orange-100 dark:bg-orange-500/10 rounded-lg">
                                 <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,14 +208,17 @@ class DynamicDashboard {
                 </div>
             </div>
         `;
+  }
+
+  renderUserList() {
+    if (!this.dashboardData.users || this.dashboardData.users.length === 0) {
+      return '<p class="text-gray-500 dark:text-gray-400 text-center py-4">No users found</p>';
     }
 
-    renderUserList() {
-        if (!this.dashboardData.users || this.dashboardData.users.length === 0) {
-            return '<p class="text-gray-500 dark:text-gray-400 text-center py-4">No users found</p>';
-        }
-
-        return this.dashboardData.users.slice(0, 5).map(user => `
+    return this.dashboardData.users
+      .slice(0, 5)
+      .map(
+        (user) => `
             <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 <div class="flex items-center space-x-3">
                     <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
@@ -203,39 +226,53 @@ class DynamicDashboard {
                     </div>
                     <div>
                         <p class="font-medium">${user.name}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">${user.role}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">${
+                          user.role
+                        }</p>
                     </div>
                 </div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">
-                    ${user.status || 'active'}
+                    ${user.status || "active"}
                 </div>
             </div>
-        `).join('');
+        `,
+      )
+      .join("");
+  }
+
+  renderCourseList() {
+    if (
+      !this.dashboardData.courses ||
+      this.dashboardData.courses.length === 0
+    ) {
+      return '<p class="text-gray-500 dark:text-gray-400 text-center py-4">No courses found</p>';
     }
 
-    renderCourseList() {
-        if (!this.dashboardData.courses || this.dashboardData.courses.length === 0) {
-            return '<p class="text-gray-500 dark:text-gray-400 text-center py-4">No courses found</p>';
-        }
-
-        return this.dashboardData.courses.slice(0, 5).map(course => `
+    return this.dashboardData.courses
+      .slice(0, 5)
+      .map(
+        (course) => `
             <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 <div>
                     <p class="font-medium">${course.name}</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">${course.description}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">${
+                      course.description
+                    }</p>
                 </div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">
                     ${course.members ? course.members.length : 0} members
                 </div>
             </div>
-        `).join('');
-    }
+        `,
+      )
+      .join("");
+  }
 
-    async renderTeacherDashboard() {
-        const container = document.getElementById('page-content-wrapper');
+  async renderTeacherDashboard() {
+    const container = document.getElementById("page-content-wrapper");
 
-        if (container) {
-            container.innerHTML = `
+    if (container) {
+      container.innerHTML = `
                 <div class="p-6 space-y-6">
                     <!-- Header Stats -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -243,7 +280,9 @@ class DynamicDashboard {
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Students</p>
-                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${this.dashboardData.totalStudents}</p>
+                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${
+                                      this.dashboardData.totalStudents
+                                    }</p>
                                 </div>
                                 <div class="p-3 bg-blue-100 dark:bg-blue-500/10 rounded-lg">
                                     <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -257,7 +296,9 @@ class DynamicDashboard {
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Mastery</p>
-                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${this.dashboardData.avgMastery}%</p>
+                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${
+                                      this.dashboardData.avgMastery
+                                    }%</p>
                                 </div>
                                 <div class="p-3 bg-green-100 dark:bg-green-500/10 rounded-lg">
                                     <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -271,7 +312,9 @@ class DynamicDashboard {
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Courses Managed</p>
-                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${this.dashboardData.coursesManaged}</p>
+                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${
+                                      this.dashboardData.coursesManaged
+                                    }</p>
                                 </div>
                                 <div class="p-3 bg-purple-100 dark:bg-purple-500/10 rounded-lg">
                                     <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -285,7 +328,9 @@ class DynamicDashboard {
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">To Grade</p>
-                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${this.dashboardData.assessmentsToGrade}</p>
+                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${
+                                      this.dashboardData.assessmentsToGrade
+                                    }</p>
                                 </div>
                                 <div class="p-3 bg-orange-100 dark:bg-orange-500/10 rounded-lg">
                                     <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,185 +354,235 @@ class DynamicDashboard {
                     </div>
                 </div>
             `;
-        } else {
-            // New Design Logic
-            const totalStudentsEl = document.getElementById('total-students');
-            const avgMasteryEl = document.getElementById('avg-mastery');
-            const toGradeEl = document.getElementById('assessments-to-grade');
-            const courseSelect = document.getElementById('course-select');
+    } else {
+      // New Design Logic
+      const totalStudentsEl = document.getElementById("total-students");
+      const avgMasteryEl = document.getElementById("avg-mastery");
+      const toGradeEl = document.getElementById("assessments-to-grade");
+      const courseSelect = document.getElementById("course-select");
 
-            if (totalStudentsEl) totalStudentsEl.textContent = this.dashboardData.totalStudents;
-            if (avgMasteryEl) avgMasteryEl.textContent = `${this.dashboardData.avgMastery}%`;
-            if (toGradeEl) toGradeEl.textContent = this.dashboardData.assessmentsToGrade;
+      if (totalStudentsEl)
+        totalStudentsEl.textContent = this.dashboardData.totalStudents;
+      if (avgMasteryEl)
+        avgMasteryEl.textContent = `${this.dashboardData.avgMastery}%`;
+      if (toGradeEl)
+        toGradeEl.textContent = this.dashboardData.assessmentsToGrade;
 
-            if (courseSelect) {
-                this.populateTeacherCourseSelect(courseSelect);
+      if (courseSelect) {
+        this.populateTeacherCourseSelect(courseSelect);
 
-                // Remove old listeners to avoid duplicates if re-initialized
-                const newSelect = courseSelect.cloneNode(true);
-                courseSelect.parentNode.replaceChild(newSelect, courseSelect);
+        // Remove old listeners to avoid duplicates if re-initialized
+        const newSelect = courseSelect.cloneNode(true);
+        courseSelect.parentNode.replaceChild(newSelect, courseSelect);
 
-                newSelect.addEventListener('change', (e) => this.updateTeacherCourseView(e.target.value));
+        newSelect.addEventListener("change", (e) =>
+          this.updateTeacherCourseView(e.target.value),
+        );
 
-                // Initialize with first course if available
-                if (this.dashboardData.courses.length > 0) {
-                    this.updateTeacherCourseView(this.dashboardData.courses[0].id);
-                }
-            }
-
-            this.initializeMasteryChart();
+        // Initialize with first course if available
+        if (this.dashboardData.courses.length > 0) {
+          this.updateTeacherCourseView(this.dashboardData.courses[0].id);
         }
+      }
+
+      this.initializeMasteryChart();
     }
+  }
 
-    populateTeacherCourseSelect(selectEl) {
-        selectEl.innerHTML = '';
-        this.dashboardData.courses.forEach(course => {
-            const option = document.createElement('option');
-            option.value = course.id;
-            option.textContent = course.name;
-            selectEl.appendChild(option);
-        });
-    }
+  populateTeacherCourseSelect(selectEl) {
+    selectEl.innerHTML = "";
+    this.dashboardData.courses.forEach((course) => {
+      const option = document.createElement("option");
+      option.value = course.id;
+      option.textContent = course.name;
+      selectEl.appendChild(option);
+    });
+  }
 
-    updateTeacherCourseView(courseId) {
-        const studentTableBody = document.getElementById('student-progress-table');
-        if (studentTableBody) {
-            studentTableBody.innerHTML = '';
-            const courseProgress = this.dashboardData.studentProgress.filter(p => p.courseId === courseId);
+  updateTeacherCourseView(courseId) {
+    const studentTableBody = document.getElementById("student-progress-table");
+    if (studentTableBody) {
+      studentTableBody.innerHTML = "";
+      const courseProgress = this.dashboardData.studentProgress.filter(
+        (p) => p.courseId === courseId,
+      );
 
-            if (courseProgress.length === 0) {
-                studentTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No student data available for this course.</td></tr>`;
-            } else {
-                courseProgress.forEach(student => {
-                    const row = document.createElement('tr');
-                    const isStruggling = student.mastery < 60; // Example logic
-                    if (isStruggling) {
-                        row.className = 'bg-red-50 dark:bg-red-500/10';
-                    }
+      if (courseProgress.length === 0) {
+        studentTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No student data available for this course.</td></tr>`;
+      } else {
+        courseProgress.forEach((student) => {
+          const row = document.createElement("tr");
+          const isStruggling = student.mastery < 60; // Example logic
+          if (isStruggling) {
+            row.className = "bg-red-50 dark:bg-red-500/10";
+          }
 
-                    const masteryColor = student.mastery >= 80 ? 'text-green-500' : student.mastery >= 60 ? 'text-amber-500' : 'text-red-500';
-                    const progressColor = student.mastery >= 80 ? 'bg-green-500' : student.mastery >= 60 ? 'bg-amber-500' : 'bg-red-500';
-                    const streakIcon = student.streak > 0 ? '🔥' : '❄️';
+          const masteryColor =
+            student.mastery >= 80
+              ? "text-green-500"
+              : student.mastery >= 60
+                ? "text-amber-500"
+                : "text-red-500";
+          const progressColor =
+            student.mastery >= 80
+              ? "bg-green-500"
+              : student.mastery >= 60
+                ? "bg-amber-500"
+                : "bg-red-500";
+          const streakIcon = student.streak > 0 ? "🔥" : "❄️";
 
-                    row.innerHTML = `
-                        <td class="py-3 pr-4 font-semibold">${student.studentName || 'Unknown'} ${isStruggling ? '<span class="text-xs text-red-500 font-bold ml-1">(Struggling)</span>' : ''}</td>
+          row.innerHTML = `
+                        <td class="py-3 pr-4 font-semibold">${
+                          student.studentName || "Unknown"
+                        } ${
+                          isStruggling
+                            ? '<span class="text-xs text-red-500 font-bold ml-1">(Struggling)</span>'
+                            : ""
+                        }</td>
                         <td class="py-3 px-4">
                             <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                <div class="${progressColor} h-2 rounded-full" style="width: ${student.progress}%"></div>
+                                <div class="${progressColor} h-2 rounded-full" style="width: ${
+                                  student.progress
+                                }%"></div>
                             </div>
                         </td>
-                        <td class="py-3 px-4 font-bold ${masteryColor}">${student.mastery}%</td>
-                        <td class="py-3 pl-4 font-semibold flex items-center gap-1">${student.streak} ${streakIcon}</td>
+                        <td class="py-3 px-4 font-bold ${masteryColor}">${
+                          student.mastery
+                        }%</td>
+                        <td class="py-3 pl-4 font-semibold flex items-center gap-1">${
+                          student.streak
+                        } ${streakIcon}</td>
                     `;
-                    studentTableBody.appendChild(row);
-                });
-            }
-        }
-
-        // Update Chart
-        this.updateMasteryChart(courseId);
+          studentTableBody.appendChild(row);
+        });
+      }
     }
 
-    initializeMasteryChart() {
-        const ctx = document.getElementById('masteryChart');
-        if (!ctx) return;
+    // Update Chart
+    this.updateMasteryChart(courseId);
+  }
 
-        // Check if Chart.js is loaded
-        if (typeof Chart === 'undefined') return;
+  initializeMasteryChart() {
+    const ctx = document.getElementById("masteryChart");
+    if (!ctx) return;
 
-        const isDarkMode = document.documentElement.classList.contains('dark');
+    // Check if Chart.js is loaded
+    if (typeof Chart === "undefined") return;
 
-        // Destroy existing chart if any (stored on the canvas element)
-        if (ctx.chart) {
-            ctx.chart.destroy();
-        }
+    const isDarkMode = document.documentElement.classList.contains("dark");
 
-        const chartConfig = {
-            type: 'radar',
-            data: {
-                labels: ['Topic 1', 'Topic 2', 'Topic 3', 'Topic 4', 'Topic 5'],
-                datasets: [{
-                    label: 'Class Mastery',
-                    data: [0, 0, 0, 0, 0],
-                    backgroundColor: 'rgba(251, 191, 36, 0.2)',
-                    borderColor: '#fbbf24',
-                    pointBackgroundColor: '#fbbf24',
-                    pointBorderColor: isDarkMode ? '#1C1C1C' : '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: '#fbbf24'
-                }]
+    // Destroy existing chart if any (stored on the canvas element)
+    if (ctx.chart) {
+      ctx.chart.destroy();
+    }
+
+    const chartConfig = {
+      type: "radar",
+      data: {
+        labels: ["Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5"],
+        datasets: [
+          {
+            label: "Class Mastery",
+            data: [0, 0, 0, 0, 0],
+            backgroundColor: "rgba(251, 191, 36, 0.2)",
+            borderColor: "#fbbf24",
+            pointBackgroundColor: "#fbbf24",
+            pointBorderColor: isDarkMode ? "#1C1C1C" : "#fff",
+            pointHoverBackgroundColor: "#fff",
+            pointHoverBorderColor: "#fbbf24",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            angleLines: {
+              color: isDarkMode
+                ? "rgba(255, 255, 255, 0.1)"
+                : "rgba(0, 0, 0, 0.1)",
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    r: {
-                        angleLines: { color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' },
-                        grid: { color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' },
-                        pointLabels: {
-                            color: isDarkMode ? '#d1d5db' : '#4b5563',
-                            font: { family: 'Inter, sans-serif' }
-                        },
-                        ticks: {
-                            backdropColor: 'transparent',
-                            color: isDarkMode ? '#9ca3af' : '#6b7280',
-                            stepSize: 20,
-                            font: { family: 'Inter, sans-serif' }
-                        },
-                        min: 0,
-                        max: 100
-                    }
-                },
-                plugins: { legend: { display: false } }
-            }
-        };
+            grid: {
+              color: isDarkMode
+                ? "rgba(255, 255, 255, 0.1)"
+                : "rgba(0, 0, 0, 0.1)",
+            },
+            pointLabels: {
+              color: isDarkMode ? "#d1d5db" : "#4b5563",
+              font: { family: "Inter, sans-serif" },
+            },
+            ticks: {
+              backdropColor: "transparent",
+              color: isDarkMode ? "#9ca3af" : "#6b7280",
+              stepSize: 20,
+              font: { family: "Inter, sans-serif" },
+            },
+            min: 0,
+            max: 100,
+          },
+        },
+        plugins: { legend: { display: false } },
+      },
+    };
 
-        this.masteryChart = new Chart(ctx, chartConfig);
-        ctx.chart = this.masteryChart; // Store reference
+    this.masteryChart = new Chart(ctx, chartConfig);
+    ctx.chart = this.masteryChart; // Store reference
+  }
+
+  updateMasteryChart(courseId) {
+    if (!this.masteryChart) return;
+
+    // Generate mock data based on courseId hash or something to make it look dynamic
+    // In real app, this would come from API
+    const mockData = [
+      Math.floor(Math.random() * 30) + 70,
+      Math.floor(Math.random() * 30) + 70,
+      Math.floor(Math.random() * 30) + 70,
+      Math.floor(Math.random() * 30) + 70,
+      Math.floor(Math.random() * 30) + 70,
+    ];
+
+    this.masteryChart.data.datasets[0].data = mockData;
+    this.masteryChart.update();
+  }
+
+  renderTeacherCourses() {
+    if (
+      !this.dashboardData.courses ||
+      this.dashboardData.courses.length === 0
+    ) {
+      return '<p class="text-gray-500 dark:text-gray-400 text-center py-8 col-span-full">No courses assigned</p>';
     }
 
-    updateMasteryChart(courseId) {
-        if (!this.masteryChart) return;
-
-        // Generate mock data based on courseId hash or something to make it look dynamic
-        // In real app, this would come from API
-        const mockData = [
-            Math.floor(Math.random() * 30) + 70,
-            Math.floor(Math.random() * 30) + 70,
-            Math.floor(Math.random() * 30) + 70,
-            Math.floor(Math.random() * 30) + 70,
-            Math.floor(Math.random() * 30) + 70
-        ];
-
-        this.masteryChart.data.datasets[0].data = mockData;
-        this.masteryChart.update();
-    }
-
-    renderTeacherCourses() {
-        if (!this.dashboardData.courses || this.dashboardData.courses.length === 0) {
-            return '<p class="text-gray-500 dark:text-gray-400 text-center py-8 col-span-full">No courses assigned</p>';
-        }
-
-        return this.dashboardData.courses.map(course => `
+    return this.dashboardData.courses
+      .map(
+        (course) => `
             <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
                 <h4 class="font-semibold text-lg mb-2">${course.name}</h4>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">${course.description}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">${
+                  course.description
+                }</p>
                 <div class="flex items-center justify-between text-sm">
-                    <span class="text-blue-600 dark:text-blue-400">${course.members ? course.members.length : 0} students</span>
+                    <span class="text-blue-600 dark:text-blue-400">${
+                      course.members ? course.members.length : 0
+                    } students</span>
                     <button class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                         View Details
                     </button>
                 </div>
             </div>
-        `).join('');
-    }
+        `,
+      )
+      .join("");
+  }
 
-    async renderStudentDashboard() {
-        const container = document.getElementById('page-content-wrapper');
+  async renderStudentDashboard() {
+    const container = document.getElementById("page-content-wrapper");
 
-        // If container exists, render the full dashboard (Admin/Old style)
-        if (container) {
-            container.innerHTML = `
+    // If container exists, render the full dashboard (Admin/Old style)
+    if (container) {
+      container.innerHTML = `
                 <div class="p-6 space-y-6">
                     <!-- Header Stats -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -495,7 +590,9 @@ class DynamicDashboard {
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Overall Mastery</p>
-                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${this.dashboardData.overallMastery}%</p>
+                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${
+                                      this.dashboardData.overallMastery
+                                    }%</p>
                                 </div>
                                 <div class="p-3 bg-blue-100 dark:bg-blue-500/10 rounded-lg">
                                     <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -509,7 +606,9 @@ class DynamicDashboard {
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Current Streak</p>
-                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${this.dashboardData.currentStreak}</p>
+                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${
+                                      this.dashboardData.currentStreak
+                                    }</p>
                                 </div>
                                 <div class="p-3 bg-orange-100 dark:bg-orange-500/10 rounded-lg">
                                     <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -523,7 +622,9 @@ class DynamicDashboard {
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Courses Enrolled</p>
-                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${this.dashboardData.enrolledCourses.length}</p>
+                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${
+                                      this.dashboardData.enrolledCourses.length
+                                    }</p>
                                 </div>
                                 <div class="p-3 bg-green-100 dark:bg-green-500/10 rounded-lg">
                                     <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -537,7 +638,9 @@ class DynamicDashboard {
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Attendance</p>
-                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${this.dashboardData.attendance}%</p>
+                                    <p class="text-3xl font-bold text-gray-900 dark:text-white">${
+                                      this.dashboardData.attendance
+                                    }%</p>
                                 </div>
                                 <div class="p-3 bg-purple-100 dark:bg-purple-500/10 rounded-lg">
                                     <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -561,36 +664,46 @@ class DynamicDashboard {
                     </div>
                 </div>
             `;
-        } else {
-            // Update existing elements in place (New Design)
-            const statMastery = document.getElementById('stat-mastery');
-            const statStreak = document.getElementById('stat-streak');
-            const statAttendance = document.getElementById('stat-attendance');
-            const statCurrentCourse = document.getElementById('stat-current-course');
+    } else {
+      // Update existing elements in place (New Design)
+      const statMastery = document.getElementById("stat-mastery");
+      const statStreak = document.getElementById("stat-streak");
+      const statAttendance = document.getElementById("stat-attendance");
+      const statCurrentCourse = document.getElementById("stat-current-course");
 
-            if (statMastery) statMastery.textContent = `${this.dashboardData.overallMastery}%`;
-            if (statStreak) statStreak.textContent = `🔥 ${this.dashboardData.currentStreak} days`;
-            if (statAttendance) statAttendance.textContent = `${this.dashboardData.attendance}%`;
+      if (statMastery)
+        statMastery.textContent = `${this.dashboardData.overallMastery}%`;
+      if (statStreak)
+        statStreak.textContent = `🔥 ${this.dashboardData.currentStreak} days`;
+      if (statAttendance)
+        statAttendance.textContent = `${this.dashboardData.attendance}%`;
 
-            if (statCurrentCourse && this.dashboardData.enrolledCourses.length > 0) {
-                statCurrentCourse.textContent = this.dashboardData.enrolledCourses[0].name;
-            } else if (statCurrentCourse) {
-                statCurrentCourse.textContent = 'None';
-            }
-        }
+      if (statCurrentCourse && this.dashboardData.enrolledCourses.length > 0) {
+        statCurrentCourse.textContent =
+          this.dashboardData.enrolledCourses[0].name;
+      } else if (statCurrentCourse) {
+        statCurrentCourse.textContent = "None";
+      }
+    }
+  }
+
+  renderStudentCourses() {
+    if (
+      !this.dashboardData.enrolledCourses ||
+      this.dashboardData.enrolledCourses.length === 0
+    ) {
+      return '<p class="text-gray-500 dark:text-gray-400 text-center py-8 col-span-full">No courses enrolled</p>';
     }
 
-    renderStudentCourses() {
-        if (!this.dashboardData.enrolledCourses || this.dashboardData.enrolledCourses.length === 0) {
-            return '<p class="text-gray-500 dark:text-gray-400 text-center py-8 col-span-full">No courses enrolled</p>';
-        }
+    return this.dashboardData.enrolledCourses
+      .map((course) => {
+        const progress = this.dashboardData.studentProgress.find(
+          (p) => p.courseId === course.id,
+        );
+        const mastery = progress ? progress.mastery : 0;
+        const progressPercent = progress ? progress.progress : 0;
 
-        return this.dashboardData.enrolledCourses.map(course => {
-            const progress = this.dashboardData.studentProgress.find(p => p.courseId === course.id);
-            const mastery = progress ? progress.mastery : 0;
-            const progressPercent = progress ? progress.progress : 0;
-
-            return `
+        return `
                 <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
                     <h4 class="font-semibold text-lg mb-2">${course.name}</h4>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">${course.description}</p>
@@ -609,19 +722,20 @@ class DynamicDashboard {
                     </div>
                 </div>
             `;
-        }).join('');
-    }
+      })
+      .join("");
+  }
 
-    // Refresh dashboard data
-    async refresh() {
-        await this.loadDashboard();
-    }
+  // Refresh dashboard data
+  async refresh() {
+    await this.loadDashboard();
+  }
 }
 
 // Initialize dashboard when DOM is loaded
-document.addEventListener('DOMContentLoaded', async () => {
-    window.dynamicDashboard = new DynamicDashboard();
-    await window.dynamicDashboard.initialize();
+document.addEventListener("DOMContentLoaded", async () => {
+  window.dynamicDashboard = new DynamicDashboard();
+  await window.dynamicDashboard.initialize();
 });
 
 // Make class available globally

@@ -4,14 +4,14 @@
 echo "Building entry points with Parcel..."
 npx parcel build src/index.html src/login.html --public-url ./
 
-# Copy all dashboard and page HTML files directly  
+# Copy all dashboard and page HTML files directly
 echo "Copying dashboard pages..."
 mkdir -p dist/admin dist/student dist/teacher
 
 # Copy all admin pages
 cp -r src/admin/*.html dist/admin/ 2>/dev/null || true
 
-# Copy all student pages  
+# Copy all student pages
 cp -r src/student/*.html dist/student/ 2>/dev/null || true
 
 # Copy all teacher pages
