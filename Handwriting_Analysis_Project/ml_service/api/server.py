@@ -49,7 +49,7 @@ async def analyze_handwriting(
         temp_filename = f"temp_{file.filename}"
         with open(temp_filename, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-        
+
         # Inference
         extracted_text = ""
         if model and processor:
@@ -57,7 +57,7 @@ async def analyze_handwriting(
             pixel_values = processor(image, return_tensors="pt").pixel_values
             if torch.cuda.is_available():
                 pixel_values = pixel_values.cuda()
-            
+
             with torch.no_grad():
                 generated_ids = model.generate(pixel_values)
                 extracted_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
@@ -70,15 +70,15 @@ async def analyze_handwriting(
             "score": None,
             "feedback": "Analysis Complete"
         }
-        
+
         if answer_key:
             score = scorer.calculate_similarity(extracted_text, answer_key)
             result["score"] = score
             result["feedback"] = f"Alignment with key: {score:.2f}"
-            
+
         # Cleanup
         os.remove(temp_filename)
-        
+
         return result
 
     except Exception as e:

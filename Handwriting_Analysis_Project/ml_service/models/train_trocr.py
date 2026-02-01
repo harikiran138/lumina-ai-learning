@@ -27,15 +27,15 @@ class HandwritingDataset(Dataset):
         # Assuming df has 'file_name' and 'text' columns
         file_name = self.df.iloc[idx]['file_name']
         text = self.df.iloc[idx]['text']
-        
+
         image_path = os.path.join(self.root_dir, file_name)
         image = Image.open(image_path).convert("RGB")
-        
+
         pixel_values = self.processor(image, return_tensors="pt").pixel_values
-        labels = self.processor.tokenizer(text, 
-                                          padding="max_length", 
+        labels = self.processor.tokenizer(text,
+                                          padding="max_length",
                                           max_length=self.max_target_length).input_ids
-        
+
         # usually labels are processed to replace pad token id with -100
         labels = [label if label != self.processor.tokenizer.pad_token_id else -100 for label in labels]
 
@@ -64,7 +64,7 @@ def train_model():
     print("Initializing Dummy Dataset for functionality verify...")
     df_train = pd.DataFrame({'file_name': [], 'text': []})
     # train_dataset = HandwritingDataset(root_dir="data/raw", df=df_train, processor=processor)
-    
+
     # In a real scenario, we would load the unified DF here
     # dataset = load_dataset(...)
 
@@ -73,7 +73,7 @@ def train_model():
         evaluation_strategy="steps",
         per_device_train_batch_size=BATCH_SIZE,
         per_device_eval_batch_size=BATCH_SIZE,
-        fp16=torch.cuda.is_available(), 
+        fp16=torch.cuda.is_available(),
         output_dir=OUTPUT_DIR,
         logging_dir=f"{OUTPUT_DIR}/logs",
         logging_steps=10,
