@@ -24,7 +24,7 @@ def main():
     # Load model in 4-bit or 8-bit mode if bitsandbytes is working, otherwise fp32/fp16
     # For simplicity on generic hardware, we'll try standard load first.
     # On Windows without specific CUDA bitsandbytes compilation, standard load is safer.
-    
+
     device_map = "auto" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device_map}")
 

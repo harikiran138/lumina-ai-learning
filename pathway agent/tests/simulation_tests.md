@@ -39,7 +39,7 @@ To validate the Pathway Agent's policy before deployment, we run it against simu
 def run_simulation(persona, max_steps=1000):
    env = PathwayGym(persona)
    agent = load_trained_policy()
-   
+
    history = []
    for _ in range(max_steps):
        obs = env.get_obs()
@@ -47,6 +47,6 @@ def run_simulation(persona, max_steps=1000):
        obs, reward, done, info = env.step(action)
        history.append(info)
        if done: break
-   
+
    return analyze_history(history)
 ```

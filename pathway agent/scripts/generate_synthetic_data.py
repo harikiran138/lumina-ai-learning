@@ -16,7 +16,7 @@ class Learner:
         self.fatigue = 0.0
         self.engagement = 1.0
         self.current_concept_idx = 0
-        
+
         # Profile params
         if profile_name == "fast":
             self.learning_rate = 0.3
@@ -39,7 +39,7 @@ class Learner:
 
     def step(self, action):
         concept = CONCEPTS[self.current_concept_idx]
-        
+
         # Apply action effects
         if action == "rest":
             self.fatigue = max(0, self.fatigue - 0.4)
@@ -82,12 +82,12 @@ class Learner:
 def generate_episodes(n_students=100):
     data = []
     profiles = ["fast", "slow", "fatigued", "guesser", "inconsistent"]
-    
+
     for i in range(n_students):
         profile = random.choice(profiles)
         student = Learner(profile)
         trajectory = []
-        
+
         for t in range(50): # 50 steps per student
             # Simple policy for data generation
             if student.fatigue > 0.8:
@@ -96,7 +96,7 @@ def generate_episodes(n_students=100):
                 action = "advance"
             else:
                 action = random.choice(["continue", "review"])
-            
+
             outcome = student.step(action)
             step_data = {
                 "student_id": i,
@@ -106,22 +106,22 @@ def generate_episodes(n_students=100):
                 **outcome
             }
             trajectory.append(step_data)
-        
+
         data.extend(trajectory)
-    
+
     return data
 
 if __name__ == "__main__":
     print("Generating synthetic data...")
     data = generate_episodes(500)
-    
+
     output_file = os.path.join(OUTPUT_DIR, "synthetic_trajectories.json")
     with open(output_file, "w") as f:
         json.dump(data, f, indent=2)
-    
+
     # Also save as CSV for easier inspection
     import pandas as pd
     df = pd.DataFrame(data)
     df.to_csv(os.path.join(OUTPUT_DIR, "synthetic_trajectories.csv"), index=False)
-    
+
     print(f"Generated {len(data)} steps of synthetic data in {OUTPUT_DIR}")

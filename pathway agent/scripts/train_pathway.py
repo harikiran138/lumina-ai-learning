@@ -29,16 +29,16 @@ class TrajectoryDataset(Dataset):
         # We need to shift 'correct' to be Input (prev outcome) vs Output (next action) is tricky in supervised.
         # Here we try to clone the behavior of the synthetic generator or 'good' students.
         # For RL, we would simulate. For now, let's do Behavior Cloning on 'fast' learners as a starter.
-        
+
         self.good_learners = self.data[self.data['profile'] == 'fast']
-        
+
         # Simple features
         self.features = self.good_learners[['mastery', 'fatigue', 'engagement']].values.astype(np.float32)
-        
+
         # Actions: Map string to int
         self.action_map = {"continue": 0, "review": 1, "advance": 2, "rest": 3}
         self.labels = self.good_learners['action'].map(self.action_map).values
-        
+
     def __len__(self):
         return len(self.features)
 
@@ -47,7 +47,7 @@ class TrajectoryDataset(Dataset):
 
 def train():
     print("Starting training...")
-    
+
     data_path = "data/synthetic/synthetic_trajectories.csv"
     if not os.path.exists(data_path):
         print(f"Data file {data_path} not found. Run generate_synthetic_data.py first.")
@@ -55,11 +55,11 @@ def train():
 
     dataset = TrajectoryDataset(data_path)
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    
+
     model = PathwayPolicy(input_dim=3, output_dim=4)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     criterion = nn.CrossEntropyLoss()
-    
+
     epochs = 5
     for epoch in range(epochs):
         total_loss = 0
@@ -70,9 +70,9 @@ def train():
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
-        
+
         print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss/len(dataloader):.4f}")
-    
+
     os.makedirs("models", exist_ok=True)
     torch.save(model.state_dict(), "models/pathway_policy_v1.pth")
     print("Model saved to models/pathway_policy_v1.pth")

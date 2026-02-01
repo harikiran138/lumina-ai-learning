@@ -21,7 +21,7 @@ def main():
         torch_dtype=torch.float16 if device == "cuda" else torch.float32,
         device_map=device
     )
-    
+
     print(f"Loading adapter from {ADAPTER_PATH}...")
     try:
         model = PeftModel.from_pretrained(base_model, ADAPTER_PATH)
@@ -34,10 +34,10 @@ def main():
 
     print("Loading validation data...")
     val_dataset = load_from_disk(os.path.join(DATA_DIR, "val"))
-    
+
     # Calculate Perplexity on a subset
     encodings = val_dataset.select(range(100)) # Test on 100 samples
-    
+
     max_length = model.config.max_position_embeddings
     stride = 512
     nlls = []
@@ -56,7 +56,7 @@ def main():
             loss = outputs.loss
             total_loss += loss.item()
             count += 1
-    
+
     avg_loss = total_loss / count
     perplexity = math.exp(avg_loss)
 
