@@ -17,8 +17,8 @@ _____________________________ test_assessment_flow _____________________________
         # 1. Start Assessment
 >       response = client.post("/api/assessment/start", json={"student_id": "test_student"})
 
-backend/tests/test_assessment_api.py:17: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_assessment_api.py:17:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/testclient.py:593: in post
     return super().post(
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1144: in post
@@ -79,7 +79,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
     raw_response = await run_endpoint_function(
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/routing.py:212: in run_endpoint_function
     return await dependant.call(**values)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 req = StartAssessmentRequest(student_id='test_student')
 
@@ -94,8 +94,8 @@ __________________________ test_assessment_not_found ___________________________
     def test_assessment_not_found():
 >       response = client.get("/api/assessment/bad_id/next-question")
 
-backend/tests/test_assessment_api.py:59: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_assessment_api.py:59:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/testclient.py:514: in get
     return super().get(
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1053: in get
@@ -156,7 +156,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
     raw_response = await run_endpoint_function(
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/routing.py:212: in run_endpoint_function
     return await dependant.call(**values)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 session_id = 'bad_id'
 

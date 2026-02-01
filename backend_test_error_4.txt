@@ -20,7 +20,7 @@ _____________________________ test_assessment_flow _____________________________
         data = response.json()
         assert "session_id" in data
         session_id = data["session_id"]
-    
+
         # 2. Get Next Question (Initial)
         response = client.get(f"/api/assessment/{session_id}/next-question")
         assert response.status_code == 200
@@ -28,24 +28,24 @@ _____________________________ test_assessment_flow _____________________________
         assert q_data["status"] == "in_progress"
         assert "question" in q_data
         question_id = q_data["question"]["id"]
-    
+
         # 3. Submit Answer (Correct)
         # Based on mock DB, let's say q1 is "0"
         # To be sturdy, we might not know which question, so we just answer something correct if we can guess, or just check the structure.
         # But wait, to test logic we need to know the question.
         # Let's inspect the question content to decide answer, or just submit "0" and see what happens (might be wrong, but flow continues)
-    
+
         # If question is q1, correct is "0"
         # If q2, "append()"
         # Let's just try to answer "0"
-    
+
 >       response = client.post(f"/api/assessment/{session_id}/submit-answer", json={
             "selected_answer": "0",
             "time_taken": 5.0
         })
 
-backend/tests/test_assessment_api.py:41: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_assessment_api.py:41:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/testclient.py:593: in post
     return super().post(
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1144: in post
@@ -108,7 +108,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
     return await dependant.call(**values)
 backend/app/assessment/api/assessment_routes.py:161: in submit_answer
     is_correct = (req.selected_answer == question.correct_answer)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = Question(id='q9', text='Which sorting algorithm has O(N^2) average complexity?', options=[Option(id='0c4f43d1-1510-467...tadata=QuestionMetadata(question_id='q9', concepts=['complexity', 'arrays'], difficulty=0.5, blooms_level='knowledge'))
 item = 'correct_answer'
@@ -119,7 +119,7 @@ item = 'correct_answer'
             attribute = private_attributes[item]
             if hasattr(attribute, '__get__'):
                 return attribute.__get__(self, type(self))  # type: ignore
-    
+
             try:
                 # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
                 return self.__pydantic_private__[item]  # type: ignore
@@ -132,7 +132,7 @@ item = 'correct_answer'
                 pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
             except AttributeError:
                 pydantic_extra = None
-    
+
             if pydantic_extra is not None:
                 try:
                     return pydantic_extra[item]

@@ -31,16 +31,16 @@ client = <starlette.testclient.TestClient object at 0x16355f0d0>
         mock_llm = MagicMock()
         # Mock agenerate as async
         mock_llm.agenerate = AsyncMock(return_value='{"title": "AI 101", "slides": [{"title": "Slide 1"}]}')
-    
+
         # Patch where it is used: app.routers.ai
         with patch("app.routers.ai.get_llm_provider", return_value=mock_llm) as mock_provider:
-    
+
             # Test 1: Generate PPT
             response = client.post("/api/tutor/generate-ppt", json={
                 "topic": "Artificial Intelligence",
                 "audience": "Students"
             })
-    
+
             # Check if it called the model
             print(f"Mock Calls: {mock_llm.mock_calls}")
             print(f"Provider Calls: {mock_provider.mock_calls}")

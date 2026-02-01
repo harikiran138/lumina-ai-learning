@@ -20,7 +20,7 @@ _____________________________ test_assessment_flow _____________________________
         data = response.json()
         assert "session_id" in data
         session_id = data["session_id"]
-    
+
         # 2. Get Next Question (Initial)
         response = client.get(f"/api/assessment/{session_id}/next-question")
 >       assert response.status_code == 200

@@ -18,15 +18,15 @@ _________________________ test_pipeline_task_dispatch __________________________
         """
 >       with patch("app.routers.assignments.grade_submission_task.delay") as mock_delay:
 
-backend/tests/test_pipeline.py:8: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_pipeline.py:8:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 ../../../.pyenv/versions/3.8.18/lib/python3.8/unittest/mock.py:1377: in __enter__
     self.target = self.getter()
 ../../../.pyenv/versions/3.8.18/lib/python3.8/unittest/mock.py:1552: in <lambda>
     getter = lambda: _importer(target)
 ../../../.pyenv/versions/3.8.18/lib/python3.8/unittest/mock.py:1228: in _importer
     thing = _dot_lookup(thing, comp, import_path)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 thing = <module 'app.routers.assignments' from '/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/routers/assignments.py'>
 comp = 'grade_submission_task'
