@@ -1,4 +1,29 @@
 import pytest
+import sys
+from unittest.mock import MagicMock
+
+# --- Global Mocks for Heavy Dependencies ---
+# These override real imports to prevent ModuleNotFoundError in tests
+try:
+    import boto3
+except ImportError:
+    # If missing in test env, mock it
+    sys.modules["boto3"] = MagicMock()
+    sys.modules["botocore"] = MagicMock()
+    sys.modules["botocore.exceptions"] = MagicMock()
+
+# Mock torch and submodules for legacy tests/embeddings
+mocks = [
+    "torch", "torch.nn", "torch.optim", "torch.utils", "torch.utils.data",
+    "sentence_transformers", "sentence_transformers.cross_encoder", "sentence_transformers.cross_encoder.CrossEncoder",
+    "transformers"
+]
+for m in mocks:
+    mock_mod = MagicMock()
+    # Fix for transformers check
+    mock_mod.__spec__ = MagicMock()
+    sys.modules[m] = mock_mod
+
 from fastapi.testclient import TestClient
 from app.main import app
 from app.dependencies import get_user_store, get_course_store, get_user_data_store

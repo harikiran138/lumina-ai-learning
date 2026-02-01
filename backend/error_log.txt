@@ -1,0 +1,40 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.8.18, pytest-7.4.4, pluggy-1.5.0 -- /Users/chepuriharikiran/Desktop/github/lumina-ai-learning/.venv/bin/python
+cachedir: .pytest_cache
+hypothesis profile 'default' -> database=DirectoryBasedExampleDatabase(PosixPath('/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/.hypothesis/examples'))
+rootdir: /Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend
+configfile: pytest.ini
+plugins: time-machine-2.15.0, hypothesis-6.113.0, asyncio-0.23.3, Faker-35.2.2, cov-4.1.0, anyio-3.7.1
+asyncio: mode=strict
+collecting ... collected 1 item
+
+tests/test_pipeline.py::test_pipeline_task_dispatch FAILED               [100%]
+
+=================================== FAILURES ===================================
+_________________________ test_pipeline_task_dispatch __________________________
+
+    def test_pipeline_task_dispatch():
+        """
+        Verifies that calling the grade endpoint dispatches a Celery task.
+        """
+        # Patch the worker where it is defined
+        with patch("app.worker.task_grade_submission.delay") as mock_delay:
+            from app.worker import task_grade_submission
+            assert task_grade_submission is not None
+    
+        # Ideally, we test the worker function logic itself
+>       from app.worker import grade_submission_task
+E       ImportError: cannot import name 'grade_submission_task' from 'app.worker' (/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/worker.py)
+
+tests/test_pipeline.py:14: ImportError
+----------------------------- Captured stdout call -----------------------------
+⚠️ AWS Credentials missing. Falling back to local storage (data/uploads)
+=============================== warnings summary ===============================
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/google/api_core/_python_version_support.py:237
+  /Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/google/api_core/_python_version_support.py:237: FutureWarning: You are using a non-supported Python version (3.8.18). Google will not post any further updates to google.api_core supporting this Python version. Please upgrade to the latest Python version, or at least Python 3.10, and then update google.api_core.
+    warnings.warn(message, FutureWarning)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_pipeline.py::test_pipeline_task_dispatch - ImportError: can...
+========================= 1 failed, 1 warning in 0.40s =========================

@@ -9,7 +9,7 @@ class PathwayInferenceEngine:
         
         self.model = TKTModel(num_skills=num_skills, max_len=self.max_len)
         if os.path.exists(model_path):
-            state = torch.load(model_path, map_location=self.device)
+            state = torch.load(model_path, map_location=self.device, weights_only=True)
             self.model.load_state_dict(state)
             print(f"Inference Engine loaded model from {model_path}")
         else:

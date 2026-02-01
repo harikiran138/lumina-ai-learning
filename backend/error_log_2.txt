@@ -1,0 +1,74 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.8.18, pytest-7.4.4, pluggy-1.5.0 -- /Users/chepuriharikiran/Desktop/github/lumina-ai-learning/.venv/bin/python
+cachedir: .pytest_cache
+hypothesis profile 'default' -> database=DirectoryBasedExampleDatabase(PosixPath('/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/.hypothesis/examples'))
+rootdir: /Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend
+configfile: pytest.ini
+plugins: time-machine-2.15.0, hypothesis-6.113.0, asyncio-0.23.3, Faker-35.2.2, cov-4.1.0, anyio-3.7.1
+asyncio: mode=strict
+collecting ... collected 1 item
+
+tests/test_pipeline.py::test_pipeline_task_dispatch FAILED               [100%]
+
+=================================== FAILURES ===================================
+_________________________ test_pipeline_task_dispatch __________________________
+
+    def test_pipeline_task_dispatch():
+        """
+        Verifies that calling the grade endpoint dispatches a Celery task.
+        """
+        # Patch the worker where it is defined
+        with patch("app.worker.task_grade_submission.delay") as mock_delay:
+            from app.worker import task_grade_submission
+            assert task_grade_submission is not None
+    
+        # Ideally, we test the worker function logic itself
+        from app.worker import task_grade_submission
+    
+        # Mock DB/S3 inside worker
+>       with patch("app.worker.db") as mock_db, \
+             patch("app.services.storage.storage_service.download_file") as mock_down:
+
+tests/test_pipeline.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../.pyenv/versions/3.8.18/lib/python3.8/unittest/mock.py:1393: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x123279820>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'app.worker' from '/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/worker.py'> does not have the attribute 'db'
+
+../../../../.pyenv/versions/3.8.18/lib/python3.8/unittest/mock.py:1366: AttributeError
+----------------------------- Captured stdout call -----------------------------
+⚠️ AWS Credentials missing. Falling back to local storage (data/uploads)
+=============================== warnings summary ===============================
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/google/api_core/_python_version_support.py:237
+  /Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/google/api_core/_python_version_support.py:237: FutureWarning: You are using a non-supported Python version (3.8.18). Google will not post any further updates to google.api_core supporting this Python version. Please upgrade to the latest Python version, or at least Python 3.10, and then update google.api_core.
+    warnings.warn(message, FutureWarning)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_pipeline.py::test_pipeline_task_dispatch - AttributeError: ...
+========================= 1 failed, 1 warning in 0.32s =========================
