@@ -133,7 +133,8 @@ class GeminiGenerator:
             Option(text=f"Concept C related to {topic}"),
             Option(text=f"Concept D related to {topic}"),
         ]
-        correct_index = random.randint(0, 3)
+        import secrets
+        correct_index = secrets.randbelow(4)
         return Question(
             text=question_text,
             options=options,

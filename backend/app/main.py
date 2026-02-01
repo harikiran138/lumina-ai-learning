@@ -78,6 +78,14 @@ os.makedirs("static/presentations", exist_ok=True)
 app.mount("/api/tutor/download-ppt", StaticFiles(directory="static/presentations"), name="presentations")
 
 
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+
+# Prevent Host Header Attacks
+app.add_middleware(
+    TrustedHostMiddleware, 
+    allowed_hosts=["localhost", "127.0.0.1", os.getenv("DOMAIN_NAME", "lumina.com"), "*"] 
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[os.getenv("FRONTEND_URL", "http://localhost:3000")],
@@ -111,6 +119,10 @@ def read_root():
 
 @app.get("/health")
 async def health_check():
-    from app.database.manager import db
-    db_status = "connected" if db.db else "disconnected"
-    return {"status": "ok", "database": db_status}
+    try:
+        from app.database.manager import db
+        db_status = "connected" if db.db is not None else "disconnected"
+        return {"status": "ok", "database": db_status}
+    except Exception as e:
+        print(f"Health check error: {e}")
+        return {"status": "error", "detail": str(e)}

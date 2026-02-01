@@ -1,0 +1,18 @@
+{
+  "v": 2,
+  "name": "Lumina API Tests",
+  "requests": [
+    {
+      "name": "Health Check",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/health",
+      "testScript": "pw.test(\"Status code is 200\", () => {\n  pw.expect(pw.response.status).toBe(200);\n});\n\npw.test(\"Database status is returned\", () => {\n  const body = pw.response.body;\n  pw.expect(body).toHaveProperty(\"database\");\n  pw.expect(body).toHaveProperty(\"status\", \"ok\");\n});"
+    },
+    {
+      "name": "Root Endpoint",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/",
+      "testScript": "pw.test(\"Status code is 200\", () => {\n  pw.expect(pw.response.status).toBe(200);\n});\n\npw.test(\"Welcome message is correct\", () => {\n  const body = pw.response.body;\n  pw.expect(body).toHaveProperty(\"message\", \"Welcome to Lumina API\");\n});"
+    }
+  ]
+}
