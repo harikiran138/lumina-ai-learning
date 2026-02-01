@@ -4,10 +4,12 @@ import uuid
 from .database import db
 from app.core.security import get_password_hash, verify_password
 
+
 class UserStore:
     """
     MongoDB store for Users.
     """
+
     def __init__(self):
         self._users_collection = None
 
@@ -17,11 +19,20 @@ class UserStore:
             _db = db.get_db()
             if _db is not None:
                 self._users_collection = _db["users"]
-                # Create index on email if possible
                 try:
                     self._users_collection.create_index("email", unique=True)
                 except Exception as e:
-                    print(f"Error creating index: {e}")
+                    from app.core.logging import structlog
+
+                    log = structlog.get_logger()
+                    log.error("index_creation_failed", error=str(e), collection="users")
+            else:
+                from app.core.logging import structlog
+                from fastapi import HTTPException
+
+                log = structlog.get_logger()
+                log.error("mongodb_connection_missing", collection="users")
+                raise HTTPException(status_code=503, detail="Database connection unavailable")
         return self._users_collection
 
     def verify_password(self, plain_password, hashed_password):
@@ -34,7 +45,7 @@ class UserStore:
         collection = self.users_collection
         if collection is None:
             raise Exception("Database not connected")
-            
+
         hashed_password = self.get_password_hash(password)
         # ... (rest is same, but I need to include it or rely on replace block matching)
         user = {
@@ -43,7 +54,7 @@ class UserStore:
             "hashed_password": hashed_password,
             "full_name": full_name,
             "role": role,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
         }
         try:
             collection.insert_one(user)
