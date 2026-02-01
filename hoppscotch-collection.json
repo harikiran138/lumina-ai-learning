@@ -13,6 +13,21 @@
       "method": "GET",
       "endpoint": "http://localhost:8000/",
       "testScript": "pw.test(\"Status code is 200\", () => {\n  pw.expect(pw.response.status).toBe(200);\n});\n\npw.test(\"Welcome message is correct\", () => {\n  const body = pw.response.body;\n  pw.expect(body).toHaveProperty(\"message\", \"Welcome to Lumina API\");\n});"
+    },
+    {
+      "name": "List Courses",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/api/courses/list",
+      "testScript": "pw.test(\"Status code is 200\", () => {\n  pw.expect(pw.response.status).toBe(200);\n});\n\npw.test(\"Returns an array of courses\", () => {\n  pw.expect(Array.isArray(pw.response.body)).toBe(true);\n});"
+    },
+    {
+      "name": "Login Token",
+      "method": "POST",
+      "endpoint": "http://localhost:8000/api/auth/token",
+      "body": {
+        "contentType": "application/x-www-form-urlencoded",
+        "body": "username=test@example.com&password=password123"
+      }
     }
   ]
 }

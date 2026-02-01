@@ -27,3 +27,5 @@ celery==5.3.6
 structlog==24.1.0
 sentry-sdk[fastapi]==1.40.6
 slowapi==0.1.9
+testcontainers[redis,mongo]
+pytest-asyncio
