@@ -254,9 +254,9 @@ const QuizComponent = ({ question, options, correctIndex, explanation, topic, di
     // Active View
     return (
         <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="my-6 p-6 bg-[#0f1115] rounded-2xl border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.3)] overflow-hidden relative"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="my-6 p-6 backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.37)] overflow-hidden relative group"
         >
             {/* Background Glow */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-lumina-primary/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
@@ -429,7 +429,7 @@ const FlashcardComponent = ({ front, back, subject }: z.infer<typeof FlashcardSc
 
 const CourseCardComponent = ({ title, code, description, matchScore }: z.infer<typeof CourseCardSchema>) => {
     return (
-        <Card className="my-4 bg-white/5 border-white/10 hover:border-purple-500/50 transition-colors group cursor-pointer">
+        <Card className="my-4 backdrop-blur-md bg-white/5 border-white/10 hover:border-lumina-primary/50 transition-all duration-300 group cursor-pointer hover:translate-x-1 shadow-lg">
             <CardContent className="p-4 flex gap-4">
                 <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0 group-hover:bg-purple-500/40 transition-colors">
                     <PlayCircle className="w-6 h-6 text-purple-400" />
@@ -914,67 +914,62 @@ export const A2UIRenderer = ({ content, onAction, isUser }: { content: string; o
           const parsed = JSON.parse(jsonrepair(trimmed));
           const items = Array.isArray(parsed) ? parsed : [parsed];
           
-          return (
-              <div className="space-y-6">
-                  {items.map((item, index) => {
-                      // Map "type" (User prompt style) to "component" (Legacy style) if needed
-                      // The user prompt uses "type": "text_block" etc.
-                      // We need to normalize this to match our renderComponent logic which expects { component: "...", props: ... }
-                      
-                      let data = item;
-                      
-                      // Normalize User Prompt Format -> A2UI Component Format
-                      if (item.type) {
-                          if (item.type === 'text_block') {
-                              return (
-                                  <div key={index} className={`prose prose-sm max-w-none break-words ${isUser ? 'prose-black text-black' : 'prose-invert text-gray-200'}`}>
-                                      <ReactMarkdown>{item.content}</ReactMarkdown>
-                                  </div>
-                              );
-                          }
-                          
-                          // Map other types
-                          const typeMap: Record<string, string> = {
-                              'quiz_block': 'Quiz',
-                              'flashcard_block': 'Flashcard',
-                              'diagram_block': 'Mermaid',
-                              'table_block': 'ComparisonTable', // or Table depending on props
-                              'step_block': 'Timeline', // Approximation
-                          };
-                          
-                          const componentType = typeMap[item.type] || item.type;
-                          
-                          // Restructure props
-                          // User prompt format might be flat: { type: "quiz", questions: [...] }
-                          // A2UI Component expects: { component: "Quiz", props: { ... } }
-                          
-                          // Remove 'type' from props
-                          const { type, ...rest } = item;
-                          
-                          // Specific adaptors
-                          let finalProps = { ...rest };
-                          if (componentType === 'Quiz' && rest.questions) {
-                             // Adapter: User prompt says "questions" (plural), but QuizComponent is single question?
-                             // Or maybe we treat it as list?
-                             // Let's assume the user prompt meant single question logic or we need to map it.
-                             // For now, let's just pass rest as props and hope schemas match or rely on 'component' property usage.
-                          }
-                          
-                          data = { component: componentType, props: finalProps };
-                      }
-                      
-                      // Use the existing render logic (extracted below)
-                      return (
-                          <A2UIErrorBoundary key={index}>
-                              {renderComponentItem(data, index, onAction)}
-                          </A2UIErrorBoundary>
-                      );
-                  })}
-              </div>
-          )
+          const containerVariants = {
+               hidden: { opacity: 0 },
+               show: {
+                   opacity: 1,
+                   transition: {
+                       staggerChildren: 0.15
+                   }
+               }
+           };
+
+           const itemVariants = {
+               hidden: { opacity: 0, y: 20 },
+               show: { opacity: 1, y: 0 }
+           };
+
+           return (
+               <motion.div 
+                   variants={containerVariants}
+                   initial="hidden"
+                   animate="show"
+                   className="space-y-6"
+               >
+                   {items.map((item, index) => {
+                       let data = item;
+                       if (item.type) {
+                           if (item.type === 'text_block') {
+                               return (
+                                   <motion.div variants={itemVariants} key={index} className={`prose prose-sm max-w-none break-words ${isUser ? 'prose-black text-black' : 'prose-invert text-gray-200'}`}>
+                                       <ReactMarkdown>{item.content}</ReactMarkdown>
+                                   </motion.div>
+                               );
+                           }
+                           const typeMap: Record<string, string> = {
+                               'quiz_block': 'Quiz',
+                               'flashcard_block': 'Flashcard',
+                               'diagram_block': 'Mermaid',
+                               'table_block': 'ComparisonTable',
+                               'step_block': 'Timeline',
+                           };
+                           const componentType = typeMap[item.type] || item.type;
+                           const { type, ...rest } = item;
+                           data = { component: componentType, props: rest };
+                       }
+
+                       return (
+                           <motion.div variants={itemVariants} key={index}>
+                               <A2UIErrorBoundary>
+                                   {renderComponentItem(data, index, onAction)}
+                               </A2UIErrorBoundary>
+                           </motion.div>
+                       );
+                   })}
+               </motion.div>
+           );
       } catch (e) {
-          // Fallback to Regex splitting if JSON parse fails (streams might be incomplete)
-          // console.warn("Pure JSON parse failed, falling back to mixed mode", e);
+          // Fallback to Regex splitting if JSON parse fails
       }
   }
 
