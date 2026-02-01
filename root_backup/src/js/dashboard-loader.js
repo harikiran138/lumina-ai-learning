@@ -12,7 +12,7 @@ class DashboardLoader {
     async init(requiredRole = null) {
         try {
             console.log('Dashboard loader initializing for role:', requiredRole);
-            
+
             // Wait for API to be ready
             if (!this.api) {
                 console.log('Waiting for API...');
@@ -33,7 +33,7 @@ class DashboardLoader {
             }
 
             console.log('Role check passed');
-            
+
             // Update UI with user info
             this.updateUserInterface();
 
@@ -188,7 +188,7 @@ class DashboardLoader {
 window.dashboardLoader = new DashboardLoader();
 
 // Auto-initialize for dashboard pages
-if (window.location.pathname.includes('dashboard.html') || 
+if (window.location.pathname.includes('dashboard.html') ||
     window.location.pathname.includes('community.html') ||
     window.location.pathname.includes('reports.html') ||
     window.location.pathname.includes('assessment') ||
@@ -198,7 +198,7 @@ if (window.location.pathname.includes('dashboard.html') ||
     window.location.pathname.includes('ai_tutor') ||
     window.location.pathname.includes('course_explorer') ||
     window.location.pathname.includes('my_notes')) {
-    
+
     document.addEventListener('DOMContentLoaded', async () => {
         // Determine required role based on URL
         let requiredRole = null;

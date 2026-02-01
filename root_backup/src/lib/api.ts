@@ -291,7 +291,7 @@ class RealAPI {
     async updateProgress(courseId: string, percentIncrement: number): Promise<any> {
         const user = await this.getCurrentUser();
         if (!user) return { success: false };
-        // In a real app we'd call a server action. 
+        // In a real app we'd call a server action.
         // For now, let's assume we maintain a simple progress tracking or mock it if server action is missing.
         // But user asked for database connection. I should check if updateProgress exists in data.ts
         // It doesn't seem to. I'll need to create it.

@@ -20,23 +20,23 @@ class RoutingValidator {
 
     async runRoutingTests() {
         console.log('🔍 Starting Routing Validation...');
-        
+
         this.testLogoLinks();
         this.testNavigationLinks();
         this.testCrossPageLinks();
         this.testAuthenticationRedirects();
-        
+
         this.displayResults();
         return this.testResults;
     }
 
     testLogoLinks() {
         console.log('🏠 Testing logo links...');
-        
-        const logoLinks = document.querySelectorAll('a[class*="gradient-text"]').length > 0 ? 
-                         document.querySelectorAll('a[class*="gradient-text"]').parentElement : 
+
+        const logoLinks = document.querySelectorAll('a[class*="gradient-text"]').length > 0 ?
+                         document.querySelectorAll('a[class*="gradient-text"]').parentElement :
                          document.querySelectorAll('a:has(.gradient-text)');
-        
+
         if (logoLinks.length === 0) {
             // Fallback: find logo by text content
             const allLinks = document.querySelectorAll('a');
@@ -54,7 +54,7 @@ class RoutingValidator {
     validateLogoLink(link) {
         const href = link.getAttribute('href');
         const expectedHref = this.getExpectedLogoHref();
-        
+
         if (href === expectedHref) {
             this.addResult('Logo Link', 'PASS', `Correct: ${href}`);
         } else {
@@ -77,13 +77,13 @@ class RoutingValidator {
 
     testNavigationLinks() {
         console.log('🧭 Testing navigation links...');
-        
+
         const navLinks = document.querySelectorAll('nav a, .sidebar a, aside a');
-        
+
         navLinks.forEach(link => {
             const href = link.getAttribute('href');
             const linkText = link.textContent.trim();
-            
+
             if (href && !href.startsWith('#') && !href.startsWith('mailto:')) {
                 this.validateNavigationLink(link, href, linkText);
             }
@@ -93,7 +93,7 @@ class RoutingValidator {
     validateNavigationLink(link, href, linkText) {
         const isValid = this.isValidPath(href);
         const isCorrectRelative = this.isCorrectRelativePath(href);
-        
+
         if (isValid && isCorrectRelative) {
             this.addResult('Navigation Link', 'PASS', `${linkText}: ${href}`);
         } else {
@@ -106,13 +106,13 @@ class RoutingValidator {
 
     testCrossPageLinks() {
         console.log('🔗 Testing cross-page links...');
-        
+
         // Test login/logout links
         const loginLinks = document.querySelectorAll('a[href*="login"]');
         loginLinks.forEach(link => {
             const href = link.getAttribute('href');
             const expectedLoginHref = this.currentDir === 'root' ? 'login.html' : '../login.html';
-            
+
             if (href === expectedLoginHref) {
                 this.addResult('Login Link', 'PASS', `Correct: ${href}`);
             } else {
@@ -134,7 +134,7 @@ class RoutingValidator {
 
     testAuthenticationRedirects() {
         console.log('🔐 Testing authentication redirects...');
-        
+
         if (typeof luminaUI !== 'undefined' && luminaUI.redirectToDashboard) {
             // Test redirect logic
             const testRoles = ['admin', 'teacher', 'student'];
@@ -167,12 +167,12 @@ class RoutingValidator {
         if (href.startsWith('#')) return true; // Anchor links are valid
         if (href.startsWith('http')) return true; // External links
         if (href.startsWith('mailto:')) return true; // Email links
-        
+
         // File extension check for local files
         const validExtensions = ['.html', '.php', '.asp', '.jsp'];
         const hasValidExtension = validExtensions.some(ext => href.includes(ext));
         const isDirectory = href.endsWith('/');
-        
+
         return hasValidExtension || isDirectory || href === '.' || href === '..';
     }
 
@@ -201,14 +201,14 @@ class RoutingValidator {
                 }
                 break;
         }
-        
+
         return true;
     }
 
     addResult(test, status, message) {
         const result = { test, status, message, timestamp: new Date() };
         this.testResults.push(result);
-        
+
         const emoji = status === 'PASS' ? '✅' : status === 'WARN' ? '⚠️' : '❌';
         console.log(`${emoji} ${test}: ${message}`);
     }
@@ -216,16 +216,16 @@ class RoutingValidator {
     displayResults() {
         console.log('\n📋 Routing Validation Results:');
         console.log('==============================');
-        
+
         const passed = this.testResults.filter(r => r.status === 'PASS').length;
         const failed = this.testResults.filter(r => r.status === 'FAIL').length;
         const warnings = this.testResults.filter(r => r.status === 'WARN').length;
-        
+
         console.log(`✅ Passed: ${passed}`);
         console.log(`⚠️ Warnings: ${warnings}`);
         console.log(`❌ Failed: ${failed}`);
         console.log(`📊 Total: ${this.testResults.length}`);
-        
+
         if (failed > 0) {
             console.log('\n❌ Failed Tests:');
             this.testResults
@@ -239,10 +239,10 @@ class RoutingValidator {
                 .filter(r => r.status === 'WARN')
                 .forEach(r => console.log(`   • ${r.test}: ${r.message}`));
         }
-        
+
         const successRate = Math.round((passed / this.testResults.length) * 100);
         console.log(`\n🎯 Success Rate: ${successRate}%`);
-        
+
         if (successRate >= 95) {
             console.log('🎉 Excellent! All routing is working correctly.');
         } else if (successRate >= 80) {
@@ -257,7 +257,7 @@ class RoutingValidator {
         const failed = this.testResults.filter(r => r.status === 'FAIL').length;
         const warnings = this.testResults.filter(r => r.status === 'WARN').length;
         const successRate = Math.round((passed / this.testResults.length) * 100);
-        
+
         return {
             passed,
             failed,

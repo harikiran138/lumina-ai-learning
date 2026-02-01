@@ -616,7 +616,7 @@ export async function sendCommunityMessage(email: string, channelId: string, con
             likes: 0,
             replies: 0,
             createdAt: new Date(),
-            // Ensure compatibility with frontend expecting 'time' string? 
+            // Ensure compatibility with frontend expecting 'time' string?
             // Frontend uses `msg.time` string. We'll rely on the frontend to format or providing a formatted string.
             // Let's store Date object for sorting, and maybe return the object.
             // But for consistency with getCommunityData, let's keep it simple.

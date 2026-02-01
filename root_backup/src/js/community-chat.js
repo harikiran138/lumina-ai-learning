@@ -12,7 +12,7 @@ class CommunityChat {
         this.api = null;
         this.allUsers = [];
         this.refreshInterval = null;
-        
+
         // DOM elements
         this.groupList = document.getElementById('group-list');
         this.chatHeader = document.getElementById('chat-header');
@@ -27,22 +27,22 @@ class CommunityChat {
         try {
             this.api = new LuminaAPI();
             await this.api.init();
-            
+
             this.currentUser = await this.api.getCurrentUser();
             this.allUsers = await this.api.getAllUsers();
             this.chatRooms = await this.api.getAllChatRooms();
-            
+
             if (this.chatRooms.length > 0) {
                 this.currentRoomId = this.chatRooms[0].id;
                 await this.loadChatRoom(this.currentRoomId);
             }
-            
+
             this.renderGroupList();
             this.setupEventListeners();
-            
+
             // Auto-refresh messages every 3 seconds
             this.refreshInterval = setInterval(() => this.refreshMessages(), 3000);
-            
+
         } catch (error) {
             console.error('Failed to initialize community:', error);
         }
@@ -53,7 +53,7 @@ class CommunityChat {
             this.currentRoomId = roomId;
             this.currentMessages = await this.api.getChatMessages(roomId);
             const room = this.chatRooms.find(r => r.id === roomId);
-            
+
             this.renderChat(room);
             this.renderMemberList(room);
         } catch (error) {
@@ -87,7 +87,7 @@ class CommunityChat {
         this.chatRooms.forEach(room => {
             const isActive = room.id === this.currentRoomId;
             const activeClasses = isActive ? 'text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-500/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800';
-            
+
             this.groupList.innerHTML += `
                 <a href="#" data-room-id="${room.id}" class="group-link flex items-center justify-between px-3 py-2 text-sm font-semibold rounded-md ${activeClasses}">
                     <div class="flex items-center">
@@ -104,19 +104,19 @@ class CommunityChat {
 
     renderMemberList(room) {
         if (!room) return;
-        
+
         this.memberList.innerHTML = '';
-        
+
         // Get member details from all users
-        const members = room.members.map(memberId => 
+        const members = room.members.map(memberId =>
             this.allUsers.find(user => user.id === memberId)
         ).filter(Boolean);
-        
+
         // Sort members by role: admins, teachers, then students
         const admins = members.filter(m => m.role === 'admin');
         const teachers = members.filter(m => m.role === 'teacher');
         const students = members.filter(m => m.role === 'student');
-        
+
         // Render admins
         if (admins.length > 0) {
             this.memberList.innerHTML += `<h3 class="px-2 pt-3 pb-1 text-xs font-bold uppercase text-gray-500 dark:text-gray-400">Admins — ${admins.length}</h3>`;
@@ -129,7 +129,7 @@ class CommunityChat {
                 `;
             });
         }
-        
+
         // Render teachers
         if (teachers.length > 0) {
             this.memberList.innerHTML += `<h3 class="px-2 pt-3 pb-1 text-xs font-bold uppercase text-gray-500 dark:text-gray-400">Teachers — ${teachers.length}</h3>`;
@@ -162,12 +162,12 @@ class CommunityChat {
 
     renderChat(room) {
         if (!room) return;
-        
+
         // Update Header with member avatars
-        const members = room.members.map(memberId => 
+        const members = room.members.map(memberId =>
             this.allUsers.find(user => user.id === memberId)
         ).filter(Boolean);
-        
+
         let memberAvatars = '';
         members.slice(0, 4).forEach(m => {
             memberAvatars += `<div class="w-8 h-8 rounded-full ${m.color} flex items-center justify-center text-white text-sm font-bold border-2 border-white dark:border-black">${m.avatar}</div>`;
@@ -195,7 +195,7 @@ class CommunityChat {
     renderMessages() {
         this.messagesContainer.innerHTML = '';
         let lastSender = null;
-        
+
         this.currentMessages.forEach(msg => {
             const isCurrentUser = msg.senderId === this.currentUser.id;
             const isContinuing = lastSender === msg.senderId;
@@ -215,9 +215,9 @@ class CommunityChat {
                         </div>
                     </div>`;
             } else {
-                const roleBadge = msg.senderRole === 'teacher' ? `<span class="text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-bold px-1.5 py-0.5 rounded-full ml-2">TEACHER</span>` : 
+                const roleBadge = msg.senderRole === 'teacher' ? `<span class="text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-bold px-1.5 py-0.5 rounded-full ml-2">TEACHER</span>` :
                                 msg.senderRole === 'admin' ? `<span class="text-xs bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-bold px-1.5 py-0.5 rounded-full ml-2">ADMIN</span>` : '';
-                                
+
                 this.messagesContainer.innerHTML += `
                     <div class="flex items-start gap-3 ${messageGroupClass}">
                         <div class="w-10 h-10 rounded-full ${msg.senderColor} flex-shrink-0 flex items-center justify-center text-white font-bold chat-avatar">

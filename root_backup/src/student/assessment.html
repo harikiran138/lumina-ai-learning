@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Dynamic Database System Scripts -->
     <script src="../js/database.js"></script>
     <script src="../js/api.js"></script>
@@ -36,7 +36,7 @@
         html.dark ::-webkit-scrollbar-thumb { background-color: #4b5563; }
         ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
         html.dark ::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
-        
+
         aside nav {
              min-height: calc(100vh - 128px);
         }
@@ -59,7 +59,7 @@
                     <span class="gradient-text">Lumina</span> ✨
                 </a>
             </div>
-            
+
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
                 <a href="dashboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -124,7 +124,7 @@
             <!-- Assessment Content -->
             <main class="flex-1 p-4 md:p-6 lg:p-8">
                 <div class="max-w-4xl mx-auto">
-                    
+
                     <div id="quiz-container" class="bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 lg:p-8">
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="text-xl font-bold">Final Assessment</h2>
@@ -142,12 +142,12 @@
                     <div id="results-container" class="hidden bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 lg:p-8 text-center">
                         <h2 class="text-2xl font-bold mb-2">Assessment Complete!</h2>
                         <p class="text-gray-600 dark:text-gray-400 mb-6">Here's how you did:</p>
-                        
+
                         <div class="mb-8">
                             <span id="score-text" class="text-5xl font-bold gradient-text">5/5</span>
                             <p id="score-feedback" class="font-semibold mt-1">Excellent Work!</p>
                         </div>
-                        
+
                         <div id="results-feedback-list" class="text-left space-y-4 mb-8">
                             <!-- Feedback for each question will be inserted here -->
                         </div>
@@ -161,7 +161,7 @@
                 </div>
             </main>
         </div>
-        
+
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="toggleSidebar()"></div>
     </div>
 
@@ -185,7 +185,7 @@
         const resultsContainer = document.getElementById('results-container');
         const questionCounter = document.getElementById('question-counter');
         const progressBar = document.getElementById('progress-bar');
-        
+
         // --- STATE ---
         let currentQuestionIndex = 0;
         let userAnswers = new Array(quizData.questions.length).fill(null);
@@ -259,11 +259,11 @@
                 } else if (question.type === 'short_answer') {
                     isCorrect = userAnswer && userAnswer.toLowerCase().trim() === question.answer.toLowerCase();
                 }
-                
+
                 if (isCorrect) score++;
 
                 const feedbackColor = isCorrect ? 'border-green-500' : 'border-red-500';
-                const icon = isCorrect 
+                const icon = isCorrect
                     ? `<svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`
                     : `<svg class="w-5 h-5 text-red-500 mr-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>`;
 
@@ -277,7 +277,7 @@
                         </div>
                     </div>`;
             });
-            
+
             document.getElementById('score-text').textContent = `${score} / ${quizData.questions.length}`;
             const scoreFeedback = document.getElementById('score-feedback');
             if(score === quizData.questions.length) {
@@ -288,7 +288,7 @@
                 scoreFeedback.textContent = "Keep Practicing!";
             }
         }
-        
+
         function saveCurrentAnswer() {
             const formData = new FormData(form);
             const answer = formData.get(`q${currentQuestionIndex}`);
@@ -340,7 +340,7 @@
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
             const overlay = document.getElementById('sidebar-overlay');
-            
+
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 mainContent.classList.add('lg:translate-x-0', 'translate-x-64');
@@ -354,4 +354,3 @@
     </script>
 </body>
 </html>
-

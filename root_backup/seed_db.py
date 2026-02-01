@@ -12,13 +12,13 @@ def seed():
     print(f"Connecting to {URI.split('@')[1]}...")
     client = MongoClient(URI, tlsCAFile=certifi.where())
     db = client[DB_NAME]
-    
+
     # 1. Clear existing (optional, but good for seed)
     # print("Clearing existing data...")
     # db.users.delete_many({})
     # db.courses.delete_many({})
     # db.progress.delete_many({})
-    
+
     # 2. Users
     print("Creating Users...")
     users = [
@@ -35,7 +35,7 @@ def seed():
         },
         {
             "email": "teacher@lumina.com",
-            "password": "hashed_teacher_pass", 
+            "password": "hashed_teacher_pass",
             "name": "Prof. Sarah",
             "role": "teacher",
             "avatar": "https://ui-avatars.com/api/?name=Sarah+Teacher&background=random",
@@ -46,7 +46,7 @@ def seed():
         },
          {
             "email": "admin@lumina.com",
-            "password": "hashed_admin_pass", 
+            "password": "hashed_admin_pass",
             "name": "System Admin",
             "role": "admin",
             "avatar": "https://ui-avatars.com/api/?name=System+Admin&background=000000&color=fff",
@@ -56,7 +56,7 @@ def seed():
             "skills": ["Ops"]
         }
     ]
-    
+
     user_ids = []
     for u in users:
         # Upsert by email to avoid dupes
@@ -101,7 +101,7 @@ def seed():
             }
         ]
     }
-    
+
     course_res = db.courses.update_one({"name": course_data["name"]}, {"$set": course_data}, upsert=True)
     course_doc = db.courses.find_one({"name": course_data["name"]})
     course_id = course_doc["_id"]
@@ -118,14 +118,14 @@ def seed():
         "lastAccessed": datetime.datetime.utcnow(),
         "enrolledAt": datetime.datetime.utcnow()
     }
-    
+
     db.progress.update_one(
         {"userId": str(student_id), "courseId": str(course_id)},
         {"$set": progress_data},
         upsert=True
     )
     print("Progress upserted.")
-    
+
     print("\n✅ Database Seeded Successfully!")
 
 if __name__ == "__main__":
