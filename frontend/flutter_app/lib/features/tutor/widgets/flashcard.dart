@@ -23,7 +23,7 @@ class _FlashcardWidgetState extends State<FlashcardWidget> with SingleTickerProv
     _controller = AnimationController(vsync: this, duration: Duration(milliseconds: 500));
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
   }
-  
+
   void _flip() {
     if (_isFront) {
       _controller.forward();
@@ -46,7 +46,7 @@ class _FlashcardWidgetState extends State<FlashcardWidget> with SingleTickerProv
         builder: (context, child) {
           final angle = _animation.value * pi;
           final isUnderHalf = angle < pi / 2;
-          
+
           return Transform(
             transform: Matrix4.identity()
               ..setEntry(3, 2, 0.001)
@@ -69,8 +69,8 @@ class _FlashcardWidgetState extends State<FlashcardWidget> with SingleTickerProv
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: isFront 
-              ? [Color(0xFF2C3E50), Color(0xFF000000)] 
+          colors: isFront
+              ? [Color(0xFF2C3E50), Color(0xFF000000)]
               : [Color(0xFF0F2027), Color(0xFF203A43)],
           begin: Alignment.topLeft, end: Alignment.bottomRight
         ),
