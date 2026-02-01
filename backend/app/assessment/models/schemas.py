@@ -63,7 +63,7 @@ class AssessmentSession(BaseModel):
     start_time: datetime = Field(default_factory=datetime.utcnow)
     end_time: Optional[datetime] = None
     final_score: Optional[float] = None
-    
+
     # Fields expected by assessment_routes.py
     mastery_state: Optional[MasteryState] = None
     current_question: Optional[Question] = None

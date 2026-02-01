@@ -10,6 +10,7 @@ import uuid
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class HuggingFaceGenerator:
     _instance = None
     _generator = None
@@ -19,11 +20,11 @@ class HuggingFaceGenerator:
             cls._instance = super(HuggingFaceGenerator, cls).__new__(cls)
             try:
                 # Using a model capable of text2text generation (e.g., FLAN-T5)
-                # We use 'text2text-generation' pipeline. 
+                # We use 'text2text-generation' pipeline.
                 # 'google/flan-t5-small' is small and fast for testing, 'base' or 'large' for better quality.
                 # We can also use 'gpt2' for text-generation but it requires more parsing.
                 logger.info("Loading Hugging Face model...")
-                cls._generator = pipeline("text2text-generation", model="google/flan-t5-base") 
+                cls._generator = pipeline("text2text-generation", model="google/flan-t5-base")
                 logger.info("Hugging Face model loaded successfully.")
             except Exception as e:
                 logger.error(f"Failed to load Hugging Face model: {e}")
@@ -49,22 +50,24 @@ class HuggingFaceGenerator:
         try:
             # Generate text
             output = self._generator(prompt, max_length=200, num_return_sequences=1)
-            generated_text = output[0]['generated_text']
+            generated_text = output[0]["generated_text"]
             logger.info(f"Generated text: {generated_text}")
-            
+
             # Simple parsing (FLAN-T5 might just output the text, better to use structured generation if possible)
             # Since reliable JSON generation from small models is hard without strict grammars,
             # we will try to parse, but fallback if it fails.
-            
+
             # NOTE: For this implementation, specifically to ensure "no errors" as requested by user,
             # we might use a template-based approach or a very robust parser if the model output is messy.
             # Let's try to simulate a successful generation or use a fallback if parsing fails.
-            
+
             # Attempt to parse (mocking logic here for stability if model output isn't perfect JSON)
             # Real-world: Use regex to extract question and options.
-            
-            return self._fallback_question(topic, difficulty) # Forcing fallback for stability in this demo unless we fine-tune.
-            
+
+            return self._fallback_question(
+                topic, difficulty
+            )  # Forcing fallback for stability in this demo unless we fine-tune.
+
         except Exception as e:
             logger.error(f"Error generating question: {e}")
             return self._fallback_question(topic, difficulty)
@@ -87,7 +90,8 @@ class HuggingFaceGenerator:
             options=options,
             correct_option_id=options[correct_index].id,
             difficulty=difficulty,
-            topic=topic
+            topic=topic,
         )
+
 
 question_generator = HuggingFaceGenerator()

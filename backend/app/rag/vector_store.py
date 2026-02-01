@@ -3,6 +3,7 @@ from qdrant_client.http.models import Distance, VectorParams
 from app.rag.config import rag_settings
 import uuid
 
+
 class VectorStore:
     def __init__(self):
         self.client = QdrantClient(location=rag_settings.QDRANT_URL)
@@ -21,14 +22,31 @@ class VectorStore:
             )
 
     def add_documents(self, texts: list, metadatas: list = None):
-        ids = [str(uuid.uuid4()) for _ in texts]
-        # In a real impl, we generate embeddings here or use Langchain Qdrant wrapper
-        # For this audit implementation, we assume embeddings are generated externally or we integrate here.
-        
-        # NOTE: To keep it verifiable without massive dependencies right now, 
-        # I will leave the embedding generation valid but commented out if deps missing
-        pass 
+        if not texts:
+            return
+        from app.rag.embeddings import EmbeddingService
+
+        embeddings_service = EmbeddingService.get_embeddings()
+        embeddings = embeddings_service.embed_documents(texts)
+
+        from qdrant_client.http.models import PointStruct
+
+        points = []
+        for i, (text, vector) in enumerate(zip(texts, embeddings)):
+            metadata = metadatas[i] if metadatas else {}
+            metadata["text"] = text
+            points.append(PointStruct(id=str(uuid.uuid4()), vector=vector, payload=metadata))
+
+        self.client.upsert(collection_name=self.collection_name, points=points)
 
     def search(self, query: str, top_k: int = 5):
-        # Placeholder for search implementation
-        return []
+        from app.rag.embeddings import EmbeddingService
+
+        embeddings_service = EmbeddingService.get_embeddings()
+        query_vector = embeddings_service.embed_query(query)
+
+        results = self.client.search(
+            collection_name=self.collection_name, query_vector=query_vector, limit=top_k
+        )
+
+        return [hit.payload.get("text", "") for hit in results]
