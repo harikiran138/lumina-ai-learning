@@ -1,22 +1,45 @@
 import sys
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from .routers import ai, handwriting_simple as handwriting, assignments
-
+import os
+import time
 import asyncio
 import functools
 import contextvars
+from contextlib import asynccontextmanager
+
+import structlog
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+from prometheus_fastapi_instrumentator import Instrumentator
+
+from .routers import (
+    ai,
+    handwriting_simple as handwriting,
+    assignments,
+    courses,
+    auth,
+    hybrid,
+    student,
+)
+from app.assessment.api.router import router as assessment_router
 
 # Polyfill for python 3.8
 if not hasattr(asyncio, "to_thread"):
+
     async def to_thread(func, /, *args, **kwargs):
         loop = asyncio.get_running_loop()
         ctx = contextvars.copy_context()
         func_call = functools.partial(ctx.run, func, *args, **kwargs)
         return await loop.run_in_executor(None, func_call)
+
     asyncio.to_thread = to_thread
 
 
@@ -33,14 +56,14 @@ from slowapi.errors import RateLimitExceeded
 # 1. Configure JSON Logging
 configure_logging()
 
-# 2. Configure Sentry (if DSN provided)
+# 2. Configure Sentry (with Profiling)
 if settings.SENTRY_DSN:
     sentry_sdk.init(
         dsn=settings.SENTRY_DSN,
         traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,  # Enable profiling
     )
 
-from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -51,72 +74,139 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"WARNING: Could not connect to database: {e}")
         print("Starting in limited functionality mode.")
-    
+
     yield
-    
+
     # Shutdown
     await db.close()
     print("Closed MongoDB connection")
 
+
 app = FastAPI(
-    title=settings.PROJECT_NAME, 
+    title="Lumina AI Learning Platform",
+    description="""
+    Lumina AI Learning Platform API.
+
+    Features:
+    * AI-powered Tutoring with RAG
+    * Handwritten Document Digitization (OCR)
+    * Automated Assignment Grading
+    * Personalized Learning Pathways
+    """,
+    version="1.0.0",
+    contact={
+        "name": "Lumina Engineering",
+        "email": "engineering@lumina-learning.com",
+    },
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # 3. Add Rate Limiter
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-from fastapi.staticfiles import StaticFiles
-import os
 
 os.makedirs("data/uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="data/uploads"), name="uploads")
 
 os.makedirs("static/presentations", exist_ok=True)
-app.mount("/api/tutor/download-ppt", StaticFiles(directory="static/presentations"), name="presentations")
-
-
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-
-# Prevent Host Header Attacks
-app.add_middleware(
-    TrustedHostMiddleware, 
-    allowed_hosts=["localhost", "127.0.0.1", os.getenv("DOMAIN_NAME", "lumina.com"), "*"] 
+app.mount(
+    "/api/tutor/download-ppt", StaticFiles(directory="static/presentations"), name="presentations"
 )
 
+
+# Prevent Host Header Attacks
+allowed_hosts = ["localhost", "127.0.0.1"]
+domain_name = os.getenv("DOMAIN_NAME")
+if domain_name:
+    allowed_hosts.append(domain_name)
+
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
+
+# CORS Polish
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("FRONTEND_URL", "http://localhost:3000")],
+    allow_origins=[frontend_url, "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# 5. Add GZip Compression
+
+
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# 6. Add Cache Control Headers for Static Files
+
+
+class CacheControlMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+
+        # Add cache headers for static files
+        if request.url.path.startswith("/uploads") or request.url.path.startswith(
+            "/api/tutor/download-ppt"
+        ):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        elif request.url.path.startswith("/api"):
+            # API responses - no cache by default (can be overridden by route)
+            if "Cache-Control" not in response.headers:
+                response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+
+        return response
+
+
+app.add_middleware(CacheControlMiddleware)
+
+# 4. Prometheus Metrics
+
+
+Instrumentator().instrument(app).expose(app)
+
 app.include_router(ai.router, prefix="/api", tags=["AI"])
 app.include_router(handwriting.router, prefix="/api/handwriting", tags=["Handwriting"])
 app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignments"])
 
-from .routers import courses
+
 app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
 
-from .routers import auth
+
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 
-from app.assessment.api.router import router as assessment_router
+
 app.include_router(assessment_router, prefix="/api/assessment", tags=["Assessment"])
 
-from .routers import hybrid
+
 app.include_router(hybrid.router, prefix="/api/ai", tags=["Hybrid AI"])
-from .routers import student
+
+
 app.include_router(student.router, prefix="/api/student", tags=["Student Data"])
 
 # --- Performance & Security Polish ---
+logger = structlog.get_logger()
 
-import time
-from fastapi import Request
-from starlette.middleware.base import BaseHTTPMiddleware
+
+class LoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+
+        logger.info(
+            "request_processed",
+            method=request.method,
+            path=request.url.path,
+            status_code=response.status_code,
+            duration=f"{process_time:.4f}s",
+        )
+        return response
+
+
+app.add_middleware(LoggingMiddleware)
+
 
 class TimingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -126,28 +216,78 @@ class TimingMiddleware(BaseHTTPMiddleware):
         response.headers["X-Process-Time"] = str(process_time)
         return response
 
+
 app.add_middleware(TimingMiddleware)
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    # Log the full exception for developers
-    print(f"CRITICAL ERROR: {exc}")
+    # Use structlog for critical errors
+    logger.error("unhandled_exception", path=request.url.path, error=str(exc), exc_info=True)
     return {
         "error": "Internal Server Error",
         "message": "An unexpected error occurred. Please try again later.",
-        "path": request.url.path
+        "path": request.url.path,
     }
+
 
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Lumina API"}
 
+
 @app.get("/health")
 async def health_check():
+    """
+    Deep Health Check: Verifies all backend dependencies.
+    """
+    health_report = {"status": "ok", "timestamp": time.time(), "services": {}}
+
+    # 1. Check MongoDB
     try:
         from app.database.manager import db
-        db_status = "connected" if db.db is not None else "disconnected"
-        return {"status": "ok", "database": db_status}
+
+        # Use simple ping
+        await db.db.command("ping")
+        health_report["services"]["mongodb"] = {"status": "connected"}
     except Exception as e:
-        print(f"Health check error: {e}")
-        return {"status": "error", "detail": str(e)}
+        health_report["status"] = "degraded"
+        health_report["services"]["mongodb"] = {"status": "error", "error": str(e)}
+
+    # 2. Check Redis
+    try:
+        from app.store.redis_client import redis_client
+
+        await redis_client.ping()
+        health_report["services"]["redis"] = {"status": "connected"}
+    except Exception as e:
+        health_report["status"] = "degraded"
+        health_report["services"]["redis"] = {"status": "error", "error": str(e)}
+
+    # 3. Check Vector Store (Chroma)
+    try:
+        import app.rag.vector_store  # noqa: F401
+
+        # Simple existence check
+        health_report["services"]["vector_store"] = {"status": "online"}
+    except Exception as e:
+        health_report["status"] = "degraded"
+        health_report["services"]["vector_store"] = {"status": "error", "error": str(e)}
+
+    return health_report
+
+
+@app.middleware("http")
+async def sentry_context_middleware(request: Request, call_next):
+    """
+    Middleware to tag Sentry events with user context if authenticated.
+    """
+    response = await call_next(request)
+
+    # Check if user data exists in request state (set by auth middleware if present)
+    user = getattr(request.state, "user", None)
+    if user:
+        with sentry_sdk.configure_scope() as scope:
+            scope.set_user({"id": str(user.get("id")), "email": user.get("email")})
+
+    return response
