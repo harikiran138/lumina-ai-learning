@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mobileMenuBtn && mobileMenu) {
         mobileMenuBtn.addEventListener('click', () => {
             mobileMenu.classList.toggle('hidden');
-            
+
             // Optional: Animate icon or change icon state
             const iconPath = mobileMenuBtn.querySelector('path');
             if (mobileMenu.classList.contains('hidden')) {
@@ -35,12 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function highlightNavigation() {
         let scrollY = window.scrollY;
-        
+
         sections.forEach(current => {
             const sectionHeight = current.offsetHeight;
             const sectionTop = current.offsetTop - 100; // Offset for fixed header
             const sectionId = current.getAttribute('id');
-            
+
             if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
                 navLinks.forEach(link => {
                     link.classList.remove('active');

@@ -25,7 +25,7 @@ class MessagingSystem {
      */
     async sendDirectMessage(recipientId, text) {
         if (!this.currentUserId) throw new Error('User not logged in');
-        
+
         const message = {
             id: `msg_${Date.now()}`,
             senderId: this.currentUserId,
@@ -47,7 +47,7 @@ class MessagingSystem {
      */
     async sendRoomMessage(roomId, text) {
         if (!this.currentUserId) throw new Error('User not logged in');
-        
+
         const message = {
             roomId: roomId,
             senderId: this.currentUserId,
@@ -77,14 +77,14 @@ class MessagingSystem {
     async getDirectMessages(userId, limit = 50) {
         const messages = await window.luminaDB.getByIndex('messages', 'senderId', this.currentUserId);
         const received = await window.luminaDB.getByIndex('messages', 'senderId', userId);
-        
+
         const filtered = [...messages, ...received]
-            .filter(m => m.type === 'direct' && 
+            .filter(m => m.type === 'direct' &&
                     ((m.senderId === this.currentUserId && m.recipientId === userId) ||
                      (m.senderId === userId && m.recipientId === this.currentUserId)))
             .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
             .slice(-limit);
-        
+
         return filtered;
     }
 
@@ -145,8 +145,8 @@ class MessagingSystem {
      */
     async getUnreadCount() {
         const messages = await window.luminaDB.getAll('messages');
-        return messages.filter(m => 
-            m.recipientId === this.currentUserId && 
+        return messages.filter(m =>
+            m.recipientId === this.currentUserId &&
             !m.read &&
             m.type === 'direct'
         ).length;
