@@ -7,6 +7,7 @@ from .auth import get_current_user
 
 router = APIRouter()
 
+
 class QuizResultRequest(BaseModel):
     # user_id: str  <-- REMOVED (Security Fix)
     topic: str
@@ -16,15 +17,17 @@ class QuizResultRequest(BaseModel):
     difficulty: str
     details: Optional[Dict[str, Any]] = None
 
+
 class NoteRequest(BaseModel):
     # user_id: str  <-- REMOVED (Security Fix)
     content: str
+
 
 @router.post("/quiz-result")
 async def save_quiz_result(
     request: QuizResultRequest,
     current_user: dict = Depends(get_current_user),
-    store: UserDataStore = Depends(get_user_data_store)
+    store: UserDataStore = Depends(get_user_data_store),
 ):
     """
     Save the result of a quiz attempt for the CURRENT user.
@@ -33,11 +36,12 @@ async def save_quiz_result(
     store.add_quiz_attempt(current_user["id"], request.dict())
     return {"status": "success", "message": "Quiz result saved"}
 
+
 @router.post("/note")
 async def save_note(
     request: NoteRequest,
     current_user: dict = Depends(get_current_user),
-    store: UserDataStore = Depends(get_user_data_store)
+    store: UserDataStore = Depends(get_user_data_store),
 ):
     """
     Save a student note for the CURRENT user.
@@ -45,10 +49,11 @@ async def save_note(
     store.add_note(current_user["id"], request.content)
     return {"status": "success", "message": "Note saved"}
 
+
 @router.get("/profile")  # Changed from /profile/{user_id}
 async def get_profile(
     current_user: dict = Depends(get_current_user),
-    store: UserDataStore = Depends(get_user_data_store)
+    store: UserDataStore = Depends(get_user_data_store),
 ):
     """
     Get the full profile for the CURRENT user.
@@ -58,8 +63,5 @@ async def get_profile(
     return {
         "stats": stats,
         "notes": notes,
-        "user_info": {
-            "name": current_user["full_name"],
-            "email": current_user["email"]
-        }
+        "user_info": {"name": current_user["full_name"], "email": current_user["email"]},
     }

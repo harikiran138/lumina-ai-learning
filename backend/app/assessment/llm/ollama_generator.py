@@ -10,10 +10,11 @@ import uuid
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class OllamaGenerator:
     _instance = None
     _base_url = "http://localhost:11434/api/generate"
-    _model = "llama3" 
+    _model = "llama3"
 
     def __new__(cls):
         if cls._instance is None:
@@ -42,7 +43,7 @@ class OllamaGenerator:
             return self._fallback_question(topic, difficulty, "Ollama connection failed")
 
         difficulty_str = "easy" if difficulty < 0.4 else "medium" if difficulty < 0.7 else "hard"
-        
+
         # Prompt designed for JSON output
         prompt = (
             f"You are an assessment expert. Generate a {difficulty_str} multiple-choice question about '{topic}'. "
@@ -55,7 +56,7 @@ class OllamaGenerator:
             "model": self._model,
             "prompt": prompt,
             "stream": False,
-            "format": "json" # Force JSON mode if model supports it
+            "format": "json",  # Force JSON mode if model supports it
         }
 
         try:
@@ -63,19 +64,19 @@ class OllamaGenerator:
             if response.status_code != 200:
                 logger.error(f"Ollama API Error: {response.status_code} - {response.text}")
                 return self._fallback_question(topic, difficulty, "API Error")
-            
+
             data = response.json()
             generated_text = data.get("response", "")
             logger.info(f"Ollama Generated: {generated_text}")
-            
+
             # Parse JSON
             try:
                 q_data = json.loads(generated_text)
-                
+
                 # Sanity Check
                 if "text" not in q_data or "options" not in q_data or "correct_index" not in q_data:
                     raise ValueError("Missing fields in JSON")
-                
+
                 if not isinstance(q_data["options"], list) or len(q_data["options"]) < 2:
                     raise ValueError("Invalid options list")
 
@@ -83,17 +84,17 @@ class OllamaGenerator:
                 # Create option objects
                 for txt in q_data["options"]:
                     options.append(Option(text=str(txt)))
-                
+
                 correct_idx = int(q_data["correct_index"])
                 if correct_idx < 0 or correct_idx >= len(options):
-                    correct_idx = 0 # Default if out of bounds
+                    correct_idx = 0  # Default if out of bounds
 
                 return Question(
                     text=q_data["text"],
                     options=options,
                     correct_option_id=options[correct_idx].id,
                     difficulty=difficulty,
-                    topic=topic
+                    topic=topic,
                 )
 
             except json.JSONDecodeError:
@@ -125,8 +126,9 @@ class OllamaGenerator:
             options=options,
             correct_option_id=options[correct_index].id,
             difficulty=difficulty,
-            topic=topic
+            topic=topic,
         )
+
 
 # Export singleton
 ollama_generator = OllamaGenerator()

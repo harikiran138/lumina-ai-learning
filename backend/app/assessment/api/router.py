@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from app.assessment.models.schemas import (
-    QuestionRequest, 
-    Question, 
-    AssessmentSession, 
+    QuestionRequest,
+    Question,
+    AssessmentSession,
     SubmitAnswerRequest,
     StartAssessmentRequest,
     AssessmentResult,
@@ -15,29 +15,33 @@ router = APIRouter()
 
 # --- Imported from assessment_routes.py (Missing Endpoints) ---
 
+
 @router.get("/student/{student_id}/mastery")
 async def get_student_mastery(student_id: str):
     """
     Get the aggregate mastery for a student across all sessions.
     """
     from app.database.manager import db
-    
+
     # Safety Check: If DB is not connected (e.g. missing ENV), return empty dict
-    if not db.db: 
+    if not db.db:
         return {}
 
     try:
         # Find latest session for student
-        cursor = db.get_collection("assessment_sessions").find(
-            {"student_id": student_id}
-        ).sort("timestamp", -1).limit(1)
-        
+        cursor = (
+            db.get_collection("assessment_sessions")
+            .find({"student_id": student_id})
+            .sort("timestamp", -1)
+            .limit(1)
+        )
+
         # Async cursor
         latest_session = None
         async for doc in cursor:
             latest_session = doc
             break
-            
+
         if latest_session:
             return latest_session.get("mastery_state", {}).get("concept_mastery", {})
         return {}
@@ -45,40 +49,43 @@ async def get_student_mastery(student_id: str):
         print(f"Error fetching mastery: {e}")
         return {}
 
+
 @router.get("/stats/teacher")
 async def get_teacher_stats():
     """
     Get aggregate statistics for the teacher dashboard.
     """
     from app.database.manager import db
-    
+
     if not db.db:
         return {"avg_mastery": 0, "total_students": 0, "error": "Database not connected"}
 
     try:
         # Simplified approach: Just get all sessions and avg in python for MVP
         cursor = db.get_collection("assessment_sessions").find({})
-        
+
         total_mastery = 0
         count = 0
-        
+
         async for session in cursor:
             mastery_map = session.get("mastery_state", {}).get("concept_mastery", {})
             if mastery_map:
-                 avg_session = sum(mastery_map.values()) / len(mastery_map)
-                 total_mastery += avg_session
-                 count += 1
-                 
+                avg_session = sum(mastery_map.values()) / len(mastery_map)
+                total_mastery += avg_session
+                count += 1
+
         if count == 0:
             return {"avg_mastery": 0, "total_students": 0}
-            
+
         return {
-            "avg_mastery": (total_mastery / count) * 100, # Return percentage
-            "total_students": count
+            "avg_mastery": (total_mastery / count) * 100,  # Return percentage
+            "total_students": count,
         }
     except Exception as e:
         print(f"Error fetching teacher stats: {e}")
         return {"avg_mastery": 0, "total_students": 0}
+
+
 # -----------------------------------------------------------
 
 
@@ -89,13 +96,12 @@ async def start_assessment(request: StartAssessmentRequest):
     """
     try:
         session = session_manager.create_session(
-            student_id=request.student_id, 
-            topic=request.topic,
-            num_questions=request.num_questions
+            student_id=request.student_id, topic=request.topic, num_questions=request.num_questions
         )
         return session
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to start assessment: {str(e)}")
+
 
 @router.post("/complete/{session_id}", response_model=AssessmentSession)
 async def complete_assessment(session_id: str):
@@ -110,6 +116,7 @@ async def complete_assessment(session_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/next-question/{session_id}", response_model=Optional[Question])
 async def get_next_question(session_id: str):
     """
@@ -122,7 +129,7 @@ async def get_next_question(session_id: str):
             # Check if session is actually complete or if it's an error
             session = session_manager.get_session(session_id)
             if session and session.is_completed:
-                return None # Assessment complete
+                return None  # Assessment complete
             elif not session:
                 raise HTTPException(status_code=404, detail="Session not found")
             else:
@@ -133,6 +140,7 @@ async def get_next_question(session_id: str):
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving question: {str(e)}")
+
 
 @router.post("/submit", response_model=AssessmentSession)
 async def submit_answer(request: SubmitAnswerRequest):
@@ -145,13 +153,14 @@ async def submit_answer(request: SubmitAnswerRequest):
             session_id=request.session_id,
             question_id=request.question_id,
             selected_option_id=request.selected_option_id,
-            time_taken=request.time_taken
+            time_taken=request.time_taken,
         )
         return session
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/result/{session_id}", response_model=AssessmentResult)
 async def get_result(session_id: str):
@@ -173,11 +182,13 @@ async def get_result(session_id: str):
 
 from pydantic import BaseModel
 
+
 class QuickLogRequest(BaseModel):
     user_id: str
     topic: str
     is_correct: bool
     difficulty: float = 0.5
+
 
 @router.post("/quick-log")
 async def log_quick_response(req: QuickLogRequest):
@@ -187,10 +198,15 @@ async def log_quick_response(req: QuickLogRequest):
     # In a real implementation, this would call session_manager or a mastery_service
     # to update the student's mastery record for the specific topic.
     # For now, we mock the logic.
-    
+
     # new_mastery = mastery_service.update_mastery(req.user_id, req.topic, req.is_correct)
-    
-    return {"status": "ok", "message": "Mastery updated", "new_mastery": 0.8 if req.is_correct else 0.4}
+
+    return {
+        "status": "ok",
+        "message": "Mastery updated",
+        "new_mastery": 0.8 if req.is_correct else 0.4,
+    }
+
 
 @router.get("/report/{session_id}", response_model=AssessmentReport)
 async def get_report(session_id: str):

@@ -2,12 +2,14 @@ import os
 import torch
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 from PIL import Image
-from learner_profile.models.behavior import BehaviorModel # Example integration
+from learner_profile.models.behavior import BehaviorModel  # Example integration
+
 # Reusing logic from the project but encapsulating here
 # In a real monorepo we'd share the lib, but here I'll re-implement the wrapper to be self-contained in backend
 
+
 class QAScorer:
-    def __init__(self, model_name='all-MiniLM-L6-v2'):
+    def __init__(self, model_name="all-MiniLM-L6-v2"):
         # Lazy load to avoid overhead if not used
         self.model_name = model_name
         self.model = None
@@ -15,6 +17,7 @@ class QAScorer:
     def _load(self):
         if not self.model:
             from sentence_transformers import SentenceTransformer, util
+
             self.model = SentenceTransformer(self.model_name)
             self.util = util
 
@@ -27,10 +30,12 @@ class QAScorer:
         cosine_score = self.util.pytorch_cos_sim(embedding_1, embedding_2)
         return cosine_score.item()
 
+
 class HandwritingAgent:
     """
     Agent responsible for analyzing handwriting and grading answers.
     """
+
     def __init__(self):
         self.model_name = "microsoft/trocr-base-handwritten"
         self.processor = None
@@ -51,33 +56,33 @@ class HandwritingAgent:
 
     def analyze(self, image_path: str, answer_key: str = None) -> dict:
         """
-        Analyzes an image file. 
+        Analyzes an image file.
         """
         self._load_model()
-        
+
         extracted_text = ""
         if self.model and self.processor:
             try:
                 image = Image.open(image_path).convert("RGB")
-                pixel_values = self.processor(image, return_tensors="pt").pixel_values.to(self.device)
-                
+                pixel_values = self.processor(image, return_tensors="pt").pixel_values.to(
+                    self.device
+                )
+
                 with torch.no_grad():
                     generated_ids = self.model.generate(pixel_values)
-                    extracted_text = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+                    extracted_text = self.processor.batch_decode(
+                        generated_ids, skip_special_tokens=True
+                    )[0]
             except Exception as e:
                 extracted_text = f"Error during extraction: {str(e)}"
         else:
             extracted_text = "Model unavailable (Mock Mode)"
 
-        result = {
-            "extracted_text": extracted_text,
-            "score": None,
-            "feedback": "Analysis Complete"
-        }
-        
+        result = {"extracted_text": extracted_text, "score": None, "feedback": "Analysis Complete"}
+
         if answer_key:
             score = self.scorer.calculate_similarity(extracted_text, answer_key)
             result["score"] = score
             result["feedback"] = f"Alignment: {score:.2f}"
-            
+
         return result
