@@ -1,6 +1,7 @@
 import asyncio
 import functools
 
+
 def run_async(coro):
     """
     Safely run an async coroutine from a synchronous context.
@@ -11,5 +12,5 @@ def run_async(coro):
     except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-    
+
     return loop.run_until_complete(coro)

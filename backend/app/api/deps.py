@@ -1,11 +1,13 @@
 from typing import Generator
 
+
 def get_db() -> Generator:
     """
     Dependency to get DB session.
     STUB: Yields None.
     """
     yield None
+
 
 def get_current_user():
     """

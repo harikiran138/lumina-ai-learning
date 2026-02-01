@@ -2,10 +2,12 @@ from typing import List, Optional
 import uuid
 from .database import db
 
+
 class CourseStore:
     """
     MongoDB store for Courses.
     """
+
     def __init__(self):
         self._courses_collection = None
 
@@ -15,11 +17,19 @@ class CourseStore:
             _db = db.get_db()
             if _db is not None:
                 self._courses_collection = _db["courses"]
+            else:
+                from app.core.logging import structlog
+                from fastapi import HTTPException
+
+                log = structlog.get_logger()
+                log.error("mongodb_connection_missing", collection="courses")
+                raise HTTPException(status_code=503, detail="Database connection unavailable")
         return self._courses_collection
 
     def create_course(self, name: str, code: str, description: str, teacher_id: str) -> dict:
         collection = self.courses_collection
-        if collection is None: raise Exception("Database not connected")
+        if collection is None:
+            raise Exception("Database not connected")
         course = {
             "id": str(uuid.uuid4()),
             "name": name,
@@ -33,7 +43,8 @@ class CourseStore:
 
     def list_courses(self) -> List[dict]:
         collection = self.courses_collection
-        if collection is None: return []
+        if collection is None:
+            return []
         cursor = collection.find({})
         courses = []
         for doc in cursor:
@@ -43,7 +54,8 @@ class CourseStore:
 
     def get_course_by_code(self, code: str) -> Optional[dict]:
         collection = self.courses_collection
-        if collection is None: return None
+        if collection is None:
+            return None
         doc = collection.find_one({"code": code})
         if doc:
             doc.pop("_id", None)
