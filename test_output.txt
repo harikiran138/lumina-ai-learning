@@ -33,18 +33,18 @@ client = <starlette.testclient.TestClient object at 0x161039430>
         Mocks the actual Gemini call to test router logic + key config usage.
         """
         mock_response_text = '[{"type": "text_block", "content": "AI is cool."}]'
-    
+
 >       with patch("google.generativeai.GenerativeModel.generate_content", return_value=MockGeminiResponse(mock_response_text)) as mock_generate:
 
-backend/tests/test_ai_router.py:18: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_ai_router.py:18:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 ../../../.pyenv/versions/3.8.18/lib/python3.8/unittest/mock.py:1377: in __enter__
     self.target = self.getter()
 ../../../.pyenv/versions/3.8.18/lib/python3.8/unittest/mock.py:1552: in <lambda>
     getter = lambda: _importer(target)
 ../../../.pyenv/versions/3.8.18/lib/python3.8/unittest/mock.py:1228: in _importer
     thing = _dot_lookup(thing, comp, import_path)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 thing = <module 'google.generativeai' from '/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/google/generativeai/__init__.py'>
 comp = 'GenerativeModel', import_path = 'google.generativeai.GenerativeModel'
@@ -69,31 +69,31 @@ Connected to MongoDB
     warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
 
 backend/app/main.py:50
-  /Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py:50: DeprecationWarning: 
+  /Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py:50: DeprecationWarning:
           on_event is deprecated, use lifespan event handlers instead.
-  
+
           Read more about it in the
           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
-          
+
     @app.on_event("startup")
 
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/applications.py:4495
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/applications.py:4495
-  /Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/applications.py:4495: DeprecationWarning: 
+  /Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/applications.py:4495: DeprecationWarning:
           on_event is deprecated, use lifespan event handlers instead.
-  
+
           Read more about it in the
           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
-          
+
     return self.router.on_event(event_type)
 
 backend/app/main.py:58
-  /Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py:58: DeprecationWarning: 
+  /Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py:58: DeprecationWarning:
           on_event is deprecated, use lifespan event handlers instead.
-  
+
           Read more about it in the
           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
-          
+
     @app.on_event("shutdown")
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html

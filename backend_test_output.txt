@@ -17,8 +17,8 @@ _____________________________ test_assessment_flow _____________________________
         # 1. Start Assessment
 >       response = client.post("/api/assessment/start", json={"student_id": "test_student"})
 
-backend/tests/test_assessment_api.py:17: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_assessment_api.py:17:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1144: in post
     return self.request(
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:825: in request
@@ -29,7 +29,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
     response = self._send_handling_redirects(
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:979: in _send_handling_redirects
     response = self._send_single_request(request)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = <httpx.Client object at 0x10cdaa310>
 request = <Request('POST', 'http://test/api/assessment/start')>
@@ -40,12 +40,12 @@ request = <Request('POST', 'http://test/api/assessment/start')>
         """
         transport = self._transport_for_url(request.url)
         start = time.perf_counter()
-    
+
         if not isinstance(request.stream, SyncByteStream):
             raise RuntimeError(
                 "Attempted to send an async request with a sync Client instance."
             )
-    
+
         with request_context(request=request):
 >           response = transport.handle_request(request)
 E           AttributeError: 'ASGITransport' object has no attribute 'handle_request'
@@ -56,8 +56,8 @@ __________________________ test_assessment_not_found ___________________________
     def test_assessment_not_found():
 >       response = client.get("/api/assessment/bad_id/next-question")
 
-backend/tests/test_assessment_api.py:59: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_assessment_api.py:59:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1053: in get
     return self.request(
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:825: in request
@@ -68,7 +68,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
     response = self._send_handling_redirects(
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:979: in _send_handling_redirects
     response = self._send_single_request(request)
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = <httpx.Client object at 0x10cdaa310>
 request = <Request('GET', 'http://test/api/assessment/bad_id/next-question')>
@@ -79,12 +79,12 @@ request = <Request('GET', 'http://test/api/assessment/bad_id/next-question')>
         """
         transport = self._transport_for_url(request.url)
         start = time.perf_counter()
-    
+
         if not isinstance(request.stream, SyncByteStream):
             raise RuntimeError(
                 "Attempted to send an async request with a sync Client instance."
             )
-    
+
         with request_context(request=request):
 >           response = transport.handle_request(request)
 E           AttributeError: 'ASGITransport' object has no attribute 'handle_request'

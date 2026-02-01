@@ -17,8 +17,8 @@ _____________________________ test_assessment_flow _____________________________
         # 1. Start Assessment
 >       response = client.post("/api/assessment/start", json={"student_id": "test_student"})
 
-backend/tests/test_assessment_api.py:17: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_assessment_api.py:17:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/testclient.py:593: in post
     return super().post(
 ../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1144: in post
@@ -81,7 +81,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
     return await dependant.call(**values)
 backend/app/assessment/api/assessment_routes.py:96: in start_assessment
     return {"session_id": session.session_id, "message": "Assessment started"}
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = AssessmentSession(id='b225636f-0c5c-4002-b7da-2dbaea0fd2c3', student_id='test_student', topic='arrays', total_question...[], is_completed=False, start_time=datetime.datetime(2026, 1, 31, 18, 41, 39, 251382), end_time=None, final_score=None)
 item = 'session_id'
@@ -92,7 +92,7 @@ item = 'session_id'
             attribute = private_attributes[item]
             if hasattr(attribute, '__get__'):
                 return attribute.__get__(self, type(self))  # type: ignore
-    
+
             try:
                 # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
                 return self.__pydantic_private__[item]  # type: ignore
@@ -105,7 +105,7 @@ item = 'session_id'
                 pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
             except AttributeError:
                 pydantic_extra = None
-    
+
             if pydantic_extra is not None:
                 try:
                     return pydantic_extra[item]
