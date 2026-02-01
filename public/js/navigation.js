@@ -41,7 +41,7 @@ class NavigationManager {
                         <div class="flex items-center gap-4">
                             <!-- Search (hidden on mobile) -->
                             <div class="hidden lg:flex items-center bg-white/5 border border-white/10 rounded-lg px-3 py-2 focus-within:border-lumina-primary/50 transition-colors">
-                                <input type="text" placeholder="Search..." 
+                                <input type="text" placeholder="Search..."
                                     class="bg-transparent outline-none w-32 text-sm text-gray-200 placeholder-gray-500"
                                     id="search-input">
                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
