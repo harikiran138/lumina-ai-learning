@@ -33,14 +33,14 @@ async def load_model():
     global model, tokenizer
     print("Loading Local Model...")
     device = "cpu" # Force CPU for safety on this machine
-    
+
     base_model = AutoModelForCausalLM.from_pretrained(BASE_MODEL_NAME)
     try:
         model = PeftModel.from_pretrained(base_model, ADAPTER_PATH)
     except:
         print("Adapter not found/ready, using base model.")
         model = base_model
-        
+
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_NAME)
     print("Model Loaded!")
 
@@ -53,14 +53,14 @@ async def chat(request: ChatRequest):
     # Format prompt
     prompt = f"<|user|>\n{request.message}</s>\n<|assistant|>\n"
     inputs = tokenizer(prompt, return_tensors="pt")
-    
+
     # Generate
     outputs = model.generate(**inputs, max_new_tokens=100)
     response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    
+
     # Extract only assistant response
     answer = response_text.split("<|assistant|>")[-1].strip()
-    
+
     return {"response": answer}
 
 if __name__ == "__main__":

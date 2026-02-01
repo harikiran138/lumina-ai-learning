@@ -19,13 +19,13 @@ def format_instruction(sample):
 def main():
     print(f"Loading dataset: {DATASET_NAME}...")
     dataset = load_dataset(DATASET_NAME)
-    
+
     print(f"Loading tokenizer: {MODEL_NAME}...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     tokenizer.pad_token = tokenizer.eos_token # Valid for Llama-type open-ended generation
 
     print("Formatting dataset...")
-    # Concatenate train/validation for a larger training set if needed, 
+    # Concatenate train/validation for a larger training set if needed,
     # but strictly we should keep validation separate.
     train_dataset = dataset["train"].map(format_instruction)
     val_dataset = dataset["validation"].map(format_instruction)

@@ -19,7 +19,7 @@ KAGGLE_DATASETS = [
 # "Student Dropout" -> "thedevastator/higher-education-predictors-of-student-retention"
 
 ADDITIONAL_KAGGLE = [
-    "arashnic/student-learning-pattern", 
+    "arashnic/student-learning-pattern",
     "thedevastator/higher-education-predictors-of-student-retention"
 ]
 
@@ -55,7 +55,7 @@ def download_hf(dataset_id):
 
 if __name__ == "__main__":
     print("Starting data download...")
-    
+
     # Check if kaggle is configured
     kaggle_config = os.path.expanduser("~/.kaggle/kaggle.json")
     if not os.path.exists(kaggle_config):
@@ -66,5 +66,5 @@ if __name__ == "__main__":
 
     for h in HF_DATASETS:
         download_hf(h)
-    
+
     print("Download complete.")
