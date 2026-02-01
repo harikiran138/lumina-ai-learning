@@ -39,8 +39,8 @@ During handling of the above exception, another exception occurred:
         # Patch the worker where it is defined
 >       with patch("app.worker.task_grade_submission.delay") as mock_delay:
 
-backend/tests/test_pipeline.py:14: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_pipeline.py:14:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 ../../../.pyenv/versions/3.8.18/lib/python3.8/unittest/mock.py:1377: in __enter__
     self.target = self.getter()
 ../../../.pyenv/versions/3.8.18/lib/python3.8/unittest/mock.py:1552: in <lambda>
@@ -51,7 +51,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
     __import__(import_path)
 backend/app/worker.py:7: in <module>
     from app.services.storage import storage_service
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 >   import boto3
 E   ModuleNotFoundError: No module named 'boto3'

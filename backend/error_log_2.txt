@@ -21,39 +21,39 @@ _________________________ test_pipeline_task_dispatch __________________________
         with patch("app.worker.task_grade_submission.delay") as mock_delay:
             from app.worker import task_grade_submission
             assert task_grade_submission is not None
-    
+
         # Ideally, we test the worker function logic itself
         from app.worker import task_grade_submission
-    
+
         # Mock DB/S3 inside worker
 >       with patch("app.worker.db") as mock_db, \
              patch("app.services.storage.storage_service.download_file") as mock_down:
 
-tests/test_pipeline.py:17: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_pipeline.py:17:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 ../../../../.pyenv/versions/3.8.18/lib/python3.8/unittest/mock.py:1393: in __enter__
     original, local = self.get_original()
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = <unittest.mock._patch object at 0x123279820>
 
     def get_original(self):
         target = self.getter()
         name = self.attribute
-    
+
         original = DEFAULT
         local = False
-    
+
         try:
             original = target.__dict__[name]
         except (AttributeError, KeyError):
             original = getattr(target, name, DEFAULT)
         else:
             local = True
-    
+
         if name in _builtins and isinstance(target, ModuleType):
             self.create = True
-    
+
         if not self.create and original is DEFAULT:
 >           raise AttributeError(
                 "%s does not have the attribute %r" % (target, name)
