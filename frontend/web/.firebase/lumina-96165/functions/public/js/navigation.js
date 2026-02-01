@@ -4,24 +4,24 @@
  */
 
 class NavigationManager {
-    constructor() {
-        this.currentUser = null;
-        this.navContainer = null;
-    }
+  constructor() {
+    this.currentUser = null;
+    this.navContainer = null;
+  }
 
-    async init() {
-        this.currentUser = await window.luminaDB.getCurrentUser();
-    }
+  async init() {
+    this.currentUser = await window.luminaDB.getCurrentUser();
+  }
 
-    /**
-     * Generate top navigation HTML
-     */
-    generateTopNav(role = 'student') {
-        const userName = this.currentUser?.name || 'User';
-        const userRole = this.currentUser?.role || role;
-        const unreadMessages = 0; // Would fetch from DB
+  /**
+   * Generate top navigation HTML
+   */
+  generateTopNav(role = "student") {
+    const userName = this.currentUser?.name || "User";
+    const userRole = this.currentUser?.role || role;
+    const unreadMessages = 0; // Would fetch from DB
 
-        return `
+    return `
             <header class="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-lumina-primary/10 shadow-gold-glow">
                 <div class="container mx-auto px-4 py-4">
                     <div class="flex items-center justify-between h-16">
@@ -41,7 +41,7 @@ class NavigationManager {
                         <div class="flex items-center gap-4">
                             <!-- Search (hidden on mobile) -->
                             <div class="hidden lg:flex items-center bg-white/5 border border-white/10 rounded-lg px-3 py-2 focus-within:border-lumina-primary/50 transition-colors">
-                                <input type="text" placeholder="Search..." 
+                                <input type="text" placeholder="Search..."
                                     class="bg-transparent outline-none w-32 text-sm text-gray-200 placeholder-gray-500"
                                     id="search-input">
                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,7 +62,11 @@ class NavigationManager {
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                                 </svg>
-                                ${unreadMessages > 0 ? `<span class="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">${unreadMessages}</span>` : ''}
+                                ${
+                                  unreadMessages > 0
+                                    ? `<span class="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">${unreadMessages}</span>`
+                                    : ""
+                                }
                             </button>
 
                             <!-- Theme Toggle (Hidden as we enforce dark mode) -->
@@ -90,7 +94,9 @@ class NavigationManager {
                                 <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-[#1C1C1C] rounded-lg shadow-gold-glow border border-lumina-primary/20 z-50">
                                     <div class="p-3 border-b border-gray-800">
                                         <p class="font-semibold text-white">${userName}</p>
-                                        <p class="text-sm text-gray-400">${this.currentUser?.email}</p>
+                                        <p class="text-sm text-gray-400">${
+                                          this.currentUser?.email
+                                        }</p>
                                     </div>
                                     <nav class="py-2">
                                         <a href="/student/profile" class="block px-4 py-2 text-gray-300 hover:bg-white/5 hover:text-lumina-primary transition-colors">
@@ -118,199 +124,229 @@ class NavigationManager {
                 </div>
             </header>
         `;
-    }
+  }
 
-    /**
-     * Get navigation links based on role
-     */
-    getNavLinks(role) {
-        const links = {
-            student: [
-                { href: '/student/dashboard', label: '📊 Dashboard', icon: '📊' },
-                { href: '/student/course_explorer', label: '🎓 Courses', icon: '🎓' },
-                { href: '/student/ai_tutor', label: '🤖 AI Tutor', icon: '🤖' },
-                { href: '/student/assessment', label: '✏️ Assessments', icon: '✏️' },
-                { href: '/student/community', label: '💬 Community', icon: '💬' }
-            ],
-            teacher: [
-                { href: '/teacher/dashboard', label: '📊 Dashboard', icon: '📊' },
-                { href: '/teacher/content_upload', label: '📤 Upload Content', icon: '📤' },
-                { href: '/teacher/assessment_management', label: '✏️ Assessments', icon: '✏️' },
-                { href: '/teacher/reports', label: '📈 Reports', icon: '📈' },
-                { href: '/teacher/community', label: '💬 Community', icon: '💬' }
-            ],
-            admin: [
-                { href: '/admin/dashboard', label: '🏛️ Dashboard', icon: '🏛️' },
-                { href: '/admin/users', label: '👥 Users', icon: '👥' },
-                { href: '/admin/courses', label: '📚 Courses', icon: '📚' },
-                { href: '/admin/community', label: '💬 Community', icon: '💬' },
-                { href: '/admin/system', label: '⚙️ System', icon: '⚙️' }
-            ]
-        };
+  /**
+   * Get navigation links based on role
+   */
+  getNavLinks(role) {
+    const links = {
+      student: [
+        { href: "/student/dashboard", label: "📊 Dashboard", icon: "📊" },
+        { href: "/student/course_explorer", label: "🎓 Courses", icon: "🎓" },
+        { href: "/student/ai_tutor", label: "🤖 AI Tutor", icon: "🤖" },
+        { href: "/student/assessment", label: "✏️ Assessments", icon: "✏️" },
+        { href: "/student/community", label: "💬 Community", icon: "💬" },
+      ],
+      teacher: [
+        { href: "/teacher/dashboard", label: "📊 Dashboard", icon: "📊" },
+        {
+          href: "/teacher/content_upload",
+          label: "📤 Upload Content",
+          icon: "📤",
+        },
+        {
+          href: "/teacher/assessment_management",
+          label: "✏️ Assessments",
+          icon: "✏️",
+        },
+        { href: "/teacher/reports", label: "📈 Reports", icon: "📈" },
+        { href: "/teacher/community", label: "💬 Community", icon: "💬" },
+      ],
+      admin: [
+        { href: "/admin/dashboard", label: "🏛️ Dashboard", icon: "🏛️" },
+        { href: "/admin/users", label: "👥 Users", icon: "👥" },
+        { href: "/admin/courses", label: "📚 Courses", icon: "📚" },
+        { href: "/admin/community", label: "💬 Community", icon: "💬" },
+        { href: "/admin/system", label: "⚙️ System", icon: "⚙️" },
+      ],
+    };
 
-        const navItems = links[role] || links.student;
-        return navItems.map(item => `
+    const navItems = links[role] || links.student;
+    return navItems
+      .map(
+        (item) => `
             <a href="${item.href}" class="text-gray-400 hover:text-lumina-primary transition-colors font-medium">
                 ${item.label}
             </a>
-        `).join('');
-    }
+        `,
+      )
+      .join("");
+  }
 
-    /**
-     * Generate sidebar navigation (for more compact layout)
-     */
-    generateSidebar(role = 'student') {
-        return `
+  /**
+   * Generate sidebar navigation (for more compact layout)
+   */
+  generateSidebar(role = "student") {
+    return `
             <aside class="fixed left-0 top-16 bottom-0 w-64 bg-black border-r border-lumina-primary/10 overflow-y-auto hidden lg:block z-40">
                 <nav class="p-4 space-y-2">
                     ${this.getSidebarLinks(role)}
                 </nav>
             </aside>
         `;
-    }
+  }
 
-    /**
-     * Get sidebar navigation links
-     */
-    getSidebarLinks(role) {
-        const links = {
-            student: [
-                { href: '/student/dashboard', label: 'Dashboard', icon: '📊' },
-                { href: '/student/course_explorer', label: 'Courses', icon: '🎓' },
-                { href: '/student/ai_tutor', label: 'AI Tutor', icon: '🤖' },
-                { href: '/student/assessment', label: 'Assessments', icon: '✏️' },
-                { href: '/student/lesson_page', label: 'Lessons', icon: '📖' },
-                { href: '/student/my_notes', label: 'My Notes', icon: '📝' },
-                { href: '/student/progress_streaks', label: 'Progress', icon: '🔥' },
-                { href: '/student/leaderboard', label: 'Leaderboard', icon: '🏆' },
-                { href: '/student/community', label: 'Community', icon: '💬' }
-            ],
-            teacher: [
-                { href: '/teacher/dashboard', label: 'Dashboard', icon: '📊' },
-                { href: '/teacher/content_upload', label: 'Upload Content', icon: '📤' },
-                { href: '/teacher/assessment_management', label: 'Assessments', icon: '✏️' },
-                { href: '/teacher/reports', label: 'Reports', icon: '📈' },
-                { href: '/teacher/community', label: 'Community', icon: '💬' }
-            ],
-            admin: [
-                { href: '/admin/dashboard', label: 'Dashboard', icon: '🏛️' },
-                { href: '/admin/users', label: 'User Management', icon: '👥' },
-                { href: '/admin/courses', label: 'Courses', icon: '📚' },
-                { href: '/admin/community', label: 'Moderation', icon: '💬' },
-                { href: '/admin/system', label: 'System Health', icon: '⚙️' }
-            ]
-        };
+  /**
+   * Get sidebar navigation links
+   */
+  getSidebarLinks(role) {
+    const links = {
+      student: [
+        { href: "/student/dashboard", label: "Dashboard", icon: "📊" },
+        { href: "/student/course_explorer", label: "Courses", icon: "🎓" },
+        { href: "/student/ai_tutor", label: "AI Tutor", icon: "🤖" },
+        { href: "/student/assessment", label: "Assessments", icon: "✏️" },
+        { href: "/student/lesson_page", label: "Lessons", icon: "📖" },
+        { href: "/student/my_notes", label: "My Notes", icon: "📝" },
+        { href: "/student/progress_streaks", label: "Progress", icon: "🔥" },
+        { href: "/student/leaderboard", label: "Leaderboard", icon: "🏆" },
+        { href: "/student/community", label: "Community", icon: "💬" },
+      ],
+      teacher: [
+        { href: "/teacher/dashboard", label: "Dashboard", icon: "📊" },
+        {
+          href: "/teacher/content_upload",
+          label: "Upload Content",
+          icon: "📤",
+        },
+        {
+          href: "/teacher/assessment_management",
+          label: "Assessments",
+          icon: "✏️",
+        },
+        { href: "/teacher/reports", label: "Reports", icon: "📈" },
+        { href: "/teacher/community", label: "Community", icon: "💬" },
+      ],
+      admin: [
+        { href: "/admin/dashboard", label: "Dashboard", icon: "🏛️" },
+        { href: "/admin/users", label: "User Management", icon: "👥" },
+        { href: "/admin/courses", label: "Courses", icon: "📚" },
+        { href: "/admin/community", label: "Moderation", icon: "💬" },
+        { href: "/admin/system", label: "System Health", icon: "⚙️" },
+      ],
+    };
 
-        const sidebarItems = links[role] || links.student;
-        return sidebarItems.map(item => `
+    const sidebarItems = links[role] || links.student;
+    return sidebarItems
+      .map(
+        (item) => `
             <a href="${item.href}" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-lumina-primary transition-colors">
                 <span class="text-xl">${item.icon}</span>
                 <span>${item.label}</span>
             </a>
-        `).join('');
+        `,
+      )
+      .join("");
+  }
+
+  /**
+   * Setup event listeners
+   */
+  setupEventListeners() {
+    // Theme toggle
+    const themeToggle = document.getElementById("theme-toggle-nav");
+    if (themeToggle) {
+      themeToggle.addEventListener("click", () => {
+        const html = document.documentElement;
+        html.classList.toggle("dark");
+        localStorage.setItem(
+          "theme",
+          html.classList.contains("dark") ? "dark" : "light",
+        );
+        this.updateThemeIcon();
+      });
     }
 
-    /**
-     * Setup event listeners
-     */
-    setupEventListeners() {
-        // Theme toggle
-        const themeToggle = document.getElementById('theme-toggle-nav');
-        if (themeToggle) {
-            themeToggle.addEventListener('click', () => {
-                const html = document.documentElement;
-                html.classList.toggle('dark');
-                localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
-                this.updateThemeIcon();
-            });
-        }
+    // User menu toggle
+    const userMenuBtn = document.getElementById("user-menu-btn");
+    const userDropdown = document.getElementById("user-dropdown");
+    if (userMenuBtn && userDropdown) {
+      userMenuBtn.addEventListener("click", () => {
+        userDropdown.classList.toggle("hidden");
+      });
 
-        // User menu toggle
-        const userMenuBtn = document.getElementById('user-menu-btn');
-        const userDropdown = document.getElementById('user-dropdown');
-        if (userMenuBtn && userDropdown) {
-            userMenuBtn.addEventListener('click', () => {
-                userDropdown.classList.toggle('hidden');
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
-                    userDropdown.classList.add('hidden');
-                }
-            });
+      document.addEventListener("click", (e) => {
+        if (
+          !userMenuBtn.contains(e.target) &&
+          !userDropdown.contains(e.target)
+        ) {
+          userDropdown.classList.add("hidden");
         }
-
-        // Logout
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
-                await window.luminaDB.logout();
-                window.location.href = '/login';
-            });
-        }
-
-        // Notifications button
-        const notificationsBtn = document.getElementById('notifications-btn');
-        if (notificationsBtn) {
-            notificationsBtn.addEventListener('click', () => {
-                this.showNotificationsPanel();
-            });
-        }
-
-        // Messages button
-        const messagesBtn = document.getElementById('messages-btn');
-        if (messagesBtn) {
-            messagesBtn.addEventListener('click', () => {
-                this.showMessagesPanel();
-            });
-        }
-
-        // Mobile menu
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        if (mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', () => {
-                // Implement mobile menu toggle
-            });
-        }
+      });
     }
 
-    /**
-     * Update theme icon
-     */
-    updateThemeIcon() {
-        const isDark = document.documentElement.classList.contains('dark');
-        const lightIcon = document.getElementById('light-icon-nav');
-        const darkIcon = document.getElementById('dark-icon-nav');
-
-        if (lightIcon && darkIcon) {
-            lightIcon.classList.toggle('hidden', isDark);
-            darkIcon.classList.toggle('hidden', !isDark);
-        }
+    // Logout
+    const logoutBtn = document.getElementById("logout-btn");
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", async () => {
+        await window.luminaDB.logout();
+        window.location.href = "/login";
+      });
     }
 
-    /**
-     * Show notifications panel
-     */
-    showNotificationsPanel() {
-        const notifications = window.notificationsManager?.getNotifications() || [];
-        console.log('Notifications:', notifications);
-        // Implement UI for notifications panel
+    // Notifications button
+    const notificationsBtn = document.getElementById("notifications-btn");
+    if (notificationsBtn) {
+      notificationsBtn.addEventListener("click", () => {
+        this.showNotificationsPanel();
+      });
     }
 
-    /**
-     * Show messages panel
-     */
-    showMessagesPanel() {
-        console.log('Opening messages panel');
-        // Implement UI for messages panel
+    // Messages button
+    const messagesBtn = document.getElementById("messages-btn");
+    if (messagesBtn) {
+      messagesBtn.addEventListener("click", () => {
+        this.showMessagesPanel();
+      });
     }
+
+    // Mobile menu
+    const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+    if (mobileMenuBtn) {
+      mobileMenuBtn.addEventListener("click", () => {
+        // Implement mobile menu toggle
+      });
+    }
+  }
+
+  /**
+   * Update theme icon
+   */
+  updateThemeIcon() {
+    const isDark = document.documentElement.classList.contains("dark");
+    const lightIcon = document.getElementById("light-icon-nav");
+    const darkIcon = document.getElementById("dark-icon-nav");
+
+    if (lightIcon && darkIcon) {
+      lightIcon.classList.toggle("hidden", isDark);
+      darkIcon.classList.toggle("hidden", !isDark);
+    }
+  }
+
+  /**
+   * Show notifications panel
+   */
+  showNotificationsPanel() {
+    const notifications = window.notificationsManager?.getNotifications() || [];
+    console.log("Notifications:", notifications);
+    // Implement UI for notifications panel
+  }
+
+  /**
+   * Show messages panel
+   */
+  showMessagesPanel() {
+    console.log("Opening messages panel");
+    // Implement UI for messages panel
+  }
 }
 
 // Global instance
 window.navigationManager = new NavigationManager();
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', async () => {
-    await window.navigationManager.init();
-    window.navigationManager.setupEventListeners();
+document.addEventListener("DOMContentLoaded", async () => {
+  await window.navigationManager.init();
+  window.navigationManager.setupEventListeners();
 });

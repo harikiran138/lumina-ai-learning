@@ -31,8 +31,8 @@
                             <p className="text-sm text-gray-400 mb-6">
                                 Upload a photo or PDF of your handwritten notes. We'll extract the text using AI and add it to your note automatically.
                             </p>
-                            <HandwritingUpload 
-                                type="note" 
+                            <HandwritingUpload
+                                type="note"
                                 onUploadComplete={handleHandwritingUpload}
                             />
                         </motion.div>
