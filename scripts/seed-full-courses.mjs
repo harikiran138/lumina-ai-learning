@@ -54,7 +54,7 @@ const ToggleContext = React.createContext();
 function Toggle({ children }) {
   const [on, setOn] = React.useState(false);
   const toggle = () => setOn(!on);
-  
+
   return (
     <ToggleContext.Provider value={{ on, toggle }}>
       {children}
@@ -251,7 +251,7 @@ async function seed() {
                         createdAt: new Date(),
                         ...rest
                     },
-                    // Ensure we don't overwrite enrolledCount if we want to preserve it, 
+                    // Ensure we don't overwrite enrolledCount if we want to preserve it,
                     // but user asked to "add courses", implying fresh or updated data.
                     // I'll set enrolledCount to 0 for these specific "New" courses to match the fresh data structure.
                 },

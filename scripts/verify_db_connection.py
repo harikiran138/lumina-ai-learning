@@ -9,7 +9,7 @@ def verify_connection(uri):
         # The ismaster command is cheap and does not require auth.
         client.admin.command('ismaster')
         print("Server available.")
-        
+
         # Now check authentication and access
         try:
             print("Listing databases...")
@@ -19,7 +19,7 @@ def verify_connection(uri):
         except OperationFailure as e:
             print(f"Authentication failed or insufficient permissions: {e}")
             return False
-            
+
     except ConnectionFailure as e:
         print(f"Server not available: {e}")
         return False
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python verify_db_connection.py <mongodb_uri>")
         sys.exit(1)
-    
+
     uri = sys.argv[1]
     success = verify_connection(uri)
     sys.exit(0 if success else 1)
