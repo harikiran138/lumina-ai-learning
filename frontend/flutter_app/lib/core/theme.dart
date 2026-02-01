@@ -7,7 +7,7 @@ class AppTheme {
   static const Color background = Color(0xFF0F1115); // Deep Dark
   static const Color surface = Color(0xFF1E1E1E); // Card Dark
   static const Color error = Color(0xFFCF6679);
-  
+
   static ThemeData get darkTheme {
     return ThemeData.dark().copyWith(
       scaffoldBackgroundColor: background,

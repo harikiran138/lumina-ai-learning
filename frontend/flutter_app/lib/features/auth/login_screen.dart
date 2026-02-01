@@ -15,7 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() async {
     setState(() => _isLoading = true);
-    
+
     // Simulate Login or Call Real API
     try {
         // Uncomment to use real backend
@@ -24,10 +24,10 @@ class _LoginScreenState extends State<LoginScreen> {
         //   'password': _passCtrl.text
         // });
         // ApiClient().setToken(res['access_token']);
-        
+
         // Mock Success
         await Future.delayed(Duration(seconds: 1));
-        
+
         if (mounted) context.go('/dashboard');
     } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login Failed: $e")));
@@ -49,13 +49,13 @@ class _LoginScreenState extends State<LoginScreen> {
               Icon(Icons.auto_awesome, size: 64, color: Theme.of(context).primaryColor),
               SizedBox(height: 24),
               Text(
-                "Welcome to Lumina", 
+                "Welcome to Lumina",
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center
               ),
               SizedBox(height: 8),
               Text(
-                "AI-Powered Personalized Learning", 
+                "AI-Powered Personalized Learning",
                 style: TextStyle(color: Colors.white54),
                 textAlign: TextAlign.center
               ),

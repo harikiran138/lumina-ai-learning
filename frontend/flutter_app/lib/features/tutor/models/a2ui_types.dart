@@ -17,7 +17,7 @@ class A2UIComponent {
   static List<A2UIComponent> parse(String text) {
     final List<A2UIComponent> components = [];
     final regex = RegExp(r'```a2ui\n([\s\S]*?)\n```');
-    
+
     final matches = regex.allMatches(text);
     for (final match in matches) {
       try {
