@@ -39,7 +39,7 @@ class OllamaProvider(LLMProvider):
         }
 
         try:
-            response = requests.post(url, json=payload)
+            response = requests.post(url, json=payload, timeout=60)
             response.raise_for_status()
             data = response.json()
             return data.get("response", "")
@@ -84,7 +84,7 @@ class GeminiRestProvider(LLMProvider):
                 # Rotate for next call immediately (Round Robin)
                 self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
                 
-                response = self.session.post(url, json=payload, headers={"Content-Type": "application/json"})
+                response = self.session.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=60)
                 
                 # Check for Rate Limit (429) specifically
                 if response.status_code == 429:
@@ -107,6 +107,11 @@ class GeminiRestProvider(LLMProvider):
         return f"Error generating content after retries: {str(last_error)}"
 
 def get_llm_provider(provider: str = "auto") -> LLMProvider:
+    # Check Environment Variable Override
+    env_provider = os.getenv("LLM_PROVIDER")
+    if env_provider:
+        provider = env_provider.lower()
+
     # Explicit provider selection
     if provider == "ollama":
         return OllamaProvider()
