@@ -4,24 +4,25 @@ import shutil
 from fastapi import UploadFile
 from botocore.exceptions import NoCredentialsError
 
+
 class StorageService:
     def __init__(self):
         self.upload_dir = "data/uploads"
         os.makedirs(self.upload_dir, exist_ok=True)
-        
+
         # Check for AWS Credentials
         self.aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
         self.aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
         self.bucket_name = os.getenv("AWS_BUCKET_NAME")
-        
+
         self.use_s3 = all([self.aws_access_key, self.aws_secret_key, self.bucket_name])
-        
+
         if self.use_s3:
             print("🚀 S3 Storage Enabled")
             self.s3_client = boto3.client(
-                's3',
+                "s3",
                 aws_access_key_id=self.aws_access_key,
-                aws_secret_access_key=self.aws_secret_key
+                aws_secret_access_key=self.aws_secret_key,
             )
         else:
             print("⚠️ AWS Credentials missing. Falling back to local storage (data/uploads)")
@@ -56,7 +57,7 @@ class StorageService:
             parts = file_key.replace("s3://", "").split("/", 1)
             bucket = parts[0]
             key = parts[1]
-            
+
             print(f"⬇️ Downloading from S3: {key}")
             self.s3_client.download_file(bucket, key, destination_path)
         else:
@@ -67,5 +68,6 @@ class StorageService:
                     shutil.copy(file_key, destination_path)
             else:
                 raise FileNotFoundError(f"Local file not found: {file_key}")
+
 
 storage_service = StorageService()
