@@ -16,12 +16,12 @@ class A2UIRenderer extends StatelessWidget {
     // 1. Extract non-code text
     final textParts = content.split(RegExp(r'```a2ui[\s\S]*?```'));
     final components = A2UIComponent.parse(content);
-    
+
     List<Widget> widgets = [];
-    
+
     // Simple interleaving (Assuming 1 component usually at end or middle)
     // For a robust implementation, we'd map ranges. For preview, we append components at the end.
-    
+
     if (textParts.isNotEmpty && textParts[0].trim().isNotEmpty) {
       widgets.add(Padding(
         padding: const EdgeInsets.only(bottom: 12.0),
@@ -38,7 +38,7 @@ class A2UIRenderer extends StatelessWidget {
         child: _buildComponent(comp),
       ));
     }
-    
+
     if (textParts.length > 1 && textParts[1].trim().isNotEmpty) {
        widgets.add(Padding(
         padding: const EdgeInsets.only(top: 12.0),

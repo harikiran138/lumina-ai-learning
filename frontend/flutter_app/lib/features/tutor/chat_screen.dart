@@ -13,7 +13,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final String _sessionId = "mob_session_${DateTime.now().millisecondsSinceEpoch}"; // Simple ID
-  
+
   final List<Map<String, dynamic>> _messages = [
     {
       'role': 'ai',
@@ -40,9 +40,9 @@ class _ChatScreenState extends State<ChatScreen> {
         'session_id': _sessionId,
         'provider': 'ollama' // or gemini
       });
-      
+
       String aiText = response['response'] ?? "I didn't get a response.";
-      
+
       if (mounted) {
         setState(() {
           _messages.add({'role': 'ai', 'content': aiText});
@@ -69,7 +69,7 @@ class _ChatScreenState extends State<ChatScreen> {
        // ApiClient().post('/assessment/log', ...);
     }
   }
-  
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -86,7 +86,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     // Theme Colors
     final primary = Theme.of(context).primaryColor;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Lumina AI Tutor", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -108,10 +108,10 @@ class _ChatScreenState extends State<ChatScreen> {
                      child: CircularProgressIndicator(color: primary),
                    ));
                 }
-                
+
                 final msg = _messages[index];
                 bool isUser = msg['role'] == 'user';
-                
+
                 return Align(
                   alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
@@ -122,7 +122,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       color: primary,
                       borderRadius: BorderRadius.circular(16).copyWith(bottomRight: Radius.circular(0)),
                     ) : null,
-                    child: isUser 
+                    child: isUser
                       ? Text(msg['content'], style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500))
                       : A2UIRenderer(content: msg['content'], onAction: _handleAction),
                   ),

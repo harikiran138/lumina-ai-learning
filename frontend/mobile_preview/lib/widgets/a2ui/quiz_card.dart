@@ -80,7 +80,7 @@ class _QuizCardState extends State<QuizCard> {
                 children: [
                   Text(widget.question, style: TextStyle(color: Colors.white70, fontSize: 14), maxLines: 1),
                   Text(
-                    isCorrect ? "Correct" : "Incorrect", 
+                    isCorrect ? "Correct" : "Incorrect",
                     style: TextStyle(color: isCorrect ? Colors.greenAccent : Colors.redAccent, fontSize: 12)
                   ),
                 ],
@@ -132,10 +132,10 @@ class _QuizCardState extends State<QuizCard> {
               ...List.generate(widget.options.length, (index) {
                 bool isSelected = _selected == index;
                 bool isCorrectInfo = index == widget.correctIndex;
-                
+
                 Color borderColor = Colors.white10;
                 Color bgColor = Colors.white.withOpacity(0.05);
-                
+
                 if (_isSubmitted) {
                   if (isCorrectInfo) {
                     borderColor = Colors.green;
@@ -180,7 +180,7 @@ class _QuizCardState extends State<QuizCard> {
                   ),
                 );
               }),
-              
+
               if (!_isSubmitted)
                 Padding(
                   padding: const EdgeInsets.only(top: 16.0),

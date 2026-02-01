@@ -30,10 +30,10 @@ class _ChatScreenState extends State<ChatScreen> {
     // Mock API Call - Replace with real http://10.0.2.2:8000 call
     // For now, simulating A2UI response logic
     await Future.delayed(Duration(seconds: 1));
-    
+
     String responseContent = "I can help with that.";
     String lower = text.toLowerCase();
-    
+
     if (lower.contains("quiz")) {
       responseContent = """Sure! Here is a quiz:
 ```a2ui
@@ -87,10 +87,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (index == _messages.length) {
                    return Center(child: CircularProgressIndicator(color: Color(0xFF00ADB5)));
                 }
-                
+
                 final msg = _messages[index];
                 bool isUser = msg['role'] == 'user';
-                
+
                 return Align(
                   alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
@@ -101,7 +101,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       color: Color(0xFF00ADB5),
                       borderRadius: BorderRadius.circular(16).copyWith(bottomRight: Radius.circular(0)),
                     ) : null, // AI messages handled by Renderer
-                    child: isUser 
+                    child: isUser
                       ? Text(msg['content'], style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500))
                       : A2UIRenderer(content: msg['content'], onAction: _handleAction),
                   ),
