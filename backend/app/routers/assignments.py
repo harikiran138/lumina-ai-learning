@@ -1,8 +1,7 @@
 from fastapi import APIRouter, HTTPException, Form, File, UploadFile, Depends
-from typing import List, Optional
+from typing import Optional
 from app.store.assignment_store import AssignmentStore
 from pydantic import BaseModel
-import shutil
 import os
 import uuid
 from .auth import get_current_user
@@ -37,7 +36,7 @@ async def create_assignment(
         raise HTTPException(status_code=403, detail="Only teachers can create assignments")
 
     try:
-        assignment = store.create_assignment(
+        assignment = await store.create_assignment(
             title, course_id, description, due_date, created_by=current_user["id"]
         )
         return {"status": "success", "assignment": assignment}
@@ -65,14 +64,11 @@ async def submit_assignment(
         file_path = storage_service.upload_file(file, file_name)
 
         # Create submission record
-        submission = store.submit_assignment(assignment_id, current_user["id"], file_path)
+        submission = await store.submit_assignment(assignment_id, current_user["id"], file_path)
         return {"status": "success", "submission": submission}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-from app.services.ocr_service import ocr_service
-from app.services.grader_service import grader_service
 
 # ... (existing imports)
 
@@ -83,14 +79,14 @@ async def grade_submission(assignment_id: str, submission_id: str):
     Grade a submission using AI.
     """
     # 1. Get Submission
-    submissions = store.get_submissions(assignment_id)
+    submissions = await store.get_submissions(assignment_id)
     submission = next((s for s in submissions if s["id"] == submission_id), None)
 
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
 
     # 2. Get Assignment for Rubric/Description
-    assignments_list = store.list_assignments()
+    assignments_list = await store.list_assignments()
     assignment = next((a for a in assignments_list if a["id"] == assignment_id), None)
 
     if not assignment:
@@ -126,7 +122,7 @@ async def update_submission_score(assignment_id: str, submission_id: str, data: 
     try:
         score = data.get("score")
         feedback = data.get("feedback")
-        store.update_submission_grade(submission_id, score, feedback)
+        await store.update_submission_grade(submission_id, score, feedback)
         return {"status": "success", "score": score, "feedback": feedback}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -137,17 +133,17 @@ async def list_assignments(course_id: Optional[str] = None, student_id: Optional
     """
     List assignment definitions with submission counts and student status.
     """
-    assignments = store.list_assignments(course_id)
+    assignments = await store.list_assignments(course_id)
     # Add submission count to each assignment
     results = []
     for a in assignments:
-        submissions = store.get_submissions(a["id"])
+        submissions = await store.get_submissions(a["id"])
         a_copy = a.copy()
         a_copy["submission_count"] = len(submissions)
 
         # Check if specific student has submitted
         if student_id:
-            user_submission = store.get_student_submission(a["id"], student_id)
+            user_submission = await store.get_student_submission(a["id"], student_id)
             if user_submission:
                 a_copy["user_submission"] = user_submission
 
@@ -160,13 +156,13 @@ async def get_assignment_submissions(assignment_id: str):
     """
     Get all submissions for a specific assignment.
     """
-    return store.get_submissions(assignment_id)
+    return await store.get_submissions(assignment_id)
 
 
 @router.get("/{assignment_id}/analytics")
 async def get_assignment_analytics(assignment_id: str):
     """Return basic analytics for an assignment (scores, counts, averages)."""
-    submissions = store.get_submissions(assignment_id)
+    submissions = await store.get_submissions(assignment_id)
     if not submissions:
         return {
             "assignment_id": assignment_id,
@@ -204,11 +200,11 @@ async def get_assignment_analytics(assignment_id: str):
 async def get_submission_report(assignment_id: str, submission_id: str):
     """Detailed report for a single submission (score, feedback, OCR text)."""
     # Get assignment and submission
-    assignment = store.get_assignment(assignment_id)
+    assignment = await store.get_assignment(assignment_id)
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
-    submissions = store.get_submissions(assignment_id)
+    submissions = await store.get_submissions(assignment_id)
     submission = next((s for s in submissions if s["id"] == submission_id), None)
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")

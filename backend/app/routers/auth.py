@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from typing import Optional
 from pydantic import BaseModel
 from datetime import timedelta
-from app.core.security import create_access_token, verify_password, get_password_hash
+from app.core.security import create_access_token, verify_password
 from app.core.config import settings
 from app.store.user_store import UserStore
 from app.dependencies import get_user_store
@@ -36,10 +35,10 @@ class UserResponse(BaseModel):
 async def register(user: UserCreate, user_store: UserStore = Depends(get_user_store)):
     try:
         # Check if user exists
-        if user_store.get_user_by_email(user.email):
+        if await user_store.get_user_by_email(user.email):
             raise HTTPException(status_code=400, detail="Email already registered")
 
-        new_user = user_store.create_user(
+        new_user = await user_store.create_user(
             email=user.email, password=user.password, full_name=user.full_name, role=user.role
         )
 
@@ -61,7 +60,9 @@ async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     user_store: UserStore = Depends(get_user_store),
 ):
-    user = user_store.get_user_by_email(form_data.username)  # username field is email in our case
+    user = await user_store.get_user_by_email(
+        form_data.username
+    )  # username field is email in our case
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -86,7 +87,7 @@ async def get_current_user(
     user_store: UserStore = Depends(get_user_store),
 ):
     try:
-        from jose import jwt, JWTError
+        from jose import jwt
 
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         email: str = payload.get("sub")
@@ -95,7 +96,7 @@ async def get_current_user(
     except Exception:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
 
-    user = user_store.get_user_by_email(email)
+    user = await user_store.get_user_by_email(email)
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
 

@@ -1,33 +1,8 @@
 import hashlib
-import json
-import os
-import time
-from typing import Dict, Set, List, Optional
 
-STATE_FILE = "data/tutor_state.json"
-
-
-class TutorSessionState:
-    def __init__(self, session_id: str, data: dict = None):
-        self.session_id = session_id
-        if data:
-            self.asked_hashes: Set[str] = set(data.get("asked_hashes", []))
-            self.asked_questions_preview: List[str] = data.get("asked_questions_preview", [])
-            self.last_activity: float = data.get("last_activity", time.time())
-            self.topic_coverage: Dict[str, int] = data.get("topic_coverage", {})
-        else:
-            self.asked_hashes: Set[str] = set()
-            self.asked_questions_preview: List[str] = []
-            self.last_activity: float = time.time()
-            self.topic_coverage: Dict[str, int] = {}
-
-    def to_dict(self):
-        return {
-            "asked_hashes": list(self.asked_hashes),
-            "asked_questions_preview": self.asked_questions_preview,
-            "last_activity": self.last_activity,
-            "topic_coverage": self.topic_coverage,
-        }
+from app.database.manager import DatabaseManager as db
+from app.database.models import TutorSession
+from datetime import datetime
 
 
 class TutorStateManager:
@@ -36,69 +11,73 @@ class TutorStateManager:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(TutorStateManager, cls).__new__(cls)
-            cls._instance.sessions = {}  # type: Dict[str, TutorSessionState]
-            cls._instance.load_state()
         return cls._instance
 
-    def load_state(self):
-        if os.path.exists(STATE_FILE):
-            try:
-                with open(STATE_FILE, "r") as f:
-                    data = json.load(f)
-                    for sid, sdata in data.items():
-                        self.sessions[sid] = TutorSessionState(sid, sdata)
-            except Exception as e:
-                print(f"Error loading tutor state: {e}")
+    @property
+    def collection(self):
+        return db.get_collection("tutor_sessions")
 
-    def save_state(self):
-        try:
-            os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
-            data = {sid: session.to_dict() for sid, session in self.sessions.items()}
-            with open(STATE_FILE, "w") as f:
-                json.dump(data, f)
-        except Exception as e:
-            print(f"Error saving tutor state: {e}")
+    async def get_session(self, session_id: str) -> dict:
+        if self.collection is None:
+            return {}
 
-    def get_session(self, session_id: str) -> TutorSessionState:
-        if session_id not in self.sessions:
-            self.sessions[session_id] = TutorSessionState(session_id)
-        self.sessions[session_id].last_activity = time.time()
-        return self.sessions[session_id]
+        doc = await self.collection.find_one({"session_id": session_id})
+        if not doc:
+            # Create a new session doc
+            new_session = TutorSession(session_id=session_id)
+            await self.collection.insert_one(new_session.model_dump(by_alias=True))
+            return new_session.model_dump()
+
+        return doc
 
     def _compute_hash(self, text: str) -> str:
         # Normalize: lower case and remove whitespace
         normalized = "".join(text.lower().split())
         return hashlib.sha256(normalized.encode()).hexdigest()
 
-    def add_question(self, session_id: str, question_text: str):
-        session = self.get_session(session_id)
-        q_hash = self._compute_hash(question_text)
-        session.asked_hashes.add(q_hash)
+    async def add_question(self, session_id: str, question_text: str):
+        if self.collection is None:
+            return
 
-        # Store a preview for context (e.g., "What is a Variable?")
-        # Keep list short (last 20 for better history)
+        q_hash = self._compute_hash(question_text)
         preview = question_text[:50] + "..." if len(question_text) > 50 else question_text
-        # Avoid duplicate previews visually
-        if preview not in session.asked_questions_preview:
-            session.asked_questions_preview.append(preview)
 
-        if len(session.asked_questions_preview) > 20:
-            session.asked_questions_preview.pop(0)
+        # Atomically update the session
+        # Use $addToSet for hashes to ensure uniqueness, and $push for preview if not exists
+        await self.collection.update_one(
+            {"session_id": session_id},
+            {
+                "$addToSet": {"asked_hashes": q_hash},
+                "$set": {
+                    "last_activity": datetime.utcnow().isoformat(),
+                    "updated_at": datetime.utcnow().isoformat(),
+                },
+            },
+        )
 
-        self.save_state()  # Persist on update
+        # Check if preview already in list before pushing to keep it simple or just use $addToSet
+        await self.collection.update_one(
+            {"session_id": session_id, "asked_questions_preview": {"$ne": preview}},
+            {
+                "$push": {
+                    "asked_questions_preview": {"$each": [preview], "$slice": -20}  # Keep last 20
+                }
+            },
+        )
 
-    def is_duplicate(self, session_id: str, question_text: str) -> bool:
-        session = self.get_session(session_id)
+    async def is_duplicate(self, session_id: str, question_text: str) -> bool:
+        doc = await self.get_session(session_id)
         q_hash = self._compute_hash(question_text)
-        return q_hash in session.asked_hashes
+        return q_hash in doc.get("asked_hashes", [])
 
-    def get_avoid_context(self, session_id: str) -> str:
-        session = self.get_session(session_id)
-        if not session.asked_questions_preview:
+    async def get_avoid_context(self, session_id: str) -> str:
+        doc = await self.get_session(session_id)
+        previews = doc.get("asked_questions_preview", [])
+        if not previews:
             return ""
 
         # Return a prompt-friendly string
-        return "\n".join([f"- {q}" for q in session.asked_questions_preview])
+        return "\n".join([f"- {q}" for q in previews])
 
 
 # Singleton accessor

@@ -66,7 +66,7 @@ export default function Sidebar({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        "fixed left-4 top-4 bottom-4 backdrop-blur-3xl bg-black/40 border border-white/10 shadow-[20px_0_40px_rgba(0,0,0,0.4)] z-50 rounded-3xl transition-all duration-500 ease-in-out lg:translate-x-0 lg:flex flex-col overflow-hidden",
+        "fixed left-4 top-4 bottom-4 glass-v2 border-white/5 shadow-premium z-50 transition-all duration-500 ease-in-out lg:translate-x-0 lg:flex flex-col overflow-hidden",
         isCollapsed && !isHovered ? "w-20" : "w-64",
         isOpen
           ? "translate-x-0 bg-black/95 w-64"
@@ -75,11 +75,14 @@ export default function Sidebar({
     >
       <div
         className={cn(
-          "flex items-center justify-between border-b border-white/10 shrink-0 transition-all duration-500",
+          "flex items-center justify-between border-b border-white/5 shrink-0 transition-all duration-500",
           isCollapsed && !isHovered ? "h-16 px-4 justify-center" : "h-20 px-6",
         )}
       >
-        <Link href="/" className="text-2xl font-bold flex items-center gap-2">
+        <Link
+          href="/"
+          className="text-2xl font-display font-bold flex items-center gap-2"
+        >
           <span className="gradient-text">
             {isCollapsed && !isHovered ? "L" : "Lumina"}
           </span>
@@ -97,13 +100,13 @@ export default function Sidebar({
         {/* Mobile Close Button */}
         <button
           onClick={onClose}
-          className="lg:hidden text-gray-400 hover:text-white"
+          className="lg:hidden text-gray-400 hover:text-white transition-colors"
         >
           <X className="w-6 h-6" />
         </button>
       </div>
 
-      <nav className="p-4 space-y-2 flex-1 overflow-y-auto hide-scrollbar">
+      <nav className="p-4 space-y-1.5 flex-1 overflow-y-auto hide-scrollbar">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -111,13 +114,13 @@ export default function Sidebar({
               key={item.name}
               href={item.href}
               suppressHydrationWarning
-              onClick={onClose} // Close sidebar on navigation on mobile
+              onClick={onClose}
               className={cn(
-                "flex items-center py-3 text-sm font-bold rounded-xl transition-all duration-300 relative group",
+                "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group",
                 isCollapsed && !isHovered ? "justify-center px-0" : "px-4",
                 isActive
-                  ? "bg-lumina-primary/20 text-lumina-primary shadow-[0_0_15px_rgba(255,215,0,0.1)] border border-lumina-primary/10"
-                  : "text-gray-400 hover:bg-white/5 hover:text-gray-200 hover:translate-x-1",
+                  ? "bg-lumina-primary/10 text-lumina-primary border border-lumina-primary/20 shadow-gold-glow"
+                  : "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
               )}
             >
               <item.icon
@@ -141,7 +144,7 @@ export default function Sidebar({
               </span>
 
               {isCollapsed && !isHovered && (
-                <div className="absolute left-full ml-4 px-2 py-1 bg-black/90 border border-white/10 rounded-md text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-[60]">
+                <div className="absolute left-full ml-4 px-3 py-1.5 bg-surface-950 border border-white/10 rounded-lg text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 translate-x-1 group-hover:translate-x-0 z-[60] shadow-premium">
                   {item.name}
                 </div>
               )}

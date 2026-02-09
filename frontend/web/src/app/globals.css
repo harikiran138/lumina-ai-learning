@@ -4,22 +4,32 @@
   --color-lumina-primary: #ffd700; /* Gold */
   --color-lumina-secondary: #e5c100; /* Darker Gold */
   --color-lumina-accent: #3b82f6; /* Blue Accent */
+  --color-lumina-academic: #1e3a8a; /* Deep Navy */
   --color-lumina-success: #10b981; /* Emerald */
   --color-lumina-warning: #f59e0b; /* Amber */
   --color-lumina-error: #ef4444; /* Red */
 
+  --color-surface-950: #02040a; /* Deep Black-Blue */
   --color-surface-900: #09090b; /* Zinc 950 */
   --color-surface-800: #18181b; /* Zinc 900 */
   --color-surface-700: #27272a; /* Zinc 800 */
 
   --font-sans: "Inter", system-ui, sans-serif;
   --font-display: "Outfit", system-ui, sans-serif;
+  --font-mono: "Fira Code", monospace;
+
+  --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.5);
+  --shadow-gold: 0 0 30px rgba(255, 215, 0, 0.1);
 }
 
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 255, 255, 255;
   --background-end-rgb: 240, 240, 240;
+
+  --glass-surface: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 24px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -32,11 +42,12 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: radial-gradient(circle at top center, #1a1a1a 0%, #000000 100%);
+  background: radial-gradient(circle at 50% 0%, #0a0a0f 0%, #020205 100%);
   background-attachment: fixed;
   min-height: 100vh;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 /* Premium Background Effects */
@@ -185,13 +196,37 @@ body::after {
     pointer-events: none;
   }
 
+  /* Academic 12-Column Grid System */
+  .academic-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
+  /* Refined Glassmorphism V2 */
   .glass-v2 {
-    @apply bg-white/[0.03] backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)];
+    background: var(--glass-surface);
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-premium);
+    border-radius: 1.5rem;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .glass-v2:hover {
-    @apply bg-white/[0.05] border-white/20;
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-4px);
+  }
+
+  .glass-v2-gold {
+    @apply glass-v2;
+    border-color: rgba(255, 215, 0, 0.1);
+  }
+
+  .glass-v2-gold:hover {
+    border-color: rgba(255, 215, 0, 0.3);
+    box-shadow: var(--shadow-gold);
   }
 
   .glow-border {
