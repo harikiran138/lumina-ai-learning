@@ -1,4 +1,6 @@
-import { Metadata } from "next";
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -8,158 +10,141 @@ import {
   Upload,
   PlusCircle,
   Bell,
-  ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
+import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
-export const metadata: Metadata = {
-  title: "Teacher Dashboard | Lumina",
-  description: "Manage your classes and students",
-};
+export default function TeacherDashboard() {
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    activeCourses: 0,
+    avgMastery: 0,
+    pendingGrading: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [assignments, setAssignments] = useState<any[]>([]);
 
-export const dynamic = "force-dynamic";
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await api.getDashboardData("teacher");
+        setStats({
+          totalStudents: data.totalStudents || 0,
+          activeCourses: data.activeCourses || 0,
+          avgMastery: data.avgMastery || 0,
+          pendingGrading: data.pendingGrading || 5,
+        });
 
-async function getTeacherStats() {
-  try {
-    // Use Firebase-backed Server Action for general data
-    const { getTeacherDashboard } = await import("@/app/actions/data");
-    const data = await getTeacherDashboard("teacher@lumina.com");
-
-    // Fetch Assessment Stats from FastAPI Backend
-    interface AssessmentStats {
-      avg_mastery: number;
-      total_students?: number;
-    }
-    let masteryData: AssessmentStats = { avg_mastery: 0 };
-    try {
-      const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-        }/api/assessment/stats/teacher`,
-        { cache: "no-store" },
-      );
-      if (res.ok) {
-        masteryData = await res.json();
+        // Use a public way to get API base or just hardcode if needed
+        const apiBase =
+          process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+        const assignmentsRes = await fetch(`${apiBase}/api/assignments/list`);
+        if (assignmentsRes.ok) {
+          setAssignments(await assignmentsRes.json());
+        }
+      } catch (e) {
+        console.error("Failed to fetch teacher data", e);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Failed to fetch assessment stats", err);
     }
+    fetchData();
+  }, []);
 
-    if (!data) {
-      return {
-        totalStudents: masteryData.total_students || 0,
-        activeCourses: 0,
-        avgMastery: Math.round(masteryData.avg_mastery || 0),
-        pendingGrading: 0,
-      };
-    }
-
-    return {
-      totalStudents: data.totalStudents || masteryData.total_students || 0,
-      activeCourses: data.activeCourses || 0,
-      avgMastery: Math.round(
-        masteryData.avg_mastery || (data.avgRating ? data.avgRating * 20 : 0),
-      ),
-      pendingGrading: 5,
-    };
-  } catch (e) {
-    console.error("Failed to fetch stats", e);
-    return {
-      totalStudents: 0,
-      activeCourses: 0,
-      avgMastery: 0,
-      pendingGrading: 0,
-    };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+      </div>
+    );
   }
-}
-
-export default async function TeacherDashboard() {
-  const stats = await getTeacherStats();
 
   return (
-    <>
-      <div className="mb-8 relative z-10">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-white">
-          Welcome back,{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
-            Teacher
-          </span>
-          !
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+      <div className="relative z-10">
+        <h1 className="text-5xl font-display font-bold mb-3 tracking-tight text-white">
+          Welcome back, <span className="gradient-text">Teacher</span>!
         </h1>
-        <p className="text-gray-400">
-          Here's what's happening in your classes today.
+        <p className="text-gray-400 text-xl font-light tracking-wide max-w-2xl">
+          Your command center for academic excellence and student growth.
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 relative z-10">
+      <DashboardGrid columns={4}>
         <StatCard
           icon={Users}
           color="blue"
-          label="Total Students"
+          title="Total Students"
           value={stats.totalStudents}
-          subtext="Active learners"
-          trend="+12% this month"
+          subtitle="Active learners"
+          trend={{ value: "+12% this month", isPositive: true }}
         />
         <StatCard
           icon={BookOpen}
-          color="amber"
-          label="Active Courses"
+          color="gold"
+          title="Active Courses"
           value={stats.activeCourses}
-          subtext="Courses managed"
+          subtitle="Courses managed"
         />
         <StatCard
           icon={BarChart2}
           color="green"
-          label="Avg Mastery"
+          title="Avg Mastery"
           value={`${stats.avgMastery}%`}
-          subtext="Class performance"
-          trend="+2.4% this week"
+          subtitle="Class performance"
+          trend={{ value: "+2.4% this week", isPositive: true }}
         />
         <StatCard
           icon={FileText}
           color="purple"
-          label="To Grade"
+          title="To Grade"
           value={stats.pendingGrading}
-          subtext="Pending assessments"
+          subtitle="Pending assessments"
         />
-      </div>
+      </DashboardGrid>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
         {/* Course List */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-            <div className="p-6 border-b border-white/10 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-white">Your Courses</h2>
+          <div className="glass-v2 overflow-hidden border-white/5">
+            <div className="p-8 border-b border-white/5 flex justify-between items-center group/header">
+              <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
+                <span className="w-1.5 h-8 bg-lumina-primary rounded-full shadow-gold-glow" />
+                Your Courses
+              </h2>
               <Link
                 href="/teacher/courses"
-                className="text-sm text-amber-500 hover:text-amber-400 font-medium"
+                className="text-sm text-lumina-primary hover:text-white font-bold transition-all duration-300 flex items-center gap-1 group-hover/header:translate-x-1"
               >
-                View All
+                View Catalog
+                <ArrowDownRight className="w-4 h-4 rotate-[-135deg]" />
               </Link>
             </div>
-            <div className="divide-y divide-white/10">
-              {/* Placeholder Course Items */}
+            <div className="divide-y divide-white/5">
               <CourseItem
                 name="Advanced Artificial Intelligence"
                 level="Graduate"
                 students={42}
                 status="Active"
-                image="https://placehold.co/600x400/2a2a2a/FFF?text=AI"
+                image="https://placehold.co/600x400/0a0a0a/FFF?text=AI"
               />
               <CourseItem
                 name="Introduction to Machine Learning"
                 level="Undergraduate"
                 students={128}
                 status="Active"
-                image="https://placehold.co/600x400/1a1a1a/FFF?text=ML"
+                image="https://placehold.co/600x400/0a0a0a/FFF?text=ML"
               />
               <CourseItem
                 name="Neural Networks Deep Dive"
                 level="Advanced"
                 students={15}
                 status="Draft"
-                image="https://placehold.co/600x400/333/FFF?text=NN"
+                image="https://placehold.co/600x400/0a0a0a/FFF?text=NN"
               />
             </div>
           </div>
@@ -167,12 +152,14 @@ export default async function TeacherDashboard() {
 
         {/* Quick Actions */}
         <div className="space-y-6">
-          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Quick Actions</h2>
-            <div className="space-y-3">
+          <div className="glass-v2 p-8 border-white/5">
+            <h2 className="text-2xl font-display font-bold text-white mb-6">
+              Quick Actions
+            </h2>
+            <div className="grid gap-4">
               <QuickActionButton
                 icon={Upload}
-                color="amber"
+                color="gold"
                 title="Upload Content"
                 subtitle="Add new materials"
               />
@@ -193,46 +180,30 @@ export default async function TeacherDashboard() {
         </div>
       </div>
       {/* Recent Assignments Section */}
-      <div className="mt-8 relative z-10">
-        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-white/10 flex justify-between items-center">
-            <h2 className="text-xl font-bold text-white">Recent Assignments</h2>
-            <a
+      <div className="relative z-10">
+        <div className="glass-v2 overflow-hidden border-white/5">
+          <div className="p-8 border-b border-white/5 flex justify-between items-center">
+            <h2 className="text-2xl font-display font-bold text-white">
+              Recent Assignments
+            </h2>
+            <Link
               href="/teacher/assignments/create"
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              className="px-5 py-2.5 bg-lumina-primary/10 text-lumina-primary border border-lumina-primary/20 text-sm font-bold rounded-xl hover:bg-lumina-primary/20 transition-all duration-300 flex items-center gap-2 shadow-gold-glow"
             >
-              <PlusCircle size={16} />
-              Create New
-            </a>
+              <PlusCircle size={18} />
+              New Assignment
+            </Link>
           </div>
-          <div className="p-6">
-            <AssignmentsList />
+          <div className="p-8">
+            <AssignmentsList assignments={assignments} />
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
-async function getAssignments() {
-  try {
-    const res = await fetch(
-      `${
-        process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-      }/api/assignments/list`,
-      { cache: "no-store" },
-    );
-    if (!res.ok) return [];
-    return await res.json();
-  } catch (e) {
-    console.error("Failed to fetch assignments", e);
-    return [];
-  }
-}
-
-async function AssignmentsList() {
-  const assignments = await getAssignments();
-
+function AssignmentsList({ assignments }: { assignments: any[] }) {
   if (assignments.length === 0) {
     return (
       <p className="text-gray-400 text-center py-4">
@@ -246,7 +217,7 @@ async function AssignmentsList() {
       <table className="w-full text-left">
         <thead>
           <tr className="text-gray-400 border-b border-white/10">
-            <th className="pb-3 text-sm font-medium">Title</th>
+            <th className="pb-3 text-sm font-medium pl-2">Title</th>
             <th className="pb-3 text-sm font-medium">Course</th>
             <th className="pb-3 text-sm font-medium">Due Date</th>
             <th className="pb-3 text-sm font-medium">Description</th>
@@ -280,70 +251,49 @@ async function AssignmentsList() {
   );
 }
 
-// Helper Components
-
-function StatCard({ icon: Icon, color, label, value, subtext, trend }: any) {
-  const colorClasses: any = {
-    blue: "bg-blue-900/30 text-blue-400",
-    amber: "bg-amber-900/30 text-amber-400",
-    green: "bg-green-900/30 text-green-400",
-    purple: "bg-purple-900/30 text-purple-400",
-  };
-
-  return (
-    <div className="backdrop-blur-xl bg-white/5 border border-white/10 p-6 rounded-2xl hover:border-amber-500/50 transition-colors">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-          <Icon size={24} />
-        </div>
-        {trend && (
-          <span className="text-xs font-semibold text-green-400 flex items-center">
-            <ArrowUpRight size={12} className="mr-1" />
-            {trend.split(" ")[0]}
-          </span>
-        )}
-      </div>
-      <h3 className="text-3xl font-bold text-white">{value}</h3>
-      <p className="text-sm text-gray-400 mt-2">{subtext}</p>
-    </div>
-  );
-}
-
 function CourseItem({ name, level, students, status, image }: any) {
   return (
-    <div className="p-6 hover:bg-white/5 transition-colors">
-      <div className="flex items-start justify-between">
-        <div className="flex gap-4">
-          <div className="w-16 h-16 rounded-lg bg-gray-800 overflow-hidden relative">
-            {/* Using a simple div placeholder if image fails, but logic implies valid src */}
+    <div className="p-8 hover:bg-white/[0.03] transition-all duration-500 group cursor-pointer relative overflow-hidden">
+      {/* Hover Indicator */}
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-lumina-primary transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500 shadow-gold-glow" />
+
+      <div className="flex items-start justify-between relative z-10">
+        <div className="flex gap-6">
+          <div className="w-20 h-20 rounded-2xl bg-surface-950 overflow-hidden relative shadow-premium group-hover:shadow-gold transition-all duration-500 border border-white/10 group-hover:border-lumina-primary/30">
             <img
               src={image}
               alt={name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 blur-[0.5px] group-hover:blur-0"
             />
           </div>
-          <div>
-            <h3 className="font-bold text-white mb-1">{name}</h3>
-            <p className="text-sm text-gray-400 mb-2">
-              {level} • {students} Students
+          <div className="flex flex-col justify-center">
+            <h3 className="text-lg font-display font-bold text-white mb-1.5 group-hover:text-lumina-primary transition-colors duration-300">
+              {name}
+            </h3>
+            <p className="text-sm text-gray-400 font-medium mb-3 flex items-center gap-2">
+              <span className="text-lumina-primary opacity-60">•</span> {level}
+              <span className="text-white/10 mx-1">|</span> {students} Students
+              Enrolled
             </p>
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-3">
               <span
-                className={`px-2 py-1 rounded-full ${
+                className={cn(
+                  "px-3 py-1 text-[10px] font-bold tracking-widest uppercase rounded-lg border transition-all duration-300",
                   status === "Active"
-                    ? "bg-green-900/30 text-green-400"
-                    : "bg-gray-800 text-gray-400"
-                }`}
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 group-hover:bg-emerald-500/20"
+                    : "bg-surface-950 text-gray-500 border-white/10",
+                )}
               >
                 {status}
               </span>
-              <span className="text-gray-500">•</span>
-              <span className="text-gray-500">Updated recently</span>
+              <span className="text-gray-600 text-[10px] font-medium tracking-tight">
+                System Managed • Sync Active
+              </span>
             </div>
           </div>
         </div>
         <button
-          className="p-2 text-gray-400 hover:text-amber-500 transition-colors"
+          className="p-3 text-gray-500 hover:text-lumina-primary hover:bg-lumina-primary/10 rounded-xl transition-all duration-300 group-hover:rotate-45"
           suppressHydrationWarning
         >
           <ArrowDownRight className="w-6 h-6" />
@@ -355,21 +305,31 @@ function CourseItem({ name, level, students, status, image }: any) {
 
 function QuickActionButton({ icon: Icon, color, title, subtitle }: any) {
   const colorClasses: any = {
-    blue: "bg-blue-900/30 text-blue-400",
-    amber: "bg-amber-900/30 text-amber-400",
-    purple: "bg-purple-900/30 text-purple-400",
+    blue: "text-blue-400 bg-blue-500/10 border-blue-500/20 shadow-blue-500/5",
+    gold: "text-lumina-primary bg-lumina-primary/10 border-lumina-primary/20 shadow-gold-glow/5",
+    purple:
+      "text-purple-400 bg-purple-500/10 border-purple-500/20 shadow-purple-500/5",
   };
   return (
     <button
-      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors text-left border border-transparent hover:border-amber-500/20"
+      className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/[0.04] transition-all duration-300 text-left border border-white/5 hover:border-white/10 group relative overflow-hidden"
       suppressHydrationWarning
     >
-      <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
-        <Icon size={20} />
+      <div
+        className={cn(
+          "p-3 rounded-xl border transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg",
+          colorClasses[color],
+        )}
+      >
+        <Icon size={22} />
       </div>
-      <div>
-        <p className="font-semibold text-white">{title}</p>
-        <p className="text-xs text-gray-400">{subtitle}</p>
+      <div className="relative z-10">
+        <p className="font-bold text-white group-hover:text-lumina-primary transition-colors duration-300">
+          {title}
+        </p>
+        <p className="text-xs text-gray-400/80 font-medium tracking-tight">
+          {subtitle}
+        </p>
       </div>
     </button>
   );

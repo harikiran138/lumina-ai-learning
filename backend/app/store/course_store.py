@@ -1,63 +1,64 @@
 from typing import List, Optional
 import uuid
-from .database import db
+from app.database.manager import db
+from app.database.models import Course
+from app.core.logging import structlog
+
+log = structlog.get_logger()
 
 
 class CourseStore:
     """
     MongoDB store for Courses.
+    All methods are ASYNC.
     """
 
     def __init__(self):
-        self._courses_collection = None
+        pass
 
     @property
     def courses_collection(self):
-        if self._courses_collection is None:
-            _db = db.get_db()
-            if _db is not None:
-                self._courses_collection = _db["courses"]
-            else:
-                from app.core.logging import structlog
-                from fastapi import HTTPException
+        return db.get_collection("courses")
 
-                log = structlog.get_logger()
-                log.error("mongodb_connection_missing", collection="courses")
-                raise HTTPException(status_code=503, detail="Database connection unavailable")
-        return self._courses_collection
-
-    def create_course(self, name: str, code: str, description: str, teacher_id: str) -> dict:
+    async def create_course(self, name: str, code: str, description: str, teacher_id: str) -> dict:
         collection = self.courses_collection
         if collection is None:
             raise Exception("Database not connected")
-        course = {
-            "id": str(uuid.uuid4()),
-            "name": name,
-            "code": code,
-            "description": description,
-            "teacher_id": teacher_id,
-        }
-        collection.insert_one(course)
-        course.pop("_id", None)
-        return course
 
-    def list_courses(self) -> List[dict]:
+        course = Course(name=name, code=code, description=description, teacher_id=teacher_id)
+
+        course_dict = course.model_dump(by_alias=True)
+        # Handle uuid mapping if needed or just use str
+        if "id" not in course_dict and "_id" not in course_dict:
+            course_dict["id"] = str(uuid.uuid4())
+
+        await collection.insert_one(course_dict)
+
+        # Return dict without _id
+        if "_id" in course_dict:
+            course_dict["id"] = str(course_dict.pop("_id"))
+        return course_dict
+
+    async def list_courses(self) -> List[dict]:
         collection = self.courses_collection
         if collection is None:
             return []
+
         cursor = collection.find({})
-        courses = []
-        for doc in cursor:
-            doc.pop("_id", None)
-            courses.append(doc)
+        courses = await cursor.to_list(length=100)
+        for doc in courses:
+            if "_id" in doc:
+                doc["id"] = str(doc.pop("_id"))
         return courses
 
-    def get_course_by_code(self, code: str) -> Optional[dict]:
+    async def get_course_by_code(self, code: str) -> Optional[dict]:
         collection = self.courses_collection
         if collection is None:
             return None
-        doc = collection.find_one({"code": code})
+
+        doc = await collection.find_one({"code": code})
         if doc:
-            doc.pop("_id", None)
+            if "_id" in doc:
+                doc["id"] = str(doc.pop("_id"))
             return doc
         return None

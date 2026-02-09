@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from app.assessment.models.schemas import (
-    QuestionRequest,
     Question,
     AssessmentSession,
     SubmitAnswerRequest,
@@ -55,35 +55,10 @@ async def get_teacher_stats():
     """
     Get aggregate statistics for the teacher dashboard.
     """
-    from app.database.manager import db
+    from app.store.analytics_store import AnalyticsStore
 
-    if not db.db:
-        return {"avg_mastery": 0, "total_students": 0, "error": "Database not connected"}
-
-    try:
-        # Simplified approach: Just get all sessions and avg in python for MVP
-        cursor = db.get_collection("assessment_sessions").find({})
-
-        total_mastery = 0
-        count = 0
-
-        async for session in cursor:
-            mastery_map = session.get("mastery_state", {}).get("concept_mastery", {})
-            if mastery_map:
-                avg_session = sum(mastery_map.values()) / len(mastery_map)
-                total_mastery += avg_session
-                count += 1
-
-        if count == 0:
-            return {"avg_mastery": 0, "total_students": 0}
-
-        return {
-            "avg_mastery": (total_mastery / count) * 100,  # Return percentage
-            "total_students": count,
-        }
-    except Exception as e:
-        print(f"Error fetching teacher stats: {e}")
-        return {"avg_mastery": 0, "total_students": 0}
+    store = AnalyticsStore()
+    return await store.get_teacher_dashboard_stats()
 
 
 # -----------------------------------------------------------
@@ -95,7 +70,7 @@ async def start_assessment(request: StartAssessmentRequest):
     Starts a new adaptive assessment session.
     """
     try:
-        session = session_manager.create_session(
+        session = await session_manager.create_session(
             student_id=request.student_id, topic=request.topic, num_questions=request.num_questions
         )
         return session
@@ -109,7 +84,7 @@ async def complete_assessment(session_id: str):
     Manually completes an assessment session.
     """
     try:
-        session = session_manager.complete_session(session_id)
+        session = await session_manager.complete_session(session_id)
         return session
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -124,10 +99,10 @@ async def get_next_question(session_id: str):
     Returns null if the assessment is complete.
     """
     try:
-        question = session_manager.get_next_question(session_id)
+        question = await session_manager.get_next_question(session_id)
         if not question:
             # Check if session is actually complete or if it's an error
-            session = session_manager.get_session(session_id)
+            session = await session_manager.get_session(session_id)
             if session and session.is_completed:
                 return None  # Assessment complete
             elif not session:
@@ -149,7 +124,7 @@ async def submit_answer(request: SubmitAnswerRequest):
     Validity is checked against the session history on server side.
     """
     try:
-        session = session_manager.submit_answer(
+        session = await session_manager.submit_answer(
             session_id=request.session_id,
             question_id=request.question_id,
             selected_option_id=request.selected_option_id,
@@ -164,7 +139,7 @@ async def submit_answer(request: SubmitAnswerRequest):
 
 @router.get("/result/{session_id}", response_model=AssessmentResult)
 async def get_result(session_id: str):
-    session = session_manager.get_session(session_id)
+    session = await session_manager.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -178,9 +153,6 @@ async def get_result(session_id: str):
         final_ability_estimate=session.current_difficulty,
         message="Assessment Completed",
     )
-
-
-from pydantic import BaseModel
 
 
 class QuickLogRequest(BaseModel):
@@ -215,7 +187,7 @@ async def get_report(session_id: str):
     This uses the existing scalar-difficulty engine and response history to
     derive an overall accuracy and a coarse performance level.
     """
-    session = session_manager.get_session(session_id)
+    session = await session_manager.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 

@@ -161,23 +161,26 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
       {/* Welcome Section */}
-      <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+      <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-bold mb-2 text-white">
+          <h1 className="text-5xl font-display font-bold mb-3 tracking-tight text-white">
             Welcome back,{" "}
             <span className="gradient-text">
               {dashboardData?.studentName || "Scholar"}
             </span>
           </h1>
-          <p className="text-gray-400 text-lg">
-            Ready to continue your learning journey?
+          <p className="text-gray-400 text-xl font-light tracking-wide max-w-2xl">
+            Where curiosity meets intelligence. Ready to resume your mastery?
           </p>
         </div>
-        <div className="flex gap-3">
-          <Link href="/student/course_explorer" className="glass-button">
-            Explore Courses
+        <div className="flex gap-4">
+          <Link
+            href="/student/course_explorer"
+            className="px-6 py-3 bg-lumina-primary/10 text-lumina-primary border border-lumina-primary/20 text-sm font-bold rounded-2xl hover:bg-lumina-primary/20 transition-all duration-300 shadow-gold-glow"
+          >
+            Explore Catalog
           </Link>
         </div>
       </div>
@@ -216,20 +219,20 @@ export default function StudentDashboard() {
       </DashboardGrid>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
         {/* Learning Activity Chart */}
-        <div className="lg:col-span-2 glass-card p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Zap className="w-5 h-5 text-lumina-primary" />
-              Learning Activity
+        <div className="lg:col-span-2 glass-v2 border-white/5">
+          <div className="p-8 border-b border-white/5 flex justify-between items-center">
+            <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
+              <span className="w-1.5 h-8 bg-lumina-primary rounded-full shadow-gold-glow" />
+              Activity Pulse
             </h2>
-            <select className="bg-surface-900 border border-white/10 rounded-lg px-3 py-1 text-xs text-gray-400 focus:outline-none">
+            <select className="bg-surface-950 border border-white/10 rounded-xl px-4 py-1.5 text-xs text-gray-400 focus:outline-none focus:ring-1 focus:ring-lumina-primary/30 transition-all">
               <option>Last 7 Days</option>
               <option>Last 30 Days</option>
             </select>
           </div>
-          <div className="h-80 w-full">
+          <div className="p-8 h-80 w-full">
             <Line
               data={progressData}
               options={{
@@ -238,25 +241,35 @@ export default function StudentDashboard() {
                 scales: {
                   y: {
                     beginAtZero: true,
-                    grid: { color: "rgba(255, 255, 255, 0.05)" },
-                    ticks: { color: "rgba(255, 255, 255, 0.4)" },
+                    grid: { color: "rgba(255, 255, 255, 0.03)" },
+                    ticks: {
+                      color: "rgba(255, 255, 255, 0.3)",
+                      font: { size: 10 },
+                    },
                   },
                   x: {
                     grid: { display: false },
-                    ticks: { color: "rgba(255, 255, 255, 0.4)" },
+                    ticks: {
+                      color: "rgba(255, 255, 255, 0.3)",
+                      font: { size: 10 },
+                    },
                   },
                 },
                 plugins: {
                   legend: { display: false },
                   tooltip: {
-                    backgroundColor: "#18181b",
+                    backgroundColor: "rgba(10, 10, 10, 0.95)",
                     titleColor: "#FFD700",
                     bodyColor: "#fff",
-                    borderColor: "rgba(255, 255, 255, 0.1)",
+                    borderColor: "rgba(255, 215, 0, 0.2)",
                     borderWidth: 1,
                     padding: 12,
-                    cornerRadius: 8,
+                    cornerRadius: 12,
                     displayColors: false,
+                    titleFont: {
+                      family: "var(--font-display)",
+                      weight: "bold",
+                    },
                   },
                 },
               }}
@@ -266,41 +279,51 @@ export default function StudentDashboard() {
 
         {/* Quick Actions & Status */}
         <div className="space-y-6">
-          <div className="glass-card p-6">
-            <h2 className="text-xl font-bold mb-4 text-white">Quick Actions</h2>
-            <div className="space-y-3">
+          <div className="glass-v2 p-8 border-white/5">
+            <h2 className="text-2xl font-display font-bold text-white mb-6">
+              Quick Actions
+            </h2>
+            <div className="grid gap-4">
               <Link
                 href="/student/ai_tutor"
-                className="flex items-center gap-4 p-4 rounded-xl bg-surface-900/50 hover:bg-surface-900/80 hover:border-lumina-primary/30 border border-transparent transition-all group"
+                className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-lumina-primary/30 transition-all group"
               >
-                <div className="w-10 h-10 rounded-lg bg-lumina-primary/10 flex items-center justify-center text-lumina-primary group-hover:scale-110 transition-transform">
-                  <Bot className="w-5 h-5" />
+                <div className="w-12 h-12 rounded-xl bg-lumina-primary/10 flex items-center justify-center text-lumina-primary group-hover:scale-110 transition-all duration-500 shadow-gold-glow/5 group-hover:shadow-gold-glow/20">
+                  <Bot className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="font-bold text-white">Ask AI Tutor</p>
-                  <p className="text-xs text-gray-400">Get instant help</p>
+                  <p className="font-bold text-white group-hover:text-lumina-primary transition-colors">
+                    AI Tutor
+                  </p>
+                  <p className="text-xs text-gray-400 font-medium tracking-tight">
+                    Personalized guidance
+                  </p>
                 </div>
               </Link>
 
               <Link
                 href="/student/assessment"
-                className="flex items-center gap-4 p-4 rounded-xl bg-surface-900/50 hover:bg-surface-900/80 hover:border-purple-500/30 border border-transparent transition-all group"
+                className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-purple-500/30 transition-all group"
               >
-                <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
-                  <PenTool className="w-5 h-5" />
+                <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-all duration-500 shadow-purple-500/5 group-hover:shadow-purple-500/20">
+                  <PenTool className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="font-bold text-white">Take Quiz</p>
-                  <p className="text-xs text-gray-400">Test your knowledge</p>
+                  <p className="font-bold text-white group-hover:text-purple-400 transition-colors">
+                    Assessments
+                  </p>
+                  <p className="text-xs text-gray-400 font-medium tracking-tight">
+                    Validate your knowledge
+                  </p>
                 </div>
               </Link>
             </div>
           </div>
 
-          <div className="glass-card p-6">
-            <h3 className="text-lg font-semibold mb-4 text-white flex items-center gap-2">
-              <PieChartIcon className="w-5 h-5 text-gray-400" />
-              Course Progress
+          <div className="glass-v2 p-8 border-white/5 flex flex-col justify-center">
+            <h3 className="text-xl font-display font-bold mb-6 text-white flex items-center gap-3">
+              <Star className="w-5 h-5 text-lumina-primary" />
+              Progress
             </h3>
             <div className="h-48 relative">
               <Pie
@@ -312,9 +335,15 @@ export default function StudentDashboard() {
                     legend: {
                       position: "right",
                       labels: {
-                        color: "rgba(255, 255, 255, 0.7)",
+                        color: "rgba(255, 255, 255, 0.5)",
                         usePointStyle: true,
-                        font: { size: 10 },
+                        pointStyle: "circle",
+                        padding: 15,
+                        font: {
+                          size: 10,
+                          weight: "bold",
+                          family: "var(--font-mono)",
+                        },
                       },
                     },
                   },
@@ -345,59 +374,59 @@ export default function StudentDashboard() {
             enrolledCourses.slice(0, 3).map((course: any) => (
               <div
                 key={course.id}
-                className="glass-card group relative overflow-hidden flex flex-col h-full"
+                className="glass-v2 group relative overflow-hidden flex flex-col h-full border-white/5 hover:border-lumina-primary/30 transition-all duration-500"
               >
-                <div className="h-32 bg-surface-900/50 relative overflow-hidden p-6 flex flex-col justify-end">
-                  <div className="absolute top-0 right-0 p-4 opacity-50">
-                    <BookOpen className="w-24 h-24 text-gray-800 transform rotate-12 translate-x-8 -translate-y-8" />
+                <div className="h-40 bg-surface-950/40 relative overflow-hidden p-8 flex flex-col justify-end border-b border-white/5">
+                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-700">
+                    <BookOpen className="w-32 h-32 text-white transform rotate-12 translate-x-10 -translate-y-10" />
                   </div>
                   <div className="relative z-10">
-                    <span className="text-xs font-bold text-lumina-primary uppercase tracking-wider bg-black/40 backdrop-blur-sm px-2 py-1 rounded mb-2 inline-block">
+                    <span className="text-[10px] font-bold text-lumina-primary uppercase tracking-[0.2em] bg-white/[0.03] backdrop-blur-md px-3 py-1 rounded-lg border border-white/5 mb-3 inline-block">
                       {course.subject || "Course"}
                     </span>
-                    <h3 className="font-bold text-xl text-white line-clamp-1 group-hover:text-lumina-primary transition-colors">
+                    <h3 className="font-display font-bold text-2xl text-white line-clamp-1 group-hover:text-lumina-primary transition-colors duration-300">
                       {course.name}
                     </h3>
                   </div>
                 </div>
 
-                <div className="p-6 pt-4 flex-1 flex flex-col">
-                  <p className="text-sm text-gray-400 mb-6 line-clamp-2 flex-1">
+                <div className="p-8 flex-1 flex flex-col">
+                  <p className="text-sm text-gray-400 mb-8 line-clamp-2 flex-1 font-light leading-relaxed">
                     {course.description}
                   </p>
 
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div>
-                      <div className="flex justify-between text-xs mb-2">
-                        <span className="text-gray-400">Progress</span>
-                        <span className="text-white font-mono">
+                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-2.5">
+                        <span className="text-gray-500">Mastery Progress</span>
+                        <span className="text-lumina-primary font-mono">
                           {course.progress || 0}%
                         </span>
                       </div>
-                      <div className="w-full bg-surface-900 rounded-full h-1.5 overflow-hidden">
+                      <div className="w-full bg-white/[0.03] rounded-full h-1.5 overflow-hidden border border-white/5">
                         <div
-                          className="bg-lumina-primary h-full rounded-full"
+                          className="bg-gradient-to-r from-lumina-primary to-amber-400 h-full rounded-full shadow-gold-glow"
                           style={{ width: `${course.progress || 0}%` }}
                         ></div>
                       </div>
                     </div>
 
-                    <div className="flex gap-4 pt-4 border-t border-white/5">
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <Target className="w-4 h-4 text-purple-400" />
-                        {course.mastery || 0}% Mastery
+                    <div className="flex gap-6 py-4 border-t border-white/5">
+                      <div className="flex items-center gap-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-tight">
+                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                        {course.mastery || 0}% Rank
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <Flame className="w-4 h-4 text-orange-400" />
-                        {course.streak || 0} Day Streak
+                      <div className="flex items-center gap-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-tight">
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
+                        {course.streak || 0} Streak
                       </div>
                     </div>
 
                     <Link
                       href={`/student/courses/${course.id}`}
-                      className="w-full mt-4 glass-button-secondary text-center block group-hover:border-lumina-primary/50 group-hover:text-lumina-primary transition-all"
+                      className="w-full h-12 flex items-center justify-center rounded-2xl bg-white/[0.03] border border-white/5 text-sm font-bold text-white hover:bg-lumina-primary hover:text-black hover:border-lumina-primary transition-all duration-300 group/btn"
                     >
-                      Continue
+                      Continue Mastery
                     </Link>
                   </div>
                 </div>
@@ -421,21 +450,21 @@ export default function StudentDashboard() {
       </div>
 
       {/* Achievements Section */}
-      <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-lumina-primary" />
-            Recent Achievements
+      <div className="glass-v2 p-8 border-white/5 relative overflow-hidden">
+        <div className="flex items-center justify-between mb-8 relative z-10">
+          <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
+            <Trophy className="w-6 h-6 text-lumina-primary shadow-gold-glow/20" />
+            Achievements
           </h2>
           <Link
             href="/student/achievements"
-            className="text-xs text-gray-400 hover:text-white"
+            className="text-[10px] font-bold text-gray-400 hover:text-lumina-primary uppercase tracking-widest transition-colors"
           >
-            View All
+            View Hall of Fame
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 relative z-10">
           {dashboardData?.achievements?.length > 0 ? (
             dashboardData.achievements.map((ach: any, i: number) => {
               const Icon =
@@ -448,32 +477,35 @@ export default function StudentDashboard() {
                 <div
                   key={i}
                   className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-xl border transition-all text-center",
+                    "flex flex-col items-center justify-center p-6 rounded-2xl border transition-all duration-500 overflow-hidden group/ach",
                     ach.unlocked
-                      ? "bg-lumina-primary/5 border-lumina-primary/20"
-                      : "bg-surface-900/50 border-transparent opacity-50 grayscale",
+                      ? "bg-white/[0.04] border-lumina-primary/20 hover:border-lumina-primary/50 shadow-premium"
+                      : "bg-black/20 border-white/5 opacity-40 grayscale",
                   )}
                 >
                   <div
                     className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center mb-3 shadow-lg",
+                      "w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-all duration-500 group-hover/ach:scale-110",
                       ach.unlocked
-                        ? "bg-lumina-primary text-black"
-                        : "bg-gray-800 text-gray-500",
+                        ? "bg-lumina-primary text-black shadow-gold-glow"
+                        : "bg-surface-900 text-gray-500",
                     )}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-6 h-6" />
                   </div>
-                  <span className="text-xs font-bold text-white line-clamp-1">
+                  <span className="text-[10px] font-bold text-white uppercase tracking-tighter line-clamp-1">
                     {ach.title}
                   </span>
                 </div>
               );
             })
           ) : (
-            <p className="col-span-full text-center text-gray-500 text-sm py-4">
-              No achievements unlocked yet. Keep learning!
-            </p>
+            <div className="col-span-full py-8 text-center bg-white/[0.01] rounded-2xl border border-dashed border-white/5">
+              <p className="text-sm text-gray-500 font-light">
+                Your legacy begins here. Complete your first lesson to unlock
+                achievements.
+              </p>
+            </div>
           )}
         </div>
       </div>

@@ -19,7 +19,9 @@ export function DashboardGrid({
   };
 
   return (
-    <div className={cn("grid gap-6", gridCols[columns], className)}>
+    <div
+      className={cn("grid gap-6 auto-rows-fr", gridCols[columns], className)}
+    >
       {children}
     </div>
   );

@@ -3,7 +3,7 @@
 import { Send, Paperclip, Mic, Sparkles, Bot, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef } from "react";
-import { A2UIRenderer } from "@/components/advanced/A2UIRenderer";
+import { A2UIRendererV2 } from "@/components/a2ui/A2UIRendererV2";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Message {
@@ -139,11 +139,7 @@ export function TutorConversation({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="chat-bubble-ai text-sm leading-relaxed glass-panel !bg-surface-900/40 !border-white/5 shadow-none">
-                      <A2UIRenderer
-                        content={msg.text}
-                        onAction={onAction}
-                        isUser={false}
-                      />
+                      <A2UIRendererV2 content={msg.text} />
                     </div>
                   </div>
                 </div>

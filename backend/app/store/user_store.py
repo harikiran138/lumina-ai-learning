@@ -1,39 +1,38 @@
-from datetime import datetime
 from typing import Optional
-import uuid
-from .database import db
+from app.database.manager import db
+from app.database.models import User
 from app.core.security import get_password_hash, verify_password
+from app.core.logging import structlog
+
+log = structlog.get_logger()
 
 
 class UserStore:
     """
-    MongoDB store for Users.
+    MongoDB store for Users using Pydantic models.
     """
 
     def __init__(self):
-        self._users_collection = None
+        pass
 
     @property
     def users_collection(self):
-        if self._users_collection is None:
-            _db = db.get_db()
-            if _db is not None:
-                self._users_collection = _db["users"]
-                try:
-                    self._users_collection.create_index("email", unique=True)
-                except Exception as e:
-                    from app.core.logging import structlog
+        collection = db.get_collection("users")
+        if collection is None:
+            # Log only once or handle gracefully?
+            # We'll log error but return None, caller must handle.
+            log.error("mongodb_connection_missing", collection="users")
+            return None
+        return collection
 
-                    log = structlog.get_logger()
-                    log.error("index_creation_failed", error=str(e), collection="users")
-            else:
-                from app.core.logging import structlog
-                from fastapi import HTTPException
-
-                log = structlog.get_logger()
-                log.error("mongodb_connection_missing", collection="users")
-                raise HTTPException(status_code=503, detail="Database connection unavailable")
-        return self._users_collection
+    async def ensure_indexes(self):
+        """
+        Create necessary indexes.
+        Should be called on startup or lazily.
+        """
+        collection = self.users_collection
+        if collection:
+            await collection.create_index("email", unique=True)
 
     def verify_password(self, plain_password, hashed_password):
         return verify_password(plain_password, hashed_password)
@@ -41,48 +40,55 @@ class UserStore:
     def get_password_hash(self, password):
         return get_password_hash(password)
 
-    def create_user(self, email: str, password: str, full_name: str, role: str = "student") -> dict:
+    async def create_user(
+        self, email: str, password: str, full_name: str, role: str = "student"
+    ) -> dict:
         collection = self.users_collection
         if collection is None:
             raise Exception("Database not connected")
 
         hashed_password = self.get_password_hash(password)
-        # ... (rest is same, but I need to include it or rely on replace block matching)
-        user = {
-            "id": str(uuid.uuid4()),
-            "email": email,
-            "hashed_password": hashed_password,
-            "full_name": full_name,
-            "role": role,
-            "created_at": datetime.now().isoformat(),
-        }
+
+        # Create Pydantic Model
+        user_model = User(
+            email=email, hashed_password=hashed_password, full_name=full_name, role=role
+        )
+
+        user_dict = user_model.model_dump(by_alias=True)
+
         try:
-            collection.insert_one(user)
-            user.pop("_id", None)
-            user.pop("hashed_password", None)
-            return user
+            await collection.insert_one(user_dict)
+
+            # Return dict without internal fields for API response
+            user_response = user_dict.copy()
+            user_response["id"] = user_response.pop("_id")  # Map _id to id
+            user_response.pop("hashed_password", None)
+            return user_response
+
         except Exception as e:
-            # Handle duplicate email likely
             if "duplicate key error" in str(e):
                 raise Exception("Email already registered")
+            log.error("create_user_failed", error=str(e))
             raise e
 
-    def get_user_by_email(self, email: str) -> Optional[dict]:
+    async def get_user_by_email(self, email: str) -> Optional[dict]:
         collection = self.users_collection
         if collection is None:
             return None
-        doc = collection.find_one({"email": email})
+
+        doc = await collection.find_one({"email": email})
         if doc:
-            doc.pop("_id", None)
+            doc["id"] = doc.pop("_id")
             return doc
         return None
 
-    def get_user_by_id(self, user_id: str) -> Optional[dict]:
+    async def get_user_by_id(self, user_id: str) -> Optional[dict]:
         collection = self.users_collection
         if collection is None:
             return None
-        doc = collection.find_one({"id": user_id})
+
+        doc = await collection.find_one({"_id": user_id})
         if doc:
-            doc.pop("_id", None)
+            doc["id"] = doc.pop("_id")
             return doc
         return None
