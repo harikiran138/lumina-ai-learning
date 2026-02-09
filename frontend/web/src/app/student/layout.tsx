@@ -4,6 +4,8 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import TopNav from "@/components/dashboard/TopNav";
 import { BGPattern } from "@/components/ui/BGPattern";
 import { useState } from "react";
+import { ChevronLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function StudentLayout({
   children,
@@ -11,6 +13,7 @@ export default function StudentLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-black text-gray-100">
@@ -21,7 +24,12 @@ export default function StudentLayout({
         className="fixed inset-0 z-0 pointer-events-none"
       />
 
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+      />
 
       <div className="relative z-10">
         <TopNav onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
@@ -34,7 +42,12 @@ export default function StudentLayout({
           />
         )}
 
-        <main className="lg:ml-64 pt-16 min-h-screen transition-all duration-300">
+        <main
+          className={cn(
+            "pt-16 min-h-screen transition-all duration-300",
+            isCollapsed ? "lg:ml-24" : "lg:ml-72",
+          )}
+        >
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {children}
           </div>

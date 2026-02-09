@@ -34,7 +34,7 @@ Lumina-Platform/
 │
 ├── frontend/                       # 🖥️ Client Applications
 │   ├── web/                        # Next.js Web App (PWA)
-│   ├── mobile/                     # React Native App (Offline-First)
+│   ├── flutter_app/                # Flutter App (Offline-First)
 │   └── desktop/                    # Electron App (Lab Integration)
 │
 ├── data/                           # 🗄️ Database Schemas & Seeds
