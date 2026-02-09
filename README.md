@@ -172,7 +172,7 @@ Current educational technology fails learners, educators, and institutions acros
         │                           │                           │
 ┌───────▼────────┐        ┌────────▼────────┐       ┌─────────▼────────┐
 │   Web Client   │        │  Mobile Client  │       │  Desktop Client  │
-│   (React PWA)  │        │   (React Native)│       │    (Electron)    │
+│   (React PWA)  │        │     (Flutter)   │       │    (Electron)    │
 └────────────────┘        └─────────────────┘       └──────────────────┘
         │                           │                           │
         └───────────────────────────┼───────────────────────────┘
@@ -397,7 +397,7 @@ Web Application:
 Mobile Application:
   Framework: Flutter 3.x -- [Primary Mobile Experience]
   Features: A2UI, Offline Support
-  Run: "flutter run"
+  Run: "cd frontend/flutter_app && flutter run"
 ```
 
 Desktop Application:
@@ -579,6 +579,9 @@ cp .env.example .env
 # Edit configuration (API keys, database credentials, etc.)
 nano .env
 
+# Restore Docker Compose from backup if needed
+# cp docker-compose.yml.backup docker-compose.yml
+
 # Start all services
 docker-compose up -d
 
@@ -597,7 +600,10 @@ docker-compose exec ai-service python download_models.py
 # Admin Panel: http://localhost:8000/admin
 ```
 
-### Production Installation (Kubernetes)
+### Production Installation (Kubernetes) [Planned]
+
+> [!NOTE]
+> Kubernetes deployment artifacts are currently in development. The `infrastructure/` directory is planned for future release.
 
 ```bash
 # Install with Helm
@@ -1215,7 +1221,7 @@ GPU Utilization                 | >80%            | 87%     |
 -  VR/AR content support
 -  Advanced gamification (badges, leaderboards)
 -  Peer learning AI matchmaking
--  Mobile app (React Native)
+-  Mobile app (Flutter)
 -  Voice interaction (Whisper integration)
 -  Jupyter notebook integration
 -  Enhanced accessibility (WCAG 2.2 AAA)
@@ -1282,7 +1288,7 @@ docker-compose -f docker-compose.dev.yml up
 - Backend development (Python/FastAPI)
 - Frontend development (React/Next.js)
 - DevOps & infrastructure (Kubernetes/Terraform)
-- Mobile development (React Native)
+- Mobile development (Flutter)
 
 ** AI/ML**
 - Model fine-tuning and optimization
@@ -1319,6 +1325,7 @@ We are committed to providing a welcoming and inclusive environment. Please read
 ### Core Documentation
 - [Installation Guide](./docs/INSTALL.md)
 - [Architecture Overview](./docs/ARCHITECTURE.md)
+- [Project Structure](./PROJECT_STRUCTURE.md)
 - [API Reference](./docs/API.md)
 - [Configuration Guide](./docs/CONFIGURATION.md)
 - [Deployment Guide](./docs/DEPLOYMENT.md)

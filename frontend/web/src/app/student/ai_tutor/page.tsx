@@ -4,24 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { api } from "@/lib/api";
 import { processMessage } from "@/lib/ai-tutor/router"; // Integrated Router
 import { CreateMLCEngine, MLCEngine } from "@mlc-ai/web-llm"; // WebLLM
-import {
-  Send,
-  Bot,
-  User,
-  Sparkles,
-  History,
-  FileText,
-  Plus,
-  Copy,
-  Loader2,
-  Cpu,
-  Globe,
-  Cloud,
-  SidebarClose,
-  SidebarOpen,
-  Menu,
-} from "lucide-react";
+import { Sparkles, History, Bot, Cloud, Cpu, Menu } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { A2UIRenderer } from "@/components/advanced/A2UIRenderer";
+import { AITutorChat } from "@/components/ai/AITutorChat";
+import { AITutorSidebar } from "@/components/ai/AITutorSidebar";
 
 // Switched to q4f16_1 for better memory stability
 const SELECTED_MODEL = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
@@ -785,300 +772,104 @@ IMPORTANT RULES FOR A2UI:
   };
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] gap-6">
-      {/* Sidebar */}
-      <div
-        className={`
-                ${
-                  isSidebarOpen
-                    ? "w-80 translate-x-0"
-                    : "w-0 -translate-x-full opacity-0 pointer-events-none"
-                }
-                glass-card flex flex-col transition-all duration-300 ease-in-out absolute lg:relative z-20 h-full bg-[#0a0a0f]/95 backdrop-blur-xl lg:bg-transparent
-            `}
-      >
-        <div className="p-4 border-b border-white/10 flex items-center justify-between">
-          <h2 className="text-white font-semibold flex items-center gap-2">
-            <History className="w-5 h-5 text-lumina-primary" />
-            Chat History
-          </h2>
-          <div className="flex gap-2">
-            <button
-              onClick={startNewChat}
-              className="p-1.5 hover:bg-white/10 rounded-lg text-lumina-primary transition-colors"
-              title="New Chat"
-              aria-label="New Chat"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setIsSidebarOpen(false)}
-              className="lg:hidden p-1.5 hover:bg-white/10 rounded-lg text-gray-400"
-              aria-label="Close Sidebar"
-            >
-              <SidebarClose className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <div className="space-y-2">
-            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">
-              Previous Chats
-            </p>
-            {Object.entries(sessions)
-              .reverse()
-              .map(([sId, msgs]) => {
-                if (msgs.length === 0) return null;
-                const isActive = sId === currentSessionId;
-                return (
-                  <div
-                    key={sId}
-                    onClick={() => switchSession(sId)}
-                    className={`p-3 rounded-xl cursor-pointer border transition-all ${
-                      isActive
-                        ? "bg-white/10 border-lumina-primary/30"
-                        : "bg-white/5 border-white/5 hover:bg-white/10"
-                    }`}
-                  >
-                    <p className="text-sm text-gray-300 line-clamp-1 font-medium">
-                      {msgs[0].text}
-                    </p>
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-[10px] text-gray-500">
-                        {new Date(
-                          msgs[msgs.length - 1].timestamp,
-                        ).toLocaleDateString()}
-                      </span>
-                      <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-gray-400">
-                        {msgs.length} msgs
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-      </div>
+    <div className="flex h-screen bg-[#0a0a0f] text-white overflow-hidden font-inter">
+      <AITutorSidebar
+        sessions={sessions}
+        currentSessionId={currentSessionId}
+        onSwitchSession={switchSession}
+        onNewChat={startNewChat}
+        isOpen={isSidebarOpen}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+      />
 
-      {/* Main Chat Area */}
-      <div className="flex-1 glass-card flex flex-col relative overflow-hidden min-w-0">
-        {/* Header */}
-        <div className="p-4 border-b border-white/10 flex items-center justify-between bg-black/20">
+      <div className="flex-1 flex flex-col relative min-w-0">
+        {/* Premium Header */}
+        <header className="h-16 border-b border-white/5 bg-black/40 backdrop-blur-3xl px-5 flex items-center justify-between z-20">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 hover:bg-white/10 rounded-lg text-gray-400 transition-colors mr-1"
-              title={isSidebarOpen ? "Maximize Chat" : "Show History"}
-              aria-label="Toggle Sidebar"
-            >
-              {isSidebarOpen ? (
-                <SidebarClose className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
-            </button>
-
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-lumina-primary to-purple-600 flex items-center justify-center shadow-lg shadow-lumina-primary/20">
-              <Bot className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-white font-bold text-sm md:text-base">
-                Lumina AI Tutor
-              </h1>
-              <div className="flex items-center gap-1.5">
-                <span
-                  className={`w-2 h-2 rounded-full animate-pulse ${
-                    isLoading ? "bg-amber-500" : "bg-green-500"
-                  }`}
-                ></span>
-                <span className="text-[10px] md:text-xs text-gray-400">
-                  {isLoading
-                    ? "Thinking..."
-                    : `Online (${getProviderName(provider)})`}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center bg-white/5 rounded-lg p-1 border border-white/10 overflow-x-auto scrollbar-hide max-w-[50%] md:max-w-none">
-            <button
-              onClick={() => setProvider("lumina")}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                provider === "lumina"
-                  ? "bg-lumina-primary text-black"
-                  : "text-gray-400 hover:text-white"
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />{" "}
-              <span className="hidden md:inline">Lumina Fast</span>
-            </button>
-            <button
-              onClick={() => setProvider("gemini")}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                provider === "gemini"
-                  ? "bg-blue-500 text-white"
-                  : "text-gray-400 hover:text-white"
-              }`}
-            >
-              <Cloud className="w-3.5 h-3.5" />{" "}
-              <span className="hidden md:inline">Pro</span>
-            </button>
-            <button
-              onClick={() => setProvider("ollama")}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                provider === "ollama"
-                  ? "bg-orange-600 text-white"
-                  : "text-gray-400 hover:text-white"
-              }`}
-            >
-              <Cpu className="w-3.5 h-3.5" />{" "}
-              <span className="hidden md:inline">Ollama</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-50">
-              <Sparkles className="w-16 h-16 text-lumina-primary mb-4 animate-pulse" />
-              <h3 className="text-xl font-bold text-white mb-2">
-                How can I help you learn?
-              </h3>
-              <p className="text-sm text-gray-400">
-                Current Mode: {getProviderName(provider)}
-              </p>
-            </div>
-          ) : (
-            messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`flex items-start gap-4 ${
-                  msg.sender === "me" ? "flex-row-reverse" : ""
-                } ${msg.isHidden ? "hidden" : ""}`}
+            {!isSidebarOpen && (
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="p-1.5 hover:bg-white/5 rounded-lg text-gray-400 transition-all active:scale-95"
               >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                    msg.sender === "me"
-                      ? "bg-gray-700"
-                      : "bg-lumina-primary/20 text-lumina-primary"
-                  }`}
-                >
-                  {msg.sender === "me" ? (
-                    <User className="w-5 h-5 text-gray-300" />
-                  ) : (
-                    <Bot className="w-5 h-5" />
-                  )}
+                <History className="w-4 h-4" />
+              </button>
+            )}
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-lumina-primary to-emerald-500 p-[1px]">
+                <div className="w-full h-full rounded-[7px] bg-black flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-lumina-primary" />
                 </div>
-                <div
-                  className={`flex flex-col ${
-                    msg.sender === "me" ? "items-end" : "items-start"
-                  } max-w-[85%] md:max-w-[75%]`}
-                >
-                  <div
-                    className={`p-4 rounded-2xl relative group ${
-                      msg.sender === "me"
-                        ? "bg-lumina-primary text-black rounded-tr-none shadow-[0_0_15px_rgba(34,197,94,0.3)]"
-                        : "bg-white/10 text-gray-200 rounded-tl-none border border-white/5"
-                    }`}
-                  >
-                    <A2UIRenderer
-                      content={msg.text}
-                      onAction={handleAction}
-                      isUser={msg.sender === "me"}
-                    />
-
-                    {msg.sender !== "me" && (
-                      <div className="absolute -bottom-8 left-0 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => addToNotes(msg.text)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 border border-white/10 rounded-full text-xs text-gray-400 hover:text-white transition-colors"
-                          aria-label="Add to Notes"
-                        >
-                          <FileText className="w-3 h-3" /> Add to Notes
-                        </button>
-                        <button
-                          onClick={() =>
-                            navigator.clipboard.writeText(msg.text)
-                          }
-                          className="p-1.5 bg-gray-800 border border-white/10 rounded-full text-gray-400 hover:text-white transition-colors"
-                          aria-label="Copy to Clipboard"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-gray-600 mt-1 px-1">
-                    {new Date(msg.timestamp).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                    {msg.source && ` • ${msg.source}`}
+              </div>
+              <div>
+                <h1 className="text-base font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+                  Lumina AI Tutor
+                </h1>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                  <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                    {getProviderName(provider)} Engine Active
                   </span>
                 </div>
               </div>
-            ))
-          )}
-
-          {isLoading && (
-            <div className="flex items-start gap-4">
-              <div className="w-8 h-8 rounded-full bg-lumina-primary/20 text-lumina-primary flex items-center justify-center shrink-0">
-                <Bot className="w-5 h-5" />
-              </div>
-              <div className="flex flex-col items-start bg-white/5 rounded-2xl p-4 rounded-tl-none border border-white/5">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 text-lumina-primary animate-spin" />
-                  <span className="text-sm text-gray-400">Thinking...</span>
-                </div>
-              </div>
             </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Area + Suggestions */}
-        <div className="p-4 bg-black/20 border-t border-white/10 flex flex-col gap-3 relative z-10 backdrop-blur-md">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {(dynamicSuggestions.length > 0
-              ? dynamicSuggestions
-              : CAPABILITY_TAGS
-            ).map((s, i) => (
-              <button
-                key={i}
-                onClick={() => setInput(s)}
-                className="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300 hover:bg-white/10 hover:border-lumina-primary/50 transition-all shadow-sm active:scale-95"
-              >
-                {s}
-              </button>
-            ))}
           </div>
 
-          <form onSubmit={handleSendMessage} className="relative">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              placeholder="Ask me anything about your courses..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3.5 text-white placeholder:text-gray-500 focus:border-lumina-primary focus:bg-white/10 outline-none transition-all focus:shadow-[0_0_15px_rgba(34,197,94,0.1)]"
-              aria-label="Chat Input"
-            />
+          <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-lg border border-white/10 shadow-inner">
             <button
-              type="submit"
-              disabled={!input.trim() || isLoading}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-lumina-primary text-black rounded-lg hover:bg-lumina-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
-              aria-label="Send Message"
+              onClick={() => setProvider("lumina")}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1 rounded-md text-[10px] font-bold transition-all duration-300",
+                provider === "lumina"
+                  ? "bg-lumina-primary text-black shadow-lg shadow-lumina-primary/20"
+                  : "text-gray-500 hover:text-gray-300",
+              )}
             >
-              <Send className="w-4 h-4" />
+              <Sparkles className="w-3 h-3" />
+              FAST
             </button>
-          </form>
-        </div>
+            <button
+              onClick={() => setProvider("gemini")}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1 rounded-md text-[10px] font-bold transition-all duration-300",
+                provider === "gemini"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                  : "text-gray-500 hover:text-gray-300",
+              )}
+            >
+              <Cloud className="w-3 h-3" />
+              PRO
+            </button>
+            <button
+              onClick={() => setProvider("ollama")}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1 rounded-md text-[10px] font-bold transition-all duration-300",
+                provider === "ollama"
+                  ? "bg-orange-600 text-white shadow-lg shadow-orange-500/20"
+                  : "text-gray-500 hover:text-gray-300",
+              )}
+            >
+              <Cpu className="w-3 h-3" />
+              LOCAL
+            </button>
+          </div>
+        </header>
+
+        <AITutorChat
+          messages={messages}
+          isLoading={isLoading}
+          input={input}
+          setInput={setInput}
+          onSendMessage={handleSendMessage}
+          onSuggestionClick={(s) => setInput(s)}
+          suggestions={
+            dynamicSuggestions.length > 0 ? dynamicSuggestions : CAPABILITY_TAGS
+          }
+          provider={provider}
+          providerName={getProviderName(provider)}
+          onAction={handleAction}
+          onAddToNotes={addToNotes}
+          onNewChat={startNewChat}
+        />
       </div>
     </div>
   );

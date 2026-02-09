@@ -1,24 +1,27 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import os
 import json
 import google.generativeai as genai
-from ai_engine.llm import get_llm_provider  # Corrected import
-from ai_engine.rag import get_rag_engine
-from ai_engine.tutor_state import get_tutor_state
-from ai_engine.prompts import A2UI_SYSTEM_PROMPT
-from app.services.ppt_generator import PPTGenerator
 import structlog
 from datetime import datetime
+import time
 
+from ai_engine.llm import get_llm_provider
+from ai_engine.rag import get_rag_engine
+from ai_engine.prompts import A2UI_SYSTEM_PROMPT
+from ai_engine.skills import get_skill_manager
+from app.services.ppt_generator import PPTGenerator
+from app.core.metrics import AI_REQUESTS, AI_LATENCY
+from app.core.audit import audit_logger
+from ai_engine.swarm.pathway import PathwayAgent
+from learner_profile.models.behavior import BehaviorModel
+
+# Initialize router and logger
 router = APIRouter()
 logger = structlog.get_logger()
-
-from app.core.metrics import AI_REQUESTS, AI_LATENCY, AI_TOKENS_USED
-from app.core.audit import audit_logger
-import time
 
 
 class CourseGenerationRequest(BaseModel):
@@ -304,6 +307,7 @@ async def tutor_chat(request: TutorChatRequest):
             f"- Pathway Recommendation: {recommendation} (If 'review', emphasize basics. If 'advance', challenge them).\n"
             f"\n{profile_str}\n"  # Inject Profile
             "If the answer is not in the context, use your general knowledge but mention that it's outside the course material.\n"
+            f"{get_skill_manager().get_skills_summary()}\n"
             f"{A2UI_SYSTEM_PROMPT}\n"  # [NEW] Inject Schema
             f"{avoid_instruction}"  # [NEW] Inject Deduplication (from Pathway)
         )
@@ -377,8 +381,6 @@ async def ingest_content(request: IngestRequest):
 
 
 # --- Pathway Agent Integration ---
-from ai_engine.swarm.pathway import PathwayAgent
-from learner_profile.models.behavior import BehaviorModel
 
 _pathway_agent = None
 _behavior_model = None
@@ -471,7 +473,6 @@ async def generate_ppt(request: PPTGenerationRequest):
     """
     try:
         # [OPTIMIZATION] Step 0: Check Cache
-        cache_dir = "static/presentations"
         safe_topic_key = request.topic.lower().strip().replace(" ", "_")
         # Find if any file starts with this topic key and is recent (optional)
         # For now, simple strict caching: look for a cache map or just check existing files
@@ -531,7 +532,7 @@ Strict JSON only."""
         except json.JSONDecodeError as e:
             logger.error("ppt_json_parse_failed", error=str(e), response_sample=content_text[:500])
             raise HTTPException(
-                status_code=500, detail=f"Failed to parse AI response. Please try again."
+                status_code=500, detail="Failed to parse AI response. Please try again."
             )
 
         # Step 2: Generate PowerPoint using PPTGenerator
