@@ -90,8 +90,19 @@ class DatabaseManager:
             await cls.db.assignments.create_index("course_id")
             await cls.db.submissions.create_index([("assignment_id", 1), ("student_id", 1)])
 
-            # AI Conversations
+            # AI Conversations & Logs
             await cls.db.conversations.create_index([("user_id", 1), ("agent_id", 1)])
+            await cls.db.ai_logs.create_index("timestamp")
+
+            # Community
+            await cls.db.community_messages.create_index([("channelId", 1), ("createdAt", 1)])
+
+            # Student Progress & Certification
+            await cls.db.progress.create_index([("userId", 1), ("courseId", 1)], unique=True)
+            await cls.db.certificates.create_index("userId")
+
+            # Tutor Sessions
+            await cls.db.tutor_sessions.create_index("session_id", unique=True)
 
             print("✅ MongoDB indexes created successfully.")
         except Exception as e:
@@ -113,11 +124,6 @@ class DatabaseManager:
         """
         Get a specific collection from the database.
         """
-        if cls.db is None:
-            # Attempt prompt reconnection or raise error?
-            # For now, simplistic check.
-            # raise ConnectionFailure("Database not connected")
-            # Return a dummy or None to fail gracefully in calling code if needed
             return None
         return cls.db[collection_name]
 

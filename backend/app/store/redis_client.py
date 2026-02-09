@@ -42,6 +42,12 @@ class RedisClientProxy:
         if self.client:
             return await self.client.delete(*names)
 
+    async def ping(self):
+        await self._ensure_connection()
+        if self.client:
+            return await self.client.ping()
+        raise Exception("Redis client not connected")
+
     async def close(self):
         if self.client:
             await self.client.close()
