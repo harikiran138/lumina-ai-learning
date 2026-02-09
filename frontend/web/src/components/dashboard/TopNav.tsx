@@ -11,7 +11,7 @@ export default function TopNav({
   user?: { name: string; role: string; initial: string };
 }) {
   return (
-    <header className="fixed top-4 right-4 left-4 lg:left-72 h-16 backdrop-blur-xl bg-black/20 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] z-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between rounded-2xl transition-all duration-300">
+    <header className="fixed top-4 right-4 left-4 lg:left-28 h-16 backdrop-blur-xl bg-black/20 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] z-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between rounded-2xl transition-all duration-300">
       <div className="flex items-center">
         <button
           onClick={onMenuClick}
