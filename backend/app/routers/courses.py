@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Form, Depends
-from typing import List
 from app.store.course_store import CourseStore
 from app.dependencies import get_course_store
 from .auth import get_current_user
@@ -41,12 +40,12 @@ async def list_courses(store: CourseStore = Depends(get_course_store)):
     """
     List all available courses. Seeds default courses if empty.
     """
-    courses = store.list_courses()
+    courses = await store.list_courses()
     if not courses:
         # Seed defaults
         for c in DEFAULT_COURSES:
-            store.create_course(c["name"], c["code"], c["description"], c["teacher_id"])
-        courses = store.list_courses()
+            await store.create_course(c["name"], c["code"], c["description"], c["teacher_id"])
+        courses = await store.list_courses()
     return courses
 
 
@@ -62,10 +61,10 @@ async def create_course(
         raise HTTPException(status_code=403, detail="Only teachers can create courses")
 
     try:
-        if store.get_course_by_code(code):
+        if await store.get_course_by_code(code):
             raise HTTPException(status_code=400, detail="Course code already exists")
 
-        course = store.create_course(name, code, description, current_user["id"])
+        course = await store.create_course(name, code, description, current_user["id"])
 
         # Invalidate cache when new course is created
         from app.core.cache import invalidate_cache

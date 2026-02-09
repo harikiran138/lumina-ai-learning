@@ -1,26 +1,32 @@
-import sys
 from dotenv import load_dotenv
 
 load_dotenv()
 
-import os
-import time
-import asyncio
-import functools
-import contextvars
-from contextlib import asynccontextmanager
+import os  # noqa: E402
+import time  # noqa: E402
+import asyncio  # noqa: E402
+import functools  # noqa: E402
+import contextvars  # noqa: E402
+from contextlib import asynccontextmanager  # noqa: E402
 
-import structlog
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.staticfiles import StaticFiles
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
-from prometheus_fastapi_instrumentator import Instrumentator
+import structlog  # noqa: E402
+import sentry_sdk  # noqa: E402
+from fastapi import FastAPI, Request  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.middleware.trustedhost import TrustedHostMiddleware  # noqa: E402
+from fastapi.middleware.gzip import GZipMiddleware  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from starlette.middleware.base import BaseHTTPMiddleware  # noqa: E402
+from prometheus_fastapi_instrumentator import Instrumentator  # noqa: E402
+from slowapi import _rate_limit_exceeded_handler  # noqa: E402
+from slowapi.errors import RateLimitExceeded  # noqa: E402
 
-from .routers import (
+from app.database.manager import db  # noqa: E402
+from app.core.config import settings  # noqa: E402
+from app.core.logging import configure_logging  # noqa: E402
+from app.core.limiter import limiter  # noqa: E402
+
+from .routers import (  # noqa: E402
     ai,
     handwriting_simple as handwriting,
     assignments,
@@ -28,8 +34,11 @@ from .routers import (
     auth,
     hybrid,
     student,
+    community,
+    admin,
 )
-from app.assessment.api.router import router as assessment_router
+
+from app.assessment.api.router import router as assessment_router  # noqa: E402
 
 # Polyfill for python 3.8
 if not hasattr(asyncio, "to_thread"):
@@ -41,17 +50,6 @@ if not hasattr(asyncio, "to_thread"):
         return await loop.run_in_executor(None, func_call)
 
     asyncio.to_thread = to_thread
-
-
-from app.database.manager import db
-from app.core.config import settings
-
-# --- Observability & Production ---
-import sentry_sdk
-from app.core.logging import configure_logging
-from app.core.limiter import limiter
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
 
 # 1. Configure JSON Logging
 configure_logging()
@@ -184,6 +182,9 @@ app.include_router(hybrid.router, prefix="/api/ai", tags=["Hybrid AI"])
 
 
 app.include_router(student.router, prefix="/api/student", tags=["Student Data"])
+app.include_router(community.router, prefix="/api/community", tags=["Community"])
+app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+
 
 # --- Performance & Security Polish ---
 logger = structlog.get_logger()

@@ -22,7 +22,7 @@ class AuditLogger:
         Log a structured audit event.
         """
         event_data = {
-            "event": "audit_log",
+            "audit_type": "audit_log",
             "action": action,
             "user_id": user_id,
             "resource_id": resource_id,

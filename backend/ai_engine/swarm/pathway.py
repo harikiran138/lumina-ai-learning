@@ -19,13 +19,13 @@ class PathwayAgent:
         self.engine = PathwayInferenceEngine(model_path=model_path)
         self.state_manager = get_tutor_state()
 
-    def get_session_constraints(self, session_id: str) -> dict:
+    async def get_session_constraints(self, session_id: str) -> dict:
         """
         Retrieves constraints for the LLM based on session history.
         Returns: { "avoid_text": str, "difficulty": str }
         """
         # 1. Deduplication (Avoid previously asked questions)
-        avoid_context = self.state_manager.get_avoid_context(session_id)
+        avoid_context = await self.state_manager.get_avoid_context(session_id)
         avoid_text = ""
         if avoid_context:
             avoid_text = (
@@ -39,7 +39,7 @@ class PathwayAgent:
 
         return {"avoid_text": avoid_text, "difficulty": difficulty}
 
-    def log_interaction(self, session_id: str, ai_response: str):
+    async def log_interaction(self, session_id: str, ai_response: str):
         """
         Parses the AI response for A2UI components and logs them into memory.
         Uses structured extraction to find questions, flashcards, etc.
@@ -56,21 +56,21 @@ class PathwayAgent:
                 if component == "Quiz":
                     q = props.get("question")
                     if q:
-                        self.state_manager.add_question(session_id, q)
+                        await self.state_manager.add_question(session_id, q)
                 elif component == "Flashcard":
                     f = props.get("front")
                     if f:
-                        self.state_manager.add_question(session_id, f)
+                        await self.state_manager.add_question(session_id, f)
                 elif component == "Timeline":
                     for event in props.get("events", []):
                         title = event.get("title")
                         if title:
-                            self.state_manager.add_question(session_id, title)
+                            await self.state_manager.add_question(session_id, title)
             except Exception:
                 # Fallback to fuzzy regex if JSON parsing fails
                 questions = re.findall(r'"question":\s*"([^"]+)"', block_str)
                 for q in questions:
-                    self.state_manager.add_question(session_id, q)
+                    await self.state_manager.add_question(session_id, q)
 
     def get_difficulty_recommendation(self, user_id: str) -> str:
         """

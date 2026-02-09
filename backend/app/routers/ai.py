@@ -143,7 +143,7 @@ async def generate_course_from_assignment(request: AssignmentCourseRequest):
     llm_instance = get_llm_provider("auto")
 
     store = AssignmentStore()
-    assignment = store.get_assignment(request.assignment_id)
+    assignment = await store.get_assignment(request.assignment_id)
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
@@ -155,7 +155,7 @@ async def generate_course_from_assignment(request: AssignmentCourseRequest):
 
     score = None
     if request.submission_id:
-        submissions = store.get_submissions(request.assignment_id)
+        submissions = await store.get_submissions(request.assignment_id)
         submission = next((s for s in submissions if s["id"] == request.submission_id), None)
         if submission and submission.get("grade") is not None:
             score = float(submission["grade"])
@@ -238,13 +238,15 @@ async def tutor_chat(request: TutorChatRequest):
         pathway = get_pathway_agent()
 
         # 1. Get Constraints (Deduplication & Difficulty)
-        constraints = pathway.get_session_constraints(request.session_id)
+        constraints = await pathway.get_session_constraints(request.session_id)
         avoid_instruction = constraints.get("avoid_text", "")
 
         # 0. Guardrails Check
         from ai_engine.swarm.guardian import GuardianAgent
+        from app.store.agent_store import AgentStore
 
         guardian = GuardianAgent()
+        agent_store = AgentStore()
 
         # Sanitize
         clean_message = guardian.sanitize_input(request.message)
@@ -269,7 +271,7 @@ async def tutor_chat(request: TutorChatRequest):
         from learner_profile.store.state import StateStore
 
         store = StateStore()
-        state = store.get_state(request.user_id)
+        state = await store.get_state(request.user_id)
 
         behavior = state.get("behavior_label", "neutral")
         # Get recommendation (pass empty graph for now/default)
@@ -279,7 +281,7 @@ async def tutor_chat(request: TutorChatRequest):
         from app.store.course_store import CourseStore
 
         course_store = CourseStore()
-        all_courses = course_store.list_courses()
+        all_courses = await course_store.list_courses()
         # Limit to top 10 and only name/code to save tokens
         course_list_str = "\n".join([f"- {c['name']} ({c['code']})" for c in all_courses[:10]])
 
@@ -289,7 +291,11 @@ async def tutor_chat(request: TutorChatRequest):
         from app.store.user_data_store import UserDataStore
 
         user_ds = UserDataStore()
-        profile_str = user_ds.get_full_profile_string(request.user_id)
+        profile_str = await user_ds.get_full_profile_string(request.user_id)
+
+        # Fetch history from AgentStore
+        history = await agent_store.get_conversation_history(request.user_id, "tutor_agent")
+        history_str = "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in history])
 
         system_prompt = (
             "You are a helpful and safe AI Tutor for the Lumina Learning Platform. \n"
@@ -306,7 +312,9 @@ async def tutor_chat(request: TutorChatRequest):
             f"- Behavior: {behavior} (If 'frustrated', be encouraging. If 'focused', be concise).\n"
             f"- Pathway Recommendation: {recommendation} (If 'review', emphasize basics. If 'advance', challenge them).\n"
             f"\n{profile_str}\n"  # Inject Profile
-            "If the answer is not in the context, use your general knowledge but mention that it's outside the course material.\n"
+            "\nRecent Conversation History:\n"
+            f"{history_str}\n"
+            "\nIf the answer is not in the context, use your general knowledge but mention that it's outside the course material.\n"
             f"{get_skill_manager().get_skills_summary()}\n"
             f"{A2UI_SYSTEM_PROMPT}\n"  # [NEW] Inject Schema
             f"{avoid_instruction}"  # [NEW] Inject Deduplication (from Pathway)
@@ -352,8 +360,11 @@ async def tutor_chat(request: TutorChatRequest):
         )
         AI_REQUESTS.labels(provider=request.provider, model="tutor_chat", status="success").inc()
 
-        # 6. [NEW] Log Interaction to Pathway Memory
-        pathway.log_interaction(request.session_id, response)
+        # 6. [NEW] Log Interaction to AgentStore & Pathway Memory
+        await agent_store.save_message(request.user_id, "tutor_agent", "user", request.message)
+        await agent_store.save_message(request.user_id, "tutor_agent", "assistant", response)
+
+        await pathway.log_interaction(request.session_id, response)
 
         return {
             "response": response,

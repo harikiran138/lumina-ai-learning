@@ -33,24 +33,28 @@ export function StatCard({
 
   return (
     <div
-      className={cn("glass-card p-6 relative overflow-hidden group", className)}
+      className={cn(
+        color === "gold" ? "glass-v2-gold" : "glass-v2",
+        "p-6 relative overflow-hidden group",
+        className,
+      )}
     >
       <div className="flex justify-between items-start mb-4">
-        <div>
-          <p className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-1">
+        <div className="relative z-10">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-[0.2em] mb-2 opacity-80">
             {title}
           </p>
           <div className="flex items-baseline gap-2">
-            <h3 className="text-3xl font-bold text-white tracking-tight">
+            <h3 className="text-4xl font-display font-bold text-white tracking-tight">
               {value}
             </h3>
             {trend && (
               <span
                 className={cn(
-                  "text-xs font-semibold px-2 py-0.5 rounded-full",
+                  "text-xs font-bold px-2 py-0.5 rounded-md",
                   trend.isPositive
-                    ? "text-emerald-400 bg-emerald-400/10"
-                    : "text-red-400 bg-red-400/10",
+                    ? "text-emerald-400 bg-emerald-400/10 border border-emerald-400/20"
+                    : "text-red-400 bg-red-400/10 border border-red-400/20",
                 )}
               >
                 {trend.value}
@@ -60,7 +64,7 @@ export function StatCard({
         </div>
         <div
           className={cn(
-            "p-3 rounded-xl transition-transform group-hover:scale-110 duration-300",
+            "p-3 rounded-xl transition-all group-hover:scale-110 group-hover:rotate-6 duration-500 relative z-10",
             colorStyles[color],
           )}
         >
@@ -68,11 +72,13 @@ export function StatCard({
         </div>
       </div>
       {subtitle && (
-        <p className="text-xs text-gray-500 font-medium">{subtitle}</p>
+        <p className="text-xs text-gray-400/60 font-medium relative z-10">
+          {subtitle}
+        </p>
       )}
 
-      {/* Decorative Gradient Blob */}
-      <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-gradient-to-br from-white/5 to-transparent rounded-full blur-2xl group-hover:bg-white/10 transition-colors duration-500" />
+      {/* Modern Gradient Background */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/[0.03] to-transparent rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
     </div>
   );
 }

@@ -11,7 +11,6 @@ import {
   Edit,
   X,
 } from "lucide-react";
-import { getUsersForAdmin } from "@/app/actions/data";
 import { api } from "@/lib/api";
 
 export default function AdminUsers() {
@@ -27,7 +26,7 @@ export default function AdminUsers() {
 
   const fetchUsers = async () => {
     setIsLoading(true);
-    const data = await getUsersForAdmin();
+    const data = await api.getAllUsers();
     setUsers(data);
     setIsLoading(false);
   };
