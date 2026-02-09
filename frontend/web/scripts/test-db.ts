@@ -20,7 +20,7 @@ async function test() {
 
     console.log("Connecting...");
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     console.log("Connected to DB:", db.databaseName);
     const count = await db.collection("users").countDocuments();
     console.log("Users count:", count);

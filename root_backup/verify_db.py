@@ -4,7 +4,7 @@ from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, OperationFailure
 
 # URI from .env.local
-MONGO_URI = "mongodb+srv://Vercel-Admin-lumina-database:VsmkyNxpyjm8VpeU@lumina-database.dt7c2xn.mongodb.net/?retryWrites=true&w=majority"
+MONGO_URI = "mongodb+srv://Vercel-Admin-lumina_db:VsmkyNxpyjm8VpeU@lumina_db.dt7c2xn.mongodb.net/?retryWrites=true&w=majority"
 
 def check_mongo():
     print(f"Attempting to connect to MongoDB...")
@@ -19,7 +19,7 @@ def check_mongo():
         print(f"Databases: {dbs}")
 
         # Check specific database if applicable
-        db_name = "lumina-database" # inferred from URI or code
+        db_name = "lumina_db" # inferred from URI or code
         if db_name in dbs or True: # Cloud Atlas might hide some, just try accessing
             db = client[db_name]
             collections = db.list_collection_names()

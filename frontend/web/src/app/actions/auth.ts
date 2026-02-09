@@ -93,7 +93,7 @@ export async function authenticateUser(
 
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const user = await db.collection("users").findOne({ email });
 
@@ -102,7 +102,10 @@ export async function authenticateUser(
       return null;
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      user.hashed_password,
+    );
 
     if (!isPasswordValid) {
       console.log("Invalid password");
@@ -126,7 +129,7 @@ export async function registerUser(
 ): Promise<User | { error: string }> {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const existingUser = await db
       .collection("users")
@@ -140,7 +143,7 @@ export async function registerUser(
 
     const newUserProfile = {
       email: userData.email || "temp-user@lumina.com",
-      password: hashedPassword,
+      hashed_password: hashedPassword,
       name: userData.name || "New User",
       role: userData.role === "teacher" ? "teacher" : "student",
       avatar:

@@ -48,7 +48,7 @@ async function seed() {
     try {
         await client.connect();
         console.log("Connected to MongoDB...");
-        const db = client.db("lumina-database");
+        const db = client.db("lumina_db");
 
         // Module Titles
         const moduleTitles = [

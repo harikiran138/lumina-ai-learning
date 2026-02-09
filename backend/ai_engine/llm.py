@@ -1,7 +1,5 @@
 import requests
-import json
 import os
-from typing import Dict, Any, Optional
 from starlette.concurrency import run_in_threadpool
 
 
@@ -53,7 +51,7 @@ class OllamaProvider(LLMProvider):
 
 # Factory
 class GeminiRestProvider(LLMProvider):
-    def __init__(self, api_keys: list, model: str = "gemini-2.5-flash"):
+    def __init__(self, api_keys: list, model: str = "gemini-1.5-flash"):
         self.api_keys = api_keys
         self.model = model
         self.current_key_index = 0

@@ -4,6 +4,10 @@ export interface ChatResponse {
   text: string;
   source: "cache" | "api" | "rule" | "fallback";
   latency?: number;
+  personalization?: {
+    behavior?: string;
+    recommendation?: string;
+  };
 }
 
 // Simple rule-based matcher for common questions (Sub-5ms response)
@@ -101,7 +105,12 @@ export const processMessage = async (
         console.warn("Cache write failed", e),
       );
 
-      return { text: answerText, source: "api", latency };
+      return {
+        text: answerText,
+        source: "api",
+        latency,
+        personalization: data.personalization,
+      };
     } catch (e: any) {
       attempts++;
       console.warn(`API Attempt ${attempts} failed:`, e); // Log full error for debugging
