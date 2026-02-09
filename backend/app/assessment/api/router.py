@@ -10,6 +10,7 @@ from app.assessment.models.schemas import (
 )
 from app.assessment.engine.session_manager import session_manager
 from typing import Optional
+from app.database.manager import db
 
 router = APIRouter()
 
@@ -21,13 +22,9 @@ async def get_student_mastery(student_id: str):
     """
     Get the aggregate mastery for a student across all sessions.
     """
-    from app.database.manager import db
-
-    # Safety Check: If DB is not connected (e.g. missing ENV), return empty dict
-    if not db.db:
-        return {}
-
     try:
+        if db.db is None:
+            return {}
         # Find latest session for student
         cursor = (
             db.get_collection("assessment_sessions")
@@ -46,6 +43,9 @@ async def get_student_mastery(student_id: str):
             return latest_session.get("mastery_state", {}).get("concept_mastery", {})
         return {}
     except Exception as e:
+        import traceback
+
+        traceback.print_exc()
         print(f"Error fetching mastery: {e}")
         return {}
 

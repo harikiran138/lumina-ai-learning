@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager  # noqa: E402
 import structlog  # noqa: E402
 import sentry_sdk  # noqa: E402
 from fastapi import FastAPI, Request  # noqa: E402
+from fastapi.responses import JSONResponse  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.middleware.trustedhost import TrustedHostMiddleware  # noqa: E402
 from fastapi.middleware.gzip import GZipMiddleware  # noqa: E402
@@ -225,11 +226,14 @@ app.add_middleware(TimingMiddleware)
 async def global_exception_handler(request: Request, exc: Exception):
     # Use structlog for critical errors
     logger.error("unhandled_exception", path=request.url.path, error=str(exc), exc_info=True)
-    return {
-        "error": "Internal Server Error",
-        "message": "An unexpected error occurred. Please try again later.",
-        "path": request.url.path,
-    }
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal Server Error",
+            "message": "An unexpected error occurred. Please try again later.",
+            "path": request.url.path,
+        },
+    )
 
 
 @app.get("/")
