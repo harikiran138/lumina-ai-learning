@@ -27,7 +27,7 @@ async function deleteUser() {
     try {
         console.log("Connecting to MongoDB...");
         await client.connect();
-        const db = client.db("lumina-database");
+        const db = client.db("lumina_db");
 
         const targetEmail = "sricharishma20@gmail.com";
         console.log(`Searching for user: ${targetEmail}`);

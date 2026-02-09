@@ -6,7 +6,7 @@ import prisma from "@/lib/db";
 // NOTE: Ideally getting API Key from env, but user provided it in memory/chat rules.
 // I will use process.env.GEMINI_API_KEY if available, else usage of provided key should be handled carefully.
 // The user rules say "Gemini API Key: AIzaSyAz5Ii7lfvb9ucIngUbKGr98qgSnHgPFgY"
-const apiKey = process.env.GEMINI_API_KEY || "AIzaSyAz5Ii7lfvb9ucIngUbKGr98qgSnHgPFgY";
+const apiKey = process.env.GEMINI_API_KEY || "AIzaSyBy3dg5S_RoDoqrUS7DFYquYNnEoj_AM1Qc";
 const genAI = new GoogleGenerativeAI(apiKey);
 
 export async function POST(req: NextRequest) {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
         const base64Data = buffer.toString("base64");
 
         // Use Gemini 1.5 Flash (efficient for text/vision)
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
       Please analyze this handwritten document.

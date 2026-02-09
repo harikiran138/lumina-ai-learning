@@ -230,7 +230,7 @@ async function seed() {
     try {
         console.log("Connecting...");
         await client.connect();
-        const db = client.db("lumina-database");
+        const db = client.db("lumina_db");
 
         // Get a teacher ID
         const teacher = await db.collection("users").findOne({ role: "teacher" });

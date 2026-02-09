@@ -20,7 +20,7 @@ async function seedData() {
   try {
     console.log("Connecting to MongoDB...");
     await client.connect();
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     // 1. Create Courses
     const courses = [

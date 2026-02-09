@@ -6,7 +6,7 @@ from bson.objectid import ObjectId
 
 # New URI
 URI = "mongodb+srv://Vercel-Admin-atlas-orange-notebook:ejVMdYwUJGHEGDE2@atlas-orange-notebook.tmc7uan.mongodb.net/?retryWrites=true&w=majority"
-DB_NAME = "lumina-database"
+DB_NAME = "lumina_db"
 
 def seed():
     print(f"Connecting to {URI.split('@')[1]}...")
