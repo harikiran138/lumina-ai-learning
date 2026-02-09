@@ -41,7 +41,7 @@ function serializeMongoObject(obj: any): any {
 export async function getStudentDashboard(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const user = await db.collection("users").findOne({ email });
     if (!user) return null;
@@ -160,7 +160,7 @@ export async function updateCourseProgress(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const user = await db.collection("users").findOne({ email });
     if (!user) return { success: false };
 
@@ -241,7 +241,7 @@ export async function completeLesson(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const user = await db.collection("users").findOne({ email });
     if (!user) return { success: false, error: "User not found" };
@@ -319,7 +319,7 @@ export async function completeLesson(
 export async function getStudentBadges(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const user = await db.collection("users").findOne({ email });
 
     if (!user) return [];
@@ -358,7 +358,7 @@ export async function getStudentBadges(email: string) {
 export async function getStudentCertificates(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const user = await db.collection("users").findOne({ email });
     if (!user) return [];
 
@@ -386,7 +386,7 @@ export async function getStudentCertificates(email: string) {
 export async function getEnrolledCourses(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const user = await db.collection("users").findOne({ email });
     if (!user) return [];
@@ -434,7 +434,7 @@ export async function getEnrolledCourses(email: string) {
 export async function getAllCourses() {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const courses = await db
       .collection("courses")
@@ -461,7 +461,7 @@ export async function getAllCourses() {
 export async function enrollInCourse(email: string, courseId: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const user = await db.collection("users").findOne({ email });
     if (!user) return { success: false, error: "User not found" };
@@ -511,7 +511,7 @@ export async function enrollInCourse(email: string, courseId: string) {
 export async function getStudentProfile(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const user = await db.collection("users").findOne({ email });
     if (!user) return null;
@@ -552,7 +552,7 @@ export async function getStudentProfile(email: string) {
 export async function updateStudentProfile(email: string, data: any) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const updateData: any = {
       name: data.name,
@@ -576,7 +576,7 @@ export async function updateStudentProfile(email: string, data: any) {
 export async function getStudentProgress(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const user = await db.collection("users").findOne({ email });
     if (!user) return null;
@@ -697,7 +697,7 @@ export async function getStudentProgress(email: string) {
 export async function getCommunityData(channelId: string = "general") {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const channels = await db.collection("community_channels").find().toArray();
 
@@ -725,7 +725,7 @@ export async function sendCommunityMessage(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const user = await db.collection("users").findOne({ email });
     if (!user) return { success: false, error: "User not found" };
@@ -770,7 +770,7 @@ export async function sendCommunityMessage(
 export async function getTeacherDashboard(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const user = await db.collection("users").findOne({ email });
     if (!user) return null;
@@ -805,7 +805,7 @@ export async function getTeacherDashboard(email: string) {
 export async function getTeacherStudents(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const user = await db.collection("users").findOne({ email });
     if (!user) return [];
@@ -883,7 +883,7 @@ export async function getTeacherStudents(email: string) {
 export async function getTeacherCourses(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const user = await db.collection("users").findOne({ email });
     if (!user) return [];
@@ -911,7 +911,7 @@ export async function getTeacherCourses(email: string) {
 export async function createCourse(email: string, courseData: any) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const user = await db.collection("users").findOne({ email });
     if (!user) return { success: false, error: "User not found" };
@@ -944,7 +944,7 @@ export async function createCourse(email: string, courseData: any) {
 export async function getStudentCourses(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const user = await db.collection("users").findOne({ email });
     if (!user) return [];
 
@@ -984,7 +984,7 @@ export async function getStudentCourses(email: string) {
 export async function getExploreCourses(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const user = await db.collection("users").findOne({ email });
 
     let enrolledIds: string[] = [];
@@ -1031,7 +1031,7 @@ export async function getExploreCourses(email: string) {
 export async function publishCourse(courseId: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     await db
       .collection("courses")
       .updateOne(
@@ -1049,7 +1049,7 @@ export async function publishCourse(courseId: string) {
 export async function updateCourseStructure(courseId: string, modules: any[]) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     await db
       .collection("courses")
       .updateOne(
@@ -1070,7 +1070,7 @@ export async function inviteStudentToCourse(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const teacher = await db
       .collection("users")
@@ -1141,7 +1141,7 @@ export async function addModule(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const teacher = await db.collection("users").findOne({ email });
     if (!teacher) return { success: false, error: "Teacher not found" };
@@ -1185,7 +1185,7 @@ export async function addLesson(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const newLesson = {
       id: new ObjectId().toString(),
@@ -1222,7 +1222,7 @@ export async function addLesson(
 export async function getStudentNotes(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const user = await db.collection("users").findOne({ email });
     if (!user) return [];
 
@@ -1250,7 +1250,7 @@ export async function getStudentNotes(email: string) {
 export async function createStudentNote(email: string, noteData: any) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const user = await db.collection("users").findOne({ email });
     if (!user) return { success: false, error: "User not found" };
 
@@ -1276,7 +1276,7 @@ export async function createStudentNote(email: string, noteData: any) {
 export async function deleteStudentNote(email: string, noteId: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const user = await db.collection("users").findOne({ email });
     if (!user) return { success: false, error: "User not found" };
 
@@ -1299,7 +1299,7 @@ export async function updateStudentNote(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const user = await db.collection("users").findOne({ email });
     if (!user) return { success: false, error: "User not found" };
 
@@ -1330,7 +1330,7 @@ export async function updateStudentNote(
 export async function getAdminDashboard(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const usersCount = await db.collection("users").countDocuments();
     const studentCount = await db
@@ -1368,7 +1368,7 @@ export async function getAdminDashboard(email: string) {
 export async function getUsersForAdmin() {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const users = await db.collection("users").find().toArray();
 
@@ -1390,7 +1390,7 @@ export async function getUsersForAdmin() {
 export async function getCourseDetails(courseId: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     const course = await db
       .collection("courses")
@@ -1421,7 +1421,7 @@ export async function getCourseDetails(courseId: string) {
 export async function getChatHistory(email: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const user = await db.collection("users").findOne({ email });
     if (!user) return [];
 
@@ -1450,7 +1450,7 @@ export async function saveChatMessage(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const user = await db.collection("users").findOne({ email });
     if (!user) return { success: false };
 
@@ -1472,7 +1472,7 @@ export async function saveChatMessage(
 export async function saveNote(email: string, content: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const user = await db.collection("users").findOne({ email });
     if (!user) return { success: false };
 
@@ -1495,7 +1495,7 @@ export async function saveNote(email: string, content: string) {
 export async function deleteCourse(email: string, courseId: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const teacher = await db.collection("users").findOne({ email });
     if (!teacher) return { success: false, error: "User not found" };
 
@@ -1528,7 +1528,7 @@ export async function deleteModule(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const teacher = await db.collection("users").findOne({ email });
     if (!teacher) return { success: false, error: "User not found" };
 
@@ -1561,7 +1561,7 @@ export async function deleteLesson(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const teacher = await db.collection("users").findOne({ email });
     if (!teacher) return { success: false, error: "User not found" };
 
@@ -1593,7 +1593,7 @@ export async function updateCourseDetails(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     await db
       .collection("courses")
@@ -1614,7 +1614,7 @@ export async function updateCourseDetails(
 export async function getAllUsers() {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const users = await db
       .collection("users")
       .find()
@@ -1641,7 +1641,7 @@ export async function getAllUsers() {
 export async function getAllCoursesAdmin() {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     // Lookup instructor details
     const courses = await db
       .collection("courses")
@@ -1680,7 +1680,7 @@ export async function getAllCoursesAdmin() {
 export async function getAllChatLogsAdmin() {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     // Fetch recent chat history with user details
     const logs = await db
@@ -1725,7 +1725,7 @@ export async function updateUserStatus(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     // Verify admin
     const admin = await db
       .collection("users")
@@ -1748,7 +1748,7 @@ export async function updateUserRole(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const admin = await db
       .collection("users")
       .findOne({ email: adminEmail, role: "admin" });
@@ -1770,7 +1770,7 @@ export async function logAIInteraction(
 ) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const user = await db.collection("users").findOne({ email });
     if (!user) return { success: false };
 
@@ -1792,7 +1792,7 @@ export async function logAIInteraction(
 export async function getAllAILogsAdmin() {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
     const logs = await db
       .collection("ai_logs")
       .find()
@@ -1810,7 +1810,7 @@ export async function getAllAILogsAdmin() {
 export async function deleteAILog(email: string, logId: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     // Verify admin
     const admin = await db
@@ -1829,7 +1829,7 @@ export async function deleteAILog(email: string, logId: string) {
 export async function deleteUser(adminEmail: string, userId: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     // Verify admin
     const admin = await db
@@ -1856,7 +1856,7 @@ export async function deleteUser(adminEmail: string, userId: string) {
 export async function getAllStudentsWithProgress() {
   try {
     const client = await clientPromise;
-    const db = client.db("lumina-database");
+    const db = client.db("lumina_db");
 
     // Get all students
     const students = await db

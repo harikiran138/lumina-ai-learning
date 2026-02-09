@@ -85,7 +85,7 @@ export async function authenticateUser(email: string, password: string): Promise
 
     try {
         const client = await clientPromise;
-        const db = client.db("lumina-database");
+        const db = client.db("lumina_db");
 
         const user = await db.collection("users").findOne({ email });
 
@@ -117,7 +117,7 @@ export async function authenticateUser(email: string, password: string): Promise
 export async function registerUser(userData: Partial<User> & { password: string }): Promise<User | { error: string }> {
     try {
         const client = await clientPromise;
-        const db = client.db("lumina-database");
+        const db = client.db("lumina_db");
 
         const existingUser = await db.collection("users").findOne({ email: userData.email });
 

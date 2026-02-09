@@ -28,7 +28,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export async function saveTextbook(title: string, content: string, userId?: string) {
     try {
         const client = await clientPromise;
-        const db = client.db("lumina-database");
+        const db = client.db("lumina_db");
 
         const result = await db.collection("textbooks").insertOne({
             title,
@@ -55,7 +55,7 @@ export async function saveTextbook(title: string, content: string, userId?: stri
 export async function getTextbookContent(textbookId: string) {
     try {
         const client = await clientPromise;
-        const db = client.db("lumina-database");
+        const db = client.db("lumina_db");
         const textbook = await db.collection("textbooks").findOne({
             _id: new ObjectId(textbookId)
         });

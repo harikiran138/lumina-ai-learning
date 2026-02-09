@@ -137,6 +137,133 @@ body::after {
   .hide-scrollbar::-webkit-scrollbar {
     display: none; /* Chrome, Safari and Opera */
   }
+
+  /* Lumina V2: Command Center Aesthetics */
+  .command-center-bg {
+    @apply bg-[#02040a] relative overflow-hidden;
+    background-image: radial-gradient(
+        circle at 50% -20%,
+        rgba(59, 130, 246, 0.08) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 0% 100%,
+        rgba(59, 130, 246, 0.05) 0%,
+        transparent 40%
+      );
+  }
+
+  .command-center-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+      linear-gradient(
+        90deg,
+        rgba(255, 0, 0, 0.02),
+        rgba(0, 255, 0, 0.01),
+        rgba(0, 0, 255, 0.02)
+      );
+    background-size:
+      100% 2px,
+      3px 100%;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0.3;
+  }
+
+  .neural-mesh {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+        rgba(255, 255, 255, 0.02) 1px,
+        transparent 1px
+      ),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 50px 50px;
+    mask-image: radial-gradient(circle at 50% 50%, black, transparent 80%);
+    pointer-events: none;
+  }
+
+  .glass-v2 {
+    @apply bg-white/[0.03] backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)];
+  }
+
+  .glass-v2:hover {
+    @apply bg-white/[0.05] border-white/20;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glow-border {
+    position: relative;
+  }
+
+  .glow-border::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(
+      45deg,
+      transparent,
+      rgba(59, 130, 246, 0.3),
+      transparent
+    );
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+
+  .glow-border:hover::after {
+    opacity: 1;
+  }
+
+  @keyframes pulse-orb {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.5;
+      filter: blur(20px);
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 0.8;
+      filter: blur(30px);
+    }
+  }
+
+  .animate-pulse-orb {
+    animation: pulse-orb 4s ease-in-out infinite;
+  }
+
+  /* Scrollbar for V2 */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Chat Bubbles */
+  .chat-bubble-me {
+    @apply bg-lumina-primary text-black rounded-2xl rounded-tr-none px-4 py-3 shadow-lg shadow-lumina-primary/10;
+    background: linear-gradient(
+      135deg,
+      var(--color-lumina-primary) 0%,
+      #ffd700 100%
+    );
+  }
+
+  .chat-bubble-ai {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl rounded-tl-none px-5 py-4 text-gray-200 shadow-xl;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  .chat-bubble-ai:hover {
+    @apply border-white/20 bg-white/10;
+    transition: all 0.3s ease;
+  }
 }
 
 @keyframes float {

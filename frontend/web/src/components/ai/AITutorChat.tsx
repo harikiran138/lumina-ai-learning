@@ -9,16 +9,61 @@ import {
   Copy,
   FileText,
   Loader2,
-  MessageSquare,
-  History,
   Plus,
-  MoreVertical,
   Cpu,
-  Cloud,
+  Zap,
+  BookOpen,
+  MoreHorizontal,
+  Lightbulb,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { A2UIRenderer } from "@/components/advanced/A2UIRenderer";
+import { CoreVisualizer } from "./CoreVisualizer";
+
+function TypewriterText({
+  text,
+  speed = 10,
+}: {
+  text: string;
+  speed?: number;
+}) {
+  const [displayedText, setDisplayedText] = React.useState("");
+
+  React.useEffect(() => {
+    let i = 0;
+    const timer = setInterval(() => {
+      setDisplayedText(text.slice(0, i));
+      i++;
+      if (i > text.length) clearInterval(timer);
+    }, speed);
+    return () => clearInterval(timer);
+  }, [text, speed]);
+
+  return <span>{displayedText}</span>;
+}
+
+// [FIX] Abstracting Telemetry logic to avoid hydration mismatch
+function useTelemetry(isActive: boolean) {
+  const [stats, setStats] = React.useState({
+    skills: { Analysis: 0, Synthesis: 0, Creativity: 0 },
+    mounted: false,
+  });
+
+  React.useEffect(() => {
+    setStats({
+      skills: {
+        Analysis: Math.floor(Math.random() * 20) + 75,
+        Synthesis: Math.floor(Math.random() * 15) + 80,
+        Creativity: Math.floor(Math.random() * 25) + 70,
+      },
+      mounted: true,
+    });
+  }, []);
+
+  return stats;
+}
 
 interface Message {
   sender: "me" | "AI Tutor";
@@ -26,6 +71,10 @@ interface Message {
   timestamp: Date | string;
   source?: string;
   isHidden?: boolean;
+  personalization?: {
+    behavior?: string;
+    recommendation?: string;
+  };
 }
 
 interface AITutorChatProps {
@@ -58,6 +107,7 @@ export function AITutorChat({
   onNewChat,
 }: AITutorChatProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const telemetry = useTelemetry(isLoading);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -70,203 +120,267 @@ export function AITutorChat({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full relative overflow-hidden">
-      {/* Background Glows */}
-      <div className="absolute top-1/4 -left-20 w-80 h-80 bg-lumina-primary/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
+    <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-gradient-to-br from-[#0a0a0a] to-[#121212] font-sans">
+      {/* Subtle Background Elements */}
+      <div className="absolute top-0 inset-x-0 h-64 bg-gradient-to-b from-lumina-primary/5 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-[0.02]" />
 
-      {/* Messages Area */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
-      >
-        <AnimatePresence initial={false}>
-          {messages.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto"
-            >
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-lumina-primary/20 to-lumina-primary/5 flex items-center justify-center mb-5 border border-lumina-primary/20 shadow-2xl shadow-lumina-primary/10">
-                <Bot className="w-8 h-8 text-lumina-primary animate-pulse" />
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">
-                How can I assist you today?
-              </h2>
-              <p className="text-sm text-gray-400 mb-6 leading-relaxed max-w-xs">
-                I'm your Lumina AI Tutor. Ask me to explain concepts, create
-                quizzes, or help with your assignments.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-                {[
-                  "Create a Python quiz",
-                  "Explain React Hooks",
-                  "Summarize my notes",
-                  "Help with SQL query",
-                ].map((hint) => (
-                  <button
-                    key={hint}
-                    onClick={() => onSuggestionClick(hint)}
-                    className="p-3 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 hover:bg-white/10 hover:border-lumina-primary/30 transition-all text-left group"
-                  >
-                    <span className="group-hover:text-lumina-primary transition-colors">
-                      {hint}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          ) : (
-            messages
-              .filter((m) => !m.isHidden)
-              .map((msg, idx) => (
+      {/* Header Bar */}
+      <header className="relative z-20 px-6 py-4 border-b border-white/5 bg-black/40 backdrop-blur-md flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-lumina-primary/20 to-lumina-secondary/10 border border-lumina-primary/10 flex items-center justify-center shadow-lg shadow-lumina-primary/5">
+            <Bot className="w-5 h-5 text-lumina-primary" />
+          </div>
+          <div>
+            <h1 className="text-sm font-semibold text-white tracking-wide">
+              Lumina AI Tutor
+            </h1>
+            <p className="text-xs text-gray-500 font-medium">
+              Powered by {providerName}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Badge
+            variant="outline"
+            className="hidden md:flex bg-white/5 border-white/10 text-gray-400 text-[10px] px-2 py-1 gap-1.5 font-medium"
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                isLoading ? "bg-amber-400 animate-pulse" : "bg-emerald-500"
+              }`}
+            />
+            {isLoading ? "Processing" : "Ready"}
+          </Badge>
+
+          <div className="h-4 w-px bg-white/10 mx-1 hidden md:block" />
+
+          <button
+            onClick={onNewChat}
+            className="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-all border border-transparent hover:border-white/10"
+            title="Start New Session"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex overflow-hidden relative z-10">
+        {/* Chat Stream */}
+        <div className="flex-1 flex flex-col min-w-0 h-full">
+          <div
+            ref={scrollRef}
+            className="flex-1 overflow-y-auto px-4 md:px-20 py-8 space-y-8 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+          >
+            <AnimatePresence initial={false}>
+              {messages.length === 0 ? (
                 <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className={cn(
-                    "flex items-start gap-4 group",
-                    msg.sender === "me" ? "flex-row-reverse" : "flex-row",
-                  )}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="h-full flex flex-col items-center justify-center text-center max-w-2xl mx-auto px-4"
                 >
-                  <div
-                    className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg",
-                      msg.sender === "me"
-                        ? "bg-white/5 border border-white/10"
-                        : "bg-gradient-to-br from-lumina-primary to-lumina-primary/60 border border-lumina-primary/20",
-                    )}
-                  >
-                    {msg.sender === "me" ? (
-                      <User className="w-5 h-5 text-gray-400" />
-                    ) : (
-                      <Bot className="w-5 h-5 text-black" />
-                    )}
+                  <div className="mb-8 relative group">
+                    <div className="absolute inset-0 bg-lumina-primary/20 blur-[50px] rounded-full opacity-0 group-hover:opacity-50 transition-opacity duration-1000" />
+                    <CoreVisualizer isActive={false} />
                   </div>
 
-                  <div
-                    className={cn(
-                      "flex flex-col max-w-[85%] md:max-w-[70%]",
-                      msg.sender === "me" ? "items-end" : "items-start",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "p-3.5 rounded-2xl relative transition-all duration-300",
-                        msg.sender === "me"
-                          ? "bg-lumina-primary/10 border border-lumina-primary/20 text-white rounded-tr-none"
-                          : "glass-card bg-white/5 border-white/10 text-gray-200 rounded-tl-none hover:bg-white/[0.07]",
-                      )}
-                    >
-                      <div className="text-sm leading-relaxed">
-                        <A2UIRenderer
-                          content={msg.text}
-                          onAction={onAction}
-                          isUser={msg.sender === "me"}
-                        />
-                      </div>
+                  <h2 className="text-2xl font-light text-white mb-2 tracking-tight">
+                    How can I help you learn today?
+                  </h2>
+                  <p className="text-sm text-gray-400 mb-8 max-w-md mx-auto leading-relaxed">
+                    I can explain complex topics, review your code, or help you
+                    solve algorithmic problems.
+                  </p>
 
-                      {msg.sender !== "me" && (
-                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => onAddToNotes(msg.text)}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-                          >
-                            <FileText className="w-2.5 h-2.5" /> Save to Notes
-                          </button>
-                          <button
-                            onClick={() => copyToClipboard(msg.text)}
-                            className="p-1.5 bg-white/5 border border-white/10 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-                          >
-                            <Copy className="w-2.5 h-2.5" />
-                          </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-lg">
+                    {[
+                      {
+                        icon: <BookOpen className="w-4 h-4" />,
+                        text: "Explain React Hooks",
+                      },
+                      {
+                        icon: <Zap className="w-4 h-4" />,
+                        text: "Optimize my SQL query",
+                      },
+                      {
+                        icon: <Cpu className="w-4 h-4" />,
+                        text: "Debug this Python script",
+                      },
+                      {
+                        icon: <Lightbulb className="w-4 h-4" />,
+                        text: "Generate a quiz on CSS",
+                      },
+                    ].map((item, i) => (
+                      <button
+                        key={i}
+                        onClick={() => onSuggestionClick(item.text)}
+                        className="flex items-center gap-3 p-3 text-left rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 transition-all group"
+                      >
+                        <div className="p-2 rounded-lg bg-white/5 text-gray-400 group-hover:text-lumina-primary group-hover:bg-lumina-primary/10 transition-colors">
+                          {item.icon}
                         </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-2 px-1">
-                      <span className="text-[10px] text-gray-500 font-medium">
-                        {new Date(msg.timestamp).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                      {msg.source && (
-                        <>
-                          <span className="text-gray-700">•</span>
-                          <span className="text-[10px] text-lumina-primary/60 font-semibold uppercase tracking-widest">
-                            {msg.source}
-                          </span>
-                        </>
-                      )}
-                    </div>
+                        <span className="text-xs text-gray-300 group-hover:text-white font-medium">
+                          {item.text}
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 </motion.div>
-              ))
-          )}
-        </AnimatePresence>
+              ) : (
+                messages
+                  .filter((m) => !m.isHidden)
+                  .map((msg, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={cn(
+                        "flex gap-4 max-w-4xl mx-auto w-full",
+                        msg.sender === "me" ? "justify-end" : "justify-start",
+                      )}
+                    >
+                      {msg.sender === "AI Tutor" && (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lumina-primary/20 to-lumina-secondary/10 border border-lumina-primary/10 flex-shrink-0 flex items-center justify-center mt-1">
+                          <Bot className="w-4 h-4 text-lumina-primary" />
+                        </div>
+                      )}
 
-        {isLoading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-start gap-4"
-          >
-            <div className="w-10 h-10 rounded-xl bg-lumina-primary/10 flex items-center justify-center shrink-0 border border-lumina-primary/20">
-              <Bot className="w-5 h-5 text-lumina-primary animate-pulse" />
-            </div>
-            <div className="glass-card bg-white/5 p-4 rounded-2xl rounded-tl-none border border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="flex gap-1">
-                  <span className="w-1 h-1 bg-lumina-primary rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                  <span className="w-1 h-1 bg-lumina-primary rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                  <span className="w-1 h-1 bg-lumina-primary rounded-full animate-bounce"></span>
+                      <div
+                        className={cn(
+                          "flex flex-col gap-1 max-w-[85%]",
+                          msg.sender === "me" ? "items-end" : "items-start",
+                        )}
+                      >
+                        <div className="flex items-center gap-2 px-1">
+                          <span className="text-xs font-medium text-gray-500">
+                            {msg.sender === "me" ? "You" : "Lumina Tutor"}
+                          </span>
+                        </div>
+
+                        <div
+                          className={cn(
+                            "p-4 rounded-2xl text-sm leading-relaxed shadow-sm",
+                            msg.sender === "me"
+                              ? "bg-lumina-primary text-black font-medium rounded-tr-md"
+                              : "bg-[#1A1A1A] border border-white/5 text-gray-200 rounded-tl-md",
+                          )}
+                        >
+                          {msg.sender === "AI Tutor" &&
+                          idx === messages.length - 1 &&
+                          isLoading ? (
+                            <TypewriterText text={msg.text} />
+                          ) : (
+                            <A2UIRenderer
+                              content={msg.text}
+                              onAction={onAction}
+                              isUser={msg.sender === "me"}
+                            />
+                          )}
+                        </div>
+
+                        {msg.sender === "AI Tutor" && (
+                          <div className="flex items-center gap-2 mt-1 pl-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => copyToClipboard(msg.text)}
+                              className="text-gray-600 hover:text-gray-400 p-1 transition-colors"
+                              title="Copy"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => onAddToNotes(msg.text)}
+                              className="text-gray-600 hover:text-gray-400 p-1 transition-colors"
+                              title="Add to Notes"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {msg.sender === "me" && (
+                        <div className="w-8 h-8 rounded-full bg-white/10 border border-white/5 flex-shrink-0 flex items-center justify-center mt-1">
+                          <User className="w-4 h-4 text-gray-300" />
+                        </div>
+                      )}
+                    </motion.div>
+                  ))
+              )}
+            </AnimatePresence>
+
+            {isLoading && messages.length > 0 && (
+              <div className="flex gap-4 max-w-4xl mx-auto w-full">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lumina-primary/20 to-lumina-secondary/10 border border-lumina-primary/10 flex-shrink-0 flex items-center justify-center">
+                  <Loader2 className="w-4 h-4 text-lumina-primary animate-spin" />
                 </div>
-                <span className="text-xs font-medium text-gray-500 tracking-wide">
-                  Lumina is thinking...
-                </span>
+                <div className="flex items-center gap-2 h-10">
+                  <span className="text-sm text-gray-500 animate-pulse">
+                    Thinking...
+                  </span>
+                </div>
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar Panel (Desktop Only) */}
+        <aside className="hidden xl:flex w-80 flex-col gap-6 p-6 border-l border-white/5 bg-[#0a0a0a]/50 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-[#151515] border border-white/5 rounded-2xl p-4">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+              Session Stats
+            </h3>
+
+            <div className="space-y-4">
+              {Object.entries(telemetry.skills).map(([key, value]) => (
+                <div key={key}>
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-gray-500">{key}</span>
+                    <span className="text-gray-300 font-mono">
+                      {telemetry.mounted ? `${value}%` : "--"}
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-lumina-primary/80"
+                      initial={{ width: 0 }}
+                      animate={{ width: telemetry.mounted ? `${value}%` : 0 }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
-          </motion.div>
-        )}
+          </div>
+
+          <div className="bg-gradient-to-br from-lumina-primary/5 to-transparent border border-lumina-primary/10 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-lumina-primary" />
+              <h3 className="text-xs font-semibold text-lumina-primary">
+                Learning Tip
+              </h3>
+            </div>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Start with specific questions to get more targeted examples. You
+              can ask for code snippets, explanations, or debugging help.
+            </p>
+          </div>
+        </aside>
       </div>
 
-      {/* Input Area Overlay */}
-      <div className="px-4 pb-6 mt-auto relative z-10">
-        <div className="max-w-4xl mx-auto flex flex-col gap-4">
-          {/* Suggestions */}
-          <AnimatePresence>
-            {suggestions.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="flex gap-2 overflow-x-auto pb-1 no-scrollbar justify-center md:justify-start"
-              >
-                {suggestions.map((s, i) => (
-                  <button
-                    key={i}
-                    onClick={() => onSuggestionClick(s)}
-                    className="whitespace-nowrap px-3 py-1.5 rounded-full glass-card bg-white/5 border-white/10 text-[10px] font-bold text-gray-400 hover:bg-lumina-primary/10 hover:border-lumina-primary/40 hover:text-white transition-all active:scale-95 shadow-lg uppercase tracking-tight"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Form */}
+      {/* Input Area */}
+      <div className="relative z-20 p-6 bg-[#0a0a0a] border-t border-white/5">
+        <div className="max-w-4xl mx-auto">
           <form
             onSubmit={onSendMessage}
-            className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-xl p-1.5 flex items-center gap-2 shadow-2xl focus-within:border-lumina-primary/40 transition-all shadow-black/40"
+            className="relative flex items-end gap-3 p-2 bg-[#151515] border border-white/10 rounded-2xl focus-within:ring-1 focus-within:ring-lumina-primary/30 transition-all"
           >
-            <div className="flex items-center gap-2 px-2.5 border-r border-white/10 hidden md:flex">
-              <Bot className="w-3.5 h-3.5 text-lumina-primary/60" />
+            <div className="pl-3 pb-3 text-gray-500">
+              <MoreHorizontal className="w-5 h-5 hover:text-white cursor-pointer transition-colors" />
             </div>
 
-            <input
-              type="text"
+            <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -275,39 +389,28 @@ export function AITutorChat({
                   onSendMessage();
                 }
               }}
-              placeholder="Message Lumina..."
-              className="flex-1 bg-transparent border-none focus:ring-0 text-white placeholder:text-gray-500 text-sm py-3 px-2 outline-none"
+              placeholder="Ask anything about coding, algorithms, or system design..."
+              className="flex-1 bg-transparent border-none focus:ring-0 text-white placeholder:text-gray-600 font-sans text-sm py-3 max-h-32 resize-none"
+              style={{ minHeight: "44px", fieldSizing: "content" } as any}
             />
 
-            <div className="flex items-center gap-2 p-1">
-              <button
-                type="submit"
-                disabled={!input.trim() || isLoading}
-                className={cn(
-                  "p-2.5 rounded-lg transition-all duration-300 flex items-center justify-center shadow-lg active:scale-90",
-                  input.trim() && !isLoading
-                    ? "bg-lumina-primary text-black hover:scale-105"
-                    : "bg-white/5 text-gray-600 cursor-not-allowed",
-                )}
-              >
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={!input.trim() || isLoading}
+              className={cn(
+                "p-2.5 rounded-xl transition-all duration-200 mb-1",
+                input.trim() && !isLoading
+                  ? "bg-lumina-primary text-black hover:bg-lumina-secondary shadow-lg shadow-lumina-primary/20"
+                  : "bg-white/5 text-gray-600 cursor-not-allowed",
+              )}
+            >
+              <Send className="w-4 h-4" />
+            </button>
           </form>
 
-          <div className="flex items-center justify-center gap-6 px-4">
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
-              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">
-                {providerName}
-              </span>
-            </div>
-            <p className="text-[10px] text-gray-600 italic">
-              Lumina AI can make mistakes. Verify important info.
+          <div className="text-center mt-3">
+            <p className="text-[10px] text-gray-600">
+              Lumina AI can make mistakes. Verify important information.
             </p>
           </div>
         </div>
