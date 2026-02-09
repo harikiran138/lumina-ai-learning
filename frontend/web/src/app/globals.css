@@ -220,8 +220,12 @@ body::after {
   }
 
   .glass-v2-gold {
-    @apply glass-v2;
-    border-color: rgba(255, 215, 0, 0.1);
+    background: var(--glass-surface);
+    backdrop-filter: blur(var(--glass-blur));
+    box-shadow: var(--shadow-premium);
+    border-radius: 1.5rem;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255, 215, 0, 0.1);
   }
 
   .glass-v2-gold:hover {
