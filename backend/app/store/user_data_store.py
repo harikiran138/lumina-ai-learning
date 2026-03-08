@@ -2,6 +2,7 @@ from typing import Dict, List
 from datetime import datetime
 from app.database.supabase_manager import supabase_db
 from app.core.logging import structlog
+from app.store.local_store import LocalJsonStore
 
 log = structlog.get_logger()
 
@@ -18,6 +19,7 @@ class UserDataStore:
         except Exception as e:
             log.warning("user_data_store_unavailable", error=str(e))
             self.client = None
+        self.local = LocalJsonStore()
 
     @property
     def user_data_collection(self):
@@ -27,7 +29,24 @@ class UserDataStore:
 
     async def _get_or_create_user(self, user_id: str) -> dict:
         if self.user_data_collection is None:
-            return {"user_id": user_id, "progress": {}, "notes": [], "quiz_history": []}
+            payload = self.local.read()
+            existing = next(
+                (item for item in payload["user_data"] if item.get("user_id") == user_id),
+                None,
+            )
+            if existing:
+                return existing
+
+            doc = {
+                "user_id": user_id,
+                "progress": {"completed_modules": [], "current_score": 0},
+                "notes": [],
+                "quiz_history": [],
+                "updated_at": datetime.now().isoformat(),
+            }
+            payload["user_data"].append(doc)
+            self.local.write(payload)
+            return doc
         try:
             response = self.user_data_collection.select("*").eq("user_id", user_id).execute()
             if response.data:
@@ -57,7 +76,21 @@ class UserDataStore:
 
     async def add_quiz_attempt(self, user_id: str, attempt: dict):
         if self.user_data_collection is None:
-            log.warning("quiz_attempt_skipped_no_store", user_id=user_id)
+            attempt["timestamp"] = datetime.now().isoformat()
+            payload = self.local.read()
+            doc = await self._get_or_create_user(user_id)
+            history = doc.get("quiz_history", []) or []
+            history.append(attempt)
+            avg = sum(a.get("score", 0) for a in history) / len(history) if history else 0
+            progress = doc.get("progress", {}) or {}
+            progress["current_score"] = round(avg, 2)
+            for item in payload["user_data"]:
+                if item.get("user_id") == user_id:
+                    item["quiz_history"] = history
+                    item["progress"] = progress
+                    item["updated_at"] = datetime.now().isoformat()
+                    break
+            self.local.write(payload)
             return
         try:
             attempt["timestamp"] = datetime.now().isoformat()
@@ -98,7 +131,26 @@ class UserDataStore:
 
     async def get_recent_quiz_stats(self, user_id: str, limit: int = 5) -> Dict:
         if self.user_data_collection is None:
-            return {"attempt_count": 0, "recent_average": 0, "weak_topics": [], "recent_history": []}
+            payload = self.local.read()
+            doc = next(
+                (item for item in payload["user_data"] if item.get("user_id") == user_id),
+                None,
+            )
+            if not doc:
+                return {"attempt_count": 0, "recent_average": 0, "weak_topics": [], "recent_history": []}
+
+            history = doc.get("quiz_history", [])
+            recent = history[-limit:]
+            avg = sum(a.get("score", 0) for a in recent) / len(recent) if recent else 0
+            weak_topics = {
+                h.get("topic") for h in history if h.get("score", 0) < 60 and h.get("topic")
+            }
+            return {
+                "attempt_count": len(history),
+                "recent_average": round(avg, 2),
+                "weak_topics": list(weak_topics),
+                "recent_history": recent,
+            }
         try:
             response = self.user_data_collection.select("quiz_history").eq("user_id", user_id).execute()
             
@@ -130,7 +182,16 @@ class UserDataStore:
 
     async def add_note(self, user_id: str, content: str):
         if self.user_data_collection is None:
-            log.warning("note_save_skipped_no_store", user_id=user_id)
+            payload = self.local.read()
+            doc = await self._get_or_create_user(user_id)
+            notes = doc.get("notes", []) or []
+            notes.append({"content": content, "timestamp": datetime.now().isoformat()})
+            for item in payload["user_data"]:
+                if item.get("user_id") == user_id:
+                    item["notes"] = notes
+                    item["updated_at"] = datetime.now().isoformat()
+                    break
+            self.local.write(payload)
             return
         try:
             doc = await self._get_or_create_user(user_id)
@@ -147,7 +208,12 @@ class UserDataStore:
 
     async def get_notes(self, user_id: str) -> List[Dict]:
         if self.user_data_collection is None:
-            return []
+            payload = self.local.read()
+            doc = next(
+                (item for item in payload["user_data"] if item.get("user_id") == user_id),
+                None,
+            )
+            return (doc or {}).get("notes", [])
         try:
             response = self.user_data_collection.select("notes").eq("user_id", user_id).execute()
             if response.data and response.data[0].get("notes"):
@@ -161,7 +227,16 @@ class UserDataStore:
 
     async def update_progress_metric(self, user_id: str, metric: str, value: any):
         if self.user_data_collection is None:
-            log.warning("progress_update_skipped_no_store", user_id=user_id, metric=metric)
+            payload = self.local.read()
+            doc = await self._get_or_create_user(user_id)
+            progress = doc.get("progress", {}) or {}
+            progress[metric] = value
+            for item in payload["user_data"]:
+                if item.get("user_id") == user_id:
+                    item["progress"] = progress
+                    item["updated_at"] = datetime.now().isoformat()
+                    break
+            self.local.write(payload)
             return
         try:
             doc = await self._get_or_create_user(user_id)

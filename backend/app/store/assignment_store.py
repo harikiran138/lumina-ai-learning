@@ -3,6 +3,7 @@ from typing import List, Optional
 import uuid
 from app.database.supabase_manager import supabase_db
 from app.core.logging import structlog
+from app.store.local_store import LocalJsonStore
 
 log = structlog.get_logger()
 
@@ -14,13 +15,18 @@ class AssignmentStore:
 
     def __init__(self):
         self.client = supabase_db.get_client()
+        self.local = LocalJsonStore()
 
     @property
     def assignments_collection(self):
+        if self.client is None:
+            return None
         return self.client.table("assignments")
 
     @property
     def submissions_collection(self):
+        if self.client is None:
+            return None
         return self.client.table("submissions")
 
     async def create_assignment(
@@ -35,6 +41,12 @@ class AssignmentStore:
             "created_by": created_by,
             "created_at": datetime.now().isoformat(),
         }
+        if self.client is None:
+            payload = self.local.read()
+            payload["assignments"].append(assignment)
+            self.local.write(payload)
+            return assignment
+
         try:
             response = self.assignments_collection.insert(assignment).execute()
             if response.data:
@@ -45,9 +57,11 @@ class AssignmentStore:
             return assignment
 
     async def submit_assignment(self, assignment_id: str, student_id: str, file_path: str) -> dict:
+        assignment = await self.get_assignment(assignment_id)
         submission = {
             "id": str(uuid.uuid4()),
             "assignment_id": assignment_id,
+            "course_id": assignment.get("course_id") if assignment else None,
             "student_id": student_id,
             "file_path": file_path,
             "submitted_at": datetime.now().isoformat(),
@@ -55,6 +69,12 @@ class AssignmentStore:
             "grade": None,
             "feedback": None,
         }
+        if self.client is None:
+            payload = self.local.read()
+            payload["submissions"].append(submission)
+            self.local.write(payload)
+            return submission
+
         try:
             response = self.submissions_collection.insert(submission).execute()
             if response.data:
@@ -71,12 +91,28 @@ class AssignmentStore:
         if ocr_text:
             update_data["ocr_text"] = ocr_text
 
+        if self.client is None:
+            payload = self.local.read()
+            for submission in payload["submissions"]:
+                if submission.get("id") == submission_id:
+                    submission.update(update_data)
+                    self.local.write(payload)
+                    return
+            return
+
         try:
             self.submissions_collection.update(update_data).eq("id", submission_id).execute()
         except Exception as e:
             log.error("update_submission_grade_failed", error=str(e))
 
     async def get_submissions(self, assignment_id: str) -> List[dict]:
+        if self.client is None:
+            payload = self.local.read()
+            return [
+                submission.copy()
+                for submission in payload["submissions"]
+                if submission.get("assignment_id") == assignment_id
+            ]
         try:
             response = self.submissions_collection.select("*").eq("assignment_id", assignment_id).execute()
             return response.data
@@ -85,6 +121,15 @@ class AssignmentStore:
             return []
 
     async def get_student_submission(self, assignment_id: str, student_id: str) -> Optional[dict]:
+        if self.client is None:
+            payload = self.local.read()
+            for submission in payload["submissions"]:
+                if (
+                    submission.get("assignment_id") == assignment_id
+                    and submission.get("student_id") == student_id
+                ):
+                    return submission.copy()
+            return None
         try:
             response = self.submissions_collection.select("*").eq("assignment_id", assignment_id).eq("student_id", student_id).execute()
             if response.data:
@@ -95,6 +140,16 @@ class AssignmentStore:
             return None
 
     async def list_assignments(self, course_id: Optional[str] = None) -> List[dict]:
+        if self.client is None:
+            payload = self.local.read()
+            assignments = payload["assignments"]
+            if course_id:
+                assignments = [
+                    assignment
+                    for assignment in assignments
+                    if assignment.get("course_id") == course_id
+                ]
+            return [assignment.copy() for assignment in assignments]
         try:
             query = self.assignments_collection.select("*")
             if course_id:
@@ -107,6 +162,12 @@ class AssignmentStore:
             return []
 
     async def get_assignment(self, assignment_id: str) -> Optional[dict]:
+        if self.client is None:
+            payload = self.local.read()
+            for assignment in payload["assignments"]:
+                if assignment.get("id") == assignment_id:
+                    return assignment.copy()
+            return None
         try:
             response = self.assignments_collection.select("*").eq("id", assignment_id).execute()
             if response.data:

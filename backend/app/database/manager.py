@@ -17,12 +17,15 @@ class DatabaseManager:
         """
         Ensure Supabase is ready.
         """
-        try:
-            supabase_db.get_client()
+        client = supabase_db.get_client()
+        if client is not None:
             log.info("supabase_connected")
-        except Exception as e:
-            log.error("supabase_connection_failed", error=str(e))
-            raise e
+            return
+
+        log.warning(
+            "supabase_connection_unavailable",
+            error=supabase_db.last_error or "Unknown Supabase initialization error",
+        )
 
     @classmethod
     async def close(cls):

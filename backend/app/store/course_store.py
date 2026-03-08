@@ -1,8 +1,10 @@
 from typing import List, Optional
+from datetime import datetime
 import uuid
 from app.database.supabase_manager import supabase_db
 from app.database.models import Course
 from app.core.logging import structlog
+from app.store.local_store import LocalJsonStore
 
 log = structlog.get_logger()
 
@@ -15,6 +17,7 @@ class CourseStore:
 
     def __init__(self):
         self.client = supabase_db.get_client()
+        self.local = LocalJsonStore()
 
     def _normalize_course(self, course: Optional[dict]) -> Optional[dict]:
         if not course:
@@ -49,15 +52,29 @@ class CourseStore:
     @property
     def courses_collection(self):
         """Supabase uses 'courses' table."""
+        if self.client is None:
+            return None
         return self.client.table("courses")
 
     async def create_course(self, name: str, code: str, description: str, teacher_id: str) -> dict:
         course_data = {
+            "id": str(uuid.uuid4()),
+            "name": name,
+            "title": name,
             "course_name": name,
+            "code": code,
             "course_code": code,
             "description": description,
-            "teacher_id": teacher_id
+            "teacher_id": teacher_id,
+            "modules": [],
+            "created_at": datetime.utcnow().isoformat(),
         }
+
+        if self.client is None:
+            payload = self.local.read()
+            payload["courses"].append(course_data)
+            self.local.write(payload)
+            return self._normalize_course(course_data)
 
         try:
             response = self.courses_collection.insert(course_data).execute()
@@ -69,6 +86,9 @@ class CourseStore:
             raise e
 
     async def list_courses(self) -> List[dict]:
+        if self.client is None:
+            payload = self.local.read()
+            return [self._normalize_course(course) for course in payload["courses"]]
         try:
             response = self.courses_collection.select("*").execute()
             return [self._normalize_course(course) for course in response.data]
@@ -77,6 +97,12 @@ class CourseStore:
             return []
 
     async def get_course_by_code(self, code: str) -> Optional[dict]:
+        if self.client is None:
+            payload = self.local.read()
+            for course in payload["courses"]:
+                if course.get("course_code") == code or course.get("code") == code:
+                    return self._normalize_course(course)
+            return None
         try:
             response = self.courses_collection.select("*").eq("course_code", code).execute()
             if response.data:
@@ -86,6 +112,12 @@ class CourseStore:
         return None
 
     async def get_course_by_id(self, course_id: str) -> Optional[dict]:
+        if self.client is None:
+            payload = self.local.read()
+            for course in payload["courses"]:
+                if course.get("id") == course_id:
+                    return self._normalize_course(course)
+            return None
         try:
             response = self.courses_collection.select("*").eq("id", course_id).execute()
             if response.data:
@@ -95,6 +127,33 @@ class CourseStore:
         return None
 
     async def update_course(self, course_id: str, updates: dict) -> bool:
+        if self.client is None:
+            updates = updates.copy()
+            updates.pop("id", None)
+            if "name" in updates:
+                updates["course_name"] = updates.pop("name")
+            if "title" in updates and "course_name" not in updates:
+                updates["course_name"] = updates.pop("title")
+            else:
+                updates.pop("title", None)
+            if "code" in updates:
+                updates["course_code"] = updates.pop("code")
+
+            payload = self.local.read()
+            updated = False
+            for course in payload["courses"]:
+                if course.get("id") == course_id:
+                    course.update(updates)
+                    if "course_name" in updates:
+                        course["name"] = updates["course_name"]
+                        course["title"] = updates["course_name"]
+                    if "course_code" in updates:
+                        course["code"] = updates["course_code"]
+                    updated = True
+                    break
+            if updated:
+                self.local.write(payload)
+            return updated
         try:
             # PostgreSQL/Supabase doesn't like some fields in update
             updates.pop("id", None)
@@ -113,6 +172,18 @@ class CourseStore:
             return False
 
     async def delete_course(self, course_id: str) -> bool:
+        if self.client is None:
+            payload = self.local.read()
+            original = len(payload["courses"])
+            payload["courses"] = [course for course in payload["courses"] if course.get("id") != course_id]
+            payload["progress"] = [
+                item for item in payload["progress"] if item.get("courseId") != course_id
+            ]
+            payload["assignments"] = [
+                item for item in payload["assignments"] if item.get("course_id") != course_id
+            ]
+            self.local.write(payload)
+            return len(payload["courses"]) != original
         try:
             response = self.courses_collection.delete().eq("id", course_id).execute()
             return len(response.data) > 0
@@ -121,6 +192,13 @@ class CourseStore:
             return False
 
     async def get_courses_by_teacher(self, teacher_id: str) -> List[dict]:
+        if self.client is None:
+            payload = self.local.read()
+            return [
+                self._normalize_course(course)
+                for course in payload["courses"]
+                if course.get("teacher_id") == teacher_id
+            ]
         try:
             response = self.courses_collection.select("*").eq("teacher_id", teacher_id).execute()
             return [self._normalize_course(course) for course in response.data]
@@ -135,6 +213,8 @@ class CourseStore:
                 return False
             modules = course.get("modules") or []
             modules.append(module)
+            if self.client is None:
+                return await self.update_modules(course_id, modules)
             response = self.courses_collection.update({"modules": modules}).eq("id", course_id).execute()
             return len(response.data) > 0
         except Exception as e:
@@ -142,6 +222,17 @@ class CourseStore:
             return False
 
     async def update_modules(self, course_id: str, modules: list) -> bool:
+        if self.client is None:
+            payload = self.local.read()
+            updated = False
+            for course in payload["courses"]:
+                if course.get("id") == course_id:
+                    course["modules"] = modules
+                    updated = True
+                    break
+            if updated:
+                self.local.write(payload)
+            return updated
         try:
             response = self.courses_collection.update({"modules": modules}).eq("id", course_id).execute()
             return len(response.data) > 0
