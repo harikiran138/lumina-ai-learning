@@ -28,7 +28,7 @@ class UserStore:
         return get_password_hash(password)
 
     async def create_user(
-        self, email: str, password: str, full_name: str, role: str = "student"
+        self, email: str, password: str, full_name: str, role: str = "student", phone: str = ""
     ) -> dict:
         hashed_password = self.get_password_hash(password)
 
@@ -38,6 +38,7 @@ class UserStore:
             "password_hash": hashed_password,
             "name": full_name,
             "role": role,
+            "phone": phone or "N/A",
         }
 
         try:
