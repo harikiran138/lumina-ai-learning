@@ -26,6 +26,7 @@ export default function AITutorPage() {
 
   // Context State
   const [userContext, setUserContext] = useState<string>("");
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   // Session Management
   const [currentSessionId, setCurrentSessionId] = useState<string>("");
@@ -108,6 +109,8 @@ export default function AITutorPage() {
           api.getStudentProfile(),
           api.getNotes(),
         ]);
+
+        if (user?.id) setCurrentUserId(user.id);
 
         let allCourses = [];
         try {
@@ -282,7 +285,7 @@ Always prioritize interactive components over plain text explanations.
         replyText = "WebLLM Not fully initialized";
       } else {
         // Cloud Router
-        const result = await processMessage(textInput, enhancedContext);
+        const result = await processMessage(textInput, enhancedContext, currentUserId);
         replyText = result.text;
         source = result.source;
         personalization = result.personalization;

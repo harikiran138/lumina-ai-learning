@@ -35,6 +35,7 @@ const sendTelemetry = (
 export const processMessage = async (
   question: string,
   userContext?: string,
+  userId?: string,
 ): Promise<ChatResponse> => {
   const startTime = performance.now();
 
@@ -77,7 +78,7 @@ export const processMessage = async (
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: question,
-          user_id: "guest", // TODO: Pass real user ID if available
+          user_id: userId || "guest",
           session_id: "default-session",
           context_filters: userContext ? { context: userContext } : undefined,
         }),
