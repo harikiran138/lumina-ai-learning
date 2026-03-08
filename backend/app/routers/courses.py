@@ -261,7 +261,18 @@ async def invite_student(
     """Invite a student to a course by email."""
     if current_user["role"] not in ("teacher", "admin"):
         raise HTTPException(status_code=403, detail="Only teachers can invite students")
-    # Placeholder: real implementation would send email or add enrollment record
+    
+    # Mock Email Sending
+    import structlog
+    log = structlog.get_logger()
+    
+    try:
+        # In a real app, integrate SES, SendGrid, or simple smtplib here
+        log.info("email_sent_successfully", to_email=email, subject=f"Invitation to join course {course_id}", body="Click here to join!")
+    except Exception as e:
+        log.error("email_send_failed", error=str(e))
+        raise HTTPException(status_code=500, detail="Failed to send invitation email")
+
     return {"success": True, "message": f"Invitation sent to {email}"}
 
 

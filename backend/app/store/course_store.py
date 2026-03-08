@@ -9,7 +9,7 @@ log = structlog.get_logger()
 
 class CourseStore:
     """
-    MongoDB store for Courses.
+    Supabase (PostgreSQL) store for Courses.
     All methods are ASYNC.
     """
 
@@ -91,21 +91,22 @@ class CourseStore:
             return []
 
     async def add_module(self, course_id: str, module: dict) -> bool:
-        collection = self.courses_collection
-        if collection is None:
+        try:
+            course = await self.get_course_by_id(course_id)
+            if not course:
+                return False
+            modules = course.get("modules") or []
+            modules.append(module)
+            response = self.courses_collection.update({"modules": modules}).eq("id", course_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            log.error("add_module_failed", error=str(e))
             return False
-        result = await collection.update_one(
-            {"$or": [{"_id": course_id}, {"id": course_id}]},
-            {"$push": {"modules": module}}
-        )
-        return result.modified_count > 0
 
     async def update_modules(self, course_id: str, modules: list) -> bool:
-        collection = self.courses_collection
-        if collection is None:
+        try:
+            response = self.courses_collection.update({"modules": modules}).eq("id", course_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            log.error("update_modules_failed", error=str(e))
             return False
-        result = await collection.update_one(
-            {"$or": [{"_id": course_id}, {"id": course_id}]},
-            {"$set": {"modules": modules}}
-        )
-        return result.modified_count > 0
