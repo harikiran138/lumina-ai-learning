@@ -23,8 +23,8 @@ class CourseStore:
 
     async def create_course(self, name: str, code: str, description: str, teacher_id: str) -> dict:
         course_data = {
-            "name": name,
-            "code": code,
+            "course_name": name,
+            "course_code": code,
             "description": description,
             "teacher_id": teacher_id
         }
@@ -48,7 +48,7 @@ class CourseStore:
 
     async def get_course_by_code(self, code: str) -> Optional[dict]:
         try:
-            response = self.courses_collection.select("*").eq("code", code).execute()
+            response = self.courses_collection.select("*").eq("course_code", code).execute()
             if response.data:
                 return response.data[0]
         except Exception as e:
