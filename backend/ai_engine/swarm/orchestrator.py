@@ -19,4 +19,4 @@ class Orchestrator:
             answer_key = context.get("answer_key")
             return self.handwriting_agent.analyze(file_path, answer_key)
 
-        raise NotImplementedError("Orchestrator routing logic not implemented for this request.")
+        return {"status": "error", "detail": "Orchestrator routing logic not implemented for this request."}

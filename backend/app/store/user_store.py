@@ -105,3 +105,16 @@ class UserStore:
         except Exception as e:
             log.error("update_user_role_failed", error=str(e))
             return False
+
+    async def update_user_fields(self, user_id: str, updates: dict) -> bool:
+        try:
+            updates.pop("id", None)
+            updates.pop("password", None)
+            updates.pop("password_hash", None)
+            updates.pop("email", None) # Do not allow email update via generic dict
+            
+            response = self.client.table("users").update(updates).eq("id", user_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            log.error("update_user_fields_failed", error=str(e))
+            return False

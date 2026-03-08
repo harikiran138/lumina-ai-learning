@@ -70,9 +70,9 @@ async def upload_document(
                 doc_data["ai_analysis"] = f"AI Analysis failed: {e}"
 
             # Store in State
-            state = state_store.get_state(user_id)
+            state = await state_store.get_state(user_id)
             state["notes"].append(doc_data)
-            state_store.update_state(user_id, state)
+            await state_store.update_state(user_id, state)
 
         elif type == "assignment":
             # Initial state for assignment
@@ -81,9 +81,9 @@ async def upload_document(
             doc_data["remarks"] = ""
 
             # Store in State
-            state = state_store.get_state(user_id)
+            state = await state_store.get_state(user_id)
             state["assignments"].append(doc_data)
-            state_store.update_state(user_id, state)
+            await state_store.update_state(user_id, state)
 
         return {"status": "success", "data": doc_data}
 
@@ -101,7 +101,7 @@ async def grade_assignment(
     """
     Teacher updates score and remarks.
     """
-    state = state_store.get_state(user_id)
+    state = await state_store.get_state(user_id)
     assignments = state.get("assignments", [])
 
     found = False
@@ -133,13 +133,13 @@ async def grade_assignment(
     if not found:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
-    state_store.update_state(user_id, state)
+    await state_store.update_state(user_id, state)
     return {"status": "graded", "assignment_id": assignment_id}
 
 
 @router.get("/list")
 async def list_content(user_id: str = "guest", type: str = "all"):
-    state = state_store.get_state(user_id)
+    state = await state_store.get_state(user_id)
     if type == "assignment":
         return state.get("assignments", [])
     elif type == "note":

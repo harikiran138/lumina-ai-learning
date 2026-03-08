@@ -1,5 +1,4 @@
-from pydantic_settings import BaseSettings
-
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class RAGSettings(BaseSettings):
     EMBEDDING_MODEL: str = "BAAI/bge-large-en-v1.5"
@@ -10,8 +9,7 @@ class RAGSettings(BaseSettings):
     TOP_K: int = 5
     RERANKING_ENABLED: bool = True
 
-    class Config:
-        env_prefix = "RAG_"
+    model_config = SettingsConfigDict(env_prefix="RAG_")
 
 
 rag_settings = RAGSettings()

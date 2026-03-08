@@ -11,11 +11,15 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 
+from typing import Optional
+import uuid
+
 class UserCreate(BaseModel):
     email: str
     password: str
     full_name: str
     role: str = "student"
+    phone: Optional[str] = None
 
 
 class Token(BaseModel):
@@ -26,7 +30,7 @@ class Token(BaseModel):
 class UserResponse(BaseModel):
     id: str
     email: str
-    full_name: str
+    name: str
     role: str
     created_at: str
 
@@ -38,8 +42,10 @@ async def register(user: UserCreate, user_store: UserStore = Depends(get_user_st
         if await user_store.get_user_by_email(user.email):
             raise HTTPException(status_code=400, detail="Email already registered")
 
+        phone_val = user.phone or f"+1555{uuid.uuid4().int % 1000000:06d}"
+
         new_user = await user_store.create_user(
-            email=user.email, password=user.password, full_name=user.full_name, role=user.role
+            email=user.email, password=user.password, full_name=user.full_name, role=user.role, phone=phone_val
         )
 
         from app.core.audit import audit_logger
@@ -69,7 +75,7 @@ async def login_for_access_token(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if not verify_password(form_data.password, user["hashed_password"]):
+    if not verify_password(form_data.password, user["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

@@ -269,7 +269,7 @@ async def health_check():
         health_report["services"]["redis"] = {"status": "connected"}
     except Exception as e:
         health_report["status"] = "degraded"
-        health_report["services"]["redis"] = {"status": "error", "error": str(e)}
+        health_report["services"]["redis"] = {"status": "degraded", "message": "Redis cache unavailable. App functioning with limited caching."}
 
     # 3. Check Vector Store (Chroma)
     try:
