@@ -35,6 +35,7 @@ from .routers import (  # noqa: E402
     auth,
     hybrid,
     student,
+    personalization,
     community,
     admin,
     pathway,
@@ -70,7 +71,12 @@ async def lifespan(app: FastAPI):
     # Startup
     try:
         await db.connect()
-        print("Connected to Supabase")
+        from app.database.supabase_manager import supabase_db
+
+        if supabase_db.client is not None:
+            print("Connected to Supabase")
+        else:
+            print("Starting in limited functionality mode (local fallback store).")
     except Exception as e:
         print(f"WARNING: Could not connect to database: {e}")
         print("Starting in limited functionality mode.")
@@ -184,6 +190,7 @@ app.include_router(hybrid.router, prefix="/api/ai", tags=["Hybrid AI"])
 
 
 app.include_router(student.router, prefix="/api/student", tags=["Student Data"])
+app.include_router(personalization.router, prefix="/api/personalization", tags=["Personalization"])
 app.include_router(community.router, prefix="/api/community", tags=["Community"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(pathway.router, prefix="/api/pathway", tags=["Pathway"])
@@ -253,8 +260,15 @@ async def health_check():
     # 1. Check Supabase
     try:
         from app.database.supabase_manager import supabase_db
-        supabase_db.get_client()
-        health_report["services"]["supabase"] = {"status": "connected"}
+        client = supabase_db.get_client()
+        if client is None:
+            health_report["status"] = "degraded"
+            health_report["services"]["supabase"] = {
+                "status": "degraded",
+                "message": supabase_db.last_error or "Running on local fallback store",
+            }
+        else:
+            health_report["services"]["supabase"] = {"status": "connected"}
     except Exception as e:
         health_report["status"] = "degraded"
         health_report["services"]["supabase"] = {"status": "error", "error": str(e)}

@@ -35,7 +35,7 @@ class UserResponse(BaseModel):
     created_at: str
 
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(user: UserCreate, user_store: UserStore = Depends(get_user_store)):
     try:
         # Check if user exists
@@ -57,6 +57,8 @@ async def register(user: UserCreate, user_store: UserStore = Depends(get_user_st
         )
 
         return new_user
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

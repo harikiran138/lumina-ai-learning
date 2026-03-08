@@ -243,16 +243,26 @@ async def get_learner_analytics(
     """
     Get deep learner analytics (cognitive load, engagement, behavior).
     """
-    from learner_profile.engine import get_learner_profile_engine
-    engine = get_learner_profile_engine()
-    profile = await engine.get_profile(current_user["id"])
-    
+    profile = await get_personalization_service().get_profile(
+        current_user["id"], role=current_user.get("role", "student")
+    )
+    mastery_scores = [item.score for item in profile.mastery_state.values()]
+    engagement_score = min(
+        100,
+        int(
+            profile.engagement_summary.total_minutes
+            + (profile.engagement_summary.current_streak * 5)
+            + (profile.engagement_summary.total_lessons_completed * 2)
+        ),
+    )
     return {
         "userId": current_user["id"],
-        "cognitiveLoad": profile.get("cognitive_load", 50),
-        "engagementScore": profile.get("engagement_score", 100),
-        "behaviorLabel": profile.get("behavior_label", "neutral"),
-        "recentMasteryTrend": profile.get("mastery_levels", {})
+        "cognitiveLoad": profile.behavior_signals.get("cognitive_load", 50),
+        "engagementScore": engagement_score,
+        "behaviorLabel": profile.behavior_signals.get("behavior_label", "neutral"),
+        "recentMasteryTrend": {topic: item.score for topic, item in profile.mastery_state.items()},
+        "riskSummary": profile.risk_summary.model_dump(mode="json"),
+        "overallMastery": round(sum(mastery_scores) / max(len(mastery_scores), 1), 2),
     }
 
 
@@ -263,14 +273,17 @@ async def get_mastery_projections(
     """
     Get mastery projections based on BKT/DKT models.
     """
-    from learner_profile.engine import get_learner_profile_engine
-    engine = get_learner_profile_engine()
-    profile = await engine.get_profile(current_user["id"])
-    
+    profile = await get_personalization_service().get_profile(
+        current_user["id"], role=current_user.get("role", "student")
+    )
+    mastery_map = {topic: item.score for topic, item in profile.mastery_state.items()}
     return {
-        "masteryMap": profile.get("mastery_levels", {}),
-        "dktProjections": profile.get("dkt_projections", {}),
-        "overallMastery": sum(profile.get("mastery_levels", {}).values()) / max(len(profile.get("mastery_levels", {})), 1)
+        "masteryMap": mastery_map,
+        "dktProjections": {},
+        "overallMastery": round(
+            sum(mastery_map.values()) / max(len(mastery_map), 1),
+            2,
+        ),
     }
 
 @router.get("/profile")  # Changed from /profile/{user_id}
@@ -282,12 +295,11 @@ async def get_profile(
     Get the full profile for the CURRENT user.
     """
     from app.store.analytics_store import AnalyticsStore
-    from learner_profile.engine import get_learner_profile_engine
 
     analytics = AnalyticsStore()
-    learner_engine = get_learner_profile_engine()
-    
-    profile_data = await learner_engine.get_profile(current_user["id"])
+    profile_data = await get_personalization_service().get_profile(
+        current_user["id"], role=current_user.get("role", "student")
+    )
     quiz_stats = await store.get_recent_quiz_stats(current_user["id"])
     dashboard_stats = await analytics.get_student_dashboard_stats(current_user["id"])
     notes = await store.get_notes(current_user["id"])
@@ -323,7 +335,7 @@ async def get_profile(
         "recentActivity": recent_activity,
         "stats": quiz_stats,
         "dashboard_stats": dashboard_stats,
-        "learner_profile": profile_data, # [NEW] Inject deep analytics
+        "learner_profile": profile_data.model_dump(mode="json"),
         "notes": notes,
         "user_info": {"name": display_name, "email": current_user.get("email")},
     }
