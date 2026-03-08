@@ -1316,6 +1316,9 @@ export const A2UIRenderer = memo(
   }) => {
     // 1. Try to parse as Pure JSON (strict or repaired)
     const trimmed = useMemo(() => content.trim(), [content]);
+    const parts = useMemo(() => {
+      return content.split(/(```a2ui[\s\S]*?```)/g);
+    }, [content]);
     
     // Helper to validate if an object looks like an A2UI block
     const isValidBlock = (item: any) => {
@@ -1460,11 +1463,6 @@ export const A2UIRenderer = memo(
     } catch (e) {
       // Ignore embedded parsing errors
     }
-
-    // Strategy 3: Legacy Mixed Mode (Markdown + ```a2ui blocks)
-    const parts = useMemo(() => {
-      return content.split(/(```a2ui[\s\S]*?```)/g);
-    }, [content]);
 
     return (
       <>

@@ -1,8 +1,23 @@
+import httpx
 from supabase import create_client, Client
 from app.core.config import settings
 from app.core.logging import structlog
 
 log = structlog.get_logger()
+
+# ---------------------------------------------------------------------------
+# Compatibility shim: gotrue 2.9.x passes `proxy=` to httpx.Client.__init__,
+# but httpx 0.25.x only accepts `proxies=`. Patch it out transparently so
+# the Supabase client can initialise without errors.
+# ---------------------------------------------------------------------------
+_OriginalHttpxSyncClient = httpx.Client.__init__
+
+def _patched_httpx_init(self, *args, **kwargs):
+    kwargs.pop("proxy", None)   # strip the unsupported kwarg
+    _OriginalHttpxSyncClient(self, *args, **kwargs)
+
+httpx.Client.__init__ = _patched_httpx_init          # type: ignore[method-assign]
+
 
 class SupabaseManager:
     """
@@ -33,6 +48,8 @@ class SupabaseManager:
         except Exception as exc:
             cls._last_error = str(exc)
             cls._client = None
+            # Allow retry on next call
+            cls._init_attempted = False
             log.warning("supabase_client_initialization_failed", error=str(exc))
         return cls._client
 
@@ -45,3 +62,4 @@ class SupabaseManager:
         return self.__class__._last_error
 
 supabase_db = SupabaseManager()
+

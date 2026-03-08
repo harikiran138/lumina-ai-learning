@@ -29,6 +29,59 @@ class AssignmentStore:
             return None
         return self.client.table("submissions")
 
+    def _write_assignment_fallback(self, assignment: dict) -> dict:
+        payload = self.local.read()
+        payload["assignments"] = [
+            item for item in payload["assignments"] if item.get("id") != assignment["id"]
+        ]
+        payload["assignments"].append(assignment)
+        self.local.write(payload)
+        return assignment
+
+    def _write_submission_fallback(self, submission: dict) -> dict:
+        payload = self.local.read()
+        payload["submissions"] = [
+            item for item in payload["submissions"] if item.get("id") != submission["id"]
+        ]
+        payload["submissions"].append(submission)
+        self.local.write(payload)
+        return submission
+
+    def _read_assignment_fallback(self, assignment_id: Optional[str] = None, course_id: Optional[str] = None):
+        payload = self.local.read()
+        assignments = payload["assignments"]
+        if assignment_id is not None:
+            for assignment in assignments:
+                if assignment.get("id") == assignment_id:
+                    return assignment.copy()
+            return None
+        if course_id is not None:
+            assignments = [
+                assignment for assignment in assignments if assignment.get("course_id") == course_id
+            ]
+        return [assignment.copy() for assignment in assignments]
+
+    def _read_submission_fallback(
+        self,
+        assignment_id: Optional[str] = None,
+        student_id: Optional[str] = None,
+    ):
+        payload = self.local.read()
+        submissions = payload["submissions"]
+        if assignment_id is not None:
+            submissions = [
+                submission
+                for submission in submissions
+                if submission.get("assignment_id") == assignment_id
+            ]
+        if student_id is not None:
+            submissions = [
+                submission
+                for submission in submissions
+                if submission.get("student_id") == student_id
+            ]
+        return [submission.copy() for submission in submissions]
+
     async def create_assignment(
         self, title: str, course_id: str, description: str, due_date: str, created_by: str
     ) -> dict:
@@ -54,7 +107,7 @@ class AssignmentStore:
             return assignment
         except Exception as e:
             log.error("create_assignment_failed", error=str(e))
-            return assignment
+            return self._write_assignment_fallback(assignment)
 
     async def submit_assignment(self, assignment_id: str, student_id: str, file_path: str) -> dict:
         assignment = await self.get_assignment(assignment_id)
@@ -82,7 +135,7 @@ class AssignmentStore:
             return submission
         except Exception as e:
             log.error("submit_assignment_failed", error=str(e))
-            return submission
+            return self._write_submission_fallback(submission)
 
     async def update_submission_grade(
         self, submission_id: str, grade: float, feedback: str, ocr_text: Optional[str] = None
@@ -104,6 +157,12 @@ class AssignmentStore:
             self.submissions_collection.update(update_data).eq("id", submission_id).execute()
         except Exception as e:
             log.error("update_submission_grade_failed", error=str(e))
+            payload = self.local.read()
+            for submission in payload["submissions"]:
+                if submission.get("id") == submission_id:
+                    submission.update(update_data)
+                    self.local.write(payload)
+                    break
 
     async def get_submissions(self, assignment_id: str) -> List[dict]:
         if self.client is None:
@@ -115,10 +174,12 @@ class AssignmentStore:
             ]
         try:
             response = self.submissions_collection.select("*").eq("assignment_id", assignment_id).execute()
-            return response.data
+            if response.data:
+                return response.data
+            return self._read_submission_fallback(assignment_id=assignment_id)
         except Exception as e:
             log.error("get_submissions_failed", error=str(e))
-            return []
+            return self._read_submission_fallback(assignment_id=assignment_id)
 
     async def get_student_submission(self, assignment_id: str, student_id: str) -> Optional[dict]:
         if self.client is None:
@@ -134,10 +195,12 @@ class AssignmentStore:
             response = self.submissions_collection.select("*").eq("assignment_id", assignment_id).eq("student_id", student_id).execute()
             if response.data:
                 return response.data[0]
-            return None
+            local = self._read_submission_fallback(assignment_id=assignment_id, student_id=student_id)
+            return local[0] if local else None
         except Exception as e:
             log.error("get_student_submission_failed", error=str(e))
-            return None
+            local = self._read_submission_fallback(assignment_id=assignment_id, student_id=student_id)
+            return local[0] if local else None
 
     async def list_assignments(self, course_id: Optional[str] = None) -> List[dict]:
         if self.client is None:
@@ -156,10 +219,15 @@ class AssignmentStore:
                 query = query.eq("course_id", course_id)
                 
             response = query.execute()
-            return response.data
+            if response.data:
+                local = self._read_assignment_fallback(course_id=course_id)
+                merged = {item["id"]: item for item in local}
+                merged.update({item["id"]: item for item in response.data})
+                return list(merged.values())
+            return self._read_assignment_fallback(course_id=course_id)
         except Exception as e:
             log.error("list_assignments_failed", error=str(e))
-            return []
+            return self._read_assignment_fallback(course_id=course_id)
 
     async def get_assignment(self, assignment_id: str) -> Optional[dict]:
         if self.client is None:
@@ -172,7 +240,7 @@ class AssignmentStore:
             response = self.assignments_collection.select("*").eq("id", assignment_id).execute()
             if response.data:
                 return response.data[0]
-            return None
+            return self._read_assignment_fallback(assignment_id=assignment_id)
         except Exception as e:
             log.error("get_assignment_failed", error=str(e))
-            return None
+            return self._read_assignment_fallback(assignment_id=assignment_id)
