@@ -1,3 +1,4 @@
+import hashlib
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -121,6 +122,15 @@ class PersonalizationService:
             weak_topics.remove(topic_id)
         profile.weak_topics = sorted(list(weak_topics))
 
+    def _stable_topic_code(self, topic_id: str) -> int:
+        digest = hashlib.sha256(topic_id.encode("utf-8")).hexdigest()
+        return int(digest[:8], 16) % 1000
+
+    def _blend_recent_average(self, current_value: float, new_value: float, has_history: bool) -> float:
+        if not has_history or current_value <= 0:
+            return round(new_value, 2)
+        return round((current_value * 0.7) + (new_value * 0.3), 2)
+
     async def _maybe_create_intervention(
         self,
         profile: LearnerProfileRecord,
@@ -200,12 +210,21 @@ class PersonalizationService:
             "user_id": profile.user_id,
             "mastery": mastery_scores,
             "mastery_scores": mastery_scores,
+            "mastery_levels": mastery_scores,
             "behavior_label": profile.behavior_signals.get("behavior_label", "neutral"),
             "pathway_state": profile.metadata.get("pathway_state", "exploring"),
             "assignments": profile.assignment_summary.get("recent_assignments", []),
             "notes": profile.metadata.get("notes", []),
             "weak_topics": profile.weak_topics,
             "recent_average": profile.performance_summary.recent_average_score,
+            "engagement_score": min(
+                100,
+                int(
+                    profile.engagement_summary.total_minutes
+                    + (profile.engagement_summary.current_streak * 5)
+                    + (profile.engagement_summary.total_lessons_completed * 2)
+                ),
+            ),
             "skill_sequence": profile.metadata.get("skill_sequence", []),
             "correct_sequence": profile.metadata.get("correct_sequence", []),
             "interaction_history": interaction_history,
@@ -264,8 +283,10 @@ class PersonalizationService:
                 / max(engagement.total_quiz_attempts, 1),
                 2,
             )
-            performance.recent_average_score = round(
-                (performance.recent_average_score * 0.7) + (score * 0.3), 2
+            performance.recent_average_score = self._blend_recent_average(
+                performance.recent_average_score,
+                score,
+                engagement.total_quiz_attempts > 1,
             )
             performance.low_score_count += 1 if score < 60 else 0
             performance.high_score_count += 1 if score >= 85 else 0
@@ -274,7 +295,7 @@ class PersonalizationService:
             profile.metadata.setdefault("skill_sequence", [])
             profile.metadata.setdefault("correct_sequence", [])
             if topic_id:
-                profile.metadata["skill_sequence"].append(abs(hash(topic_id)) % 1000)
+                profile.metadata["skill_sequence"].append(self._stable_topic_code(topic_id))
                 profile.metadata["correct_sequence"].append(1 if score >= 70 else 0)
 
         elif event_type == LearningEventType.ASSESSMENT_ANSWER:
@@ -289,8 +310,10 @@ class PersonalizationService:
                 / max(engagement.total_assessments_completed, 1),
                 2,
             )
-            performance.recent_average_score = round(
-                (performance.recent_average_score * 0.7) + (accuracy * 0.3), 2
+            performance.recent_average_score = self._blend_recent_average(
+                performance.recent_average_score,
+                accuracy,
+                engagement.total_assessments_completed > 1 or performance.recent_average_score > 0,
             )
             if topic_id:
                 self._update_mastery_from_score(profile, topic_id, accuracy, event_type.value)
@@ -321,8 +344,10 @@ class PersonalizationService:
                 ]
             )[-10:]
             performance.assignment_average = round(profile.assignment_summary["average_score"], 2)
-            performance.recent_average_score = round(
-                (performance.recent_average_score * 0.7) + (score * 0.3), 2
+            performance.recent_average_score = self._blend_recent_average(
+                performance.recent_average_score,
+                score,
+                count > 1 or performance.recent_average_score > 0,
             )
             if topic_id:
                 self._update_mastery_from_score(profile, topic_id, score, event_type.value)

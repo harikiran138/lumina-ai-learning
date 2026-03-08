@@ -2,6 +2,7 @@ from typing import List, Dict, Any
 from app.database.supabase_manager import supabase_db
 from app.core.logging import structlog
 from datetime import datetime
+from app.store.local_store import LocalJsonStore
 
 log = structlog.get_logger()
 
@@ -13,27 +14,65 @@ class StudentStore:
 
     def __init__(self):
         self.client = supabase_db.get_client()
+        self.local = LocalJsonStore()
 
     @property
     def progress_collection(self):
+        if self.client is None:
+            return None
         return self.client.table("progress")
 
     @property
     def users_collection(self):
+        if self.client is None:
+            return None
         return self.client.table("users")
 
     @property
     def courses_collection(self):
+        if self.client is None:
+            return None
         return self.client.table("courses")
 
     @property
     def certificates_collection(self):
+        if self.client is None:
+            return None
         return self.client.table("certificates")
 
     async def enroll_in_course(self, student_id: str, course_id: str) -> bool:
         """
         Enrolls a student in a course. Creates a progress record.
         """
+        if self.client is None:
+            payload = self.local.read()
+            existing = next(
+                (
+                    item
+                    for item in payload["progress"]
+                    if item.get("userId") == student_id and item.get("courseId") == course_id
+                ),
+                None,
+            )
+            if existing:
+                return False
+
+            payload["progress"].append(
+                {
+                    "userId": student_id,
+                    "courseId": course_id,
+                    "progress": 0,
+                    "mastery": 0,
+                    "streak": 0,
+                    "completedLessons": [],
+                    "hoursSpent": 0,
+                    "lastAccessed": datetime.utcnow().isoformat(),
+                    "enrolledAt": datetime.utcnow().isoformat(),
+                }
+            )
+            self.local.write(payload)
+            return True
+
         try:
             # Check if already enrolled
             response = self.progress_collection.select("*").eq("userId", student_id).eq("courseId", course_id).execute()
@@ -70,6 +109,39 @@ class StudentStore:
         """
         Marks a lesson as complete.
         """
+        if self.client is None:
+            payload = self.local.read()
+            record = next(
+                (
+                    item
+                    for item in payload["progress"]
+                    if item.get("userId") == student_id and item.get("courseId") == course_id
+                ),
+                None,
+            )
+            if not record:
+                return {"success": False}
+
+            completed_lessons = record.get("completedLessons", [])
+            if lesson_id not in completed_lessons:
+                completed_lessons.append(lesson_id)
+
+            course = next(
+                (item for item in payload["courses"] if item.get("id") == course_id),
+                None,
+            )
+            total_lessons = 0
+            if course:
+                for module in course.get("modules", []):
+                    total_lessons += len(module.get("lessons", []))
+
+            progress_pct = (len(completed_lessons) / total_lessons * 100) if total_lessons > 0 else 0
+            record["completedLessons"] = completed_lessons
+            record["progress"] = round(progress_pct, 2)
+            record["lastAccessed"] = datetime.utcnow().isoformat()
+            self.local.write(payload)
+            return {"success": True, "lesson_id": lesson_id, "progress": progress_pct}
+
         try:
             # Fetch current progress to append lesson_id
             response = self.progress_collection.select("completedLessons").eq("userId", student_id).eq("courseId", course_id).execute()
@@ -107,6 +179,11 @@ class StudentStore:
         """
         Fetches all certificates for a student.
         """
+        if self.client is None:
+            payload = self.local.read()
+            return [
+                item.copy() for item in payload["certificates"] if item.get("userId") == student_id
+            ]
         try:
             response = self.certificates_collection.select("*").eq("userId", student_id).order("issueDate", desc=True).execute()
             return response.data
@@ -118,6 +195,10 @@ class StudentStore:
         """
         Fetches all badges for a student from their user record.
         """
+        if self.client is None:
+            payload = self.local.read()
+            user = next((item for item in payload["users"] if item.get("id") == student_id), None)
+            return (user or {}).get("badges", [])
         try:
             response = self.users_collection.select("badges").eq("id", student_id).execute()
             if response.data and "badges" in response.data[0]:
@@ -131,6 +212,44 @@ class StudentStore:
         Logs student activity time and updates the streak.
         duration_minutes: session length in minutes.
         """
+        if self.client is None:
+            payload = self.local.read()
+            record = next(
+                (
+                    item
+                    for item in payload["progress"]
+                    if item.get("userId") == student_id and item.get("courseId") == course_id
+                ),
+                None,
+            )
+            if not record:
+                return False
+
+            current_hours = record.get("hoursSpent", 0)
+            current_streak = record.get("streak", 0)
+            last_accessed_str = record.get("lastAccessed")
+            now = datetime.utcnow()
+
+            new_hours = current_hours + (duration_minutes / 60.0)
+            new_streak = current_streak
+            if last_accessed_str:
+                last_accessed = datetime.fromisoformat(last_accessed_str.replace("Z", "+00:00"))
+                delta = (now.date() - last_accessed.date()).days
+                if delta == 1:
+                    new_streak += 1
+                elif delta > 1:
+                    new_streak = 1
+                elif current_streak == 0:
+                    new_streak = 1
+            else:
+                new_streak = 1
+
+            record["hoursSpent"] = round(new_hours, 2)
+            record["streak"] = new_streak
+            record["lastAccessed"] = now.isoformat()
+            self.local.write(payload)
+            return True
+
         try:
             # 1. Fetch current progress
             response = self.progress_collection.select("hoursSpent, lastAccessed, streak").eq("userId", student_id).eq("courseId", course_id).execute()
