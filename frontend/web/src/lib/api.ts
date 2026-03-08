@@ -406,9 +406,12 @@ class RealAPI {
   }
 
   async getChatHistory(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/ai/tutor/history");
-    if (!res.ok) return [];
-    return await res.json();
+    try {
+      // Chat history is stored in IndexedDB locally; backend has no dedicated history endpoint
+      return [];
+    } catch {
+      return [];
+    }
   }
 
   async saveChatMessage(message: {
@@ -451,7 +454,7 @@ class RealAPI {
   async chatWithAI(messages: any[]): Promise<any> {
     // This is often a separate direct call to tutor/chat
     const lastMsg = messages[messages.length - 1];
-    const res = await this.fetchAuthorized("/api/ai/tutor/chat", {
+    const res = await this.fetchAuthorized("/api/tutor/chat", {
       method: "POST",
       body: JSON.stringify({
         message: lastMsg.content || lastMsg.text,

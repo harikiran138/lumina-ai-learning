@@ -124,6 +124,7 @@ class DatabaseManager:
         """
         Get a specific collection from the database.
         """
+        if cls.db is None:
             return None
         return cls.db[collection_name]
 
