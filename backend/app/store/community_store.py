@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict
-from app.database.manager import db
+from app.database.supabase_manager import supabase_db
 from app.core.logging import structlog
 from datetime import datetime
 
@@ -8,41 +8,37 @@ log = structlog.get_logger()
 
 class CommunityStore:
     """
-    Store for Community features: Channels and Messages.
+    Store for Community features: Channels and Messages via Supabase.
     """
 
     def __init__(self):
-        pass
+        self.client = supabase_db.get_client()
 
     @property
     def channels_collection(self):
-        return db.get_collection("community_channels")
+        return self.client.table("community_channels")
 
     @property
     def messages_collection(self):
-        return db.get_collection("community_messages")
+        return self.client.table("community_messages")
 
     async def get_channels(self) -> List[Dict]:
         """Fetches all community channels."""
-        col = self.channels_collection
-        if col is None:
+        try:
+            response = self.channels_collection.select("*").execute()
+            return response.data
+        except Exception as e:
+            log.error("get_channels_failed", error=str(e))
             return []
-        cursor = col.find()
-        channels = await cursor.to_list(length=100)
-        for c in channels:
-            c["id"] = str(c.pop("_id"))
-        return channels
 
     async def get_messages(self, channel_id: str, limit: int = 50) -> List[Dict]:
         """Fetches messages for a specific channel."""
-        col = self.messages_collection
-        if col is None:
+        try:
+            response = self.messages_collection.select("*").eq("channelId", channel_id).order("createdAt", desc=False).limit(limit).execute()
+            return response.data
+        except Exception as e:
+            log.error("get_messages_failed", error=str(e))
             return []
-        cursor = col.find({"channelId": channel_id}).sort("createdAt", 1).limit(limit)
-        messages = await cursor.to_list(length=limit)
-        for m in messages:
-            m["id"] = str(m.pop("_id"))
-        return messages
 
     async def send_message(
         self,
@@ -53,10 +49,6 @@ class CommunityStore:
         avatar: Optional[str] = None,
     ) -> Dict:
         """Sends a message to a channel."""
-        col = self.messages_collection
-        if col is None:
-            return {"success": False}
-
         new_message = {
             "channelId": channel_id,
             "userId": student_id,
@@ -66,13 +58,14 @@ class CommunityStore:
             "content": content,
             "likes": 0,
             "replies": 0,
-            "createdAt": datetime.utcnow(),
+            "createdAt": datetime.utcnow().isoformat(),
         }
 
         try:
-            result = await col.insert_one(new_message)
-            new_message["id"] = str(result.inserted_id)
-            return {"success": True, "message": new_message}
+            result = self.messages_collection.insert(new_message).execute()
+            if result.data:
+                return {"success": True, "message": result.data[0]}
+            return {"success": False}
         except Exception as e:
             log.error("send_community_message_failed", error=str(e))
             return {"success": False}

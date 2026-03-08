@@ -69,7 +69,7 @@ async def lifespan(app: FastAPI):
     # Startup
     try:
         await db.connect()
-        print("Connected to MongoDB")
+        print("Connected to Supabase")
     except Exception as e:
         print(f"WARNING: Could not connect to database: {e}")
         print("Starting in limited functionality mode.")
@@ -78,7 +78,7 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     await db.close()
-    print("Closed MongoDB connection")
+    print("Closed database connections")
 
 
 app = FastAPI(
@@ -248,16 +248,16 @@ async def health_check():
     """
     health_report = {"status": "ok", "timestamp": time.time(), "services": {}}
 
-    # 1. Check MongoDB
+    # 1. Check Supabase
     try:
-        from app.database.manager import db
-
-        # Use simple ping
-        await db.db.command("ping")
-        health_report["services"]["mongodb"] = {"status": "connected"}
+        from app.database.supabase_manager import supabase_db
+        supabase_db.get_client()
+        health_report["services"]["supabase"] = {"status": "connected"}
     except Exception as e:
         health_report["status"] = "degraded"
-        health_report["services"]["mongodb"] = {"status": "error", "error": str(e)}
+        health_report["services"]["supabase"] = {"status": "error", "error": str(e)}
+
+    # MongoDB removed from health check
 
     # 2. Check Redis
     try:

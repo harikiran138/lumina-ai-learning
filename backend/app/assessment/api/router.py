@@ -10,7 +10,7 @@ from app.assessment.models.schemas import (
 )
 from app.assessment.engine.session_manager import session_manager
 from typing import Optional
-from app.database.manager import db
+from app.database.supabase_manager import supabase_db
 
 router = APIRouter()
 
@@ -23,30 +23,19 @@ async def get_student_mastery(student_id: str):
     Get the aggregate mastery for a student across all sessions.
     """
     try:
-        if db.db is None:
-            return {}
         # Find latest session for student
-        cursor = (
-            db.get_collection("assessment_sessions")
-            .find({"student_id": student_id})
-            .sort("timestamp", -1)
-            .limit(1)
-        )
-
-        # Async cursor
+        response = supabase_db.client.table("assessment_sessions").select("*").eq("student_id", student_id).order("timestamp", desc=True).limit(1).execute()
+        
         latest_session = None
-        async for doc in cursor:
-            latest_session = doc
-            break
+        if response.data:
+            latest_session = response.data[0]
 
         if latest_session:
             return latest_session.get("mastery_state", {}).get("concept_mastery", {})
         return {}
     except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-        print(f"Error fetching mastery: {e}")
+        import structlog
+        structlog.get_logger().error("mastery_fetch_failed", error=str(e))
         return {}
 
 

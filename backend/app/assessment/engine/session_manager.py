@@ -9,7 +9,7 @@ from app.assessment.models.schemas import (
 # Switch to Gemini Generator
 from app.assessment.llm.gemini_generator import gemini_generator as question_generator
 from app.assessment.engine.adaptive_logic import adaptive_logic
-from app.database.manager import db
+from app.database.supabase_manager import supabase_db
 from datetime import datetime
 import logging
 
@@ -22,7 +22,7 @@ class SessionManager:
 
     @property
     def sessions_collection(self):
-        return db.get_collection("assessment_sessions")
+        return supabase_db.client.table("assessment_sessions")
 
     async def create_session(
         self, student_id: str, topic: str, initial_difficulty: float = 0.5, num_questions: int = 5
@@ -37,32 +37,31 @@ class SessionManager:
             seen_question_ids=[],
         )
 
-        collection = self.sessions_collection
-        if collection is not None:
-            await collection.insert_one(session.model_dump())
-        else:
-            logger.warning("Database not connected. Session persisted in memory only.")
+        try:
+            self.sessions_collection.insert(session.model_dump()).execute()
+        except Exception as e:
+            logger.warning(f"Database error writing session. Session persisted in memory only. Error: {e}")
             self.in_memory_sessions[session.id] = session
 
         return session
 
     async def get_session(self, session_id: str) -> Optional[AssessmentSession]:
         """Retrieves a session by ID."""
-        collection = self.sessions_collection
-        if collection is None:
-            return self.in_memory_sessions.get(session_id)
-
-        data = await collection.find_one({"id": session_id})
-        if data:
-            return AssessmentSession(**data)
-        return None
+        try:
+            response = self.sessions_collection.select("*").eq("id", session_id).execute()
+            if response.data:
+                return AssessmentSession(**response.data[0])
+        except Exception:
+            pass
+        return self.in_memory_sessions.get(session_id)
 
     async def save_session(self, session: AssessmentSession):
         """Helper to save session state."""
-        collection = self.sessions_collection
-        if collection is not None:
-            await collection.replace_one({"id": session.id}, session.model_dump())
-        else:
+        try:
+            # Note: For updates in Supabase/Postgrest where you want full document replacement
+            self.sessions_collection.update(session.model_dump()).eq("id", session.id).execute()
+        except Exception as e:
+            logger.error(f"Failed to update session: {e}")
             self.in_memory_sessions[session.id] = session
 
     async def get_next_question(self, session_id: str) -> Optional[Question]:
