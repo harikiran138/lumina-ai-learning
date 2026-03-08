@@ -24,6 +24,7 @@ import {
   AlertTriangle,
   FileText,
   Sparkles,
+  BookOpen,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -167,6 +168,16 @@ const ScoreCardSchema = z.object({
   totalCount: z.number(),
   topic: z.string(),
   message: z.string().optional(),
+});
+
+const SourceReferenceSchema = z.object({
+  sources: z.array(
+    z.object({
+      title: z.string(),
+      url: z.string().optional(),
+      snippet: z.string().optional(),
+    })
+  ),
 });
 
 // --- Component Interfaces (Derived from Zod) ---
@@ -1259,6 +1270,38 @@ const ScoreCardComponent = ({
   );
 };
 
+const SourceReferenceComponent = ({
+  sources,
+}: {
+  sources: Array<{ title: string; url?: string; snippet?: string }>;
+}) => {
+  return (
+    <div className="mt-4 pt-4 border-t border-white/5 space-y-3">
+      <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-widest">
+        <BookOpen className="w-3 h-3" />
+        Sources & References
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {sources.map((source, i) => (
+          <div
+            key={i}
+            className="group relative px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 hover:border-lumina-primary/30 transition-all cursor-help"
+          >
+            <span className="text-xs text-gray-300 font-medium whitespace-nowrap">
+              {source.title}
+            </span>
+            {source.snippet && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-black/90 backdrop-blur-md border border-white/10 rounded-xl text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none shadow-2xl">
+                {source.snippet}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // --- Main Renderer ---
 
 export const A2UIRenderer = memo(
@@ -1548,6 +1591,9 @@ const renderComponentItem = (data: any, index: number, onAction?: any) => {
         break;
       case "ScoreCard":
         component = <ScoreCardComponent key={uniqueKey} {...props} />;
+        break;
+      case "SourceReference":
+        component = <SourceReferenceComponent key={uniqueKey} {...props} />;
         break;
       default:
         component = (

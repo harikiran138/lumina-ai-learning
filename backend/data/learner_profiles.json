@@ -1,0 +1,26 @@
+{
+  "user_123": {
+    "user_id": "user_123",
+    "mastery": {},
+    "behavior_label": "neutral",
+    "pathway_state": "exploring",
+    "assignments": [],
+    "notes": [],
+    "weak_topics": [],
+    "recent_average": 0.0,
+    "skill_sequence": [],
+    "correct_sequence": [],
+    "updated_at": "2026-03-08T14:23:23.574316",
+    "mastery_scores": {
+      "1": 0.6
+    },
+    "cognitive_load": 20.0,
+    "interaction_history": [
+      {
+        "concept_id": 1,
+        "correct": true,
+        "timestamp": 123456789
+      }
+    ]
+  }
+}

@@ -80,12 +80,23 @@ class StudentStore:
             if lesson_id not in completed_lessons:
                 completed_lessons.append(lesson_id)
             
+            # Fetch total lessons for this course to calculate progress %
+            course_res = self.courses_collection.select("modules").eq("id", course_id).execute()
+            total_lessons = 0
+            if course_res.data:
+                modules = course_res.data[0].get("modules", [])
+                for m in modules:
+                    total_lessons += len(m.get("lessons", []))
+            
+            progress_pct = (len(completed_lessons) / total_lessons * 100) if total_lessons > 0 else 0
+            
             self.progress_collection.update({
                 "completedLessons": completed_lessons,
+                "progress": round(progress_pct, 2),
                 "lastAccessed": datetime.utcnow().isoformat()
             }).eq("userId", student_id).eq("courseId", course_id).execute()
 
-            return {"success": True, "lesson_id": lesson_id}
+            return {"success": True, "lesson_id": lesson_id, "progress": progress_pct}
         except Exception as e:
             log.error(
                 "complete_lesson_failed", student_id=student_id, lesson_id=lesson_id, error=str(e)
@@ -114,3 +125,55 @@ class StudentStore:
         except Exception as e:
             log.error("get_badges_failed", student_id=student_id, error=str(e))
         return []
+
+    async def log_activity(self, student_id: str, course_id: str, duration_minutes: int) -> bool:
+        """
+        Logs student activity time and updates the streak.
+        duration_minutes: session length in minutes.
+        """
+        try:
+            # 1. Fetch current progress
+            response = self.progress_collection.select("hoursSpent, lastAccessed, streak").eq("userId", student_id).eq("courseId", course_id).execute()
+            if not response.data:
+                return False
+
+            record = response.data[0]
+            current_hours = record.get("hoursSpent", 0)
+            current_streak = record.get("streak", 0)
+            last_accessed_str = record.get("lastAccessed")
+
+            # 2. Update hours
+            new_hours = current_hours + (duration_minutes / 60.0)
+
+            # 3. Calculate Streak
+            now = datetime.utcnow()
+            new_streak = current_streak
+            
+            if last_accessed_str:
+                last_accessed = datetime.fromisoformat(last_accessed_str.replace('Z', '+00:00'))
+                # If last activity was on a different day
+                delta = (now.date() - last_accessed.date()).days
+                
+                if delta == 1:
+                    new_streak += 1
+                elif delta > 1:
+                    new_streak = 1
+                # If delta == 0, keep same streak
+                
+                # Special case: if current streak is data-corrupted or 0 but we have activity
+                if current_streak == 0:
+                    new_streak = 1
+            else:
+                new_streak = 1
+
+            # 4. Update DB
+            self.progress_collection.update({
+                "hoursSpent": round(new_hours, 2),
+                "streak": new_streak,
+                "lastAccessed": now.isoformat()
+            }).eq("userId", student_id).eq("courseId", course_id).execute()
+
+            return True
+        except Exception as e:
+            log.error("log_activity_failed", student_id=student_id, error=str(e))
+            return False

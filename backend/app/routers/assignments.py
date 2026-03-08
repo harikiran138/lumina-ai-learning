@@ -5,6 +5,8 @@ from pydantic import BaseModel
 import os
 import uuid
 from .auth import get_current_user
+from app.personalization.schemas import LearningEventType
+from app.services.personalization_service import get_personalization_service
 
 router = APIRouter()
 store = AssignmentStore()
@@ -65,6 +67,19 @@ async def submit_assignment(
 
         # Create submission record
         submission = await store.submit_assignment(assignment_id, current_user["id"], file_path)
+        await get_personalization_service().record_event(
+            current_user["id"],
+            LearningEventType.ASSIGNMENT_SUBMITTED,
+            payload={
+                "assignment_id": assignment_id,
+                "file_path": file_path,
+                "submission_id": submission.get("id"),
+            },
+            source="assignments_router",
+            course_id=submission.get("course_id"),
+            session_id=submission.get("id"),
+            role=current_user.get("role", "student"),
+        )
         return {"status": "success", "submission": submission}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

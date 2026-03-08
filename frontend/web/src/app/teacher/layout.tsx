@@ -3,7 +3,8 @@
 import TeacherSidebar from "@/components/dashboard/TeacherSidebar";
 import TopNav from "@/components/dashboard/TopNav";
 import { BGPattern } from "@/components/ui/BGPattern";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "@/lib/api";
 
 export default function TeacherLayout({
   children,
@@ -11,6 +12,15 @@ export default function TeacherLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const userData = await api.getCurrentUser();
+      setUser(userData);
+    };
+    fetchUser();
+  }, []);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-black text-gray-100">
@@ -27,7 +37,16 @@ export default function TeacherLayout({
       />
       <TopNav
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-        user={{ name: "Teacher User", role: "Teacher", initial: "T" }}
+        user={
+          user
+            ? {
+                name: user.name,
+                role: "Teacher",
+                initial: user.name?.charAt(0) || "T",
+                avatar: user.avatar,
+              }
+            : { name: "Teacher", role: "Teacher", initial: "T" }
+        }
       />
 
       {/* Mobile Sidebar Overlay - simplified for now */}

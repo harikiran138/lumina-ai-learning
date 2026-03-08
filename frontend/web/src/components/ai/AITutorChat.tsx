@@ -74,6 +74,8 @@ interface Message {
   personalization?: {
     behavior?: string;
     recommendation?: string;
+    cognitive_load?: number;
+    mastery?: Record<string, number>;
   };
 }
 
@@ -329,28 +331,80 @@ export function AITutorChat({
         <aside className="hidden xl:flex w-80 flex-col gap-6 p-6 border-l border-white/5 bg-[#0a0a0a]/50 backdrop-blur-sm overflow-y-auto">
           <div className="bg-[#151515] border border-white/5 rounded-2xl p-4">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-              Session Stats
+              Real-time Analytics
             </h3>
 
-            <div className="space-y-4">
-              {Object.entries(telemetry.skills).map(([key, value]) => (
-                <div key={key}>
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-gray-500">{key}</span>
-                    <span className="text-gray-300 font-mono">
-                      {telemetry.mounted ? `${value}%` : "--"}
+            <div className="space-y-5">
+              {/* Cognitive Load Indicator */}
+              {messages.length > 0 && messages[messages.length - 1].personalization?.cognitive_load !== undefined ? (
+                <div>
+                  <div className="flex justify-between text-xs mb-1.5 px-0.5">
+                    <span className="text-gray-500">Cognitive Load</span>
+                    <span className={cn(
+                      "font-mono",
+                      (messages[messages.length - 1].personalization?.cognitive_load ?? 0) > 70 ? "text-red-400" : "text-lumina-primary"
+                    )}>
+                      {messages[messages.length - 1].personalization?.cognitive_load}%
                     </span>
                   </div>
                   <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                     <motion.div
-                      className="h-full bg-lumina-primary/80"
+                      className={cn(
+                        "h-full",
+                        (messages[messages.length - 1].personalization?.cognitive_load ?? 0) > 70 ? "bg-red-500/80" : "bg-lumina-primary/80"
+                      )}
                       initial={{ width: 0 }}
-                      animate={{ width: telemetry.mounted ? `${value}%` : 0 }}
-                      transition={{ duration: 1, ease: "easeOut" }}
+                      animate={{ width: `${messages[messages.length - 1].personalization?.cognitive_load}%` }}
+                      transition={{ duration: 1 }}
                     />
                   </div>
                 </div>
-              ))}
+              ) : (
+                /* Fallback Telemetry */
+                Object.entries(telemetry.skills).map(([key, value]) => (
+                  <div key={key}>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-gray-500">{key}</span>
+                      <span className="text-gray-300 font-mono">
+                        {telemetry.mounted ? `${value}%` : "--"}
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-lumina-primary/80"
+                        initial={{ width: 0 }}
+                        animate={{ width: telemetry.mounted ? `${value}%` : 0 }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {/* Mastery Level Visualization */}
+              {messages.length > 0 && messages[messages.length - 1].personalization?.mastery && (
+                <div className="pt-2 border-t border-white/5">
+                  <h4 className="text-[10px] font-bold text-gray-600 uppercase mb-3 px-0.5">Focus Areas Mastery</h4>
+                  <div className="space-y-3">
+                    {Object.entries(messages[messages.length - 1].personalization?.mastery || {}).map(([skill, level], i) => (
+                      <div key={i} className="flex flex-col gap-1.5">
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-gray-400 truncate max-w-[120px]">{skill}</span>
+                          <span className="text-white font-mono">{(level * 100).toFixed(0)}%</span>
+                        </div>
+                        <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                          <motion.div 
+                            className="h-full bg-lumina-secondary" 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${level * 100}%` }}
+                            transition={{ delay: i * 0.1 }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
