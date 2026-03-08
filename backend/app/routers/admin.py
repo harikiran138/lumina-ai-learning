@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from .auth import get_current_user
 from app.store.user_store import UserStore
 from app.store.course_store import CourseStore
-from app.database.manager import db
+from app.database.supabase_manager import supabase_db
 
 router = APIRouter()
 
@@ -17,18 +17,28 @@ def is_admin(current_user: dict = Depends(get_current_user)):
 @router.get("/dashboard")
 async def get_admin_dashboard(admin: dict = Depends(is_admin)):
     """Get high-level system stats for the admin dashboard."""
-    users_col = db.get_collection("users")
-    courses_col = db.get_collection("courses")
+    try:
+        users_res = supabase_db.client.table("users").select("*", count="exact").execute()
+        courses_res = supabase_db.client.table("courses").select("*", count="exact").execute()
 
-    total_users = await users_col.count_documents({})
-    total_courses = await courses_col.count_documents({})
+        total_users = users_res.count if users_res.count is not None else len(users_res.data)
+        total_courses = courses_res.count if courses_res.count is not None else len(courses_res.data)
 
-    return {
-        "totalUsers": total_users,
-        "totalCourses": total_courses,
-        "activeUsers": total_users,
-        "systemStatus": "healthy",
-    }
+        return {
+            "totalUsers": total_users,
+            "totalCourses": total_courses,
+            "activeUsers": total_users,
+            "systemStatus": "healthy",
+        }
+    except Exception as e:
+        import structlog
+        structlog.get_logger().error("admin_dashboard_stats_failed", error=str(e))
+        return {
+            "totalUsers": 0,
+            "totalCourses": 0,
+            "activeUsers": 0,
+            "systemStatus": "degraded",
+        }
 
 
 @router.get("/users")
@@ -51,11 +61,13 @@ async def delete_user(user_id: str, admin: dict = Depends(is_admin)):
 @router.post("/users/{user_id}/status")
 async def update_user_status(user_id: str, status: str, admin: dict = Depends(is_admin)):
     """Update a user's active status."""
-    users_col = db.get_collection("users")
-    result = await users_col.update_one({"_id": user_id}, {"$set": {"status": status, "is_active": status == "active"}})
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="User not found")
-    return {"success": True}
+    try:
+        res = supabase_db.client.table("users").update({"status": status, "is_active": status == "active"}).eq("id", user_id).execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/users/{user_id}/role")
@@ -80,64 +92,70 @@ async def get_all_courses(admin: dict = Depends(is_admin)):
 @router.get("/logs/ai")
 async def get_ai_logs(admin: dict = Depends(is_admin)):
     """Fetch AI interaction logs."""
-    logs_col = db.get_collection("ai_logs")
-    cursor = logs_col.find().sort("timestamp", -1).limit(100)
-    logs = await cursor.to_list(length=100)
-    for log_entry in logs:
-        log_entry["id"] = str(log_entry.pop("_id"))
-    return logs
-
+    try:
+        response = supabase_db.client.table("ai_logs").select("*").order("timestamp", desc=True).limit(100).execute()
+        return response.data
+    except Exception as e:
+        return []
 
 @router.delete("/logs/ai/{log_id}")
 async def delete_ai_log(log_id: str, admin: dict = Depends(is_admin)):
     """Delete a specific AI log entry."""
-    logs_col = db.get_collection("ai_logs")
-    result = await logs_col.delete_one({"$or": [{"_id": log_id}, {"id": log_id}]})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Log entry not found")
-    return {"success": True}
+    try:
+        res = supabase_db.client.table("ai_logs").delete().eq("id", log_id).execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Log entry not found")
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/logs/chat")
 async def get_chat_logs(admin: dict = Depends(is_admin)):
     """Fetch AI tutor chat conversation logs."""
-    convos_col = db.get_collection("conversations")
-    cursor = convos_col.find().sort("timestamp", -1).limit(100)
-    logs = await cursor.to_list(length=100)
-    for entry in logs:
-        entry["id"] = str(entry.pop("_id"))
-    return logs
+    try:
+        response = supabase_db.client.table("conversations").select("*").order("last_updated", desc=True).limit(100).execute()
+        return response.data
+    except Exception as e:
+        return []
 
 
 @router.get("/students-progress")
 async def get_students_progress(admin: dict = Depends(is_admin)):
     """Get progress data for all students."""
-    sessions_col = db.get_collection("assessment_sessions")
-    users_col = db.get_collection("users")
-
-    pipeline = [
-        {
-            "$group": {
-                "_id": "$student_id",
-                "avg_score": {"$avg": "$current_difficulty"},
-                "total_sessions": {"$count": {}},
-                "topics": {"$addToSet": "$topic"},
-            }
-        },
-        {
-            "$project": {
-                "student_id": "$_id",
-                "_id": 0,
-                "avg_score": {"$multiply": ["$avg_score", 100]},
-                "total_sessions": 1,
-                "topic_count": {"$size": "$topics"},
-            }
-        },
-    ]
-
     try:
-        cursor = sessions_col.aggregate(pipeline)
-        progress_list = await cursor.to_list(length=500)
+        response = supabase_db.client.table("assessment_sessions").select("student_id, current_difficulty, topic").execute()
+        data = response.data
+        if not data:
+            return []
+            
+        student_stats = {}
+        for d in data:
+            sid = d.get("student_id")
+            if not sid:
+                continue
+            if sid not in student_stats:
+                student_stats[sid] = {"sum": 0, "count": 0, "topics": set()}
+            
+            diff = d.get("current_difficulty")
+            if diff is not None:
+                student_stats[sid]["sum"] += diff
+                student_stats[sid]["count"] += 1
+            if d.get("topic"):
+                student_stats[sid]["topics"].add(d.get("topic"))
+                
+        progress_list = []
+        for sid, stats in student_stats.items():
+            avg = stats["sum"] / stats["count"] if stats["count"] else 0
+            progress_list.append({
+                "student_id": sid,
+                "avg_score": round(avg * 100, 2),
+                "total_sessions": stats["count"],
+                "topic_count": len(stats["topics"])
+            })
+            
         return progress_list
-    except Exception:
+    except Exception as e:
+        import structlog
+        structlog.get_logger().error("students_progress_failed", error=str(e))
         return []

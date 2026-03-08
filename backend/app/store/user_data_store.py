@@ -1,6 +1,6 @@
 from typing import Dict, List
 from datetime import datetime
-from app.database.manager import db
+from app.database.supabase_manager import supabase_db
 from app.core.logging import structlog
 
 log = structlog.get_logger()
@@ -8,25 +8,23 @@ log = structlog.get_logger()
 
 class UserDataStore:
     """
-    MongoDB store for User Data (Progress, Notes, Quiz History).
-    All methods are ASYNC.
+    Supabase store for User Data (Progress, Notes, Quiz History).
+    Assumes a user_data table with JSONB fields: progress, notes, quiz_history.
     """
 
     def __init__(self):
-        pass
+        self.client = supabase_db.get_client()
 
     @property
     def user_data_collection(self):
-        # Use get_collection which handles connection check
-        return db.get_collection("user_data")
+        return self.client.table("user_data")
 
     async def _get_or_create_user(self, user_id: str) -> dict:
-        collection = self.user_data_collection
-        if collection is None:
-            raise Exception("Database not connected")
-
-        doc = await collection.find_one({"user_id": user_id})
-        if not doc:
+        try:
+            response = self.user_data_collection.select("*").eq("user_id", user_id).execute()
+            if response.data:
+                return response.data[0]
+                
             doc = {
                 "user_id": user_id,
                 "progress": {"completed_modules": [], "current_score": 0},
@@ -34,114 +32,111 @@ class UserDataStore:
                 "quiz_history": [],
                 "updated_at": datetime.now().isoformat(),
             }
-            try:
-                await collection.insert_one(doc)
-            except Exception as e:
-                # Handle race condition where it might have been created
-                log.warning("user_data_create_race", error=str(e))
-                doc = await collection.find_one({"user_id": user_id})
-        return doc
+            
+            insert_response = self.user_data_collection.insert(doc).execute()
+            if insert_response.data:
+                return insert_response.data[0]
+            return doc
+        except Exception as e:
+            log.warning("user_data_create_error", error=str(e))
+            # Fallback fetch in case of race condition
+            response = self.user_data_collection.select("*").eq("user_id", user_id).execute()
+            if response.data:
+                return response.data[0]
+            return {"user_id": user_id, "progress": {}, "notes": [], "quiz_history": []}
 
     # --- Quiz History ---
 
     async def add_quiz_attempt(self, user_id: str, attempt: dict):
-        collection = self.user_data_collection
-        if collection is None:
-            log.error("db_not_connected_quiz_attempt")
-            return
+        try:
+            attempt["timestamp"] = datetime.now().isoformat()
 
-        attempt["timestamp"] = datetime.now().isoformat()
+            doc = await self._get_or_create_user(user_id)
+            history = doc.get("quiz_history", []) or []
+            history.append(attempt)
 
-        # We need to fetch history to update average
-        # Optimize: Use aggregation or just $push and recalc on read if history is long
-        # For now, simplistic approach consistent with previous logic
-        doc = await self._get_or_create_user(user_id)
-        history = doc.get("quiz_history", [])
-        history.append(attempt)
+            avg = sum(a.get("score", 0) for a in history) / len(history) if history else 0
+            
+            progress = doc.get("progress", {}) or {}
+            progress["current_score"] = round(avg, 2)
 
-        avg = sum(a.get("score", 0) for a in history) / len(history) if history else 0
-
-        await collection.update_one(
-            {"user_id": user_id},
-            {
-                "$push": {"quiz_history": attempt},
-                "$set": {
-                    "progress.current_score": round(avg, 2),
-                    "updated_at": datetime.now().isoformat(),
-                },
-            },
-        )
+            self.user_data_collection.update({
+                "quiz_history": history,
+                "progress": progress,
+                "updated_at": datetime.now().isoformat()
+            }).eq("user_id", user_id).execute()
+            
+        except Exception as e:
+            log.error("quiz_attempt_update_failed", error=str(e))
 
     async def get_recent_quiz_stats(self, user_id: str, limit: int = 5) -> Dict:
-        collection = self.user_data_collection
-        if collection is None:
+        try:
+            response = self.user_data_collection.select("quiz_history").eq("user_id", user_id).execute()
+            
+            if not response.data or not response.data[0].get("quiz_history"):
+                return {"attempt_count": 0, "recent_average": 0, "weak_topics": [], "recent_history": []}
+                
+            history = response.data[0]["quiz_history"]
+            recent = history[-limit:]
+
+            avg = sum(a.get("score", 0) for a in recent) / len(recent) if recent else 0
+
+            # Weak topic analysis
+            weak_topics = set()
+            for h in history:
+                if h.get("score", 0) < 60 and h.get("topic"):
+                    weak_topics.add(h.get("topic"))
+
             return {
-                "attempt_count": 0,
-                "recent_average": 0,
-                "weak_topics": [],
-                "error": "DB Disconnected",
+                "attempt_count": len(history),
+                "recent_average": round(avg, 2),
+                "weak_topics": list(weak_topics),
+                "recent_history": recent,
             }
-
-        doc = await collection.find_one({"user_id": user_id})
-        if not doc or not doc.get("quiz_history"):
-            return {"attempt_count": 0, "recent_average": 0, "weak_topics": []}
-
-        history = doc["quiz_history"]
-        recent = history[-limit:]
-
-        avg = sum(a.get("score", 0) for a in recent) / len(recent) if recent else 0
-
-        # Weak topic analysis
-        weak_topics = set()
-        for h in history:
-            if h.get("score", 0) < 60 and h.get("topic"):
-                weak_topics.add(h.get("topic"))
-
-        return {
-            "attempt_count": len(history),
-            "recent_average": round(avg, 2),
-            "weak_topics": list(weak_topics),
-            "recent_history": recent,
-        }
+        except Exception as e:
+            log.error("get_recent_quiz_stats_failed", error=str(e))
+            return {"attempt_count": 0, "recent_average": 0, "weak_topics": [], "error": str(e)}
 
     # --- Notes ---
 
     async def add_note(self, user_id: str, content: str):
-        collection = self.user_data_collection
-        if collection is None:
-            return
-
-        # Ensure user exists first
-        await self._get_or_create_user(user_id)
-
-        note = {"content": content, "timestamp": datetime.now().isoformat()}
-
-        await collection.update_one(
-            {"user_id": user_id},
-            {"$push": {"notes": note}, "$set": {"updated_at": datetime.now().isoformat()}},
-        )
+        try:
+            doc = await self._get_or_create_user(user_id)
+            notes = doc.get("notes", []) or []
+            note = {"content": content, "timestamp": datetime.now().isoformat()}
+            notes.append(note)
+            
+            self.user_data_collection.update({
+                "notes": notes,
+                "updated_at": datetime.now().isoformat()
+            }).eq("user_id", user_id).execute()
+        except Exception as e:
+            log.error("add_note_failed", error=str(e))
 
     async def get_notes(self, user_id: str) -> List[Dict]:
-        collection = self.user_data_collection
-        if collection is None:
+        try:
+            response = self.user_data_collection.select("notes").eq("user_id", user_id).execute()
+            if response.data and response.data[0].get("notes"):
+                return response.data[0]["notes"]
             return []
-
-        doc = await collection.find_one({"user_id": user_id})
-        return doc.get("notes", []) if doc else []
+        except Exception as e:
+            log.error("get_notes_failed", error=str(e))
+            return []
 
     # --- Progress ---
 
     async def update_progress_metric(self, user_id: str, metric: str, value: any):
-        collection = self.user_data_collection
-        if collection is None:
-            return
-
-        await self._get_or_create_user(user_id)
-
-        await collection.update_one(
-            {"user_id": user_id},
-            {"$set": {f"progress.{metric}": value, "updated_at": datetime.now().isoformat()}},
-        )
+        try:
+            doc = await self._get_or_create_user(user_id)
+            progress = doc.get("progress", {}) or {}
+            progress[metric] = value
+            
+            self.user_data_collection.update({
+                "progress": progress,
+                "updated_at": datetime.now().isoformat()
+            }).eq("user_id", user_id).execute()
+        except Exception as e:
+            log.error("update_progress_failed", error=str(e))
 
     async def get_full_profile_string(self, user_id: str) -> str:
         """Returns a string summary for AI Context injection"""
