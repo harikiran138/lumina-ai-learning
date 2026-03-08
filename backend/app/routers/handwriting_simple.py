@@ -45,19 +45,11 @@ async def upload_document(
         print(f"Starting OCR for file: {file_name}")
         extracted_text = ""
 
-        # Determine file type and process
-        if ext.lower() in ["jpg", "jpeg", "png", "bmp", "webp"]:
-            # Run OCR in a separate thread to avoid blocking the event loop
-            import asyncio
+        import asyncio
 
-            extracted_text = await asyncio.to_thread(ocr_service.digitize_image, content)
-        elif ext.lower() == "pdf":
-            # Placeholder for PDF logic:
-            # For now, we will treat it as a warning since basic implementation handles images.
-            # Real PDF support would require pdf2image library + poppler
-            extracted_text = "[PDF Processing requires additional setup. Please upload images (JPG/PNG) for best results.]"
-        else:
-            extracted_text = "[Unsupported file format for OCR]"
+        extracted_text = await asyncio.to_thread(ocr_service.extract_text, content, ext.lower())
+        if not extracted_text.strip():
+            extracted_text = "[Unsupported or empty document content]"
 
         print(f"OCR Complete. Extracted {len(extracted_text)} characters.")
 

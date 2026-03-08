@@ -1322,32 +1322,26 @@ We are committed to providing a welcoming and inclusive environment. Please read
 
 ##  Documentation
 
-### Core Documentation
-- [Installation Guide](./docs/INSTALL.md)
-- [Architecture Overview](./docs/ARCHITECTURE.md)
-- [Project Structure](./PROJECT_STRUCTURE.md)
-- [API Reference](./docs/API.md)
-- [Configuration Guide](./docs/CONFIGURATION.md)
-- [Deployment Guide](./docs/DEPLOYMENT.md)
+### Master Documentation
+- [Master Guide](./docs/MASTER_GUIDE.md)
+- [Architecture](./docs/ARCHITECTURE.md)
+- [Connection Map](./docs/CONNECTION_MAP.md)
+- [Feature Audit](./docs/FEATURE_AUDIT.md)
+- [AI LMS Blueprint](./docs/AI_LMS_BLUEPRINT.md)
+- [Research Foundation](./docs/RESEARCH_FOUNDATION.md)
+- [Product Strategy And Market Gap](./docs/PRODUCT_STRATEGY_AND_MARKET_GAP.md)
+- [Feature Requirements Checklist](./docs/FEATURE_REQUIREMENTS_CHECKLIST.md)
+- [Delivery Roadmap And Phases](./docs/DELIVERY_ROADMAP_AND_PHASES.md)
+- [Agent Execution Guide](./docs/AGENT_EXECUTION_GUIDE.md)
 
-### AI/ML Documentation
-- [RAG Pipeline](./docs/ai/RAG.md)
-- [Agent System](./docs/ai/AGENTS.md)
-- [Knowledge Tracing](./docs/ai/KNOWLEDGE_TRACING.md)
-- [Model Fine-Tuning](./docs/ai/FINE_TUNING.md)
-- [Guardrails](./docs/ai/GUARDRAILS.md)
-
-### User Guides
-- [Educator Guide](./docs/guides/EDUCATOR_GUIDE.md)
-- [Student Guide](./docs/guides/STUDENT_GUIDE.md)
-- [Administrator Guide](./docs/guides/ADMIN_GUIDE.md)
-- [Developer Guide](./docs/guides/DEVELOPER_GUIDE.md)
-
-### Video Tutorials
-- [Platform Overview](https://youtube.com/watch?v=...)
-- [Creating Your First Course](https://youtube.com/watch?v=...)
-- [Understanding Analytics](https://youtube.com/watch?v=...)
-- [Advanced Configuration](https://youtube.com/watch?v=...)
+### Existing Reference Docs
+- [Database Notes](./docs/DATABASE.md)
+- [API Reference](./docs/API_REFERENCE.md)
+- [API Spec](./docs/API_SPEC.md)
+- [Student Role Guide](./docs/STUDENT_ROLE.md)
+- [Teacher Role Guide](./docs/TEACHER_ROLE.md)
+- [Admin Role Guide](./docs/ADMIN_ROLE.md)
+- [Governance Notes](./docs/GOVERNANCE.md)
 
 ---
 

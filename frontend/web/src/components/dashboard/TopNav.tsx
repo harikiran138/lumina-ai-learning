@@ -8,7 +8,7 @@ export default function TopNav({
   user = { name: "Student User", role: "Student", initial: "S" },
 }: {
   onMenuClick?: () => void;
-  user?: { name: string; role: string; initial: string };
+  user?: { name: string; role: string; initial: string; avatar?: string };
 }) {
   return (
     <header className="fixed top-4 right-4 left-4 lg:left-28 h-16 backdrop-blur-xl bg-black/20 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] z-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between rounded-2xl transition-all duration-300">

@@ -1,301 +1,208 @@
-# Connection Map — How Everything Is Wired Together
+# Lumina Connection Map
 
-## System Overview
+This document explains how the main user journeys move through the current system and where the data is stored at each step.
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    USER BROWSER                     │
-│                                                     │
-│  Next.js 15 App (frontend/web/)                     │
-│  ├── /login            → Auth flow                  │
-│  ├── /student/*        → Student dashboard suite    │
-│  ├── /teacher/*        → Teacher dashboard suite    │
-│  └── /admin/*          → Admin dashboard suite      │
-│                                                     │
-│  lib/api.ts            → All backend HTTP calls     │
-│  lib/ai-tutor/router.ts→ 3-tier AI response system  │
-│  lib/ai-tutor/cache.ts → IndexedDB response cache   │
-└────────────────┬────────────────────────────────────┘
-                 │ HTTP (fetch with Bearer token)
-                 │ Base URL: NEXT_PUBLIC_API_URL
-                 │          or http://127.0.0.1:8000
-                 ▼
-┌─────────────────────────────────────────────────────┐
-│              FASTAPI BACKEND                        │
-│              backend/app/main.py                    │
-│                                                     │
-│  Routers mounted:                                   │
-│  /api/auth/*           ← auth.py                   │
-│  /api/tutor/*          ← ai.py  (AI tutor)          │
-│  /api/courses/*        ← courses.py                │
-│  /api/student/*        ← student.py                │
-│  /api/assignments/*    ← assignments.py            │
-│  /api/assessment/*     ← assessment/api/router.py  │
-│  /api/community/*      ← community.py              │
-│  /api/admin/*          ← admin.py                  │
-│  /api/ai/*             ← hybrid.py                 │
-│  /api/handwriting/*    ← handwriting_simple.py     │
-│                                                     │
-│  Middleware:                                        │
-│  - CORS (allows FRONTEND_URL)                       │
-│  - TrustedHost                                      │
-│  - JWT auth (via get_current_user dependency)       │
-│  - Rate limiting                                    │
-│  - Prometheus metrics                               │
-└──────┬──────────────┬──────────────────────────────┘
-       │              │
-       ▼              ▼
-┌──────────────┐  ┌──────────────────────────────────┐
-│    REDIS     │  │         SUPABASE (PostgreSQL)     │
-│  redis:6379  │  │                                  │
-│              │  │  Tables: users, courses,          │
-│  - Cache     │  │  progress, assignments,           │
-│  - Celery    │  │  submissions, assessment_sessions,│
-│    broker    │  │  community_messages, user_data,   │
-│  - Rate      │  │  ai_logs, conversations,          │
-│    limiting  │  │  certificates                    │
-└──────────────┘  └──────────────────────────────────┘
-                             │
-                    ┌────────┘
-                    ▼
-         ┌──────────────────┐
-         │  CELERY WORKER   │
-         │  app/worker.py   │
-         │                  │
-         │  task_grade_     │
-         │  submission()    │
-         │  ├── OCR         │
-         │  ├── LLM Grade   │
-         │  └── DB update   │
-         └──────────────────┘
+## 1. Source of Truth Map
+
+| Data type | Current source of truth | Used by |
+| --- | --- | --- |
+| Users and roles | `users` table | auth, student profile, admin |
+| Courses | `courses` table | student catalog, teacher authoring, tutor context |
+| Enrollments and progress | `progress` table | dashboard, course progress, teacher views |
+| User notes and quiz history | `user_data` table | student profile, tutor context, learner bootstrap |
+| Assessment sessions | `assessment_sessions` table | assessment reports, mastery views, analytics |
+| Assignments | `assignments` table | teacher workflows |
+| Submissions | `submissions` table | grading and reports |
+| Tutor session memory | `backend/data/tutor_sessions.json` | deduplication and tutor continuity |
+| Learner profile fallback | `backend/data/learner_profiles.json` | pathway and personalization fallback |
+| Generated presentations | `backend/static/presentations` | teacher or tutor PPT download |
+
+## 2. Authentication Flow
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant W as Web App
+  participant A as Auth Router
+  participant DB as Users Table
+
+  U->>W: Enter email and password
+  W->>A: POST /api/auth/token
+  A->>DB: Verify user + password hash
+  DB-->>A: User record
+  A-->>W: JWT access token
+  W->>A: GET /api/auth/me
+  A-->>W: User profile + role
+  W->>W: Store token and role in sessionStorage
 ```
 
----
+## 3. Student Learning Flow
 
-## Authentication Connection
+### Browse and enroll
 
-```
-┌──────────────┐     POST /api/auth/token      ┌────────────────────┐
-│  Login Page  │  ──────────────────────────►  │  auth.py router    │
-│  /login      │                               │                    │
-│              │  ◄──────────────────────────  │  1. verify email   │
-│              │     { access_token }          │  2. check password │
-│              │                               │  3. create JWT     │
-│              │     GET /api/auth/me          │                    │
-│              │  ──────────────────────────►  │  4. return user    │
-│              │                               │     profile        │
-│              │  ◄──────────────────────────  └────────────────────┘
-│              │     { id, name, role, email }
-│              │
-│  Store in sessionStorage:
-│  - lumina_token
-│  - lumina_user
-│
-│  Redirect → /{role}/dashboard
-└──────────────┘
-```
+1. Student opens `/student/courses`.
+2. Frontend calls `GET /api/courses`.
+3. `CourseStore` returns normalized course records.
+4. Student clicks enroll.
+5. Frontend calls `POST /api/student/enroll`.
+6. `StudentStore` writes a `progress` record.
 
----
+### Learn and complete lessons
 
-## AI Tutor Connection (3-tier)
+1. Student opens `/student/courses/[courseId]`.
+2. Frontend calls `GET /api/courses/{courseId}`.
+3. Student opens a lesson.
+4. Frontend calls `POST /api/student/complete-lesson`.
+5. `StudentStore` appends `completedLessons` and recalculates progress.
+6. Frontend also logs time through `POST /api/student/log-activity`.
 
-```
-Student types message
-        │
-        ▼
-[Tier 1] IndexedDB cache lookup  ──► HIT: return cached answer (<5ms)
-        │ MISS
-        ▼
-[Tier 2] Rule-based matcher
-        "hello/hi" → greeting
-        "who are you" → identity
-        "help" → help text      ──► MATCH: return instant (<1ms)
-        │ NO MATCH
-        ▼
-[Tier 3] POST /api/tutor/chat
-        {
-          message: "...",
-          user_id: "<real user id>",
-          session_id: "<uuid>",
-          context_filters: { context: "<user profile>" }
-        }
-        │
-        ▼
-  FastAPI ai.py router
-        │
-        ├── GuardianAgent.sanitize_input()   ← safety check
-        ├── RAG retrieval (top-3 context)    ← knowledge base
-        ├── PathwayAgent.get_constraints()   ← personalization
-        ├── UserDataStore (quiz history)     ← learner context
-        ├── CourseStore (available courses)  ← course context
-        ├── LLM (Gemini / Ollama)            ← generate response
-        └── AgentStore.save_message()        ← log conversation
-        │
-        ▼
-  {
-    response: "...",
-    context_used: [...],
-    personalization: { behavior, recommendation }
-  }
-        │
-        ▼
-  Cache response in IndexedDB
-  Display to student
+## 4. AI Tutor Flow
+
+```mermaid
+sequenceDiagram
+  participant S as Student
+  participant F as Tutor UI
+  participant R as frontend/web/src/lib/ai-tutor/router.ts
+  participant API as backend/app/routers/ai.py
+  participant LP as Learner Profile Store
+  participant RAG as RAG Engine
+  participant PATH as Pathway Agent
+  participant LLM as LLM Provider
+
+  S->>F: Ask question
+  F->>R: processMessage()
+  R->>R: cache and rule checks
+  R->>API: POST /api/tutor/chat
+  API->>PATH: session constraints
+  API->>LP: learner state
+  API->>RAG: retrieve context
+  API->>LLM: generate response
+  API-->>F: response + personalization
+  F->>R: cache answer
 ```
 
----
+### Important connection details
 
-## Assessment Connection
+- tutor personalization currently depends on:
+  - learner profile state
+  - quiz history summary
+  - conversation history
+  - pathway recommendation
+  - course catalog context
+- tutor memory is currently session-based, not a full long-term pedagogical memory
+- subject specialization is still a roadmap item, not fully implemented
 
-```
-Student starts quiz
-        │
-POST /api/assessment/start
-  { student_id, topic, num_questions }
-        │
-        ▼
-AssessmentEngine creates session
-  current_difficulty = 0.5 (start medium)
-        │
-Loop:
-        │
-GET /api/assessment/next-question/{session_id}
-        │
-        ▼
-Question selected based on current_difficulty
-        │
-Student answers
-        │
-POST /api/assessment/submit
-  { session_id, question_id, selected_option_id, time_taken }
-        │
-        ▼
-Engine updates difficulty:
-  correct answer → difficulty +0.1
-  wrong answer   → difficulty -0.1
-  (clamped 0.0–1.0)
-        │
-GET /api/assessment/report/{session_id}
-        │
-        ▼
-{
-  accuracy: 0.8,
-  level: "strong|developing|weak",
-  final_ability_estimate: 0.75
-}
-```
+## 5. Assessment Flow
 
----
+1. Student starts an assessment from `/student/assessment`.
+2. Frontend calls `POST /api/assessment/start`.
+3. `session_manager.create_session()` creates an assessment session.
+4. Frontend calls `GET /api/assessment/next-question/{session_id}`.
+5. Question generator returns the next question at current difficulty.
+6. Frontend submits answer to `POST /api/assessment/submit`.
+7. Adaptive logic updates session difficulty.
+8. Session report is available through `GET /api/assessment/report/{session_id}`.
+9. Authenticated mastery view is available through `GET /api/assessment/student/mastery`.
 
-## Course Management Connection
+### What is connected today
 
-```
-TEACHER                          BACKEND                      SUPABASE
-─────────                        ───────                      ────────
-Create course ──POST /api/courses/──► CourseStore ──────────► INSERT courses
-Add module    ──POST /{id}/modules──► CourseStore ──────────► UPDATE courses (modules jsonb)
-Add lesson    ──POST /{id}/modules/{mid}/lessons──► CourseStore ► UPDATE courses
-Publish       ──POST /{id}/publish──► CourseStore ──────────► UPDATE is_published=true
+- assessment sessions persist
+- reports are generated
+- student mastery can be read
 
-STUDENT
-───────
-Browse        ──GET /api/courses/──────────────► CourseStore ─► SELECT courses
-Enroll        ──POST /api/student/enroll────────► StudentStore ► INSERT progress
-View lesson   ──GET /api/courses/{id}───────────► CourseStore ─► SELECT courses
-Complete      ──POST /api/student/complete-lesson► StudentStore ► UPDATE completedLessons[]
-```
+### What still needs tighter connection
 
----
+- question metadata should always map to concepts
+- concept mastery should feed pathway and remediation automatically
+- teacher dashboards should surface misconception patterns from assessment data
 
-## Assignment Grading Connection
+## 6. Assignment Flow
 
-```
-TEACHER creates assignment
-  POST /api/assignments/create
-  → AssignmentStore → Supabase (assignments)
+```mermaid
+sequenceDiagram
+  participant T as Teacher
+  participant S as Student
+  participant API as Assignments Router
+  participant ST as Storage Service
+  participant W as Celery Worker
+  participant OCR as OCR Service
+  participant G as Grader Service
+  participant DB as Assignments/Submissions Tables
 
-STUDENT submits file
-  POST /api/assignments/submit (multipart)
-  → StorageService saves file to /uploads or S3
-  → AssignmentStore creates submission record
-
-TEACHER triggers grading
-  POST /api/assignments/{id}/submissions/{sid}/grade
-  → Celery dispatches task_grade_submission()
-  → Returns { task_id } immediately
-
-BACKGROUND WORKER (async)
-  1. Download file from storage
-  2. OCR: extract text from image/PDF
-  3. Grade: LLM evaluates against rubric
-  4. Update submission: { score, feedback, ocr_text, status: "graded" }
-
-TEACHER views result
-  GET /api/assignments/{id}/submissions/{sid}/report
-  → { score, feedback, level: "weak|developing|strong" }
+  T->>API: Create assignment
+  API->>DB: Insert assignment
+  S->>API: Submit file
+  API->>ST: Upload file
+  API->>DB: Insert submission
+  T->>API: Trigger grading
+  API->>W: Queue grading task
+  W->>ST: Download file
+  W->>OCR: Extract text
+  W->>G: Score content
+  W->>DB: Update submission grade + feedback
 ```
 
----
+### Supported extraction path after this pass
 
-## Frontend ↔ Backend API Map
+- images -> OCR
+- PDFs -> text extraction via `pypdf`
+- text files -> direct text extraction
 
-| Frontend Call (lib/api.ts) | Backend Endpoint | Auth Required |
-|---------------------------|-----------------|---------------|
-| `api.login()` | POST /api/auth/token | No |
-| `api.createUser()` | POST /api/auth/register | No |
-| `api.getCurrentUser()` | — (sessionStorage) | — |
-| `api.getDashboardData("student")` | GET /api/student/dashboard | Yes |
-| `api.getDashboardData("teacher")` | GET /api/courses/teacher/dashboard | Yes |
-| `api.getDashboardData("admin")` | GET /api/admin/dashboard | Yes |
-| `api.getStudentProfile()` | GET /api/student/profile | Yes |
-| `api.getStudentBadges()` | GET /api/student/badges | Yes |
-| `api.getStudentCertificates()` | GET /api/student/certificates | Yes |
-| `api.getStudentMastery()` | GET /api/assessment/student/mastery | Yes |
-| `api.enrollInCourse()` | POST /api/student/enroll | Yes |
-| `api.completeLesson()` | POST /api/student/complete-lesson | Yes |
-| `api.saveNote()` | POST /api/student/note | Yes |
-| `api.getNotes()` | GET /api/student/profile | Yes |
-| `api.saveQuizResult()` | POST /api/student/quiz-result | Yes |
-| `api.getCommunityData()` | GET /api/community/data | Yes |
-| `api.sendCommunityMessage()` | POST /api/community/send | Yes |
-| `api.getTeacherCourses()` | GET /api/courses/teacher/list | Yes |
-| `api.getTeacherStudents()` | GET /api/courses/teacher/students | Yes |
-| `api.createCourse()` | POST /api/courses/ | Yes |
-| `api.getAllCourses()` | GET /api/courses/ | No |
-| `api.getCourseDetails()` | GET /api/courses/{id} | No |
-| `api.updateCourseDetails()` | PATCH /api/courses/{id} | Yes |
-| `api.deleteCourse()` | DELETE /api/courses/{id} | Yes |
-| `api.addModule()` | POST /api/courses/{id}/modules | Yes |
-| `api.updateCourseStructure()` | PUT /api/courses/{id}/modules | Yes |
-| `api.deleteModule()` | DELETE /api/courses/{id}/modules/{mid} | Yes |
-| `api.addLesson()` | POST /api/courses/{id}/modules/{mid}/lessons | Yes |
-| `api.deleteLesson()` | DELETE /api/courses/{id}/modules/{mid}/lessons/{lid} | Yes |
-| `api.publishCourse()` | POST /api/courses/{id}/publish | Yes |
-| `api.getAllUsers()` | GET /api/admin/users | Yes (admin) |
-| `api.updateUserStatus()` | POST /api/admin/users/{id}/status | Yes (admin) |
-| `api.updateUserRole()` | POST /api/admin/users/{id}/role | Yes (admin) |
-| `api.deleteUser()` | DELETE /api/admin/users/{id} | Yes (admin) |
-| `api.getAllAILogs()` | GET /api/admin/logs/ai | Yes (admin) |
-| `api.deleteAILog()` | DELETE /api/admin/logs/ai/{id} | Yes (admin) |
-| `api.getAllChatLogs()` | GET /api/admin/logs/chat | Yes (admin) |
-| `api.getAllStudentsWithProgress()` | GET /api/admin/students-progress | Yes (admin) |
-| `processMessage()` (router.ts) | POST /api/tutor/chat | No (uses user_id param) |
+## 7. Course Generation and PPT Flow
 
----
+### AI course generation
 
-## Role-Based Route Access Summary
+1. Teacher or system calls `POST /api/generate-course`.
+2. Backend builds a curriculum-design prompt.
+3. LLM returns JSON course outline.
+4. Frontend can transform the outline into course records.
 
-| Route Pattern | Who Can Access | Redirect if Not Authorized |
-|--------------|---------------|---------------------------|
-| `/login` | Everyone | → `/{role}/dashboard` if logged in |
-| `/dashboard` | Authenticated | → `/login` if not logged in |
-| `/student/*` | Student role | Role check in each page |
-| `/teacher/*` | Teacher role | Role check in each page |
-| `/admin/*` | Admin role | Role check in each page |
-| `/api/admin/*` | Admin JWT | 403 Forbidden |
-| `/api/student/*` | Any JWT | 401 Unauthorized |
-| `/api/courses/teacher/*` | Teacher/Admin JWT | 403 Forbidden |
-| `/api/assignments/create` | Teacher JWT | 403 Forbidden |
-| `/api/auth/*` | No auth needed | — |
-| `/api/courses/list` | No auth needed | — |
-| `/api/courses/` (GET) | No auth needed | — |
+### Assignment-based course generation
+
+1. Call `POST /api/generate-course-from-assignment`.
+2. Backend reads assignment plus optional submission grade.
+3. Difficulty is adjusted from performance band.
+4. LLM returns a remediation or enrichment course outline.
+
+### PPT generation
+
+1. Frontend or tutor calls `POST /api/tutor/generate-ppt`.
+2. Backend generates a JSON slide plan.
+3. `PPTGenerator` writes a `.pptx` file.
+4. Presentation is stored in `static/presentations`.
+
+## 8. Teacher Monitoring Flow
+
+Current flow:
+
+1. Teacher opens dashboard.
+2. Frontend calls `/api/courses/teacher/dashboard`.
+3. Backend joins teacher courses with analytics.
+4. Teacher opens students list via `/api/courses/teacher/students`.
+5. Teacher reviews assignments and grading reports.
+
+Missing flow:
+
+- class-level alerting
+- recommended interventions
+- “why this student is at risk” explanations
+- teacher approval for AI-generated remediation plans
+
+## 9. Target Data Flow for a Personal LMS
+
+The final system should feed every learner event into one shared profile loop:
+
+```mermaid
+flowchart TD
+  A["Lesson activity"] --> P["Learner Profile"]
+  B["Quiz result"] --> P
+  C["Assessment session"] --> P
+  D["Assignment grade"] --> P
+  E["Tutor chat"] --> P
+  P --> X["Student next step"]
+  P --> Y["Teacher intervention"]
+  P --> Z["Content recommendation"]
+  P --> Q["Question generation"]
+```
+
+That is the connection pattern the rest of the roadmap should follow.

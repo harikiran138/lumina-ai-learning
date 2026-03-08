@@ -13,13 +13,21 @@ class UserDataStore:
     """
 
     def __init__(self):
-        self.client = supabase_db.get_client()
+        try:
+            self.client = supabase_db.get_client()
+        except Exception as e:
+            log.warning("user_data_store_unavailable", error=str(e))
+            self.client = None
 
     @property
     def user_data_collection(self):
+        if not self.client:
+            return None
         return self.client.table("user_data")
 
     async def _get_or_create_user(self, user_id: str) -> dict:
+        if self.user_data_collection is None:
+            return {"user_id": user_id, "progress": {}, "notes": [], "quiz_history": []}
         try:
             response = self.user_data_collection.select("*").eq("user_id", user_id).execute()
             if response.data:
@@ -48,6 +56,9 @@ class UserDataStore:
     # --- Quiz History ---
 
     async def add_quiz_attempt(self, user_id: str, attempt: dict):
+        if self.user_data_collection is None:
+            log.warning("quiz_attempt_skipped_no_store", user_id=user_id)
+            return
         try:
             attempt["timestamp"] = datetime.now().isoformat()
 
@@ -66,10 +77,28 @@ class UserDataStore:
                 "updated_at": datetime.now().isoformat()
             }).eq("user_id", user_id).execute()
             
+            # Also update the 'mastery' in the 'progress' table if applicable
+            # We assume 'attempt' might have course_id or we find the relevant progress record
+            course_id = attempt.get("course_id")
+            if course_id:
+                # Update specific course mastery
+                try:
+                    supabase_db.get_client().table("progress").update({
+                        "mastery": round(avg, 2)
+                    }).eq("userId", user_id).eq("courseId", course_id).execute()
+                except Exception as progress_error:
+                    log.warning("progress_mastery_update_skipped", error=str(progress_error))
+            else:
+                # Update overall mastery across all progress records if needed, 
+                # but better to do it per topic/course.
+                pass
+                
         except Exception as e:
             log.error("quiz_attempt_update_failed", error=str(e))
 
     async def get_recent_quiz_stats(self, user_id: str, limit: int = 5) -> Dict:
+        if self.user_data_collection is None:
+            return {"attempt_count": 0, "recent_average": 0, "weak_topics": [], "recent_history": []}
         try:
             response = self.user_data_collection.select("quiz_history").eq("user_id", user_id).execute()
             
@@ -100,6 +129,9 @@ class UserDataStore:
     # --- Notes ---
 
     async def add_note(self, user_id: str, content: str):
+        if self.user_data_collection is None:
+            log.warning("note_save_skipped_no_store", user_id=user_id)
+            return
         try:
             doc = await self._get_or_create_user(user_id)
             notes = doc.get("notes", []) or []
@@ -114,6 +146,8 @@ class UserDataStore:
             log.error("add_note_failed", error=str(e))
 
     async def get_notes(self, user_id: str) -> List[Dict]:
+        if self.user_data_collection is None:
+            return []
         try:
             response = self.user_data_collection.select("notes").eq("user_id", user_id).execute()
             if response.data and response.data[0].get("notes"):
@@ -126,6 +160,9 @@ class UserDataStore:
     # --- Progress ---
 
     async def update_progress_metric(self, user_id: str, metric: str, value: any):
+        if self.user_data_collection is None:
+            log.warning("progress_update_skipped_no_store", user_id=user_id, metric=metric)
+            return
         try:
             doc = await self._get_or_create_user(user_id)
             progress = doc.get("progress", {}) or {}
