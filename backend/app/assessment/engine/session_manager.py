@@ -1,4 +1,5 @@
 from typing import Optional
+import inspect
 from app.assessment.models.schemas import (
     AssessmentSession,
     StudentResponse,
@@ -24,6 +25,21 @@ class SessionManager:
     def sessions_collection(self):
         return supabase_db.client.table("assessment_sessions")
 
+    def _session_record(self, session: AssessmentSession):
+        return {
+            "id": session.id,
+            "student_id": session.student_id,
+            "topic": session.topic,
+            "current_difficulty": session.current_difficulty,
+            "responses": [response.model_dump(mode="json") for response in session.responses],
+            "mastery_state": (
+                session.mastery_state.model_dump(mode="json") if session.mastery_state else None
+            ),
+            "status": "completed" if session.is_completed else "active",
+            "timestamp": session.start_time.isoformat(),
+            "num_questions": session.total_questions,
+        }
+
     async def create_session(
         self, student_id: str, topic: str, initial_difficulty: float = 0.5, num_questions: int = 5
     ) -> AssessmentSession:
@@ -38,7 +54,7 @@ class SessionManager:
         )
 
         try:
-            self.sessions_collection.insert(session.model_dump()).execute()
+            self.sessions_collection.insert(self._session_record(session)).execute()
         except Exception as e:
             logger.warning(f"Database error writing session. Session persisted in memory only. Error: {e}")
             self.in_memory_sessions[session.id] = session
@@ -50,7 +66,15 @@ class SessionManager:
         try:
             response = self.sessions_collection.select("*").eq("id", session_id).execute()
             if response.data:
-                return AssessmentSession(**response.data[0])
+                data = response.data[0]
+                responses = data.get("responses", [])
+                data["responses"] = [StudentResponse(**item) for item in responses]
+                if data.get("mastery_state"):
+                    data["mastery_state"] = MasteryState(**data["mastery_state"])
+                data["total_questions"] = data.get("num_questions", data.get("total_questions", 5))
+                data["start_time"] = data.get("timestamp", data.get("start_time"))
+                data["is_completed"] = data.get("status") == "completed"
+                return AssessmentSession(**data)
         except Exception:
             pass
         return self.in_memory_sessions.get(session_id)
@@ -59,7 +83,7 @@ class SessionManager:
         """Helper to save session state."""
         try:
             # Note: For updates in Supabase/Postgrest where you want full document replacement
-            self.sessions_collection.update(session.model_dump()).eq("id", session.id).execute()
+            self.sessions_collection.update(self._session_record(session)).eq("id", session.id).execute()
         except Exception as e:
             logger.error(f"Failed to update session: {e}")
             self.in_memory_sessions[session.id] = session
@@ -70,9 +94,10 @@ class SessionManager:
         if not session or session.is_completed:
             return None
 
-        question = await question_generator.generate_question(
+        generated = question_generator.generate_question(
             topic=session.topic, difficulty=session.current_difficulty
         )
+        question = await generated if inspect.isawaitable(generated) else generated
 
         if question:
             # Append to history and save
