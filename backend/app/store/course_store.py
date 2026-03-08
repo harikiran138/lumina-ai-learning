@@ -62,3 +62,64 @@ class CourseStore:
                 doc["id"] = str(doc.pop("_id"))
             return doc
         return None
+
+    async def get_course_by_id(self, course_id: str) -> Optional[dict]:
+        collection = self.courses_collection
+        if collection is None:
+            return None
+        doc = await collection.find_one({"$or": [{"_id": course_id}, {"id": course_id}]})
+        if doc:
+            if "_id" in doc:
+                doc["id"] = str(doc.pop("_id"))
+            return doc
+        return None
+
+    async def update_course(self, course_id: str, updates: dict) -> bool:
+        collection = self.courses_collection
+        if collection is None:
+            return False
+        updates.pop("_id", None)
+        updates.pop("id", None)
+        result = await collection.update_one(
+            {"$or": [{"_id": course_id}, {"id": course_id}]},
+            {"$set": updates}
+        )
+        return result.modified_count > 0
+
+    async def delete_course(self, course_id: str) -> bool:
+        collection = self.courses_collection
+        if collection is None:
+            return False
+        result = await collection.delete_one({"$or": [{"_id": course_id}, {"id": course_id}]})
+        return result.deleted_count > 0
+
+    async def get_courses_by_teacher(self, teacher_id: str) -> List[dict]:
+        collection = self.courses_collection
+        if collection is None:
+            return []
+        cursor = collection.find({"teacher_id": teacher_id})
+        courses = await cursor.to_list(length=100)
+        for doc in courses:
+            if "_id" in doc:
+                doc["id"] = str(doc.pop("_id"))
+        return courses
+
+    async def add_module(self, course_id: str, module: dict) -> bool:
+        collection = self.courses_collection
+        if collection is None:
+            return False
+        result = await collection.update_one(
+            {"$or": [{"_id": course_id}, {"id": course_id}]},
+            {"$push": {"modules": module}}
+        )
+        return result.modified_count > 0
+
+    async def update_modules(self, course_id: str, modules: list) -> bool:
+        collection = self.courses_collection
+        if collection is None:
+            return False
+        result = await collection.update_one(
+            {"$or": [{"_id": course_id}, {"id": course_id}]},
+            {"$set": {"modules": modules}}
+        )
+        return result.modified_count > 0

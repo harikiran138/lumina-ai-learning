@@ -92,3 +92,28 @@ class UserStore:
             doc["id"] = doc.pop("_id")
             return doc
         return None
+
+    async def list_all_users(self) -> list:
+        collection = self.users_collection
+        if collection is None:
+            return []
+        cursor = collection.find({})
+        users = await cursor.to_list(length=500)
+        for u in users:
+            u["id"] = str(u.pop("_id"))
+            u.pop("hashed_password", None)
+        return users
+
+    async def delete_user(self, user_id: str) -> bool:
+        collection = self.users_collection
+        if collection is None:
+            return False
+        result = await collection.delete_one({"_id": user_id})
+        return result.deleted_count > 0
+
+    async def update_user_role(self, user_id: str, role: str) -> bool:
+        collection = self.users_collection
+        if collection is None:
+            return False
+        result = await collection.update_one({"_id": user_id}, {"$set": {"role": role}})
+        return result.modified_count > 0
