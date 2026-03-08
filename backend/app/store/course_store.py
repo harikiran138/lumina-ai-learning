@@ -16,6 +16,36 @@ class CourseStore:
     def __init__(self):
         self.client = supabase_db.get_client()
 
+    def _normalize_course(self, course: Optional[dict]) -> Optional[dict]:
+        if not course:
+            return course
+
+        normalized = course.copy()
+        name = (
+            normalized.get("name")
+            or normalized.get("title")
+            or normalized.get("course_name")
+            or "Untitled Course"
+        )
+        code = normalized.get("code") or normalized.get("course_code")
+
+        normalized["name"] = name
+        normalized["title"] = normalized.get("title") or name
+        normalized["course_name"] = normalized.get("course_name") or name
+
+        if code:
+            normalized["code"] = code
+            normalized["course_code"] = normalized.get("course_code") or code
+
+        if normalized.get("thumbnail") is None and normalized.get("thumbnail_url"):
+            normalized["thumbnail"] = normalized["thumbnail_url"]
+
+        normalized["modules"] = normalized.get("modules") or []
+        normalized["students"] = normalized.get("students") or normalized.get("student_count") or 0
+        normalized["duration"] = normalized.get("duration") or "Self-paced"
+        normalized["rating"] = normalized.get("rating") or 0
+        return normalized
+
     @property
     def courses_collection(self):
         """Supabase uses 'courses' table."""
@@ -32,7 +62,7 @@ class CourseStore:
         try:
             response = self.courses_collection.insert(course_data).execute()
             if response.data:
-                return response.data[0]
+                return self._normalize_course(response.data[0])
             raise Exception("Failed to create course")
         except Exception as e:
             log.error("create_course_failed", error=str(e))
@@ -41,7 +71,7 @@ class CourseStore:
     async def list_courses(self) -> List[dict]:
         try:
             response = self.courses_collection.select("*").execute()
-            return response.data
+            return [self._normalize_course(course) for course in response.data]
         except Exception as e:
             log.error("list_courses_failed", error=str(e))
             return []
@@ -50,7 +80,7 @@ class CourseStore:
         try:
             response = self.courses_collection.select("*").eq("course_code", code).execute()
             if response.data:
-                return response.data[0]
+                return self._normalize_course(response.data[0])
         except Exception as e:
             log.error("get_course_by_code_failed", error=str(e))
         return None
@@ -59,7 +89,7 @@ class CourseStore:
         try:
             response = self.courses_collection.select("*").eq("id", course_id).execute()
             if response.data:
-                return response.data[0]
+                return self._normalize_course(response.data[0])
         except Exception as e:
             log.error("get_course_by_id_failed", error=str(e))
         return None
@@ -68,6 +98,14 @@ class CourseStore:
         try:
             # PostgreSQL/Supabase doesn't like some fields in update
             updates.pop("id", None)
+            if "name" in updates:
+                updates["course_name"] = updates.pop("name")
+            if "title" in updates and "course_name" not in updates:
+                updates["course_name"] = updates.pop("title")
+            else:
+                updates.pop("title", None)
+            if "code" in updates:
+                updates["course_code"] = updates.pop("code")
             response = self.courses_collection.update(updates).eq("id", course_id).execute()
             return len(response.data) > 0
         except Exception as e:
@@ -85,7 +123,7 @@ class CourseStore:
     async def get_courses_by_teacher(self, teacher_id: str) -> List[dict]:
         try:
             response = self.courses_collection.select("*").eq("teacher_id", teacher_id).execute()
-            return response.data
+            return [self._normalize_course(course) for course in response.data]
         except Exception as e:
             log.error("get_courses_by_teacher_failed", error=str(e))
             return []

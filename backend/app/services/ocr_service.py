@@ -4,6 +4,7 @@ import torch
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 import io
 from typing import List, Union
+from pypdf import PdfReader
 
 
 class OCRService:
@@ -50,6 +51,43 @@ class OCRService:
             except Exception as e:
                 print(f"❌ Error loading OCR model: {e}")
                 raise e
+
+    def _read_text_file(self, document_input: Union[str, bytes]) -> str:
+        try:
+            if isinstance(document_input, str):
+                with open(document_input, "r", encoding="utf-8") as handle:
+                    return handle.read()
+            if isinstance(document_input, bytes):
+                return document_input.decode("utf-8", errors="ignore")
+        except Exception as e:
+            print(f"Error reading text file: {e}")
+        return ""
+
+    def _extract_pdf_text(self, document_input: Union[str, bytes]) -> str:
+        try:
+            if isinstance(document_input, str):
+                with open(document_input, "rb") as handle:
+                    reader = PdfReader(handle)
+                    pages = [page.extract_text() or "" for page in reader.pages]
+            else:
+                reader = PdfReader(io.BytesIO(document_input))
+                pages = [page.extract_text() or "" for page in reader.pages]
+
+            text = "\n\n".join(page.strip() for page in pages if page and page.strip())
+            return text or "[No extractable text found in PDF]"
+        except Exception as e:
+            print(f"Error extracting PDF text: {e}")
+            return f"[Error extracting PDF text: {str(e)}]"
+
+    def extract_text(self, document_input: Union[str, bytes, Image.Image], file_type: str = "") -> str:
+        ext = file_type.lower().lstrip(".")
+
+        if ext in {"txt", "md", "csv", "json"}:
+            return self._read_text_file(document_input)
+        if ext == "pdf":
+            return self._extract_pdf_text(document_input)
+
+        return self.digitize_image(document_input)
 
     def digitize_image(self, image_input: Union[str, bytes, Image.Image]) -> str:
         """

@@ -1,22 +1,21 @@
 class GuardianAgent:
     """
-    Safety and Guardrails Agent for PII redaction and topic filtering.
+    Safety and Guardrails Agent for content filtering and bias prevention.
     """
 
     def __init__(self):
         self.banned_keywords = [
-            "bomb",
-            "hack",
-            "exploit",
-            "suicide",
-            "murder",
-            "kill",
-            "attack",
-            "malware",
-            "virus",
-            "trojan",
-            "ignore previous instructions",
+            "bomb", "hack", "exploit", "suicide", "murder", "kill",
+            "attack", "malware", "virus", "trojan",
+            "ignore previous instructions", "system prompt", "DAN mode"
         ]
+
+    def check_safety(self, content: str) -> bool:
+        """
+        Check if content is safe.
+        """
+        result = self.validate_content(content)
+        return result["safe"]
 
     def validate_content(self, content: str) -> dict:
         """
@@ -28,14 +27,18 @@ class GuardianAgent:
             if word in content_lower:
                 return {"safe": False, "reason": f"Content contains prohibited term: {word}"}
 
-        # Simple PII check (mock: check for phone-like patterns or emails)
-        # In production this would use Presidio or similar
-        if "@" in content and "." in content.split("@")[-1]:
-            # Just a warning for now, don't block
-            pass
+        # Basic Prompt Injection Checks
+        injection_patterns = ["you are now", "instead of", "forget everything"]
+        for pattern in injection_patterns:
+            if pattern in content_lower:
+                return {"safe": False, "reason": "Potential prompt injection detected."}
 
         return {"safe": True, "reason": "Content is safe"}
 
     def sanitize_input(self, user_input: str) -> str:
-        # Remove simple injections
-        return user_input.replace("<script>", "").replace("</script>", "")
+        """
+        Basic HTML/Script scrubbing.
+        """
+        import re
+        clean = re.compile('<.*?>')
+        return re.sub(clean, '', user_input)

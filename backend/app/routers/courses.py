@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Body
 from pydantic import BaseModel
 from typing import Optional, List, Any
 from app.store.course_store import CourseStore
@@ -67,6 +67,10 @@ class ModulesUpdateBody(BaseModel):
     modules: List[Any]
 
 
+class InviteStudentBody(BaseModel):
+    email: str
+
+
 async def _seed_default_courses(store: CourseStore):
     for c in DEFAULT_COURSES:
         await store.create_course(c["name"], c["code"], c["description"], c["teacher_id"])
@@ -110,11 +114,11 @@ async def get_course(course_id: str, store: CourseStore = Depends(get_course_sto
 
 @router.get("/teacher/dashboard")
 async def teacher_dashboard(current_user: dict = Depends(get_current_user)):
-    """Get teacher dashboard stats."""
-    if current_user["role"] not in ("teacher", "admin"):
+    """Teacher dashboard stats with role check"""
+    if current_user.get("role") not in ["teacher", "admin"]:
         raise HTTPException(status_code=403, detail="Teacher access required")
     analytics = AnalyticsStore()
-    stats = await analytics.get_teacher_dashboard_stats()
+    stats = await analytics.get_teacher_dashboard_stats(current_user["id"])
     store = CourseStore()
     courses = await store.get_courses_by_teacher(current_user["id"])
     return {
@@ -255,12 +259,17 @@ async def publish_course(
 @router.post("/{course_id}/invite")
 async def invite_student(
     course_id: str,
-    email: str,
+    email: Optional[str] = None,
+    body: Optional[InviteStudentBody] = Body(default=None),
     current_user: dict = Depends(get_current_user),
 ):
     """Invite a student to a course by email."""
     if current_user["role"] not in ("teacher", "admin"):
         raise HTTPException(status_code=403, detail="Only teachers can invite students")
+
+    invite_email = email or (body.email if body else None)
+    if not invite_email:
+        raise HTTPException(status_code=400, detail="Student email is required")
     
     # Mock Email Sending
     import structlog
@@ -268,12 +277,12 @@ async def invite_student(
     
     try:
         # In a real app, integrate SES, SendGrid, or simple smtplib here
-        log.info("email_sent_successfully", to_email=email, subject=f"Invitation to join course {course_id}", body="Click here to join!")
+        log.info("email_sent_successfully", to_email=invite_email, subject=f"Invitation to join course {course_id}", body="Click here to join!")
     except Exception as e:
         log.error("email_send_failed", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to send invitation email")
 
-    return {"success": True, "message": f"Invitation sent to {email}"}
+    return {"success": True, "message": f"Invitation sent to {invite_email}"}
 
 
 # ─── Module & Lesson Management ──────────────────────────────────────────────

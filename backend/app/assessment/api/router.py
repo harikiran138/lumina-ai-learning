@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from app.assessment.models.schemas import (
     Question,
@@ -11,6 +11,9 @@ from app.assessment.models.schemas import (
 from app.assessment.engine.session_manager import session_manager
 from typing import Optional
 from app.database.supabase_manager import supabase_db
+from app.routers.auth import get_current_user
+from app.personalization.schemas import LearningEventType
+from app.services.personalization_service import get_personalization_service
 
 router = APIRouter()
 
@@ -37,6 +40,14 @@ async def get_student_mastery(student_id: str):
         import structlog
         structlog.get_logger().error("mastery_fetch_failed", error=str(e))
         return {}
+
+
+@router.get("/student/mastery")
+async def get_current_student_mastery(current_user: dict = Depends(get_current_user)):
+    """
+    Compatibility endpoint for the authenticated student's mastery view.
+    """
+    return await get_student_mastery(current_user["id"])
 
 
 @router.get("/stats/teacher")
@@ -74,6 +85,23 @@ async def complete_assessment(session_id: str):
     """
     try:
         session = await session_manager.complete_session(session_id)
+        await get_personalization_service().record_event(
+            session.student_id,
+            LearningEventType.ASSESSMENT_COMPLETED,
+            payload={
+                "session_id": session.id,
+                "topic": session.topic,
+                "accuracy": (
+                    sum(1 for r in session.responses if r.is_correct) / len(session.responses)
+                    if session.responses
+                    else 0
+                ),
+                "total_questions": len(session.responses),
+            },
+            source="assessment_router",
+            topic_id=session.topic,
+            session_id=session.id,
+        )
         return session
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -118,6 +146,21 @@ async def submit_answer(request: SubmitAnswerRequest):
             question_id=request.question_id,
             selected_option_id=request.selected_option_id,
             time_taken=request.time_taken,
+        )
+        response = session.responses[-1] if session.responses else None
+        await get_personalization_service().record_event(
+            session.student_id,
+            LearningEventType.ASSESSMENT_ANSWER,
+            payload={
+                "session_id": session.id,
+                "topic": session.topic,
+                "question_id": request.question_id,
+                "is_correct": response.is_correct if response else False,
+                "time_taken": request.time_taken,
+            },
+            source="assessment_router",
+            topic_id=session.topic,
+            session_id=session.id,
         )
         return session
     except ValueError as e:

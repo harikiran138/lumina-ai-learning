@@ -217,6 +217,17 @@ class RealAPI {
     return await res.json();
   }
 
+  async logActivity(courseId: string, durationMinutes: number): Promise<any> {
+    const res = await this.fetchAuthorized("/api/student/log-activity", {
+      method: "POST",
+      body: JSON.stringify({
+        course_id: courseId,
+        duration_minutes: durationMinutes,
+      }),
+    });
+    return await res.json();
+  }
+
   async getStudentBadges(): Promise<any[]> {
     const res = await this.fetchAuthorized("/api/student/badges");
     if (!res.ok) return [];
@@ -525,12 +536,12 @@ class RealAPI {
   }
 
   async saveQuizResult(data: {
-    user_id: string; // Legacy ID in request
     topic: string;
     score: number;
     total_questions: number;
     correct_count: number;
     difficulty: string;
+    course_id?: string;
     details?: any;
   }): Promise<any> {
     const res = await this.fetchAuthorized("/api/student/quiz-result", {

@@ -112,6 +112,30 @@ export default function CourseDetails({
     fetchCourse();
   }, [courseId]);
 
+  // Time tracking effect
+  useEffect(() => {
+    if (!courseId || isLoading) return;
+
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      // Heartbeat activity logging every 5 minutes
+      const elapsedMinutes = 5;
+      api.logActivity(courseId, elapsedMinutes).catch(console.error);
+    }, 5 * 60 * 1000);
+
+    return () => {
+      clearInterval(interval);
+      const endTime = Date.now();
+      const totalElapsedMinutes = Math.floor((endTime - startTime) / (60 * 1000));
+      if (totalElapsedMinutes > 0) {
+        // Log remaining time on unmount
+        // Note: navigator.sendBeacon could be used here for reliability, 
+        // but for now a simple catch-all logActivity is fine.
+        api.logActivity(courseId, totalElapsedMinutes % 5 || 1).catch(console.error);
+      }
+    };
+  }, [courseId, isLoading]);
+
   const handleLessonSelect = async (
     lesson: any,
     mIdx: number,
@@ -139,8 +163,8 @@ export default function CourseDetails({
       setActiveQuiz(null);
       setCurrentSlideIndex(0); // Reset slides
 
-      // Mark lesson as started/complete in DB (optional: for now just log locally or simple ping)
-      await api.updateProgress(courseId, 5);
+      // Mark lesson as complete in DB
+      await api.completeLesson(courseId, "module_id", lesson.id);
     }
   };
 
@@ -189,7 +213,15 @@ export default function CourseDetails({
     setQuizSubmitted(true);
 
     try {
-      await api.updateProgress(courseId, 10);
+      await api.saveQuizResult({
+        user_id: "current_user", // Backend handles this
+        topic: activeQuiz.title,
+        score: (score / activeQuiz.questions.length) * 100,
+        total_questions: activeQuiz.questions.length,
+        correct_count: score,
+        difficulty: "intermediate",
+        course_id: courseId, // Added course_id for progress tracking
+      } as any);
     } catch (e) {
       console.error("Failed to sync progress");
     }

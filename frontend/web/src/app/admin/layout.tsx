@@ -3,7 +3,8 @@
 import AdminSidebar from "@/components/dashboard/AdminSidebar";
 import TopNav from "@/components/dashboard/TopNav";
 import { BGPattern } from "@/components/ui/BGPattern";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "@/lib/api";
 
 export default function AdminLayout({
   children,
@@ -11,6 +12,15 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const userData = await api.getCurrentUser();
+      setUser(userData);
+    };
+    fetchUser();
+  }, []);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-black text-gray-100">
@@ -24,7 +34,16 @@ export default function AdminLayout({
       <AdminSidebar />
       <TopNav
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-        user={{ name: "Admin User", role: "Administrator", initial: "A" }}
+        user={
+          user
+            ? {
+                name: user.name,
+                role: "Administrator",
+                initial: user.name?.charAt(0) || "A",
+                avatar: user.avatar,
+              }
+            : { name: "Admin", role: "Administrator", initial: "A" }
+        }
       />
 
       {/* Mobile Sidebar Overlay */}

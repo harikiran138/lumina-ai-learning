@@ -21,34 +21,78 @@ class AnalyticsStore:
     def user_data_collection(self):
         return self.client.table("user_data")
 
-    async def get_teacher_dashboard_stats(self) -> Dict:
+    async def get_teacher_dashboard_stats(self, teacher_id: str) -> Dict:
         """
-        Calculates global stats for the teacher dashboard from Supabase.
-        Calculates average mastery across all students and sessions.
+        Calculates stats for a specific teacher's dashboard.
+        Aggregates data only for courses owned by this teacher.
         """
         try:
-            # Note: Fetching all might be heavy for large DBs, 
-            # ideally we'd use a Supabase RPC here. Doing in-memory for now.
-            response = self.sessions_collection.select("student_id, current_difficulty").execute()
-            data = response.data
+            # 1. Get courses owned by this teacher
+            courses_res = self.client.table("courses").select("id").eq("teacher_id", teacher_id).execute()
+            course_ids = [c["id"] for c in courses_res.data]
             
-            if not data:
-                return {"avg_mastery": 0, "total_students": 0, "total_sessions": 0}
-                
-            total_sessions = len(data)
-            unique_students = len(set(d.get("student_id") for d in data if d.get("student_id")))
+            if not course_ids:
+                return {
+                    "avg_mastery": 0,
+                    "total_students": 0,
+                    "active_courses": 0,
+                    "pending_assignments": 0
+                }
+
+            # 2. Get progress for those specific courses
+            progress_res = self.client.table("progress").select("mastery, userId").in_("courseId", course_ids).execute()
+            progress_data = progress_res.data
             
-            difficulties = [d.get("current_difficulty", 0) for d in data if d.get("current_difficulty") is not None]
-            avg_mastery = (sum(difficulties) / len(difficulties)) * 100 if difficulties else 0
+            if not progress_data:
+                return {
+                    "avg_mastery": 0,
+                    "total_students": 0,
+                    "active_courses": len(course_ids),
+                    "pending_assignments": 0
+                }
+
+            total_students = len(set(p["userId"] for p in progress_data))
+            avg_mastery = sum(p.get("mastery", 0) for p in progress_data) / len(progress_data)
             
             return {
                 "avg_mastery": round(avg_mastery, 2),
-                "total_students": unique_students,
-                "total_sessions": total_sessions
+                "total_students": total_students,
+                "active_courses": len(course_ids),
+                "pending_assignments": 0  # Placeholder for future logic
             }
         except Exception as e:
-            log.error("teacher_stats_aggregation_failed", error=str(e))
-            return {"avg_mastery": 0, "total_students": 0, "total_sessions": 0}
+            log.error("teacher_stats_aggregation_failed", teacher_id=teacher_id, error=str(e))
+            return {"avg_mastery": 0, "total_students": 0, "active_courses": 0}
+
+    async def get_admin_dashboard_stats(self) -> Dict:
+        """
+        Calculates high-level system-wide stats for administration.
+        """
+        try:
+            users_res = self.client.table("users").select("id, role", count="exact").execute()
+            courses_res = self.client.table("courses").select("id", count="exact").execute()
+            
+            total_users = users_res.count if users_res.count is not None else len(users_res.data)
+            total_courses = courses_res.count if courses_res.count is not None else len(courses_res.data)
+            
+            students = [u for u in users_res.data if u.get("role") == "student"]
+            teachers = [u for u in users_res.data if u.get("role") == "teacher"]
+            
+            return {
+                "totalUsers": total_users,
+                "totalCourses": total_courses,
+                "studentCount": len(students),
+                "teacherCount": len(teachers),
+                "systemStatus": "healthy",
+                "activeSessions": 12, # Placeholder or live session count
+            }
+        except Exception as e:
+            log.error("admin_stats_aggregation_failed", error=str(e))
+            return {
+                "totalUsers": 0,
+                "totalCourses": 0,
+                "systemStatus": "degraded"
+            }
 
     async def get_student_dashboard_stats(self, student_id: str) -> Dict:
         """
@@ -89,30 +133,59 @@ class AnalyticsStore:
             progress_response = self.client.table("progress").select("*").eq("userId", student_id).execute()
             progress_data = progress_response.data
             
+            log.info("dashboard_progress_check", student_id=student_id, count=len(progress_data) if progress_data else 0)
+            
             enrolled_courses = []
-            if progress_data:
-                # Fetch courses in one go
-                course_ids = [str(p.get("courseId")) for p in progress_data if p.get("courseId")]
-                
-                if course_ids:
-                    courses_response = self.client.table("courses").select("*").in_("id", course_ids).execute()
-                    courses_map = {str(c.get("id")): c for c in courses_response.data}
+            if not progress_data:
+                return {
+                    "currentStreak": 0,
+                    "enrolledCourses": [],
+                    "overallMastery": 0,
+                    "totalHours": 0,
+                    "badges": []
+                }
+
+            # Fetch courses in one go
+            # Use lowercase keys for fallback as well
+            course_ids = []
+            for p in progress_data:
+                cid = p.get("courseId") or p.get("courseid") or p.get("course_id")
+                if cid:
+                    course_ids.append(str(cid))
+            
+            courses_map = {}
+            if course_ids:
+                courses_response = self.client.table("courses").select("*").in_("id", course_ids).execute()
+                # Store in map with lowercase ID string
+                for c in courses_response.data:
+                    cid_str = str(c.get("id") or c.get("ID")).lower()
+                    courses_map[cid_str] = c
+            
+            for p in progress_data:
+                cid = p.get("courseId") or p.get("courseid") or p.get("course_id")
+                if not cid:
+                    continue
                     
-                    for p in progress_data:
-                        cid = str(p.get("courseId"))
-                        if cid in courses_map:
-                            course = courses_map[cid]
-                            enrolled_courses.append({
-                                "id": cid,
-                                "name": course.get("name"),
-                                "description": course.get("description"),
-                                "thumbnail": course.get("thumbnail"),
-                                "progress": p.get("progress", 0),
-                                "mastery": p.get("mastery", 0),
-                                "streak": p.get("streak", 0),
-                                "lastAccessed": p.get("lastAccessed"),
-                                "hoursSpent": p.get("hoursSpent", 0)
-                            })
+                cid_str = str(cid).lower()
+                if cid_str in courses_map:
+                    course = courses_map[cid_str]
+                    course_name = course.get("course_name") or course.get("title") or course.get("name") or "Untitled Course"
+                    
+                    enrolled_courses.append({
+                        "id": cid_str,
+                        "name": course_name,
+                        "title": course_name,
+                        "code": course.get("course_code") or course.get("code"),
+                        "description": course.get("description"),
+                        "thumbnail": course.get("thumbnail"),
+                        "progress": p.get("progress", 0),
+                        "mastery": p.get("mastery", 0),
+                        "streak": p.get("streak", 0),
+                        "lastAccessed": p.get("lastAccessed") or p.get("lastaccessed"),
+                        "hoursSpent": p.get("hoursSpent", 0) or p.get("hours_spent", 0) or p.get("hoursspent", 0)
+                    })
+                else:
+                    log.warning("course_not_found_in_map", course_id=cid_str, available_ids=list(courses_map.keys()))
 
             # Calculate Aggregates
             current_streak = max([c.get("streak", 0) for c in enrolled_courses] + [0])
@@ -124,20 +197,18 @@ class AnalyticsStore:
             total_hours = sum([c.get("hoursSpent", 0) for c in enrolled_courses])
 
             # Get User Badges
-            users_response = self.client.table("users").select("badges").eq("id", student_id).execute()
+            # Note: users.badges column does not exist currently
             badges = []
-            if users_response.data and "badges" in users_response.data[0]:
-                badges = users_response.data[0]["badges"]
 
             return {
                 "currentStreak": current_streak,
                 "enrolledCourses": enrolled_courses,
                 "overallMastery": avg_mastery,
                 "totalHours": total_hours,
-                "badges": badges or [],
+                "badges": badges,
             }
         except Exception as e:
-            log.error("student_full_dashboard_failed", student_id=student_id, error=str(e))
+            log.error("student_full_dashboard_failed", student_id=student_id, error=str(e), traceback=True)
             return {}
 
     async def get_top_performing_topics(self, limit: int = 5) -> List[Dict]:
