@@ -1,3 +1,4 @@
+import pytest
 import asyncio
 import uuid
 import sys
@@ -11,6 +12,7 @@ from app.store.user_store import UserStore
 from app.store.course_store import CourseStore
 from app.store.user_data_store import UserDataStore
 
+@pytest.mark.asyncio
 async def test_all_connections():
     print("🚀 Beginning Supabase tests...")
     

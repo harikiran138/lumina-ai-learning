@@ -142,14 +142,17 @@ async def get_certificates(
 async def update_profile(
     data: Dict[str, Any],
     current_user: dict = Depends(get_current_user),
-    store: UserDataStore = Depends(get_user_data_store),
 ):
     """
     Update profile data for the CURRENT student.
     """
-    # Logic to update user in DB
-    # ... (simplistic for now)
-    return {"status": "success", "message": "Profile updated"}
+    from app.store.user_store import UserStore
+    user_store = UserStore()
+    success = await user_store.update_user_fields(current_user["id"], data)
+    
+    if not success:
+         raise HTTPException(status_code=500, detail="Failed to update profile")
+    return {"status": "success", "message": "Profile updated", "data": data}
 
 
 @router.get("/profile")  # Changed from /profile/{user_id}

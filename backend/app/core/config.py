@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 import os
 
@@ -25,9 +25,7 @@ class Settings(BaseSettings):
     ASSESSMENT_API_KEY: Optional[str] = None
     SENTRY_DSN: Optional[str] = None
 
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
