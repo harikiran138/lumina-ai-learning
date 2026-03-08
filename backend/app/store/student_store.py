@@ -2,6 +2,7 @@ from typing import List, Dict, Any
 from app.database.supabase_manager import supabase_db
 from app.core.logging import structlog
 from datetime import datetime
+import re
 from app.store.local_store import LocalJsonStore
 
 log = structlog.get_logger()
@@ -39,6 +40,28 @@ class StudentStore:
         if self.client is None:
             return None
         return self.client.table("certificates")
+
+    def _parse_timestamp(self, value: str):
+        if not value:
+            return None
+
+        normalized = value.replace("Z", "+00:00")
+        try:
+            return datetime.fromisoformat(normalized)
+        except ValueError:
+            match = re.match(
+                r"^(?P<head>.+?\.)?(?P<fraction>\d+)(?P<tz>[+-]\d{2}:\d{2})$",
+                normalized,
+            )
+            if match:
+                head = match.group("head") or ""
+                fraction = match.group("fraction")
+                tz = match.group("tz")
+                padded = fraction[:6].ljust(6, "0")
+                if not head.endswith("."):
+                    head = f"{head}."
+                return datetime.fromisoformat(f"{head}{padded}{tz}")
+            raise
 
     async def enroll_in_course(self, student_id: str, course_id: str) -> bool:
         """
@@ -136,8 +159,9 @@ class StudentStore:
                     total_lessons += len(module.get("lessons", []))
 
             progress_pct = (len(completed_lessons) / total_lessons * 100) if total_lessons > 0 else 0
+            progress_value = int(round(progress_pct))
             record["completedLessons"] = completed_lessons
-            record["progress"] = round(progress_pct, 2)
+            record["progress"] = progress_value
             record["lastAccessed"] = datetime.utcnow().isoformat()
             self.local.write(payload)
             return {"success": True, "lesson_id": lesson_id, "progress": progress_pct}
@@ -161,10 +185,11 @@ class StudentStore:
                     total_lessons += len(m.get("lessons", []))
             
             progress_pct = (len(completed_lessons) / total_lessons * 100) if total_lessons > 0 else 0
+            progress_value = int(round(progress_pct))
             
             self.progress_collection.update({
                 "completedLessons": completed_lessons,
-                "progress": round(progress_pct, 2),
+                "progress": progress_value,
                 "lastAccessed": datetime.utcnow().isoformat()
             }).eq("userId", student_id).eq("courseId", course_id).execute()
 
@@ -233,7 +258,7 @@ class StudentStore:
             new_hours = current_hours + (duration_minutes / 60.0)
             new_streak = current_streak
             if last_accessed_str:
-                last_accessed = datetime.fromisoformat(last_accessed_str.replace("Z", "+00:00"))
+                last_accessed = self._parse_timestamp(last_accessed_str)
                 delta = (now.date() - last_accessed.date()).days
                 if delta == 1:
                     new_streak += 1
@@ -269,7 +294,7 @@ class StudentStore:
             new_streak = current_streak
             
             if last_accessed_str:
-                last_accessed = datetime.fromisoformat(last_accessed_str.replace('Z', '+00:00'))
+                last_accessed = self._parse_timestamp(last_accessed_str)
                 # If last activity was on a different day
                 delta = (now.date() - last_accessed.date()).days
                 
