@@ -7,7 +7,7 @@ from app.store.analytics_store import AnalyticsStore
 from app.dependencies import get_course_store
 from .auth import get_current_user
 from app.core.cache import cached
-from app.database.manager import db
+from app.database.supabase_manager import supabase_db
 
 router = APIRouter()
 
@@ -142,23 +142,29 @@ async def teacher_students(current_user: dict = Depends(get_current_user)):
     courses = await store.get_courses_by_teacher(current_user["id"])
     course_ids = [c.get("id") or c.get("code") for c in courses]
 
-    progress_col = db.get_collection("progress")
-    if progress_col is None or not course_ids:
+    if not course_ids:
         return []
 
-    cursor = progress_col.find({"courseId": {"$in": course_ids}})
-    entries = await cursor.to_list(length=500)
+    try:
+        # Fetch progress for these courses
+        progress_res = supabase_db.client.table("progress").select("userId").in_("courseId", course_ids).execute()
+        student_ids = list({p["userId"] for p in progress_res.data if p.get("userId")})
 
-    users_col = db.get_collection("users")
-    student_ids = list({e["userId"] for e in entries if "userId" in e})
-    students = []
-    for sid in student_ids:
-        user = await users_col.find_one({"_id": sid})
-        if user:
-            user["id"] = str(user.pop("_id"))
+        if not student_ids:
+            return []
+
+        # Fetch users
+        users_res = supabase_db.client.table("users").select("*").in_("id", student_ids).execute()
+        students = []
+        for user in users_res.data:
             user.pop("hashed_password", None)
             students.append(user)
-    return students
+            
+        return students
+    except Exception as e:
+        import structlog
+        structlog.get_logger().error("teacher_students_error", error=str(e))
+        return []
 
 
 # ─── Course Creation ─────────────────────────────────────────────────────────

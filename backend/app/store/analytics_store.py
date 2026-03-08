@@ -1,5 +1,5 @@
 from typing import Dict, List
-from app.database.manager import db
+from app.database.supabase_manager import supabase_db
 from app.core.logging import structlog
 
 log = structlog.get_logger()
@@ -7,55 +7,45 @@ log = structlog.get_logger()
 
 class AnalyticsStore:
     """
-    MongoDB store for Analytics and Aggregated Dashboard Data.
-    All methods are ASYNC.
+    Supabase store for Analytics and Aggregated Dashboard Data.
     """
 
     def __init__(self):
-        pass
+        self.client = supabase_db.get_client()
 
     @property
     def sessions_collection(self):
-        return db.get_collection("assessment_sessions")
+        return self.client.table("assessment_sessions")
 
     @property
     def user_data_collection(self):
-        return db.get_collection("user_data")
+        return self.client.table("user_data")
 
     async def get_teacher_dashboard_stats(self) -> Dict:
         """
-        Uses MongoDB aggregation to calculate global stats for the teacher dashboard.
+        Calculates global stats for the teacher dashboard from Supabase.
         Calculates average mastery across all students and sessions.
         """
-        collection = self.sessions_collection
-        if collection is None:
-            return {"avg_mastery": 0, "total_students": 0, "error": "DB disconnected"}
-
-        pipeline = [
-            {
-                "$group": {
-                    "_id": None,
-                    "avg_mastery": {"$avg": "$current_difficulty"},
-                    "unique_students": {"$addToSet": "$student_id"},
-                    "total_sessions": {"$count": {}},
-                }
-            },
-            {
-                "$project": {
-                    "_id": 0,
-                    "avg_mastery": {"$multiply": ["$avg_mastery", 100]},
-                    "total_students": {"$size": "$unique_students"},
-                    "total_sessions": 1,
-                }
-            },
-        ]
-
         try:
-            cursor = collection.aggregate(pipeline)
-            result = await cursor.to_list(length=1)
-            if result:
-                return result[0]
-            return {"avg_mastery": 0, "total_students": 0, "total_sessions": 0}
+            # Note: Fetching all might be heavy for large DBs, 
+            # ideally we'd use a Supabase RPC here. Doing in-memory for now.
+            response = self.sessions_collection.select("student_id, current_difficulty").execute()
+            data = response.data
+            
+            if not data:
+                return {"avg_mastery": 0, "total_students": 0, "total_sessions": 0}
+                
+            total_sessions = len(data)
+            unique_students = len(set(d.get("student_id") for d in data if d.get("student_id")))
+            
+            difficulties = [d.get("current_difficulty", 0) for d in data if d.get("current_difficulty") is not None]
+            avg_mastery = (sum(difficulties) / len(difficulties)) * 100 if difficulties else 0
+            
+            return {
+                "avg_mastery": round(avg_mastery, 2),
+                "total_students": unique_students,
+                "total_sessions": total_sessions
+            }
         except Exception as e:
             log.error("teacher_stats_aggregation_failed", error=str(e))
             return {"avg_mastery": 0, "total_students": 0, "total_sessions": 0}
@@ -64,38 +54,28 @@ class AnalyticsStore:
         """
         Calculates personalized stats for a student dashboard.
         """
-        collection = self.sessions_collection
-        if collection is None:
-            return {}
-
-        pipeline = [
-            {"$match": {"student_id": student_id}},
-            {
-                "$group": {
-                    "_id": "$student_id",
-                    "avg_score": {"$avg": "$current_difficulty"},
-                    "total_sessions": {"$count": {}},
-                    "topics_covered": {"$addToSet": "$topic"},
-                    "latest_activity": {"$max": "$timestamp"},
-                }
-            },
-            {
-                "$project": {
-                    "_id": 0,
-                    "avg_score": {"$multiply": ["$avg_score", 100]},
-                    "total_sessions": 1,
-                    "topic_count": {"$size": "$topics_covered"},
-                    "latest_activity": 1,
-                }
-            },
-        ]
-
         try:
-            cursor = collection.aggregate(pipeline)
-            result = await cursor.to_list(length=1)
-            if result:
-                return result[0]
-            return {"avg_score": 0, "total_sessions": 0, "topic_count": 0}
+            response = self.sessions_collection.select("current_difficulty, topic, timestamp").eq("student_id", student_id).execute()
+            data = response.data
+            
+            if not data:
+                return {"avg_score": 0, "total_sessions": 0, "topic_count": 0, "latest_activity": None}
+                
+            total_sessions = len(data)
+            topics = set(d.get("topic") for d in data if d.get("topic"))
+            
+            scores = [d.get("current_difficulty", 0) for d in data if d.get("current_difficulty") is not None]
+            avg_score = (sum(scores) / len(scores)) * 100 if scores else 0
+            
+            timestamps = [d.get("timestamp") for d in data if d.get("timestamp")]
+            latest_activity = max(timestamps) if timestamps else None
+            
+            return {
+                "avg_score": round(avg_score, 2),
+                "total_sessions": total_sessions,
+                "topic_count": len(topics),
+                "latest_activity": latest_activity
+            }
         except Exception as e:
             log.error("student_stats_aggregation_failed", student_id=student_id, error=str(e))
             return {"avg_score": 0, "total_sessions": 0, "topic_count": 0}
@@ -105,42 +85,36 @@ class AnalyticsStore:
         Mirroring getStudentDashboard from data.ts
         Aggregates enrolled courses, progress, streaks, and achievements.
         """
-        progress_col = db.get_collection("progress")
-        if progress_col is None:
-            return {}
-
-        # 1. Aggregate Enrolled Courses with Details
-        pipeline = [
-            {"$match": {"userId": student_id}},
-            {
-                "$lookup": {
-                    "from": "courses",
-                    "let": {"courseIdObj": {"$toObjectId": "$courseId"}},
-                    "pipeline": [{"$match": {"$expr": {"$eq": ["$_id", "$$courseIdObj"]}}}],
-                    "as": "courseDetails",
-                }
-            },
-            {"$unwind": "$courseDetails"},
-            {
-                "$project": {
-                    "id": {"$toString": "$courseDetails._id"},
-                    "name": "$courseDetails.name",
-                    "description": "$courseDetails.description",
-                    "thumbnail": "$courseDetails.thumbnail",
-                    "progress": {"$ifNull": ["$progress", 0]},
-                    "mastery": {"$ifNull": ["$mastery", 0]},
-                    "streak": {"$ifNull": ["$streak", 0]},
-                    "lastAccessed": "$lastAccessed",
-                    "hoursSpent": {"$ifNull": ["$hoursSpent", 0]},
-                }
-            },
-        ]
-
         try:
-            cursor = progress_col.aggregate(pipeline)
-            enrolled_courses = await cursor.to_list(length=100)
+            progress_response = self.client.table("progress").select("*").eq("userId", student_id).execute()
+            progress_data = progress_response.data
+            
+            enrolled_courses = []
+            if progress_data:
+                # Fetch courses in one go
+                course_ids = [str(p.get("courseId")) for p in progress_data if p.get("courseId")]
+                
+                if course_ids:
+                    courses_response = self.client.table("courses").select("*").in_("id", course_ids).execute()
+                    courses_map = {str(c.get("id")): c for c in courses_response.data}
+                    
+                    for p in progress_data:
+                        cid = str(p.get("courseId"))
+                        if cid in courses_map:
+                            course = courses_map[cid]
+                            enrolled_courses.append({
+                                "id": cid,
+                                "name": course.get("name"),
+                                "description": course.get("description"),
+                                "thumbnail": course.get("thumbnail"),
+                                "progress": p.get("progress", 0),
+                                "mastery": p.get("mastery", 0),
+                                "streak": p.get("streak", 0),
+                                "lastAccessed": p.get("lastAccessed"),
+                                "hoursSpent": p.get("hoursSpent", 0)
+                            })
 
-            # 2. Calculate Aggregates
+            # Calculate Aggregates
             current_streak = max([c.get("streak", 0) for c in enrolled_courses] + [0])
             avg_mastery = (
                 round(sum([c.get("mastery", 0) for c in enrolled_courses]) / len(enrolled_courses))
@@ -149,17 +123,18 @@ class AnalyticsStore:
             )
             total_hours = sum([c.get("hoursSpent", 0) for c in enrolled_courses])
 
-            # 3. Get User Badges
-            users_col = db.get_collection("users")
-            user = await users_col.find_one({"_id": student_id})
-            badges = user.get("badges", []) if user else []
+            # Get User Badges
+            users_response = self.client.table("users").select("badges").eq("id", student_id).execute()
+            badges = []
+            if users_response.data and "badges" in users_response.data[0]:
+                badges = users_response.data[0]["badges"]
 
             return {
                 "currentStreak": current_streak,
                 "enrolledCourses": enrolled_courses,
                 "overallMastery": avg_mastery,
                 "totalHours": total_hours,
-                "badges": badges,
+                "badges": badges or [],
             }
         except Exception as e:
             log.error("student_full_dashboard_failed", student_id=student_id, error=str(e))
@@ -167,14 +142,30 @@ class AnalyticsStore:
 
     async def get_top_performing_topics(self, limit: int = 5) -> List[Dict]:
         """Aggregation for global trends"""
-        collection = self.sessions_collection
-        if collection is None:
+        try:
+            response = self.sessions_collection.select("topic, current_difficulty").execute()
+            data = response.data
+            
+            if not data:
+                return []
+                
+            topic_stats = {}
+            for d in data:
+                topic = d.get("topic")
+                diff = d.get("current_difficulty")
+                if topic and diff is not None:
+                    if topic not in topic_stats:
+                        topic_stats[topic] = {"sum": 0, "count": 0}
+                    topic_stats[topic]["sum"] += diff
+                    topic_stats[topic]["count"] += 1
+                    
+            results = [
+                {"_id": topic, "avg_difficulty": stats["sum"] / stats["count"]}
+                for topic, stats in topic_stats.items()
+            ]
+            
+            results.sort(key=lambda x: x["avg_difficulty"], reverse=True)
+            return results[:limit]
+        except Exception as e:
+            log.error("top_topics_aggregation_failed", error=str(e))
             return []
-
-        pipeline = [
-            {"$group": {"_id": "$topic", "avg_difficulty": {"$avg": "$current_difficulty"}}},
-            {"$sort": {"avg_difficulty": -1}},
-            {"$limit": limit},
-        ]
-        cursor = collection.aggregate(pipeline)
-        return await cursor.to_list(length=limit)
