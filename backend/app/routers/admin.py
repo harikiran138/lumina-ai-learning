@@ -1,11 +1,14 @@
 from fastapi import APIRouter, HTTPException, Depends
+from typing import Optional, List
 
 from .auth import get_current_user
 from app.store.user_store import UserStore
 from app.store.course_store import CourseStore
 from app.store.analytics_store import AnalyticsStore
+from app.store.institution_store import InstitutionStore
 from app.services.personalization_service import get_personalization_service
 from app.database.supabase_manager import supabase_db
+from app.database.models import Institution, Department, Stakeholder
 
 router = APIRouter()
 
@@ -149,3 +152,42 @@ async def get_interventions(admin: dict = Depends(is_admin)):
         item.model_dump(mode="json")
         for item in await get_personalization_service().get_interventions()
     ]
+
+
+# --- Institution & Connection Management ---
+
+@router.get("/institutions")
+async def get_institutions(admin: dict = Depends(is_admin)):
+    """List all institutions."""
+    return await InstitutionStore().list_institutions()
+
+
+@router.post("/institutions")
+async def create_institution(data: dict, admin: dict = Depends(is_admin)):
+    """Create a new institution."""
+    return await InstitutionStore().create_institution(data)
+
+
+@router.get("/institutions/{inst_id}/departments")
+async def get_departments(inst_id: str, admin: dict = Depends(is_admin)):
+    """List all departments for an institution."""
+    return await InstitutionStore().list_departments(inst_id)
+
+
+@router.post("/institutions/{inst_id}/departments")
+async def create_department(inst_id: str, data: dict, admin: dict = Depends(is_admin)):
+    """Create a new department."""
+    data["institution_id"] = inst_id
+    return await InstitutionStore().create_department(data)
+
+
+@router.post("/connections/link")
+async def link_stakeholder(data: dict, admin: dict = Depends(is_admin)):
+    """Link a user as a stakeholder to an institution or program."""
+    return await InstitutionStore().create_stakeholder(data)
+
+
+@router.get("/connections")
+async def get_connections(inst_id: Optional[str] = None, program_id: Optional[str] = None, admin: dict = Depends(is_admin)):
+    """List stakeholder connections."""
+    return await InstitutionStore().list_stakeholders(inst_id, program_id)

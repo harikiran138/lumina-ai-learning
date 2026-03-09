@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-MODEL_NAME="mannix/llama3.1-8b-abliterated:latest"
+MODEL_NAME="qwen3.5:2b"
 ENV_FILE=".env.local"
 
 # Colors

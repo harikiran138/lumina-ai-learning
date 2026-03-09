@@ -6,9 +6,7 @@ except ImportError:
     CHROMADB_AVAILABLE = False
     chromadb = None
 import uuid
-import torch
 from typing import List, Dict, Any
-from sentence_transformers import SentenceTransformer, CrossEncoder
 import os
 
 
@@ -63,16 +61,26 @@ class RAGEngine:
         self.client = chromadb.PersistentClient(path=chroma_path)
         self.collection = self.client.get_or_create_collection(name=collection_name)
 
-        # 2. Embedding Model (Small HF Model)
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        # "all-MiniLM-L6-v2" is optimal for speed/accuracy ratio
-        print(f"Loading Embedding Model on {self.device}...")
-        self.embedder = SentenceTransformer("all-MiniLM-L6-v2", device=self.device)
+        self.device = "cpu"
+        self.embedder = None
+        self.reranker = None
 
-        # 3. Re-Ranker (Cross-Encoder)
-        # "ms-marco-MiniLM-L-6-v2" is excellent for Passage Ranking
-        print("Loading Re-Ranker...")
-        self.reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", device=self.device)
+    def _ensure_models_loaded(self):
+        try:
+            import torch
+            from sentence_transformers import SentenceTransformer, CrossEncoder
+        except Exception as exc:
+            raise RuntimeError(f"Embedding stack unavailable: {exc}") from exc
+
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        if self.embedder is None:
+            print(f"Loading Embedding Model on {self.device}...")
+            self.embedder = SentenceTransformer("all-MiniLM-L6-v2", device=self.device)
+
+        if self.reranker is None:
+            print("Loading Re-Ranker...")
+            self.reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", device=self.device)
 
     def ingest_text(self, text: str, metadata: Dict[str, Any] = None):
         """
@@ -84,6 +92,11 @@ class RAGEngine:
         if not chunks:
             return
 
+        try:
+            self._ensure_models_loaded()
+        except Exception as exc:
+            print(f"RAG ingest skipped: {exc}")
+            return
         ids = [str(uuid.uuid4()) for _ in chunks]
         embeddings = self.embedder.encode(chunks, convert_to_tensor=False).tolist()
 
@@ -98,6 +111,18 @@ class RAGEngine:
         """
         Pipeline: Query -> Vector Search -> Re-Rank -> Return Top K
         """
+        try:
+            if self.collection.count() == 0:
+                return []
+        except Exception:
+            return []
+
+        try:
+            self._ensure_models_loaded()
+        except Exception as exc:
+            print(f"RAG query skipped: {exc}")
+            return []
+
         # 1. Vector Search (Retrieve more than we need for re-ranking)
         query_embedding = self.embedder.encode(query_text).tolist()
 

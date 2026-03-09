@@ -8,18 +8,18 @@ import google.generativeai as genai
 import structlog
 from datetime import datetime
 import time
+import re
 
 from ai_engine.llm import get_llm_provider
 from ai_engine.rag import get_rag_engine
 from ai_engine.prompts import A2UI_SYSTEM_PROMPT
 from ai_engine.skills import get_skill_manager
+from ai_engine.swarm.tutor import build_tutor_degraded_response
 from app.services.ppt_generator import PPTGenerator
 from app.services.personalization_service import get_personalization_service
 from app.personalization.schemas import LearningEventType
 from app.core.metrics import AI_REQUESTS, AI_LATENCY
 from app.core.audit import audit_logger
-from ai_engine.swarm.pathway import PathwayAgent
-from learner_profile.models.behavior import BehaviorModel
 
 # Initialize router and logger
 router = APIRouter()
@@ -61,6 +61,7 @@ class TutorChatRequest(BaseModel):
     session_id: Optional[str] = "default-session"
     context_filters: Optional[dict] = None
     provider: str = "auto"
+    history: Optional[List[Dict[str, Any]]] = None
 
 
 class TutorChatResponse(BaseModel):
@@ -68,6 +69,244 @@ class TutorChatResponse(BaseModel):
     content: Optional[str] = None
     context_used: List[str]
     personalization: Dict[str, Any]
+
+
+def _is_a2ui_payload(payload: Any) -> bool:
+    return (
+        isinstance(payload, dict)
+        and isinstance(payload.get("meta"), dict)
+        and isinstance(payload.get("flow"), list)
+    )
+
+
+def _difficulty_label(value: Any) -> str:
+    if isinstance(value, str):
+        lowered = value.lower()
+        if lowered in {"easy", "medium", "hard"}:
+            return lowered
+    if isinstance(value, (int, float)):
+        if value >= 0.7:
+            return "hard"
+        if value >= 0.4:
+            return "medium"
+    return "easy"
+
+
+def _extract_topic_from_message(message: str) -> Optional[str]:
+    lower_message = (message or "").lower()
+    pattern_candidates = [
+        r"(?:give me|show me|can you show me|can you give me)\s+(?:a\s+)?(?:timeline|time\s*line|history|summary|overview)\s+(?:of|for|about)\s+([a-z0-9][a-z0-9\s\-/]{1,60})",
+        r"(?:timeline|time\s*line|history|evolution|summary|overview)\s+(?:of|for|about)\s+([a-z0-9][a-z0-9\s\-/]{1,60})",
+        r"(?:explain|teach|quiz me on|help me with|what is|why is|how does|tell me about|summarize|show me)\s+([a-z0-9][a-z0-9\s\-/]{1,60})",
+        r"(?:about|on)\s+([a-z0-9][a-z0-9\s\-/]{1,60})",
+    ]
+    for pattern in pattern_candidates:
+        match = re.search(pattern, lower_message)
+        if not match:
+            continue
+        candidate = match.group(1).strip(" ?.!,:;")
+        candidate = re.sub(
+            r"\b(please|simply|briefly|step by step|in detail|for me|now)\b",
+            "",
+            candidate,
+        ).strip()
+        candidate = re.sub(r"\s+", " ", candidate)
+        if candidate:
+            return candidate[:60]
+    return None
+
+
+def _infer_tutor_topic(message: str, profile: Dict[str, Any], context_filters: Optional[Dict[str, Any]]) -> str:
+    filters = context_filters or {}
+    inferred_from_message = _extract_topic_from_message(message)
+    if inferred_from_message:
+        return inferred_from_message
+
+    if filters.get("topic"):
+        return filters["topic"]
+
+    weak_topics = profile.get("weak_topics") or []
+    lower_message = message.lower()
+    for topic in weak_topics:
+        if str(topic).lower() in lower_message:
+            return str(topic)
+
+    return weak_topics[0] if weak_topics else "General"
+
+
+def _build_tutor_blocked_payload(topic: str, detail: str) -> Dict[str, Any]:
+    safe_topic = topic or "this request"
+    return {
+        "meta": {
+            "topic": safe_topic,
+            "difficulty": "easy",
+            "estimated_time_min": 1,
+            "exportable": False,
+        },
+        "flow": [
+            {
+                "type": "concept",
+                "title": "Request blocked",
+                "summary": "I cannot help with that request because it violates tutor safety rules.",
+                "key_points": [
+                    "I can still help with safe educational questions.",
+                    "Try asking for an explanation, a quiz, or a study summary instead.",
+                ],
+            },
+            {
+                "type": "reflection",
+                "prompt": "Do you want to rephrase this as a safe learning question?",
+                "placeholder": "Example: explain the safe academic concept instead.",
+            },
+            {
+                "type": "text",
+                "content": detail,
+            },
+        ],
+    }
+
+
+def _build_tutor_error_payload(
+    message: str,
+    profile: Dict[str, Any],
+    topic: str,
+    context_filters: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    profile_context = (context_filters or {}).get("context", "")
+    return build_tutor_degraded_response(
+        topic,
+        message,
+        learner_profile=profile,
+        profile_context=profile_context,
+    )
+
+
+def _build_tutor_fallback(message: str, profile: Dict[str, Any], topic: str, detail: str) -> Dict[str, Any]:
+    weak_topics = profile.get("weak_topics") or []
+    focus_topic = weak_topics[0] if weak_topics else topic
+    return _build_tutor_blocked_payload(focus_topic, detail)
+
+
+def _wrap_assessment_payload(result: Dict[str, Any], topic: str) -> Dict[str, Any]:
+    return {
+        "meta": {
+            "topic": topic,
+            "difficulty": _difficulty_label(result.get("difficulty")),
+            "estimated_time_min": 4,
+            "exportable": False,
+        },
+        "flow": [
+            {
+                "type": "quiz",
+                "difficulty": _difficulty_label(result.get("difficulty")),
+                "questions": [
+                    {
+                        "question": result.get("question", f"What is a key idea in {topic}?"),
+                        "options": result.get("options", []),
+                        "answer": int(result.get("correct_index", 0) or 0),
+                        "explanation": result.get(
+                            "explanation",
+                            "Review the explanation after answering.",
+                        ),
+                    }
+                ],
+            },
+            {
+                "type": "reflection",
+                "prompt": "After answering, tell me whether you want another question or a simpler explanation.",
+                "placeholder": "Example: give me one easier practice question.",
+            },
+        ],
+    }
+
+
+def _wrap_pathway_payload(result: Any, topic: str) -> Dict[str, Any]:
+    if isinstance(result, dict):
+        message = result.get("message") or result.get("response") or "Here is your next study direction."
+        next_topic = result.get("next_topic") or topic
+        action = result.get("action") or "CONTINUE"
+    else:
+        message = str(result)
+        next_topic = topic
+        action = "CONTINUE"
+
+    return {
+        "meta": {
+            "topic": topic,
+            "difficulty": "easy",
+            "estimated_time_min": 3,
+            "exportable": False,
+        },
+        "flow": [
+            {
+                "type": "concept",
+                "title": "Recommended next step",
+                "summary": message,
+                "key_points": [
+                    f"Action: {action}",
+                    f"Focus topic: {next_topic}",
+                    "Ask for a quiz or worked example if you want to act on this immediately.",
+                ],
+            },
+            {
+                "type": "steps",
+                "title": "How to use this recommendation",
+                "steps": [
+                    f"Review {next_topic} briefly.",
+                    "Ask the tutor for a simple explanation if the idea still feels unclear.",
+                    "Take one short quiz question to confirm understanding.",
+                ],
+            },
+        ],
+    }
+
+
+def _wrap_text_payload(result: Any, topic: str) -> Dict[str, Any]:
+    content = str(result).strip() or "Let us continue step by step."
+    return {
+        "meta": {
+            "topic": topic,
+            "difficulty": "easy",
+            "estimated_time_min": 4,
+            "exportable": False,
+        },
+        "flow": [
+            {
+                "type": "concept",
+                "title": f"Support for {topic}",
+                "summary": content,
+                "key_points": [
+                    "Ask for a simpler explanation if this still feels dense.",
+                    "Ask for a quiz when you want to check understanding.",
+                ],
+            },
+            {
+                "type": "reflection",
+                "prompt": "Do you want an example, a quiz, or a step-by-step explanation next?",
+                "placeholder": "Example: give me one worked example.",
+            },
+        ],
+    }
+
+
+def _normalize_tutor_payload(result: Any, topic: str) -> Dict[str, Any]:
+    if _is_a2ui_payload(result):
+        return result
+
+    if isinstance(result, dict):
+        if "question" in result and isinstance(result.get("options"), list):
+            return _wrap_assessment_payload(result, topic)
+        if any(key in result for key in {"action", "next_topic", "message"}):
+            return _wrap_pathway_payload(result, topic)
+        if "response" in result:
+            return _wrap_text_payload(result.get("response"), topic)
+
+    if isinstance(result, str):
+        lowered = result.lower()
+        if any(marker in lowered for marker in ["pathway agent", "study next", "next, review", "next step"]):
+            return _wrap_pathway_payload(result, topic)
+
+    return _wrap_text_payload(result, topic)
 
 
 # ... (IngestRequest remains same)
@@ -226,43 +465,63 @@ async def tutor_chat(request: TutorChatRequest):
     
     try:
         # 1. Initialize Swarm and Learner Engine
-        orchestrator = Orchestrator()
+        orchestrator = Orchestrator(provider=request.provider or "auto")
         personalization = get_personalization_service()
         
         # 2. Get Learner Profile for context
         profile = await personalization.get_legacy_state(request.user_id)
+        topic = _infer_tutor_topic(request.message, profile, request.context_filters)
 
         # 3. Route via Orchestrator
         # Context for the agents
         context = {
             "user_id": request.user_id,
             "session_id": request.session_id,
-            "history": [], # In production, fetch history from state
+            "history": request.history or [],
             "filters": request.context_filters,
-            "topic": (request.context_filters or {}).get("topic", "General"),
+            "profile_context": (request.context_filters or {}).get("context", ""),
+            "topic": topic,
         }
         
         # [NEW] The Swarm handles safety, intent classification, and RAG
         result = await orchestrator.route_request(request.message, context, learner_profile=profile)
+
+        if isinstance(result, dict) and result.get("status") == "blocked":
+            blocked = _build_tutor_blocked_payload(
+                topic,
+                result.get("detail", "This request was blocked by safety controls."),
+            )
+            response_text = json.dumps(blocked)
+            return {
+                "response": response_text,
+                "content": response_text,
+                "context_used": [],
+                "personalization": {
+                    "behavior": profile.get("behavior_label", "neutral"),
+                    "cognitive_load": profile.get("cognitive_load", 50),
+                    "mastery": profile.get("mastery_scores", {}),
+                    "risk": profile.get("risk_summary", {}),
+                },
+            }
         
         # If the result is a dict (likely A2UI), return as response
         if isinstance(result, dict):
-            # Convert dict to string for the 'response' field if it's not already
-            response_text = result.get("response") or json.dumps(result)
+            normalized_payload = _normalize_tutor_payload(result, topic)
+            response_text = json.dumps(normalized_payload)
             personalization_payload = {
                 "message": request.message,
                 "response": response_text,
                 "session_id": request.session_id,
                 "behavior": profile.get("behavior_label", "neutral"),
                 "recommendation": profile.get("risk_summary", {}).get("risk_level"),
-                "topic": context.get("topic"),
+                "topic": topic,
             }
             await personalization.record_event(
                 request.user_id,
                 LearningEventType.TUTOR_INTERACTION,
                 payload=personalization_payload,
                 source="ai_router",
-                topic_id=context.get("topic"),
+                topic_id=topic,
                 session_id=request.session_id,
             )
             return {
@@ -278,23 +537,25 @@ async def tutor_chat(request: TutorChatRequest):
             }
         
         # Fallback for string responses
+        normalized_payload = _normalize_tutor_payload(result, topic)
+        response_text = json.dumps(normalized_payload)
         await personalization.record_event(
             request.user_id,
             LearningEventType.TUTOR_INTERACTION,
             payload={
                 "message": request.message,
-                "response": str(result),
+                "response": response_text,
                 "session_id": request.session_id,
                 "behavior": profile.get("behavior_label", "neutral"),
-                "topic": context.get("topic"),
+                "topic": topic,
             },
             source="ai_router",
-            topic_id=context.get("topic"),
+            topic_id=topic,
             session_id=request.session_id,
         )
         return {
-            "response": str(result),
-            "content": str(result),
+            "response": response_text,
+            "content": response_text,
             "context_used": [],
             "personalization": {
                 "behavior": profile.get("behavior_label", "neutral"),
@@ -304,13 +565,28 @@ async def tutor_chat(request: TutorChatRequest):
 
     except Exception as e:
         AI_REQUESTS.labels(provider=request.provider, model="tutor_chat", status="error").inc()
-        logger.error("tutor_chat_swarm_failed", user_id=request.user_id, error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
-
-    except Exception as e:
-        AI_REQUESTS.labels(provider=request.provider, model="tutor_chat", status="error").inc()
         logger.error("tutor_chat_failed", user_id=request.user_id, error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        personalization = get_personalization_service()
+        profile = await personalization.get_legacy_state(request.user_id)
+        topic = _infer_tutor_topic(request.message, profile, request.context_filters)
+        fallback_payload = _build_tutor_error_payload(
+            request.message,
+            profile,
+            topic,
+            request.context_filters,
+        )
+        response_text = json.dumps(fallback_payload)
+        return {
+            "response": response_text,
+            "content": response_text,
+            "context_used": [],
+            "personalization": {
+                "behavior": profile.get("behavior_label", "neutral"),
+                "cognitive_load": profile.get("cognitive_load", 50),
+                "mastery": profile.get("mastery_scores", {}),
+                "risk": profile.get("risk_summary", {}),
+            },
+        }
 
 
 @router.post("/tutor/ingest")
@@ -335,6 +611,8 @@ _behavior_model = None
 def get_pathway_agent():
     global _pathway_agent
     if _pathway_agent is None:
+        from ai_engine.swarm.pathway import PathwayAgent
+
         _pathway_agent = PathwayAgent()
     return _pathway_agent
 
@@ -342,6 +620,8 @@ def get_pathway_agent():
 def get_behavior_model():
     global _behavior_model
     if _behavior_model is None:
+        from learner_profile.models.behavior import BehaviorModel
+
         _behavior_model = BehaviorModel()
     return _behavior_model
 

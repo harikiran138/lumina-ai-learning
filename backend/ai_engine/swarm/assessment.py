@@ -1,5 +1,5 @@
 import json
-from ai_engine.llm import get_llm_provider
+from ai_engine.llm import get_llm_provider, is_provider_error
 from ai_engine.rag import get_rag_engine
 
 class AssessmentAgent:
@@ -8,8 +8,8 @@ class AssessmentAgent:
     Adapts difficulty based on learner performance.
     """
 
-    def __init__(self):
-        self.llm = get_llm_provider()
+    def __init__(self, provider: str = "auto"):
+        self.llm = get_llm_provider(provider)
         self.rag = get_rag_engine()
 
     async def generate_question(self, topic: str, difficulty: float, context: str = "") -> dict:
@@ -44,6 +44,19 @@ class AssessmentAgent:
         """
 
         response_str = await self.llm.agenerate(prompt)
+        if is_provider_error(response_str):
+            return {
+                "question": f"What is the core idea behind {topic}?",
+                "options": [
+                    "State the main definition",
+                    "Skip the concept entirely",
+                    "Memorize without understanding",
+                    "Ignore earlier lessons",
+                ],
+                "correct_index": 0,
+                "explanation": "Start by identifying the central definition or principle before adding details.",
+                "difficulty": difficulty,
+            }
         
         # Parse JSON
         if "```json" in response_str:

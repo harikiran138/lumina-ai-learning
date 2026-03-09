@@ -1,18 +1,15 @@
-"use client";
-
 import { useState } from "react";
 import { Upload, FileText, CheckCircle, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
 
 interface UploadProps {
   type: "assignment" | "note";
-  userId?: string;
   assignmentId?: string;
   onUploadComplete?: (data: any) => void;
 }
 
 export default function HandwritingUpload({
   type,
-  userId = "guest",
   assignmentId,
   onUploadComplete,
 }: UploadProps) {
@@ -30,30 +27,18 @@ export default function HandwritingUpload({
     if (!file) return;
 
     setLoading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("type", type);
-    formData.append("user_id", userId);
-    if (assignmentId) formData.append("assignment_id", assignmentId);
-
     try {
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-      const response = await fetch(`${API_URL}/api/handwriting/upload`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-      if (data.status === "success") {
-        setResult(data.data);
-        if (onUploadComplete) onUploadComplete(data.data);
+      const data = await api.uploadHandwriting(type, file, assignmentId);
+      if (data.status === "success" || data.data) {
+        const responseData = data.data || data;
+        setResult(responseData);
+        if (onUploadComplete) onUploadComplete(responseData);
       } else {
-        alert("Upload failed");
+        alert("Upload failed: " + (data.message || "Unknown error"));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading:", error);
-      alert("Error uploading file");
+      alert("Error uploading file: " + (error.message || "Check connection"));
     } finally {
       setLoading(false);
     }

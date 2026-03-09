@@ -1,14 +1,15 @@
 "use client";
 
-import { History, BookOpen, MessageSquare, Menu, Plus } from "lucide-react";
+import { History, BookOpen, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
 
 interface TutorSidebarProps {
   sessions: Record<string, any[]>;
   currentSessionId: string;
   onSwitchSession: (id: string) => void;
   onNewChat: () => void;
+  studentName?: string;
+  subtitle?: string;
 }
 
 export function TutorSidebar({
@@ -16,9 +17,9 @@ export function TutorSidebar({
   currentSessionId,
   onSwitchSession,
   onNewChat,
+  studentName = "Student",
+  subtitle = "Personal learning mode",
 }: TutorSidebarProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-
   const sessionList = Object.keys(sessions).map((sessionId) => {
     const msgs = sessions[sessionId];
     const lastMsg = msgs[msgs.length - 1];
@@ -32,6 +33,10 @@ export function TutorSidebar({
       timestamp: lastMsg?.timestamp || new Date(),
     };
   });
+  sessionList.sort(
+    (a, b) =>
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+  );
 
   return (
     <div className="h-full flex flex-col bg-transparent">
@@ -85,7 +90,7 @@ export function TutorSidebar({
                 s.id === currentSessionId && "text-lumina-primary",
               )}
             >
-              {s.preview}...
+              {s.preview}
             </div>
             <div className="text-[10px] text-gray-600 mt-1 group-hover:text-gray-500">
               {new Date(s.timestamp).toLocaleDateString()}
@@ -100,9 +105,11 @@ export function TutorSidebar({
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lumina-primary to-lumina-secondary border border-white/10" />
           <div className="flex-1 overflow-hidden">
             <div className="text-sm font-medium text-white truncate">
-              Student User
+              {studentName}
             </div>
-            <div className="text-xs text-gray-500 truncate">Pro Plan</div>
+            <div className="text-xs text-gray-500 truncate">
+              {subtitle}
+            </div>
           </div>
         </div>
       </div>

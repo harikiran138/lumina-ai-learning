@@ -14,7 +14,7 @@
       },
       "mastery_state": {
         "1": {
-          "score": 0.6,
+          "score": 0.9448275862068966,
           "confidence": 0.5,
           "attempts": 0,
           "successes": 0,
@@ -62,11 +62,205 @@
         "correct_sequence": [],
         "notes": []
       },
-      "created_at": "2026-03-08T15:54:19.649314",
-      "updated_at": "2026-03-08T15:54:19.649314"
+      "created_at": "2026-03-09T02:07:17.600887",
+      "updated_at": "2026-03-09T02:07:17.600893"
+    },
+    "guest": {
+      "user_id": "guest",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": []
+      },
+      "mastery_state": {},
+      "weak_topics": [],
+      "behavior_signals": {
+        "cognitive_load": 18.55,
+        "behavior_label": "frustrated"
+      },
+      "engagement_summary": {
+        "total_minutes": 0.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 0,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 3,
+        "current_streak": 0,
+        "last_activity_at": null
+      },
+      "performance_summary": {
+        "recent_average_score": 0.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 0.0,
+        "low_score_count": 0,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "medium",
+        "risk_score": 0.39999999999999997,
+        "confidence": 0.7,
+        "reasons": [
+          "recent scores are low",
+          "limited recent activity"
+        ],
+        "last_evaluated_at": "2026-03-09T02:11:52.267681"
+      },
+      "tutor_summary": {
+        "last_session_id": "default-session",
+        "last_topic": "fractions",
+        "last_recommendation": "medium",
+        "last_behavior": "frustrated",
+        "total_sessions": 3
+      },
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {
+        "last_event_type": "tutor_interaction",
+        "last_event_at": "2026-03-09T02:11:52.264363"
+      },
+      "created_at": "2026-03-09T02:08:22.334688",
+      "updated_at": "2026-03-09T02:11:52.266924"
+    },
+    "00000000-0000-0000-0000-000000000001": {
+      "user_id": "00000000-0000-0000-0000-000000000001",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": []
+      },
+      "mastery_state": {},
+      "weak_topics": [],
+      "behavior_signals": {
+        "cognitive_load": 50.0,
+        "behavior_label": "neutral"
+      },
+      "engagement_summary": {
+        "total_minutes": 0.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 0,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 0,
+        "current_streak": 0,
+        "last_activity_at": null
+      },
+      "performance_summary": {
+        "recent_average_score": 0.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 0.0,
+        "low_score_count": 0,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "medium",
+        "risk_score": 0.39999999999999997,
+        "confidence": 0.7,
+        "reasons": [
+          "recent scores are low",
+          "limited recent activity"
+        ],
+        "last_evaluated_at": "2026-03-09T04:28:55.158750"
+      },
+      "tutor_summary": {},
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {
+        "last_event_type": "note_added",
+        "last_event_at": "2026-03-09T04:28:54.495174",
+        "notes": [
+          {
+            "content": "This is a test note content.",
+            "created_at": "2026-03-09T04:28:55.016612"
+          }
+        ]
+      },
+      "created_at": "2026-03-09T04:28:54.752930",
+      "updated_at": "2026-03-09T04:28:55.016544"
     }
   },
-  "events": [],
+  "events": [
+    {
+      "id": "44f208ed-4320-4302-ae09-4349b207cc48",
+      "user_id": "guest",
+      "event_type": "tutor_interaction",
+      "source": "ai_router",
+      "course_id": null,
+      "topic_id": "General",
+      "session_id": "default-session",
+      "payload": {
+        "message": "Explain fractions simply",
+        "response": "{\"meta\": {\"topic\": \"General\", \"difficulty\": \"easy\", \"estimated_time_min\": 6, \"exportable\": false}, \"flow\": [{\"type\": \"concept\", \"title\": \"Let us break down General\", \"summary\": \"I could not reach the full model response, so I am giving you a focused study scaffold for General.\", \"key_points\": [\"Start with the core definition before jumping to advanced details.\", \"Relate the idea to an example from your course or assignment.\", \"Check your understanding with one small self-test question.\"]}, {\"type\": \"steps\", \"title\": \"Study This In Order\", \"steps\": [\"Restate the question in your own words: Explain fractions simply\", \"Review the main concept behind General.\", \"Work through one simple example before trying a harder one.\", \"Ask me a narrower follow-up question if one step is still unclear.\"]}, {\"type\": \"reflection\", \"prompt\": \"What specific part is still unclear: the definition, the process, or an example?\", \"placeholder\": \"Example: I understand the formula, but not when to use it.\"}, {\"type\": \"text\", \"content\": \"Ask a follow-up like `give me an example`, `quiz me`, or `explain it more simply`.\"}]}",
+        "session_id": "default-session",
+        "behavior": "neutral",
+        "recommendation": "low",
+        "topic": "General"
+      },
+      "created_at": "2026-03-09T02:08:23.688766"
+    },
+    {
+      "id": "02763d60-3185-4b44-9390-48d332a52e31",
+      "user_id": "guest",
+      "event_type": "tutor_interaction",
+      "source": "ai_router",
+      "course_id": null,
+      "topic_id": "General",
+      "session_id": "default-session",
+      "payload": {
+        "message": "Explain fractions simply",
+        "response": "{\"meta\": {\"topic\": \"General\", \"difficulty\": \"easy\", \"estimated_time_min\": 6, \"exportable\": false}, \"flow\": [{\"type\": \"concept\", \"title\": \"Let us break down General\", \"summary\": \"I could not reach the full model response, so I am giving you a focused study scaffold for General.\", \"key_points\": [\"Start with the core definition before jumping to advanced details.\", \"Relate the idea to an example from your course or assignment.\", \"Check your understanding with one small self-test question.\"]}, {\"type\": \"steps\", \"title\": \"Study This In Order\", \"steps\": [\"Restate the question in your own words: Explain fractions simply\", \"Review the main concept behind General.\", \"Work through one simple example before trying a harder one.\", \"Ask me a narrower follow-up question if one step is still unclear.\"]}, {\"type\": \"reflection\", \"prompt\": \"What specific part is still unclear: the definition, the process, or an example?\", \"placeholder\": \"Example: I understand the formula, but not when to use it.\"}, {\"type\": \"text\", \"content\": \"Ask a follow-up like `give me an example`, `quiz me`, or `explain it more simply`.\"}]}",
+        "session_id": "default-session",
+        "behavior": "frustrated",
+        "recommendation": "medium",
+        "topic": "General"
+      },
+      "created_at": "2026-03-09T02:09:05.961636"
+    },
+    {
+      "id": "f9f7b116-4db2-42f3-883d-af7eb1d57e6c",
+      "user_id": "guest",
+      "event_type": "tutor_interaction",
+      "source": "ai_router",
+      "course_id": null,
+      "topic_id": "fractions",
+      "session_id": "default-session",
+      "payload": {
+        "message": "Explain fractions simply",
+        "response": "{\"meta\": {\"topic\": \"fractions\", \"difficulty\": \"easy\", \"estimated_time_min\": 6, \"exportable\": false}, \"flow\": [{\"type\": \"concept\", \"title\": \"Let us break down fractions\", \"summary\": \"I could not reach the full model response, so I am giving you a focused study scaffold for fractions.\", \"key_points\": [\"Start with the core definition before jumping to advanced details.\", \"Relate the idea to an example from your course or assignment.\", \"Check your understanding with one small self-test question.\"]}, {\"type\": \"steps\", \"title\": \"Study This In Order\", \"steps\": [\"Restate the question in your own words: Explain fractions simply\", \"Review the main concept behind fractions.\", \"Work through one simple example before trying a harder one.\", \"Ask me a narrower follow-up question if one step is still unclear.\"]}, {\"type\": \"reflection\", \"prompt\": \"What specific part is still unclear: the definition, the process, or an example?\", \"placeholder\": \"Example: I understand the formula, but not when to use it.\"}, {\"type\": \"text\", \"content\": \"Ask a follow-up like `give me an example`, `quiz me`, or `explain it more simply`.\"}]}",
+        "session_id": "default-session",
+        "behavior": "frustrated",
+        "recommendation": "medium",
+        "topic": "fractions"
+      },
+      "created_at": "2026-03-09T02:11:52.264363"
+    },
+    {
+      "id": "1877b7cb-bef0-4ccd-8b6e-0243c2f593c4",
+      "user_id": "00000000-0000-0000-0000-000000000001",
+      "event_type": "note_added",
+      "source": "student_router",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "title": "Test Note",
+        "subject": "Testing",
+        "content": "This is a test note content."
+      },
+      "created_at": "2026-03-09T04:28:54.495174"
+    }
+  ],
   "interventions": [],
   "rubrics": {},
   "scorecards": {}
