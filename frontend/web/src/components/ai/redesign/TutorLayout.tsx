@@ -6,7 +6,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
-  PanelRightOpen,
 } from "lucide-react";
 
 interface TutorLayoutProps {
@@ -24,12 +23,10 @@ export function TutorLayout({
 }: TutorLayoutProps) {
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
 
   // Responsive check
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
       if (window.innerWidth < 1024) {
         setLeftOpen(false);
         setRightOpen(false);

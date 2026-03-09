@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Paperclip, Mic, Sparkles, Bot, User } from "lucide-react";
+import { Send, Paperclip, Mic, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef } from "react";
 import { A2UIRendererV2 } from "@/components/a2ui/A2UIRendererV2";
@@ -10,7 +10,7 @@ interface Message {
   id: string;
   sender: "me" | "ai";
   text: string;
-  timestamp: Date;
+  timestamp: Date | string;
   a2ui_component?: any; // For structured blocks rendering
 }
 
@@ -31,7 +31,6 @@ export function TutorConversation({
   onSendMessage,
   input,
   setInput,
-  onAction,
   suggestions = [],
   onSuggestionClick,
 }: TutorConversationProps) {
@@ -72,17 +71,18 @@ export function TutorConversation({
                 <span className="font-semibold text-lumina-primary">AI</span>
               </h3>
               <p className="text-sm text-gray-400 max-w-sm mb-10 leading-relaxed">
-                Your personal AI mentor for mastering code. Ask me to{" "}
+                Your personal AI mentor for mastering concepts, assignments, and
+                study plans. Ask me to{" "}
                 <span className="text-gray-200 border-b border-white/10 pb-0.5">
                   explain concepts
                 </span>
                 ,{" "}
                 <span className="text-gray-200 border-b border-white/10 pb-0.5">
-                  review code
+                  build a quiz
                 </span>
                 , or{" "}
                 <span className="text-gray-200 border-b border-white/10 pb-0.5">
-                  generate quizzes
+                  simplify a difficult topic
                 </span>
                 .
               </p>
@@ -202,7 +202,7 @@ export function TutorConversation({
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask anything about your code..."
+            placeholder="Ask about a concept, assignment, weak topic, or quiz..."
             className="flex-1 bg-transparent border-none outline-none text-base text-gray-100 placeholder-gray-600 h-10 px-2 font-light tracking-wide focus:ring-0"
           />
 

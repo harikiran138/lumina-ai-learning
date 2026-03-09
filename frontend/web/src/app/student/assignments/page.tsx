@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Upload, FileText, CheckCircle, Loader2 } from "lucide-react";
+import { Upload, CheckCircle, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
 
 interface Assignment {
   id: string;
@@ -25,18 +26,7 @@ export default function StudentAssignmentsPage() {
   const fetchAssignments = async () => {
     try {
       setError(null);
-      // Hardcoded student_id for demo
-      const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE ||
-          process.env.NEXT_PUBLIC_API_URL ||
-          "http://127.0.0.1:8000"
-        }/api/assignments/list?student_id=student_demo`,
-      );
-      if (!res.ok) {
-        throw new Error(`Failed to fetch assignments: ${res.statusText}`);
-      }
-      const data = await res.json();
+      const data = await api.getAssignments();
       setAssignments(data);
     } catch (err: any) {
       console.error(err);
@@ -53,37 +43,21 @@ export default function StudentAssignmentsPage() {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
 
-    setSubmitting(assignmentId);
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("type", "assignment");
-    formData.append("student_id", "student_demo"); // Mock user
-    formData.append("assignment_id", assignmentId);
-
     try {
-      const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE ||
-          process.env.NEXT_PUBLIC_API_URL ||
-          "http://127.0.0.1:8000"
-        }/api/assignments/submit`,
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
+      setSubmitting(assignmentId);
+      setError(null);
 
-      if (res.ok) {
+      const data = await api.submitAssignment(assignmentId, file);
+
+      if (data.status === "success" || data.id) {
         alert("Assignment submitted successfully!");
-        // Refresh assignments to show updated status
         fetchAssignments();
       } else {
-        alert("Submission failed.");
+        alert("Submission failed: " + (data.message || "Unknown error"));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error uploading file.");
+      alert("Error uploading file: " + (err.message || "Check your connection"));
     } finally {
       setSubmitting(null);
     }

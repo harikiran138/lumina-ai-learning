@@ -202,3 +202,60 @@ class TutorSession(BaseModel):
     topic_coverage: Dict[str, int] = {}
     last_activity: str = Field(default_factory=current_time_iso)
     updated_at: str = Field(default_factory=current_time_iso)
+
+# --- 8. INSTITUTION & STAKEHOLDER MANAGEMENT ---
+
+
+class Institution(BaseModel):
+    id: str = Field(default_factory=generate_id, alias="_id")
+    institution_name: str
+    email: Optional[EmailStr] = None
+    institution_type: Optional[str] = None  # Private, Government, Deemed, Trust
+    institution_status: Optional[str] = None  # Autonomous, Affiliated, etc.
+    established_year: Optional[int] = None
+    university_affiliation: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    vision: Optional[str] = None
+    mission: Optional[str] = None
+    onboarding_status: str = "PENDING"
+    created_at: str = Field(default_factory=current_time_iso)
+    updated_at: str = Field(default_factory=current_time_iso)
+
+
+class Department(BaseModel):
+    id: str = Field(default_factory=generate_id, alias="_id")
+    institution_id: str
+    department_name: str
+    hod_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    created_at: str = Field(default_factory=current_time_iso)
+    updated_at: str = Field(default_factory=current_time_iso)
+
+
+class Program(BaseModel):
+    id: str = Field(default_factory=generate_id, alias="_id")
+    institution_id: str
+    program_name: str
+    degree: Optional[str] = None
+    level: Optional[str] = None
+    intake: Optional[int] = None
+    status: str = "active"
+    created_at: str = Field(default_factory=current_time_iso)
+    updated_at: str = Field(default_factory=current_time_iso)
+
+
+class Stakeholder(BaseModel):
+    id: str = Field(default_factory=generate_id, alias="_id")
+    program_id: Optional[str] = None
+    institution_id: Optional[str] = None
+    user_id: Optional[str] = None  # Link to User if they are a login user
+    name: str
+    email: Optional[EmailStr] = None
+    contact_no: Optional[str] = None
+    organization: Optional[str] = None
+    category: str  # Student, Teacher, Parent, Alumni, Industry, etc.
+    feedback_enabled: bool = False
+    created_at: str = Field(default_factory=current_time_iso)
+    updated_at: str = Field(default_factory=current_time_iso)

@@ -123,7 +123,7 @@ app.mount(
 
 
 # Prevent Host Header Attacks
-allowed_hosts = ["localhost", "127.0.0.1"]
+allowed_hosts = ["localhost", "127.0.0.1", "testserver"]
 domain_name = os.getenv("DOMAIN_NAME")
 if domain_name:
     allowed_hosts.append(domain_name)
@@ -134,7 +134,13 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_url, "http://127.0.0.1:3000"],
+    allow_origins=[
+        frontend_url,
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,39 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import { Line, Pie } from "react-chartjs-2";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { Line } from "react-chartjs-2";
 import {
-  Chart as ChartJS,
+  AlertTriangle,
+  ArrowRight,
+  BookOpen,
+  Bot,
+  Brain,
+  CalendarClock,
+  CheckCircle2,
+  Clock3,
+  Flame,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Trophy,
+  type LucideIcon,
+} from "lucide-react";
+import {
+  ArcElement,
   CategoryScale,
+  Chart as ChartJS,
+  Legend,
   LinearScale,
-  PointElement,
   LineElement,
+  PointElement,
   Title,
   Tooltip,
-  Legend,
-  ArcElement,
 } from "chart.js";
-import Link from "next/link";
-import {
-  Flame,
-  BookOpen,
-  Clock,
-  Target,
-  Bot,
-  PenTool,
-  FileText,
-  Trophy,
-  Star,
-  Award,
-  Zap,
-} from "lucide-react";
-import { getChartColors } from "@/lib/utils";
-import { StatCard } from "@/components/dashboard/StatCard";
+import { api } from "@/lib/api";
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
+import { StatCard } from "@/components/dashboard/StatCard";
 import { cn } from "@/lib/utils";
 
-// Register ChartJS components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -45,50 +46,224 @@ ChartJS.register(
   ArcElement,
 );
 
+type DashboardPriority = "critical" | "high" | "medium" | "low";
+
+interface CourseCardData {
+  id: string;
+  name: string;
+  title?: string;
+  code?: string;
+  description?: string;
+  progress?: number;
+  mastery?: number;
+  streak?: number;
+}
+
+interface WeeklyActivityPoint {
+  label: string;
+  date: string;
+  minutes: number;
+  interactions: number;
+}
+
+interface DueAssignment {
+  id: string;
+  title: string;
+  courseName: string;
+  dueDate?: string;
+  daysRemaining?: number | null;
+  status: "submitted" | "pending" | "due_soon" | "overdue";
+  submitted: boolean;
+  href: string;
+}
+
+interface WeakTopic {
+  topic: string;
+  score: number;
+  confidence: number;
+  attempts: number;
+  status: "urgent" | "developing" | "strong";
+}
+
+interface DashboardAction {
+  title: string;
+  description: string;
+  ctaLabel: string;
+  href: string;
+  priority: DashboardPriority;
+  kind: string;
+}
+
+interface StudyPlanItem {
+  title: string;
+  detail: string;
+  status: "urgent" | "planned" | "focus" | "recommended";
+  href: string;
+  ctaLabel: string;
+  kind: string;
+}
+
+interface ResumeCourse {
+  id: string;
+  title: string;
+  description?: string;
+  progress: number;
+  mastery: number;
+  streak: number;
+  href: string;
+}
+
+interface LearningSignals {
+  behaviorLabel: string;
+  cognitiveLoad: number;
+  riskLevel: string;
+  riskScore: number;
+  reasons: string[];
+  engagementScore: number;
+  recentAverageScore: number;
+}
+
+interface CoachInsight {
+  title: string;
+  summary: string;
+  priority: DashboardPriority;
+  actionLabel: string;
+  href: string;
+}
+
+interface AchievementHighlight {
+  title: string;
+  detail: string;
+  completed: boolean;
+}
+
+interface AchievementSummary {
+  badgeCount: number;
+  unlockedCount: number;
+  nextMilestone: string;
+  highlights: AchievementHighlight[];
+}
+
+interface StudentDashboardData {
+  studentName?: string;
+  currentStreak?: number;
+  overallMastery?: number;
+  totalHours?: number;
+  weeklyMinutes?: number;
+  pendingAssignments?: number;
+  enrolledCourses?: CourseCardData[];
+  weeklyActivity?: WeeklyActivityPoint[];
+  dueAssignments?: DueAssignment[];
+  nextAction?: DashboardAction;
+  todayPlan?: StudyPlanItem[];
+  weakTopics?: WeakTopic[];
+  masteryBreakdown?: WeakTopic[];
+  resumeCourse?: ResumeCourse | null;
+  learningSignals?: LearningSignals;
+  coachInsight?: CoachInsight;
+  achievementSummary?: AchievementSummary;
+}
+
+const EMPTY_ACTIVITY: WeeklyActivityPoint[] = [];
+
+function SectionCard({
+  title,
+  subtitle,
+  icon: Icon,
+  action,
+  children,
+  className,
+}: {
+  title: string;
+  subtitle?: string;
+  icon: LucideIcon;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn("glass-v2 border-white/5 overflow-hidden", className)}>
+      <div className="flex items-start justify-between gap-4 p-6 border-b border-white/5">
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-white/[0.04] border border-white/5 flex items-center justify-center text-lumina-primary">
+              <Icon className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-display font-bold text-white">
+                {title}
+              </h2>
+              {subtitle ? (
+                <p className="text-sm text-gray-400 mt-1">{subtitle}</p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+        {action}
+      </div>
+      <div className="p-6">{children}</div>
+    </section>
+  );
+}
+
 export default function StudentDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dashboardData, setDashboardData] = useState<any>(null);
-  const [chartColors, setChartColors] = useState<any>(null);
+  const [dashboardData, setDashboardData] = useState<StudentDashboardData | null>(
+    null,
+  );
 
   useEffect(() => {
-    const init = async () => {
+    const loadDashboard = async () => {
       try {
-        const isDark = document.documentElement.classList.contains("dark");
-        setChartColors(getChartColors(isDark));
-
         const data = await api.getDashboardData("student");
         setDashboardData(data);
-        setIsLoading(false);
-      } catch (error: any) {
-        console.error("Dashboard initialization error:", error);
+      } catch (loadError: any) {
+        console.error("student_dashboard_load_failed", loadError);
         setError(
-          error.message || "An error occurred while loading the dashboard",
+          loadError?.message || "An error occurred while loading the dashboard.",
         );
+      } finally {
         setIsLoading(false);
       }
     };
 
-    init();
-
-    const handleThemeChange = () => {
-      const isDark = document.documentElement.classList.contains("dark");
-      setChartColors(getChartColors(isDark));
-    };
-
-    const observer = new MutationObserver(handleThemeChange);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
+    loadDashboard();
   }, []);
+
+  const weeklyActivity = dashboardData?.weeklyActivity ?? EMPTY_ACTIVITY;
+  const activityChartData = useMemo(
+    () => ({
+      labels:
+        weeklyActivity.length > 0
+          ? weeklyActivity.map((point) => point.label)
+          : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      datasets: [
+        {
+          label: "Focused Minutes",
+          data:
+            weeklyActivity.length > 0
+              ? weeklyActivity.map((point) => point.minutes)
+              : [0, 0, 0, 0, 0, 0, 0],
+          borderColor: "#FFD700",
+          backgroundColor: "rgba(255, 215, 0, 0.12)",
+          fill: true,
+          tension: 0.35,
+          pointBackgroundColor: "#FFD700",
+          pointBorderColor: "#0A0A0A",
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+      ],
+    }),
+    [weeklyActivity],
+  );
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lumina-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lumina-primary" />
       </div>
     );
   }
@@ -110,82 +285,63 @@ export default function StudentDashboard() {
     );
   }
 
-  // Process data
-  const weeklyActivity = dashboardData?.weeklyActivity || [];
-  const weeks = weeklyActivity.map((w: any) => `Week ${w.week}`);
-  const timeSpent = weeklyActivity.map((w: any) => w.timeSpent || 0);
-
-  const progressData = {
-    labels: weeks.length > 0 ? weeks : ["Week 1", "Week 2", "Week 3", "Week 4"],
-    datasets: [
-      {
-        label: "Learning Hours",
-        data: timeSpent.length > 0 ? timeSpent : [0, 0, 0, 0],
-        borderColor: "#FFD700", // Gold
-        backgroundColor: "rgba(255, 215, 0, 0.1)",
-        tension: 0.4,
-        fill: true,
-        pointBackgroundColor: "#FFD700",
-        pointBorderColor: "#000",
-        pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-      },
-    ],
-  };
-
   const enrolledCourses = dashboardData?.enrolledCourses || [];
-  const completed = enrolledCourses.filter(
-    (c: any) => (c.progress || 0) === 100,
-  ).length;
-  const inProgress = enrolledCourses.filter(
-    (c: any) => (c.progress || 0) > 0 && (c.progress || 0) < 100,
-  ).length;
-  const notStarted = enrolledCourses.filter(
-    (c: any) => (c.progress || 0) === 0,
-  ).length;
-
-  const courseStatusData = {
-    labels: ["Not Started", "In Progress", "Completed"],
-    datasets: [
-      {
-        data: [notStarted, inProgress, completed],
-        backgroundColor: [
-          "#27272a", // Surface 800 (Gray)
-          "#FFD700", // Gold
-          "#10B981", // Emerald
-        ],
-        borderWidth: 0,
-      },
-    ],
-  };
+  const dueAssignments = dashboardData?.dueAssignments || [];
+  const nextAction = dashboardData?.nextAction;
+  const weakTopics = dashboardData?.weakTopics || [];
+  const masteryBreakdown = dashboardData?.masteryBreakdown || [];
+  const todayPlan = dashboardData?.todayPlan || [];
+  const learningSignals = dashboardData?.learningSignals;
+  const resumeCourse = dashboardData?.resumeCourse;
+  const coachInsight = dashboardData?.coachInsight;
+  const achievementSummary = dashboardData?.achievementSummary;
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-      {/* Welcome Section */}
-      <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <h1 className="text-5xl font-display font-bold mb-3 tracking-tight text-white">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+        <div className="max-w-3xl">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <StatusPill tone="accent">
+              {normalizeLabel(learningSignals?.behaviorLabel || "steady")} mode
+            </StatusPill>
+            <StatusPill
+              tone={getRiskTone(learningSignals?.riskLevel || "low")}
+            >
+              Risk {normalizeLabel(learningSignals?.riskLevel || "low")}
+            </StatusPill>
+            <StatusPill tone="neutral">
+              {dashboardData?.pendingAssignments || 0} pending tasks
+            </StatusPill>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight text-white">
             Welcome back,{" "}
             <span className="gradient-text">
               {dashboardData?.studentName || "Scholar"}
             </span>
           </h1>
-          <p className="text-gray-400 text-xl font-light tracking-wide max-w-2xl">
-            Where curiosity meets intelligence. Ready to resume your mastery?
+          <p className="text-gray-400 text-lg mt-3 max-w-2xl leading-relaxed">
+            Your dashboard is now centered on what matters most: the next action
+            to take, the concepts that need support, and the work that is coming
+            due.
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href={nextAction?.href || "/student/ai_tutor"}
+            className="h-12 px-5 rounded-2xl bg-lumina-primary text-black font-semibold inline-flex items-center gap-2 hover:brightness-110 transition-all shadow-gold-glow"
+          >
+            {nextAction?.ctaLabel || "Open tutor"}
+            <ArrowRight className="w-4 h-4" />
+          </Link>
           <Link
             href="/student/course_explorer"
-            className="px-6 py-3 bg-lumina-primary/10 text-lumina-primary border border-lumina-primary/20 text-sm font-bold rounded-2xl hover:bg-lumina-primary/20 transition-all duration-300 shadow-gold-glow"
+            className="h-12 px-5 rounded-2xl border border-white/10 text-white font-semibold inline-flex items-center gap-2 hover:border-lumina-primary/30 hover:text-lumina-primary transition-all"
           >
             Explore Catalog
           </Link>
         </div>
       </div>
 
-      {/* Stats Grid using new Component */}
       <DashboardGrid columns={4}>
         <StatCard
           title="Current Streak"
@@ -193,65 +349,154 @@ export default function StudentDashboard() {
           subtitle="Days in a row"
           icon={Flame}
           color="gold"
-          trend={{ value: "On Fire!", isPositive: true }}
         />
         <StatCard
-          title="Active Courses"
-          value={dashboardData?.enrolledCourses?.length || 0}
-          subtitle="Currently enrolled"
-          icon={BookOpen}
-          color="blue"
+          title="Pending Work"
+          value={dashboardData?.pendingAssignments || 0}
+          subtitle="Assignments to close"
+          icon={CalendarClock}
+          color="purple"
         />
         <StatCard
-          title="Total Learning"
-          value={`${dashboardData?.totalHours || 0}h`}
-          subtitle="Hours spent"
-          icon={Clock}
+          title="Weekly Focus"
+          value={`${roundValue(dashboardData?.weeklyMinutes || 0)}m`}
+          subtitle="Focused minutes logged"
+          icon={Clock3}
           color="green"
         />
         <StatCard
-          title="Average Mastery"
-          value={`${dashboardData?.overallMastery || 0}%`}
-          subtitle="Across all courses"
+          title="Overall Mastery"
+          value={`${roundValue(dashboardData?.overallMastery || 0)}%`}
+          subtitle="Across active courses"
           icon={Target}
-          color="purple"
+          color="blue"
         />
       </DashboardGrid>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
-        {/* Learning Activity Chart */}
-        <div className="lg:col-span-2 glass-v2 border-white/5">
-          <div className="p-8 border-b border-white/5 flex justify-between items-center">
-            <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
-              <span className="w-1.5 h-8 bg-lumina-primary rounded-full shadow-gold-glow" />
-              Activity Pulse
-            </h2>
-            <select className="bg-surface-950 border border-white/10 rounded-xl px-4 py-1.5 text-xs text-gray-400 focus:outline-none focus:ring-1 focus:ring-lumina-primary/30 transition-all">
-              <option>Last 7 Days</option>
-              <option>Last 30 Days</option>
-            </select>
+      <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_0.9fr] gap-8">
+        <SectionCard
+          title="Next Best Action"
+          subtitle="The highest-impact task based on your profile, deadlines, and mastery."
+          icon={Sparkles}
+        >
+          {nextAction ? (
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 items-center">
+              <div>
+                <div className="flex flex-wrap gap-3 mb-4">
+                  <StatusPill tone={getPriorityTone(nextAction.priority)}>
+                    {normalizeLabel(nextAction.priority)} priority
+                  </StatusPill>
+                  <StatusPill tone="neutral">
+                    {normalizeLabel(nextAction.kind)}
+                  </StatusPill>
+                </div>
+                <h3 className="text-3xl font-display font-bold text-white">
+                  {nextAction.title}
+                </h3>
+                <p className="text-gray-400 mt-3 max-w-2xl leading-relaxed">
+                  {nextAction.description}
+                </p>
+              </div>
+              <Link
+                href={nextAction.href}
+                className="h-12 px-5 rounded-2xl bg-white/[0.04] border border-white/10 text-white font-semibold inline-flex items-center gap-2 hover:border-lumina-primary/30 hover:text-lumina-primary transition-all"
+              >
+                {nextAction.ctaLabel}
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          ) : (
+            <EmptyState
+              title="No recommended action yet"
+              description="Start a course or log some activity and this card will begin to personalize itself."
+            />
+          )}
+        </SectionCard>
+
+        <SectionCard
+          title="Due Soon"
+          subtitle="Deadlines and pending work that should not slip."
+          icon={AlertTriangle}
+          action={
+            <Link
+              href="/student/assignments"
+              className="text-sm font-semibold text-lumina-primary hover:text-white transition-colors"
+            >
+              View all
+            </Link>
+          }
+        >
+          <div className="space-y-3">
+            {dueAssignments.filter((item) => !item.submitted).slice(0, 4).length >
+            0 ? (
+              dueAssignments
+                .filter((item) => !item.submitted)
+                .slice(0, 4)
+                .map((assignment) => (
+                  <div
+                    key={assignment.id}
+                    className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 flex items-start justify-between gap-4"
+                  >
+                    <div>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        <StatusPill tone={getAssignmentTone(assignment.status)}>
+                          {formatAssignmentStatus(assignment)}
+                        </StatusPill>
+                        <StatusPill tone="neutral">
+                          {assignment.courseName}
+                        </StatusPill>
+                      </div>
+                      <h3 className="text-white font-semibold">
+                        {assignment.title}
+                      </h3>
+                      <p className="text-sm text-gray-400 mt-1">
+                        {formatDueDate(assignment.dueDate)}
+                      </p>
+                    </div>
+                    <Link
+                      href={assignment.href}
+                      className="text-sm font-semibold text-lumina-primary hover:text-white transition-colors shrink-0"
+                    >
+                      Open
+                    </Link>
+                  </div>
+                ))
+            ) : (
+              <EmptyState
+                title="No pending assignments"
+                description="Your assignment queue is clear right now."
+              />
+            )}
           </div>
-          <div className="p-8 h-80 w-full">
+        </SectionCard>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-8">
+        <SectionCard
+          title="Activity Pulse"
+          subtitle="Focused study minutes recorded over the last seven days."
+          icon={TrendingUp}
+        >
+          <div className="h-80">
             <Line
-              data={progressData}
+              data={activityChartData}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
                   y: {
                     beginAtZero: true,
-                    grid: { color: "rgba(255, 255, 255, 0.03)" },
+                    grid: { color: "rgba(255, 255, 255, 0.04)" },
                     ticks: {
-                      color: "rgba(255, 255, 255, 0.3)",
-                      font: { size: 10 },
+                      color: "rgba(255, 255, 255, 0.4)",
+                      font: { size: 11 },
                     },
                   },
                   x: {
                     grid: { display: false },
                     ticks: {
-                      color: "rgba(255, 255, 255, 0.3)",
-                      font: { size: 10 },
+                      color: "rgba(255, 255, 255, 0.4)",
+                      font: { size: 11 },
                     },
                   },
                 },
@@ -266,269 +511,570 @@ export default function StudentDashboard() {
                     padding: 12,
                     cornerRadius: 12,
                     displayColors: false,
-                    titleFont: {
-                      family: "var(--font-display)",
-                      weight: "bold",
-                    },
                   },
                 },
               }}
             />
           </div>
-        </div>
+        </SectionCard>
 
-        {/* Quick Actions & Status */}
-        <div className="space-y-6">
-          <div className="glass-v2 p-8 border-white/5">
-            <h2 className="text-2xl font-display font-bold text-white mb-6">
-              Quick Actions
-            </h2>
-            <div className="grid gap-4">
-              <Link
-                href="/student/ai_tutor"
-                className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-lumina-primary/30 transition-all group"
-              >
-                <div className="w-12 h-12 rounded-xl bg-lumina-primary/10 flex items-center justify-center text-lumina-primary group-hover:scale-110 transition-all duration-500 shadow-gold-glow/5 group-hover:shadow-gold-glow/20">
-                  <Bot className="w-6 h-6" />
+        <SectionCard
+          title="Today's Study Plan"
+          subtitle="A focused task queue built from weak topics, pending work, and course momentum."
+          icon={CheckCircle2}
+        >
+          <div className="space-y-3">
+            {todayPlan.length > 0 ? (
+              todayPlan.map((item, index) => (
+                <div
+                  key={`${item.title}-${index}`}
+                  className="rounded-2xl border border-white/5 bg-white/[0.02] p-4"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        <StatusPill tone={getPlanTone(item.status)}>
+                          {normalizeLabel(item.status)}
+                        </StatusPill>
+                        <StatusPill tone="neutral">
+                          {normalizeLabel(item.kind)}
+                        </StatusPill>
+                      </div>
+                      <h3 className="text-white font-semibold">{item.title}</h3>
+                      <p className="text-sm text-gray-400 mt-1">
+                        {item.detail}
+                      </p>
+                    </div>
+                    <Link
+                      href={item.href}
+                      className="text-sm font-semibold text-lumina-primary hover:text-white transition-colors shrink-0"
+                    >
+                      {item.ctaLabel}
+                    </Link>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-white group-hover:text-lumina-primary transition-colors">
-                    AI Tutor
-                  </p>
-                  <p className="text-xs text-gray-400 font-medium tracking-tight">
-                    Personalized guidance
-                  </p>
-                </div>
-              </Link>
-
-              <Link
-                href="/student/assessment"
-                className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-purple-500/30 transition-all group"
-              >
-                <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-all duration-500 shadow-purple-500/5 group-hover:shadow-purple-500/20">
-                  <PenTool className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="font-bold text-white group-hover:text-purple-400 transition-colors">
-                    Assessments
-                  </p>
-                  <p className="text-xs text-gray-400 font-medium tracking-tight">
-                    Validate your knowledge
-                  </p>
-                </div>
-              </Link>
-            </div>
-          </div>
-
-          <div className="glass-v2 p-8 border-white/5 flex flex-col justify-center">
-            <h3 className="text-xl font-display font-bold mb-6 text-white flex items-center gap-3">
-              <Star className="w-5 h-5 text-lumina-primary" />
-              Progress
-            </h3>
-            <div className="h-48 relative">
-              <Pie
-                data={courseStatusData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: {
-                      position: "right",
-                      labels: {
-                        color: "rgba(255, 255, 255, 0.5)",
-                        usePointStyle: true,
-                        pointStyle: "circle",
-                        padding: 15,
-                        font: {
-                          size: 10,
-                          weight: "bold",
-                          family: "var(--font-mono)",
-                        },
-                      },
-                    },
-                  },
-                  elements: {
-                    arc: { borderWidth: 0 },
-                  },
-                }}
+              ))
+            ) : (
+              <EmptyState
+                title="No study plan yet"
+                description="Complete a quiz, lesson, or assignment and your plan will begin to adapt."
               />
-            </div>
+            )}
           </div>
-        </div>
+        </SectionCard>
       </div>
 
-      {/* Enrolled Courses */}
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">Continue Learning</h2>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <SectionCard
+          title="Weak Topics"
+          subtitle="Concepts that need reinforcement before you level up."
+          icon={Brain}
+        >
+          <div className="space-y-4">
+            {weakTopics.length > 0 ? (
+              weakTopics.slice(0, 4).map((topic) => (
+                <div key={topic.topic}>
+                  <div className="flex items-center justify-between gap-4 mb-2">
+                    <div>
+                      <p className="text-white font-semibold">{topic.topic}</p>
+                      <p className="text-xs text-gray-400">
+                        {topic.attempts} attempts, {roundValue(topic.confidence)}%
+                        confidence
+                      </p>
+                    </div>
+                    <StatusPill tone={getTopicTone(topic.status)}>
+                      {normalizeLabel(topic.status)}
+                    </StatusPill>
+                  </div>
+                  <ProgressBar value={topic.score} />
+                </div>
+              ))
+            ) : (
+              <EmptyState
+                title="No weak topics detected"
+                description="Once you build more interaction history, we will surface exact concepts that need support."
+              />
+            )}
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Resume Learning"
+          subtitle="Jump back into the course with the strongest momentum."
+          icon={BookOpen}
+        >
+          {resumeCourse ? (
+            <div className="space-y-5">
+              <div>
+                <h3 className="text-2xl font-display font-bold text-white">
+                  {resumeCourse.title}
+                </h3>
+                <p className="text-sm text-gray-400 mt-2 leading-relaxed">
+                  {resumeCourse.description ||
+                    "Continue the course you were last building momentum in."}
+                </p>
+              </div>
+              <div className="space-y-4">
+                <MetricRow
+                  label="Course progress"
+                  value={`${roundValue(resumeCourse.progress)}%`}
+                />
+                <ProgressBar value={resumeCourse.progress} />
+                <div className="grid grid-cols-2 gap-4">
+                  <MiniMetric
+                    label="Mastery"
+                    value={`${roundValue(resumeCourse.mastery)}%`}
+                  />
+                  <MiniMetric
+                    label="Course streak"
+                    value={`${resumeCourse.streak || 0} days`}
+                  />
+                </div>
+              </div>
+              <Link
+                href={resumeCourse.href}
+                className="h-12 px-5 rounded-2xl bg-white/[0.04] border border-white/10 text-white font-semibold inline-flex items-center gap-2 hover:border-lumina-primary/30 hover:text-lumina-primary transition-all"
+              >
+                Continue course
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          ) : (
+            <EmptyState
+              title="No resume path yet"
+              description="Enroll in a course and your resume card will appear here."
+            />
+          )}
+        </SectionCard>
+
+        <SectionCard
+          title="Learning Signals"
+          subtitle="Behavior, risk, and engagement signals from your learner profile."
+          icon={Target}
+        >
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+              <MiniMetric
+                label="Engagement"
+                value={`${learningSignals?.engagementScore || 0}/100`}
+              />
+              <MiniMetric
+                label="Recent average"
+                value={`${roundValue(learningSignals?.recentAverageScore || 0)}%`}
+              />
+            </div>
+            <div>
+              <MetricRow
+                label="Cognitive load"
+                value={`${roundValue(learningSignals?.cognitiveLoad || 0)}%`}
+              />
+              <ProgressBar
+                value={Math.min(100, learningSignals?.cognitiveLoad || 0)}
+                tone={getLoadBarTone(learningSignals?.cognitiveLoad || 0)}
+              />
+            </div>
+            <div>
+              <MetricRow
+                label="Risk score"
+                value={`${roundValue(learningSignals?.riskScore || 0)}%`}
+              />
+              <ProgressBar
+                value={Math.min(100, learningSignals?.riskScore || 0)}
+                tone={getRiskBarTone(learningSignals?.riskLevel || "low")}
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <StatusPill tone="neutral">
+                {normalizeLabel(learningSignals?.behaviorLabel || "neutral")}
+              </StatusPill>
+              <StatusPill
+                tone={getRiskTone(learningSignals?.riskLevel || "low")}
+              >
+                {normalizeLabel(learningSignals?.riskLevel || "low")} risk
+              </StatusPill>
+            </div>
+            {learningSignals?.reasons?.length ? (
+              <ul className="space-y-2 text-sm text-gray-400">
+                {learningSignals.reasons.slice(0, 3).map((reason) => (
+                  <li key={reason} className="flex gap-2">
+                    <span className="text-lumina-primary">•</span>
+                    <span>{capitalizeSentence(reason)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-400">
+                No major risk signals are active right now.
+              </p>
+            )}
+          </div>
+        </SectionCard>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-8">
+        <SectionCard
+          title="Mastery Pulse"
+          subtitle="A concept-by-concept view of where your understanding currently stands."
+          icon={TrendingUp}
+        >
+          <div className="space-y-4">
+            {masteryBreakdown.length > 0 ? (
+              masteryBreakdown.map((item) => (
+                <div key={item.topic}>
+                  <div className="flex items-center justify-between gap-4 mb-2">
+                    <div>
+                      <p className="text-white font-semibold">{item.topic}</p>
+                      <p className="text-xs text-gray-400">
+                        Confidence {roundValue(item.confidence)}%
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-lumina-primary">
+                      {roundValue(item.score)}%
+                    </span>
+                  </div>
+                  <ProgressBar value={item.score} tone={getTopicBarTone(item.status)} />
+                </div>
+              ))
+            ) : (
+              <EmptyState
+                title="Mastery data is still building"
+                description="Take quizzes and assessments to unlock concept-level mastery tracking."
+              />
+            )}
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Coach Insight"
+          subtitle="A focused intervention cue generated from your recent behavior and performance."
+          icon={Bot}
+        >
+          {coachInsight ? (
+            <div className="space-y-5">
+              <StatusPill tone={getPriorityTone(coachInsight.priority)}>
+                {normalizeLabel(coachInsight.priority)} priority
+              </StatusPill>
+              <div>
+                <h3 className="text-2xl font-display font-bold text-white">
+                  {coachInsight.title}
+                </h3>
+                <p className="text-gray-400 mt-3 leading-relaxed">
+                  {coachInsight.summary}
+                </p>
+              </div>
+              <Link
+                href={coachInsight.href}
+                className="h-12 px-5 rounded-2xl bg-white/[0.04] border border-white/10 text-white font-semibold inline-flex items-center gap-2 hover:border-lumina-primary/30 hover:text-lumina-primary transition-all"
+              >
+                {coachInsight.actionLabel}
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          ) : (
+            <EmptyState
+              title="No coach insight yet"
+              description="As your learner profile matures, intervention suggestions will appear here."
+            />
+          )}
+        </SectionCard>
+      </div>
+
+      <SectionCard
+        title="Continue Learning"
+        subtitle="Your active courses, sorted for momentum rather than noise."
+        icon={BookOpen}
+        action={
           <Link
             href="/student/courses"
             className="text-sm font-semibold text-lumina-primary hover:text-white transition-colors"
           >
-            View All Courses →
+            View all
           </Link>
-        </div>
-
-        <DashboardGrid columns={3}>
-          {enrolledCourses.length > 0 ? (
-            enrolledCourses.slice(0, 3).map((course: any) => (
+        }
+      >
+        {enrolledCourses.length > 0 ? (
+          <DashboardGrid columns={3}>
+            {enrolledCourses.slice(0, 3).map((course) => (
               <div
                 key={course.id}
-                className="glass-v2 group relative overflow-hidden flex flex-col h-full border-white/5 hover:border-lumina-primary/30 transition-all duration-500"
+                className="rounded-[28px] border border-white/5 bg-white/[0.02] overflow-hidden flex flex-col"
               >
-                <div className="h-40 bg-surface-950/40 relative overflow-hidden p-8 flex flex-col justify-end border-b border-white/5">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-700">
-                    <BookOpen className="w-32 h-32 text-white transform rotate-12 translate-x-10 -translate-y-10" />
+                <div className="p-6 border-b border-white/5 bg-surface-950/40">
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <StatusPill tone="neutral">
+                      {course.code || "Course"}
+                    </StatusPill>
+                    <StatusPill tone="accent">
+                      {roundValue(course.mastery || 0)}% mastery
+                    </StatusPill>
                   </div>
-                  <div className="relative z-10">
-                    <span className="text-[10px] font-bold text-lumina-primary uppercase tracking-[0.2em] bg-white/[0.03] backdrop-blur-md px-3 py-1 rounded-lg border border-white/5 mb-3 inline-block">
-                      {course.subject || "Course"}
-                    </span>
-                    <h3 className="font-display font-bold text-2xl text-white line-clamp-1 group-hover:text-lumina-primary transition-colors duration-300">
-                      {course.name}
-                    </h3>
-                  </div>
+                  <h3 className="text-2xl font-display font-bold text-white line-clamp-2">
+                    {course.name || course.title}
+                  </h3>
                 </div>
-
-                <div className="p-8 flex-1 flex flex-col">
-                  <p className="text-sm text-gray-400 mb-8 line-clamp-2 flex-1 font-light leading-relaxed">
-                    {course.description}
+                <div className="p-6 flex-1 flex flex-col">
+                  <p className="text-sm text-gray-400 leading-relaxed line-clamp-3 flex-1">
+                    {course.description || "Continue building momentum in this course."}
                   </p>
-
-                  <div className="space-y-6">
-                    <div>
-                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-2.5">
-                        <span className="text-gray-500">Mastery Progress</span>
-                        <span className="text-lumina-primary font-mono">
-                          {course.progress || 0}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-white/[0.03] rounded-full h-1.5 overflow-hidden border border-white/5">
-                        <div
-                          className="bg-gradient-to-r from-lumina-primary to-amber-400 h-full rounded-full shadow-gold-glow"
-                          style={{ width: `${course.progress || 0}%` }}
-                        ></div>
-                      </div>
+                  <div className="mt-6 space-y-3">
+                    <MetricRow
+                      label="Progress"
+                      value={`${roundValue(course.progress || 0)}%`}
+                    />
+                    <ProgressBar value={course.progress || 0} />
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <span>{course.streak || 0} day streak</span>
+                      <span>{roundValue(course.mastery || 0)}% mastery</span>
                     </div>
-
-                    <div className="flex gap-6 py-4 border-t border-white/5">
-                      <div className="flex items-center gap-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-tight">
-                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
-                        {course.mastery || 0}% Rank
-                      </div>
-                      <div className="flex items-center gap-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-tight">
-                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
-                        {course.streak || 0} Streak
-                      </div>
-                    </div>
-
                     <Link
                       href={`/student/courses/${course.id}`}
-                      className="w-full h-12 flex items-center justify-center rounded-2xl bg-white/[0.03] border border-white/5 text-sm font-bold text-white hover:bg-lumina-primary hover:text-black hover:border-lumina-primary transition-all duration-300 group/btn"
+                      className="h-11 rounded-2xl bg-white/[0.04] border border-white/10 text-white font-semibold inline-flex items-center justify-center gap-2 hover:border-lumina-primary/30 hover:text-lumina-primary transition-all"
                     >
-                      Continue Mastery
+                      Continue course
+                      <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="col-span-3 text-center py-16 glass-card border-dashed">
-              <BookOpen className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">
-                No Courses Started
-              </h3>
-              <p className="text-gray-400 mb-6">
-                Explore our catalog and start learning today.
+            ))}
+          </DashboardGrid>
+        ) : (
+          <EmptyState
+            title="No active courses"
+            description="Explore the catalog to start your first personalized learning path."
+            actionLabel="Browse catalog"
+            href="/student/course_explorer"
+          />
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title="Achievement Snapshot"
+        subtitle="A compact view of progress milestones without turning the dashboard into a trophy wall."
+        icon={Trophy}
+      >
+        {achievementSummary ? (
+          <div className="grid grid-cols-1 lg:grid-cols-[0.7fr_1.3fr] gap-6">
+            <div className="rounded-3xl border border-white/5 bg-white/[0.02] p-6">
+              <p className="text-sm uppercase tracking-[0.2em] text-gray-500">
+                Unlocked
               </p>
-              <Link href="/student/course_explorer" className="glass-button">
-                Browse Catalog
-              </Link>
+              <h3 className="text-5xl font-display font-bold text-white mt-3">
+                {achievementSummary.unlockedCount}
+              </h3>
+              <p className="text-sm text-gray-400 mt-3">
+                {achievementSummary.badgeCount} stored badges. Next milestone:{" "}
+                <span className="text-white">
+                  {achievementSummary.nextMilestone}
+                </span>
+              </p>
             </div>
-          )}
-        </DashboardGrid>
-      </div>
-
-      {/* Achievements Section */}
-      <div className="glass-v2 p-8 border-white/5 relative overflow-hidden">
-        <div className="flex items-center justify-between mb-8 relative z-10">
-          <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
-            <Trophy className="w-6 h-6 text-lumina-primary shadow-gold-glow/20" />
-            Achievements
-          </h2>
-          <Link
-            href="/student/achievements"
-            className="text-[10px] font-bold text-gray-400 hover:text-lumina-primary uppercase tracking-widest transition-colors"
-          >
-            View Hall of Fame
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 relative z-10">
-          {dashboardData?.achievements?.length > 0 ? (
-            dashboardData.achievements.map((ach: any, i: number) => {
-              const Icon =
-                ach.icon === "Star"
-                  ? Star
-                  : ach.icon === "Flame"
-                    ? Flame
-                    : Trophy;
-              return (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {achievementSummary.highlights.map((item) => (
                 <div
-                  key={i}
+                  key={item.title}
                   className={cn(
-                    "flex flex-col items-center justify-center p-6 rounded-2xl border transition-all duration-500 overflow-hidden group/ach",
-                    ach.unlocked
-                      ? "bg-white/[0.04] border-lumina-primary/20 hover:border-lumina-primary/50 shadow-premium"
-                      : "bg-black/20 border-white/5 opacity-40 grayscale",
+                    "rounded-3xl border p-5",
+                    item.completed
+                      ? "border-lumina-primary/20 bg-lumina-primary/[0.08]"
+                      : "border-white/5 bg-white/[0.02]",
                   )}
                 >
-                  <div
-                    className={cn(
-                      "w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-all duration-500 group-hover/ach:scale-110",
-                      ach.unlocked
-                        ? "bg-lumina-primary text-black shadow-gold-glow"
-                        : "bg-surface-900 text-gray-500",
-                    )}
-                  >
-                    <Icon className="w-6 h-6" />
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-white font-semibold">{item.title}</p>
+                    <StatusPill tone={item.completed ? "accent" : "neutral"}>
+                      {item.completed ? "Unlocked" : "In progress"}
+                    </StatusPill>
                   </div>
-                  <span className="text-[10px] font-bold text-white uppercase tracking-tighter line-clamp-1">
-                    {ach.title}
-                  </span>
+                  <p className="text-sm text-gray-400 mt-3">{item.detail}</p>
                 </div>
-              );
-            })
-          ) : (
-            <div className="col-span-full py-8 text-center bg-white/[0.01] rounded-2xl border border-dashed border-white/5">
-              <p className="text-sm text-gray-500 font-light">
-                Your legacy begins here. Complete your first lesson to unlock
-                achievements.
-              </p>
+              ))}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        ) : (
+          <EmptyState
+            title="Achievement tracking is quiet"
+            description="Milestones will appear here once you build streaks, mastery, and course completions."
+          />
+        )}
+      </SectionCard>
     </div>
   );
 }
 
-function PieChartIcon(props: any) {
+function ProgressBar({
+  value,
+  tone = "from-lumina-primary to-amber-400",
+}: {
+  value: number;
+  tone?: string;
+}) {
   return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-      <path d="M22 12A10 10 0 0 0 12 2v10z" />
-    </svg>
+    <div className="w-full h-2 rounded-full bg-white/[0.04] border border-white/5 overflow-hidden">
+      <div
+        className={cn("h-full rounded-full bg-gradient-to-r", tone)}
+        style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
+      />
+    </div>
   );
+}
+
+function MetricRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 text-sm">
+      <span className="text-gray-400">{label}</span>
+      <span className="text-white font-semibold">{value}</span>
+    </div>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
+      <p className="text-xs uppercase tracking-[0.18em] text-gray-500">{label}</p>
+      <p className="text-xl font-display font-bold text-white mt-2">{value}</p>
+    </div>
+  );
+}
+
+function EmptyState({
+  title,
+  description,
+  actionLabel,
+  href,
+}: {
+  title: string;
+  description: string;
+  actionLabel?: string;
+  href?: string;
+}) {
+  return (
+    <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.01] p-8 text-center">
+      <p className="text-lg font-semibold text-white">{title}</p>
+      <p className="text-sm text-gray-400 mt-2 max-w-xl mx-auto">{description}</p>
+      {actionLabel && href ? (
+        <Link
+          href={href}
+          className="inline-flex items-center gap-2 mt-5 text-sm font-semibold text-lumina-primary hover:text-white transition-colors"
+        >
+          {actionLabel}
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function StatusPill({
+  children,
+  tone,
+}: {
+  children: ReactNode;
+  tone: "accent" | "neutral" | "success" | "warning" | "danger";
+}) {
+  const tones = {
+    accent: "bg-lumina-primary/10 text-lumina-primary border-lumina-primary/20",
+    neutral: "bg-white/[0.04] text-gray-300 border-white/10",
+    success: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+    warning: "bg-amber-500/10 text-amber-300 border-amber-500/20",
+    danger: "bg-red-500/10 text-red-300 border-red-500/20",
+  };
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]",
+        tones[tone],
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function roundValue(value: number) {
+  return Math.round((value || 0) * 10) / 10;
+}
+
+function normalizeLabel(value: string) {
+  return value.replace(/_/g, " ");
+}
+
+function capitalizeSentence(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function getPriorityTone(priority: DashboardPriority) {
+  if (priority === "critical") return "danger";
+  if (priority === "high") return "warning";
+  if (priority === "medium") return "accent";
+  return "neutral";
+}
+
+function getRiskTone(riskLevel: string) {
+  if (riskLevel === "critical" || riskLevel === "high") return "danger";
+  if (riskLevel === "medium") return "warning";
+  return "neutral";
+}
+
+function getPlanTone(status: StudyPlanItem["status"]) {
+  if (status === "urgent") return "danger";
+  if (status === "focus") return "warning";
+  if (status === "recommended") return "accent";
+  return "neutral";
+}
+
+function getTopicTone(status: WeakTopic["status"]) {
+  if (status === "urgent") return "danger";
+  if (status === "developing") return "warning";
+  return "success";
+}
+
+function getAssignmentTone(status: DueAssignment["status"]) {
+  if (status === "overdue") return "danger";
+  if (status === "due_soon") return "warning";
+  if (status === "submitted") return "success";
+  return "neutral";
+}
+
+function getLoadBarTone(value: number) {
+  if (value >= 75) return "from-red-500 to-orange-400";
+  if (value >= 50) return "from-amber-400 to-lumina-primary";
+  return "from-emerald-400 to-lumina-primary";
+}
+
+function getRiskBarTone(riskLevel: string) {
+  if (riskLevel === "critical" || riskLevel === "high") {
+    return "from-red-500 to-orange-400";
+  }
+  if (riskLevel === "medium") {
+    return "from-amber-400 to-yellow-300";
+  }
+  return "from-emerald-400 to-lumina-primary";
+}
+
+function getTopicBarTone(status: WeakTopic["status"]) {
+  if (status === "urgent") return "from-red-500 to-orange-400";
+  if (status === "developing") return "from-amber-400 to-yellow-300";
+  return "from-emerald-400 to-lumina-primary";
+}
+
+function formatDueDate(value?: string) {
+  if (!value) return "No due date set";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "No due date set";
+  return `Due ${date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  })}`;
+}
+
+function formatAssignmentStatus(assignment: DueAssignment) {
+  if (assignment.status === "overdue") return "Overdue";
+  if (assignment.status === "due_soon") {
+    if (assignment.daysRemaining === 0) return "Due today";
+    if (assignment.daysRemaining === 1) return "Due tomorrow";
+    return "Due soon";
+  }
+  return "Pending";
 }

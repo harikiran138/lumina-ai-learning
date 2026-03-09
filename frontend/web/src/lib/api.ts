@@ -52,8 +52,8 @@ class RealAPI {
       headers.set("Authorization", `Bearer ${this.token}`);
     }
 
-    // Default Content-Type to JSON if body is present
-    if (options.body && !headers.has("Content-Type")) {
+    // Default Content-Type to JSON if body is present and not FormData
+    if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
 
@@ -68,6 +68,30 @@ class RealAPI {
     }
 
     return response;
+  }
+
+  private getChatStorageKey(): string {
+    return `lumina_chat_history_${this.currentUser?.id || "guest"}`;
+  }
+
+  private readChatHistory(): any[] {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem(this.getChatStorageKey());
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private writeChatHistory(messages: any[]): void {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(
+      this.getChatStorageKey(),
+      JSON.stringify(messages.slice(-400)),
+    );
   }
 
   async login(email: string, password?: string): Promise<User> {
@@ -101,16 +125,18 @@ class RealAPI {
     if (!userRes.ok) throw new Error("Failed to fetch user profile");
 
     const userData = await userRes.json();
+    const displayName = userData.name || userData.full_name || email.split("@")[0];
     this.currentUser = {
       id: userData.id,
       email: userData.email,
-      name: userData.full_name,
+      name: displayName,
       role: userData.role,
       avatar:
         userData.avatar ||
-        `https://ui-avatars.com/api/?name=${userData.full_name}&background=random`,
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`,
       status: "active",
       createdAt: userData.created_at,
+      preferences: userData.preferences || {},
     };
 
     if (typeof window !== "undefined") {
@@ -184,11 +210,74 @@ class RealAPI {
   }
 
   async getStudentProgress(): Promise<any> {
-    // For now, student progress is part of dashboard data
-    const res = await this.fetchAuthorized("/api/student/dashboard");
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.enrolledCourses || [];
+    const [dashboardRes, analyticsRes, profileRes] = await Promise.all([
+      this.fetchAuthorized("/api/student/dashboard"),
+      this.fetchAuthorized("/api/student/profile/analytics"),
+      this.fetchAuthorized("/api/student/profile"),
+    ]);
+
+    if (!dashboardRes.ok) return null;
+
+    const dashboard = await dashboardRes.json();
+    const analytics = analyticsRes.ok ? await analyticsRes.json() : {};
+    const profile = profileRes.ok ? await profileRes.json() : {};
+    const enrolledCourses = Array.isArray(dashboard.enrolledCourses)
+      ? dashboard.enrolledCourses
+      : [];
+    const weeklyActivity = Array.isArray(dashboard.weeklyActivity)
+      ? dashboard.weeklyActivity
+      : [];
+    const achievementSummary = dashboard.achievementSummary || {};
+
+    return {
+      ...dashboard,
+      stats: {
+        currentStreak: dashboard.currentStreak || 0,
+        totalXP: achievementSummary.unlockedCount
+          ? achievementSummary.unlockedCount * 120
+          : Math.round((dashboard.overallMastery || 0) * 8),
+        avgAccuracy: Math.round(
+          analytics.overallMastery
+            ? Number(analytics.overallMastery) * 100
+            : dashboard.overallMastery || 0,
+        ),
+        learningTime: `${Math.floor((dashboard.weeklyMinutes || 0) / 60)}h ${Math.round(
+          (dashboard.weeklyMinutes || 0) % 60,
+        )}m`,
+      },
+      weeklyActivity: weeklyActivity.map((item: any) => item.minutes || 0),
+      weeklyActivityDetail: weeklyActivity,
+      recentCourses: enrolledCourses
+        .slice()
+        .sort(
+          (a: any, b: any) =>
+            new Date(b.lastAccessed || 0).getTime() -
+            new Date(a.lastAccessed || 0).getTime(),
+        )
+        .slice(0, 5)
+        .map((course: any) => ({
+          id: course.id,
+          courseName: course.name || course.title || "Untitled Course",
+          progress: Math.round(course.progress || 0),
+          mastery: Math.round(course.mastery || 0),
+          streak: course.streak || 0,
+        })),
+      achievements: (achievementSummary.highlights || []).map((item: any, index: number) => ({
+        title: item.title,
+        desc: item.detail,
+        unlocked: item.completed,
+        icon: index === 0 ? "Flame" : index === 1 ? "Target" : "Award",
+        color: item.completed ? "text-lumina-primary" : "text-gray-500",
+      })),
+      weakTopics: dashboard.weakTopics || [],
+      learningSignals: dashboard.learningSignals || {},
+      coachInsight: dashboard.coachInsight || null,
+      nextAction: dashboard.nextAction || null,
+      todayPlan: dashboard.todayPlan || [],
+      dueAssignments: dashboard.dueAssignments || [],
+      masteryBreakdown: dashboard.masteryBreakdown || [],
+      profile,
+    };
   }
 
   async getStudentCertificates(): Promise<any[]> {
@@ -202,7 +291,27 @@ class RealAPI {
       method: "POST",
       body: JSON.stringify(data),
     });
-    return await res.json();
+    const payload = await res.json();
+
+    if (res.ok && this.currentUser) {
+      const nextUser = {
+        ...this.currentUser,
+        name: data.name || this.currentUser.name,
+        avatar: data.avatar || this.currentUser.avatar,
+        bio: data.bio ?? this.currentUser.bio,
+        location: data.location ?? this.currentUser.location,
+        preferences: {
+          ...(this.currentUser.preferences || {}),
+          ...(data.preferences || {}),
+        },
+      };
+      this.currentUser = nextUser;
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("lumina_user", JSON.stringify(nextUser));
+      }
+    }
+
+    return payload;
   }
 
   async completeLesson(
@@ -228,6 +337,42 @@ class RealAPI {
     return await res.json();
   }
 
+  async getAssignments(courseId?: string): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (courseId) params.append("course_id", courseId);
+    if (this.currentUser?.id) params.append("student_id", this.currentUser.id);
+
+    const res = await this.fetchAuthorized(`/api/assignments/list?${params.toString()}`);
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async submitAssignment(assignmentId: string, file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append("assignment_id", assignmentId);
+    formData.append("file", file);
+
+    const res = await this.fetchAuthorized("/api/assignments/submit", {
+      method: "POST",
+      body: formData,
+    });
+    return await res.json();
+  }
+
+  async uploadHandwriting(type: "assignment" | "note", file: File, assignmentId?: string): Promise<any> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("type", type);
+    if (assignmentId) formData.append("assignment_id", assignmentId);
+    if (this.currentUser?.id) formData.append("user_id", this.currentUser.id);
+
+    const res = await this.fetchAuthorized("/api/handwriting/upload", {
+      method: "POST",
+      body: formData,
+    });
+    return await res.json();
+  }
+
   async getStudentBadges(): Promise<any[]> {
     const res = await this.fetchAuthorized("/api/student/badges");
     if (!res.ok) return [];
@@ -247,7 +392,8 @@ class RealAPI {
   }
 
   async getEnrolledCourses(): Promise<any> {
-    return this.getStudentProgress();
+    const progress = await this.getStudentProgress();
+    return progress?.enrolledCourses || [];
   }
 
   async getCommunityData(channelId?: string): Promise<any> {
@@ -301,15 +447,33 @@ class RealAPI {
   }
 
   async getStudentCourses(): Promise<any[]> {
-    return this.getStudentProgress();
+    const progress = await this.getStudentProgress();
+    return progress?.enrolledCourses || [];
   }
 
   async getExploreCourses(): Promise<{ enrolled: any[]; recommended: any[] }> {
-    // Combine calls or have a special endpoint
-    const enrolled = await this.getStudentProgress();
+    const progress = await this.getStudentProgress();
+    const enrolled = progress?.enrolledCourses || [];
     const all = await this.getAllCourses();
-    // Simple mock logic for recommendation
-    return { enrolled, recommended: all.slice(0, 3) };
+    const enrolledIds = new Set(enrolled.map((course: any) => String(course.id)));
+    const focusTerms = (progress?.weakTopics || [])
+      .map((item: any) => String(item.topic || "").toLowerCase())
+      .filter(Boolean);
+
+    const recommended = all
+      .filter((course: any) => !enrolledIds.has(String(course.id)))
+      .map((course: any) => {
+        const haystack = `${course.name || ""} ${course.description || ""}`.toLowerCase();
+        const topicalMatches = focusTerms.filter((term: string) => haystack.includes(term)).length;
+        return {
+          ...course,
+          recommendationScore: topicalMatches * 10 + (course.rating || 0) + ((course.students || 0) / 1000),
+        };
+      })
+      .sort((a: any, b: any) => b.recommendationScore - a.recommendationScore)
+      .slice(0, 6);
+
+    return { enrolled, recommended };
   }
 
   async publishCourse(courseId: string): Promise<any> {
@@ -409,17 +573,22 @@ class RealAPI {
   }
 
   async updateProgress(
-    courseId: string,
-    percentIncrement: number,
+    _courseId: string,
+    _percentIncrement: number,
   ): Promise<any> {
     // Partial progress update
+    void _courseId;
+    void _percentIncrement;
     return { success: true };
   }
 
   async getChatHistory(): Promise<any[]> {
     try {
-      // Chat history is stored in IndexedDB locally; backend has no dedicated history endpoint
-      return [];
+      return this.readChatHistory().sort(
+        (a, b) =>
+          new Date(a.timestamp || 0).getTime() -
+          new Date(b.timestamp || 0).getTime(),
+      );
     } catch {
       return [];
     }
@@ -430,36 +599,57 @@ class RealAPI {
     text: string;
     sessionId?: string;
   }): Promise<any> {
-    // Save via backend
+    const existing = this.readChatHistory();
+    existing.push({
+      id: `${message.sessionId || "session"}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      sender: message.sender,
+      text: message.text,
+      sessionId: message.sessionId || "default-session",
+      timestamp: new Date().toISOString(),
+    });
+    this.writeChatHistory(existing);
     return { success: true };
   }
 
-  async saveNote(content: string): Promise<any> {
-    const res = await this.fetchAuthorized("/api/student/note", {
+  async saveNote(content: string, title?: string, subject?: string): Promise<any> {
+    const res = await this.fetchAuthorized("/api/student/notes", {
       method: "POST",
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, title, subject }),
     });
     return await res.json();
   }
 
   async getNotes(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/student/profile");
+    const res = await this.fetchAuthorized("/api/student/notes");
     if (!res.ok) return [];
-    const profile = await res.json();
-    return profile.notes || [];
+    return await res.json();
   }
 
   async createNote(noteData: any): Promise<any> {
-    return this.saveNote(noteData.content || noteData);
+    return this.saveNote(
+      noteData.content || noteData,
+      noteData.title,
+      noteData.subject
+    );
   }
 
   async deleteNote(noteId: string): Promise<any> {
-    // Need endpoint
-    return { success: true };
+    const res = await this.fetchAuthorized(`/api/student/notes/${noteId}`, {
+      method: "DELETE",
+    });
+    return await res.json();
   }
 
   async updateNote(noteId: string, noteData: any): Promise<any> {
-    return this.saveNote(noteData.content || noteData);
+    const res = await this.fetchAuthorized(`/api/student/notes/${noteId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        content: noteData.content,
+        title: noteData.title,
+        subject: noteData.subject,
+      }),
+    });
+    return await res.json();
   }
 
   async chatWithAI(messages: any[]): Promise<any> {
@@ -528,11 +718,18 @@ class RealAPI {
   }
 
   async logAIInteraction(prompt: string, response: string): Promise<any> {
-    const res = await this.fetchAuthorized("/api/ai/log", {
-      method: "POST",
-      body: JSON.stringify({ prompt, response }),
-    });
-    return await res.json();
+    try {
+      const res = await this.fetchAuthorized("/api/ai/log", {
+        method: "POST",
+        body: JSON.stringify({ prompt, response }),
+      });
+      if (!res.ok) {
+        return { success: false };
+      }
+      return await res.json();
+    } catch {
+      return { success: false };
+    }
   }
 
   async saveQuizResult(data: {
@@ -562,6 +759,57 @@ class RealAPI {
     const res = await this.fetchAuthorized(`/api/admin/users/${userId}`, {
       method: "DELETE",
     });
+    return await res.json();
+  }
+
+  // --- Institution & Connection Management ---
+
+  async getInstitutions(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/institutions");
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async createInstitution(data: any): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/institutions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async getDepartments(instId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(`/api/admin/institutions/${instId}/departments`);
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async createDepartment(instId: string, data: any): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/admin/institutions/${instId}/departments`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async linkStakeholder(data: any): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/connections/link", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async getConnections(params?: { instId?: string; programId?: string }): Promise<any[]> {
+    let url = "/api/admin/connections";
+    const query = new URLSearchParams();
+    if (params?.instId) query.append("inst_id", params.instId);
+    if (params?.programId) query.append("program_id", params.programId);
+    
+    if (query.toString()) url += `?${query.toString()}`;
+    
+    const res = await this.fetchAuthorized(url);
+    if (!res.ok) return [];
     return await res.json();
   }
 }
