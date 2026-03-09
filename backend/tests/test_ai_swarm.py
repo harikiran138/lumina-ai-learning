@@ -1,5 +1,6 @@
 import pytest
 import asyncio
+import json
 from unittest.mock import MagicMock, AsyncMock, patch
 from ai_engine.swarm.orchestrator import Orchestrator
 from ai_engine.swarm.guardian import GuardianAgent
@@ -84,3 +85,66 @@ async def test_tutor_agent_personalization():
             assert "Topic: React" in args[0]
             # The system prompt is in kwargs
             assert "WARNING: Student is experiencing high cognitive load" in kwargs['system_prompt']
+
+@pytest.mark.asyncio
+async def test_orchestrator_heuristic_intent_when_provider_fails():
+    with patch("ai_engine.swarm.orchestrator.get_llm_provider") as mock_factory:
+        mock_llm = AsyncMock()
+        mock_llm.agenerate.return_value = "Error generating content: connection refused"
+        mock_factory.return_value = mock_llm
+
+        orchestrator = Orchestrator(provider="auto")
+        intent = await orchestrator.classify_intent("Quiz me on algebra")
+
+        assert intent == "ASSESSMENT"
+
+
+@pytest.mark.asyncio
+async def test_tutor_agent_returns_structured_fallback_on_provider_error():
+    mock_rag = MagicMock()
+    mock_rag.query.return_value = []
+
+    with patch("ai_engine.swarm.tutor.get_rag_engine", return_value=mock_rag):
+        with patch("ai_engine.swarm.tutor.get_llm_provider") as mock_llm_factory:
+            mock_llm = AsyncMock()
+            mock_llm.agenerate.return_value = "Error generating content: connection refused"
+            mock_llm_factory.return_value = mock_llm
+
+            tutor = TutorAgent()
+            response = await tutor.generate_response(
+                "Algebra",
+                "Explain factoring",
+                history=[],
+                learner_profile={"weak_topics": ["factoring"]},
+                profile_context="Weak topic: factoring",
+            )
+
+            assert response["meta"]["topic"] == "Algebra"
+            assert response["flow"][0]["type"] == "concept"
+            assert "Helpful context I already know about you" not in json.dumps(response)
+
+
+@pytest.mark.asyncio
+async def test_tutor_agent_builds_timeline_fallback_for_ai_request():
+    mock_rag = MagicMock()
+    mock_rag.query.return_value = []
+
+    with patch("ai_engine.swarm.tutor.get_rag_engine", return_value=mock_rag):
+        with patch("ai_engine.swarm.tutor.get_llm_provider") as mock_llm_factory:
+            mock_llm = AsyncMock()
+            mock_llm.agenerate.return_value = "Error generating content: connection refused"
+            mock_llm_factory.return_value = mock_llm
+
+            tutor = TutorAgent()
+            response = await tutor.generate_response(
+                "ai",
+                "Give me time line of ai",
+                history=[],
+                learner_profile={},
+            )
+
+            assert response["meta"]["topic"] == "AI"
+            assert any(
+                block["type"] == "steps" and "timeline" in block.get("title", "").lower()
+                for block in response["flow"]
+            )

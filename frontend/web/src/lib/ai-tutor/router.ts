@@ -10,6 +10,15 @@ export interface ChatResponse {
   };
 }
 
+export interface ProcessMessageOptions {
+  userContext?: string;
+  userId?: string;
+  sessionId?: string;
+  provider?: string;
+  topic?: string;
+  history?: Array<{ sender: string; text: string; timestamp?: string | Date }>;
+}
+
 // Simple rule-based matcher for common questions (Sub-5ms response)
 const checkRules = (question: string): string | null => {
   const lower = question.toLowerCase();
@@ -34,10 +43,17 @@ const sendTelemetry = (
 
 export const processMessage = async (
   question: string,
-  userContext?: string,
-  userId?: string,
+  options: ProcessMessageOptions = {},
 ): Promise<ChatResponse> => {
   const startTime = performance.now();
+  const {
+    userContext,
+    userId,
+    sessionId,
+    provider = "auto",
+    topic,
+    history = [],
+  } = options;
 
   // 1. Check local cache (Instant)
   try {
@@ -66,9 +82,13 @@ export const processMessage = async (
 
   // Determine API Base URL
   const API_BASE =
-    typeof window !== "undefined" && window.location.hostname === "localhost"
-      ? "http://localhost:8000"
-      : process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1")
+      ? "http://127.0.0.1:8000"
+      : process.env.NEXT_PUBLIC_API_URL ||
+        process.env.NEXT_PUBLIC_API_BASE ||
+        "http://127.0.0.1:8000";
 
   while (attempts < maxAttempts) {
     try {
@@ -79,8 +99,20 @@ export const processMessage = async (
         body: JSON.stringify({
           message: question,
           user_id: userId || "guest",
-          session_id: "default-session",
-          context_filters: userContext ? { context: userContext } : undefined,
+          session_id: sessionId || "default-session",
+          provider,
+          history: history.slice(-8).map((item) => ({
+            sender: item.sender,
+            text: item.text,
+            timestamp: item.timestamp,
+          })),
+          context_filters:
+            userContext || topic
+              ? {
+                  context: userContext,
+                  topic,
+                }
+              : undefined,
         }),
       });
 

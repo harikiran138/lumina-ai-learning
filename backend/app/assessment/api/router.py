@@ -199,16 +199,28 @@ async def log_quick_response(req: QuickLogRequest):
     """
     Logs a quick assessment result (e.g. from AI Tutor chat) to update topic mastery.
     """
-    # In a real implementation, this would call session_manager or a mastery_service
-    # to update the student's mastery record for the specific topic.
-    # For now, we mock the logic.
-
-    # new_mastery = mastery_service.update_mastery(req.user_id, req.topic, req.is_correct)
+    personalization = get_personalization_service()
+    await personalization.record_event(
+        req.user_id,
+        LearningEventType.ASSESSMENT_ANSWER,
+        payload={
+            "topic": req.topic,
+            "question_id": "quick-log",
+            "is_correct": req.is_correct,
+            "time_taken": None,
+            "difficulty": req.difficulty,
+        },
+        source="assessment_quick_log",
+        topic_id=req.topic,
+    )
+    profile = await personalization.get_profile(req.user_id)
+    topic_state = profile.mastery_state.get(req.topic)
+    new_mastery = round(topic_state.score, 4) if topic_state else (0.8 if req.is_correct else 0.4)
 
     return {
         "status": "ok",
         "message": "Mastery updated",
-        "new_mastery": 0.8 if req.is_correct else 0.4,
+        "new_mastery": new_mastery,
     }
 
 

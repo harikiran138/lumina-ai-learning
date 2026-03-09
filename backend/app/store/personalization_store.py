@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Dict, List, Optional
+from uuid import UUID
 
 from app.core.logging import structlog
 from app.database.supabase_manager import supabase_db
@@ -63,8 +64,17 @@ class PersonalizationStore:
         with open(self.file_path, "w", encoding="utf-8") as handle:
             json.dump(payload, handle, indent=2)
 
+    def _supports_remote_user_id(self, user_id: Optional[str]) -> bool:
+        if not user_id:
+            return False
+        try:
+            UUID(str(user_id))
+            return True
+        except (ValueError, TypeError):
+            return False
+
     async def get_profile(self, user_id: str) -> Optional[LearnerProfileRecord]:
-        if self.client:
+        if self.client and self._supports_remote_user_id(user_id):
             try:
                 response = self.client.table("learner_profiles").select("*").eq("user_id", user_id).execute()
                 if response.data:
@@ -80,7 +90,7 @@ class PersonalizationStore:
 
     async def upsert_profile(self, profile: LearnerProfileRecord) -> LearnerProfileRecord:
         record = profile.model_dump(mode="json")
-        if self.client:
+        if self.client and self._supports_remote_user_id(profile.user_id):
             try:
                 existing = self.client.table("learner_profiles").select("user_id").eq("user_id", profile.user_id).execute()
                 if existing.data:
@@ -98,7 +108,7 @@ class PersonalizationStore:
 
     async def append_event(self, event: LearningEventRecord) -> LearningEventRecord:
         record = event.model_dump(mode="json")
-        if self.client:
+        if self.client and self._supports_remote_user_id(event.user_id):
             try:
                 self.client.table("learning_events").insert(record).execute()
                 return event
@@ -112,7 +122,7 @@ class PersonalizationStore:
         return event
 
     async def list_events(self, user_id: str, limit: int = 100) -> List[LearningEventRecord]:
-        if self.client:
+        if self.client and self._supports_remote_user_id(user_id):
             try:
                 response = (
                     self.client.table("learning_events")
@@ -156,7 +166,7 @@ class PersonalizationStore:
     async def list_interventions(
         self, user_id: Optional[str] = None, limit: int = 100
     ) -> List[InterventionRecommendation]:
-        if self.client:
+        if self.client and (user_id is None or self._supports_remote_user_id(user_id)):
             try:
                 query = self.client.table("intervention_recommendations").select("*").order("created_at", desc=True).limit(limit)
                 if user_id:

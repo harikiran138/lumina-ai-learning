@@ -4,21 +4,36 @@ from .assessment import AssessmentAgent
 from .intervention import InterventionAgent
 from .guardian import GuardianAgent
 from .pathway import PathwayAgent
-from ai_engine.llm import get_llm_provider
+from ai_engine.llm import get_llm_provider, is_provider_error
 
 class Orchestrator:
     """
     Master Agent that routes user intent to specialized agents.
     """
 
-    def __init__(self):
+    VALID_INTENTS = {"TUTORING", "ASSESSMENT", "PATHWAY", "HANDWRITING", "GENERAL"}
+
+    def __init__(self, provider: str = "auto"):
         self.handwriting_agent = HandwritingAgent()
-        self.tutor_agent = TutorAgent()
-        self.assessment_agent = AssessmentAgent()
+        self.tutor_agent = TutorAgent(provider=provider)
+        self.assessment_agent = AssessmentAgent(provider=provider)
         self.intervention_agent = InterventionAgent()
         self.guardian_agent = GuardianAgent()
         self.pathway_agent = PathwayAgent()
-        self.llm = get_llm_provider()
+        self.llm = get_llm_provider(provider)
+
+    def _heuristic_intent(self, user_input: str) -> str:
+        lower = user_input.lower()
+
+        if any(word in lower for word in ["handwriting", "handwritten", "upload note", "scan note"]):
+            return "HANDWRITING"
+        if any(word in lower for word in ["quiz", "question", "test me", "assessment", "mcq"]):
+            return "ASSESSMENT"
+        if any(word in lower for word in ["what next", "next topic", "progress", "study plan", "roadmap"]):
+            return "PATHWAY"
+        if any(word in lower for word in ["hi", "hello", "hey"]):
+            return "GENERAL"
+        return "TUTORING"
 
     async def classify_intent(self, user_input: str) -> str:
         """
@@ -37,7 +52,12 @@ class Orchestrator:
         Return ONLY the category name.
         """
         intent = await self.llm.agenerate(prompt)
-        return intent.strip().upper()
+        normalized = (intent or "").strip().upper()
+        if not normalized or is_provider_error(normalized):
+            return self._heuristic_intent(user_input)
+        if normalized not in self.VALID_INTENTS:
+            return self._heuristic_intent(user_input)
+        return normalized
 
     async def route_request(self, user_input: str, context: dict, learner_profile: dict = None):
         """
@@ -60,7 +80,11 @@ class Orchestrator:
         elif intent == "ASSESSMENT":
             topic = context.get("topic", "General")
             difficulty = context.get("difficulty", 0.5)
-            return self.assessment_agent.generate_question(topic, difficulty)
+            return await self.assessment_agent.generate_question(
+                topic,
+                difficulty,
+                context=context.get("profile_context", ""),
+            )
         
         elif intent == "PATHWAY":
             return self.pathway_agent.process_input(user_input, context)
@@ -68,4 +92,10 @@ class Orchestrator:
         # Default to Tutor Agent for most interactions
         topic = context.get("topic", "General")
         history = context.get("history", [])
-        return await self.tutor_agent.generate_response(topic, user_input, history, learner_profile)
+        return await self.tutor_agent.generate_response(
+            topic,
+            user_input,
+            history,
+            learner_profile,
+            profile_context=context.get("profile_context", ""),
+        )
