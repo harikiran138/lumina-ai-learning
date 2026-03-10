@@ -171,22 +171,20 @@ export default function LoginPage() {
           <button
             suppressHydrationWarning
             onClick={() => setActiveTab("signin")}
-            className={`w-full py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-300 ${
-              activeTab === "signin"
+            className={`w-full py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === "signin"
                 ? "bg-lumina-primary text-black shadow-lg shadow-lumina-primary/20"
                 : "text-gray-400 hover:text-white hover:bg-white/5"
-            }`}
+              }`}
           >
             Sign In
           </button>
           <button
             suppressHydrationWarning
             onClick={() => setActiveTab("signup")}
-            className={`w-full py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-300 ${
-              activeTab === "signup"
+            className={`w-full py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-300 ${activeTab === "signup"
                 ? "bg-lumina-primary text-black shadow-lg shadow-lumina-primary/20"
                 : "text-gray-400 hover:text-white hover:bg-white/5"
-            }`}
+              }`}
           >
             Sign Up
           </button>
@@ -196,6 +194,7 @@ export default function LoginPage() {
         <div className="flex justify-center space-x-2 mt-4">
           <button
             type="button"
+            suppressHydrationWarning
             onClick={() => quickLogin("student")}
             className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-3 rounded border border-gray-600 transition-colors"
           >
@@ -203,6 +202,7 @@ export default function LoginPage() {
           </button>
           <button
             type="button"
+            suppressHydrationWarning
             onClick={() => quickLogin("teacher")}
             className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-3 rounded border border-gray-600 transition-colors"
           >
@@ -210,6 +210,7 @@ export default function LoginPage() {
           </button>
           <button
             type="button"
+            suppressHydrationWarning
             onClick={() => quickLogin("admin")}
             className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-3 rounded border border-gray-600 transition-colors"
           >
