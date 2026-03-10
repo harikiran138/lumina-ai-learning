@@ -188,6 +188,73 @@
       },
       "created_at": "2026-03-09T04:28:54.752930",
       "updated_at": "2026-03-09T04:28:55.016544"
+    },
+    "demo_student": {
+      "user_id": "demo_student",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": []
+      },
+      "mastery_state": {
+        "Python Programming": {
+          "score": 0.225,
+          "confidence": 0.7,
+          "attempts": 5,
+          "successes": 0,
+          "last_assessed_at": "2026-03-10T07:19:26.073681",
+          "last_source": "assessment_answer"
+        }
+      },
+      "weak_topics": [
+        "Python Programming"
+      ],
+      "behavior_signals": {
+        "cognitive_load": 46.27,
+        "behavior_label": "neutral"
+      },
+      "engagement_summary": {
+        "total_minutes": 0.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 0,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 0,
+        "current_streak": 0,
+        "last_activity_at": null
+      },
+      "performance_summary": {
+        "recent_average_score": 0.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 0.0,
+        "low_score_count": 0,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "medium",
+        "risk_score": 0.39999999999999997,
+        "confidence": 0.7,
+        "reasons": [
+          "recent scores are low",
+          "limited recent activity"
+        ],
+        "last_evaluated_at": "2026-03-10T07:19:26.074836"
+      },
+      "tutor_summary": {},
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {
+        "last_event_type": "assessment_answer",
+        "last_event_at": "2026-03-10T07:19:26.067732"
+      },
+      "created_at": "2026-03-10T07:18:00.350147",
+      "updated_at": "2026-03-10T07:19:26.073681"
     }
   },
   "events": [
@@ -259,6 +326,91 @@
         "content": "This is a test note content."
       },
       "created_at": "2026-03-09T04:28:54.495174"
+    },
+    {
+      "id": "191cfdd5-feb4-44b7-ae02-160337912aec",
+      "user_id": "demo_student",
+      "event_type": "assessment_answer",
+      "source": "assessment_router",
+      "course_id": null,
+      "topic_id": "Python Programming",
+      "session_id": "13367d41-0a8d-4e18-bf73-12cbfcf3799d",
+      "payload": {
+        "session_id": "13367d41-0a8d-4e18-bf73-12cbfcf3799d",
+        "topic": "Python Programming",
+        "question_id": "81991bd0-08d2-42b7-92a2-9e1d2f2d2b1a",
+        "is_correct": false,
+        "time_taken": 30.206
+      },
+      "created_at": "2026-03-10T07:18:00.345662"
+    },
+    {
+      "id": "62b8fb21-a7e4-4622-9174-02e6eecaebaf",
+      "user_id": "demo_student",
+      "event_type": "assessment_answer",
+      "source": "assessment_router",
+      "course_id": null,
+      "topic_id": "Python Programming",
+      "session_id": "13367d41-0a8d-4e18-bf73-12cbfcf3799d",
+      "payload": {
+        "session_id": "13367d41-0a8d-4e18-bf73-12cbfcf3799d",
+        "topic": "Python Programming",
+        "question_id": "162499cc-4c35-478e-bf6c-33bd14bc8006",
+        "is_correct": false,
+        "time_taken": 42.477
+      },
+      "created_at": "2026-03-10T07:18:46.614439"
+    },
+    {
+      "id": "8b4c04d9-7ec5-43c8-ac9a-fc1a0d66cdba",
+      "user_id": "demo_student",
+      "event_type": "assessment_answer",
+      "source": "assessment_router",
+      "course_id": null,
+      "topic_id": "Python Programming",
+      "session_id": "13367d41-0a8d-4e18-bf73-12cbfcf3799d",
+      "payload": {
+        "session_id": "13367d41-0a8d-4e18-bf73-12cbfcf3799d",
+        "topic": "Python Programming",
+        "question_id": "b0117a42-d0fd-4a9d-94bb-d8bd1c5eb194",
+        "is_correct": false,
+        "time_taken": 5.293
+      },
+      "created_at": "2026-03-10T07:18:57.697557"
+    },
+    {
+      "id": "bc6a32cf-e95a-484a-819d-8bc51c963b54",
+      "user_id": "demo_student",
+      "event_type": "assessment_answer",
+      "source": "assessment_router",
+      "course_id": null,
+      "topic_id": "Python Programming",
+      "session_id": "13367d41-0a8d-4e18-bf73-12cbfcf3799d",
+      "payload": {
+        "session_id": "13367d41-0a8d-4e18-bf73-12cbfcf3799d",
+        "topic": "Python Programming",
+        "question_id": "9f1d1c9d-ed2f-419f-a21c-2dace4c6b48c",
+        "is_correct": false,
+        "time_taken": 4.214
+      },
+      "created_at": "2026-03-10T07:19:15.369783"
+    },
+    {
+      "id": "f38beefe-783e-497a-9819-c504ad894813",
+      "user_id": "demo_student",
+      "event_type": "assessment_answer",
+      "source": "assessment_router",
+      "course_id": null,
+      "topic_id": "Python Programming",
+      "session_id": "13367d41-0a8d-4e18-bf73-12cbfcf3799d",
+      "payload": {
+        "session_id": "13367d41-0a8d-4e18-bf73-12cbfcf3799d",
+        "topic": "Python Programming",
+        "question_id": "a80ae7f1-2cdf-4f50-8755-0f730fbcbb3e",
+        "is_correct": false,
+        "time_taken": 6.797
+      },
+      "created_at": "2026-03-10T07:19:26.067732"
     }
   ],
   "interventions": [],
