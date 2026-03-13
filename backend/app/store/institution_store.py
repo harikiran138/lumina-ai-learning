@@ -153,18 +153,62 @@ class InstitutionStore:
             payload = self.local.read()
             if "stakeholders" not in payload:
                 payload["stakeholders"] = []
-            
+
+            existing = next(
+                (
+                    item
+                    for item in payload["stakeholders"]
+                    if item.get("user_id") == data.get("user_id")
+                    and item.get("institution_id") == data.get("institution_id")
+                    and item.get("program_id") == data.get("program_id")
+                ),
+                None,
+            )
+
+            if existing:
+                existing.update(
+                    {
+                        **data,
+                        "updated_at": datetime.utcnow().isoformat(),
+                    }
+                )
+                self.local.write(payload)
+                return existing
+
             record = {
                 "id": str(uuid.uuid4()),
                 "created_at": datetime.utcnow().isoformat(),
                 "updated_at": datetime.utcnow().isoformat(),
-                **data
+                **data,
             }
             payload["stakeholders"].append(record)
             self.local.write(payload)
             return record
 
         try:
+            duplicate_query = self.client.table("stakeholders").select("*")
+            if data.get("user_id"):
+                duplicate_query = duplicate_query.eq("user_id", data["user_id"])
+            if data.get("institution_id"):
+                duplicate_query = duplicate_query.eq("institution_id", data["institution_id"])
+            if data.get("program_id"):
+                duplicate_query = duplicate_query.eq("program_id", data["program_id"])
+
+            duplicate_response = duplicate_query.limit(1).execute()
+            if duplicate_response.data:
+                existing = duplicate_response.data[0]
+                update_payload = data.copy()
+                update_payload["updated_at"] = datetime.utcnow().isoformat()
+                response = (
+                    self.client.table("stakeholders")
+                    .update(update_payload)
+                    .eq("id", existing["id"])
+                    .execute()
+                )
+                if response.data:
+                    return response.data[0]
+                return {**existing, **update_payload}
+
             response = self.client.table("stakeholders").insert(data).execute()
             if not response.data:
                 raise Exception("Failed to create stakeholder")

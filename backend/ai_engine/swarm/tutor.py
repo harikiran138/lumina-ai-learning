@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from ai_engine.llm import get_llm_provider, is_provider_error
+from ai_engine.llm import OllamaProvider, get_llm_provider, is_provider_error
 from ai_engine.rag import get_rag_engine
 from ai_engine.prompts import A2UI_SYSTEM_PROMPT
 
@@ -24,6 +24,21 @@ def _format_topic_label(topic: str) -> str:
         "nlp": "Natural Language Processing",
     }
     return aliases.get(normalized.lower(), normalized.title())
+
+
+def _meta_topic_label(topic: str) -> str:
+    normalized = _normalize_spaces(topic)
+    if not normalized:
+        return "General"
+
+    aliases = {
+        "ai": "AI",
+        "artificial intelligence": "Artificial Intelligence",
+        "ml": "Machine Learning",
+        "machine learning": "Machine Learning",
+        "nlp": "Natural Language Processing",
+    }
+    return aliases.get(normalized.lower(), normalized)
 
 
 def _detect_request_mode(user_query: str) -> str:
@@ -135,17 +150,19 @@ def build_tutor_degraded_response(
     context_text: str = "",
     profile_context: str = "",
 ) -> dict:
-    normalized_topic = _format_topic_label(topic)
+    raw_topic = _normalize_spaces(topic) or "General"
+    meta_topic = _meta_topic_label(raw_topic)
+    normalized_topic = _format_topic_label(raw_topic)
     request_mode = _detect_request_mode(user_query)
     context_points = _extract_context_points(context_text)
     cognitive_load = (learner_profile or {}).get("cognitive_load", 50)
     difficulty = "easy" if cognitive_load >= 70 else "medium" if cognitive_load >= 45 else "easy"
 
-    topic_lower = normalized_topic.lower()
+    topic_lower = raw_topic.lower()
     if request_mode == "timeline" and topic_lower in {"ai", "artificial intelligence"}:
         return {
             "meta": {
-                "topic": normalized_topic,
+                "topic": meta_topic,
                 "difficulty": difficulty,
                 "estimated_time_min": 6,
                 "exportable": False,
@@ -238,12 +255,71 @@ def build_tutor_degraded_response(
 
     return {
         "meta": {
-            "topic": normalized_topic,
+            "topic": meta_topic,
             "difficulty": difficulty,
             "estimated_time_min": 5,
             "exportable": False,
         },
         "flow": flow,
+    }
+
+
+def _coerce_local_a2ui_payload(payload: dict, topic: str) -> dict | None:
+    if not isinstance(payload, dict):
+        return None
+
+    meta = payload.get("meta") if isinstance(payload.get("meta"), dict) else {}
+    flow = payload.get("flow")
+    if not isinstance(flow, list) or not flow:
+        return None
+
+    if all(isinstance(block, dict) and block.get("type") for block in flow):
+        return payload
+
+    candidate = flow[0] if isinstance(flow[0], dict) else {}
+    concept = candidate.get("concept")
+    steps = candidate.get("steps")
+    reflection = candidate.get("reflection")
+
+    normalized_flow: list[dict] = []
+    if concept:
+        normalized_flow.append(
+            {
+                "type": "concept",
+                "title": _format_topic_label(topic),
+                "summary": str(concept),
+                "key_points": [],
+            }
+        )
+    if isinstance(steps, list) and steps:
+        normalized_flow.append(
+            {
+                "type": "steps",
+                "title": f"Study {_format_topic_label(topic)}",
+                "steps": [str(step) for step in steps[:4]],
+            }
+        )
+    if reflection:
+        prompt = reflection[0] if isinstance(reflection, list) and reflection else str(reflection)
+        normalized_flow.append(
+            {
+                "type": "reflection",
+                "prompt": str(prompt),
+                "placeholder": "Tell me which part still feels unclear.",
+            }
+        )
+
+    if not normalized_flow:
+        return None
+
+    return {
+        "meta": {
+            "topic": meta.get("topic", _meta_topic_label(topic)),
+            "difficulty": meta.get("difficulty", "easy"),
+            "estimated_time_min": meta.get("estimated_time_min", 3),
+            "exportable": bool(meta.get("exportable", False)),
+        },
+        "flow": normalized_flow,
     }
 
 
@@ -255,6 +331,49 @@ class TutorAgent:
     def __init__(self, provider: str = "auto"):
         self.llm = get_llm_provider(provider)
         self.rag = get_rag_engine()
+
+    def _is_local_ollama(self) -> bool:
+        return isinstance(self.llm, OllamaProvider)
+
+    def _build_local_prompt(
+        self,
+        topic: str,
+        user_query: str,
+        learner_profile: dict | None,
+        context_text: str,
+        profile_context: str,
+    ) -> tuple[str, str]:
+        cognitive_load = (learner_profile or {}).get("cognitive_load", 50)
+        detail_instruction = (
+            "Keep every sentence extremely short and concrete."
+            if cognitive_load > 70
+            else "Keep the response concise and practical."
+        )
+        system_prompt = """
+You are Lumina's local AI tutor.
+Return only valid JSON with this exact top-level shape:
+{"meta":{"topic":"Topic","difficulty":"easy|medium|hard","estimated_time_min":3,"exportable":false},"flow":[...]}
+Allowed block types: concept, steps, quiz, table, flashcards, reflection, text.
+Use exactly 3 blocks in this order:
+1. concept
+2. steps
+3. reflection or quiz
+Do not use markdown fences.
+""".strip()
+        prompt = f"""
+Topic: {topic}
+User question: {user_query}
+Course context: {(context_text or 'None')[:1200]}
+Learner context: {(profile_context or 'None')[:400]}
+Instruction: {detail_instruction}
+
+Return a simple teaching response with:
+- one concept block,
+- one steps block,
+- one reflection or quiz block.
+Keep arrays short and educational.
+""".strip()
+        return system_prompt, prompt
 
     def _fallback_response(
         self,
@@ -302,18 +421,26 @@ class TutorAgent:
             if cognitive_load > 70:
                 socratic_instruction += "\nWARNING: Student is experiencing high cognitive load. Be extremely simple, clear, and encouraging."
             
-        system_prompt = A2UI_SYSTEM_PROMPT + "\n\n" + socratic_instruction
-        
-        prompt = f"""
-        Topic: {topic}
-        Context from materials: {context_text}
-        Learner profile context: {profile_context}
-        
-        User Query: {user_query}
-        History: {history}
-        
-        Generate a pedagogical response following the A2UI JSON format.
-        """
+        if self._is_local_ollama():
+            system_prompt, prompt = self._build_local_prompt(
+                topic,
+                user_query,
+                learner_profile,
+                context_text,
+                profile_context,
+            )
+        else:
+            system_prompt = A2UI_SYSTEM_PROMPT + "\n\n" + socratic_instruction
+            prompt = f"""
+            Topic: {topic}
+            Context from materials: {context_text}
+            Learner profile context: {profile_context}
+            
+            User Query: {user_query}
+            History: {history}
+            
+            Generate a pedagogical response following the A2UI JSON format.
+            """
 
         response_str = await self.llm.agenerate(prompt, system_prompt=system_prompt)
         if is_provider_error(response_str):
@@ -332,7 +459,12 @@ class TutorAgent:
             response_str = response_str.split("```")[1].split("```")[0].strip()
 
         try:
-            return json.loads(response_str)
+            parsed = json.loads(response_str)
+            if self._is_local_ollama():
+                normalized = _coerce_local_a2ui_payload(parsed, topic)
+                if normalized:
+                    return normalized
+            return parsed
         except Exception as e:
             print(f"Failed to parse AI response as JSON: {e}")
             # Fallback if LLM fails to return JSON

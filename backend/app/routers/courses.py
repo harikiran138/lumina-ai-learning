@@ -3,7 +3,6 @@ from fastapi import APIRouter, HTTPException, Depends, Body
 from pydantic import BaseModel
 from typing import Optional, List, Any
 from app.store.course_store import CourseStore
-from app.store.analytics_store import AnalyticsStore
 from app.dependencies import get_course_store
 from .auth import get_current_user
 from app.core.cache import cached
@@ -118,13 +117,12 @@ async def teacher_dashboard(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") not in ["teacher", "admin"]:
         raise HTTPException(status_code=403, detail="Teacher access required")
     analytics = AnalyticsStore()
+    overview = await analytics.get_teacher_dashboard_overview(current_user["id"])
     stats = await analytics.get_teacher_dashboard_stats(current_user["id"])
-    store = CourseStore()
-    courses = await store.get_courses_by_teacher(current_user["id"])
     return {
         **stats,
-        "courseCount": len(courses),
-        "courses": courses,
+        **overview,
+        "courseCount": overview["summary"]["activeCourses"],
     }
 
 
@@ -142,33 +140,8 @@ async def teacher_students(current_user: dict = Depends(get_current_user)):
     """Get students enrolled in the teacher's courses."""
     if current_user["role"] not in ("teacher", "admin"):
         raise HTTPException(status_code=403, detail="Teacher access required")
-    store = CourseStore()
-    courses = await store.get_courses_by_teacher(current_user["id"])
-    course_ids = [c.get("id") or c.get("code") for c in courses]
-
-    if not course_ids:
-        return []
-
-    try:
-        # Fetch progress for these courses
-        progress_res = supabase_db.client.table("progress").select("userId").in_("courseId", course_ids).execute()
-        student_ids = list({p["userId"] for p in progress_res.data if p.get("userId")})
-
-        if not student_ids:
-            return []
-
-        # Fetch users
-        users_res = supabase_db.client.table("users").select("*").in_("id", student_ids).execute()
-        students = []
-        for user in users_res.data:
-            user.pop("hashed_password", None)
-            students.append(user)
-            
-        return students
-    except Exception as e:
-        import structlog
-        structlog.get_logger().error("teacher_students_error", error=str(e))
-        return []
+    analytics = AnalyticsStore()
+    return await analytics.get_teacher_students_snapshot(current_user["id"])
 
 
 # ─── Course Creation ─────────────────────────────────────────────────────────

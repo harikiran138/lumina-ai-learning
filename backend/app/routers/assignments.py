@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Form, File, UploadFile, Depends
 from typing import Optional
 from app.store.assignment_store import AssignmentStore
+from app.store.course_store import CourseStore
 from pydantic import BaseModel
 import os
 import uuid
@@ -149,12 +150,22 @@ async def list_assignments(course_id: Optional[str] = None, student_id: Optional
     List assignment definitions with submission counts and student status.
     """
     assignments = await store.list_assignments(course_id)
+    course_store = CourseStore()
+    course_lookup = {}
+    for course in await course_store.list_courses():
+        course_lookup[str(course.get("id"))] = course
+        if course.get("code"):
+            course_lookup[str(course.get("code"))] = course
+
     # Add submission count to each assignment
     results = []
     for a in assignments:
         submissions = await store.get_submissions(a["id"])
         a_copy = a.copy()
         a_copy["submission_count"] = len(submissions)
+        course = course_lookup.get(str(a_copy.get("course_id")))
+        if course:
+            a_copy["course_name"] = course.get("title") or course.get("name")
 
         # Check if specific student has submitted
         if student_id:

@@ -34,8 +34,24 @@ class CommunityStore:
     async def get_messages(self, channel_id: str, limit: int = 50) -> List[Dict]:
         """Fetches messages for a specific channel."""
         try:
-            response = self.messages_collection.select("*").eq("channelId", channel_id).order("createdAt", desc=False).limit(limit).execute()
-            return response.data
+            response = self.messages_collection.select("*").eq("channel_id", channel_id).order("timestamp", desc=False).limit(limit).execute()
+            messages = response.data
+            
+            # Map database fields to frontend fields
+            mapped_messages = []
+            for msg in messages:
+                mapped_messages.append({
+                    "id": msg.get("id"),
+                    "channelId": msg.get("channel_id"),
+                    "userId": msg.get("student_id"),
+                    "user": msg.get("student_name"),
+                    "avatar": msg.get("avatar"),
+                    "content": msg.get("content"),
+                    "createdAt": msg.get("timestamp"),
+                    "likes": 0,  # Placeholder
+                    "replies": 0 # Placeholder
+                })
+            return mapped_messages
         except Exception as e:
             log.error("get_messages_failed", error=str(e))
             return []
@@ -50,21 +66,31 @@ class CommunityStore:
     ) -> Dict:
         """Sends a message to a channel."""
         new_message = {
-            "channelId": channel_id,
-            "userId": student_id,
-            "user": student_name,
+            "channel_id": channel_id,
+            "student_id": student_id,
+            "student_name": student_name,
             "avatar": avatar
             or f"https://ui-avatars.com/api/?name={student_name}&background=random",
             "content": content,
-            "likes": 0,
-            "replies": 0,
-            "createdAt": datetime.utcnow().isoformat(),
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
         try:
             result = self.messages_collection.insert(new_message).execute()
             if result.data:
-                return {"success": True, "message": result.data[0]}
+                msg = result.data[0]
+                mapped_msg = {
+                    "id": msg.get("id"),
+                    "channelId": msg.get("channel_id"),
+                    "userId": msg.get("student_id"),
+                    "user": msg.get("student_name"),
+                    "avatar": msg.get("avatar"),
+                    "content": msg.get("content"),
+                    "createdAt": msg.get("timestamp"),
+                    "likes": 0,
+                    "replies": 0
+                }
+                return {"success": True, "message": mapped_msg}
             return {"success": False}
         except Exception as e:
             log.error("send_community_message_failed", error=str(e))

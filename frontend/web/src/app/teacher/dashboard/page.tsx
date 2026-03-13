@@ -1,336 +1,797 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import {
-  Users,
+  AlertTriangle,
+  ArrowRight,
   BookOpen,
-  BarChart2,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock3,
   FileText,
-  Upload,
+  GraduationCap,
   PlusCircle,
-  Bell,
-  ArrowDownRight,
+  Sparkles,
+  TrendingUp,
+  Users,
 } from "lucide-react";
+
 import { StatCard } from "@/components/dashboard/StatCard";
-import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
-import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
+
+interface TeacherSummary {
+  totalStudents: number;
+  activeCourses: number;
+  avgMastery: number;
+  pendingGrading: number;
+  atRiskStudents: number;
+  upcomingDeadlines: number;
+}
+
+interface TeacherCourseCard {
+  id: string;
+  title: string;
+  code?: string;
+  description?: string;
+  status: string;
+  studentCount: number;
+  assignmentCount: number;
+  pendingGrading: number;
+  averageProgress: number;
+  averageMastery: number;
+  moduleCount: number;
+  nextDeadline?: string | null;
+  lastActivity?: string | null;
+  image?: string;
+  href: string;
+  attention: "healthy" | "watch";
+}
+
+interface TeacherAssignmentCard {
+  id: string;
+  title: string;
+  courseName: string;
+  description?: string;
+  dueDate?: string | null;
+  daysUntilDue?: number | null;
+  submissionCount: number;
+  pendingGrading: number;
+  status: "scheduled" | "due-soon" | "overdue";
+  href: string;
+}
+
+interface TeacherStudentMomentum {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  status: "needs-attention" | "watch" | "on-track";
+  courseCount: number;
+  courses: string[];
+  averageProgress: number;
+  averageMastery: number;
+  lastActive?: string | null;
+  focusArea: string;
+  href: string;
+}
+
+interface TeacherPriorityItem {
+  id: string;
+  kind: string;
+  tone: "urgent" | "watch" | "info";
+  title: string;
+  detail: string;
+  href: string;
+}
+
+interface TeacherWeeklySnapshot {
+  publishedCourses: number;
+  draftCourses: number;
+  assignmentsCreated: number;
+  submissionsReceived: number;
+}
+
+interface TeacherDashboardData {
+  summary?: Partial<TeacherSummary>;
+  courses?: TeacherCourseCard[];
+  recentAssignments?: TeacherAssignmentCard[];
+  studentMomentum?: TeacherStudentMomentum[];
+  priorityItems?: TeacherPriorityItem[];
+  weeklySnapshot?: Partial<TeacherWeeklySnapshot>;
+}
+
+const EMPTY_SUMMARY: TeacherSummary = {
+  totalStudents: 0,
+  activeCourses: 0,
+  avgMastery: 0,
+  pendingGrading: 0,
+  atRiskStudents: 0,
+  upcomingDeadlines: 0,
+};
+
+const EMPTY_SNAPSHOT: TeacherWeeklySnapshot = {
+  publishedCourses: 0,
+  draftCourses: 0,
+  assignmentsCreated: 0,
+  submissionsReceived: 0,
+};
+
+function formatDate(value?: string | null) {
+  if (!value) return "No date";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "No date";
+  return parsed.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "No activity yet";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "No activity yet";
+  return parsed.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function dueLabel(item: TeacherAssignmentCard) {
+  if (item.daysUntilDue == null) return "No due date";
+  if (item.daysUntilDue < 0) return `${Math.abs(item.daysUntilDue)}d overdue`;
+  if (item.daysUntilDue === 0) return "Due today";
+  return `Due in ${item.daysUntilDue}d`;
+}
+
+function Panel({
+  title,
+  subtitle,
+  action,
+  children,
+  className,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn("glass-v2 border-white/5 overflow-hidden", className)}>
+      <div className="flex items-start justify-between gap-4 border-b border-white/5 p-6">
+        <div>
+          <h2 className="text-xl font-display font-bold text-white">{title}</h2>
+          {subtitle ? <p className="mt-1 text-sm text-gray-400">{subtitle}</p> : null}
+        </div>
+        {action}
+      </div>
+      <div className="p-6">{children}</div>
+    </section>
+  );
+}
+
+function QuickAction({
+  href,
+  icon: Icon,
+  title,
+  description,
+  tone,
+}: {
+  href: string;
+  icon: typeof PlusCircle;
+  title: string;
+  description: string;
+  tone: "gold" | "blue" | "green";
+}) {
+  const toneStyles = {
+    gold: "from-amber-500/20 to-amber-500/5 border-amber-400/20 text-amber-200",
+    blue: "from-blue-500/20 to-blue-500/5 border-blue-400/20 text-blue-200",
+    green: "from-emerald-500/20 to-emerald-500/5 border-emerald-400/20 text-emerald-200",
+  };
+
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "group rounded-2xl border bg-gradient-to-br p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20",
+        toneStyles[tone],
+      )}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-white">{title}</p>
+          <p className="mt-1 text-sm text-gray-300/80">{description}</p>
+        </div>
+        <div className="rounded-xl bg-black/20 p-3 text-white/80 transition-transform group-hover:scale-105">
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 export default function TeacherDashboard() {
-  const [stats, setStats] = useState({
-    totalStudents: 0,
-    activeCourses: 0,
-    avgMastery: 0,
-    pendingGrading: 0,
-  });
+  const [data, setData] = useState<TeacherDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [assignments, setAssignments] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchData() {
+    const load = async () => {
       try {
-        const data = await api.getDashboardData("teacher");
-        setStats({
-          totalStudents: data.totalStudents || 0,
-          activeCourses: data.activeCourses || 0,
-          avgMastery: data.avgMastery || 0,
-          pendingGrading: data.pendingGrading || 5,
-        });
-
-        // Use a public way to get API base or just hardcode if needed
-        const apiBase =
-          process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-        const assignmentsRes = await fetch(`${apiBase}/api/assignments/list`);
-        if (assignmentsRes.ok) {
-          setAssignments(await assignmentsRes.json());
-        }
-      } catch (e) {
-        console.error("Failed to fetch teacher data", e);
+        const payload = await api.getDashboardData("teacher");
+        setData(payload);
+      } catch (err: any) {
+        console.error("teacher_dashboard_load_failed", err);
+        setError(err?.message || "Unable to load teacher dashboard");
       } finally {
         setLoading(false);
       }
-    }
-    fetchData();
+    };
+
+    load();
   }, []);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+      <div className="flex min-h-[420px] items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-amber-400" />
       </div>
     );
   }
 
-  return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-      <div className="relative z-10">
-        <h1 className="text-5xl font-display font-bold mb-3 tracking-tight text-white">
-          Welcome back, <span className="gradient-text">Teacher</span>!
-        </h1>
-        <p className="text-gray-400 text-xl font-light tracking-wide max-w-2xl">
-          Your command center for academic excellence and student growth.
-        </p>
+  if (error) {
+    return (
+      <div className="glass-v2 border border-red-400/20 p-8 text-center">
+        <AlertTriangle className="mx-auto mb-4 h-8 w-8 text-red-400" />
+        <h1 className="text-xl font-semibold text-white">Teacher dashboard unavailable</h1>
+        <p className="mt-2 text-sm text-gray-400">{error}</p>
       </div>
+    );
+  }
 
-      {/* Stats Grid */}
-      <DashboardGrid columns={4}>
+  const summary = { ...EMPTY_SUMMARY, ...(data?.summary || {}) };
+  const courses = data?.courses || [];
+  const assignments = data?.recentAssignments || [];
+  const momentum = data?.studentMomentum || [];
+  const priorityItems = data?.priorityItems || [];
+  const weeklySnapshot = { ...EMPTY_SNAPSHOT, ...(data?.weeklySnapshot || {}) };
+
+  return (
+    <div className="space-y-8">
+      <section className="glass-v2 border-white/5 overflow-hidden">
+        <div className="grid gap-6 p-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(340px,1fr)]">
+          <div>
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-amber-300/80">
+              Teacher Command Center
+            </p>
+            <h1 className="max-w-3xl text-4xl font-display font-bold tracking-tight text-white md:text-5xl">
+              Run your classroom from one live operating view.
+            </h1>
+            <p className="mt-4 max-w-2xl text-base text-gray-300">
+              Course health, grading load, and student momentum are connected now,
+              so you can move from insight to action without jumping between pages.
+            </p>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              <QuickAction
+                href="/teacher/create-course"
+                icon={PlusCircle}
+                title="Create course"
+                description="Launch a new learning track with modules and publishing controls."
+                tone="gold"
+              />
+              <QuickAction
+                href="/teacher/assignments/create"
+                icon={ClipboardCheck}
+                title="Create assignment"
+                description="Set deadlines, collect submissions, and push work into grading."
+                tone="blue"
+              />
+              <QuickAction
+                href="/teacher/ai-generator"
+                icon={Sparkles}
+                title="Generate with AI"
+                description="Draft content faster with the course generator and tutor tooling."
+                tone="green"
+              />
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <p className="text-sm font-semibold text-white">This week</p>
+            <div className="mt-5 grid grid-cols-2 gap-4">
+              <SnapshotTile
+                icon={BookOpen}
+                label="Published"
+                value={weeklySnapshot.publishedCourses}
+              />
+              <SnapshotTile
+                icon={FileText}
+                label="Drafts"
+                value={weeklySnapshot.draftCourses}
+              />
+              <SnapshotTile
+                icon={CalendarDays}
+                label="Assignments"
+                value={weeklySnapshot.assignmentsCreated}
+              />
+              <SnapshotTile
+                icon={CheckCircle2}
+                label="Submissions"
+                value={weeklySnapshot.submissionsReceived}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-6 xl:grid-cols-4">
         <StatCard
+          title="Students"
+          value={summary.totalStudents}
+          subtitle="Tracked across your courses"
           icon={Users}
           color="blue"
-          title="Total Students"
-          value={stats.totalStudents}
-          subtitle="Active learners"
-          trend={{ value: "+12% this month", isPositive: true }}
         />
         <StatCard
+          title="Active Courses"
+          value={summary.activeCourses}
+          subtitle="Courses under your ownership"
           icon={BookOpen}
           color="gold"
-          title="Active Courses"
-          value={stats.activeCourses}
-          subtitle="Courses managed"
         />
         <StatCard
-          icon={BarChart2}
-          color="green"
           title="Avg Mastery"
-          value={`${stats.avgMastery}%`}
-          subtitle="Class performance"
-          trend={{ value: "+2.4% this week", isPositive: true }}
+          value={`${summary.avgMastery}%`}
+          subtitle="Current learner comprehension"
+          icon={TrendingUp}
+          color="green"
         />
         <StatCard
-          icon={FileText}
+          title="Pending Grading"
+          value={summary.pendingGrading}
+          subtitle={`${summary.upcomingDeadlines} deadline(s) need attention`}
+          icon={ClipboardCheck}
           color="purple"
-          title="To Grade"
-          value={stats.pendingGrading}
-          subtitle="Pending assessments"
         />
-      </DashboardGrid>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
-        {/* Course List */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="glass-v2 overflow-hidden border-white/5">
-            <div className="p-8 border-b border-white/5 flex justify-between items-center group/header">
-              <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
-                <span className="w-1.5 h-8 bg-lumina-primary rounded-full shadow-gold-glow" />
-                Your Courses
-              </h2>
-              <Link
-                href="/teacher/courses"
-                className="text-sm text-lumina-primary hover:text-white font-bold transition-all duration-300 flex items-center gap-1 group-hover/header:translate-x-1"
-              >
-                View Catalog
-                <ArrowDownRight className="w-4 h-4 rotate-[-135deg]" />
-              </Link>
-            </div>
-            <div className="divide-y divide-white/5">
-              <CourseItem
-                name="Advanced Artificial Intelligence"
-                level="Graduate"
-                students={42}
-                status="Active"
-                image="https://placehold.co/600x400/0a0a0a/FFF?text=AI"
-              />
-              <CourseItem
-                name="Introduction to Machine Learning"
-                level="Undergraduate"
-                students={128}
-                status="Active"
-                image="https://placehold.co/600x400/0a0a0a/FFF?text=ML"
-              />
-              <CourseItem
-                name="Neural Networks Deep Dive"
-                level="Advanced"
-                students={15}
-                status="Draft"
-                image="https://placehold.co/600x400/0a0a0a/FFF?text=NN"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="space-y-6">
-          <div className="glass-v2 p-8 border-white/5">
-            <h2 className="text-2xl font-display font-bold text-white mb-6">
-              Quick Actions
-            </h2>
-            <div className="grid gap-4">
-              <QuickActionButton
-                icon={Upload}
-                color="gold"
-                title="Upload Content"
-                subtitle="Add new materials"
-              />
-              <QuickActionButton
-                icon={PlusCircle}
-                color="blue"
-                title="Create Assessment"
-                subtitle="New quiz or exam"
-              />
-              <QuickActionButton
-                icon={Bell}
-                color="purple"
-                title="Announcement"
-                subtitle="Notify students"
-              />
-            </div>
-          </div>
-        </div>
       </div>
-      {/* Recent Assignments Section */}
-      <div className="relative z-10">
-        <div className="glass-v2 overflow-hidden border-white/5">
-          <div className="p-8 border-b border-white/5 flex justify-between items-center">
-            <h2 className="text-2xl font-display font-bold text-white">
-              Recent Assignments
-            </h2>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
+        <Panel
+          title="Course Health"
+          subtitle="Every course now surfaces enrollment, mastery, grading load, and the next deadline."
+          action={
             <Link
-              href="/teacher/assignments/create"
-              className="px-5 py-2.5 bg-lumina-primary/10 text-lumina-primary border border-lumina-primary/20 text-sm font-bold rounded-xl hover:bg-lumina-primary/20 transition-all duration-300 flex items-center gap-2 shadow-gold-glow"
+              href="/teacher/courses"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-amber-300 transition-colors hover:text-white"
             >
-              <PlusCircle size={18} />
-              New Assignment
+              View all courses
+              <ArrowRight className="h-4 w-4" />
             </Link>
-          </div>
-          <div className="p-8">
-            <AssignmentsList assignments={assignments} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AssignmentsList({ assignments }: { assignments: any[] }) {
-  if (assignments.length === 0) {
-    return (
-      <p className="text-gray-400 text-center py-4">
-        No assignments created yet.
-      </p>
-    );
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left">
-        <thead>
-          <tr className="text-gray-400 border-b border-white/10">
-            <th className="pb-3 text-sm font-medium pl-2">Title</th>
-            <th className="pb-3 text-sm font-medium">Course</th>
-            <th className="pb-3 text-sm font-medium">Due Date</th>
-            <th className="pb-3 text-sm font-medium">Description</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-white/5">
-          {assignments.map((asm: any) => (
-            <tr
-              key={asm.id}
-              className="group hover:bg-white/5 transition-colors"
-            >
-              <td className="py-4 text-white font-medium pl-2">{asm.title}</td>
-              <td className="py-4 text-gray-400">{asm.course_id}</td>
-              <td className="py-4 text-gray-400">
-                {new Date(asm.due_date).toLocaleDateString()}
-                <span className="ml-2 text-xs text-gray-500">
-                  {new Date(asm.due_date).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </td>
-              <td className="py-4 text-gray-500 text-sm max-w-md truncate">
-                {asm.description}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function CourseItem({ name, level, students, status, image }: any) {
-  return (
-    <div className="p-8 hover:bg-white/[0.03] transition-all duration-500 group cursor-pointer relative overflow-hidden">
-      {/* Hover Indicator */}
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-lumina-primary transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500 shadow-gold-glow" />
-
-      <div className="flex items-start justify-between relative z-10">
-        <div className="flex gap-6">
-          <div className="w-20 h-20 rounded-2xl bg-surface-950 overflow-hidden relative shadow-premium group-hover:shadow-gold transition-all duration-500 border border-white/10 group-hover:border-lumina-primary/30">
-            <img
-              src={image}
-              alt={name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 blur-[0.5px] group-hover:blur-0"
-            />
-          </div>
-          <div className="flex flex-col justify-center">
-            <h3 className="text-lg font-display font-bold text-white mb-1.5 group-hover:text-lumina-primary transition-colors duration-300">
-              {name}
-            </h3>
-            <p className="text-sm text-gray-400 font-medium mb-3 flex items-center gap-2">
-              <span className="text-lumina-primary opacity-60">•</span> {level}
-              <span className="text-white/10 mx-1">|</span> {students} Students
-              Enrolled
-            </p>
-            <div className="flex items-center gap-3">
-              <span
-                className={cn(
-                  "px-3 py-1 text-[10px] font-bold tracking-widest uppercase rounded-lg border transition-all duration-300",
-                  status === "Active"
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 group-hover:bg-emerald-500/20"
-                    : "bg-surface-950 text-gray-500 border-white/10",
-                )}
-              >
-                {status}
-              </span>
-              <span className="text-gray-600 text-[10px] font-medium tracking-tight">
-                System Managed • Sync Active
-              </span>
-            </div>
-          </div>
-        </div>
-        <button
-          className="p-3 text-gray-500 hover:text-lumina-primary hover:bg-lumina-primary/10 rounded-xl transition-all duration-300 group-hover:rotate-45"
-          suppressHydrationWarning
+          }
         >
-          <ArrowDownRight className="w-6 h-6" />
-        </button>
+          {courses.length === 0 ? (
+            <EmptyState
+              icon={BookOpen}
+              title="No teacher-owned courses yet"
+              detail="Create your first course to start tracking learner progress and grading load."
+            />
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {courses.slice(0, 4).map((course) => (
+                <Link
+                  key={course.id}
+                  href={course.href}
+                  className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] transition-all duration-300 hover:border-white/20 hover:bg-white/[0.05]"
+                >
+                  <div
+                    className="h-36 bg-cover bg-center"
+                    style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.7)), url(${course.image})` }}
+                  />
+                  <div className="space-y-4 p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-400">
+                          {course.code || "COURSE"}
+                        </p>
+                        <h3 className="mt-2 text-lg font-semibold text-white">{course.title}</h3>
+                      </div>
+                      <span
+                        className={cn(
+                          "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
+                          course.attention === "healthy"
+                            ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                            : "border-amber-400/20 bg-amber-400/10 text-amber-300",
+                        )}
+                      >
+                        {course.attention === "healthy" ? "Stable" : "Watch"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-sm text-gray-300">
+                      <Metric label="Students" value={course.studentCount} />
+                      <Metric label="Modules" value={course.moduleCount} />
+                      <Metric label="Mastery" value={`${course.averageMastery}%`} />
+                      <Metric label="To Grade" value={course.pendingGrading} />
+                    </div>
+
+                    <div className="space-y-2">
+                      <ProgressBar label="Average progress" value={course.averageProgress} />
+                      <ProgressBar label="Average mastery" value={course.averageMastery} accent="emerald" />
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <span>Next deadline: {formatDate(course.nextDeadline)}</span>
+                      <span>Last activity: {formatDateTime(course.lastActivity)}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Panel>
+
+        <div className="space-y-6">
+          <Panel title="Priority Queue" subtitle="What needs a teacher decision first.">
+            {priorityItems.length === 0 ? (
+              <EmptyState
+                icon={CheckCircle2}
+                title="Queues are clear"
+                detail="No urgent grading, deadline, or student interventions are waiting right now."
+                compact
+              />
+            ) : (
+              <div className="space-y-3">
+                {priorityItems.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition-all hover:border-white/20 hover:bg-white/[0.05]"
+                  >
+                    <div
+                      className={cn(
+                        "mt-0.5 rounded-xl p-2",
+                        item.tone === "urgent"
+                          ? "bg-red-500/10 text-red-300"
+                          : item.tone === "watch"
+                            ? "bg-amber-400/10 text-amber-300"
+                            : "bg-blue-500/10 text-blue-300",
+                      )}
+                    >
+                      {item.kind === "student" ? (
+                        <Users className="h-4 w-4" />
+                      ) : item.kind === "grading" ? (
+                        <ClipboardCheck className="h-4 w-4" />
+                      ) : (
+                        <Clock3 className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-white">{item.title}</p>
+                      <p className="mt-1 text-sm text-gray-400">{item.detail}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="Classroom Signals" subtitle="Teacher-wide risk and delivery indicators.">
+            <div className="space-y-3">
+              <SignalRow
+                icon={AlertTriangle}
+                label="Students needing intervention"
+                value={summary.atRiskStudents}
+                tone={summary.atRiskStudents > 0 ? "warning" : "good"}
+              />
+              <SignalRow
+                icon={CalendarDays}
+                label="Deadlines approaching"
+                value={summary.upcomingDeadlines}
+                tone={summary.upcomingDeadlines > 0 ? "warning" : "good"}
+              />
+              <SignalRow
+                icon={GraduationCap}
+                label="Average mastery"
+                value={`${summary.avgMastery}%`}
+                tone={summary.avgMastery < 70 ? "warning" : "good"}
+              />
+            </div>
+          </Panel>
+        </div>
+      </div>
+
+      <Panel
+        title="Recent Assignments"
+        subtitle="Deadlines, submission volume, and grading load are linked here."
+        action={
+          <Link
+            href="/teacher/assignments"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-amber-300 transition-colors hover:text-white"
+          >
+            Open assignments
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        }
+      >
+        {assignments.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title="No assignments yet"
+            detail="Assignments you create will appear here with submission and grading state."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left">
+              <thead>
+                <tr className="border-b border-white/10 text-xs uppercase tracking-[0.22em] text-gray-500">
+                  <th className="pb-4 pr-6">Assignment</th>
+                  <th className="pb-4 pr-6">Course</th>
+                  <th className="pb-4 pr-6">Due</th>
+                  <th className="pb-4 pr-6">Submissions</th>
+                  <th className="pb-4">Queue</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {assignments.map((item) => (
+                  <tr key={item.id} className="text-sm">
+                    <td className="py-4 pr-6">
+                      <Link href={item.href} className="font-semibold text-white hover:text-amber-300">
+                        {item.title}
+                      </Link>
+                      <p className="mt-1 line-clamp-1 text-gray-400">{item.description || "Assignment activity"}</p>
+                    </td>
+                    <td className="py-4 pr-6 text-gray-300">{item.courseName}</td>
+                    <td className="py-4 pr-6">
+                      <div className="text-white">{formatDate(item.dueDate)}</div>
+                      <div className="mt-1 text-xs text-gray-500">{dueLabel(item)}</div>
+                    </td>
+                    <td className="py-4 pr-6 text-gray-300">{item.submissionCount}</td>
+                    <td className="py-4">
+                      <span
+                        className={cn(
+                          "rounded-full border px-2.5 py-1 text-xs font-semibold",
+                          item.pendingGrading > 0
+                            ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
+                            : "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+                        )}
+                      >
+                        {item.pendingGrading > 0
+                          ? `${item.pendingGrading} to grade`
+                          : "Up to date"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+
+      <Panel
+        title="Student Momentum"
+        subtitle="Roster health is derived from course progress, mastery, and recency of activity."
+        action={
+          <Link
+            href="/teacher/students"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-amber-300 transition-colors hover:text-white"
+          >
+            Open students
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        }
+      >
+        {momentum.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="No enrolled students yet"
+            detail="Once students join your courses, their momentum and risk signals will appear here."
+          />
+        ) : (
+          <div className="space-y-3">
+            {momentum.slice(0, 6).map((student) => (
+              <Link
+                key={student.id}
+                href={student.href}
+                className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition-all hover:border-white/20 hover:bg-white/[0.05] lg:flex-row lg:items-center lg:justify-between"
+              >
+                <div className="flex min-w-0 items-center gap-4">
+                  <img
+                    src={student.avatar}
+                    alt={student.name}
+                    className="h-12 w-12 rounded-2xl border border-white/10 object-cover"
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-3">
+                      <p className="truncate font-semibold text-white">{student.name}</p>
+                      <span
+                        className={cn(
+                          "rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em]",
+                          student.status === "on-track"
+                            ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                            : student.status === "watch"
+                              ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
+                              : "border-red-400/20 bg-red-400/10 text-red-300",
+                        )}
+                      >
+                        {student.status.replace("-", " ")}
+                      </span>
+                    </div>
+                    <p className="mt-1 truncate text-sm text-gray-400">{student.email}</p>
+                    <p className="mt-1 truncate text-xs text-gray-500">
+                      Focus area: {student.focusArea} • {student.courseCount} course(s)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[360px] lg:grid-cols-3">
+                  <ProgressChip label="Progress" value={student.averageProgress} accent="amber" />
+                  <ProgressChip label="Mastery" value={student.averageMastery} accent="emerald" />
+                  <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Last Active</p>
+                    <p className="mt-2 text-sm font-medium text-white">
+                      {formatDateTime(student.lastActive)}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </Panel>
+    </div>
+  );
+}
+
+function SnapshotTile({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof BookOpen;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
+      <div className="flex items-center gap-3">
+        <div className="rounded-xl bg-white/5 p-2 text-amber-300">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-[0.22em] text-gray-500">{label}</p>
+          <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
+        </div>
       </div>
     </div>
   );
 }
 
-function QuickActionButton({ icon: Icon, color, title, subtitle }: any) {
-  const colorClasses: any = {
-    blue: "text-blue-400 bg-blue-500/10 border-blue-500/20 shadow-blue-500/5",
-    gold: "text-lumina-primary bg-lumina-primary/10 border-lumina-primary/20 shadow-gold-glow/5",
-    purple:
-      "text-purple-400 bg-purple-500/10 border-purple-500/20 shadow-purple-500/5",
-  };
+function EmptyState({
+  icon: Icon,
+  title,
+  detail,
+  compact = false,
+}: {
+  icon: typeof BookOpen;
+  title: string;
+  detail: string;
+  compact?: boolean;
+}) {
   return (
-    <button
-      className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/[0.04] transition-all duration-300 text-left border border-white/5 hover:border-white/10 group relative overflow-hidden"
-      suppressHydrationWarning
+    <div
+      className={cn(
+        "rounded-3xl border border-dashed border-white/10 bg-white/[0.02] text-center",
+        compact ? "p-6" : "p-10",
+      )}
     >
-      <div
-        className={cn(
-          "p-3 rounded-xl border transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg",
-          colorClasses[color],
-        )}
-      >
-        <Icon size={22} />
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-gray-400">
+        <Icon className="h-5 w-5" />
       </div>
-      <div className="relative z-10">
-        <p className="font-bold text-white group-hover:text-lumina-primary transition-colors duration-300">
-          {title}
-        </p>
-        <p className="text-xs text-gray-400/80 font-medium tracking-tight">
-          {subtitle}
-        </p>
+      <h3 className="text-lg font-semibold text-white">{title}</h3>
+      <p className="mx-auto mt-2 max-w-md text-sm text-gray-400">{detail}</p>
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-3">
+      <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500">{label}</p>
+      <p className="mt-1 text-base font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
+function ProgressBar({
+  label,
+  value,
+  accent = "amber",
+}: {
+  label: string;
+  value: number;
+  accent?: "amber" | "emerald";
+}) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs text-gray-400">
+        <span>{label}</span>
+        <span>{value}%</span>
       </div>
-    </button>
+      <div className="h-2 rounded-full bg-white/10">
+        <div
+          className={cn(
+            "h-2 rounded-full",
+            accent === "amber" ? "bg-amber-400" : "bg-emerald-400",
+          )}
+          style={{ width: `${value}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SignalRow({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: typeof AlertTriangle;
+  label: string;
+  value: string | number;
+  tone: "warning" | "good";
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            "rounded-xl p-2",
+            tone === "good" ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-300",
+          )}
+        >
+          <Icon className="h-4 w-4" />
+        </div>
+        <p className="text-sm text-white">{label}</p>
+      </div>
+      <span className="text-sm font-semibold text-white">{value}</span>
+    </div>
+  );
+}
+
+function ProgressChip({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: number;
+  accent: "amber" | "emerald";
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
+      <p className="text-xs uppercase tracking-[0.2em] text-gray-500">{label}</p>
+      <div className="mt-2 flex items-center gap-3">
+        <div className="h-2 flex-1 rounded-full bg-white/10">
+          <div
+            className={cn(
+              "h-2 rounded-full",
+              accent === "amber" ? "bg-amber-400" : "bg-emerald-400",
+            )}
+            style={{ width: `${value}%` }}
+          />
+        </div>
+        <span className="text-sm font-semibold text-white">{value}%</span>
+      </div>
+    </div>
   );
 }

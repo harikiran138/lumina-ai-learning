@@ -32,6 +32,31 @@ async def get_all_users(admin: dict = Depends(is_admin)):
     return await user_store.list_all_users()
 
 
+@router.post("/users")
+async def create_user(data: dict, admin: dict = Depends(is_admin)):
+    """Create a user without replacing the admin session."""
+    role = (data.get("role") or "student").strip().lower()
+    if role not in {"student", "teacher", "admin"}:
+        raise HTTPException(status_code=400, detail="Invalid role")
+
+    email = (data.get("email") or "").strip()
+    password = data.get("password") or ""
+    full_name = (data.get("name") or data.get("full_name") or "").strip()
+    phone = (data.get("phone") or "").strip()
+
+    if not email or not password or not full_name:
+        raise HTTPException(
+            status_code=400,
+            detail="name, email, and password are required",
+        )
+
+    user_store = UserStore()
+    try:
+        return await user_store.create_user(email, password, full_name, role, phone)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.delete("/users/{user_id}")
 async def delete_user(user_id: str, admin: dict = Depends(is_admin)):
     """Delete a user from the system."""
@@ -45,13 +70,18 @@ async def delete_user(user_id: str, admin: dict = Depends(is_admin)):
 @router.post("/users/{user_id}/status")
 async def update_user_status(user_id: str, status: str, admin: dict = Depends(is_admin)):
     """Update a user's active status."""
-    try:
-        res = supabase_db.client.table("users").update({"status": status, "is_active": status == "active"}).eq("id", user_id).execute()
-        if not res.data:
-            raise HTTPException(status_code=404, detail="User not found")
-        return {"success": True}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    normalized_status = (status or "").strip().lower()
+    if normalized_status not in {"active", "inactive", "suspended"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid status. Must be active, inactive, or suspended",
+        )
+
+    user_store = UserStore()
+    success = await user_store.update_user_status(user_id, normalized_status)
+    if not success:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"success": True}
 
 
 @router.post("/users/{user_id}/role")
@@ -107,42 +137,7 @@ async def get_chat_logs(admin: dict = Depends(is_admin)):
 @router.get("/students-progress")
 async def get_students_progress(admin: dict = Depends(is_admin)):
     """Get progress data for all students."""
-    try:
-        response = supabase_db.client.table("assessment_sessions").select("student_id, current_difficulty, topic").execute()
-        data = response.data
-        if not data:
-            return []
-            
-        student_stats = {}
-        for d in data:
-            sid = d.get("student_id")
-            if not sid:
-                continue
-            if sid not in student_stats:
-                student_stats[sid] = {"sum": 0, "count": 0, "topics": set()}
-            
-            diff = d.get("current_difficulty")
-            if diff is not None:
-                student_stats[sid]["sum"] += diff
-                student_stats[sid]["count"] += 1
-            if d.get("topic"):
-                student_stats[sid]["topics"].add(d.get("topic"))
-                
-        progress_list = []
-        for sid, stats in student_stats.items():
-            avg = stats["sum"] / stats["count"] if stats["count"] else 0
-            progress_list.append({
-                "student_id": sid,
-                "avg_score": round(avg * 100, 2),
-                "total_sessions": stats["count"],
-                "topic_count": len(stats["topics"])
-            })
-            
-        return progress_list
-    except Exception as e:
-        import structlog
-        structlog.get_logger().error("students_progress_failed", error=str(e))
-        return []
+    return await AnalyticsStore().get_admin_student_progress_snapshot()
 
 
 @router.get("/interventions")
@@ -190,4 +185,36 @@ async def link_stakeholder(data: dict, admin: dict = Depends(is_admin)):
 @router.get("/connections")
 async def get_connections(inst_id: Optional[str] = None, program_id: Optional[str] = None, admin: dict = Depends(is_admin)):
     """List stakeholder connections."""
-    return await InstitutionStore().list_stakeholders(inst_id, program_id)
+    store = InstitutionStore()
+    connections = await store.list_stakeholders(inst_id, program_id)
+    institutions = {
+        item["id"]: item for item in await store.list_institutions()
+    }
+    programs = {}
+    if inst_id:
+        program_records = await store.list_programs(inst_id)
+    else:
+        program_records = []
+        for institution in institutions.values():
+            program_records.extend(await store.list_programs(institution["id"]))
+    for item in program_records:
+        programs[item["id"]] = item
+    users = {item["id"]: item for item in await UserStore().list_all_users()}
+
+    enriched = []
+    for item in connections:
+        user = users.get(item.get("user_id") or "")
+        institution = institutions.get(item.get("institution_id") or "")
+        program = programs.get(item.get("program_id") or "")
+        enriched.append(
+            {
+                **item,
+                "user_name": user.get("name") if user else item.get("name"),
+                "user_email": user.get("email") if user else item.get("email"),
+                "user_role": user.get("role") if user else None,
+                "institution_name": institution.get("institution_name") if institution else None,
+                "program_name": program.get("program_name") if program else None,
+            }
+        )
+
+    return enriched
