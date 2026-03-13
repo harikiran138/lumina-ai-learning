@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-MODEL_NAME="qwen3.5:2b"
+MODEL_NAME="qwen2.5:1.5b"
 ENV_FILE=".env.local"
 
 # Colors
@@ -38,16 +38,48 @@ ollama pull $MODEL_NAME
 
 # 4. Configure Application
 if [ -f "$ENV_FILE" ]; then
-    # Update or Add LLM_PROVIDER
+    # Update or add local Ollama defaults
     if grep -q "LLM_PROVIDER=" "$ENV_FILE"; then
         sed -i '' 's/LLM_PROVIDER=.*/LLM_PROVIDER=ollama/' "$ENV_FILE"
     else
         echo "LLM_PROVIDER=ollama" >> "$ENV_FILE"
     fi
+    if grep -q "OLLAMA_MODEL=" "$ENV_FILE"; then
+        sed -i '' "s/OLLAMA_MODEL=.*/OLLAMA_MODEL=$MODEL_NAME/" "$ENV_FILE"
+    else
+        echo "OLLAMA_MODEL=$MODEL_NAME" >> "$ENV_FILE"
+    fi
+    if grep -q "OLLAMA_THINK=" "$ENV_FILE"; then
+        sed -i '' 's/OLLAMA_THINK=.*/OLLAMA_THINK=false/' "$ENV_FILE"
+    else
+        echo "OLLAMA_THINK=false" >> "$ENV_FILE"
+    fi
+    if grep -q "OLLAMA_KEEP_ALIVE=" "$ENV_FILE"; then
+        sed -i '' 's/OLLAMA_KEEP_ALIVE=.*/OLLAMA_KEEP_ALIVE=15m/' "$ENV_FILE"
+    else
+        echo "OLLAMA_KEEP_ALIVE=15m" >> "$ENV_FILE"
+    fi
+    if grep -q "OLLAMA_NUM_CTX=" "$ENV_FILE"; then
+        sed -i '' 's/OLLAMA_NUM_CTX=.*/OLLAMA_NUM_CTX=8192/' "$ENV_FILE"
+    else
+        echo "OLLAMA_NUM_CTX=8192" >> "$ENV_FILE"
+    fi
+    if grep -q "OLLAMA_READ_TIMEOUT=" "$ENV_FILE"; then
+        sed -i '' 's/OLLAMA_READ_TIMEOUT=.*/OLLAMA_READ_TIMEOUT=60/' "$ENV_FILE"
+    else
+        echo "OLLAMA_READ_TIMEOUT=60" >> "$ENV_FILE"
+    fi
     echo -e "${GREEN}✓ Updated .env.local to use Local LLM${NC}"
 else
-    echo "Creating .env.local with LLM_PROVIDER=ollama"
-    echo "LLM_PROVIDER=ollama" > "$ENV_FILE"
+    echo "Creating .env.local with local Ollama defaults"
+    cat > "$ENV_FILE" <<EOF
+LLM_PROVIDER=ollama
+OLLAMA_MODEL=$MODEL_NAME
+OLLAMA_THINK=false
+OLLAMA_KEEP_ALIVE=15m
+OLLAMA_NUM_CTX=8192
+OLLAMA_READ_TIMEOUT=60
+EOF
 fi
 
 echo -e "${BLUE}=== Setup Complete ===${NC}"

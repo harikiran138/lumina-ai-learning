@@ -3,6 +3,16 @@ import os
 from starlette.concurrency import run_in_threadpool
 
 
+def _parse_ollama_think(value):
+    if value is None:
+        return False
+
+    normalized = str(value).strip().lower()
+    if normalized in {"low", "medium", "high"}:
+        return normalized
+    return normalized in {"1", "true", "yes", "on"}
+
+
 def is_provider_error(text: str) -> bool:
     if not text:
         return True
@@ -31,13 +41,16 @@ class LLMProvider:
 
 
 class OllamaProvider(LLMProvider):
-    def __init__(self, model: str = "qwen3.5:2b", host: str = None):
-        self.model = model
+    def __init__(self, model: str = None, host: str = None):
+        self.model = model or os.getenv("OLLAMA_MODEL", "qwen2.5:1.5b")
         # Default to localhost for local dev, Docker internal for containers
         self.host = host or os.getenv("OLLAMA_HOST", "http://localhost:11434")
-        self.connect_timeout = float(os.getenv("OLLAMA_CONNECT_TIMEOUT", "2"))
-        self.read_timeout = float(os.getenv("OLLAMA_READ_TIMEOUT", "12"))
+        self.connect_timeout = float(os.getenv("OLLAMA_CONNECT_TIMEOUT", "5"))
+        self.read_timeout = float(os.getenv("OLLAMA_READ_TIMEOUT", "60"))
         self.health_timeout = float(os.getenv("OLLAMA_HEALTH_TIMEOUT", "2"))
+        self.keep_alive = os.getenv("OLLAMA_KEEP_ALIVE", "15m")
+        self.num_ctx = int(os.getenv("OLLAMA_NUM_CTX", "8192"))
+        self.think = _parse_ollama_think(os.getenv("OLLAMA_THINK"))
 
     def is_healthy(self) -> bool:
         try:
@@ -55,24 +68,25 @@ class OllamaProvider(LLMProvider):
 
         url = f"{self.host}/api/generate"
 
-        full_prompt = prompt
-        if system_prompt:
-            full_prompt = f"System: {system_prompt}\n\nUser: {prompt}"
-
         # [FIX] Hard Truncation to prevent overflow (Safety Net)
         # Limit to ~6000 tokens (approx 24000 chars) to stay under 8192 limit
-        if len(full_prompt) > 24000:
-            full_prompt = full_prompt[:24000] + "...\n[TRUNCATED]"
+        user_prompt = prompt
+        if len(user_prompt) > 24000:
+            user_prompt = user_prompt[:24000] + "...\n[TRUNCATED]"
 
         payload = {
             "model": self.model,
-            "prompt": full_prompt,
+            "prompt": user_prompt,
             "stream": False,
+            "think": self.think,
+            "keep_alive": self.keep_alive,
             "options": {
                 "temperature": 0.7,
-                "num_ctx": 262144,  # [FIX] Increase context window for Qwen 3.5 (256K)
+                "num_ctx": self.num_ctx,
             },
         }
+        if system_prompt:
+            payload["system"] = system_prompt
 
         try:
             response = requests.post(

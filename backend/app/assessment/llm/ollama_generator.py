@@ -2,6 +2,7 @@ import logging
 import requests
 import json
 import random
+import os
 from typing import Optional
 from app.assessment.models.schemas import Question, Option
 import uuid
@@ -13,8 +14,13 @@ logger = logging.getLogger(__name__)
 
 class OllamaGenerator:
     _instance = None
-    _base_url = "http://localhost:11434/api/generate"
-    _model = "llama3"
+    _host = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+    _base_url = f"{_host}/api/generate"
+    _model = os.getenv("OLLAMA_MODEL", "qwen2.5:1.5b")
+    _read_timeout = float(os.getenv("OLLAMA_READ_TIMEOUT", "60"))
+    _keep_alive = os.getenv("OLLAMA_KEEP_ALIVE", "15m")
+    _num_ctx = int(os.getenv("OLLAMA_NUM_CTX", "8192"))
+    _think = os.getenv("OLLAMA_THINK", "false").strip().lower() in {"1", "true", "yes", "on"}
 
     def __new__(cls):
         if cls._instance is None:
@@ -57,10 +63,15 @@ class OllamaGenerator:
             "prompt": prompt,
             "stream": False,
             "format": "json",  # Force JSON mode if model supports it
+            "think": self._think,
+            "keep_alive": self._keep_alive,
+            "options": {
+                "num_ctx": self._num_ctx,
+            },
         }
 
         try:
-            response = requests.post(self._base_url, json=payload, timeout=30)
+            response = requests.post(self._base_url, json=payload, timeout=self._read_timeout)
             if response.status_code != 200:
                 logger.error(f"Ollama API Error: {response.status_code} - {response.text}")
                 return self._fallback_question(topic, difficulty, "API Error")

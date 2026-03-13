@@ -1,285 +1,694 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import {
-  Users,
-  BookOpen,
-  Database,
-  Shield,
   Activity,
-  Server,
-  Settings,
-  GraduationCap,
+  AlertTriangle,
+  ArrowRight,
+  BookOpen,
+  Building2,
+  CheckCircle2,
+  Network,
+  Shield,
+  Sparkles,
+  UserCog,
+  Users,
 } from "lucide-react";
-import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
+
 import { StatCard } from "@/components/dashboard/StatCard";
 import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
+
+interface AdminSummary {
+  totalUsers: number;
+  totalStudents: number;
+  totalTeachers: number;
+  totalCourses: number;
+  activeCourses: number;
+  draftCourses: number;
+  totalInstitutions: number;
+  totalConnections: number;
+  systemHealthScore: number;
+  systemHealthLabel: string;
+  securityAlerts: number;
+  attentionRequired: number;
+}
+
+interface AdminAttentionItem {
+  id: string;
+  severity: "high" | "medium";
+  title: string;
+  detail: string;
+  href: string;
+}
+
+interface AdminService {
+  name: string;
+  status: "healthy" | "watch" | "degraded";
+  metric: string;
+  detail: string;
+}
+
+interface AdminInstitution {
+  id: string;
+  institution_name: string;
+  institution_type?: string;
+  city?: string;
+  state?: string;
+  onboarding_status?: string;
+  departmentCount: number;
+  programCount: number;
+  stakeholderCount: number;
+  health: "connected" | "new";
+}
+
+interface AdminConnection {
+  id: string;
+  userName?: string;
+  userEmail?: string;
+  userRole?: string | null;
+  institutionName?: string | null;
+  programName?: string | null;
+  category: string;
+  created_at?: string | null;
+}
+
+interface AdminRecentUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  avatar: string;
+  created_at?: string | null;
+}
+
+interface AdminActivityItem {
+  id: string;
+  timestamp?: string | null;
+  title: string;
+  detail: string;
+  tone: "info" | "success";
+  href: string;
+}
+
+interface AdminDashboardData {
+  summary?: Partial<AdminSummary>;
+  attentionQueue?: AdminAttentionItem[];
+  systemServices?: AdminService[];
+  institutions?: AdminInstitution[];
+  connections?: AdminConnection[];
+  recentUsers?: AdminRecentUser[];
+  activityFeed?: AdminActivityItem[];
+}
+
+const EMPTY_SUMMARY: AdminSummary = {
+  totalUsers: 0,
+  totalStudents: 0,
+  totalTeachers: 0,
+  totalCourses: 0,
+  activeCourses: 0,
+  draftCourses: 0,
+  totalInstitutions: 0,
+  totalConnections: 0,
+  systemHealthScore: 100,
+  systemHealthLabel: "100%",
+  securityAlerts: 0,
+  attentionRequired: 0,
+};
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "No timestamp";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "No timestamp";
+  return parsed.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function Panel({
+  title,
+  subtitle,
+  action,
+  children,
+  className,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn("glass-v2 border-white/5 overflow-hidden", className)}>
+      <div className="flex items-start justify-between gap-4 border-b border-white/5 p-6">
+        <div>
+          <h2 className="text-xl font-display font-bold text-white">{title}</h2>
+          {subtitle ? <p className="mt-1 text-sm text-gray-400">{subtitle}</p> : null}
+        </div>
+        {action}
+      </div>
+      <div className="p-6">{children}</div>
+    </section>
+  );
+}
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalStudents: 0,
-    totalTeachers: 0,
-    totalCourses: 0,
-    systemHealth: "98%",
-    securityAlerts: 0,
-  });
+  const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchStats() {
+    const load = async () => {
       try {
-        const data = await api.getDashboardData("admin");
-        setStats({
-          totalUsers: data.totalUsers || 0,
-          totalStudents: data.totalStudents || 0,
-          totalTeachers: data.totalTeachers || 0,
-          totalCourses: data.totalCourses || 0,
-          systemHealth: data.systemHealth || "98%",
-          securityAlerts: data.securityAlerts || 0,
-        });
-      } catch (e) {
-        console.error("Failed to fetch admin stats", e);
+        const payload = await api.getDashboardData("admin");
+        setData(payload);
+      } catch (err: any) {
+        console.error("admin_dashboard_load_failed", err);
+        setError(err?.message || "Unable to load admin dashboard");
       } finally {
         setLoading(false);
       }
-    }
-    fetchStats();
+    };
+
+    load();
   }, []);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <div className="flex min-h-[420px] items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-blue-400" />
       </div>
     );
   }
 
-  return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-      <div className="mb-10 relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-        <div>
-          <h1 className="text-5xl font-display font-bold mb-3 tracking-tight text-white">
-            System <span className="gradient-text">Overview</span>
-          </h1>
-          <p className="text-gray-400 text-xl font-light tracking-wide max-w-2xl">
-            Real-time monitoring and administrative control for the Lumina
-            network.
-          </p>
-        </div>
-        <div className="flex items-center gap-3 bg-white/[0.03] backdrop-blur-3xl px-6 py-3 rounded-2xl border border-white/5 shadow-premium">
-          <div className="relative">
-            <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-            <div className="absolute inset-0 w-3 h-3 rounded-full bg-emerald-500 blur-md opacity-60" />
-          </div>
-          <span className="text-xs font-bold text-emerald-400 uppercase tracking-[0.2em]">
-            System Operational
-          </span>
-        </div>
+  if (error) {
+    return (
+      <div className="glass-v2 border border-red-400/20 p-8 text-center">
+        <AlertTriangle className="mx-auto mb-4 h-8 w-8 text-red-400" />
+        <h1 className="text-xl font-semibold text-white">Admin control center unavailable</h1>
+        <p className="mt-2 text-sm text-gray-400">{error}</p>
       </div>
+    );
+  }
 
-      {/* Stats Grid using Shared Component */}
-      <DashboardGrid columns={4}>
+  const summary = { ...EMPTY_SUMMARY, ...(data?.summary || {}) };
+  const attentionQueue = data?.attentionQueue || [];
+  const systemServices = data?.systemServices || [];
+  const institutions = data?.institutions || [];
+  const connections = data?.connections || [];
+  const recentUsers = data?.recentUsers || [];
+  const activityFeed = data?.activityFeed || [];
+
+  return (
+    <div className="space-y-8">
+      <section className="glass-v2 border-white/5 overflow-hidden">
+        <div className="grid gap-6 p-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(360px,1fr)]">
+          <div>
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-blue-300/80">
+              Admin Control Center
+            </p>
+            <h1 className="max-w-3xl text-4xl font-display font-bold tracking-tight text-white md:text-5xl">
+              Govern the platform with live operational context.
+            </h1>
+            <p className="mt-4 max-w-2xl text-base text-gray-300">
+              Users, institutions, access risk, and delivery throughput are now
+              connected into one dashboard instead of isolated placeholder pages.
+            </p>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              <DashboardLink
+                href="/admin/users"
+                icon={UserCog}
+                title="Manage users"
+                description="Create accounts, adjust roles, and clean up dormant access."
+                tone="blue"
+              />
+              <DashboardLink
+                href="/admin/institution"
+                icon={Building2}
+                title="Manage institutions"
+                description="Connect stakeholders, departments, and onboarding flows."
+                tone="emerald"
+              />
+              <DashboardLink
+                href="/admin/security"
+                icon={Shield}
+                title="Review security"
+                description="Audit suspended accounts, elevated access, and system signals."
+                tone="amber"
+              />
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-white">System health</p>
+                <p className="mt-2 text-4xl font-display font-bold text-white">
+                  {summary.systemHealthLabel}
+                </p>
+              </div>
+              <div
+                className={cn(
+                  "rounded-2xl border px-4 py-2 text-sm font-semibold",
+                  summary.securityAlerts > 0
+                    ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
+                    : "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+                )}
+              >
+                {summary.securityAlerts > 0
+                  ? `${summary.securityAlerts} alert(s)`
+                  : "Secure"}
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              <SignalRow
+                icon={Users}
+                label="Accounts monitored"
+                value={summary.totalUsers}
+              />
+              <SignalRow
+                icon={Network}
+                label="Institution links"
+                value={summary.totalConnections}
+              />
+              <SignalRow
+                icon={BookOpen}
+                label="Published courses"
+                value={summary.activeCourses}
+              />
+              <SignalRow
+                icon={AlertTriangle}
+                label="Attention items"
+                value={summary.attentionRequired}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-6 xl:grid-cols-4">
         <StatCard
-          title="Total Students"
-          value={stats.totalStudents || 0}
-          subtitle="Enrolled learners"
+          title="Total Users"
+          value={summary.totalUsers}
+          subtitle={`${summary.totalStudents} students / ${summary.totalTeachers} teachers`}
           icon={Users}
           color="blue"
-          trend={{ value: "+12% growth", isPositive: true }}
         />
         <StatCard
-          title="Total Teachers"
-          value={stats.totalTeachers || 0}
-          subtitle="Active instructors"
-          icon={GraduationCap}
+          title="Course Catalog"
+          value={summary.totalCourses}
+          subtitle={`${summary.activeCourses} active / ${summary.draftCourses} draft`}
+          icon={BookOpen}
+          color="gold"
+        />
+        <StatCard
+          title="Institutions"
+          value={summary.totalInstitutions}
+          subtitle={`${summary.totalConnections} stakeholder connections`}
+          icon={Building2}
           color="green"
         />
         <StatCard
-          title="Active Courses"
-          value={stats.totalCourses || 0}
-          subtitle="Across all subjects"
-          icon={BookOpen}
-          color="gold" // Using Gold for courses
-        />
-        <StatCard
-          title="Security Status"
-          value="Secure"
-          subtitle="0 Active Threats"
+          title="Security"
+          value={summary.securityAlerts === 0 ? "Secure" : summary.securityAlerts}
+          subtitle={`${summary.attentionRequired} operational issue(s)`}
           icon={Shield}
           color="purple"
-          trend={{ value: "Protected", isPositive: true }}
         />
-      </DashboardGrid>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
-        {/* System Status Panel */}
-        <div className="glass-v2 border-white/5">
-          <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
-            <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
-              <span className="w-1.5 h-8 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
-              Infrastructure
-            </h2>
-            <button className="text-xs text-blue-400 hover:text-white font-bold flex items-center gap-2 bg-blue-500/10 px-4 py-2 rounded-xl transition-all duration-300 border border-blue-500/20 hover:bg-blue-500/20">
-              <Settings className="w-4 h-4" /> System Control
-            </button>
-          </div>
-
-          <div className="p-8 space-y-4">
-            <StatusItem
-              name="Database Cluster"
-              status="Operational"
-              latency="12ms"
-              icon={Database}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
+        <Panel
+          title="Attention Queue"
+          subtitle="High-signal issues across grading, access, staffing, and onboarding."
+          action={
+            <Link
+              href="/admin/security"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-blue-300 transition-colors hover:text-white"
+            >
+              Open security
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          }
+        >
+          {attentionQueue.length === 0 ? (
+            <EmptyState
+              icon={CheckCircle2}
+              title="No critical queue items"
+              detail="The platform does not currently report access or operational issues needing escalation."
             />
-            <StatusItem
-              name="API Gateway"
-              status="Operational"
-              latency="45ms"
-              icon={Activity}
-            />
-            <StatusItem
-              name="AI Inference Engine"
-              status="Processing"
-              latency="120ms"
-              icon={Server}
-            />
-            <StatusItem
-              name="Authentication"
-              status="Operational"
-              latency="8ms"
-              icon={Shield}
-            />
-          </div>
-        </div>
-
-        {/* Recent Activity Logs */}
-        <div className="glass-v2 border-white/5 bg-surface-950/20">
-          <div className="p-8 border-b border-white/5 flex items-center gap-3">
-            <h2 className="text-2xl font-display font-bold text-white">
-              Live System Logs
-            </h2>
-            <div className="flex-1" />
-            <div className="flex gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-white/10" />
-              <span className="w-2 h-2 rounded-full bg-white/10" />
-              <span className="w-2 h-2 rounded-full bg-white/10" />
+          ) : (
+            <div className="space-y-3">
+              {attentionQueue.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition-all hover:border-white/20 hover:bg-white/[0.05]"
+                >
+                  <div
+                    className={cn(
+                      "rounded-xl p-2",
+                      item.severity === "high"
+                        ? "bg-red-500/10 text-red-300"
+                        : "bg-amber-400/10 text-amber-300",
+                    )}
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-white">{item.title}</p>
+                    <p className="mt-1 text-sm text-gray-400">{item.detail}</p>
+                  </div>
+                </Link>
+              ))}
             </div>
+          )}
+        </Panel>
+
+        <Panel title="Platform Services" subtitle="Core operating areas and current posture.">
+          <div className="space-y-3">
+            {systemServices.map((service) => (
+              <div
+                key={service.name}
+                className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-white">{service.name}</p>
+                    <p className="mt-1 text-sm text-gray-400">{service.detail}</p>
+                  </div>
+                  <span
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
+                      service.status === "healthy"
+                        ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                        : service.status === "watch"
+                          ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
+                          : "border-red-400/20 bg-red-400/10 text-red-300",
+                    )}
+                  >
+                    {service.status}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm font-medium text-blue-200">{service.metric}</p>
+              </div>
+            ))}
           </div>
-          <div className="p-8 pt-4 space-y-0 relative">
-            <div className="absolute top-0 bottom-0 left-[2.75rem] w-px bg-white/5 z-0" />
-            {/* Improved Logs Visuals */}
-            <LogItem
-              time="10:42 AM"
-              action="User Auth"
-              detail="teacher@lumina.edu"
-              status="success"
+        </Panel>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <Panel
+          title="Institution Graph"
+          subtitle="Which organizations are connected, and which are still empty shells."
+          action={
+            <Link
+              href="/admin/institution"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-blue-300 transition-colors hover:text-white"
+            >
+              Open institutions
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          }
+        >
+          {institutions.length === 0 ? (
+            <EmptyState
+              icon={Building2}
+              title="No institutions onboarded"
+              detail="Create institutions and connect stakeholders to start the multi-tenant graph."
             />
-            <LogItem
-              time="10:38 AM"
-              action="Course Sync"
-              detail="Intro to Machine Learning"
-              status="success"
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {institutions.slice(0, 4).map((institution) => (
+                <div
+                  key={institution.id}
+                  className="rounded-3xl border border-white/10 bg-white/[0.03] p-5"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-500">
+                        {institution.institution_type || "Institution"}
+                      </p>
+                      <h3 className="mt-2 text-lg font-semibold text-white">
+                        {institution.institution_name}
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-400">
+                        {[institution.city, institution.state].filter(Boolean).join(", ") || "Location pending"}
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
+                        institution.health === "connected"
+                          ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                          : "border-amber-400/20 bg-amber-400/10 text-amber-300",
+                      )}
+                    >
+                      {institution.health}
+                    </span>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
+                    <Metric label="Departments" value={institution.departmentCount} />
+                    <Metric label="Programs" value={institution.programCount} />
+                    <Metric label="Stakeholders" value={institution.stakeholderCount} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+
+        <Panel
+          title="Latest Connections"
+          subtitle="Recent stakeholder links across institutions and programs."
+        >
+          {connections.length === 0 ? (
+            <EmptyState
+              icon={Network}
+              title="No live connections yet"
+              detail="Stakeholder relationships will appear here once institutions are linked to users."
             />
-            <LogItem
-              time="10:15 AM"
-              action="DB Snapshot"
-              detail="Backup initialized #4829"
-              status="info"
+          ) : (
+            <div className="space-y-3">
+              {connections.slice(0, 6).map((connection) => (
+                <div
+                  key={connection.id}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-white">
+                        {connection.userName || "Unassigned user"}
+                      </p>
+                      <p className="mt-1 text-sm text-gray-400">
+                        {connection.userEmail || "No email"} • {connection.userRole || connection.category}
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-blue-400/20 bg-blue-400/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-300">
+                      {connection.category}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm text-gray-300">
+                    {connection.institutionName || "Institution"}{connection.programName ? ` • ${connection.programName}` : ""}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Linked {formatDateTime(connection.created_at)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+        <Panel
+          title="Recent Users"
+          subtitle="Newest accounts entering the platform."
+          action={
+            <Link
+              href="/admin/users"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-blue-300 transition-colors hover:text-white"
+            >
+              Open users
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          }
+        >
+          {recentUsers.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="No recent users"
+              detail="New account creation will appear here."
             />
-            <LogItem
-              time="09:55 AM"
-              action="Security BLock"
-              detail="Suspicious IP: 192.168.1.1"
-              status="warning"
+          ) : (
+            <div className="space-y-3">
+              {recentUsers.slice(0, 6).map((user) => (
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      className="h-10 w-10 rounded-2xl border border-white/10 object-cover"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-white">{user.name}</p>
+                      <p className="truncate text-sm text-gray-400">{user.email}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-white">{user.role}</p>
+                    <p className="text-xs text-gray-500">{formatDateTime(user.created_at)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Activity Feed" subtitle="Recent operations across onboarding and relationships.">
+          {activityFeed.length === 0 ? (
+            <EmptyState
+              icon={Activity}
+              title="No recent activity"
+              detail="Platform events will show up here once operations start flowing."
             />
-          </div>
-        </div>
+          ) : (
+            <div className="space-y-3">
+              {activityFeed.slice(0, 8).map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition-all hover:border-white/20 hover:bg-white/[0.05]"
+                >
+                  <div
+                    className={cn(
+                      "rounded-xl p-2",
+                      item.tone === "success"
+                        ? "bg-emerald-400/10 text-emerald-300"
+                        : "bg-blue-400/10 text-blue-300",
+                    )}
+                  >
+                    {item.tone === "success" ? (
+                      <Sparkles className="h-4 w-4" />
+                    ) : (
+                      <Activity className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-white">{item.title}</p>
+                    <p className="mt-1 text-sm text-gray-400">{item.detail}</p>
+                    <p className="mt-2 text-xs text-gray-500">{formatDateTime(item.timestamp)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Panel>
       </div>
     </div>
   );
 }
 
-// Helpers
-function StatusItem({ name, status, latency, icon: Icon }: any) {
-  const isOperational = status === "Operational";
-  const isProcessing = status === "Processing";
-
-  return (
-    <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 group">
-      <div className="flex items-center gap-4">
-        <div
-          className={`p-2 rounded-lg ${
-            isOperational
-              ? "bg-emerald-500/10 text-emerald-400"
-              : isProcessing
-                ? "bg-blue-500/10 text-blue-400"
-                : "bg-gray-500/10 text-gray-400"
-          }`}
-        >
-          {Icon ? <Icon size={16} /> : <div className="w-4 h-4" />}
-        </div>
-        <span className="text-gray-200 font-medium group-hover:text-white transition-colors">
-          {name}
-        </span>
-      </div>
-      <div className="flex items-center gap-4">
-        {latency && (
-          <span className="text-xs text-gray-500 font-mono hidden sm:inline-block">
-            {latency}
-          </span>
-        )}
-        <span
-          className={`text-xs px-2.5 py-1 rounded-md font-bold uppercase tracking-wider ${
-            isOperational
-              ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20"
-              : isProcessing
-                ? "text-blue-400 bg-blue-500/10 border border-blue-500/20"
-                : "text-amber-400 bg-amber-500/10 border border-amber-500/20"
-          }`}
-        >
-          {status}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function LogItem({ time, action, detail, status }: any) {
-  const statusConfig: any = {
-    success: {
-      color: "text-emerald-400",
-      bg: "bg-emerald-500",
-      border: "border-emerald-500/20",
-    },
-    warning: {
-      color: "text-red-400",
-      bg: "bg-red-500",
-      border: "border-red-500/20",
-    },
-    info: {
-      color: "text-blue-400",
-      bg: "bg-blue-500",
-      border: "border-blue-500/20",
-    },
+function DashboardLink({
+  href,
+  icon: Icon,
+  title,
+  description,
+  tone,
+}: {
+  href: string;
+  icon: typeof UserCog;
+  title: string;
+  description: string;
+  tone: "blue" | "emerald" | "amber";
+}) {
+  const toneStyles = {
+    blue: "from-blue-500/20 to-blue-500/5 border-blue-400/20 text-blue-200",
+    emerald: "from-emerald-500/20 to-emerald-500/5 border-emerald-400/20 text-emerald-200",
+    amber: "from-amber-500/20 to-amber-500/5 border-amber-400/20 text-amber-200",
   };
 
-  const config = statusConfig[status];
-
   return (
-    <div className="flex items-start gap-4 py-4 group relative z-10">
-      <span className="text-gray-600 font-mono text-xs mt-1 min-w-[4rem] group-hover:text-gray-400 transition-colors">
-        {time}
-      </span>
-      <div
-        className={`mt-1.5 w-2 h-2 rounded-full ring-4 ring-black/50 ${config.bg} shadow-[0_0_8px_rgba(0,0,0,0.5)]`}
-      />
-      <div className="flex-1 -mt-1 p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
-        <p className={`text-sm font-bold ${config.color} mb-0.5`}>{action}</p>
-        <p className="text-xs text-gray-500 group-hover:text-gray-400">
-          {detail}
-        </p>
+    <Link
+      href={href}
+      className={cn(
+        "group rounded-2xl border bg-gradient-to-br p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20",
+        toneStyles[tone],
+      )}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-white">{title}</p>
+          <p className="mt-1 text-sm text-gray-300/80">{description}</p>
+        </div>
+        <div className="rounded-xl bg-black/20 p-3 text-white/80 transition-transform group-hover:scale-105">
+          <Icon className="h-5 w-5" />
+        </div>
       </div>
+    </Link>
+  );
+}
+
+function SignalRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
+      <div className="flex items-center gap-3">
+        <div className="rounded-xl bg-white/5 p-2 text-blue-300">
+          <Icon className="h-4 w-4" />
+        </div>
+        <p className="text-sm text-white">{label}</p>
+      </div>
+      <span className="text-sm font-semibold text-white">{value}</span>
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-3">
+      <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500">{label}</p>
+      <p className="mt-1 text-base font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
+function EmptyState({
+  icon: Icon,
+  title,
+  detail,
+}: {
+  icon: typeof Users;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-gray-400">
+        <Icon className="h-5 w-5" />
+      </div>
+      <h3 className="text-lg font-semibold text-white">{title}</h3>
+      <p className="mx-auto mt-2 max-w-md text-sm text-gray-400">{detail}</p>
     </div>
   );
 }

@@ -14,7 +14,7 @@
       },
       "mastery_state": {
         "1": {
-          "score": 0.9448275862068966,
+          "score": 0.9999963596789688,
           "confidence": 0.5,
           "attempts": 0,
           "successes": 0,
@@ -80,7 +80,7 @@
       "mastery_state": {},
       "weak_topics": [],
       "behavior_signals": {
-        "cognitive_load": 18.55,
+        "cognitive_load": 0.0,
         "behavior_label": "frustrated"
       },
       "engagement_summary": {
@@ -89,7 +89,7 @@
         "total_quiz_attempts": 0,
         "total_assessments_completed": 0,
         "total_assignment_submissions": 0,
-        "total_tutor_interactions": 3,
+        "total_tutor_interactions": 11,
         "current_streak": 0,
         "last_activity_at": null
       },
@@ -103,29 +103,30 @@
       },
       "risk_summary": {
         "risk_level": "medium",
-        "risk_score": 0.39999999999999997,
+        "risk_score": 0.49999999999999994,
         "confidence": 0.7,
         "reasons": [
           "recent scores are low",
+          "frequent help requests with limited progress",
           "limited recent activity"
         ],
-        "last_evaluated_at": "2026-03-09T02:11:52.267681"
+        "last_evaluated_at": "2026-03-09T06:50:41.918563"
       },
       "tutor_summary": {
-        "last_session_id": "default-session",
+        "last_session_id": "smoke",
         "last_topic": "fractions",
         "last_recommendation": "medium",
         "last_behavior": "frustrated",
-        "total_sessions": 3
+        "total_sessions": 11
       },
       "assignment_summary": {},
       "assessment_summary": {},
       "metadata": {
         "last_event_type": "tutor_interaction",
-        "last_event_at": "2026-03-09T02:11:52.264363"
+        "last_event_at": "2026-03-09T06:50:41.841736"
       },
       "created_at": "2026-03-09T02:08:22.334688",
-      "updated_at": "2026-03-09T02:11:52.266924"
+      "updated_at": "2026-03-09T06:50:41.868011"
     },
     "00000000-0000-0000-0000-000000000001": {
       "user_id": "00000000-0000-0000-0000-000000000001",
@@ -259,6 +260,150 @@
         "content": "This is a test note content."
       },
       "created_at": "2026-03-09T04:28:54.495174"
+    },
+    {
+      "id": "9cc79ea2-7a7b-452d-a6f7-3370443310c3",
+      "user_id": "guest",
+      "event_type": "tutor_interaction",
+      "source": "ai_router",
+      "course_id": null,
+      "topic_id": "ai",
+      "session_id": "codex-local-llm-check",
+      "payload": {
+        "message": "Give me time line of ai",
+        "response": "{\"meta\": {\"topic\": \"AI\", \"difficulty\": \"easy\", \"estimated_time_min\": 6, \"exportable\": false}, \"flow\": [{\"type\": \"concept\", \"title\": \"AI timeline at a glance\", \"summary\": \"Artificial intelligence moved from early symbolic reasoning ideas to machine learning, deep learning, and modern generative AI systems.\", \"key_points\": [\"Early AI focused on logic, search, and symbolic rules.\", \"Machine learning shifted the field toward learning from data.\", \"Deep learning and generative models made AI useful at internet scale.\"]}, {\"type\": \"steps\", \"title\": \"Timeline of AI\", \"steps\": [\"1943 - McCulloch and Pitts proposed a mathematical model of an artificial neuron.\", \"1956 - The Dartmouth workshop helped establish AI as a formal research field.\", \"1960s to 1970s - Symbolic AI, search, and early problem-solving programs drove optimism.\", \"1980s - Expert systems brought AI into industry, followed by renewed limits and another AI winter.\", \"1997 - IBM Deep Blue defeated Garry Kasparov, showing the power of narrow AI systems.\", \"2012 - Deep learning surged after AlexNet showed major gains in image recognition.\", \"2022 onward - Generative AI and large language models brought AI into everyday products.\"]}, {\"type\": \"table\", \"title\": \"Main eras of AI\", \"headers\": [\"Era\", \"Main idea\", \"Example\"], \"rows\": [[\"Symbolic AI\", \"Rules and logic\", \"Expert systems\"], [\"Machine Learning\", \"Patterns learned from data\", \"Spam filtering\"], [\"Deep Learning\", \"Large neural networks\", \"Image recognition\"], [\"Generative AI\", \"Create text, code, and media\", \"Chat assistants\"]]}, {\"type\": \"quiz\", \"difficulty\": \"easy\", \"questions\": [{\"question\": \"Which event is commonly used to mark the formal birth of AI as a field?\", \"options\": [\"The 1956 Dartmouth workshop\", \"The 1997 Deep Blue match\", \"The 2012 AlexNet result\", \"The release of ChatGPT\"], \"answer\": 0, \"explanation\": \"The Dartmouth workshop in 1956 is widely cited as the starting point of AI as a named research field.\"}]}, {\"type\": \"reflection\", \"prompt\": \"Do you want the AI timeline next as a shorter exam answer, a diagram, or flashcards?\", \"placeholder\": \"Example: turn this into a 5-mark exam answer.\"}]}",
+        "session_id": "codex-local-llm-check",
+        "behavior": "frustrated",
+        "recommendation": "medium",
+        "topic": "ai"
+      },
+      "created_at": "2026-03-09T06:20:56.152561"
+    },
+    {
+      "id": "0120828e-2779-40cf-baa9-27b67b76778f",
+      "user_id": "guest",
+      "event_type": "tutor_interaction",
+      "source": "ai_router",
+      "course_id": null,
+      "topic_id": "ai",
+      "session_id": "tutor-1ia6wo53",
+      "payload": {
+        "message": "Give me time line of ai",
+        "response": "{\"meta\": {\"topic\": \"AI\", \"difficulty\": \"easy\", \"estimated_time_min\": 6, \"exportable\": false}, \"flow\": [{\"type\": \"concept\", \"title\": \"AI timeline at a glance\", \"summary\": \"Artificial intelligence moved from early symbolic reasoning ideas to machine learning, deep learning, and modern generative AI systems.\", \"key_points\": [\"Early AI focused on logic, search, and symbolic rules.\", \"Machine learning shifted the field toward learning from data.\", \"Deep learning and generative models made AI useful at internet scale.\"]}, {\"type\": \"steps\", \"title\": \"Timeline of AI\", \"steps\": [\"1943 - McCulloch and Pitts proposed a mathematical model of an artificial neuron.\", \"1956 - The Dartmouth workshop helped establish AI as a formal research field.\", \"1960s to 1970s - Symbolic AI, search, and early problem-solving programs drove optimism.\", \"1980s - Expert systems brought AI into industry, followed by renewed limits and another AI winter.\", \"1997 - IBM Deep Blue defeated Garry Kasparov, showing the power of narrow AI systems.\", \"2012 - Deep learning surged after AlexNet showed major gains in image recognition.\", \"2022 onward - Generative AI and large language models brought AI into everyday products.\"]}, {\"type\": \"table\", \"title\": \"Main eras of AI\", \"headers\": [\"Era\", \"Main idea\", \"Example\"], \"rows\": [[\"Symbolic AI\", \"Rules and logic\", \"Expert systems\"], [\"Machine Learning\", \"Patterns learned from data\", \"Spam filtering\"], [\"Deep Learning\", \"Large neural networks\", \"Image recognition\"], [\"Generative AI\", \"Create text, code, and media\", \"Chat assistants\"]]}, {\"type\": \"quiz\", \"difficulty\": \"easy\", \"questions\": [{\"question\": \"Which event is commonly used to mark the formal birth of AI as a field?\", \"options\": [\"The 1956 Dartmouth workshop\", \"The 1997 Deep Blue match\", \"The 2012 AlexNet result\", \"The release of ChatGPT\"], \"answer\": 0, \"explanation\": \"The Dartmouth workshop in 1956 is widely cited as the starting point of AI as a named research field.\"}]}, {\"type\": \"reflection\", \"prompt\": \"Do you want the AI timeline next as a shorter exam answer, a diagram, or flashcards?\", \"placeholder\": \"Example: turn this into a 5-mark exam answer.\"}]}",
+        "session_id": "tutor-1ia6wo53",
+        "behavior": "frustrated",
+        "recommendation": "medium",
+        "topic": "ai"
+      },
+      "created_at": "2026-03-09T06:24:50.951587"
+    },
+    {
+      "id": "633b7f9c-7544-4950-827d-fe01e6a76f23",
+      "user_id": "guest",
+      "event_type": "tutor_interaction",
+      "source": "ai_router",
+      "course_id": null,
+      "topic_id": "ai",
+      "session_id": "tutor-qku8roju",
+      "payload": {
+        "message": "Give me time line of ai",
+        "response": "{\"meta\": {\"topic\": \"AI\", \"difficulty\": \"easy\", \"estimated_time_min\": 6, \"exportable\": false}, \"flow\": [{\"type\": \"concept\", \"title\": \"AI timeline at a glance\", \"summary\": \"Artificial intelligence moved from early symbolic reasoning ideas to machine learning, deep learning, and modern generative AI systems.\", \"key_points\": [\"Early AI focused on logic, search, and symbolic rules.\", \"Machine learning shifted the field toward learning from data.\", \"Deep learning and generative models made AI useful at internet scale.\"]}, {\"type\": \"steps\", \"title\": \"Timeline of AI\", \"steps\": [\"1943 - McCulloch and Pitts proposed a mathematical model of an artificial neuron.\", \"1956 - The Dartmouth workshop helped establish AI as a formal research field.\", \"1960s to 1970s - Symbolic AI, search, and early problem-solving programs drove optimism.\", \"1980s - Expert systems brought AI into industry, followed by renewed limits and another AI winter.\", \"1997 - IBM Deep Blue defeated Garry Kasparov, showing the power of narrow AI systems.\", \"2012 - Deep learning surged after AlexNet showed major gains in image recognition.\", \"2022 onward - Generative AI and large language models brought AI into everyday products.\"]}, {\"type\": \"table\", \"title\": \"Main eras of AI\", \"headers\": [\"Era\", \"Main idea\", \"Example\"], \"rows\": [[\"Symbolic AI\", \"Rules and logic\", \"Expert systems\"], [\"Machine Learning\", \"Patterns learned from data\", \"Spam filtering\"], [\"Deep Learning\", \"Large neural networks\", \"Image recognition\"], [\"Generative AI\", \"Create text, code, and media\", \"Chat assistants\"]]}, {\"type\": \"quiz\", \"difficulty\": \"easy\", \"questions\": [{\"question\": \"Which event is commonly used to mark the formal birth of AI as a field?\", \"options\": [\"The 1956 Dartmouth workshop\", \"The 1997 Deep Blue match\", \"The 2012 AlexNet result\", \"The release of ChatGPT\"], \"answer\": 0, \"explanation\": \"The Dartmouth workshop in 1956 is widely cited as the starting point of AI as a named research field.\"}]}, {\"type\": \"reflection\", \"prompt\": \"Do you want the AI timeline next as a shorter exam answer, a diagram, or flashcards?\", \"placeholder\": \"Example: turn this into a 5-mark exam answer.\"}]}",
+        "session_id": "tutor-qku8roju",
+        "behavior": "frustrated",
+        "recommendation": "medium",
+        "topic": "ai"
+      },
+      "created_at": "2026-03-09T06:27:38.311080"
+    },
+    {
+      "id": "a7afd149-8c88-458e-a6e8-e4c538059c4b",
+      "user_id": "guest",
+      "event_type": "tutor_interaction",
+      "source": "ai_router",
+      "course_id": null,
+      "topic_id": "ai",
+      "session_id": "tutor-8c3g0zxy",
+      "payload": {
+        "message": "Give me time line of ai",
+        "response": "{\"meta\": {\"topic\": \"AI\", \"difficulty\": \"easy\", \"estimated_time_min\": 6, \"exportable\": false}, \"flow\": [{\"type\": \"concept\", \"title\": \"AI timeline at a glance\", \"summary\": \"Artificial intelligence moved from early symbolic reasoning ideas to machine learning, deep learning, and modern generative AI systems.\", \"key_points\": [\"Early AI focused on logic, search, and symbolic rules.\", \"Machine learning shifted the field toward learning from data.\", \"Deep learning and generative models made AI useful at internet scale.\"]}, {\"type\": \"steps\", \"title\": \"Timeline of AI\", \"steps\": [\"1943 - McCulloch and Pitts proposed a mathematical model of an artificial neuron.\", \"1956 - The Dartmouth workshop helped establish AI as a formal research field.\", \"1960s to 1970s - Symbolic AI, search, and early problem-solving programs drove optimism.\", \"1980s - Expert systems brought AI into industry, followed by renewed limits and another AI winter.\", \"1997 - IBM Deep Blue defeated Garry Kasparov, showing the power of narrow AI systems.\", \"2012 - Deep learning surged after AlexNet showed major gains in image recognition.\", \"2022 onward - Generative AI and large language models brought AI into everyday products.\"]}, {\"type\": \"table\", \"title\": \"Main eras of AI\", \"headers\": [\"Era\", \"Main idea\", \"Example\"], \"rows\": [[\"Symbolic AI\", \"Rules and logic\", \"Expert systems\"], [\"Machine Learning\", \"Patterns learned from data\", \"Spam filtering\"], [\"Deep Learning\", \"Large neural networks\", \"Image recognition\"], [\"Generative AI\", \"Create text, code, and media\", \"Chat assistants\"]]}, {\"type\": \"quiz\", \"difficulty\": \"easy\", \"questions\": [{\"question\": \"Which event is commonly used to mark the formal birth of AI as a field?\", \"options\": [\"The 1956 Dartmouth workshop\", \"The 1997 Deep Blue match\", \"The 2012 AlexNet result\", \"The release of ChatGPT\"], \"answer\": 0, \"explanation\": \"The Dartmouth workshop in 1956 is widely cited as the starting point of AI as a named research field.\"}]}, {\"type\": \"reflection\", \"prompt\": \"Do you want the AI timeline next as a shorter exam answer, a diagram, or flashcards?\", \"placeholder\": \"Example: turn this into a 5-mark exam answer.\"}]}",
+        "session_id": "tutor-8c3g0zxy",
+        "behavior": "frustrated",
+        "recommendation": "medium",
+        "topic": "ai"
+      },
+      "created_at": "2026-03-09T06:28:40.882889"
+    },
+    {
+      "id": "e3c1b3dc-22ba-41e7-8f92-41a4eb9e9c7d",
+      "user_id": "guest",
+      "event_type": "tutor_interaction",
+      "source": "ai_router",
+      "course_id": null,
+      "topic_id": "ai",
+      "session_id": "latency-auto",
+      "payload": {
+        "message": "Give me time line of ai",
+        "response": "{\"meta\": {\"topic\": \"AI\", \"difficulty\": \"easy\", \"estimated_time_min\": 6, \"exportable\": false}, \"flow\": [{\"type\": \"concept\", \"title\": \"AI timeline at a glance\", \"summary\": \"Artificial intelligence moved from early symbolic reasoning ideas to machine learning, deep learning, and modern generative AI systems.\", \"key_points\": [\"Early AI focused on logic, search, and symbolic rules.\", \"Machine learning shifted the field toward learning from data.\", \"Deep learning and generative models made AI useful at internet scale.\"]}, {\"type\": \"steps\", \"title\": \"Timeline of AI\", \"steps\": [\"1943 - McCulloch and Pitts proposed a mathematical model of an artificial neuron.\", \"1956 - The Dartmouth workshop helped establish AI as a formal research field.\", \"1960s to 1970s - Symbolic AI, search, and early problem-solving programs drove optimism.\", \"1980s - Expert systems brought AI into industry, followed by renewed limits and another AI winter.\", \"1997 - IBM Deep Blue defeated Garry Kasparov, showing the power of narrow AI systems.\", \"2012 - Deep learning surged after AlexNet showed major gains in image recognition.\", \"2022 onward - Generative AI and large language models brought AI into everyday products.\"]}, {\"type\": \"table\", \"title\": \"Main eras of AI\", \"headers\": [\"Era\", \"Main idea\", \"Example\"], \"rows\": [[\"Symbolic AI\", \"Rules and logic\", \"Expert systems\"], [\"Machine Learning\", \"Patterns learned from data\", \"Spam filtering\"], [\"Deep Learning\", \"Large neural networks\", \"Image recognition\"], [\"Generative AI\", \"Create text, code, and media\", \"Chat assistants\"]]}, {\"type\": \"quiz\", \"difficulty\": \"easy\", \"questions\": [{\"question\": \"Which event is commonly used to mark the formal birth of AI as a field?\", \"options\": [\"The 1956 Dartmouth workshop\", \"The 1997 Deep Blue match\", \"The 2012 AlexNet result\", \"The release of ChatGPT\"], \"answer\": 0, \"explanation\": \"The Dartmouth workshop in 1956 is widely cited as the starting point of AI as a named research field.\"}]}, {\"type\": \"reflection\", \"prompt\": \"Do you want the AI timeline next as a shorter exam answer, a diagram, or flashcards?\", \"placeholder\": \"Example: turn this into a 5-mark exam answer.\"}]}",
+        "session_id": "latency-auto",
+        "behavior": "frustrated",
+        "recommendation": "medium",
+        "topic": "ai"
+      },
+      "created_at": "2026-03-09T06:29:24.648898"
+    },
+    {
+      "id": "0f271964-0bda-4c66-a411-f3882926779b",
+      "user_id": "guest",
+      "event_type": "tutor_interaction",
+      "source": "ai_router",
+      "course_id": null,
+      "topic_id": "ai",
+      "session_id": "latency-ollama",
+      "payload": {
+        "message": "Give me time line of ai",
+        "response": "{\"meta\": {\"topic\": \"AI\", \"difficulty\": \"easy\", \"estimated_time_min\": 6, \"exportable\": false}, \"flow\": [{\"type\": \"concept\", \"title\": \"AI timeline at a glance\", \"summary\": \"Artificial intelligence moved from early symbolic reasoning ideas to machine learning, deep learning, and modern generative AI systems.\", \"key_points\": [\"Early AI focused on logic, search, and symbolic rules.\", \"Machine learning shifted the field toward learning from data.\", \"Deep learning and generative models made AI useful at internet scale.\"]}, {\"type\": \"steps\", \"title\": \"Timeline of AI\", \"steps\": [\"1943 - McCulloch and Pitts proposed a mathematical model of an artificial neuron.\", \"1956 - The Dartmouth workshop helped establish AI as a formal research field.\", \"1960s to 1970s - Symbolic AI, search, and early problem-solving programs drove optimism.\", \"1980s - Expert systems brought AI into industry, followed by renewed limits and another AI winter.\", \"1997 - IBM Deep Blue defeated Garry Kasparov, showing the power of narrow AI systems.\", \"2012 - Deep learning surged after AlexNet showed major gains in image recognition.\", \"2022 onward - Generative AI and large language models brought AI into everyday products.\"]}, {\"type\": \"table\", \"title\": \"Main eras of AI\", \"headers\": [\"Era\", \"Main idea\", \"Example\"], \"rows\": [[\"Symbolic AI\", \"Rules and logic\", \"Expert systems\"], [\"Machine Learning\", \"Patterns learned from data\", \"Spam filtering\"], [\"Deep Learning\", \"Large neural networks\", \"Image recognition\"], [\"Generative AI\", \"Create text, code, and media\", \"Chat assistants\"]]}, {\"type\": \"quiz\", \"difficulty\": \"easy\", \"questions\": [{\"question\": \"Which event is commonly used to mark the formal birth of AI as a field?\", \"options\": [\"The 1956 Dartmouth workshop\", \"The 1997 Deep Blue match\", \"The 2012 AlexNet result\", \"The release of ChatGPT\"], \"answer\": 0, \"explanation\": \"The Dartmouth workshop in 1956 is widely cited as the starting point of AI as a named research field.\"}]}, {\"type\": \"reflection\", \"prompt\": \"Do you want the AI timeline next as a shorter exam answer, a diagram, or flashcards?\", \"placeholder\": \"Example: turn this into a 5-mark exam answer.\"}]}",
+        "session_id": "latency-ollama",
+        "behavior": "frustrated",
+        "recommendation": "medium",
+        "topic": "ai"
+      },
+      "created_at": "2026-03-09T06:29:49.295844"
+    },
+    {
+      "id": "b4af5d36-541c-4cbf-892f-48045b55dc96",
+      "user_id": "guest",
+      "event_type": "tutor_interaction",
+      "source": "ai_router",
+      "course_id": null,
+      "topic_id": "ai",
+      "session_id": "tutor-qpb06m8i",
+      "payload": {
+        "message": "Give me time line of ai",
+        "response": "{\"meta\": {\"topic\": \"AI\", \"difficulty\": \"easy\", \"estimated_time_min\": 6, \"exportable\": false}, \"flow\": [{\"type\": \"concept\", \"title\": \"AI timeline at a glance\", \"summary\": \"Artificial intelligence moved from early symbolic reasoning ideas to machine learning, deep learning, and modern generative AI systems.\", \"key_points\": [\"Early AI focused on logic, search, and symbolic rules.\", \"Machine learning shifted the field toward learning from data.\", \"Deep learning and generative models made AI useful at internet scale.\"]}, {\"type\": \"steps\", \"title\": \"Timeline of AI\", \"steps\": [\"1943 - McCulloch and Pitts proposed a mathematical model of an artificial neuron.\", \"1956 - The Dartmouth workshop helped establish AI as a formal research field.\", \"1960s to 1970s - Symbolic AI, search, and early problem-solving programs drove optimism.\", \"1980s - Expert systems brought AI into industry, followed by renewed limits and another AI winter.\", \"1997 - IBM Deep Blue defeated Garry Kasparov, showing the power of narrow AI systems.\", \"2012 - Deep learning surged after AlexNet showed major gains in image recognition.\", \"2022 onward - Generative AI and large language models brought AI into everyday products.\"]}, {\"type\": \"table\", \"title\": \"Main eras of AI\", \"headers\": [\"Era\", \"Main idea\", \"Example\"], \"rows\": [[\"Symbolic AI\", \"Rules and logic\", \"Expert systems\"], [\"Machine Learning\", \"Patterns learned from data\", \"Spam filtering\"], [\"Deep Learning\", \"Large neural networks\", \"Image recognition\"], [\"Generative AI\", \"Create text, code, and media\", \"Chat assistants\"]]}, {\"type\": \"quiz\", \"difficulty\": \"easy\", \"questions\": [{\"question\": \"Which event is commonly used to mark the formal birth of AI as a field?\", \"options\": [\"The 1956 Dartmouth workshop\", \"The 1997 Deep Blue match\", \"The 2012 AlexNet result\", \"The release of ChatGPT\"], \"answer\": 0, \"explanation\": \"The Dartmouth workshop in 1956 is widely cited as the starting point of AI as a named research field.\"}]}, {\"type\": \"reflection\", \"prompt\": \"Do you want the AI timeline next as a shorter exam answer, a diagram, or flashcards?\", \"placeholder\": \"Example: turn this into a 5-mark exam answer.\"}]}",
+        "session_id": "tutor-qpb06m8i",
+        "behavior": "frustrated",
+        "recommendation": "medium",
+        "topic": "ai"
+      },
+      "created_at": "2026-03-09T06:31:08.364480"
+    },
+    {
+      "id": "edd14949-4b56-4339-94b5-ea0dbcfcea29",
+      "user_id": "guest",
+      "event_type": "tutor_interaction",
+      "source": "ai_router",
+      "course_id": null,
+      "topic_id": "fractions",
+      "session_id": "smoke",
+      "payload": {
+        "message": "Explain fractions simply",
+        "response": "{\"meta\": {\"topic\": \"fractions\", \"difficulty\": \"easy\", \"estimated_time_min\": 5, \"exportable\": false}, \"flow\": [{\"type\": \"concept\", \"title\": \"Fractions made simpler\", \"summary\": \"Fractions becomes easier when you first understand the core idea, then walk through one example, and finally test yourself with one short check.\", \"key_points\": [\"Start with the main definition of Fractions.\", \"Identify the key parts or stages inside Fractions.\", \"Use one worked example to connect the idea to practice.\"]}, {\"type\": \"steps\", \"title\": \"Study Fractions in order\", \"steps\": [\"Define Fractions in one simple sentence.\", \"Break Fractions into its main parts or steps.\", \"Work through one small example of Fractions.\", \"Explain Fractions back in your own words without looking at notes.\"]}, {\"type\": \"reflection\", \"prompt\": \"What do you want next for Fractions: an example, a quiz, or a shorter explanation?\", \"placeholder\": \"Example: give me one easy example first.\"}]}",
+        "session_id": "smoke",
+        "behavior": "frustrated",
+        "recommendation": "medium",
+        "topic": "fractions"
+      },
+      "created_at": "2026-03-09T06:50:41.841736"
     }
   ],
   "interventions": [],
