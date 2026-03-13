@@ -1,181 +1,597 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import {
+  Building2,
+  CheckCircle2,
+  Link2,
+  Loader2,
+  MapPin,
+  Plus,
+  Users,
+  X,
+} from "lucide-react";
+
 import { api } from "@/lib/api";
-import ConnectionCreator from "@/components/admin/ConnectionCreator";
-import { Building, Plus, GraduationCap, Users, MapPin, Globe, ChevronRight, LayoutDashboard } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface InstitutionRecord {
+  id: string;
+  institution_name: string;
+  institution_type?: string;
+  city?: string;
+  state?: string;
+  onboarding_status?: string;
+}
+
+interface ConnectionRecord {
+  id: string;
+  user_name?: string;
+  user_email?: string;
+  user_role?: string | null;
+  institution_id?: string | null;
+  institution_name?: string | null;
+  program_name?: string | null;
+  category: string;
+  created_at?: string | null;
+}
+
+const DEFAULT_INSTITUTION = {
+  institution_name: "",
+  institution_type: "Private",
+  city: "",
+  state: "",
+};
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "No timestamp";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "No timestamp";
+  return parsed.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 export default function InstitutionManagementPage() {
-  const [institutions, setInstitutions] = useState<any[]>([]);
+  const [institutions, setInstitutions] = useState<InstitutionRecord[]>([]);
+  const [connections, setConnections] = useState<ConnectionRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newInst, setNewInst] = useState({
-    institution_name: "",
-    institution_type: "Private",
-    city: "",
-    state: "",
-  });
+  const [newInstitution, setNewInstitution] = useState(DEFAULT_INSTITUTION);
+  const [savingInstitution, setSavingInstitution] = useState(false);
 
-  useEffect(() => {
-    loadInstitutions();
-  }, []);
-
-  const loadInstitutions = async () => {
-    const data = await api.getInstitutions();
-    setInstitutions(data);
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [institutionRecords, connectionRecords] = await Promise.all([
+        api.getInstitutions(),
+        api.getConnections(),
+      ]);
+      setInstitutions(institutionRecords || []);
+      setConnections(connectionRecords || []);
+    } catch (err: any) {
+      console.error("institution_page_load_failed", err);
+      setError(err?.message || "Unable to load institutions");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCreate = async () => {
-    await api.createInstitution(newInst);
-    setShowAddModal(false);
-    loadInstitutions();
+  useEffect(() => {
+    load();
+  }, []);
+
+  const connectionCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const connection of connections) {
+      const institutionId = connection.institution_id;
+      if (!institutionId) continue;
+      counts.set(institutionId, (counts.get(institutionId) || 0) + 1);
+    }
+    return counts;
+  }, [connections]);
+
+  const connectedInstitutions = institutions.filter(
+    (institution) => (connectionCounts.get(institution.id) || 0) > 0,
+  ).length;
+
+  const createInstitution = async () => {
+    setSavingInstitution(true);
+    setError(null);
+    try {
+      const response = await api.createInstitution(newInstitution);
+      if (response?.detail) {
+        throw new Error(response.detail);
+      }
+      setNewInstitution(DEFAULT_INSTITUTION);
+      setShowAddModal(false);
+      await load();
+    } catch (err: any) {
+      setError(err?.message || "Unable to create institution");
+    } finally {
+      setSavingInstitution(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8">
-      <div className="max-w-7xl mx-auto space-y-12">
-        {/* Header */}
-        <div className="flex justify-between items-end">
+    <div className="space-y-8">
+      <section className="glass-v2 border-white/5 overflow-hidden">
+        <div className="grid gap-6 p-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(360px,1fr)]">
           <div>
-            <h1 className="text-5xl font-extrabold tracking-tight mb-2">
-              Institutional <span className="text-indigo-500">Intelligence</span>
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-300/80">
+              Institution Graph
+            </p>
+            <h1 className="text-4xl font-display font-bold tracking-tight text-white">
+              Build the organization layer around the platform.
             </h1>
-            <p className="text-white/40 text-lg">Manage multi-tenant structures and knowledge nodes</p>
+            <p className="mt-4 max-w-2xl text-base text-gray-300">
+              Institutions, stakeholder connections, and onboarding state are now
+              visible together, so you can see which tenants are actually wired in.
+            </p>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 bg-white text-slate-950 px-6 py-3 rounded-2xl font-bold hover:bg-slate-200 transition-colors"
-          >
-            <Plus className="w-5 h-5" /> Add Institution
-          </button>
+
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <p className="text-sm font-semibold text-white">Graph snapshot</p>
+            <div className="mt-5 grid grid-cols-2 gap-4">
+              <SummaryTile label="Institutions" value={institutions.length} />
+              <SummaryTile label="Connected" value={connectedInstitutions} />
+              <SummaryTile label="Live links" value={connections.length} />
+              <SummaryTile
+                label="Empty shells"
+                value={institutions.length - connectedInstitutions}
+              />
+            </div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-emerald-500"
+            >
+              <Plus className="h-4 w-4" />
+              Add institution
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {error ? (
+        <div className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          {error}
+        </div>
+      ) : null}
+
+      <ConnectionComposer onCreated={load} />
+
+      <section className="glass-v2 border-white/5 overflow-hidden">
+        <div className="flex items-start justify-between gap-4 border-b border-white/5 p-6">
+          <div>
+            <h2 className="text-xl font-display font-bold text-white">
+              Institutions
+            </h2>
+            <p className="mt-1 text-sm text-gray-400">
+              Stakeholder counts make it obvious which tenants are connected and which still need setup.
+            </p>
+          </div>
         </div>
 
-        {/* Connection Creator Section */}
-        <section>
-          <ConnectionCreator />
-        </section>
-
-        {/* Institutions Grid */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold flex items-center gap-3">
-              <Building className="w-6 h-6 text-indigo-400" /> Active Institutions
-            </h2>
-            <div className="text-white/30 text-sm">Showing {institutions.length} nodes</div>
+        {loading ? (
+          <div className="flex min-h-[280px] items-center justify-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-emerald-400" />
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {institutions.map((inst) => (
-              <div
-                key={inst.id}
-                className="group relative p-6 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/[0.08] transition-all hover:border-indigo-500/50"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-3 bg-indigo-500/10 rounded-2xl">
-                    <Landmark className="w-6 h-6 text-indigo-400" />
+        ) : institutions.length === 0 ? (
+          <EmptyInstitutions />
+        ) : (
+          <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
+            {institutions.map((institution) => {
+              const stakeholderCount = connectionCounts.get(institution.id) || 0;
+              return (
+                <div
+                  key={institution.id}
+                  className="rounded-3xl border border-white/10 bg-white/[0.03] p-5"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-500">
+                        {institution.institution_type || "Institution"}
+                      </p>
+                      <h3 className="mt-2 text-lg font-semibold text-white">
+                        {institution.institution_name}
+                      </h3>
+                    </div>
+                    <span
+                      className={cn(
+                        "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
+                        stakeholderCount > 0
+                          ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                          : "border-amber-400/20 bg-amber-400/10 text-amber-300",
+                      )}
+                    >
+                      {stakeholderCount > 0 ? "Connected" : "Needs links"}
+                    </span>
                   </div>
-                  <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold tracking-widest uppercase text-white/40">
-                    {inst.institution_type}
+
+                  <div className="mt-4 space-y-2 text-sm text-gray-400">
+                    <p className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-gray-500" />
+                      {[institution.city, institution.state].filter(Boolean).join(", ") || "Location pending"}
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-gray-500" />
+                      {stakeholderCount} stakeholder connection(s)
+                    </p>
+                  </div>
+
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
+                      Onboarding
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-white">
+                      {institution.onboarding_status || "PENDING"}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="glass-v2 border-white/5 overflow-hidden">
+        <div className="flex items-start justify-between gap-4 border-b border-white/5 p-6">
+          <div>
+            <h2 className="text-xl font-display font-bold text-white">
+              Live connections
+            </h2>
+            <p className="mt-1 text-sm text-gray-400">
+              The most recent user-to-institution links, including role and category.
+            </p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex min-h-[220px] items-center justify-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-emerald-400" />
+          </div>
+        ) : connections.length === 0 ? (
+          <EmptyConnections />
+        ) : (
+          <div className="space-y-3 p-6">
+            {connections.slice(0, 8).map((connection) => (
+              <div
+                key={connection.id}
+                className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-white">
+                      {connection.user_name || "Unassigned user"}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-400">
+                      {connection.user_email || "No email"} • {connection.user_role || connection.category}
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                    {connection.category}
                   </span>
                 </div>
-
-                <h3 className="text-xl font-bold mb-2 group-hover:text-indigo-400 transition-colors">
-                  {inst.institution_name}
-                </h3>
-                
-                <div className="space-y-2 mb-6">
-                  <div className="flex items-center gap-2 text-white/40 text-sm">
-                    <MapPin className="w-4 h-4" /> {inst.city}, {inst.state}
-                  </div>
-                  <div className="flex items-center gap-2 text-white/40 text-sm">
-                    <Users className="w-4 h-4" /> 0 Registered Stakeholders
-                  </div>
-                </div>
-
-                <button className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-indigo-500 hover:text-white hover:border-indigo-500 transition-all">
-                  Manage Institution <ChevronRight className="w-4 h-4" />
-                </button>
+                <p className="mt-3 text-sm text-gray-300">
+                  {connection.institution_name || "Institution"}{connection.program_name ? ` • ${connection.program_name}` : ""}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Linked {formatDateTime(connection.created_at)}
+                </p>
               </div>
             ))}
-
-            {institutions.length === 0 && (
-              <div className="col-span-full py-20 bg-white/5 border border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center text-white/20">
-                <Building className="w-12 h-12 mb-4 opacity-20" />
-                <p>No institutions registered yet</p>
-              </div>
-            )}
           </div>
-        </section>
-      </div>
+        )}
+      </section>
 
-      {/* Add Modal Placeholder */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-white/10 rounded-3xl p-8 w-full max-w-md shadow-2xl">
-            <h2 className="text-2xl font-bold mb-6">Register Institution</h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Institution Name"
-                className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white"
-                value={newInst.institution_name}
-                onChange={e => setNewInst({...newInst, institution_name: e.target.value})}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="City"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white"
-                  value={newInst.city}
-                  onChange={e => setNewInst({...newInst, city: e.target.value})}
-                />
-                <input
-                  type="text"
-                  placeholder="State"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white"
-                  value={newInst.state}
-                  onChange={e => setNewInst({...newInst, state: e.target.value})}
-                />
+      {showAddModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-950 p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-display font-bold text-white">
+                  Add institution
+                </h2>
+                <p className="mt-1 text-sm text-gray-400">
+                  Create a new tenant shell and then wire stakeholders into it.
+                </p>
               </div>
-              <button
-                onClick={handleCreate}
-                className="w-full bg-indigo-600 py-4 rounded-xl font-bold mt-4"
-              >
-                Onboard Node
-              </button>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="w-full text-white/40 text-sm"
+                className="rounded-xl border border-white/10 bg-white/5 p-2 text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
               >
-                Cancel
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              <Field label="Institution name">
+                <input
+                  value={newInstitution.institution_name}
+                  onChange={(event) =>
+                    setNewInstitution((current) => ({
+                      ...current,
+                      institution_name: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-emerald-400/40"
+                  placeholder="Lumina Academy"
+                />
+              </Field>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="City">
+                  <input
+                    value={newInstitution.city}
+                    onChange={(event) =>
+                      setNewInstitution((current) => ({
+                        ...current,
+                        city: event.target.value,
+                      }))
+                    }
+                    className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-emerald-400/40"
+                    placeholder="Bengaluru"
+                  />
+                </Field>
+                <Field label="State">
+                  <input
+                    value={newInstitution.state}
+                    onChange={(event) =>
+                      setNewInstitution((current) => ({
+                        ...current,
+                        state: event.target.value,
+                      }))
+                    }
+                    className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-emerald-400/40"
+                    placeholder="Karnataka"
+                  />
+                </Field>
+              </div>
+
+              <Field label="Institution type">
+                <select
+                  value={newInstitution.institution_type}
+                  onChange={(event) =>
+                    setNewInstitution((current) => ({
+                      ...current,
+                      institution_type: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-emerald-400/40"
+                >
+                  <option value="Private">Private</option>
+                  <option value="Government">Government</option>
+                  <option value="Trust">Trust</option>
+                  <option value="Autonomous">Autonomous</option>
+                </select>
+              </Field>
+
+              <button
+                onClick={createInstitution}
+                disabled={savingInstitution || !newInstitution.institution_name.trim()}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {savingInstitution ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                {savingInstitution ? "Creating..." : "Create institution"}
               </button>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
 
-function Landmark({ className }: { className?: string }) {
+function ConnectionComposer({ onCreated }: { onCreated: () => Promise<void> | void }) {
+  const [users, setUsers] = useState<any[]>([]);
+  const [institutions, setInstitutions] = useState<any[]>([]);
+  const [selectedUser, setSelectedUser] = useState("");
+  const [selectedInstitution, setSelectedInstitution] = useState("");
+  const [category, setCategory] = useState("Teacher");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [userRecords, institutionRecords] = await Promise.all([
+          api.getAllUsers(),
+          api.getInstitutions(),
+        ]);
+        setUsers(userRecords || []);
+        setInstitutions(institutionRecords || []);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  const createConnection = async () => {
+    if (!selectedUser || !selectedInstitution) return;
+    setSubmitting(true);
+    setMessage(null);
+    try {
+      const user = users.find((item) => item.id === selectedUser);
+      const response = await api.linkStakeholder({
+        user_id: selectedUser,
+        institution_id: selectedInstitution,
+        name: user?.name,
+        email: user?.email,
+        category,
+        feedback_enabled: true,
+      });
+      if (response?.detail) {
+        throw new Error(response.detail);
+      }
+      setMessage("Connection saved");
+      setSelectedUser("");
+      setSelectedInstitution("");
+      await onCreated();
+    } catch (err: any) {
+      setMessage(err?.message || "Unable to save connection");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" 
-      height="24" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <line x1="3" y1="22" x2="21" y2="22"></line>
-      <line x1="6" y1="18" x2="6" y2="11"></line>
-      <line x1="10" y1="18" x2="10" y2="11"></line>
-      <line x1="14" y1="18" x2="14" y2="11"></line>
-      <line x1="18" y1="18" x2="18" y2="11"></line>
-      <polygon points="12 2 3 7 3 11 21 11 21 7 12 2"></polygon>
-    </svg>
+    <section className="glass-v2 border-white/5 overflow-hidden">
+      <div className="border-b border-white/5 p-6">
+        <div className="flex items-center gap-3">
+          <div className="rounded-2xl bg-emerald-500/10 p-3 text-emerald-300">
+            <Link2 className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-xl font-display font-bold text-white">
+              Create connection
+            </h2>
+            <p className="mt-1 text-sm text-gray-400">
+              Link a user to an institution. Repeated saves update the existing edge instead of duplicating it.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+        <Field label="User">
+          <select
+            value={selectedUser}
+            onChange={(event) => setSelectedUser(event.target.value)}
+            disabled={loading || submitting}
+            className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-emerald-400/40 disabled:opacity-60"
+          >
+            <option value="">Select a user</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name} ({user.role})
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Institution">
+          <select
+            value={selectedInstitution}
+            onChange={(event) => setSelectedInstitution(event.target.value)}
+            disabled={loading || submitting}
+            className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-emerald-400/40 disabled:opacity-60"
+          >
+            <option value="">Select an institution</option>
+            {institutions.map((institution) => (
+              <option key={institution.id} value={institution.id}>
+                {institution.institution_name}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Category">
+          <select
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            disabled={loading || submitting}
+            className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-emerald-400/40 disabled:opacity-60"
+          >
+            <option value="Teacher">Teacher</option>
+            <option value="Student">Student</option>
+            <option value="Admin">Admin</option>
+            <option value="Alumni">Alumni</option>
+            <option value="Industry">Industry</option>
+          </select>
+        </Field>
+      </div>
+
+      <div className="flex flex-col gap-3 border-t border-white/5 p-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="text-sm text-gray-400">
+          {message ? (
+            <span className="inline-flex items-center gap-2 text-emerald-200">
+              <CheckCircle2 className="h-4 w-4" />
+              {message}
+            </span>
+          ) : (
+            "Use this to connect platform identities to institution tenants for role-aware management."
+          )}
+        </div>
+
+        <button
+          onClick={createConnection}
+          disabled={loading || submitting || !selectedUser || !selectedInstitution}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading || submitting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Link2 className="h-4 w-4" />
+          )}
+          {submitting ? "Saving..." : "Save connection"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function SummaryTile({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
+      <p className="text-xs uppercase tracking-[0.22em] text-gray-500">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-medium text-gray-300">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function EmptyInstitutions() {
+  return (
+    <div className="p-10 text-center">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-gray-400">
+        <Building2 className="h-5 w-5" />
+      </div>
+      <h3 className="text-lg font-semibold text-white">No institutions yet</h3>
+      <p className="mt-2 text-sm text-gray-400">
+        Add an institution to start building tenant-level connections.
+      </p>
+    </div>
+  );
+}
+
+function EmptyConnections() {
+  return (
+    <div className="p-10 text-center">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-gray-400">
+        <Link2 className="h-5 w-5" />
+      </div>
+      <h3 className="text-lg font-semibold text-white">No stakeholder links</h3>
+      <p className="mt-2 text-sm text-gray-400">
+        Create a connection above to link users into an institution.
+      </p>
+    </div>
   );
 }

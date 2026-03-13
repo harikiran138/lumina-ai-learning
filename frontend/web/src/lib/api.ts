@@ -673,6 +673,20 @@ class RealAPI {
     return await res.json();
   }
 
+  async adminCreateUser(userData: {
+    name: string;
+    email: string;
+    password: string;
+    role: "student" | "teacher" | "admin";
+    phone?: string;
+  }): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/users", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    });
+    return await res.json();
+  }
+
   async getAllCoursesAdmin(): Promise<any[]> {
     const res = await this.fetchAuthorized("/api/admin/courses");
     if (!res.ok) return [];

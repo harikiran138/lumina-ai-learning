@@ -37,6 +37,22 @@ function tryExtractA2UITopic(payload: string): string | null {
   }
 }
 
+function resolveTutorProvider(): "auto" | "ollama" | "gemini" {
+  const envProvider = process.env.NEXT_PUBLIC_TUTOR_PROVIDER;
+  if (envProvider === "ollama" || envProvider === "gemini" || envProvider === "auto") {
+    return envProvider;
+  }
+
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "ollama";
+    }
+  }
+
+  return "auto";
+}
+
 function createSessionId() {
   return `tutor-${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -327,7 +343,7 @@ export default function AITutorPage() {
         userContext,
         userId: currentUserId,
         sessionId: currentSessionId,
-        provider: "auto",
+        provider: resolveTutorProvider(),
         topic: currentTopicRef.current,
         history: [...(sessions[currentSessionId] || []), userMessage].slice(-8),
       };

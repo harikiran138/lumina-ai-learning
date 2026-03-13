@@ -34,6 +34,27 @@ class UserStore:
     def _sanitize_user(self, user: dict) -> dict:
         safe_user = user.copy()
         safe_user.pop("password_hash", None)
+        safe_user.pop("hashed_password", None)
+
+        name = safe_user.get("name") or safe_user.get("full_name") or "Unnamed User"
+        created_at = safe_user.get("created_at") or safe_user.get("createdAt")
+        status = safe_user.get("status")
+        if not status:
+            status = "active" if safe_user.get("is_active", True) else "inactive"
+
+        avatar = safe_user.get("avatar") or safe_user.get("profile_image")
+        if not avatar:
+            avatar = (
+                "https://ui-avatars.com/api/?name="
+                f"{name.replace(' ', '+')}&background=111827&color=F9FAFB"
+            )
+
+        safe_user["name"] = name
+        safe_user["created_at"] = created_at
+        safe_user["createdAt"] = created_at
+        safe_user["status"] = status
+        safe_user["is_active"] = status == "active"
+        safe_user["avatar"] = avatar
         return safe_user
 
     async def create_user(
@@ -166,6 +187,35 @@ class UserStore:
             return len(response.data) > 0
         except Exception as e:
             log.error("update_user_role_failed", error=str(e))
+            return False
+
+    async def update_user_status(self, user_id: str, status: str) -> bool:
+        normalized_status = (status or "").strip().lower()
+        if normalized_status not in {"active", "inactive", "suspended"}:
+            return False
+
+        updates = {
+            "status": normalized_status,
+            "is_active": normalized_status == "active",
+        }
+
+        if self.client is None:
+            payload = self.local.read()
+            updated = False
+            for item in payload["users"]:
+                if item.get("id") == user_id:
+                    item.update(updates)
+                    updated = True
+                    break
+            if updated:
+                self.local.write(payload)
+            return updated
+
+        try:
+            response = self.client.table("users").update(updates).eq("id", user_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            log.error("update_user_status_failed", error=str(e))
             return False
 
     async def update_user_fields(self, user_id: str, updates: dict) -> bool:

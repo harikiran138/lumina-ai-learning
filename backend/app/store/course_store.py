@@ -43,10 +43,38 @@ class CourseStore:
         if normalized.get("thumbnail") is None and normalized.get("thumbnail_url"):
             normalized["thumbnail"] = normalized["thumbnail_url"]
 
+        normalized["image"] = (
+            normalized.get("image")
+            or normalized.get("thumbnail")
+            or "https://placehold.co/1200x675/0a0a0a/FFF?text=Lumina+Course"
+        )
         normalized["modules"] = normalized.get("modules") or []
         normalized["students"] = normalized.get("students") or normalized.get("student_count") or 0
         normalized["duration"] = normalized.get("duration") or "Self-paced"
         normalized["rating"] = normalized.get("rating") or 0
+        normalized["level"] = normalized.get("level") or "General"
+        normalized["lastUpdated"] = (
+            normalized.get("lastUpdated")
+            or normalized.get("updated_at")
+            or normalized.get("updatedAt")
+            or normalized.get("created_at")
+            or normalized.get("createdAt")
+            or ""
+        )
+
+        published = normalized.get("is_published")
+        if published is None:
+            published = normalized.get("published")
+        status = normalized.get("status")
+        if not status:
+            status = "Published" if published else "Draft"
+
+        normalized["status"] = status
+        normalized["is_published"] = bool(published) if published is not None else status.lower() in {
+            "published",
+            "active",
+            "live",
+        }
         return normalized
 
     @property
