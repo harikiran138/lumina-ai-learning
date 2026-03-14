@@ -86,6 +86,7 @@ Create one real learner-profile service that becomes the source of truth.
   - tutor interaction
 - create profile update jobs
 - expose learner-profile read API for tutor, teacher dashboard, and recommendations
+- add explanation profile and KPI snapshot fields
 
 ### Deliverables
 
@@ -116,9 +117,13 @@ Turn assessment and scoring into real adaptive intelligence, not only session sc
 - implement misconception tagging
 - upgrade weakness detection
 - add question expected-time metadata
+- add multi-format question support
+- add answer-conditioned follow-up question planning
 - create rubric-aware scoring model for assignments
 - add confidence score and teacher review threshold
 - generate remediation packs from low scores
+- formalize engagement, readiness, and retention KPIs
+- add authenticity review signals and supportive probe flow
 
 ### Deliverables
 
@@ -149,6 +154,7 @@ Make the teacher dashboard operational, not just informative.
 - build teacher follow-up notes
 - build intervention outcome tracking
 - build teacher digest generation
+- add direct teacher actions from the dashboard
 
 ### Deliverables
 
@@ -179,6 +185,7 @@ Move from a generic tutor to subject-specialized tutoring.
 - add learning-level adaptation
 - add remediation and enrichment modes
 - add tutor-generated practice with non-repetition logic
+- add a first-class explanation planner with strategy effectiveness tracking
 
 ### Deliverables
 
@@ -201,6 +208,7 @@ Make AI generation a serious teacher workflow, not just helper endpoints.
 ### Tasks
 
 - generate course outlines into full course objects
+- split canonical course blueprint from learner-specific pathway projection
 - generate modules, lessons, quizzes, assignments, rubrics, and PPTs
 - add teacher review workflow before publish
 - connect generation outputs to course storage

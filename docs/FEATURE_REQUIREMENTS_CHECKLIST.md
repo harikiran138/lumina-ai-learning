@@ -23,11 +23,13 @@ Use this as a program-level requirements list.
 - learner profile per student
 - concept-level mastery map
 - weak-topic detection
+- misconception memory by topic
 - recommendation engine for next lesson, next quiz, next practice
 - spaced review reminders
 - personalized revision queue
 - low-confidence topic review
 - student patience and study-behavior profiling
+- explanation effectiveness history
 
 ### Must-have student AI features
 
@@ -41,6 +43,8 @@ Use this as a program-level requirements list.
 - practice question generation
 - flashcard generation
 - explanation reformatting by difficulty level
+- explanation planning by cognitive load and mastery
+- explanation strategy tracking and feedback loop
 
 ## 2. Teacher Experience Requirements
 
@@ -52,12 +56,14 @@ Use this as a program-level requirements list.
 - create assessments and question banks
 - publish and update learning resources
 - invite and manage students
+- teacher override of high-impact AI next steps
 
 ### Must-have teacher intelligence
 
 - class dashboard
 - student-by-student progress drilldown
 - risk queue
+- concept heatmap
 - misconception summaries
 - intervention recommendations
 - teacher approval for AI-generated actions
@@ -98,6 +104,9 @@ Use this as a program-level requirements list.
 - confidence-based questioning
 - misconception classification
 - mastery threshold definitions
+- multiple question formats beyond MCQ
+- answer-conditioned next-question generation
+- teach-back and transfer checks before high-confidence mastery promotion
 
 ## 4. Assignment And Scoring Requirements
 
@@ -120,6 +129,7 @@ Use this as a program-level requirements list.
 - manual review fallback
 - resubmission handling
 - remediation suggestions from poor performance
+- authenticity review routing for suspicious responses
 
 ## 5. Learner Profile Requirements
 
@@ -136,8 +146,11 @@ Use this as a program-level requirements list.
 - frustration or struggle signals
 - preferred learning modality
 - preferred difficulty band
+- explanation strategy preferences
+- explanation strategy effectiveness by topic
 - recent tutor interactions
 - assignment performance history
+- learner-course projection or pathway preferences
 
 ### Must-have profile behaviors
 
@@ -147,6 +160,7 @@ Use this as a program-level requirements list.
 - update profile after tutor session
 - update profile after lesson completion
 - update profile after inactivity or drop in engagement
+- update profile after explanation success or failure
 
 ## 6. AI Tutor Requirements
 
@@ -159,6 +173,9 @@ Use this as a program-level requirements list.
 - avoid repeated questions when asked to generate practice
 - explain using different levels of detail
 - create short assessments from current lesson
+- choose explanation strategy before generation
+- log explanation strategy and resulting learner outcome
+- support named communication modes such as story, analogy, formula, experiment, and Socratic modes
 
 ### Must-have specialization
 
@@ -192,6 +209,7 @@ Use this as a program-level requirements list.
 - student risk alert creation
 - inactivity intervention reminders
 - mastery snapshot generation
+- explanation effectiveness summary generation
 
 ## 8. Admin And Governance Requirements
 
@@ -228,10 +246,12 @@ Use this as a program-level requirements list.
 - upload and artifact storage
 - caching
 - API auth and rate limiting
+- real-time or near-real-time update channel for teacher interventions where needed
 
 ### Must-have data model quality
 
 - one learner profile source of truth
+- one normalized event contract for all learning actions
 - consistent course schema
 - consistent assignment and rubric schema
 - concept ids shared across assessment and pathway systems

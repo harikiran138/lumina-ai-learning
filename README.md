@@ -1324,6 +1324,15 @@ We are committed to providing a welcoming and inclusive environment. Please read
 
 ### Master Documentation
 - [Master Guide](./docs/MASTER_GUIDE.md)
+- [Student Intelligence Loop](./docs/STUDENT_INTELLIGENCE_LOOP.md)
+- [Student KPI Engine](./docs/STUDENT_KPI_ENGINE.md)
+- [Explanation Style Engine](./docs/EXPLANATION_STYLE_ENGINE.md)
+- [Vision Alignment Audit](./docs/VISION_ALIGNMENT_AUDIT.md)
+- [Question Diversity Engine](./docs/QUESTION_DIVERSITY_ENGINE.md)
+- [Authenticity And Originality Engine](./docs/AUTHENTICITY_AND_ORIGINALITY_ENGINE.md)
+- [Teacher Real-Time Dashboard](./docs/TEACHER_REAL_TIME_DASHBOARD.md)
+- [Personalized Course Architecture](./docs/PERSONALIZED_COURSE_ARCHITECTURE.md)
+- [Agent Build Backlog](./docs/AGENT_BUILD_BACKLOG.md)
 - [Architecture](./docs/ARCHITECTURE.md)
 - [Connection Map](./docs/CONNECTION_MAP.md)
 - [Feature Audit](./docs/FEATURE_AUDIT.md)
