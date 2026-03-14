@@ -26,7 +26,7 @@ class KPIEngine:
         
         # We only consider events from the last 7 days for velocity/lag
         time_window = now - timedelta(days=7)
-        relevant_events = [e for e in recent_events if e.created_at >= time_window]
+        relevant_events = [e for e in recent_events if e.created_at.replace(tzinfo=None) >= time_window]
         
         assessment_events = [e for e in relevant_events if e.event_type == LearningEventType.ASSESSMENT_ANSWER]
         

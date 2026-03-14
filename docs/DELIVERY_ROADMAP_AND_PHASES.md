@@ -1,6 +1,6 @@
 # Delivery Roadmap And Phases
 
-Last updated: 2026-03-08
+Last updated: 2026-03-14
 
 This is the execution roadmap for turning Lumina from a strong foundation into a complete AI LMS.
 
@@ -87,6 +87,9 @@ Create one real learner-profile service that becomes the source of truth.
 - create profile update jobs
 - expose learner-profile read API for tutor, teacher dashboard, and recommendations
 - add explanation profile and KPI snapshot fields
+- add relationship and capability foundations for guardian and support-role expansion
+- add knowledge-graph identifiers and spaced-repetition state fields to the learner-facing data model
+- add offline sync and multilingual preference fields where needed
 
 ### Deliverables
 
@@ -124,6 +127,9 @@ Turn assessment and scoring into real adaptive intelligence, not only session sc
 - generate remediation packs from low scores
 - formalize engagement, readiness, and retention KPIs
 - add authenticity review signals and supportive probe flow
+- add confidence-versus-correctness tracking for metacognitive calibration
+- add process-based evidence flows such as drafts, oral checks, reflective prompts, or portfolio evidence
+- add competency and badge issuance hooks for demonstrated mastery
 
 ### Deliverables
 
@@ -155,6 +161,8 @@ Make the teacher dashboard operational, not just informative.
 - build intervention outcome tracking
 - build teacher digest generation
 - add direct teacher actions from the dashboard
+- add guardian summary and alert objects that derive from the same intervention evidence
+- add counselor escalation and privacy-bounded support workflows for severe or persistent cases
 
 ### Deliverables
 
@@ -186,6 +194,8 @@ Move from a generic tutor to subject-specialized tutoring.
 - add remediation and enrichment modes
 - add tutor-generated practice with non-repetition logic
 - add a first-class explanation planner with strategy effectiveness tracking
+- add behavioral-signal-driven emotional adaptation without webcam-first assumptions
+- add multilingual tutoring behavior and voice interaction pathways
 
 ### Deliverables
 
@@ -214,6 +224,9 @@ Make AI generation a serious teacher workflow, not just helper endpoints.
 - connect generation outputs to course storage
 - add assignment-to-remediation course generation
 - add cohort-based PPT generation from class weak areas
+- add differentiated lesson generation at multiple difficulty levels
+- add curriculum and standards alignment metadata to generation outputs
+- add content-designer review and versioning workflows
 
 ### Deliverables
 
@@ -242,6 +255,8 @@ Automate recurring academic work.
 - create post-assignment improvement automation
 - create pre-class PPT preparation automation
 - create inactivity and risk alert automation
+- create guardian weekly summary and alert automation
+- create mentor, peer-support, or counselor follow-up reminders where policy allows
 
 ### Deliverables
 
@@ -271,6 +286,10 @@ Make the system safe, explainable, and scalable enough for serious deployment.
 - add background queue health metrics
 - optimize data pipelines and caching
 - define privacy and retention rules
+- add differential privacy policies for aggregate analytics
+- add experimentation support for intervention and pedagogy testing
+- add federated-learning readiness planning for multi-institution deployments
+- add interoperability planning for standards and public-platform integrations where needed
 
 ### Deliverables
 
@@ -315,6 +334,29 @@ These workstreams should continue across multiple phases.
 - update docs after every major phase
 - add ADRs for major architectural decisions
 - keep feature matrix current
+
+### Workstream E: Offline-first and multilingual delivery
+
+- keep low-bandwidth use cases in scope across product surfaces
+- avoid new critical flows that require perfect connectivity
+- preserve multilingual extensibility in tutor, content, and assessment pipelines
+
+### Workstream F: Privacy and safety
+
+- review every new signal for necessity and proportionality
+- keep role-based access boundaries current
+- add explicit human-in-the-loop review for sensitive escalations
+
+### Workstream G: Experimentation and evaluation
+
+- instrument features for treatment-effect measurement
+- compare intervention and explanation strategies on consistent traces
+- keep outcome evaluation separate from vanity metrics
+
+### Workstream H: Role ecosystem expansion
+
+- design parent, mentor, peer tutor, counselor, content designer, researcher, and alumni workflows as first-class but bounded roles
+- ensure role additions strengthen the core learner-teacher loop rather than fragment it
 
 ## 12. Recommended Team Execution Order
 
@@ -369,6 +411,8 @@ Operational AI LMS
 - automation layer
 - governance layer
 - observability and scale readiness
+- offline-first and multilingual readiness
+- privacy-bounded family and support-role workflows
 
 ## 14. Definition Of Done For The Full Project
 

@@ -1,6 +1,6 @@
 # Agent Execution Guide
 
-Last updated: 2026-03-08
+Last updated: 2026-03-14
 
 This file is for future contributors and AI agents working on Lumina.
 
