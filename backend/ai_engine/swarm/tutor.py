@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import re
 from ai_engine.llm import OllamaProvider, get_llm_provider, is_provider_error
-from ai_engine.rag import get_rag_engine
+from app.rag.retrieval import RetrievalService
 from ai_engine.prompts import A2UI_SYSTEM_PROMPT
+from app.personalization.explanation_planner import ExplanationPlanner
+from app.personalization.schemas import LearnerProfileRecord
 
 
 def _normalize_spaces(value: str) -> str:
@@ -330,7 +332,7 @@ class TutorAgent:
 
     def __init__(self, provider: str = "auto"):
         self.llm = get_llm_provider(provider)
-        self.rag = get_rag_engine()
+        self.retrieval = RetrievalService(provider=provider)
 
     def _is_local_ollama(self) -> bool:
         return isinstance(self.llm, OllamaProvider)
@@ -396,14 +398,14 @@ Keep arrays short and educational.
         topic: str,
         user_query: str,
         history: list,
-        learner_profile: dict = None,
+        learner_profile: dict | LearnerProfileRecord = None,
         profile_context: str = "",
     ) -> dict:
         """
-        Generates a Socratic response using RAG and learner profile context.
+        Generates a Socratic response using Semantic RAG and learner profile context.
         """
-        # 1. RAG Retrieval
-        context_docs = self.rag.query(user_query, n_results=3)
+        # 1. Semantic RAG Retrieval
+        context_docs = await self.retrieval.hybrid_search(user_query, top_k=3)
         context_text = "\n".join(context_docs)
 
         # 2. Build Socratic Prompt
@@ -412,12 +414,42 @@ Keep arrays short and educational.
         but to guide the student towards the answer by asking insightful questions.
         
         Use the provided context from course materials.
+        IMPORTANT: Always cite your sources when making fact-based claims using [Source Content Segment] style.
+        
         If the student is confused, break down the concept into smaller pieces.
         Adjust your complexity based on the learner's mastery levels and cognitive load.
         """
         
+        explanation_plan = None
         if learner_profile:
-            cognitive_load = learner_profile.get('cognitive_load', 50)
+            # Convert dict to model if necessary
+            if isinstance(learner_profile, dict):
+                # We expect the dict to be compatible with LearnerProfileRecord
+                # However, the current projection might be partial.
+                # For safety, we try to get a full profile from service if possible,
+                # but here we'll assume we have enough for the planner.
+                # To be robust, the ExplanationPlanner uses defaults.
+                pass 
+            
+            # Generate Explanation Plan
+            # Note: We might need a real LearnerProfileRecord here if planner needs more fields
+            # For now, planner mostly uses cognitive_load and mastery_state
+            from app.services.personalization_service import get_personalization_service
+            service = get_personalization_service()
+            
+            # If we don't have a full record, try to get it
+            user_id = learner_profile.get("user_id") if isinstance(learner_profile, dict) else getattr(learner_profile, "user_id", None)
+            full_profile = await service.get_profile(user_id) if user_id else None
+            
+            if full_profile:
+                explanation_plan = ExplanationPlanner.generate_plan(full_profile)
+                socratic_instruction += f"\n\nEXPLANATION PLAN:\n{json.dumps(explanation_plan.model_dump(), indent=2)}"
+                socratic_instruction += f"\n\nADAPTATION MODE: {explanation_plan.mode}"
+                socratic_instruction += f"\nSTRATEGY: {explanation_plan.strategy}"
+                socratic_instruction += f"\nDEPTH: {explanation_plan.depth}"
+                socratic_instruction += f"\nCHUNK SIZE: {explanation_plan.chunk_size}"
+            
+            cognitive_load = learner_profile.get('cognitive_load', 50) if isinstance(learner_profile, dict) else getattr(learner_profile, "cognitive_load", 50)
             if cognitive_load > 70:
                 socratic_instruction += "\nWARNING: Student is experiencing high cognitive load. Be extremely simple, clear, and encouraging."
             
@@ -468,7 +500,14 @@ Keep arrays short and educational.
         except Exception as e:
             print(f"Failed to parse AI response as JSON: {e}")
             # Fallback if LLM fails to return JSON
-            return {
+            parsed = {
                 "meta": {"topic": topic, "status": "fallback"}, 
                 "flow": [{"type": "text", "content": response_str}]
             }
+        
+        # Add explanation plan to the output if generated
+        if explanation_plan:
+            if isinstance(parsed, dict):
+                parsed["explanation_plan"] = explanation_plan.model_dump()
+            
+        return parsed

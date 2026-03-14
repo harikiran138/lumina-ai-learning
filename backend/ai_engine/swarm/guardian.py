@@ -42,3 +42,18 @@ class GuardianAgent:
         import re
         clean = re.compile('<.*?>')
         return re.sub(clean, '', user_input)
+
+    def check_transition(self, current_state: dict, requested_action: str) -> dict:
+        """
+        Review gate for high-impact AI transitions.
+        """
+        if requested_action == "ADVANCE":
+            # Example gate: require minimum mastery or readiness
+            readiness = current_state.get("readiness_score", 0.0)
+            if readiness < 0.7:
+                return {
+                    "approved": False, 
+                    "reason": f"Readiness score ({readiness:.2f}) is below the required 0.70 for advancement."
+                }
+        
+        return {"approved": True, "reason": "Transition approved"}

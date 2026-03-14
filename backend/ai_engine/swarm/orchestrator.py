@@ -87,7 +87,7 @@ class Orchestrator:
             )
         
         elif intent == "PATHWAY":
-            return self.pathway_agent.process_input(user_input, context)
+            return await self.pathway_agent.process_input(user_input, context)
 
         # Default to Tutor Agent for most interactions
         topic = context.get("topic", "General")

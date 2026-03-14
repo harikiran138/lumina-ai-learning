@@ -1,7 +1,7 @@
 import random
 from typing import List, Optional
 
-from app.assessment.models.schemas import Option, Question, QuestionMetadata
+from app.assessment.models.schemas import Option, Question, QuestionMetadata, QuestionFormat
 from app.assessment.engine.policy_engine import PolicyDecision, AssessmentAction
 
 
@@ -152,14 +152,41 @@ MOCK_QUESTIONS: List[Question] = [
 
 
 class QuestionSelector:
-    """Selects the best question based on the policy decision."""
+    """Selects the best question format or bank-question based on student state."""
 
     def __init__(self, questions: Optional[List[Question]] = None):
         self.questions = questions if questions is not None else MOCK_QUESTIONS
 
+    def get_ideal_format(self, difficulty: float, format_history: List[QuestionFormat]) -> QuestionFormat:
+        """
+        Determines the most appropriate question format based on target difficulty
+        and format history (to avoid repetition).
+        """
+        # Mastery-based format bands
+        if difficulty < 0.4:
+            available = [QuestionFormat.MCQ, QuestionFormat.FILL_BLANK]
+        elif difficulty < 0.7:
+            available = [QuestionFormat.MCQ, QuestionFormat.FILL_BLANK, QuestionFormat.SHORT_ANSWER]
+        else:
+            available = [
+                QuestionFormat.SHORT_ANSWER, 
+                QuestionFormat.LONG_EXPLANATION, 
+                QuestionFormat.TEACH_BACK, 
+                QuestionFormat.TRY_ANSWER
+            ]
+
+        # Prevent repeating the same format more than 2 times
+        if len(format_history) >= 2 and format_history[-1] == format_history[-2]:
+            last_format = format_history[-1]
+            if last_format in available and len(available) > 1:
+                available = [f for f in available if f != last_format]
+
+        return random.choice(available)
+
     def select_question(
         self, decision: PolicyDecision, seen_question_ids: List[str]
     ) -> Optional[Question]:
+        """Bank-based selection (legacy support / hybrid)."""
         if decision.action == AssessmentAction.STOP:
             return None
 
@@ -181,7 +208,7 @@ class QuestionSelector:
             if not available:
                 return None
 
-        # 3. Find closest difficulty match (using metadata if present, else question.difficulty)
+        # 3. Find closest difficulty match
         def _difficulty(q: Question) -> float:
             if q.metadata and q.metadata.difficulty is not None:
                 return q.metadata.difficulty
@@ -189,6 +216,5 @@ class QuestionSelector:
 
         available.sort(key=lambda q: abs(_difficulty(q) - decision.target_difficulty))
 
-        # Take the top 3 closest and pick one randomly (slightly stochastic)
         top_candidates = available[:3]
         return random.choice(top_candidates) if top_candidates else None

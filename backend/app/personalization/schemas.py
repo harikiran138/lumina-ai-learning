@@ -40,6 +40,7 @@ class InterventionStatus(str, Enum):
 class ConceptMastery(BaseModel):
     score: float = Field(default=0.0, ge=0.0, le=1.0)
     confidence: float = Field(default=0.5, ge=0.0, le=1.0)
+    integrity_score: float = Field(default=1.0, ge=0.0, le=1.0) # Confident in originality
     attempts: int = 0
     successes: int = 0
     last_assessed_at: Optional[datetime] = None
@@ -90,9 +91,25 @@ class ExplanationStrategyState(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class ExplanationPlan(BaseModel):
+    plan_id: str = Field(default_factory=generate_id)
+    objective: str # explain, simplify, hint, summarize, quiz, challenge
+    strategy: str # worked_example_first, socratic_prompting, etc.
+    mode: str # Story, Joke, Analogy, etc.
+    vocabulary_band: str # simple, grade-level, advanced
+    depth: str # concise, standard, deep
+    pace: str # compressed, normal, slow
+    chunk_size: int = 1
+    socratic_ratio: float = 0.0
+    modalities: List[str] = Field(default_factory=list)
+    confidence: float = 1.0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class ExplanationProfile(BaseModel):
     strategies: Dict[str, ExplanationStrategyState] = Field(default_factory=dict)
     primary_mode: Optional[str] = None
+    last_plan: Optional[ExplanationPlan] = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -102,6 +119,9 @@ class KPISnapshot(BaseModel):
     authenticity_score: float = 1.0
     explanation_effectiveness: float = 0.0
     recorded_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+
 
 
 class InterventionHistory(BaseModel):
@@ -163,6 +183,8 @@ class TutorInteractionPayload(BaseModel):
     recommendation: Optional[str] = None
     behavior: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
+    explanation_plan: Optional[Dict[str, Any]] = None
+    strategy_used: Optional[str] = None
 
 
 class AssessmentAnswerPayload(BaseModel):
@@ -175,6 +197,8 @@ class AssessmentAnswerPayload(BaseModel):
     session_id: Optional[str] = None
     topic: Optional[str] = None
     difficulty: Optional[float] = None
+    analysis: Optional[Dict[str, Any]] = None
+    telemetry: Optional[Dict[str, Any]] = None
 
 
 class AssessmentCompletedPayload(BaseModel):
@@ -228,6 +252,9 @@ class InterventionRecommendation(BaseModel):
     reason: str
     confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     evidence: Dict[str, Any] = Field(default_factory=dict)
+    teacher_notes: Optional[str] = None
+    action_taken: Optional[str] = None
+    resolved_at: Optional[datetime] = None
     created_by: str = "system"
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -269,3 +296,9 @@ class SubmissionScorecard(BaseModel):
     rationale: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class InterventionUpdateRequest(BaseModel):
+    status: Optional[InterventionStatus] = None
+    teacher_notes: Optional[str] = None
+    action_taken: Optional[str] = None

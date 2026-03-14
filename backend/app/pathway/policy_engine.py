@@ -57,14 +57,36 @@ class PolicyEngine:
 
         # 3. Check ADVANCE Condition (High Mastery, Ready for next steps)
         # If the user is doing very well on all current tracked concepts
+        readiness = state.get("context", {}).get("readiness_score", 0.5)
+        risk = state.get("context", {}).get("risk_level", 0.0)
+        
         if all(c["norm_confidence"] > 0.85 for c in concepts) and concepts:
+            # Prefer the most recent concept or current focus as target if blocked
+            target_id = concepts[0]["concept_id"]
+            
+            if readiness < 0.7:
+                return (
+                    PathwayAction.CONTINUE,
+                    target_id,
+                    ActionPriority.MEDIUM,
+                    f"Mastery is high, but readiness score ({readiness:.2f}) is below threshold (0.70). Continuing practice."
+                )
+            
+            if risk > 0.6:
+                return (
+                    PathwayAction.REVIEW,
+                    target_id,
+                    ActionPriority.HIGH,
+                    f"Mastery is high, but risk level ({risk:.2f}) is elevated. Recommending review before advancing."
+                )
+
             # We assume the curriculum optimizer will provide the next node for 'ADVANCE', 
             # so target_concept can be inferred downstream or returned as 'NEXT' signal.
             return (
                 PathwayAction.ADVANCE,
                 "NEXT_OPTIMAL_NODE", # Placeholder for optimizer
                 ActionPriority.MEDIUM,
-                "Mastery on current concepts is high (>0.85). Ready to advance."
+                f"Mastery is high and readiness ({readiness:.2f}) is sufficient. Ready to advance."
             )
 
         # 4. Default to CONTINUE (Incremental mastery)

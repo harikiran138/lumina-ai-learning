@@ -1,8 +1,8 @@
-from typing import List, Optional, Dict
+import uuid
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 from datetime import datetime
 from enum import Enum
-import uuid
 
 # --- Input Schemas ---
 
@@ -47,9 +47,41 @@ class PathwayInput(BaseModel):
     currentTimestamp: datetime
     masteryState: Dict[str, MasteryDetail]
     engagementState: EngagementState
+    readinessScore: float = Field(0.5, ge=0.0, le=1.0)
+    riskLevel: str = "low"
     recentPerformance: Optional[List[PerformanceRecord]] = []
     constraints: Optional[Constraints] = None
     detectedPatterns: Optional[List[DetectedPattern]] = []
+
+# --- Structure Schemas ---
+
+class ConceptNode(BaseModel):
+    id: str
+    name: str
+    description: str
+    prerequisites: List[str] = []
+    difficulty: float = 0.5
+
+class CourseBlueprint(BaseModel):
+    """
+    Static structure of a course as defined by content designers.
+    """
+    courseId: str
+    title: str
+    concepts: List[ConceptNode]
+    version: str = "1.0.0"
+
+class LearnerPathway(BaseModel):
+    """
+    Dynamic projection of the blueprint for a specific learner.
+    """
+    learnerId: str
+    courseId: str
+    activeConceptId: str
+    completedConceptIds: List[str]
+    readinessScore: float
+    projectedCompletionDate: Optional[datetime] = None
+    lastUpdated: datetime = Field(default_factory=datetime.utcnow)
 
 # --- Output Schemas ---
 
