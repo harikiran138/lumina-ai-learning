@@ -1,4 +1,4 @@
-// Mock Data API - Optimized for Simple Frontend Demo
+// API client for the Lumina FastAPI backend
 
 export interface User {
   id: string;
@@ -40,7 +40,11 @@ class RealAPI {
   }
 
   private getApiBase(): string {
-    return process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    return (
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.NEXT_PUBLIC_API_BASE ||
+      "http://127.0.0.1:8000"
+    );
   }
 
   private async fetchAuthorized(
@@ -344,6 +348,25 @@ class RealAPI {
 
     const res = await this.fetchAuthorized(`/api/assignments/list?${params.toString()}`);
     if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async createAssignment(payload: {
+    title: string;
+    course_id: string;
+    description: string;
+    due_date: string;
+  }): Promise<any> {
+    const formData = new FormData();
+    formData.append("title", payload.title);
+    formData.append("course_id", payload.course_id);
+    formData.append("description", payload.description);
+    formData.append("due_date", payload.due_date);
+
+    const res = await this.fetchAuthorized("/api/assignments/create", {
+      method: "POST",
+      body: formData,
+    });
     return await res.json();
   }
 

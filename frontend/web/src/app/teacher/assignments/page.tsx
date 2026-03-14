@@ -16,6 +16,7 @@ import {
   Download,
   Eye,
 } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function AssignmentsPage() {
   return (
@@ -55,16 +56,8 @@ function AssignmentsContent() {
 
   const fetchAssignments = async () => {
     try {
-      const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-        }/api/assignments/list`,
-        { cache: "no-store" },
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setAssignments(data);
-      }
+      const data = await api.getAssignments();
+      setAssignments(data);
     } catch (e) {
       console.error("Failed to fetch assignments", e);
     } finally {
@@ -247,14 +240,16 @@ function AssignmentsList({
 function CreateAssignmentForm({ onSuccess }: { onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE ||
+    "http://127.0.0.1:8000";
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const res = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-          }/api/courses/list`,
+          `${apiBase}/api/courses/list`,
         );
         if (res.ok) {
           const data = await res.json();
@@ -275,22 +270,21 @@ function CreateAssignmentForm({ onSuccess }: { onSuccess: () => void }) {
     formData.append("created_by", "Teacher");
 
     try {
-      const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-        }/api/assignments/create`,
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
+      const payload = {
+        title: String(formData.get("title") || ""),
+        course_id: String(formData.get("course_id") || ""),
+        description: String(formData.get("description") || ""),
+        due_date: String(formData.get("due_date") || ""),
+      };
 
-      if (res.ok) {
+      const result = await api.createAssignment(payload);
+
+      if (result?.status === "success") {
         alert("Assignment Created Successfully!");
         (e.target as HTMLFormElement).reset();
         onSuccess();
       } else {
-        alert("Failed to create assignment");
+        alert(result?.detail || "Failed to create assignment");
       }
     } catch (err) {
       console.error(err);

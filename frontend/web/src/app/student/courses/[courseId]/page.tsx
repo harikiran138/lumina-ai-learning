@@ -402,7 +402,10 @@ export default function CourseDetails({
       <div className="relative rounded-3xl overflow-hidden glass-card">
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent z-10"></div>
         <img
-          src={course.thumbnail || "/api/placeholder/1200/400"}
+          src={
+            course.thumbnail ||
+            "https://placehold.co/1200x400/0a0a0a/FFF?text=Lumina+Course"
+          }
           alt={course.name}
           className="w-full h-80 object-cover"
         />

@@ -27,6 +27,9 @@ ACCESS_TOKEN_EXPIRE_MINUTES="11520"
 
 # AI Integration
 GEMINI_API_KEY="your-gemini-api-key"
+
+# Optional local store (skips Supabase for dev/test)
+LUMINA_FORCE_LOCAL_STORE="false"
 ```
 
 ## 2. Supabase Tables required
@@ -69,7 +72,9 @@ You must create the following tables in your Supabase project (either via the SQ
 
 ## 3. Row Level Security (RLS)
 
-By default, the Python `supabase` client instantiated with the `SUPABASE_SERVICE_ROLE_KEY` bypasses RLS for backend operations. If the frontend connects directly, ensure proper RLS policies are set in the Supabase Dashboard.
+By default, the backend uses `SUPABASE_SERVICE_ROLE_KEY` (if set) to bypass RLS for server operations.
+If only the anon key is provided, ensure your RLS policies allow the required server actions.
+For local development or tests without Supabase, set `LUMINA_FORCE_LOCAL_STORE=true` to use the JSON store under `backend/data/local_db.json`.
 
 ## 4. Run the Project
 

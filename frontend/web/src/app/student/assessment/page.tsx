@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Card,
   CardContent,
@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { api } from "@/lib/api";
 import {
   Loader2,
   CheckCircle2,
@@ -20,6 +21,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function AssessmentPage() {
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [status, setStatus] = useState<
     "idle" | "loading" | "question" | "feedback" | "completed"
@@ -33,6 +35,8 @@ export default function AssessmentPage() {
     typing_variance: 0,
     char_count: 0,
   });
+  const lastKeyTimeRef = useRef<number | null>(null);
+  const typingIntervalsRef = useRef<number[]>([]);
 
   const [feedback, setFeedback] = useState<any>(null);
   const [completionReason, setCompletionReason] = useState<string>("");
@@ -40,9 +44,56 @@ export default function AssessmentPage() {
   const [topic, setTopic] = useState<string>("Python Programming");
   const [numQuestions, setNumQuestions] = useState<number>(5);
 
+  useEffect(() => {
+    let mounted = true;
+    api
+      .getCurrentUser()
+      .then((user) => {
+        if (!mounted) return;
+        setCurrentUserId(user?.id || null);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setCurrentUserId(null);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const computeVariance = (samples: number[]) => {
+    if (samples.length < 2) return 0;
+    const mean = samples.reduce((sum, v) => sum + v, 0) / samples.length;
+    const variance =
+      samples.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) /
+      samples.length;
+    return variance;
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key.length === 1) {
+      const now = Date.now();
+      if (lastKeyTimeRef.current) {
+        const interval = now - lastKeyTimeRef.current;
+        typingIntervalsRef.current = [
+          ...typingIntervalsRef.current.slice(-40),
+          interval,
+        ];
+      }
+      lastKeyTimeRef.current = now;
+
+      const variance = computeVariance(typingIntervalsRef.current);
+      setTelemetry((prev) => ({
+        ...prev,
+        typing_variance: Number.isFinite(variance) ? variance : prev.typing_variance,
+      }));
+    }
     if (e.key === "Backspace") {
-      setTelemetry((prev) => ({ ...prev, backspace_count: prev.backspace_count + 1 }));
+      setTelemetry((prev) => ({
+        ...prev,
+        backspace_count: prev.backspace_count + 1,
+      }));
     }
   };
 
@@ -50,10 +101,12 @@ export default function AssessmentPage() {
     setTelemetry((prev) => ({ ...prev, paste_detected: true }));
   };
 
-  // API Base URL - fallback to 8001 if env not set
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE
-    ? `${process.env.NEXT_PUBLIC_API_BASE}/api/assessment`
-    : "http://localhost:8000/api/assessment";
+  // API Base URL
+  const apiRoot =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE ||
+    "http://localhost:8000";
+  const API_BASE = `${apiRoot}/api/assessment`;
 
   const startAssessment = async () => {
     console.log("Starting assessment, connecting to:", API_BASE);
@@ -63,7 +116,7 @@ export default function AssessmentPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          student_id: "demo_student",
+          student_id: currentUserId || "demo_student",
           topic: topic,
           num_questions: numQuestions,
         }),
@@ -82,7 +135,7 @@ export default function AssessmentPage() {
     } catch (err) {
       console.error("Assessment start failed:", err);
       setCompletionReason(
-        `Failed to connect to assessment server (${API_BASE}). Ensure backend is running on port 8001.`,
+        `Failed to connect to assessment server (${API_BASE}). Ensure the backend is running and NEXT_PUBLIC_API_URL is correct.`,
       );
       setStatus("completed");
     }
@@ -145,9 +198,11 @@ export default function AssessmentPage() {
       setTelemetry({
         paste_detected: false,
         backspace_count: 0,
-        typing_variance: 0.1, // mock
+        typing_variance: 0,
         char_count: 0,
       });
+      lastKeyTimeRef.current = null;
+      typingIntervalsRef.current = [];
       setFeedback(null);
       setReport(null);
       setStatus("question");
@@ -355,7 +410,14 @@ export default function AssessmentPage() {
                         className="w-full h-32 bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-mono text-sm"
                         placeholder="Type your answer here..."
                         value={selectedAnswer}
-                        onChange={(e) => setSelectedAnswer(e.target.value)}
+                        onChange={(e) => {
+                          const nextValue = e.target.value;
+                          setSelectedAnswer(nextValue);
+                          setTelemetry((prev) => ({
+                            ...prev,
+                            char_count: nextValue.length,
+                          }));
+                        }}
                         onKeyDown={handleKeyDown}
                         onPaste={handlePaste}
                       />

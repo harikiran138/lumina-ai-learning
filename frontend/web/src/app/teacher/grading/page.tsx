@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Loader2, CheckCircle } from "lucide-react";
+import { api } from "@/lib/api";
 
 interface Assignment {
   id: string;
@@ -19,6 +20,11 @@ export default function GradingPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [gradingId, setGradingId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState("guest");
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE ||
+    "http://127.0.0.1:8000";
 
   // Form State
   const [score, setScore] = useState("");
@@ -26,14 +32,16 @@ export default function GradingPage() {
 
   useEffect(() => {
     fetchAssignments();
+    api
+      .getCurrentUser()
+      .then((user) => setCurrentUserId(user?.id || "guest"))
+      .catch(() => setCurrentUserId("guest"));
   }, []);
 
   const fetchAssignments = async () => {
     try {
       const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-        }/api/handwriting/list?type=assignment`,
+        `${apiBase}/api/handwriting/list?type=assignment`,
       );
       const data = await res.json();
       setAssignments(data);
@@ -51,12 +59,10 @@ export default function GradingPage() {
       formData.append("assignment_id", assignmentId);
       formData.append("score", score);
       formData.append("remarks", remarks);
-      formData.append("user_id", "guest");
+      formData.append("user_id", currentUserId);
 
       const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-        }/api/handwriting/grade`,
+        `${apiBase}/api/handwriting/grade`,
         {
           method: "POST",
           body: formData,
