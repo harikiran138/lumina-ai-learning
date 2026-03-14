@@ -12,7 +12,11 @@ from app.assessment.engine.session_manager import session_manager
 from typing import Optional
 from app.database.supabase_manager import supabase_db
 from app.routers.auth import get_current_user
-from app.personalization.schemas import LearningEventType
+from app.personalization.schemas import (
+    LearningEventType,
+    AssessmentCompletedPayload,
+    AssessmentAnswerPayload,
+)
 from app.services.personalization_service import get_personalization_service
 
 router = APIRouter()
@@ -88,16 +92,16 @@ async def complete_assessment(session_id: str):
         await get_personalization_service().record_event(
             session.student_id,
             LearningEventType.ASSESSMENT_COMPLETED,
-            payload={
-                "session_id": session.id,
-                "topic": session.topic,
-                "accuracy": (
+            payload=AssessmentCompletedPayload(
+                session_id=session.id,
+                topic=session.topic,
+                accuracy=(
                     sum(1 for r in session.responses if r.is_correct) / len(session.responses)
                     if session.responses
                     else 0
                 ),
-                "total_questions": len(session.responses),
-            },
+                total_questions=len(session.responses),
+            ).model_dump(exclude_none=True),
             source="assessment_router",
             topic_id=session.topic,
             session_id=session.id,
@@ -151,13 +155,13 @@ async def submit_answer(request: SubmitAnswerRequest):
         await get_personalization_service().record_event(
             session.student_id,
             LearningEventType.ASSESSMENT_ANSWER,
-            payload={
-                "session_id": session.id,
-                "topic": session.topic,
-                "question_id": request.question_id,
-                "is_correct": response.is_correct if response else False,
-                "time_taken": request.time_taken,
-            },
+            payload=AssessmentAnswerPayload(
+                session_id=session.id,
+                topic=session.topic,
+                question_id=request.question_id,
+                is_correct=response.is_correct if response else False,
+                time_taken=request.time_taken,
+            ).model_dump(exclude_none=True),
             source="assessment_router",
             topic_id=session.topic,
             session_id=session.id,
@@ -203,13 +207,13 @@ async def log_quick_response(req: QuickLogRequest):
     await personalization.record_event(
         req.user_id,
         LearningEventType.ASSESSMENT_ANSWER,
-        payload={
-            "topic": req.topic,
-            "question_id": "quick-log",
-            "is_correct": req.is_correct,
-            "time_taken": None,
-            "difficulty": req.difficulty,
-        },
+        payload=AssessmentAnswerPayload(
+            topic=req.topic,
+            question_id="quick-log",
+            is_correct=req.is_correct,
+            time_taken=None,
+            difficulty=req.difficulty,
+        ).model_dump(exclude_none=True),
         source="assessment_quick_log",
         topic_id=req.topic,
     )

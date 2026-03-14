@@ -17,7 +17,7 @@ from ai_engine.skills import get_skill_manager
 from ai_engine.swarm.tutor import build_tutor_degraded_response
 from app.services.ppt_generator import PPTGenerator
 from app.services.personalization_service import get_personalization_service
-from app.personalization.schemas import LearningEventType
+from app.personalization.schemas import LearningEventType, TutorInteractionPayload
 from app.core.metrics import AI_REQUESTS, AI_LATENCY
 from app.core.audit import audit_logger
 
@@ -508,14 +508,14 @@ async def tutor_chat(request: TutorChatRequest):
         if isinstance(result, dict):
             normalized_payload = _normalize_tutor_payload(result, topic)
             response_text = json.dumps(normalized_payload)
-            personalization_payload = {
-                "message": request.message,
-                "response": response_text,
-                "session_id": request.session_id,
-                "behavior": profile.get("behavior_label", "neutral"),
-                "recommendation": profile.get("risk_summary", {}).get("risk_level"),
-                "topic": topic,
-            }
+            personalization_payload = TutorInteractionPayload(
+                message=request.message,
+                response=response_text,
+                session_id=request.session_id,
+                behavior=profile.get("behavior_label", "neutral"),
+                recommendation=profile.get("risk_summary", {}).get("risk_level") if isinstance(profile.get("risk_summary"), dict) else getattr(profile.get("risk_summary", {}), "risk_level", None),
+                topic=topic,
+            ).model_dump(exclude_none=True)
             await personalization.record_event(
                 request.user_id,
                 LearningEventType.TUTOR_INTERACTION,
@@ -542,13 +542,13 @@ async def tutor_chat(request: TutorChatRequest):
         await personalization.record_event(
             request.user_id,
             LearningEventType.TUTOR_INTERACTION,
-            payload={
-                "message": request.message,
-                "response": response_text,
-                "session_id": request.session_id,
-                "behavior": profile.get("behavior_label", "neutral"),
-                "topic": topic,
-            },
+            payload=TutorInteractionPayload(
+                message=request.message,
+                response=response_text,
+                session_id=request.session_id,
+                behavior=profile.get("behavior_label", "neutral"),
+                topic=topic,
+            ).model_dump(exclude_none=True),
             source="ai_router",
             topic_id=topic,
             session_id=request.session_id,

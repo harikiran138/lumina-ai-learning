@@ -104,6 +104,43 @@ flowchart LR
     T --> G
 ```
 
+## Screenshot-Parity Loop
+
+The vision images describe a more specific five-step loop. The implementation docs should preserve that framing because it is useful for agents and designers:
+
+1. Student answers or interacts.
+2. BKT and DKT signals update mastery, growth velocity, and lag zones.
+3. The next question is generated from the learner's latest evidence.
+4. The course path or review plan adjusts.
+5. The teacher dashboard updates and can trigger intervention.
+
+Important accuracy note:
+
+- steps 1, 2, and parts of 5 have real foundations in the repo today
+- steps 3 and 4 are still only partially implemented in production
+
+## Behavioral Telemetry Layer
+
+The screenshots also imply a real-time behavior-capture layer before question selection.
+
+That layer should feed both authenticity and cognitive-load logic.
+
+### Target signal families
+
+- typing speed and rhythm
+- think-time before first character
+- pause and hesitation pattern
+- correction and backspace behavior
+- paste bursts
+- scroll and reread behavior
+- repeated answer changes
+- inactivity spikes inside an active session
+
+### Current accuracy note
+
+- the repo has learner-profile and assessment event foundations
+- it does not yet have the full frontend telemetry pipeline shown in the screenshots
+
 ## Core Design Rule
 
 Every new major feature should participate in this loop:
@@ -258,6 +295,23 @@ Loop:
 3. The teacher approves, modifies, dismisses, or completes the action.
 4. The system tracks whether the student improved afterward.
 5. That outcome becomes evidence for future interventions.
+
+## Platform-Wide Learning Loop
+
+Several screenshots show the system getting smarter not just for one learner, but across similar learners and concepts.
+
+That should be treated as a separate optimization loop on top of the per-student loop.
+
+### Target behaviors
+
+- if explanation style `X` consistently works for learner profile type `Y`, raise its prior weight for similar future learners
+- if question format `Z` improves retention at mastery band `0.4-0.6`, increase its selection priority in that band
+- if a concept causes a large share of learners to need the same remediation style, pre-bias future support for that concept
+
+### Current accuracy note
+
+- this cross-learner transfer layer is still target-state
+- it should not be described as live production behavior yet
 
 ## 4. Pathway optimization loop
 

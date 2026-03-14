@@ -53,6 +53,12 @@ Shows:
 - grading queue
 - average mastery
 
+The screenshots also imply these top-line buckets:
+
+- struggling right now
+- at-risk this week
+- growing consistently
+
 ## 2. Concept heatmap
 
 Target-state display:
@@ -87,6 +93,15 @@ When teacher clicks a student, show:
 - explanation modes that worked recently
 - current AI recommendation
 
+This aligns with the screenshot claim that a teacher should be able to see:
+
+- current question the learner is on right now
+- mastery per concept, not just overall
+- growth velocity state
+- last five answers
+- top lag zones
+- AI's current recommendation
+
 ## 5. Teacher action center
 
 Target teacher actions:
@@ -98,6 +113,13 @@ Target teacher actions:
 - override the next question
 - override the next pathway step
 - schedule follow-up
+
+To match the screenshots more literally, this action center should also support:
+
+- one-click encouragement
+- watchlist only
+- send a quick tip
+- shift learner to easier or harder track
 
 ## Data Model
 
@@ -165,6 +187,20 @@ queue_priority = (
 - unresolved high-risk interventions rise to the top
 - learners who are stuck despite repeated AI support rise to the top
 - low-confidence AI recommendations should still appear, but clearly marked for teacher judgment
+
+## Class-Level Insight Panels
+
+The screenshots show a broader class-intelligence layer, not only per-student alerts.
+
+Teacher-facing class insight panels should include:
+
+- which concept has `60%+` of the class confused
+- which explanation mode the class currently responds best to
+- which student pairs or support clusters learn well together
+- class dropout-risk score, refreshed on a regular schedule
+- average time-to-mastery per concept
+- predictive list of learners likely to fail or stall next week
+- auto-generated weekly report per student and for the whole class
 
 ## Refresh Model
 

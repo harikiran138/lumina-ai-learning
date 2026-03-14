@@ -16,6 +16,7 @@ from app.personalization.schemas import (
     RiskSummary,
 )
 from app.store.personalization_store import PersonalizationStore
+from app.personalization.kpi_engine import KPIEngine
 from learner_profile.analysis.cognitive_load import CognitiveLoadEstimator
 from learner_profile.models.bkt import BKTModel
 
@@ -374,8 +375,18 @@ class PersonalizationService:
         elif event_type == LearningEventType.PROFILE_UPDATED:
             profile.metadata["profile_updates"] = int(profile.metadata.get("profile_updates", 0)) + 1
 
-        recent_events = await self.store.list_events(user_id, limit=10)
+        recent_events = await self.store.list_events(user_id, limit=50) # Increased limit for better KPI window
         self._refresh_cognitive_load(profile, recent_events)
+        
+        # Calculate & Persist KPIs
+        new_kpi = KPIEngine.compute_snapshot(profile, recent_events)
+        profile.kpi_snapshot = new_kpi
+        profile.kpi_history.append(new_kpi)
+        
+        # Limit history size to 30 snapshots
+        if len(profile.kpi_history) > 30:
+            profile.kpi_history = profile.kpi_history[-30:]
+
         if profile.behavior_signals["cognitive_load"] > 75:
             profile.behavior_signals["behavior_label"] = "overloaded"
         elif performance.recent_average_score >= 80:
@@ -389,10 +400,57 @@ class PersonalizationService:
         await self.store.upsert_profile(profile)
         await self._maybe_create_intervention(profile, event)
         return profile
-
     async def get_interventions(self, user_id: Optional[str] = None):
         return await self.store.list_interventions(user_id=user_id)
 
+    async def get_student_projection(self, user_id: str) -> Dict[str, Any]:
+        """Canonical projection for the student dashboard."""
+        profile = await self.get_profile(user_id)
+        return {
+            "mastery": {topic: cm.model_dump() for topic, cm in profile.mastery_state.items()},
+            "performance": profile.performance_summary.model_dump(),
+            "engagement": profile.engagement_summary.model_dump(),
+            "recent_achievements": profile.metadata.get("achievements", []),
+        }
+
+    async def get_tutor_projection(self, user_id: str) -> Dict[str, Any]:
+        """Canonical projection for the ATUI (AI Tutor). Includes DKT and explanation profile."""
+        profile = await self.get_profile(user_id)
+        return {
+            "mastery_scores": {topic: round(cm.score, 4) for topic, cm in profile.mastery_state.items()},
+            "weak_topics": profile.weak_topics,
+            "behavior_label": profile.behavior_signals.get("behavior_label", "neutral"),
+            "cognitive_load": profile.behavior_signals.get("cognitive_load", 50),
+            "risk_summary": profile.risk_summary.model_dump(),
+            "explanation_profile": profile.explanation_profile.model_dump(),
+            "misconceptions": profile.misconception_summary,
+        }
+
+    async def get_teacher_projection(self, user_id: str) -> Dict[str, Any]:
+        """Canonical projection for the teacher dashboard. Includes KPIs and interventions."""
+        profile = await self.get_profile(user_id)
+        interventions = await self.get_interventions(user_id)
+        return {
+            "user_id": profile.user_id,
+            "risk_summary": profile.risk_summary.model_dump(),
+            "performance": profile.performance_summary.model_dump(),
+            "engagement": profile.engagement_summary.model_dump(),
+            "kpi_snapshot": profile.kpi_snapshot.model_dump(),
+            "active_interventions": [i.model_dump() for i in interventions if i.status in (InterventionStatus.OPEN, InterventionStatus.ACKNOWLEDGED)],
+            "weak_topics": profile.weak_topics,
+        }
+
+    async def get_pathway_projection(self, user_id: str) -> Dict[str, Any]:
+        """Canonical projection for the pathway engine. Includes readiness and limits."""
+        profile = await self.get_profile(user_id)
+        return {
+            "mastery_state": {topic: cm.model_dump() for topic, cm in profile.mastery_state.items()},
+            "risk_level": profile.risk_summary.risk_level,
+            "cognitive_load": profile.behavior_signals.get("cognitive_load", 50),
+            "weak_topics": profile.weak_topics,
+            "readiness_score": profile.performance_summary.recent_average_score / 100.0,
+            "kpi_snapshot": profile.kpi_snapshot.model_dump(),
+        }
 
 _service_instance: Optional[PersonalizationService] = None
 

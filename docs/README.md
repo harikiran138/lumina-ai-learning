@@ -35,12 +35,16 @@ Welcome to the comprehensive documentation for **Lumina**, an AI-powered, self-h
 - [STUDENT_KPI_ENGINE.md](STUDENT_KPI_ENGINE.md) - KPI formulas, thresholds, and shared scoring rules for mastery, risk, engagement, and readiness
 - [EXPLANATION_STYLE_ENGINE.md](EXPLANATION_STYLE_ENGINE.md) - how the tutor should adapt explanations, pacing, modality, and scaffolding per learner
 - [VISION_ALIGNMENT_AUDIT.md](VISION_ALIGNMENT_AUDIT.md) - claim-by-claim check of the bold architecture vision against what is actually implemented today
+- [IMAGE_ALIGNMENT_CHECKLIST.md](IMAGE_ALIGNMENT_CHECKLIST.md) - screenshot-to-documentation crosswalk showing where each visual concept is covered
 - [QUESTION_DIVERSITY_ENGINE.md](QUESTION_DIVERSITY_ENGINE.md) - answer-conditioned multi-format question planning and evidence-driven assessment design
 - [AUTHENTICITY_AND_ORIGINALITY_ENGINE.md](AUTHENTICITY_AND_ORIGINALITY_ENGINE.md) - non-punitive copy-paste and originality verification architecture
 - [TEACHER_REAL_TIME_DASHBOARD.md](TEACHER_REAL_TIME_DASHBOARD.md) - the teacher control plane, intervention queue, and heatmap design
 - [PERSONALIZED_COURSE_ARCHITECTURE.md](PERSONALIZED_COURSE_ARCHITECTURE.md) - blueprint vs learner-projection design for per-student course delivery
 - [AGENT_BUILD_BACKLOG.md](AGENT_BUILD_BACKLOG.md) - strategic implementation tasks for future agents building the learner intelligence system
 - [PRODUCT_STRATEGY_AND_MARKET_GAP.md](PRODUCT_STRATEGY_AND_MARKET_GAP.md) - problem statement, market gap, positioning, and why Lumina should exist
+- [WORLD_CLASS_AI_LMS_STRATEGY.md](WORLD_CLASS_AI_LMS_STRATEGY.md) - strategic synthesis for making Lumina a category-defining AI LMS
+- [ROLE_ECOSYSTEM_AND_ACCESS_MODEL.md](ROLE_ECOSYSTEM_AND_ACCESS_MODEL.md) - expanded stakeholder roles, permissions, and privacy boundaries
+- [PLATFORM_AND_GLOBAL_DEPLOYMENT_STRATEGY.md](PLATFORM_AND_GLOBAL_DEPLOYMENT_STRATEGY.md) - model stack, privacy, offline-first, multilingual, and global deployment strategy
 - [FEATURE_REQUIREMENTS_CHECKLIST.md](FEATURE_REQUIREMENTS_CHECKLIST.md) - complete feature checklist for a full AI LMS
 - [DELIVERY_ROADMAP_AND_PHASES.md](DELIVERY_ROADMAP_AND_PHASES.md) - phase-by-phase program roadmap with tasks and acceptance criteria
 - [AGENT_EXECUTION_GUIDE.md](AGENT_EXECUTION_GUIDE.md) - instructions for future agents and contributors
