@@ -1,4 +1,8 @@
 from typing import List, Dict, Optional
+from app.database.supabase_manager import supabase_db
+from app.core.logging import structlog
+
+log = structlog.get_logger()
 
 class CurriculumNode:
     def __init__(self, concept_id: str, difficulty: float):
@@ -8,14 +12,43 @@ class CurriculumNode:
         
 class CurriculumOptimizer:
     """
-    Simulates a Curriculum Graph for Pathway Optimization.
-    In a full production environment, this would search a Neo4j or 
-    PostgreSQL graph to find the lowest-cost path of concepts.
+    Optimizes the learning path using a Curriculum Graph backed by PostgreSQL.
+    Matches concepts based on prerequisite satisfaction and difficulty.
     """
-    def __init__(self):
-        # A mocked simple graph for bootstrapping
+    def __init__(self, course_id: Optional[str] = None):
         self.nodes: Dict[str, CurriculumNode] = {}
+        if course_id:
+            self.load_from_db(course_id)
         
+    def load_from_db(self, course_id: str):
+        """
+        Loads knowledge nodes and their relationships from the Supabase database.
+        """
+        try:
+            client = supabase_db.get_client()
+            if not client:
+                log.warning("optimizer_db_load_failed", reason="no_client")
+                return
+
+            response = client.table("knowledge_nodes").select("*").eq("course_id", course_id).execute()
+            
+            # Difficulty mapping to numeric scale for sorting
+            diff_map = {"beginner": 0.2, "intermediate": 0.5, "advanced": 0.8}
+            
+            for item in response.data:
+                # We use the 'concept' name as the identifier for pathing
+                concept = item["concept"]
+                difficulty_raw = item.get("difficulty", "beginner")
+                difficulty = diff_map.get(difficulty_raw, 0.5)
+                
+                node = CurriculumNode(concept, difficulty)
+                node.prerequisites = item.get("prerequisites", [])
+                self.nodes[concept] = node
+                
+            log.info("optimizer_loaded_nodes", count=len(self.nodes), course_id=course_id)
+        except Exception as e:
+            log.error("optimizer_load_error", error=str(e))
+
     def add_node(self, concept_id: str, difficulty: float, prerequisites: List[str] = None):
         node = CurriculumNode(concept_id, difficulty)
         if prerequisites:

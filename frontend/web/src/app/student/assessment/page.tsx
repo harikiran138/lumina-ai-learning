@@ -26,11 +26,29 @@ export default function AssessmentPage() {
   >("idle");
   const [question, setQuestion] = useState<any>(null);
   const [selectedOptionId, setSelectedOptionId] = useState<string>("");
+  const [selectedAnswer, setSelectedAnswer] = useState<string>("");
+  const [telemetry, setTelemetry] = useState({
+    paste_detected: false,
+    backspace_count: 0,
+    typing_variance: 0,
+    char_count: 0,
+  });
+
   const [feedback, setFeedback] = useState<any>(null);
   const [completionReason, setCompletionReason] = useState<string>("");
   const [report, setReport] = useState<any>(null);
   const [topic, setTopic] = useState<string>("Python Programming");
   const [numQuestions, setNumQuestions] = useState<number>(5);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Backspace") {
+      setTelemetry((prev) => ({ ...prev, backspace_count: prev.backspace_count + 1 }));
+    }
+  };
+
+  const handlePaste = () => {
+    setTelemetry((prev) => ({ ...prev, paste_detected: true }));
+  };
 
   // API Base URL - fallback to 8001 if env not set
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE
@@ -123,6 +141,13 @@ export default function AssessmentPage() {
       setQuestion(data);
       setStartTime(Date.now());
       setSelectedOptionId("");
+      setSelectedAnswer("");
+      setTelemetry({
+        paste_detected: false,
+        backspace_count: 0,
+        typing_variance: 0.1, // mock
+        char_count: 0,
+      });
       setFeedback(null);
       setReport(null);
       setStatus("question");
@@ -134,12 +159,20 @@ export default function AssessmentPage() {
   };
 
   const submitAnswer = async () => {
-    if (!sessionId || !selectedOptionId || !question) return;
+    if (!sessionId || !question) return;
+
+    const isMCQ = question.format === "mcq";
+    if (isMCQ && !selectedOptionId) return;
+    if (!isMCQ && !selectedAnswer) return;
+
     setStatus("loading");
 
-    // Determine correctness on client side for this demo flow
-    const isCorrect = selectedOptionId === question.correct_option_id;
     const timeTaken = (Date.now() - startTime) / 1000;
+    const finalTelemetry = {
+      ...telemetry,
+      char_count: selectedAnswer.length || 0,
+      think_time_seconds: timeTaken,
+    };
 
     try {
       const res = await fetch(`${API_BASE}/submit`, {
@@ -148,8 +181,9 @@ export default function AssessmentPage() {
         body: JSON.stringify({
           session_id: sessionId,
           question_id: question.id,
-          selected_option_id: selectedOptionId,
-          is_correct: isCorrect,
+          selected_option_id: isMCQ ? selectedOptionId : null,
+          selected_answer: isMCQ ? null : selectedAnswer,
+          telemetry: finalTelemetry,
           time_taken: timeTaken,
         }),
       });
@@ -160,17 +194,12 @@ export default function AssessmentPage() {
       }
 
       const data = await res.json();
-
-      // Use the real explanation if available, fallback to generic
-      const explanationText =
-        question.explanation ||
-        (isCorrect
-          ? "Great job! That's the correct answer."
-          : "Incorrect. Keep trying!");
+      const lastResponse = data.responses[data.responses.length - 1];
 
       const feedbackData = {
-        is_correct: isCorrect,
-        explanation: explanationText,
+        is_correct: lastResponse.is_correct,
+        score: lastResponse.score,
+        explanation: lastResponse.analysis?.feedback || question.explanation,
         mastery_update: { current_difficulty: data.current_difficulty },
       };
 
@@ -178,6 +207,7 @@ export default function AssessmentPage() {
       setStatus("feedback");
     } catch (err) {
       console.error(err);
+      setStatus("question"); // Allow retry on error
     }
   };
 
@@ -294,35 +324,52 @@ export default function AssessmentPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <RadioGroup
-                    value={selectedOptionId}
-                    onValueChange={setSelectedOptionId}
-                    className="space-y-4"
-                  >
-                    {question.options.map((opt: any, i: number) => (
-                      <div
-                        key={opt.id}
-                        className="flex items-center space-x-2 p-3 rounded-lg border border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
-                      >
-                        <RadioGroupItem
-                          value={opt.id}
-                          id={`opt-${opt.id}`}
-                          className="border-white/20 text-purple-500"
-                        />
-                        <Label
-                          htmlFor={`opt-${opt.id}`}
-                          className="text-gray-300 font-normal cursor-pointer flex-1"
+                  {question.format === "mcq" ? (
+                    <RadioGroup
+                      value={selectedOptionId}
+                      onValueChange={setSelectedOptionId}
+                      className="space-y-4"
+                    >
+                      {question.options.map((opt: any, i: number) => (
+                        <div
+                          key={opt.id}
+                          className="flex items-center space-x-2 p-3 rounded-lg border border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
                         >
-                          {opt.text}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
+                          <RadioGroupItem
+                            value={opt.id}
+                            id={`opt-${opt.id}`}
+                            className="border-white/20 text-purple-500"
+                          />
+                          <Label
+                            htmlFor={`opt-${opt.id}`}
+                            className="text-gray-300 font-normal cursor-pointer flex-1"
+                          >
+                            {opt.text}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  ) : (
+                    <div className="space-y-4">
+                      <textarea
+                        className="w-full h-32 bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-mono text-sm"
+                        placeholder="Type your answer here..."
+                        value={selectedAnswer}
+                        onChange={(e) => setSelectedAnswer(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        onPaste={handlePaste}
+                      />
+                      <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                        Semantic Analysis Active
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter className="flex justify-end pt-4">
                   <Button
                     onClick={submitAnswer}
-                    disabled={!selectedOptionId}
+                    disabled={question.format === "mcq" ? !selectedOptionId : !selectedAnswer}
                     className="bg-purple-600 hover:bg-purple-700 ml-4"
                   >
                     Submit Answer

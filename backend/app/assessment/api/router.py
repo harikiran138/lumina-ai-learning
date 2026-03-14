@@ -149,19 +149,27 @@ async def submit_answer(request: SubmitAnswerRequest):
             session_id=request.session_id,
             question_id=request.question_id,
             selected_option_id=request.selected_option_id,
+            selected_answer=request.selected_answer,
+            telemetry=request.telemetry,
             time_taken=request.time_taken,
         )
         response = session.responses[-1] if session.responses else None
+        
+        # Build enriched payload for PersonalizationService (WS4)
+        payload = AssessmentAnswerPayload(
+            session_id=session.id,
+            topic=session.topic,
+            question_id=request.question_id,
+            is_correct=response.is_correct if response else False,
+            time_taken=request.time_taken,
+            analysis=response.analysis.model_dump() if response and response.analysis else None,
+            telemetry=response.telemetry.model_dump() if response and response.telemetry else None,
+        )
+
         await get_personalization_service().record_event(
             session.student_id,
             LearningEventType.ASSESSMENT_ANSWER,
-            payload=AssessmentAnswerPayload(
-                session_id=session.id,
-                topic=session.topic,
-                question_id=request.question_id,
-                is_correct=response.is_correct if response else False,
-                time_taken=request.time_taken,
-            ).model_dump(exclude_none=True),
+            payload=payload.model_dump(exclude_none=True),
             source="assessment_router",
             topic_id=session.topic,
             session_id=session.id,
@@ -230,11 +238,7 @@ async def log_quick_response(req: QuickLogRequest):
 
 @router.get("/report/{session_id}", response_model=AssessmentReport)
 async def get_report(session_id: str):
-    """Return a richer summary report for a completed assessment.
-
-    This uses the existing scalar-difficulty engine and response history to
-    derive an overall accuracy and a coarse performance level.
-    """
+    """Return a richer summary report for a completed assessment."""
     session = await session_manager.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -267,4 +271,5 @@ async def get_report(session_id: str):
         final_ability_estimate=ability,
         level=level,
         summary=summary,
+        analysis_history=[r.analysis for r in session.responses if r.analysis]
     )

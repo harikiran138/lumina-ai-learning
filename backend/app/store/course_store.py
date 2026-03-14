@@ -113,6 +113,39 @@ class CourseStore:
             log.error("create_course_failed", error=str(e))
             raise e
 
+    async def create_course_from_blueprint(self, blueprint: dict, teacher_id: str) -> dict:
+        """
+        Creates a course from a CourseBlueprint object.
+        """
+        course_data = {
+            "id": str(uuid.uuid4()),
+            "name": blueprint.get("title", "Untitled Course"),
+            "title": blueprint.get("title", "Untitled Course"),
+            "course_name": blueprint.get("title", "Untitled Course"),
+            "code": blueprint.get("code") or f"c-{str(uuid.uuid4())[:8]}",
+            "course_code": blueprint.get("code") or f"c-{str(uuid.uuid4())[:8]}",
+            "description": blueprint.get("description", ""),
+            "teacher_id": teacher_id,
+            "modules": blueprint.get("modules", []),
+            "estimated_duration": blueprint.get("estimated_duration", ""),
+            "created_at": datetime.utcnow().isoformat(),
+        }
+
+        if self.client is None:
+            payload = self.local.read()
+            payload["courses"].append(course_data)
+            self.local.write(payload)
+            return self._normalize_course(course_data)
+
+        try:
+            response = self.courses_collection.insert(course_data).execute()
+            if response.data:
+                return self._normalize_course(response.data[0])
+            raise Exception("Failed to create course from blueprint")
+        except Exception as e:
+            log.error("create_course_from_blueprint_failed", error=str(e))
+            raise e
+
     async def list_courses(self) -> List[dict]:
         if self.client is None:
             payload = self.local.read()

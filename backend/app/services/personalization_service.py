@@ -17,6 +17,8 @@ from app.personalization.schemas import (
 )
 from app.store.personalization_store import PersonalizationStore
 from app.personalization.kpi_engine import KPIEngine
+from app.personalization.authenticity_engine import authenticity_engine
+from app.assessment.models.schemas import ResponseTelemetry, AnswerAnalysis
 from learner_profile.analysis.cognitive_load import CognitiveLoadEstimator
 from learner_profile.models.bkt import BKTModel
 
@@ -86,11 +88,18 @@ class PersonalizationService:
         score_pct: float,
         source: str,
         attempts: int = 1,
+        integrity: float = 1.0,
     ):
         mastery = self._ensure_mastery(profile, topic_id)
         normalized = max(0.0, min(1.0, score_pct / 100.0))
         previous = mastery.score
-        mastery.score = round((previous * 0.6) + (normalized * 0.4), 4)
+        
+        # Apply integrity-weighting to the mastery update
+        # If integrity is low (e.g. 0.2), we trust the new evidence less
+        weight = 0.4 * integrity
+        mastery.score = round((previous * (1.0 - weight)) + (normalized * weight), 4)
+        
+        mastery.integrity_score = round((mastery.integrity_score * 0.7) + (integrity * 0.3), 3)
         mastery.confidence = round(min(1.0, mastery.confidence + 0.05), 4)
         mastery.attempts += attempts
         if normalized >= 0.7:
@@ -106,10 +115,19 @@ class PersonalizationService:
         profile.weak_topics = sorted(list(weak_topics))
 
     def _update_mastery_from_binary(
-        self, profile: LearnerProfileRecord, topic_id: str, is_correct: bool, source: str
+        self, 
+        profile: LearnerProfileRecord, 
+        topic_id: str, 
+        is_correct: bool, 
+        source: str,
+        integrity: float = 1.0
     ):
         mastery = self._ensure_mastery(profile, topic_id)
         mastery.score = round(self.bkt.update_mastery(mastery.score or self.bkt.p_l0, is_correct), 4)
+        
+        # Integrate integrity into the topic-level stats
+        mastery.integrity_score = round((mastery.integrity_score * 0.7) + (integrity * 0.3), 3)
+        
         mastery.confidence = round(min(1.0, mastery.confidence + 0.04), 4)
         mastery.attempts += 1
         mastery.successes += 1 if is_correct else 0
@@ -131,6 +149,42 @@ class PersonalizationService:
         if not has_history or current_value <= 0:
             return round(new_value, 2)
         return round((current_value * 0.7) + (new_value * 0.3), 2)
+
+    def _reward_explanation_style(self, profile: LearnerProfileRecord, was_success: bool):
+        """
+        Updates the effectiveness of the last used explanation mode based on current success.
+        """
+        exp_profile = profile.explanation_profile
+        if not exp_profile.last_plan:
+            return
+
+        mode_name = exp_profile.last_plan.mode
+        if mode_name not in exp_profile.strategies:
+            from app.personalization.schemas import ExplanationStrategyState
+            exp_profile.strategies[mode_name] = ExplanationStrategyState(mode_name=mode_name)
+
+        state = exp_profile.strategies[mode_name]
+        state.total_uses += 1
+        if was_success:
+            state.success_count += 1
+        
+        # Simple moving average for effectiveness
+        alpha = 0.2
+        reward = 1.0 if was_success else 0.0
+        state.effectiveness_score = round(
+            (state.effectiveness_score * (1 - alpha)) + (reward * alpha), 
+            2
+        )
+        state.updated_at = datetime.utcnow()
+        exp_profile.updated_at = datetime.utcnow()
+
+        # Update primary mode
+        sorted_modes = sorted(
+            exp_profile.strategies.items(), 
+            key=lambda x: x[1].effectiveness_score, 
+            reverse=True
+        )
+        exp_profile.primary_mode = sorted_modes[0][0]
 
     async def _maybe_create_intervention(
         self,
@@ -301,7 +355,24 @@ class PersonalizationService:
 
         elif event_type == LearningEventType.ASSESSMENT_ANSWER:
             if topic_id:
-                self._update_mastery_from_binary(profile, topic_id, bool(payload.get("is_correct")), event_type.value)
+                is_correct = bool(payload.get("is_correct"))
+                
+                # WS4: Calculate integrity from telemetry and analysis
+                telemetry_data = payload.get("telemetry")
+                analysis_data = payload.get("analysis")
+                
+                integrity = 1.0
+                if telemetry_data and analysis_data:
+                    try:
+                        telemetry = ResponseTelemetry(**telemetry_data)
+                        analysis = AnswerAnalysis(**analysis_data)
+                        integrity = authenticity_engine.calculate_integrity_score(telemetry, analysis)
+                    except Exception as e:
+                        log.warning("failed_to_parse_telemetry_or_analysis", error=str(e))
+                
+                self._update_mastery_from_binary(profile, topic_id, is_correct, event_type.value, integrity=integrity)
+                # Reward the last explanation if this was successful
+                self._reward_explanation_style(profile, is_correct)
 
         elif event_type == LearningEventType.ASSESSMENT_COMPLETED:
             engagement.total_assessments_completed += 1
@@ -361,6 +432,15 @@ class PersonalizationService:
             tutor_summary["last_recommendation"] = payload.get("recommendation")
             tutor_summary["last_behavior"] = payload.get("behavior")
             tutor_summary["total_sessions"] = int(tutor_summary.get("total_sessions", 0)) + 1
+            
+            # Persist the plan used for this interaction for later rewarding
+            if "explanation_plan" in payload:
+                from app.personalization.schemas import ExplanationPlan
+                plan_data = payload["explanation_plan"]
+                if isinstance(plan_data, dict):
+                    profile.explanation_profile.last_plan = ExplanationPlan(**plan_data)
+                elif isinstance(plan_data, ExplanationPlan):
+                    profile.explanation_profile.last_plan = plan_data
 
         elif event_type == LearningEventType.NOTE_ADDED:
             notes = profile.metadata.get("notes", [])
@@ -402,6 +482,89 @@ class PersonalizationService:
         return profile
     async def get_interventions(self, user_id: Optional[str] = None):
         return await self.store.list_interventions(user_id=user_id)
+
+    async def update_intervention(
+        self,
+        intervention_id: str,
+        status: Optional[InterventionStatus] = None,
+        teacher_notes: Optional[str] = None,
+        action_taken: Optional[str] = None,
+    ) -> Optional[InterventionRecommendation]:
+        intervention = await self.store.get_intervention(intervention_id)
+        if not intervention:
+            return None
+
+        if status:
+            intervention.status = status
+            if status == InterventionStatus.RESOLVED:
+                intervention.resolved_at = datetime.utcnow()
+        if teacher_notes is not None:
+            intervention.teacher_notes = teacher_notes
+        if action_taken is not None:
+            intervention.action_taken = action_taken
+        
+        intervention.updated_at = datetime.utcnow()
+        
+        # If resolved, update the student's intervention history
+        if status == InterventionStatus.RESOLVED:
+            profile = await self.get_profile(intervention.user_id)
+            profile.intervention_history.resolved_count += 1
+            profile.intervention_history.total_interventions += 1 # Ensure this is tracked
+            await self.store.upsert_profile(profile)
+
+        return await self.store.upsert_intervention(intervention)
+
+    async def get_cohort_summary(self, user_ids: List[str]) -> Dict[str, Any]:
+        """Aggregate risk and performance metrics for a group of students."""
+        profiles = []
+        for uid in user_ids:
+            p = await self.store.get_profile(uid)
+            if p:
+                profiles.append(p)
+        
+        if not profiles:
+            return {"total_students": len(user_ids), "risk_distribution": {}, "average_performance": 0}
+
+        risk_counts = {"low": 0, "medium": 0, "high": 0, "critical": 0}
+        total_perf = 0.0
+        active_interventions = 0
+
+        for p in profiles:
+            risk_counts[p.risk_summary.risk_level] += 1
+            total_perf += p.performance_summary.recent_average_score
+            active_interventions += p.intervention_history.total_interventions - p.intervention_history.resolved_count
+
+        return {
+            "total_students": len(profiles),
+            "risk_distribution": risk_counts,
+            "average_performance": round(total_perf / len(profiles), 2),
+            "active_interventions_count": active_interventions,
+        }
+
+    async def get_concept_heatmap(self, user_ids: List[str], course_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Generate a class-wide mastery heatmap for all topics across students."""
+        topic_aggregation: Dict[str, List[float]] = {}
+        
+        for uid in user_ids:
+            profile = await self.store.get_profile(uid)
+            if not profile:
+                continue
+            
+            for topic_id, mastery in profile.mastery_state.items():
+                # If course_id is provided, we might want to filter topics by course
+                # But topic_id often encodes course or we can check last_source
+                topic_aggregation.setdefault(topic_id, []).append(mastery.score)
+
+        heatmap = []
+        for topic_id, scores in topic_aggregation.items():
+            heatmap.append({
+                "topic_id": topic_id,
+                "average_mastery": round(sum(scores) / len(scores), 3),
+                "student_count": len(scores),
+                "risk_count": len([s for s in scores if s < 0.6]),
+            })
+        
+        return sorted(heatmap, key=lambda x: x["average_mastery"])
 
     async def get_student_projection(self, user_id: str) -> Dict[str, Any]:
         """Canonical projection for the student dashboard."""

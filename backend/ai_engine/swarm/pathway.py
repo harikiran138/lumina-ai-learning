@@ -1,15 +1,18 @@
 from ai_engine.pathway.inference_engine import PathwayInferenceEngine
 from ai_engine.tutor_state import get_tutor_state
 from learner_profile.engine import get_learner_profile_engine
+from app.pathway.orchestrator import PathwayOrchestrator
+from app.pathway.schemas import PathwayInput
 import os
 import re
 import json
+from datetime import datetime
 
 
 class PathwayAgent:
     """
     Adaptive Curriculum Agent that optimizes learning trajectories.
-    Uses LearnerProfileEngine for data-driven recommendations.
+    Uses PathwayOrchestrator for intelligent, safe, and audited decisions.
     """
 
     def __init__(self):
@@ -20,6 +23,7 @@ class PathwayAgent:
         self.engine = PathwayInferenceEngine(model_path=model_path)
         self.state_manager = get_tutor_state()
         self.learner_engine = get_learner_profile_engine()
+        self.orchestrator = PathwayOrchestrator()
 
     async def get_session_constraints(self, session_id: str) -> dict:
         """
@@ -47,33 +51,32 @@ class PathwayAgent:
 
     async def get_recommendation(self, user_id: str, current_topic: str) -> dict:
         """
-        Determines the next best step for the learner.
+        Determines the next best step for the learner using the intelligent orchestrator.
         """
-        profile = await self.learner_engine.get_profile(user_id)
-        mastery_map = profile.get("mastery_levels", {})
-        current_mastery = mastery_map.get(current_topic, 0.5)
+        # Prepare input for the orchestrator
+        pathway_input = PathwayInput(
+            learnerId=user_id,
+            currentTopic=current_topic,
+            masteryLevel=0.5,  # Orchestrator will enrich from PersonalizationService
+            lastInteraction=datetime.utcnow().isoformat()
+        )
 
-        if current_mastery > 0.8:
-            return {
-                "action": "ADVANCE",
-                "message": f"You've mastered {current_topic}! Ready for the next challenge?",
-                "next_topic": "Next Logical Topic"
-            }
-        elif current_mastery < 0.4:
-            return {
-                "action": "REVIEW",
-                "message": f"It looks like {current_topic} is still a bit tricky. Let's do a quick review.",
-                "next_topic": current_topic
-            }
-        else:
-            return {
-                "action": "PRACTICE",
-                "message": f"Good progress on {current_topic}. Let's do some more practice.",
-                "next_topic": current_topic
-            }
+        # Run the full decision cycle (includes enrichment, policy evaluation, and audit)
+        decision = await self.orchestrator.run_decision_cycle(pathway_input)
 
-    def process_input(self, user_input: str, context: dict) -> str:
+        return {
+            "action": decision["action"].value.upper(),
+            "message": decision["reasoning"],
+            "next_topic": decision["target_id"]
+        }
+
+    async def process_input(self, user_input: str, context: dict) -> str:
         """
         Process natural language input regarding the pathway.
         """
-        return f"Pathway Agent: Analyzed '{user_input}'. Adjusting your journey based on mastery data."
+        user_id = context.get("user_id", "anonymous")
+        current_topic = context.get("topic", "General")
+        
+        recommendation = await self.get_recommendation(user_id, current_topic)
+        
+        return f"Pathway Agent: {recommendation['message']}"

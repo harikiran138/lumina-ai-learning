@@ -182,6 +182,21 @@ class PersonalizationStore:
             items = [item for item in items if item.get("user_id") == user_id]
         return [InterventionRecommendation(**item) for item in items[-limit:]][::-1]
 
+    async def get_intervention(self, intervention_id: str) -> Optional[InterventionRecommendation]:
+        if self.client:
+            try:
+                response = self.client.table("intervention_recommendations").select("*").eq("id", intervention_id).execute()
+                if response.data:
+                    return InterventionRecommendation(**response.data[0])
+            except Exception as exc:
+                log.warning("intervention_fetch_failed", intervention_id=intervention_id, error=str(exc))
+
+        payload = self._read_fallback()
+        for item in payload["interventions"]:
+            if item.get("id") == intervention_id:
+                return InterventionRecommendation(**item)
+        return None
+
     async def upsert_rubric(self, rubric: RubricDefinition) -> RubricDefinition:
         record = rubric.model_dump(mode="json")
         if self.client:
