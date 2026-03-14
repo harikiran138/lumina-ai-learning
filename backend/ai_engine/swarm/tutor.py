@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from ai_engine.llm import OllamaProvider, get_llm_provider, is_provider_error
@@ -143,6 +144,10 @@ def _build_ai_timeline_flow() -> list[dict]:
             "placeholder": "Example: turn this into a 5-mark exam answer.",
         },
     ]
+
+
+def get_rag_engine(provider: str = "auto") -> RetrievalService:
+    return RetrievalService(provider=provider)
 
 
 def build_tutor_degraded_response(
@@ -332,7 +337,7 @@ class TutorAgent:
 
     def __init__(self, provider: str = "auto"):
         self.llm = get_llm_provider(provider)
-        self.retrieval = RetrievalService(provider=provider)
+        self.retrieval = get_rag_engine(provider=provider)
 
     def _is_local_ollama(self) -> bool:
         return isinstance(self.llm, OllamaProvider)
@@ -405,8 +410,16 @@ Keep arrays short and educational.
         Generates a Socratic response using Semantic RAG and learner profile context.
         """
         # 1. Semantic RAG Retrieval
-        context_docs = await self.retrieval.hybrid_search(user_query, top_k=3)
-        context_text = "\n".join(context_docs)
+        context_docs: list[str] = []
+        if hasattr(self.retrieval, "query"):
+            candidate = self.retrieval.query(user_query)
+            context_docs = (
+                await candidate if asyncio.iscoroutine(candidate) else candidate or []
+            )
+        elif hasattr(self.retrieval, "hybrid_search"):
+            context_docs = await self.retrieval.hybrid_search(user_query, top_k=3)
+
+        context_text = "\n".join(context_docs or [])
 
         # 2. Build Socratic Prompt
         socratic_instruction = """

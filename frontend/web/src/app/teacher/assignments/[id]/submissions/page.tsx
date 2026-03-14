@@ -17,7 +17,6 @@ import {
   BarChart2,
   BookOpen,
 } from "lucide-react";
-import { api } from "@/lib/api";
 
 export default function AssignmentSubmissionsPage() {
   const params = useParams();
@@ -39,6 +38,10 @@ export default function AssignmentSubmissionsPage() {
   const [courseLoading, setCourseLoading] = useState(false);
   const [courseSaving, setCourseSaving] = useState(false);
   const [savedCourseId, setSavedCourseId] = useState<string | null>(null);
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE ||
+    "http://127.0.0.1:8000";
 
   useEffect(() => {
     fetchSubmissions();
@@ -48,9 +51,7 @@ export default function AssignmentSubmissionsPage() {
   const fetchSubmissions = async () => {
     try {
       const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-        }/api/assignments/${assignmentId}/submissions`,
+        `${apiBase}/api/assignments/${assignmentId}/submissions`,
         { cache: "no-store" },
       );
       if (res.ok) {
@@ -68,9 +69,7 @@ export default function AssignmentSubmissionsPage() {
     try {
       setAnalyticsLoading(true);
       const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-        }/api/assignments/${assignmentId}/analytics`,
+        `${apiBase}/api/assignments/${assignmentId}/analytics`,
         { cache: "no-store" },
       );
       if (res.ok) {
@@ -89,9 +88,7 @@ export default function AssignmentSubmissionsPage() {
     setGradeResult(null);
     try {
       const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-        }/api/assignments/${assignmentId}/submissions/${submissionId}/grade`,
+        `${apiBase}/api/assignments/${assignmentId}/submissions/${submissionId}/grade`,
         {
           method: "POST",
         },
@@ -119,11 +116,7 @@ export default function AssignmentSubmissionsPage() {
     setSaving(true);
     try {
       const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-        }/api/assignments/${assignmentId}/submissions/${
-          gradeResult.submissionId
-        }/score`,
+        `${apiBase}/api/assignments/${assignmentId}/submissions/${gradeResult.submissionId}/score`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -152,9 +145,7 @@ export default function AssignmentSubmissionsPage() {
   const getFileUrl = (filePath: string | null | undefined) => {
     if (!filePath) return "#";
     const filename = filePath.split(/[\\/]/).pop();
-    return `${
-      process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-    }/uploads/${filename}`;
+    return `${apiBase}/uploads/${filename}`;
   };
 
   const handleViewReport = async (submissionId: string) => {
@@ -163,9 +154,7 @@ export default function AssignmentSubmissionsPage() {
     setCoursePlan(null);
     try {
       const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-        }/api/assignments/${assignmentId}/submissions/${submissionId}/report`,
+        `${apiBase}/api/assignments/${assignmentId}/submissions/${submissionId}/report`,
         { cache: "no-store" },
       );
       if (res.ok) {
@@ -187,9 +176,7 @@ export default function AssignmentSubmissionsPage() {
     setSavedCourseId(null);
     try {
       const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000"
-        }/api/ai/generate-course-from-assignment`,
+        `${apiBase}/api/ai/generate-course-from-assignment`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -246,7 +233,7 @@ export default function AssignmentSubmissionsPage() {
         description:
           coursePlan.description || "AI-generated personalized learning path",
         modules,
-        image: "/api/placeholder/400/320",
+        image: "https://placehold.co/400x320/0a0a0a/FFF?text=Lumina+Course",
       });
 
       if (result.success && result.courseId) {
