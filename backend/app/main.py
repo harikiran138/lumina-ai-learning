@@ -43,6 +43,7 @@ from .routers import (  # noqa: E402
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
+from app.api.routers.automation import router as automation_router  # noqa: E402
 
 # Polyfill for python 3.8
 if not hasattr(asyncio, "to_thread"):
@@ -81,6 +82,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"WARNING: Could not connect to database: {e}")
         print("Starting in limited functionality mode.")
+
+    # Startup automation scheduler
+    try:
+        from app.automation.scheduler import setup_scheduled_jobs
+        setup_scheduled_jobs(app)
+    except Exception as e:
+        print(f"WARNING: Scheduler not started: {e}")
 
     yield
 
@@ -198,6 +206,7 @@ app.include_router(hybrid.router, prefix="/api/ai", tags=["Hybrid AI"])
 
 app.include_router(student.router, prefix="/api/student", tags=["Student Data"])
 app.include_router(personalization.router, prefix="/api/personalization", tags=["Personalization"])
+app.include_router(automation_router)
 app.include_router(community.router, prefix="/api/community", tags=["Community"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(pathway.router, prefix="/api/pathway", tags=["Pathway"])

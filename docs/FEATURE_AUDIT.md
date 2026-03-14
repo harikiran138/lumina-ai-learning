@@ -1,6 +1,6 @@
 # Lumina Feature Audit
 
-Last updated: 2026-03-08
+Last updated: 2026-03-14
 
 ## 1. Summary
 
@@ -15,13 +15,12 @@ The strongest parts today are:
 - assignment upload and grading pipeline
 - AI course and PPT generation utilities
 
-The weakest parts today are:
+The weakest parts today are (as of 2026-03-14):
 
-- unified learner profile
-- teacher intervention workflows
-- explainable and calibrated scoring
-- end-to-end subject specialization
-- automation and orchestration
+- end-to-end data flow (services built but DB rows sparse)
+- RLS policies on high-sensitivity tables (17+ tables need policies)
+- subject-specific AI tutor modes (math/science/coding)
+- persistent automation audit logs (now added — `automation_job_logs` table)
 
 ## 2. Capability Matrix
 
@@ -43,7 +42,7 @@ The weakest parts today are:
 | Teacher insights | Partial | Teacher dashboard and student list | Needs recommended actions and risk ranking |
 | Admin controls | Partial | Users, logs, high-level stats | Needs policy, compliance, and model governance |
 | Mobile experience | Prototype | Flutter and mobile preview apps | No unified production mobile path |
-| AI automation | Missing | No general workflow engine | Needed for weekly plans, reports, interventions |
+| AI automation | **Implemented** | 4 recurring jobs (class digest, remediation, inactivity alerts, progress digest), APScheduler + Celery, REST API, DB-persisted logs | Guardian/parent summaries and pre-class PPT prep still pending |
 
 ## 3. Pain Points Blocking a Full AI LMS
 
