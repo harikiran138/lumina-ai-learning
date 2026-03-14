@@ -15,17 +15,17 @@
       "mastery_state": {
         "1": {
           "score": 1.0,
-          "confidence": 0.62,
-          "attempts": 3,
-          "successes": 3,
-          "last_assessed_at": "2026-03-14T13:28:08.856716",
+          "confidence": 0.66,
+          "attempts": 4,
+          "successes": 4,
+          "last_assessed_at": "2026-03-14T13:37:24.018255",
           "last_source": "assessment_answer"
         }
       },
       "weak_topics": [],
       "behavior_signals": {
         "behavior_label": "neutral",
-        "cognitive_load": 18.07
+        "cognitive_load": 14.21
       },
       "engagement_summary": {
         "total_minutes": 0.0,
@@ -53,7 +53,7 @@
           "recent scores are low",
           "limited recent activity"
         ],
-        "last_evaluated_at": "2026-03-14T13:28:08.857113"
+        "last_evaluated_at": "2026-03-14T13:37:24.019111"
       },
       "explanation_profile": {
         "strategies": {},
@@ -61,12 +61,21 @@
         "updated_at": "2026-03-14T13:23:30.334692"
       },
       "kpi_snapshot": {
-        "growth_velocity": 0.0,
+        "growth_velocity": 1.0,
         "lag_zone_score": 0.0,
         "authenticity_score": 1.0,
-        "explanation_effectiveness": 0.0,
-        "recorded_at": "2026-03-14T13:23:30.334694"
+        "explanation_effectiveness": 0.5,
+        "recorded_at": "2026-03-14T13:37:24.019074"
       },
+      "kpi_history": [
+        {
+          "growth_velocity": 1.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T13:37:24.019074"
+        }
+      ],
       "intervention_history": {
         "total_interventions": 0,
         "resolved_count": 0,
@@ -84,10 +93,10 @@
         "correct_sequence": [],
         "notes": [],
         "last_event_type": "assessment_answer",
-        "last_event_at": "2026-03-14T13:28:08.854986"
+        "last_event_at": "2026-03-14T13:37:24.016172"
       },
       "created_at": "2026-03-09T02:07:17.600887",
-      "updated_at": "2026-03-14T13:28:08.856686"
+      "updated_at": "2026-03-14T13:37:24.018211"
     },
     "guest": {
       "user_id": "guest",
@@ -196,7 +205,7 @@
           "recent scores are low",
           "limited recent activity"
         ],
-        "last_evaluated_at": "2026-03-14T13:28:45.274872"
+        "last_evaluated_at": "2026-03-14T13:37:44.535647"
       },
       "explanation_profile": {
         "strategies": {},
@@ -207,9 +216,18 @@
         "growth_velocity": 0.0,
         "lag_zone_score": 0.0,
         "authenticity_score": 1.0,
-        "explanation_effectiveness": 0.0,
-        "recorded_at": "2026-03-14T13:24:34.623424"
+        "explanation_effectiveness": 0.5,
+        "recorded_at": "2026-03-14T13:37:44.535604"
       },
+      "kpi_history": [
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T13:37:44.535604"
+        }
+      ],
       "intervention_history": {
         "total_interventions": 0,
         "resolved_count": 0,
@@ -221,7 +239,7 @@
       "assessment_summary": {},
       "metadata": {
         "last_event_type": "note_added",
-        "last_event_at": "2026-03-14T13:28:44.919843",
+        "last_event_at": "2026-03-14T13:37:44.177216",
         "notes": [
           {
             "content": "This is a test note content.",
@@ -234,11 +252,15 @@
           {
             "content": "This is a test note content.",
             "created_at": "2026-03-14T13:28:45.177284"
+          },
+          {
+            "content": "This is a test note content.",
+            "created_at": "2026-03-14T13:37:44.412521"
           }
         ]
       },
       "created_at": "2026-03-09T04:28:54.752930",
-      "updated_at": "2026-03-14T13:28:45.177228"
+      "updated_at": "2026-03-14T13:37:44.412493"
     },
     "demo_student": {
       "user_id": "demo_student",
@@ -486,6 +508,178 @@
       },
       "created_at": "2026-03-14T13:28:42.160521",
       "updated_at": "2026-03-14T13:28:43.317312"
+    },
+    "73afc7bf-4370-4a5d-9e21-84c59150aae9": {
+      "user_id": "73afc7bf-4370-4a5d-9e21-84c59150aae9",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": []
+      },
+      "mastery_state": {},
+      "weak_topics": [],
+      "behavior_signals": {},
+      "engagement_summary": {
+        "total_minutes": 0.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 0,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 0,
+        "current_streak": 0,
+        "last_activity_at": null
+      },
+      "performance_summary": {
+        "recent_average_score": 0.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 0.0,
+        "low_score_count": 0,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "low",
+        "risk_score": 0.0,
+        "confidence": 0.5,
+        "reasons": [],
+        "last_evaluated_at": null
+      },
+      "explanation_profile": {
+        "strategies": {},
+        "primary_mode": null,
+        "updated_at": "2026-03-14T13:37:42.497254"
+      },
+      "kpi_snapshot": {
+        "growth_velocity": 0.0,
+        "lag_zone_score": 0.0,
+        "authenticity_score": 1.0,
+        "explanation_effectiveness": 0.0,
+        "recorded_at": "2026-03-14T13:37:42.497269"
+      },
+      "kpi_history": [],
+      "intervention_history": {
+        "total_interventions": 0,
+        "resolved_count": 0,
+        "dismissed_count": 0
+      },
+      "misconception_summary": {},
+      "tutor_summary": {},
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {},
+      "created_at": "2026-03-14T13:37:42.497280",
+      "updated_at": "2026-03-14T13:37:42.497281"
+    },
+    "e1c7a1cc-53ac-45df-a0af-5dc43c804f61": {
+      "user_id": "e1c7a1cc-53ac-45df-a0af-5dc43c804f61",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": []
+      },
+      "mastery_state": {
+        "quadratics": {
+          "score": 0.18,
+          "confidence": 0.55,
+          "attempts": 1,
+          "successes": 0,
+          "last_assessed_at": "2026-03-14T13:38:29.663624",
+          "last_source": "quiz_result"
+        }
+      },
+      "weak_topics": [
+        "quadratics"
+      ],
+      "behavior_signals": {
+        "cognitive_load": 19.99,
+        "behavior_label": "neutral"
+      },
+      "engagement_summary": {
+        "total_minutes": 25.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 1,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 0,
+        "current_streak": 0,
+        "last_activity_at": "2026-03-14T13:38:30.564632"
+      },
+      "performance_summary": {
+        "recent_average_score": 45.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 45.0,
+        "low_score_count": 1,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "medium",
+        "risk_score": 0.35,
+        "confidence": 0.7,
+        "reasons": [
+          "recent scores are low"
+        ],
+        "last_evaluated_at": "2026-03-14T13:38:30.694035"
+      },
+      "explanation_profile": {
+        "strategies": {},
+        "primary_mode": null,
+        "updated_at": "2026-03-14T13:38:29.413916"
+      },
+      "kpi_snapshot": {
+        "growth_velocity": 0.0,
+        "lag_zone_score": 0.0,
+        "authenticity_score": 1.0,
+        "explanation_effectiveness": 0.5,
+        "recorded_at": "2026-03-14T13:38:30.693923"
+      },
+      "kpi_history": [
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T13:38:29.771455"
+        },
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T13:38:30.693923"
+        }
+      ],
+      "intervention_history": {
+        "total_interventions": 0,
+        "resolved_count": 0,
+        "dismissed_count": 0
+      },
+      "misconception_summary": {},
+      "tutor_summary": {},
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {
+        "last_event_type": "activity_logged",
+        "last_event_at": "2026-03-14T13:38:30.353767",
+        "skill_sequence": [
+          965
+        ],
+        "correct_sequence": [
+          0
+        ]
+      },
+      "created_at": "2026-03-14T13:38:29.413977",
+      "updated_at": "2026-03-14T13:38:30.564549"
     }
   },
   "events": [
@@ -861,6 +1055,36 @@
         "content": "This is a test note content."
       },
       "created_at": "2026-03-14T13:28:44.919843"
+    },
+    {
+      "id": "bd5a2db4-caef-4035-bb14-e5c5aca8e475",
+      "user_id": "user_123",
+      "event_type": "assessment_answer",
+      "source": "legacy_profile_engine",
+      "course_id": null,
+      "topic_id": "1",
+      "session_id": null,
+      "payload": {
+        "is_correct": true,
+        "question_id": "legacy-engine-event",
+        "topic": "1"
+      },
+      "created_at": "2026-03-14T13:37:24.016172"
+    },
+    {
+      "id": "9c14a862-3af7-42ad-be31-f403dc0d0fce",
+      "user_id": "00000000-0000-0000-0000-000000000001",
+      "event_type": "note_added",
+      "source": "student_router",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "title": "Test Note",
+        "subject": "Testing",
+        "content": "This is a test note content."
+      },
+      "created_at": "2026-03-14T13:37:44.177216"
     }
   ],
   "interventions": [],

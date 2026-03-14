@@ -30,6 +30,24 @@
       "due_date": "2026-03-15T13:28:41.213486",
       "created_by": "f13e8d94-46cd-42ed-a87a-ab459cd61602",
       "created_at": "2026-03-14T18:58:41.213569"
+    },
+    {
+      "id": "83fe4d2d-d826-4f34-8e80-7e92b4c7c71d",
+      "title": "Quadratics Homework",
+      "course_id": "e6c76e22-a62d-45fc-8467-9be66cab9a33",
+      "description": "Solve the assigned quadratic equations.",
+      "due_date": "2026-03-15T13:37:41.470166",
+      "created_by": "4cbe0e2a-6cdb-4d12-a75d-108468d52887",
+      "created_at": "2026-03-14T19:07:41.470273"
+    },
+    {
+      "id": "4a1f1ad9-2881-4560-aacf-c937b16607ce",
+      "title": "Quadratics Homework",
+      "course_id": "2aed173a-54a0-4888-992c-4619496f0229",
+      "description": "Solve the assigned quadratic equations.",
+      "due_date": "2026-03-15T13:38:28.451744",
+      "created_by": "91a50b9e-8d48-48ab-823a-14cbbb641782",
+      "created_at": "2026-03-14T19:08:28.451774"
     }
   ],
   "submissions": [],
@@ -42,7 +60,7 @@
       },
       "notes": [],
       "quiz_history": [],
-      "updated_at": "2026-03-14T18:58:45.508012"
+      "updated_at": "2026-03-14T19:07:44.784918"
     }
   ],
   "assessment_sessions": []

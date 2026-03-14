@@ -4,7 +4,7 @@ Last updated: 2026-03-14
 
 ## Purpose
 
-This is the strategic implementation backlog for the student intelligence system described in:
+This is the strategic implementation backlog for Lumina's student intelligence, ecosystem, and platform strategy described in:
 
 - `docs/STUDENT_INTELLIGENCE_LOOP.md`
 - `docs/STUDENT_KPI_ENGINE.md`
@@ -13,6 +13,9 @@ This is the strategic implementation backlog for the student intelligence system
 - `docs/AUTHENTICITY_AND_ORIGINALITY_ENGINE.md`
 - `docs/TEACHER_REAL_TIME_DASHBOARD.md`
 - `docs/PERSONALIZED_COURSE_ARCHITECTURE.md`
+- `docs/WORLD_CLASS_AI_LMS_STRATEGY.md`
+- `docs/ROLE_ECOSYSTEM_AND_ACCESS_MODEL.md`
+- `docs/PLATFORM_AND_GLOBAL_DEPLOYMENT_STRATEGY.md`
 
 Use this backlog when the goal is to turn Lumina into a fully operational personalized learning system.
 
@@ -31,6 +34,8 @@ This file is different from the root `AGENT_TASK_LIST.md`:
 | WS4 | One question-diversity and authenticity layer for evidence-rich assessment |
 | WS5 | One intervention loop teachers can act on and close |
 | WS6 | One personalized course and evaluation layer for trustworthy rollout |
+| WS7 | One expanded human-support ecosystem with clear role boundaries |
+| WS8 | One privacy-first global platform with stronger model and retrieval foundations |
 
 ## Recommended Execution Order
 
@@ -40,6 +45,8 @@ This file is different from the root `AGENT_TASK_LIST.md`:
 4. Add question diversity and authenticity controls.
 5. Connect teacher intervention workflows.
 6. Add personalized course, evaluation, audit, and rollout controls.
+7. Expand parent, mentor, peer, counselor, and researcher role workflows.
+8. Harden the platform for hybrid retrieval, offline-first delivery, multilingual support, and privacy-safe scale.
 
 ## WS1: Canonical Learner State
 
@@ -617,6 +624,191 @@ Acceptance:
 - teacher-facing high-impact recommendations expose evidence and confidence
 - low-confidence actions can be held for review
 
+## WS7: Role Ecosystem And Human Support Network
+
+### ROLE-001: Expand the role and relationship model beyond student, teacher, admin, and parent
+
+Why:
+
+- Lumina's next strategic layer depends on bounded support roles such as mentor, peer tutor, counselor, curriculum designer, researcher, and alumni
+
+Primary files:
+
+- auth and user schemas
+- database role and relationship models
+- route authorization helpers
+
+Deliverables:
+
+- capability matrix
+- relationship-aware access rules
+- migration plan for new role types or capability-based role extension
+
+Acceptance:
+
+- every new role has a purpose, bounded access, and explicit non-access rules
+
+### GUARD-001: Build guardian-facing progress summaries and multilingual family communication flows
+
+Why:
+
+- parent or guardian engagement should become a first-class support loop, not an afterthought
+
+Primary files:
+
+- student and messaging routes
+- notification or automation workers
+- guardian-facing UI surfaces
+
+Deliverables:
+
+- guardian dashboard projection
+- weekly summary object
+- grade, risk, and attendance alert rules
+
+Acceptance:
+
+- guardians see only their learner's scoped data
+- summaries are actionable and privacy-bounded
+
+### PEER-001: Add peer tutoring and study-group formation with AI guardrails
+
+Why:
+
+- Lumina should support small-group and peer-assisted learning without losing instructional quality
+
+Primary files:
+
+- community or collaboration routes
+- learner matching logic
+- tutor or session-quality support flows
+
+Deliverables:
+
+- peer-match suggestion logic
+- session scaffolding prompts
+- small-group membership and moderation rules
+
+Acceptance:
+
+- peer support sessions are topic-scoped, auditable, and guided away from answer-dumping
+
+### SUPPORT-001: Add counselor, mentor, and alumni workflows with scoped access
+
+Why:
+
+- Lumina's ecosystem strategy needs career support and wellbeing support without exposing unrestricted student data
+
+Primary files:
+
+- role-aware dashboard routes
+- messaging and scheduling flows
+- analytics and escalation services
+
+Deliverables:
+
+- counselor risk view
+- mentor or alumni interaction contracts
+- escalation and follow-up logging
+
+Acceptance:
+
+- support roles can act on approved summaries and assignments without seeing unrestricted academic or behavioral detail
+
+## WS8: Platform, Privacy, And Global Readiness
+
+### GRAPH-001: Make the knowledge graph a first-class backbone for retrieval, pathway, and review
+
+Why:
+
+- concept structure should not remain only an idea inside isolated modules
+
+Primary files:
+
+- content generation flows
+- pathway modules
+- assessment concept metadata
+- knowledge-node storage and analytics docs
+
+Deliverables:
+
+- shared concept graph contract
+- resource-to-concept mapping
+- prerequisite and similarity edge policy
+
+Acceptance:
+
+- tutoring, pathway, and review features can reference the same concept graph
+
+### RAG-001: Upgrade educational retrieval to hybrid search with attribution and confidence
+
+Why:
+
+- educational trust depends on citing the right course evidence and abstaining when retrieval is weak
+
+Primary files:
+
+- RAG or retrieval services
+- tutor answer routes
+- analytics and evaluation harnesses
+
+Deliverables:
+
+- vector plus keyword plus concept-aware retrieval
+- attribution metadata
+- retrieval confidence and abstention rules
+
+Acceptance:
+
+- important answers can cite source materials and expose retrieval confidence
+
+### ACCESS-001: Add offline-first sync, multilingual tutor foundations, and low-bandwidth delivery rules
+
+Why:
+
+- Lumina should be deployable in low-connectivity and multilingual environments without a separate product fork
+
+Primary files:
+
+- frontend app shell and caching layers
+- tutor and content localization surfaces
+- sync and queue infrastructure
+
+Deliverables:
+
+- offline queueing rules
+- lesson caching policy
+- localization and multilingual prompt hooks
+
+Acceptance:
+
+- core learning flows can degrade gracefully under weak connectivity
+- multilingual support has a documented extension path
+
+### PRIV-001: Add privacy-preserving analytics, federated-learning readiness, and experimentation tooling
+
+Why:
+
+- the long-term strategy depends on trusted analytics and cross-institution improvement without over-collecting sensitive data
+
+Primary files:
+
+- analytics store and export surfaces
+- audit and governance modules
+- offline evaluation harnesses
+
+Deliverables:
+
+- privacy-classified analytics outputs
+- differential-privacy planning for aggregate exports
+- experimentation contracts for interventions and teaching strategies
+- federated-learning readiness notes or scaffolding
+
+Acceptance:
+
+- high-sensitivity analytics paths are governed and auditable
+- experimentation can compare strategies without bypassing privacy controls
+
 ## Milestone Definition
 
 ### Milestone A: Shared state
@@ -639,6 +831,14 @@ Done when `INTV-001` through `INTV-003` and `DASH-001` are complete.
 
 Done when `QD-001`, `QD-002`, `AUTH-001`, `AUTH-002`, `PATH-001`, `COURSE-001`, `COURSE-002`, `EVAL-001`, and `GOV-001` are complete.
 
+### Milestone F: Expanded support ecosystem
+
+Done when `ROLE-001`, `GUARD-001`, `PEER-001`, and `SUPPORT-001` are complete.
+
+### Milestone G: Privacy-first global platform
+
+Done when `GRAPH-001`, `RAG-001`, `ACCESS-001`, and `PRIV-001` are complete.
+
 ## Definition Of Done
 
 This backlog is complete when Lumina can honestly say:
@@ -648,3 +848,5 @@ This backlog is complete when Lumina can honestly say:
 - the tutor adapts explanation style using measured effectiveness
 - teachers receive explainable intervention queues
 - the system logs outcomes and improves future actions
+- family, mentor, peer, and counselor workflows are role-bounded and useful
+- the platform can scale through privacy-safe analytics, better retrieval, and low-connectivity delivery paths

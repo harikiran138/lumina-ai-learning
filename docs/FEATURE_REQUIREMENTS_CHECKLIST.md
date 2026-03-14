@@ -1,6 +1,6 @@
 # Feature Requirements Checklist
 
-Last updated: 2026-03-08
+Last updated: 2026-03-14
 
 This document is the complete feature checklist for turning Lumina into a full AI LMS.
 
@@ -25,11 +25,13 @@ Use this as a program-level requirements list.
 - weak-topic detection
 - misconception memory by topic
 - recommendation engine for next lesson, next quiz, next practice
+- knowledge-graph-linked spaced repetition
 - spaced review reminders
 - personalized revision queue
 - low-confidence topic review
 - student patience and study-behavior profiling
 - explanation effectiveness history
+- metacognitive calibration history
 
 ### Must-have student AI features
 
@@ -45,6 +47,25 @@ Use this as a program-level requirements list.
 - explanation reformatting by difficulty level
 - explanation planning by cognitive load and mastery
 - explanation strategy tracking and feedback loop
+- multimodal input support for text, voice, handwriting, and image-assisted questions
+- privacy-preserving emotional adaptation from behavioral signals
+
+### Must-have student engagement, accessibility, and community systems
+
+- gamification core with streaks, XP, tiered leaderboards, and milestone badges
+- novelty refresh system for long-lived engagement mechanics
+- peer study groups
+- peer tutoring workflows
+- mentor-linked learning goals
+- social annotation
+- AI debate or discussion practice
+- accessibility controls for dyslexia, low-vision, and reduced-distraction modes
+- text-to-speech and captioning options
+- adaptive chunking and executive-function scaffolds
+- virtual lab integration hooks
+- offline-first lesson and progress caching
+- multilingual tutor and localized UI support
+- competitive-exam prep mode where relevant
 
 ## 2. Teacher Experience Requirements
 
@@ -80,6 +101,11 @@ Use this as a program-level requirements list.
 - AI remediation-plan generator
 - AI feedback draft generator
 - AI lesson-summary generator
+- differentiated lesson generation at multiple difficulty levels
+- curriculum and standards alignment support
+- parent communication draft generation
+- live class co-pilot recommendations
+- teaching strategy analytics and optional lecture-analysis workflows
 
 ## 3. Assessment Requirements
 
@@ -268,3 +294,61 @@ Lumina should not be considered a full AI LMS until these gates are true:
 - tutor specialization is active
 - automation layer is active
 - governance and auditability are visible
+- offline-first core learning flows are usable
+- multilingual support is real in at least one major deployment path
+- privacy controls are enforceable by role and purpose
+- family and support-role workflows are defined and scoped
+
+## 11. Ecosystem Role Requirements
+
+### Must-have family and guardian support
+
+- guardian portal with child-specific progress summaries
+- attendance and grade-drop alerts
+- teacher-guardian messaging
+- multilingual family communication support
+- home support recommendations grounded in learner data
+
+### Must-have mentor, peer tutor, and counselor support
+
+- mentor matching and scheduling
+- portfolio and goal-sharing with mentors
+- peer tutoring assignments with AI guardrails
+- study-group formation and moderation tools
+- counselor early-warning dashboard
+- scoped escalation workflows between teacher and counselor
+
+### Must-have content, research, and alumni support
+
+- curriculum designer blueprint workspace
+- versioned content review workflows
+- anonymized research analytics workspace
+- alumni mentoring and pathway contribution tools
+
+## 12. Platform, Privacy, And Global Deployment Requirements
+
+### Must-have platform intelligence
+
+- knowledge graph shared across content, assessment, pathway, and tutoring
+- graph-aware retrieval and recommendation support
+- hybrid RAG with vector, keyword, and concept-aware retrieval
+- explicit attribution in important AI answers
+- confidence scoring and abstention behavior when retrieval is weak
+
+### Must-have privacy and experimentation
+
+- role-based data compartmentalization
+- differential privacy for aggregate analytics and research exports
+- federated learning readiness for cross-institution improvement
+- SHAP-style explanation support for major risk predictions
+- first-class A or B testing support for pedagogy and intervention policies
+- causal evaluation hooks for intervention effectiveness
+
+### Must-have global and accessibility foundations
+
+- offline-first PWA behavior
+- low-bandwidth content budgets
+- multilingual translation, transliteration, and speech hooks
+- local-language handwriting and OCR pathway planning
+- standards interoperability and curriculum mapping
+- public-sector interoperability planning where relevant
