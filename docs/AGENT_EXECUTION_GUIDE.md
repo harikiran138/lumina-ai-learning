@@ -66,9 +66,18 @@ Before making large changes, read:
 - [ARCHITECTURE.md](./ARCHITECTURE.md)
 - [CONNECTION_MAP.md](./CONNECTION_MAP.md)
 - [FEATURE_AUDIT.md](./FEATURE_AUDIT.md)
+- [STUDENT_INTELLIGENCE_LOOP.md](./STUDENT_INTELLIGENCE_LOOP.md)
+- [STUDENT_KPI_ENGINE.md](./STUDENT_KPI_ENGINE.md)
+- [EXPLANATION_STYLE_ENGINE.md](./EXPLANATION_STYLE_ENGINE.md)
+- [VISION_ALIGNMENT_AUDIT.md](./VISION_ALIGNMENT_AUDIT.md)
+- [QUESTION_DIVERSITY_ENGINE.md](./QUESTION_DIVERSITY_ENGINE.md)
+- [AUTHENTICITY_AND_ORIGINALITY_ENGINE.md](./AUTHENTICITY_AND_ORIGINALITY_ENGINE.md)
+- [TEACHER_REAL_TIME_DASHBOARD.md](./TEACHER_REAL_TIME_DASHBOARD.md)
+- [PERSONALIZED_COURSE_ARCHITECTURE.md](./PERSONALIZED_COURSE_ARCHITECTURE.md)
 - [PRODUCT_STRATEGY_AND_MARKET_GAP.md](./PRODUCT_STRATEGY_AND_MARKET_GAP.md)
 - [DELIVERY_ROADMAP_AND_PHASES.md](./DELIVERY_ROADMAP_AND_PHASES.md)
 - [FEATURE_REQUIREMENTS_CHECKLIST.md](./FEATURE_REQUIREMENTS_CHECKLIST.md)
+- [AGENT_BUILD_BACKLOG.md](./AGENT_BUILD_BACKLOG.md)
 
 ## 6. Design Rules For New Features
 
@@ -106,6 +115,16 @@ When the system suggests an action, it should capture:
 - affected student or concept
 - why the action was chosen
 
+### Rule E: Adaptive explanation, not fixed labels
+
+Do not hard-code a student into one permanent "learning style."
+
+Instead:
+
+- store explanation preferences as evidence-backed tendencies
+- measure which explanation patterns worked by topic and objective
+- keep testing alternatives when confidence is low
+
 ## 7. Acceptance Checklist For Any New Work
 
 Before considering a task done, verify:
@@ -131,7 +150,14 @@ Before considering a task done, verify:
 - read learner profile
 - read current lesson and course context
 - read recent assessment or assignment signals
+- read explanation effectiveness history if available
 - avoid building generic detached prompts
+
+### If working on personalization or analytics
+
+- prefer the canonical profile in `backend/app/services/personalization_service.py`
+- treat KPI definitions in `STUDENT_KPI_ENGINE.md` as the scoring source of truth
+- avoid adding new per-feature signal stores when the profile can hold the data
 
 ### If working on teacher dashboard
 
