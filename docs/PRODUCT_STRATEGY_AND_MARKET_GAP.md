@@ -65,6 +65,10 @@ The strongest gap is:
 
 This is the gap Lumina should own.
 
+An expanded version of the same gap is:
+
+> Most systems solve only one or two of the following well: cognitive tutoring, engagement design, social learning, privacy-first deployment, and institution-safe analytics. Lumina should unify all five.
+
 ### The gap in simpler terms
 
 Most products answer:
@@ -93,6 +97,7 @@ Lumina should be positioned as:
 - an AI intervention operating system for teachers
 - a teacher-supervised adaptive learning platform
 - an institution-controlled AI education layer
+- a privacy-first learning network that can include parents, mentors, counselors, and researchers without breaking trust
 
 ## 6. North-Star Value Proposition
 
@@ -172,6 +177,29 @@ If these layers are unified, Lumina becomes a real AI LMS.
 - teacher approval workflows for AI actions
 - personalized practice generation from assignment and quiz evidence
 - class-level heatmaps and risk queues
+- privacy-preserving emotional adaptation from behavioral signals
+- social learning and peer tutoring inside the LMS
+- multilingual and offline-first delivery
+- parent and counselor support surfaces
+- standards-aligned differentiated lesson generation
+
+## 10. Expanded Strategic Edge
+
+Lumina becomes much harder to compete with if it combines these four advantages at once:
+
+1. adaptive intelligence grounded in shared learner state
+2. teacher time savings through generation, grading, and intervention support
+3. human support ecosystem beyond student plus teacher
+4. accessibility and privacy by default for global deployment
+
+Competitive mental model:
+
+- Canvas or Moodle: strong course delivery, weak adaptive intelligence
+- Khanmigo-style tutor: strong tutoring, weak social and ecosystem layer
+- Duolingo-style engagement: strong habits, weaker depth across subjects
+- Discord-style community: strong social interaction, weak assessment and governance
+
+Lumina should combine the best parts of all four categories inside one governed platform.
 
 ## 10. What To Deprioritize
 
@@ -184,7 +212,13 @@ Deprioritize until the core loop is excellent:
 - advanced visual polish without stronger adaptive logic
 - non-core side experiments not connected to learner personalization
 
-## 11. Final Strategic Statement
+## 11. Companion Strategy Docs
+
+- `docs/WORLD_CLASS_AI_LMS_STRATEGY.md`
+- `docs/ROLE_ECOSYSTEM_AND_ACCESS_MODEL.md`
+- `docs/PLATFORM_AND_GLOBAL_DEPLOYMENT_STRATEGY.md`
+
+## 12. Final Strategic Statement
 
 Lumina should be built as:
 

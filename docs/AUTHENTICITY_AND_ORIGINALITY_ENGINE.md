@@ -50,6 +50,15 @@ Never:
 
 ## Signal Families
 
+The screenshots repeatedly show the same six-signal stack. That should remain the canonical first-pass design:
+
+1. keystroke burst pattern
+2. vocabulary complexity jump
+3. answer-time versus difficulty mismatch
+4. zero-backspace or correction anomaly
+5. semantic fingerprint drift
+6. supportive follow-up probe
+
 ## 1. Interaction signals
 
 | Signal | Meaning |
@@ -82,6 +91,15 @@ Never:
 | follow-up simplification success | learner can restate in their own words |
 | targeted sub-step success | learner can explain one part of the answer |
 | contradiction under probing | confident text collapses under small probes |
+
+## Screenshot-Aligned Signal Notes
+
+The screenshots attach especially concrete examples to these signals:
+
+- pasted text often arrives in one burst instead of character-by-character
+- hard questions answered unusually fast should be judged against the learner's own baseline
+- zero backspaces in a long typed answer is unusual enough to justify a follow-up check
+- semantic drift should compare against the learner's historical phrasing profile, not only a global class baseline
 
 ## Proposed Event Contract
 

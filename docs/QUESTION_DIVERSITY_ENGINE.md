@@ -62,6 +62,15 @@ To estimate real understanding, it needs multiple evidence types:
 | Try-answer / open exploration | creativity and hypothesis | reasoning style and intuition |
 | Teach-back | high mastery confirmation | transfer and simplification ability |
 
+## Screenshot-Aligned Trigger Notes
+
+The screenshots make several trigger rules explicit. Keep them visible here:
+
+- use more MCQ when mastery is below roughly `0.40` and the system still needs confidence-building recognition checks
+- use fill-in-the-blank after an MCQ success when the system wants to verify recall instead of recognition
+- unlock long explanation or essay only after the learner shows enough mastery to support structured reasoning
+- use teach-back near high mastery to confirm transfer, simplification ability, and remaining misconception residue
+
 ## Proposed Question Contract
 
 The current `Question` model should evolve into a multi-format union.

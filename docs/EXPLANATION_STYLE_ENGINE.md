@@ -252,6 +252,54 @@ Current accuracy note:
 - pieces of this mode library are implied in current tutor behavior
 - the weighted, persistent per-student mode-selection engine is still target-state
 
+## Screenshot Trigger Examples
+
+The screenshots attach memorable triggers to each mode. Preserve those in the docs so UI and prompt work stay consistent.
+
+| Mode | Screenshot-style trigger examples |
+| --- | --- |
+| Story mode | context-rich learner, narrative hooks increase engagement |
+| Joke or humor mode | disengaged learner, safe topic, engagement score drops |
+| Poem or rhythm mode | mnemonic retention improves with rhythm or verse |
+| Analogy mode | learner asks "what is it like?" or responds well to relational comparisons |
+| Experiment or try-it mode | hands-on learner, science contexts, observation helps before formal explanation |
+| Formula or precision mode | learner wants exact definitions, steps, or derivations |
+| Socratic mode | learner near mastery and ready for guided discovery |
+| Real-world scenario mode | everyday application improves transfer and recall |
+
+## Reinforcement Loop
+
+One screenshot shows the style-selection loop as:
+
+1. Observe
+2. Reward
+3. Explore
+4. Persist
+
+That is the right mental model for the target explanation engine.
+
+### 1. Observe
+
+After each explanation, measure:
+
+- next related correctness
+- mastery delta
+- confusion reduction
+- time to recovery
+- delayed retention if available
+
+### 2. Reward
+
+Increase weight for the mode that produced the strongest learning gain for that learner and concept band.
+
+### 3. Explore
+
+Occasionally try a less-used mode so the system can detect preference shifts instead of locking too early.
+
+### 4. Persist
+
+Store mode weights in the learner profile so the next session starts from prior evidence rather than from zero.
+
 ## Example Policies
 
 ## Case 1: Low mastery, high load

@@ -3,7 +3,13 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
-from app.personalization.schemas import LearningEventType
+from app.personalization.schemas import (
+    LearningEventType,
+    QuizResultPayload,
+    NoteAddedPayload,
+    LessonCompletedPayload,
+    ActivityLoggedPayload,
+)
 from app.services.personalization_service import get_personalization_service
 from app.store.user_data_store import UserDataStore
 from app.store.student_store import StudentStore
@@ -471,7 +477,7 @@ async def save_quiz_result(
     await get_personalization_service().record_event(
         current_user["id"],
         LearningEventType.QUIZ_RESULT,
-        payload=payload,
+        payload=QuizResultPayload(**payload).model_dump(exclude_none=True),
         source="student_router",
         course_id=request.course_id,
         topic_id=request.topic,
@@ -514,11 +520,11 @@ async def save_note(
     await get_personalization_service().record_event(
         current_user["id"],
         LearningEventType.NOTE_ADDED,
-        payload={
-            "title": request.title,
-            "subject": request.subject,
-            "content": request.content
-        },
+        payload=NoteAddedPayload(
+            title=request.title,
+            subject=request.subject,
+            content=request.content,
+        ).model_dump(exclude_none=True),
         source="student_router",
         role=current_user.get("role", "student"),
     )
@@ -712,11 +718,11 @@ async def complete_lesson(
     await get_personalization_service().record_event(
         current_user["id"],
         LearningEventType.LESSON_COMPLETED,
-        payload={
-            "lesson_id": request.lesson_id,
-            "course_id": request.course_id,
-            "progress": result.get("progress", 0),
-        },
+        payload=LessonCompletedPayload(
+            lesson_id=request.lesson_id,
+            course_id=request.course_id,
+            progress=result.get("progress", 0),
+        ).model_dump(exclude_none=True),
         source="student_router",
         course_id=request.course_id,
         role=current_user.get("role", "student"),
@@ -743,10 +749,10 @@ async def log_activity(
     await get_personalization_service().record_event(
         current_user["id"],
         LearningEventType.ACTIVITY_LOGGED,
-        payload={
-            "course_id": request.course_id,
-            "duration_minutes": request.duration_minutes,
-        },
+        payload=ActivityLoggedPayload(
+            course_id=request.course_id,
+            duration_minutes=request.duration_minutes,
+        ).model_dump(exclude_none=True),
         source="student_router",
         course_id=request.course_id,
         role=current_user.get("role", "student"),

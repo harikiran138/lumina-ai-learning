@@ -1,78 +1,71 @@
-from .store.state import StateStore
-from .models.bkt import BKTModel
+from app.services.personalization_service import get_personalization_service
+from app.personalization.schemas import LearningEventType, AssessmentAnswerPayload
 from .models.dkt import DKTModel
-from .analysis.cognitive_load import CognitiveLoadEstimator
 import asyncio
 
 class LearnerProfileEngine:
     """
     Core engine for user modeling and state tracking.
-    Integrates BKT, DKT, and Cognitive Load estimation.
+    Now acts as a wrapper around the canonical PersonalizationService pipeline.
+    Legacy DKT estimations are preserved here mapping from the canonical event list.
     """
 
     def __init__(self):
-        self.state_store = StateStore()
-        self.bkt = BKTModel()
         self.dkt = DKTModel()
-        self.cognitive_load_estimator = CognitiveLoadEstimator()
+        self.personalization_service = get_personalization_service()
 
     async def update_state(self, user_id: str, event: dict):
         """
         Update the learner's state based on an interaction event.
-        Event structure: {'type': str, 'concept_id': int, 'correct': bool, 'response_time': float, ...}
+        Delegates up to PersonalizationService.
         """
-        current_state = await self.state_store.get_state(user_id)
-        
-        # 1. Update BKT mastery
         if event.get('type') == 'interaction' and 'concept_id' in event:
-            concept_id = str(event['concept_id'])
-            mastery_scores = current_state.get('mastery_scores', {})
-            current_mastery = mastery_scores.get(concept_id, self.bkt.p_l0)
-            
-            new_mastery = self.bkt.update_mastery(current_mastery, event.get('correct', False))
-            mastery_scores[concept_id] = new_mastery
-            current_state['mastery_scores'] = mastery_scores
-
-        # 2. Update interaction history for DKT
-        history = current_state.get('interaction_history', [])
-        if event.get('type') == 'interaction':
-            history.append({
-                'concept_id': event.get('concept_id'),
-                'correct': event.get('correct'),
-                'timestamp': event.get('timestamp')
-            })
-            # Keep history manageable
-            current_state['interaction_history'] = history[-50:]
-
-        # 3. Estimate Cognitive Load
-        recent_events = current_state['interaction_history'][-5:]
-        current_state['cognitive_load'] = self.cognitive_load_estimator.estimate_load(recent_events)
-
-        # 4. Update behavior labels
-        if "behavior" in event:
-            current_state["behavior_label"] = event["behavior"]
-
-        await self.state_store.update_state(user_id, current_state)
+            await self.personalization_service.record_event(
+                user_id=user_id,
+                event_type=LearningEventType.ASSESSMENT_ANSWER,
+                payload=AssessmentAnswerPayload(
+                    is_correct=event.get('correct', False),
+                    topic=str(event['concept_id']),
+                    time_taken=event.get('response_time'),
+                    question_id="legacy-engine-event"
+                ).model_dump(exclude_none=True),
+                source="legacy_profile_engine",
+                topic_id=str(event['concept_id'])
+            )
 
     async def get_summary(self, user_id: str):
-        profile = await self.get_profile(user_id)
+        tutor_proj = await self.personalization_service.get_tutor_projection(user_id)
         return {
-            "mastery": profile["mastery_levels"],
-            "load": profile["cognitive_load"],
-            "behavior": profile["behavior_label"]
+            "mastery": tutor_proj.get("mastery_scores", {}),
+            "load": tutor_proj.get("cognitive_load", 50),
+            "behavior": tutor_proj.get("behavior_label", "neutral")
         }
 
     async def get_profile(self, user_id: str) -> dict:
         """
         Retrieve the full learner profile including DKT predictions.
         """
-        state = await self.state_store.get_state(user_id)
+        tutor_proj = await self.personalization_service.get_tutor_projection(user_id)
         
-        # Add DKT predictions to the profile for the pathway agent
-        history = state.get('interaction_history', [])
-        state['dkt_predictions'] = self.dkt.predict_mastery(history)
+        # Reconstruct interaction history for DKT from canonical events
+        events = await self.personalization_service.store.list_events(user_id, limit=50)
+        history = []
         
-        return state
+        for e in sorted(events, key=lambda x: x.created_at):
+            if e.event_type == LearningEventType.ASSESSMENT_ANSWER and e.topic_id:
+                history.append({
+                    'concept_id': self.personalization_service._stable_topic_code(e.topic_id) % 100,
+                    'correct': e.payload.get('is_correct', False),
+                    'timestamp': e.created_at.isoformat()
+                })
+        
+        tutor_proj['interaction_history'] = history
+        tutor_proj['dkt_predictions'] = self.dkt.predict_mastery(history)
+        
+        # Map mastery array for legacy compatibility
+        tutor_proj['mastery_levels'] = tutor_proj.get('mastery_scores', {})
+        
+        return tutor_proj
 
 _engine_instance = None
 
