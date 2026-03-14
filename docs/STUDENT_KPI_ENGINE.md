@@ -69,6 +69,26 @@ Current implementation anchor:
 
 - `PersonalizationService._update_mastery_from_binary`
 
+### Screenshot-aligned BKT reference formula
+
+The screenshots show the classic Bayesian Knowledge Tracing posterior update. Keep that formula in the docs because it is the clearest explanation of the intended mastery signal:
+
+```python
+P_mastery_given_correct = (
+    P_L * (1 - slip)
+) / (
+    P_L * (1 - slip) + (1 - P_L) * guess
+)
+```
+
+Interpretation:
+
+- `P_L`: prior probability the learner already knows the concept
+- `slip`: probability the learner knows it but still answers incorrectly
+- `guess`: probability the learner does not know it but answers correctly
+
+This is the mathematical reference model behind the simpler implementation helpers.
+
 ### Scored work update
 
 Use the current blend for quizzes, assessments, and assignments that return a percentage score.
@@ -320,6 +340,52 @@ Use cases:
 - assessment confidence adjustment
 - supportive follow-up probe triggering
 
+### Screenshot-aligned shorthand
+
+One screenshot expresses this as an engagement-authenticity composite:
+
+```python
+engagement_authenticity = (
+    keystroke_variance
+    * avg_think_time
+    * correction_ratio
+    * answer_originality
+) ** 0.25
+```
+
+Use that as an interpretable shorthand view if needed, while the weighted formula above remains the more implementation-ready version.
+
+## 8C. Learning Style Or Explanation Preference Score
+
+Primary meaning: which explanation or communication modes have historically produced the best comprehension gain for this learner.
+
+This is not a fixed human identity label. It is a rolling evidence score over modes.
+
+### Screenshot-aligned classifier framing
+
+```python
+style = argmax(
+    mode_scores[
+        "story",
+        "joke",
+        "poem",
+        "analogy",
+        "experiment",
+        "formula",
+        "socratic",
+        "real_world"
+    ]
+)
+```
+
+Reward signal:
+
+```python
+reward = comprehension_gain_after_mode
+```
+
+The explanation engine should store the full mode score vector, not only the top label.
+
 ## 9. Readiness Score
 
 Primary meaning: whether the learner is ready to advance on a concept or lesson.
@@ -466,6 +532,21 @@ risk_score = min(
 | Authenticity | `<0.45` | `0.45-0.74` | `>=0.75` |
 | Explanation effectiveness | `<0.45` | `0.45-0.74` | `>=0.75` |
 | Risk | `<0.25` | `0.25-0.59` | `>=0.60` |
+
+## Screenshot Dashboard Mapping
+
+The KPI dashboard shown in the images can be mapped to the documented KPI set like this:
+
+| Screenshot label | Meaning in docs |
+| --- | --- |
+| `M` | concept mastery score |
+| `V` | growth velocity |
+| `L` | lag-zone score |
+| `E` | authenticity or engagement-authenticity score |
+| `S` | explanation mode effectiveness or learning-style score |
+| `C` | cognitive load |
+| `P` | response-pattern trait label |
+| `R` | risk score |
 
 ## Storage Contract
 

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 import os
 import uuid
 from .auth import get_current_user
-from app.personalization.schemas import LearningEventType
+from app.personalization.schemas import LearningEventType, AssignmentSubmittedPayload
 from app.services.personalization_service import get_personalization_service
 
 router = APIRouter()
@@ -71,11 +71,11 @@ async def submit_assignment(
         await get_personalization_service().record_event(
             current_user["id"],
             LearningEventType.ASSIGNMENT_SUBMITTED,
-            payload={
-                "assignment_id": assignment_id,
-                "file_path": file_path,
-                "submission_id": submission.get("id"),
-            },
+            payload=AssignmentSubmittedPayload(
+                assignment_id=assignment_id,
+                file_path=file_path,
+                submission_id=submission.get("id"),
+            ).model_dump(exclude_none=True),
             source="assignments_router",
             course_id=submission.get("course_id"),
             session_id=submission.get("id"),

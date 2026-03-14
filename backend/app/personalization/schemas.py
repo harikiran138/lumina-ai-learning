@@ -82,6 +82,34 @@ class RiskSummary(BaseModel):
     last_evaluated_at: Optional[datetime] = None
 
 
+class ExplanationStrategyState(BaseModel):
+    mode_name: str
+    effectiveness_score: float = Field(default=0.5, ge=0.0, le=1.0)
+    total_uses: int = 0
+    success_count: int = 0
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ExplanationProfile(BaseModel):
+    strategies: Dict[str, ExplanationStrategyState] = Field(default_factory=dict)
+    primary_mode: Optional[str] = None
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class KPISnapshot(BaseModel):
+    growth_velocity: float = 0.0
+    lag_zone_score: float = 0.0
+    authenticity_score: float = 1.0
+    explanation_effectiveness: float = 0.0
+    recorded_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class InterventionHistory(BaseModel):
+    total_interventions: int = 0
+    resolved_count: int = 0
+    dismissed_count: int = 0
+
+
 class LearnerProfileRecord(BaseModel):
     user_id: str
     role: str = "student"
@@ -94,12 +122,87 @@ class LearnerProfileRecord(BaseModel):
     engagement_summary: EngagementSummary = Field(default_factory=EngagementSummary)
     performance_summary: PerformanceSummary = Field(default_factory=PerformanceSummary)
     risk_summary: RiskSummary = Field(default_factory=RiskSummary)
+    explanation_profile: ExplanationProfile = Field(default_factory=ExplanationProfile)
+    kpi_snapshot: KPISnapshot = Field(default_factory=KPISnapshot)
+    kpi_history: List[KPISnapshot] = Field(default_factory=list)
+    intervention_history: InterventionHistory = Field(default_factory=InterventionHistory)
+    misconception_summary: Dict[str, Any] = Field(default_factory=dict)
     tutor_summary: Dict[str, Any] = Field(default_factory=dict)
     assignment_summary: Dict[str, Any] = Field(default_factory=dict)
     assessment_summary: Dict[str, Any] = Field(default_factory=dict)
     metadata: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class QuizResultPayload(BaseModel):
+    score: float
+    total_questions: Optional[int] = None
+    correct_count: Optional[int] = None
+    difficulty: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
+
+
+class LessonCompletedPayload(BaseModel):
+    lesson_id: str
+    course_id: str
+    progress: float
+
+
+class ActivityLoggedPayload(BaseModel):
+    course_id: str
+    duration_minutes: float
+    streak: Optional[int] = None
+
+
+class TutorInteractionPayload(BaseModel):
+    message: Optional[str] = None
+    response: Optional[str] = None
+    session_id: Optional[str] = None
+    topic: Optional[str] = None
+    recommendation: Optional[str] = None
+    behavior: Optional[str] = None
+    context: Optional[Dict[str, Any]] = None
+
+
+class AssessmentAnswerPayload(BaseModel):
+    is_correct: bool
+    question_id: Optional[str] = None
+    time_taken: Optional[float] = None
+    response_time: Optional[float] = None
+    attempt_number: Optional[int] = None
+    answer_text: Optional[str] = None
+    session_id: Optional[str] = None
+    topic: Optional[str] = None
+    difficulty: Optional[float] = None
+
+
+class AssessmentCompletedPayload(BaseModel):
+    accuracy: float
+    session_id: Optional[str] = None
+    topic: Optional[str] = None
+    total_questions: Optional[int] = None
+    duration: Optional[float] = None
+    details: Optional[Dict[str, Any]] = None
+
+
+class AssignmentSubmittedPayload(BaseModel):
+    assignment_id: str
+    file_path: Optional[str] = None
+    submission_id: Optional[str] = None
+    content: Optional[str] = None
+
+
+class AssignmentGradedPayload(BaseModel):
+    assignment_id: str
+    score: float
+    feedback: Optional[str] = None
+
+
+class NoteAddedPayload(BaseModel):
+    title: Optional[str] = None
+    subject: Optional[str] = None
+    content: str
 
 
 class LearningEventRecord(BaseModel):
