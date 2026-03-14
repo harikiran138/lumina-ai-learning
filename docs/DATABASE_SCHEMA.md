@@ -32,7 +32,7 @@ Lumina is an AI-powered Learning Management System designed to deliver personali
 
 ```bash
 SUPABASE_URL=https://[project-id].supabase.co
-SUPABASE_KEY=eyJ... # anon key for client
+SUPABASE_ANON_KEY=eyJ... # anon key for client
 SUPABASE_SERVICE_ROLE_KEY=eyJ... # service role for server
 DATABASE_URL=postgresql://postgres:[password]@db.[project-id].supabase.co:5432/postgres
 ```
@@ -1103,4 +1103,3 @@ INSERT INTO agent_memory (user_id, agent_type, memory_key, memory_value, confide
 **Tables 3.16-3.35 will be in the continuation:** quizzes, quiz_attempts, teacher_stats, student_stats, analytics_events, tutor_sessions, notifications, pathway_nodes, student_pathways, attendance, study_groups, study_group_members, parent_guardian, intervention_logs, knowledge_nodes, skill_mastery, question_bank, ppt_generations, feedback, leaderboard_entries.
 
 Due to size constraints, I'll continue with the SQL schema file now.
-

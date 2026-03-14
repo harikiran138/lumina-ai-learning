@@ -5,7 +5,7 @@
 ### Prerequisites
 - Python 3.8+ installed
 - Node.js 18+ installed
-- MongoDB running on `localhost:27017` (optional, for full functionality)
+- Supabase project (recommended) or local JSON fallback store
 - Redis running on `localhost:6379` (optional, for caching)
 
 ### One-Command Startup
@@ -48,8 +48,15 @@ Required variables:
 # Gemini API (for AI features)
 GEMINI_API_KEY=your_api_key_here
 
-# Database (optional for basic features)
-MONGODB_URI=mongodb://localhost:27017/lumina_db
+# Supabase (recommended for persistence)
+SUPABASE_URL=https://<project-id>.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Optional local store (skip Supabase for dev/tests)
+LUMINA_FORCE_LOCAL_STORE=false
+
+# Cache (optional)
 REDIS_URL=redis://localhost:6379/0
 ```
 
@@ -71,30 +78,18 @@ npm install
 
 ## Database Setup
 
-### Option 1: Use Docker for Databases Only (Recommended)
+### Option 1: Use Supabase (Recommended)
 
-```bash
-# Start only database services
-docker-compose up -d db redis mongo
-```
+Set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` in `.env`.
 
-### Option 2: Install Locally (macOS)
+### Option 2: Local JSON Store (Limited Functionality)
 
-```bash
-# Install via Homebrew
-brew install mongodb-community redis
+Set `LUMINA_FORCE_LOCAL_STORE=true` to use `backend/data/local_db.json` and
+`backend/data/personalization_store.json` for persistence.
 
-# Start services
-brew services start mongodb-community
-brew services start redis
-```
+### Option 3: Redis Only (Optional)
 
-### Option 3: Skip Databases (Limited Functionality)
-
-The app will start without databases but some features won't work:
-- User authentication
-- Course persistence
-- Chat history
+Redis is still optional for caching and background jobs.
 
 ## Accessing the Application
 
@@ -144,9 +139,9 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**Error**: `Connection refused` (MongoDB/Redis)
-- Check if services are running: `mongosh` or `redis-cli ping`
-- Or start with Docker: `docker-compose up -d db redis mongo`
+**Error**: `Connection refused` (Supabase/Redis)
+- Check Supabase credentials in `.env`
+- Ensure Redis is running: `redis-cli ping`
 
 ### Frontend won't start
 

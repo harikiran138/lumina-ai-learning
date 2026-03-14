@@ -21,12 +21,15 @@ All stores use `supabase_db.client.table("<table_name>")` to query.
 ```env
 SUPABASE_URL=https://<project-id>.supabase.co
 SUPABASE_ANON_KEY=<anon-jwt-key>
-SUPABASE_SERVICE_KEY=<service-role-key>   # for admin ops
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key>   # for admin ops
 SECRET_KEY=<random-secret>                # for JWT signing
 GEMINI_API_KEY=<your-key>                 # for AI features
 CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/0
 ```
+
+If you are running locally without Supabase, set `LUMINA_FORCE_LOCAL_STORE=true` to use
+`backend/data/local_db.json` as a lightweight fallback store.
 
 ---
 

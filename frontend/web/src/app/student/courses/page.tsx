@@ -187,7 +187,10 @@ function CourseCard({ course, isEnrolled, compact, onEnroll }: any) {
         } bg-gradient-to-br from-gray-800 to-gray-900 relative rounded-t-xl overflow-hidden`}
       >
         <img
-          src={course.thumbnail || "/api/placeholder/400/320"}
+          src={
+            course.thumbnail ||
+            "https://placehold.co/400x320/0a0a0a/FFF?text=Lumina+Course"
+          }
           alt={course.name}
           className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
         />

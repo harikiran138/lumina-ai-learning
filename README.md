@@ -42,6 +42,16 @@
 
 **Lumina** is a revolutionary, self-hosted AI-powered learning platform that fundamentally reimagines digital education. Unlike traditional Learning Management Systems (LMS) that deliver static content to all learners identically, Lumina creates truly personalized, adaptive learning journeys that evolve in real-time based on each learner's unique cognitive profile, behavior patterns, and mastery state.
 
+## Implementation Status
+
+This repository contains both implemented features and target-state architecture.
+For a claim-by-claim audit of what is live, partial, or planned, read:
+
+- `docs/VISION_ALIGNMENT_AUDIT.md`
+- `docs/FEATURE_AUDIT.md`
+
+Use those documents when making product promises, demos, or roadmap commitments.
+
 ### What Makes Lumina Different?
 
 - ** Truly Intelligent**: Understands how individual learners think, not just what they click

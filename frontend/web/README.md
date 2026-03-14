@@ -20,6 +20,24 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Lumina Backend Connection
+
+The frontend expects the FastAPI backend to be running locally (default `http://127.0.0.1:8000`).
+To point to another backend:
+
+```bash
+export NEXT_PUBLIC_API_URL="http://127.0.0.1:8000"
+```
+
+If you are using a different variable name, `NEXT_PUBLIC_API_BASE` is also supported as a fallback.
+
+Start the backend from the repo root:
+
+```bash
+cd ../../backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

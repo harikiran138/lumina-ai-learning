@@ -63,6 +63,25 @@ export default function CourseGeneratorPage() {
   // API State
   const [savingStatus, setSavingStatus] = useState("");
   const [createdCourseId, setCreatedCourseId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    api
+      .getCurrentUser()
+      .then((user) => {
+        if (!mounted) return;
+        setCurrentUserId(user?.id || null);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setCurrentUserId(null);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
@@ -90,6 +109,9 @@ export default function CourseGeneratorPage() {
       const { saveTextbook, analyzeTableOfContents } = await import(
         "@/app/actions/gemini"
       );
+
+      const authorId =
+        currentUserId || (await api.getCurrentUser())?.id || "teacher-123";
 
       // 1. Scan Index (TOC)
       setAiProgress("Scanning Table of Contents (Index Driven Extraction)...");
@@ -121,7 +143,7 @@ export default function CourseGeneratorPage() {
 
         // 3. Save Backup (Stage 1)
         setAiProgress("Saving raw content...");
-        await saveTextbook(file.name, fullTextForBackup, "teacher-123");
+        await saveTextbook(file.name, fullTextForBackup, authorId);
 
         // 4. Flatten Recursive Structure
         setAiProgress("Extracting & Mapping Content (1-to-1 Fidelity)...");
@@ -168,7 +190,7 @@ export default function CourseGeneratorPage() {
                   range.end,
                 );
               } else {
-                contentText = "Text content placeholder";
+                contentText = fullTextForBackup;
               }
             } catch (e) {
               console.error(
@@ -210,7 +232,7 @@ export default function CourseGeneratorPage() {
 
       // 3. Save Backup (Stage 1) - If not done yet
       setAiProgress("Saving raw content...");
-      await saveTextbook(file.name, fullTextForBackup, "teacher-123");
+      await saveTextbook(file.name, fullTextForBackup, authorId);
 
       setAnalysisProgress(40);
 
@@ -264,7 +286,7 @@ export default function CourseGeneratorPage() {
         title: courseTitle,
         description: courseDescription,
         modules: dbModules,
-        image: "/api/placeholder/400/320",
+        image: "https://placehold.co/400x320/0a0a0a/FFF?text=Lumina+Course",
       });
 
       if (result.success && result.courseId) {
