@@ -63,7 +63,9 @@ class StateBuilder:
              time_budget_mins = context.constraints.maxSessionTimeMinutes
              
         encoded_context = {
-            "time_remaining_ratio": 1.0 - normalize_session_time(session_mins / max(time_budget_mins, 1.0) * 120)
+            "time_remaining_ratio": 1.0 - normalize_session_time(session_mins / max(time_budget_mins, 1.0) * 120),
+            "readiness_score": context.readinessScore,
+            "risk_level": 1.0 if context.riskLevel == "critical" else 0.7 if context.riskLevel == "high" else 0.4 if context.riskLevel == "medium" else 0.0
         }
 
         # 4. Mastery State (Aggregated or Concept-Specific)

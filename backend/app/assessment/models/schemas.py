@@ -1,7 +1,17 @@
+from enum import Enum
 from pydantic import BaseModel, Field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any, Union
 from datetime import datetime
 import uuid
+
+
+class QuestionFormat(str, Enum):
+    MCQ = "mcq"
+    FILL_BLANK = "fill_blank"
+    SHORT_ANSWER = "short_answer"
+    LONG_EXPLANATION = "long_explanation"
+    TEACH_BACK = "teach_back"
+    TRY_ANSWER = "try_answer"
 
 
 class Option(BaseModel):
@@ -16,17 +26,23 @@ class QuestionMetadata(BaseModel):
     concepts: List[str] = Field(default_factory=list)
     difficulty: float = 0.5
     blooms_level: Optional[str] = None
+    evidence_goal: Optional[str] = None  # e.g., "recognition", "recall", "transfer"
+    expected_time_seconds: Optional[int] = None
 
 
 class Question(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    format: QuestionFormat = QuestionFormat.MCQ
     text: str
-    options: List[Option]
-    correct_option_id: str
+    prompt: Optional[str] = None  # Context-specific prompt (e.g., "You said X, why Y?")
+    options: List[Option] = []  # Empty for open-ended formats
+    correct_option_id: Optional[str] = None
+    correct_answer: Optional[str] = None  # For non-MCQ formats
     explanation: Optional[str] = None
     difficulty: float = 0.5  # 0.0 to 1.0
     topic: str
     metadata: Optional[QuestionMetadata] = None
+    rubric: Dict[str, Any] = Field(default_factory=dict)  # Scoring keys for open-ended
 
 
 class MasteryState(BaseModel):
@@ -39,14 +55,36 @@ class MasteryState(BaseModel):
     concept_mastery: Dict[str, float] = Field(default_factory=dict)
 
 
+class ResponseTelemetry(BaseModel):
+    paste_detected: bool = False
+    typing_variance: float = 0.0
+    backspace_count: int = 0
+    think_time_seconds: float = 0.0
+    char_count: int = 0
+
+
+class AnswerAnalysis(BaseModel):
+    correctness: float = 0.0  # 0 to 1.0
+    concepts_demonstrated: List[str] = Field(default_factory=list)
+    concepts_missing: List[str] = Field(default_factory=list)
+    misconceptions: List[str] = Field(default_factory=list)
+    confidence_estimate: float = 0.5
+    feedback: str = ""
+
+
 class StudentResponse(BaseModel):
     question_id: str
-    # For ID-based MCQs (LLM-generated questions)
+    # For ID-based MCQs
     selected_option_id: Optional[str] = None
-    # For older/simple flows where we only store the raw answer text
+    # For open-ended or simple flows
     selected_answer: Optional[str] = None
-    is_correct: bool
-    # Optional timing information for future policy use
+    is_correct: bool = False  # Legacy for MCQ, multi-score uses analysis
+    score: float = 0.0 # 0 to 1.0
+    
+    # New enrichment fields
+    telemetry: Optional[ResponseTelemetry] = None
+    analysis: Optional[AnswerAnalysis] = None
+    
     time_taken_seconds: Optional[float] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
@@ -58,23 +96,22 @@ class AssessmentSession(BaseModel):
     total_questions: int = 5
     current_difficulty: float = 0.5
     responses: List[StudentResponse] = []
-    question_history: List[Question] = []  # Store generated questions for validation
+    question_history: List[Question] = []
     is_completed: bool = False
     start_time: datetime = Field(default_factory=datetime.utcnow)
     end_time: Optional[datetime] = None
     final_score: Optional[float] = None
-
-    # Fields expected by assessment_routes.py
-    mastery_state: Optional[MasteryState] = None
+    
     current_question: Optional[Question] = None
     seen_question_ids: List[str] = []
-    # history is implicitly responses, but routes use 'history' expecting list of dicts.
-    # We will update routes to use 'responses' list of objects.
+    mastery_state: Optional[MasteryState] = None
 
 
 class QuestionRequest(BaseModel):
     topic: str
     difficulty: float
+    format: Optional[QuestionFormat] = None
+    previous_analysis: Optional[AnswerAnalysis] = None
 
 
 class StartAssessmentRequest(BaseModel):
@@ -86,7 +123,9 @@ class StartAssessmentRequest(BaseModel):
 class SubmitAnswerRequest(BaseModel):
     session_id: str
     question_id: str
-    selected_option_id: str
+    selected_option_id: Optional[str] = None
+    selected_answer: Optional[str] = None
+    telemetry: Optional[ResponseTelemetry] = None
     time_taken: Optional[float] = None
 
 
@@ -99,10 +138,7 @@ class AssessmentResult(BaseModel):
 
 
 class AssessmentReport(BaseModel):
-    """Richer report for a completed assessment session.
-
-    This is built from the scalar-difficulty engine and summarizes overall performance.
-    """
+    """Richer report for a completed assessment session."""
 
     session_id: str
     total_questions: int
@@ -111,3 +147,4 @@ class AssessmentReport(BaseModel):
     final_ability_estimate: float
     level: str
     summary: str
+    analysis_history: List[AnswerAnalysis] = []

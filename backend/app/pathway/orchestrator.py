@@ -5,6 +5,9 @@ from app.pathway.state_builder import StateBuilder
 from app.pathway.policy_engine import PolicyEngine
 from app.pathway.optimizer import CurriculumOptimizer
 from app.pathway.explainer import Explainer
+from app.services.personalization_service import get_personalization_service
+from app.services.audit_service import get_audit_service
+from ai_engine.swarm.guardian import GuardianAgent
 
 class PathwayOrchestrator:
     """
@@ -16,11 +19,33 @@ class PathwayOrchestrator:
         self.policy_engine = PolicyEngine()
         self.optimizer = CurriculumOptimizer.get_fallback_optimizer()
         self.explainer = Explainer()
+        self.guardian = GuardianAgent()
+        self.audit = get_audit_service()
 
-    def run_decision_cycle(self, context: PathwayInput) -> PathwayOutput:
+    async def run_decision_cycle(self, context: PathwayInput) -> PathwayOutput:
         """
         Main orchestration loop mimicking `run_decision_cycle` from pathway_agent.md.
+        Enriches context with live student intelligence from PersonalizationService.
         """
+        # 0. Enrich Context
+        try:
+            service = get_personalization_service()
+            profile = await service.get_legacy_state(context.learnerId)
+            
+            # Update readiness and risk from profile if they were not explicitly provided (stayed at defaults)
+            if "readiness_score" in profile and context.readinessScore == 0.5:
+                context.readinessScore = profile["readiness_score"]
+            
+            risk_summary = profile.get("risk_summary")
+            if isinstance(risk_summary, dict) and context.riskLevel == "low":
+                context.riskLevel = risk_summary.get("risk_level", "low")
+            elif hasattr(risk_summary, "risk_level") and context.riskLevel == "low":
+                context.riskLevel = risk_summary.risk_level
+                
+        except Exception as e:
+            # Fallback to existing context values if service fails
+            pass
+
         # 1. Normalize (State Construction)
         state_vector = self.state_builder.build_state(context)
         
@@ -41,8 +66,15 @@ class PathwayOrchestrator:
         # 3. Explain
         reasoning = self.explainer.generate_reasoning(action, target_id, raw_reasoning)
         
+        # 3b. Governance (Guardian Gate)
+        # Check if the transition is approved based on safety and readiness
+        gate = self.guardian.check_transition(state_vector.get("context", {}), action)
+        if not gate["approved"]:
+            action = PathwayAction.CONTINUE
+            reasoning = f"Transition blocked: {gate['reason']} " + reasoning
+        
         # 4. Emit
-        return PathwayOutput(
+        decision = PathwayOutput(
             decisionId=str(uuid.uuid4()),
             timestamp=datetime.utcnow(),
             action=action,
@@ -54,3 +86,19 @@ class PathwayOrchestrator:
                 "explorationFactor": 0.0
             }
         )
+
+        # 5. Audit
+        await self.audit.log_decision(
+            user_id=context.learnerId,
+            decision_id=decision.decisionId,
+            action=action,
+            target=target_id,
+            reasoning=reasoning,
+            metadata={
+                "original_action": action,
+                "readiness": state_vector.get("context", {}).get("readiness_score"),
+                "risk": state_vector.get("context", {}).get("risk_level")
+            }
+        )
+
+        return decision

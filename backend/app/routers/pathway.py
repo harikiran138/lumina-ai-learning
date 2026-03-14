@@ -20,7 +20,7 @@ async def get_next_decision(context: PathwayInput) -> PathwayOutput:
     """
     try:
         log.info("pathway_decision_requested", learner_id=context.learnerId)
-        decision = orchestrator.run_decision_cycle(context)
+        decision = await orchestrator.run_decision_cycle(context)
         log.info("pathway_decision_made", action=decision.action, target=decision.targetConcept)
         return decision
         

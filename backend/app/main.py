@@ -39,6 +39,7 @@ from .routers import (  # noqa: E402
     community,
     admin,
     pathway,
+    teacher,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
@@ -200,6 +201,7 @@ app.include_router(personalization.router, prefix="/api/personalization", tags=[
 app.include_router(community.router, prefix="/api/community", tags=["Community"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(pathway.router, prefix="/api/pathway", tags=["Pathway"])
+app.include_router(teacher.router, prefix="/api/teacher", tags=["Teacher Dashboard"])
 
 
 # --- Performance & Security Polish ---
