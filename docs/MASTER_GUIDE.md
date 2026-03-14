@@ -28,11 +28,20 @@ Lumina should become a personal AI LMS for every student:
 2. [Connection Map](./CONNECTION_MAP.md)
 3. [Feature Audit](./FEATURE_AUDIT.md)
 4. [AI LMS Blueprint](./AI_LMS_BLUEPRINT.md)
-5. [Research Foundation](./RESEARCH_FOUNDATION.md)
-6. [Product Strategy And Market Gap](./PRODUCT_STRATEGY_AND_MARKET_GAP.md)
-7. [Feature Requirements Checklist](./FEATURE_REQUIREMENTS_CHECKLIST.md)
-8. [Delivery Roadmap And Phases](./DELIVERY_ROADMAP_AND_PHASES.md)
-9. [Agent Execution Guide](./AGENT_EXECUTION_GUIDE.md)
+5. [Student Intelligence Loop](./STUDENT_INTELLIGENCE_LOOP.md)
+6. [Student KPI Engine](./STUDENT_KPI_ENGINE.md)
+7. [Explanation Style Engine](./EXPLANATION_STYLE_ENGINE.md)
+8. [Vision Alignment Audit](./VISION_ALIGNMENT_AUDIT.md)
+9. [Question Diversity Engine](./QUESTION_DIVERSITY_ENGINE.md)
+10. [Authenticity And Originality Engine](./AUTHENTICITY_AND_ORIGINALITY_ENGINE.md)
+11. [Teacher Real-Time Dashboard](./TEACHER_REAL_TIME_DASHBOARD.md)
+12. [Personalized Course Architecture](./PERSONALIZED_COURSE_ARCHITECTURE.md)
+13. [Research Foundation](./RESEARCH_FOUNDATION.md)
+14. [Product Strategy And Market Gap](./PRODUCT_STRATEGY_AND_MARKET_GAP.md)
+15. [Feature Requirements Checklist](./FEATURE_REQUIREMENTS_CHECKLIST.md)
+16. [Delivery Roadmap And Phases](./DELIVERY_ROADMAP_AND_PHASES.md)
+17. [Agent Build Backlog](./AGENT_BUILD_BACKLOG.md)
+18. [Agent Execution Guide](./AGENT_EXECUTION_GUIDE.md)
 
 ## What Exists Today
 
@@ -93,6 +102,17 @@ Create content -> Review class signals -> Approve or adjust AI suggestions -> In
 ### System loop
 
 Collect events -> score mastery and behavior -> generate recommendations -> explain actions -> log outcomes -> improve future decisions
+
+## Intelligence Layers To Keep In Sync
+
+Future work should treat these as one connected system:
+
+- the canonical learner profile and event pipeline
+- the KPI engine that turns signals into action-ready scores
+- the explanation style engine that adapts tutor communication
+- the teacher intervention loop that closes the loop on high-risk learners
+
+If one of these changes without the others, personalization quality will drift quickly.
 
 ## Code Areas That Matter Most
 

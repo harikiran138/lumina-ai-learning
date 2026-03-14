@@ -1,6 +1,9 @@
 # Lumina AI Learning — Agent Task List
 > Auto-generated from test run + full project audit on 2026-03-08.
 > Each task is self-contained with file paths, exact lines, and acceptance criteria so an agent can execute it without extra context.
+>
+> Strategic learner-intelligence build work now lives in `docs/AGENT_BUILD_BACKLOG.md`.
+> Use this file for operational bug-fix and coverage work, and use the new backlog for the student intelligence loop, KPI engine, and explanation-style system.
 
 ---
 
