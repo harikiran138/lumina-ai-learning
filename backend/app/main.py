@@ -1,4 +1,13 @@
 from dotenv import load_dotenv
+import importlib.metadata
+
+# Python 3.8 compatibility shim for dependencies expecting packages_distributions
+if not hasattr(importlib.metadata, "packages_distributions"):
+    try:
+        import importlib_metadata
+        importlib.metadata.packages_distributions = importlib_metadata.packages_distributions
+    except ImportError:
+        pass
 
 load_dotenv()
 
