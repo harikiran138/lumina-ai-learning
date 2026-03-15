@@ -25,7 +25,7 @@ async def get_profile_by_user_id(user_id: str, current_user: dict = Depends(get_
 
 @router.get("/interventions")
 async def get_interventions(
-    user_id: str = Query(default=None),
+    user_id: Optional[str] = Query(default=None),
     current_user: dict = Depends(get_current_user),
 ):
     if current_user.get("role") == "student":
@@ -82,3 +82,31 @@ async def get_pathway_projection_for_user(user_id: str, current_user: dict = Dep
     service = get_personalization_service()
     projection = await service.get_pathway_projection(user_id)
     return projection
+
+
+@router.get("/analytics/misconceptions")
+async def get_misconception_clusters(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") not in {"teacher", "admin"}:
+        raise HTTPException(status_code=403, detail="Teacher access required")
+    service = get_personalization_service()
+    return await service.get_cohort_misconceptions()
+
+
+@router.get("/analytics/growth-trajectories")
+async def get_growth_trajectories(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") not in {"teacher", "admin"}:
+        raise HTTPException(status_code=403, detail="Teacher access required")
+    service = get_personalization_service()
+    return await service.get_growth_trajectories()
+
+
+@router.get("/analytics/ab-test")
+async def get_ab_test_performance(
+    variant_a: str = Query(..., description="Cohort ID for variant A"),
+    variant_b: str = Query(..., description="Cohort ID for variant B"),
+    current_user: dict = Depends(get_current_user)
+):
+    if current_user.get("role") not in {"teacher", "admin"}:
+        raise HTTPException(status_code=403, detail="Teacher access required")
+    service = get_personalization_service()
+    return await service.get_ab_test_performance(variant_a, variant_b)
