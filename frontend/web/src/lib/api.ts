@@ -4,7 +4,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "teacher" | "student";
+  role: "admin" | "teacher" | "student" | "parent" | "mentor" | "peer_tutor" | "counselor" | "content_creator" | "researcher" | "alumni";
   status: "active" | "suspended" | "inactive";
   avatar: string;
   createdAt: string;
@@ -204,7 +204,153 @@ class RealAPI {
       return await res.json();
     }
 
+    if (userRole === "parent") {
+      const res = await this.fetchAuthorized("/api/parent/dashboard");
+      if (!res.ok) return {};
+      return await res.json();
+    }
+
+    if (userRole === "mentor") {
+      const res = await this.fetchAuthorized("/api/mentor/matches");
+      if (!res.ok) return {};
+      return await res.json();
+    }
+
     return {};
+  }
+
+  // --- Parent Portal Methods ---
+  async getParentDashboard(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/parent/dashboard");
+    return res.ok ? await res.json() : null;
+  }
+
+  async getParentMessages(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/parent/messages");
+    return res.ok ? await res.json() : [];
+  }
+
+  async setParentGoal(goalData: { student_id: string; title: string; description?: string; target_date?: string }): Promise<any> {
+    const res = await this.fetchAuthorized("/api/parent/goals", {
+      method: "POST",
+      body: JSON.stringify(goalData),
+    });
+    return await res.json();
+  }
+
+  // --- Mentor System Methods ---
+  async getMentorMatches(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/mentor/matches");
+    return res.ok ? await res.json() : [];
+  }
+
+  async getMenteeProfile(menteeId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/mentor/mentees/${menteeId}/profile`);
+    return res.ok ? await res.json() : null;
+  }
+
+  async scheduleMentorSession(sessionData: { mentee_id: string; scheduled_at: string; topic?: string }): Promise<any> {
+    const res = await this.fetchAuthorized("/api/mentor/session/schedule", {
+      method: "POST",
+      body: JSON.stringify(sessionData),
+    });
+    return await res.json();
+  }
+
+  async submitPortfolioReview(reviewData: { mentee_id: string; portfolio_snapshot: any; feedback: string; rating: number }): Promise<any> {
+    const res = await this.fetchAuthorized("/api/mentor/portfolio-review", {
+      method: "POST",
+      body: JSON.stringify(reviewData),
+    });
+    return await res.json();
+  }
+
+  async getMentorSessions(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/mentor/sessions");
+    return res.ok ? await res.json() : [];
+  }
+
+  // --- Peer Tutor Methods ---
+  async getPeerTutorSessions(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/peer_tutor/sessions");
+    return res.ok ? await res.json() : [];
+  }
+
+  async getPeerTutorTraining(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/peer_tutor/training");
+    return res.ok ? await res.json() : null;
+  }
+
+  // --- Counselor Methods ---
+  async getCounselorStudents(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/counselor/students");
+    return res.ok ? await res.json() : [];
+  }
+
+  async getCrisisCases(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/counselor/crisis");
+    return res.ok ? await res.json() : [];
+  }
+
+  async addCounselingNote(studentId: string, encryptedContent: string): Promise<any> {
+    const res = await this.fetchAuthorized("/api/counselor/notes", {
+      method: "POST",
+      body: JSON.stringify({ student_id: studentId, encrypted_content: encryptedContent }),
+    });
+    return await res.json();
+  }
+
+  async revealStudentIdentity(studentId: string, reason: string): Promise<any> {
+    const res = await this.fetchAuthorized("/api/counselor/reveal", {
+      method: "POST",
+      body: JSON.stringify({ student_id: studentId, reason }),
+    });
+    return await res.json();
+  }
+
+  // --- Content Creator Methods ---
+  async createCourseBlueprint(title: string, structure: any): Promise<any> {
+    const res = await this.fetchAuthorized("/api/content_creator/blueprints", {
+      method: "POST",
+      body: JSON.stringify({ title, structure }),
+    });
+    return await res.json();
+  }
+
+  async addLessonSequence(blueprintId: string, sequenceData: any[]): Promise<any> {
+    const res = await this.fetchAuthorized("/api/content_creator/lesson-sequence", {
+      method: "POST",
+      body: JSON.stringify({ blueprint_id: blueprintId, sequence_data: sequenceData }),
+    });
+    return await res.json();
+  }
+
+  // --- Researcher Methods ---
+  async getAnonymizedSnapshots(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/researcher/snapshots");
+    return res.ok ? await res.json() : [];
+  }
+
+  async logResearchQuery(queryText: string): Promise<any> {
+    const res = await this.fetchAuthorized("/api/researcher/query", {
+      method: "POST",
+      body: JSON.stringify({ query_text: queryText }),
+    });
+    return await res.json();
+  }
+
+  // --- Alumni Methods ---
+  async getAlumniPortfolio(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/alumni/portfolio");
+    return res.ok ? await res.json() : null;
+  }
+
+  async updateAlumniMentorshipStatus(isAvailable: boolean): Promise<any> {
+    const res = await this.fetchAuthorized("/api/alumni/mentorship/status", {
+      method: "POST",
+      body: JSON.stringify({ is_available: isAvailable }),
+    });
+    return await res.json();
   }
 
   async getStudentProfile(): Promise<any> {
