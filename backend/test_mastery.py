@@ -20,7 +20,7 @@ async def test_mastery():
         quiz_data = {
             "difficulty": "medium",
             "score": 90.0,
-            "course_id": "3ca8f41f-a4c9-49f5-bb14-e52ceda64c13",
+            "course_id": "bc7d54b4-20d1-4eec-8751-e13f7054ec8d",
             "details": {
                 "quiz_id": "quiz-123",
                 "total_questions": 10,
@@ -40,7 +40,7 @@ async def test_mastery():
         
         course = None
         for c in dash_data.get('enrolledCourses', []):
-            if c['id'] == "3ca8f41f-a4c9-49f5-bb14-e52ceda64c13":
+            if c['id'] == "bc7d54b4-20d1-4eec-8751-e13f7054ec8d":
                 course = c
                 break
         

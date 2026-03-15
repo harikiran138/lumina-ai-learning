@@ -303,19 +303,31 @@ class AnalyticsStore:
     async def _normalized_tables(self) -> Dict[str, List[dict]]:
         users = [self._normalize_user(item) for item in await self._read_table("users")]
         courses = [self._normalize_course(item) for item in await self._read_table("courses")]
-        progress = [self._normalize_progress(item) for item in await self._read_table("progress")]
+
+        # 'progress' table doesn't exist — read from enrollments and expand JSONB progress
+        raw_enrollments = await self._read_table("enrollments")
+        progress = []
+        for e in raw_enrollments:
+            p = e.get("progress") or {}
+            progress.append(self._normalize_progress({
+                "id": e.get("id"),
+                "course_id": e.get("course_id"),
+                "student_id": e.get("student_id"),
+                "progress": p.get("percentage", 0),
+                "mastery": p.get("mastery", 0),
+                "streak": p.get("streak", 0),
+                "hoursSpent": p.get("hoursSpent", 0),
+                "lastAccessed": p.get("lastAccessed"),
+            }))
+
         assignments = [self._normalize_assignment(item) for item in await self._read_table("assignments")]
-        submissions = [self._normalize_submission(item) for item in await self._read_table("submissions")]
-        institutions = [
-            self._normalize_institution(item) for item in await self._read_table("institutions")
-        ]
-        departments = [
-            self._normalize_department(item) for item in await self._read_table("departments")
-        ]
-        programs = [self._normalize_program(item) for item in await self._read_table("programs")]
-        stakeholders = [
-            self._normalize_stakeholder(item) for item in await self._read_table("stakeholders")
-        ]
+        # 'submissions' table is actually 'assignment_submissions' in real schema
+        submissions = [self._normalize_submission(item) for item in await self._read_table("assignment_submissions")]
+        # Optional tables — gracefully return empty if they don't exist
+        institutions = []
+        departments = []
+        programs = []
+        stakeholders = []
         return {
             "users": users,
             "courses": courses,
@@ -1140,13 +1152,14 @@ class AnalyticsStore:
     async def get_student_full_dashboard(self, student_id: str) -> Dict:
         try:
             client = self.db.get_client()
-            progress_response = client.table("progress").select("*").eq("userId", student_id).execute()
-            progress_data = progress_response.data
 
-            log.info("dashboard_progress_check", student_id=student_id, count=len(progress_data) if progress_data else 0)
+            # Fetch enrollments for this student (our real schema)
+            enrollment_response = client.table("enrollments").select("*").eq("student_id", student_id).execute()
+            enrollments = enrollment_response.data or []
 
-            enrolled_courses = []
-            if not progress_data:
+            log.info("dashboard_enrollment_check", student_id=student_id, count=len(enrollments))
+
+            if not enrollments:
                 return {
                     "currentStreak": 0,
                     "enrolledCourses": [],
@@ -1155,46 +1168,40 @@ class AnalyticsStore:
                     "badges": [],
                 }
 
-            course_ids = []
-            for p in progress_data:
-                cid = p.get("courseId") or p.get("courseid") or p.get("course_id")
-                if cid:
-                    course_ids.append(str(cid))
+            # Get all unique course IDs
+            course_ids = list({str(e.get("course_id")) for e in enrollments if e.get("course_id")})
 
+            # Batch fetch courses
             courses_map = {}
             if course_ids:
-                courses_response = self.client.table("courses").select("*").in_("id", course_ids).execute()
+                courses_response = client.table("courses").select("*").in_("id", course_ids).execute()
                 for c in courses_response.data:
-                    cid_str = str(c.get("id") or c.get("ID")).lower()
-                    courses_map[cid_str] = c
+                    courses_map[str(c.get("id"))] = c
 
-            for p in progress_data:
-                cid = p.get("courseId") or p.get("courseid") or p.get("course_id")
-                if not cid:
+            enrolled_courses = []
+            for enrollment in enrollments:
+                cid = str(enrollment.get("course_id") or "")
+                if not cid or cid not in courses_map:
                     continue
 
-                cid_str = str(cid).lower()
-                if cid_str in courses_map:
-                    course = courses_map[cid_str]
-                    course_name = course.get("course_name") or course.get("title") or course.get("name") or "Untitled Course"
+                course = courses_map[cid]
+                course_name = course.get("title") or course.get("course_name") or course.get("name") or "Untitled Course"
+                progress_data = enrollment.get("progress") or {}
 
-                    enrolled_courses.append(
-                        {
-                            "id": cid_str,
-                            "name": course_name,
-                            "title": course_name,
-                            "code": course.get("course_code") or course.get("code"),
-                            "description": course.get("description"),
-                            "thumbnail": course.get("thumbnail"),
-                            "progress": p.get("progress", 0),
-                            "mastery": p.get("mastery", 0),
-                            "streak": p.get("streak", 0),
-                            "lastAccessed": p.get("lastAccessed") or p.get("lastaccessed"),
-                            "hoursSpent": p.get("hoursSpent", 0) or p.get("hours_spent", 0) or p.get("hoursspent", 0),
-                        }
-                    )
-                else:
-                    log.warning("course_not_found_in_map", course_id=cid_str, available_ids=list(courses_map.keys()))
+                enrolled_courses.append({
+                    "id": cid,
+                    "name": course_name,
+                    "title": course_name,
+                    "code": course.get("code") or course.get("course_code"),
+                    "description": course.get("description"),
+                    "thumbnail": course.get("thumbnail_url"),
+                    "progress": float(progress_data.get("percentage", 0) or 0),
+                    "mastery": float(progress_data.get("mastery", 0) or 0),
+                    "streak": int(progress_data.get("streak", 0) or 0),
+                    "lastAccessed": progress_data.get("lastAccessed"),
+                    "hoursSpent": float(progress_data.get("hoursSpent", 0) or 0),
+                    "status": enrollment.get("status", "active"),
+                })
 
             current_streak = max([c.get("streak", 0) for c in enrolled_courses] + [0])
             avg_mastery = (
@@ -1202,15 +1209,14 @@ class AnalyticsStore:
                 if enrolled_courses
                 else 0
             )
-            total_hours = sum([c.get("hoursSpent", 0) for c in enrolled_courses])
-            badges = []
+            total_hours = round(sum([c.get("hoursSpent", 0) for c in enrolled_courses]), 2)
 
             return {
                 "currentStreak": current_streak,
                 "enrolledCourses": enrolled_courses,
                 "overallMastery": avg_mastery,
                 "totalHours": total_hours,
-                "badges": badges,
+                "badges": [],
             }
         except Exception as e:
             log.error("student_full_dashboard_failed", student_id=student_id, error=str(e), traceback=True)

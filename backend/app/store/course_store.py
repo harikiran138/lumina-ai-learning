@@ -21,20 +21,16 @@ class CourseStore:
 
         normalized = course.copy()
         
-        # Ensure consistent title/name
-        title = normalized.get("title") or normalized.get("course_name") or "Untitled Course"
-        code = normalized.get("code") or normalized.get("course_code")
+        # v2.0 uses 'name' and 'code' directly
+        title = normalized.get("name") or "Untitled Course"
+        code = normalized.get("code")
         
-        normalized["title"] = title
-        normalized["course_name"] = title
+        normalized["title"] = title  # For frontend compatibility
         normalized["name"] = title
-        
-        if code:
-            normalized["code"] = code
-            normalized["course_code"] = code
+        normalized["code"] = code
 
         # Thumbnail / Image normalization
-        img = normalized.get("thumbnail_url") or normalized.get("image") or normalized.get("thumbnail")
+        img = normalized.get("image_url") or normalized.get("thumbnail_url")
         if not img:
             img = "https://placehold.co/1200x675/0a0a0a/FFF?text=Lumina+Course"
         
@@ -43,27 +39,22 @@ class CourseStore:
         
         # Metadata / Stats
         normalized["modules"] = normalized.get("modules") or []
-        normalized["student_count"] = normalized.get("student_count") or 0
-        normalized["duration"] = normalized.get("estimated_duration") or "Self-paced"
         
         # Status normalization
         published = normalized.get("is_published", False)
         normalized["status"] = "Published" if published else "Draft"
-        normalized["is_published"] = published
         
         return normalized
 
-    async def create_course(self, name: str, code: str, description: str, teacher_id: str) -> dict:
+    async def create_course(self, name: str, code: str, description: str, teacher_id: str, subject: str = "general") -> dict:
         course_data = {
-            "title": name,
-            "course_name": name,
+            "name": name,
             "code": code,
-            "course_code": code,
             "description": description,
             "teacher_id": teacher_id,
+            "subject": subject,
             "modules": [],
-            "is_published": False,
-            "metadata": {}
+            "is_published": False
         }
 
         try:

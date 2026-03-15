@@ -12,6 +12,8 @@ from .auth import get_current_user
 UPLOAD_DIR = "data/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+router = APIRouter()
+
 
 class AssignmentCreate(BaseModel):
     title: str
