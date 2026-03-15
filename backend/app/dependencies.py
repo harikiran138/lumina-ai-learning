@@ -11,6 +11,13 @@ from app.store.community_store import CommunityStore
 from app.store.generation_store import GenerationStore
 from app.store.institution_store import InstitutionStore
 from app.store.tutor_memory_store import TutorMemoryStore
+from app.store.parent_store import ParentStore
+from app.store.mentor_store import MentorStore
+from app.store.peer_tutor_store import PeerTutorStore
+from app.store.counselor_store import CounselorStore
+from app.store.content_creator_store import ContentCreatorStore
+from app.store.researcher_store import ResearcherStore
+from app.store.alumni_store import AlumniStore
 
 
 @lru_cache()
@@ -71,3 +78,38 @@ def get_institution_store() -> InstitutionStore:
 @lru_cache()
 def get_tutor_memory_store() -> TutorMemoryStore:
     return TutorMemoryStore()
+
+
+@lru_cache()
+def get_parent_store() -> ParentStore:
+    return ParentStore()
+
+
+@lru_cache()
+def get_mentor_store() -> MentorStore:
+    return MentorStore()
+
+
+@lru_cache()
+def get_peer_tutor_store() -> PeerTutorStore:
+    return PeerTutorStore()
+
+
+@lru_cache()
+def get_counselor_store() -> CounselorStore:
+    return CounselorStore()
+
+
+@lru_cache()
+def get_content_creator_store() -> ContentCreatorStore:
+    return ContentCreatorStore()
+
+
+@lru_cache()
+def get_researcher_store() -> ResearcherStore:
+    return ResearcherStore()
+
+
+@lru_cache()
+def get_alumni_store() -> AlumniStore:
+    return AlumniStore()

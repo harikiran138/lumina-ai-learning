@@ -51,6 +51,13 @@ from .routers import (  # noqa: E402
     teacher,
     knowledge_graph,
     generation,
+    parent,
+    mentor,
+    peer_tutor,
+    counselor,
+    content_creator,
+    researcher,
+    alumni,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
@@ -220,6 +227,13 @@ app.include_router(student.router, prefix="/api/student", tags=["Student Data"])
 app.include_router(personalization.router, prefix="/api/personalization", tags=["Personalization"])
 app.include_router(automation_router)
 app.include_router(community.router, prefix="/api/community", tags=["Community"])
+app.include_router(parent.router, prefix="/api/parent", tags=["Parent"])
+app.include_router(mentor.router, prefix="/api/mentor", tags=["Mentor"])
+app.include_router(peer_tutor.router, prefix="/api/peer_tutor", tags=["Peer Tutor"])
+app.include_router(counselor.router, prefix="/api/counselor", tags=["Counselor"])
+app.include_router(content_creator.router, prefix="/api/content_creator", tags=["Content Creator"])
+app.include_router(researcher.router, prefix="/api/researcher", tags=["Researcher"])
+app.include_router(alumni.router, prefix="/api/alumni", tags=["Alumni"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(pathway.router, prefix="/api/pathway", tags=["Pathway"])
 app.include_router(teacher.router, prefix="/api/teacher", tags=["Teacher Dashboard"])
