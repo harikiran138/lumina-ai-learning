@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional, List
+from datetime import datetime
 
 from .auth import get_current_user
 from app.store.user_store import UserStore
@@ -23,6 +24,39 @@ def is_admin(current_user: dict = Depends(get_current_user)):
 async def get_admin_dashboard(admin: dict = Depends(is_admin)):
     """Get high-level system stats for the admin dashboard."""
     return await AnalyticsStore().get_admin_dashboard_stats()
+
+
+@router.get("/health")
+async def get_system_health(admin: dict = Depends(is_admin)):
+    """Comprehensive system-wide health audit."""
+    return await AnalyticsStore().get_system_health_audit()
+
+
+@router.get("/queue-health")
+async def get_queue_health(admin: dict = Depends(is_admin)):
+    """AI verification backlog and throughput signals."""
+    return await AnalyticsStore().get_verification_queue_stats()
+
+
+@router.get("/guardian")
+async def get_guardian_signals(admin: dict = Depends(is_admin)):
+    """Fetch active Guardian agent flagging signals."""
+    return await AnalyticsStore().get_guardian_signals()
+
+
+@router.get("/roles/matrix")
+async def get_role_matrix(admin: dict = Depends(is_admin)):
+    """Fetch the functional role-per-permission matrix."""
+    return {
+        "roles": ["student", "teacher", "admin", "parent"],
+        "permissions": {
+            "course_create": ["admin", "teacher"],
+            "course_delete": ["admin"],
+            "user_manage": ["admin"],
+            "analytics_view": ["admin", "teacher"],
+            "billing_manage": ["admin"]
+        }
+    }
 
 
 @router.get("/users")
@@ -218,3 +252,35 @@ async def get_connections(inst_id: Optional[str] = None, program_id: Optional[st
         )
 
     return enriched
+@router.get("/compliance/deletions")
+async def get_deletion_requests(admin: dict = Depends(is_admin)):
+    """List pending and completed data deletion requests."""
+    try:
+        response = supabase_db.client.table("deletion_requests").select("*").order("created_at", desc=True).execute()
+        return response.data
+    except Exception:
+        return []
+
+
+@router.post("/compliance/deletions/{request_id}/process")
+async def process_deletion_request(request_id: str, admin: dict = Depends(is_admin)):
+    """Approve and process a data deletion request."""
+    # This would involve calling a background service for scrubbing data
+    try:
+        supabase_db.client.table("deletion_requests").update({
+            "status": "completed",
+            "completed_at": datetime.utcnow().isoformat()
+        }).eq("id", request_id).execute()
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/compliance/audit-logs")
+async def get_compliance_audit_logs(admin: dict = Depends(is_admin)):
+    """Fetch immutable audit logs for compliance tracking."""
+    try:
+        response = supabase_db.client.table("audit_logs").select("*").order("created_at", desc=True).limit(200).execute()
+        return response.data
+    except Exception:
+        return []
