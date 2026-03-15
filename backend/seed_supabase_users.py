@@ -49,7 +49,7 @@ async def seed_users():
                 "role": user["role"],
                 "status": "active",
                 "is_active": True,
-                "profile_image": f"https://ui-avatars.com/api/?name={user['name'].replace(' ', '+')}&background=random",
+                "avatar": f"https://ui-avatars.com/api/?name={user['name'].replace(' ', '+')}&background=random",
             }
             client.table("users").insert(new_user).execute()
 

@@ -16,6 +16,7 @@ from app.personalization.schemas import (
     RiskSummary,
 )
 from app.store.personalization_store import PersonalizationStore
+from app.store.student_store import StudentStore
 from app.personalization.kpi_engine import KPIEngine
 from app.personalization.authenticity_engine import authenticity_engine
 from app.assessment.models.schemas import ResponseTelemetry, AnswerAnalysis
@@ -32,6 +33,7 @@ class PersonalizationService:
 
     def __init__(self):
         self.store = PersonalizationStore()
+        self.student_store = StudentStore()
         self.bkt = BKTModel()
         self.cognitive_load = CognitiveLoadEstimator()
 
@@ -325,6 +327,22 @@ class PersonalizationService:
             "risk_summary": profile.risk_summary.model_dump(mode="json"),
         }
 
+    async def _sync_mastery_to_enrollment(self, user_id: str, course_id: Optional[str], topic_id: Optional[str], profile: LearnerProfileRecord):
+        if not course_id:
+            return
+        
+        # Calculate overall mastery for this specific course
+        # In a real system, we'd filter topics by course
+        # For now, we'll use the profile's recent performance average as a proxy if topic is not specified,
+        # or the specific topic's score if available.
+        mastery_score = 0.0
+        if topic_id and topic_id in profile.mastery_state:
+            mastery_score = profile.mastery_state[topic_id].score * 100.0
+        else:
+            mastery_score = profile.performance_summary.recent_average_score
+            
+        await self.student_store.update_mastery(user_id, course_id, mastery_score)
+
     async def record_event(
         self,
         user_id: str,
@@ -338,12 +356,13 @@ class PersonalizationService:
     ) -> LearnerProfileRecord:
         payload = payload or {}
         topic_id = topic_id or payload.get("topic") or payload.get("topic_id")
+        course_id = course_id or payload.get("course_id")
 
         event = LearningEventRecord(
             user_id=user_id,
             event_type=event_type,
             source=source,
-            course_id=course_id or payload.get("course_id"),
+            course_id=course_id,
             topic_id=topic_id,
             session_id=session_id or payload.get("session_id"),
             payload=payload,
@@ -524,6 +543,16 @@ class PersonalizationService:
 
         profile.risk_summary = self._risk_from_profile(profile)
         await self.store.upsert_profile(profile)
+        
+        # Sync to enrollment for dashboard visibility
+        if event_type in {
+            LearningEventType.QUIZ_RESULT, 
+            LearningEventType.ASSESSMENT_COMPLETED, 
+            LearningEventType.ASSIGNMENT_GRADED,
+            LearningEventType.LESSON_COMPLETED
+        }:
+            await self._sync_mastery_to_enrollment(user_id, course_id, topic_id, profile)
+
         await self._maybe_create_intervention(profile, event)
         return profile
 

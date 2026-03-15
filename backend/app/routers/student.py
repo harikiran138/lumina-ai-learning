@@ -14,6 +14,7 @@ from app.services.personalization_service import get_personalization_service
 from app.store.user_data_store import UserDataStore
 from app.store.student_store import StudentStore
 from app.store.assignment_store import AssignmentStore
+from app.store.analytics_store import AnalyticsStore
 from app.dependencies import get_user_data_store, get_student_store, get_assignment_store, get_analytics_store
 from .auth import get_current_user
 

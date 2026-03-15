@@ -33,14 +33,14 @@ class UserStore:
         
         # Consistent naming for frontend (name, avatar, status)
         name = safe_user.get("name") or "Unnamed User"
-        avatar = safe_user.get("avatar")
+        avatar = safe_user.get("avatar_url") or safe_user.get("avatar")
         if not avatar:
             avatar = f"https://ui-avatars.com/api/?name={name.replace(' ', '+')}&background=111827&color=F9FAFB"
         
         safe_user["name"] = name
-        safe_user["avatar"] = avatar
+        safe_user["avatar_url"] = avatar
+        safe_user["avatar"] = avatar  # Backward compatibility
         safe_user["status"] = safe_user.get("status", "active")
-        safe_user["is_active"] = safe_user["status"] == "active"
         
         return safe_user
 
@@ -55,15 +55,25 @@ class UserStore:
             "name": full_name,
             "role": role,
             "phone": phone or "N/A",
-            "status": "active",
             "is_active": True
         }
 
         try:
             # Use SupabaseManager's insert
-            result = await self.db.insert("users", user_data)
+            # Ensure we are targeting the public schema explicitly if possible
+            client = self.db.get_client()
+            insert_result = client.table("users").insert(user_data).execute()
+            
+            # Fallback: If RLS prevents returning the row on insert, fetch it explicitly
+            result = insert_result.data[0] if insert_result.data else await self.get_user_by_email(email)
+            
             if not result:
-                raise Exception("Failed to create user record")
+                # Last resort check
+                log.warning("insert_result_empty_trying_retry", email=email)
+                result = await self.get_user_by_email(email)
+                
+            if not result:
+                raise Exception("Failed to create or retrieve user record")
             
             return self._sanitize_user(result)
 
