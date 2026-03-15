@@ -7,6 +7,9 @@ from app.dependencies import get_course_store
 from .auth import get_current_user
 from app.core.cache import cached
 from app.database.supabase_manager import supabase_db
+from app.store.analytics_store import AnalyticsStore
+from app.services.personalization_service import get_personalization_service
+from app.personalization.schemas import InterventionStatus
 
 router = APIRouter()
 
@@ -119,9 +122,125 @@ async def teacher_dashboard(current_user: dict = Depends(get_current_user)):
     analytics = AnalyticsStore()
     overview = await analytics.get_teacher_dashboard_overview(current_user["id"])
     stats = await analytics.get_teacher_dashboard_stats(current_user["id"])
+    personalization = get_personalization_service()
+
+    student_momentum = overview.get("studentMomentum", [])
+    student_ids = [item.get("id") for item in student_momentum if item.get("id")]
+    profiles = {}
+    for student_id in student_ids:
+        try:
+            profiles[student_id] = await personalization.get_profile(student_id)
+        except Exception:
+            continue
+
+    for student in student_momentum:
+        profile = profiles.get(student.get("id"))
+        if not profile:
+            continue
+        risk_level = profile.risk_summary.risk_level
+        student["riskLevel"] = risk_level
+        student["riskScore"] = profile.risk_summary.risk_score
+        student["weakTopics"] = profile.weak_topics
+        misconceptions = profile.misconception_summary.get("labels", {}) if profile.misconception_summary else {}
+        sorted_misconceptions = sorted(misconceptions.items(), key=lambda item: item[1], reverse=True)
+        student["misconceptions"] = [label for label, _count in sorted_misconceptions[:3]]
+        if profile.weak_topics:
+            student["focusArea"] = profile.weak_topics[0]
+        if risk_level in {"high", "critical"}:
+            student["status"] = "needs-attention"
+        elif risk_level == "medium":
+            student["status"] = "watch"
+        else:
+            student["status"] = "on-track"
+
+    interventions = await personalization.get_interventions(user_id=None)
+    active = [
+        item
+        for item in interventions
+        if item.status in (InterventionStatus.OPEN, InterventionStatus.ACKNOWLEDGED)
+        and item.user_id in student_ids
+    ]
+    student_name_lookup = {item.get("id"): item.get("name") for item in student_momentum}
+    priority_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    intervention_queue = []
+    for item in active:
+        profile = profiles.get(item.user_id)
+        priority_value = item.priority.value if hasattr(item.priority, "value") else str(item.priority)
+        intervention_queue.append(
+            {
+                "id": item.id,
+                "studentId": item.user_id,
+                "studentName": student_name_lookup.get(item.user_id, "Student"),
+                "riskLevel": profile.risk_summary.risk_level if profile else "medium",
+                "topicId": item.topic_id,
+                "priority": priority_value,
+                "status": item.status.value if hasattr(item.status, "value") else str(item.status),
+                "recommendedAction": item.recommended_action,
+                "reason": item.reason,
+                "confidence": item.confidence,
+                "evidence": item.evidence,
+                "suggestedMessage": (
+                    f"Hi {student_name_lookup.get(item.user_id, 'student')}, "
+                    f"let's review {item.topic_id or 'this topic'} together."
+                ),
+                "misconceptions": profile.misconception_summary.get("recent", []) if profile else [],
+                "weakTopics": profile.weak_topics if profile else [],
+                "createdAt": item.created_at.isoformat() if hasattr(item.created_at, "isoformat") else item.created_at,
+            }
+        )
+
+    intervention_queue.sort(
+        key=lambda item: (priority_order.get(item["priority"], 99), -(item.get("confidence") or 0))
+    )
+
+    heatmap = []
+    if student_ids:
+        try:
+            heatmap = await personalization.get_concept_heatmap(user_ids=student_ids)
+        except Exception:
+            heatmap = []
+
+    topic_groups = {}
+    for student_id, profile in profiles.items():
+        for topic in profile.weak_topics[:2]:
+            topic_groups.setdefault(topic, []).append(student_id)
+    clusters = []
+    for topic, group_ids in topic_groups.items():
+        if len(group_ids) < 2:
+            continue
+        clusters.append(
+            {
+                "topic": topic,
+                "students": [
+                    {
+                        "id": sid,
+                        "name": student_name_lookup.get(sid, "Student"),
+                    }
+                    for sid in group_ids
+                ],
+                "riskCount": sum(
+                    1
+                    for sid in group_ids
+                    if profiles.get(sid)
+                    and profiles[sid].risk_summary.risk_level in {"high", "critical"}
+                ),
+                "recommendedAction": f"Run a focused small-group session on {topic}.",
+            }
+        )
+
+    if profiles:
+        overview["summary"]["atRiskStudents"] = sum(
+            1
+            for profile in profiles.values()
+            if profile.risk_summary.risk_level in {"high", "critical"}
+        )
+
     return {
         **stats,
         **overview,
+        "interventionQueue": intervention_queue,
+        "conceptHeatmap": heatmap,
+        "supportClusters": clusters,
         "courseCount": overview["summary"]["activeCourses"],
     }
 
@@ -141,7 +260,26 @@ async def teacher_students(current_user: dict = Depends(get_current_user)):
     if current_user["role"] not in ("teacher", "admin"):
         raise HTTPException(status_code=403, detail="Teacher access required")
     analytics = AnalyticsStore()
-    return await analytics.get_teacher_students_snapshot(current_user["id"])
+    snapshot = await analytics.get_teacher_students_snapshot(current_user["id"])
+    personalization = get_personalization_service()
+    student_ids = [item.get("id") for item in snapshot if item.get("id")]
+    profiles = {}
+    for student_id in student_ids:
+        try:
+            profiles[student_id] = await personalization.get_profile(student_id)
+        except Exception:
+            continue
+    for student in snapshot:
+        profile = profiles.get(student.get("id"))
+        if not profile:
+            continue
+        student["riskLevel"] = profile.risk_summary.risk_level
+        student["riskScore"] = profile.risk_summary.risk_score
+        student["weakTopics"] = profile.weak_topics
+        misconceptions = profile.misconception_summary.get("labels", {}) if profile.misconception_summary else {}
+        sorted_misconceptions = sorted(misconceptions.items(), key=lambda item: item[1], reverse=True)
+        student["misconceptions"] = [label for label, _count in sorted_misconceptions[:3]]
+    return snapshot
 
 
 # ─── Course Creation ─────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 from .handwriting_agent import HandwritingAgent
-from .tutor import TutorAgent
+from .tutor import TutorAgent, infer_subject_mode
 from .assessment import AssessmentAgent
 from .intervention import InterventionAgent
 from .guardian import GuardianAgent
@@ -90,6 +90,8 @@ class Orchestrator:
             return await self.pathway_agent.process_input(user_input, context)
 
         # Default to Tutor Agent for most interactions
+        filters = context.get("filters") or {}
+        subject_mode = infer_subject_mode(user_input, context.get("topic", ""), filters)
         topic = context.get("topic", "General")
         history = context.get("history", [])
         return await self.tutor_agent.generate_response(
@@ -98,4 +100,10 @@ class Orchestrator:
             history,
             learner_profile,
             profile_context=context.get("profile_context", ""),
+            subject_mode=subject_mode,
+            lesson_context=context.get("lesson_context"),
+            assignment_context=context.get("assignment_context"),
+            user_id=context.get("user_id"),
+            session_id=context.get("session_id"),
+            comprehension_signal=context.get("comprehension_signal"),
         )

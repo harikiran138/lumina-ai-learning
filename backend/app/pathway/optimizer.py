@@ -1,5 +1,6 @@
 from typing import List, Dict, Optional
 from app.database.supabase_manager import supabase_db
+from app.store.local_store import LocalJsonStore
 from app.core.logging import structlog
 
 log = structlog.get_logger()
@@ -27,7 +28,7 @@ class CurriculumOptimizer:
         try:
             client = supabase_db.get_client()
             if not client:
-                log.warning("optimizer_db_load_failed", reason="no_client")
+                self._load_from_local(course_id)
                 return
 
             response = client.table("knowledge_nodes").select("*").eq("course_id", course_id).execute()
@@ -48,6 +49,23 @@ class CurriculumOptimizer:
             log.info("optimizer_loaded_nodes", count=len(self.nodes), course_id=course_id)
         except Exception as e:
             log.error("optimizer_load_error", error=str(e))
+
+    def _load_from_local(self, course_id: str):
+        store = LocalJsonStore()
+        payload = store.read()
+        nodes = payload.get("knowledge_nodes", [])
+        diff_map = {"beginner": 0.2, "intermediate": 0.5, "advanced": 0.8}
+        for item in nodes:
+            if item.get("course_id") != course_id:
+                continue
+            concept = item.get("concept")
+            if not concept:
+                continue
+            difficulty_raw = item.get("difficulty", "beginner")
+            difficulty = diff_map.get(difficulty_raw, 0.5)
+            node = CurriculumNode(concept, difficulty)
+            node.prerequisites = item.get("prerequisites", [])
+            self.nodes[concept] = node
 
     def add_node(self, concept_id: str, difficulty: float, prerequisites: List[str] = None):
         node = CurriculumNode(concept_id, difficulty)

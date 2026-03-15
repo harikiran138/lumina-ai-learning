@@ -18,6 +18,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "app.worker.task_run_inactivity_alert",
         "schedule": 86400,  # every 24 hours
     },
+    "profile-refresh": {
+        "task": "app.worker.task_run_profile_refresh",
+        "schedule": 86400,  # every 24 hours
+    },
 }
 
 
@@ -29,7 +33,7 @@ def setup_scheduled_jobs(app=None):
     """
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
-        from app.automation.jobs import run_inactivity_alert_scan, run_weekly_class_digest
+        from app.automation.jobs import run_inactivity_alert_scan, run_profile_refresh, run_weekly_class_digest
 
         scheduler = BackgroundScheduler()
 
@@ -48,6 +52,15 @@ def setup_scheduled_jobs(app=None):
             trigger="interval",
             hours=6,
             id="inactivity_alert_scan",
+            replace_existing=True,
+        )
+
+        # Profile refresh (daily in dev)
+        scheduler.add_job(
+            func=lambda: run_profile_refresh(),
+            trigger="interval",
+            hours=24,
+            id="profile_refresh",
             replace_existing=True,
         )
 

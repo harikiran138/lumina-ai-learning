@@ -105,15 +105,19 @@ lumina-ai-learning/
 │   │   │   └── metrics.py            # Prometheus metrics
 │   │   │
 │   │   ├── database/                 # Database management
-│   │   │   ├── supabase.py           # Supabase client singleton
+│   │   │   ├── supabase_manager.py   # Supabase client singleton
+│   │   │   ├── manager.py            # Legacy Mongo manager (deprecated)
 │   │   │   └── migrations/           # SQL migration files
 │   │   │
 │   │   ├── services/                 # Business logic services
-│   │   └── store/                    # Fallback JSON data stores
-│   │       ├── courses/              # Course JSON fallback
-│   │       ├── users/                # User JSON fallback
-│   │       ├── students/             # Student JSON fallback
-│   │       └── assignments/          # Assignment JSON fallback
+│   │   └── store/                    # Data stores + JSON fallback
+│   │       ├── course_store.py       # Courses CRUD + normalization
+│   │       ├── user_store.py         # Users CRUD
+│   │       ├── student_store.py      # Student dashboard and progress
+│   │       ├── assignment_store.py   # Assignments and submissions
+│   │       ├── personalization_store.py # Learner profile persistence
+│   │       ├── tutor_memory_store.py # Tutor memory (Supabase + JSON fallback)
+│   │       └── local_store.py        # Local JSON fallback (`backend/data`)
 │   │
 │   └── ai_engine/                    # AI/ML layer
 │       ├── llm.py                    # LLM provider abstraction (Gemini/Ollama)
@@ -216,7 +220,7 @@ All protected routes require valid JWT unless noted.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/auth/register` | None | Register new user. Body: `{email, password, name, role}` |
+| POST | `/auth/register` | None | Register new user. Body: `{email, password, full_name, role}` |
 | POST | `/auth/token` | None | Login. Form: `username=email&password=...` → returns `{access_token, token_type}` |
 | GET | `/auth/me` | Required | Current user profile |
 
@@ -245,7 +249,7 @@ All protected routes require valid JWT unless noted.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/chat` | Required | Main tutor chat. Body: `{message, course_id?, lesson_id?, session_id?}` → `{response, intent, agent}` |
+| POST | `/chat` | Required | Main tutor chat. Body: `{message, user_id, session_id?, context_filters?: {context?, topic?, subject?, lesson?, assignment?}}` → `{response, personalization}` |
 | POST | `/generate-course` | Teacher | Generate course from topic. Body: `{topic, grade_level?, num_modules?}` |
 | POST | `/generate-course/assignment` | Teacher | Generate course from assignment description |
 | POST | `/ingest-document` | Teacher | Ingest doc into RAG. Body: `{text, course_id, metadata?}` |
@@ -257,30 +261,33 @@ All protected routes require valid JWT unless noted.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/assessment/session/start` | Student | Start session. Body: `{course_id, topic_id?, difficulty?}` → `{session_id, first_question}` |
-| POST | `/assessment/session/{session_id}/next-question` | Student | Get next question (adaptive) |
-| POST | `/assessment/session/{session_id}/submit` | Student | Submit answer. Body: `{answer, question_id}` → `{correct, explanation, mastery_delta}` |
-| POST | `/assessment/session/{session_id}/complete` | Student | End session → `{report, mastery_updates}` |
-| GET | `/assessment/session/{session_id}` | Student | Get session state |
-| POST | `/assessment/session/{session_id}/report` | Student | Full session report |
-| GET | `/assessment/mastery/{user_id}` | Any | Mastery map for user |
-| GET | `/assessment/weakness/{user_id}` | Any | Weakness analysis |
+| POST | `/assessment/start` | Student | Start session. Body: `{student_id, topic, num_questions}` |
+| GET | `/assessment/next-question/{session_id}` | Student | Get next question (adaptive) |
+| POST | `/assessment/submit` | Student | Submit answer. Body: `{session_id, question_id, answer, time_taken, telemetry?}` |
+| POST | `/assessment/complete/{session_id}` | Student | End session → report summary |
+| GET | `/assessment/report/{session_id}` | Student | Full session report |
+| GET | `/assessment/student/mastery` | Student | Mastery map for current user |
 
 ### Assignments (`/api/assignments/`)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/assignments/submit` | Student | Submit assignment. Form: `{file, course_id, assignment_id}` |
-| GET | `/assignments/{submission_id}` | Any | Get submission details |
-| POST | `/assignments/{submission_id}/grade` | Teacher | Grade submission (OCR + AI). Body: `{rubric?, answer_key?}` |
-| GET | `/assignments/user/{user_id}` | Any | All submissions for user |
+| POST | `/assignments/create` | Teacher | Create assignment (multipart form) |
+| POST | `/assignments/submit` | Student | Submit assignment. Form: `{file, assignment_id}` |
+| GET | `/assignments/list` | Any | List assignments (optional `course_id`, `student_id`) |
+| GET | `/assignments/{assignment_id}/submissions` | Teacher | Submissions for assignment |
+| POST | `/assignments/{assignment_id}/submissions/{submission_id}/grade` | Teacher | Trigger AI grading |
+| PUT | `/assignments/{assignment_id}/submissions/{submission_id}/score` | Teacher | Update score/feedback |
+| GET | `/assignments/{assignment_id}/analytics` | Teacher | Basic assignment analytics |
+| GET | `/assignments/{assignment_id}/submissions/{submission_id}/report` | Teacher | Submission report |
 
 ### Handwriting (`/api/handwriting/`)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/handwriting/analyze` | Student | Upload handwritten PDF. Form: `{file}` → `{transcribedText, score, feedback}` |
-| GET | `/handwriting/history/{user_id}` | Any | Past analyses for user |
+| POST | `/handwriting/upload` | Student | Upload handwritten note or assignment |
+| POST | `/handwriting/grade` | Teacher | Grade assignment in handwriting state store |
+| GET | `/handwriting/list` | Any | List handwriting items (optional `type`) |
 
 ### Student (`/api/student/`)
 
@@ -288,53 +295,68 @@ All protected routes require valid JWT unless noted.
 |--------|------|------|-------------|
 | GET | `/student/profile` | Student | Full learner profile |
 | GET | `/student/dashboard` | Student | Dashboard: progress, streak, courses |
-| GET | `/student/progress` | Student | Detailed progress tracking |
-| POST | `/student/quiz-result` | Student | Log quiz result. Body: `{course_id, topic_id, score, answers}` |
-| POST | `/student/enroll` | Student | Enroll in course. Body: `{course_id}` |
-| POST | `/student/lesson-complete` | Student | Mark lesson complete |
-| POST | `/student/note` | Student | Save note. Body: `{content, lesson_id?, course_id?}` |
-| POST | `/student/activity-log` | Student | Log any learning event |
+| GET | `/student/profile/analytics` | Student | Detailed progress and analytics |
+| POST | `/student/quiz-result` | Student | Log quiz result |
+| POST | `/student/enroll` | Student | Enroll in course |
+| POST | `/student/complete-lesson` | Student | Mark lesson complete |
+| POST | `/student/notes` | Student | Save note |
+| GET | `/student/notes` | Student | List notes |
+| POST | `/student/log-activity` | Student | Log learning activity |
+| GET | `/student/badges` | Student | List badges |
+| GET | `/student/certificates` | Student | List certificates |
 
 ### Teacher (`/api/teacher/`)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/teacher/dashboard` | Teacher | Full teacher dashboard |
-| GET | `/teacher/students` | Teacher | Class roster with profiles |
-| GET | `/teacher/grading-queue` | Teacher | Pending assignments to grade |
-| POST | `/teacher/intervention/{student_id}` | Teacher | Log manual intervention |
+| GET | `/teacher/dashboard/summary` | Teacher | Summary cards |
+| GET | `/teacher/interventions/queue` | Teacher | Intervention queue |
+| PATCH | `/teacher/interventions/{intervention_id}` | Teacher | Update intervention status |
+| GET | `/teacher/heatmap/{course_id}` | Teacher | Class heatmap (scaffold) |
 
 ### Pathway (`/api/pathway/`)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/pathway/next-topic` | Student | Recommended next topic for current user |
-| GET | `/pathway/recommendation/{user_id}` | Any | Full pathway recommendation with reasoning |
+| POST | `/pathway/decision` | Student | Pathway recommendation output |
+
+### Knowledge Graph (`/api/knowledge-graph/`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/knowledge-graph/{course_id}` | Any | List knowledge nodes for a course |
+| POST | `/knowledge-graph/{course_id}/nodes` | Teacher | Upsert knowledge nodes for a course |
 
 ### Personalization (`/api/personalization/`)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/personalization/event` | Student | Log learning event to profile |
-| GET | `/personalization/profile/{user_id}` | Any | Get personalization profile |
-| PUT | `/personalization/profile/{user_id}` | Any | Update profile preferences |
+| GET | `/personalization/profile` | Student | Current user profile |
+| GET | `/personalization/profile/{user_id}` | Any | Fetch profile by user id |
+| GET | `/personalization/interventions` | Teacher | Suggested interventions |
+| GET | `/personalization/projection/tutor` | Student | Tutor-facing projection for current user |
+| GET | `/personalization/projection/tutor/{user_id}` | Teacher | Tutor-facing projection for user |
+| GET | `/personalization/projection/teacher/{user_id}` | Teacher | Teacher-facing projection for user |
+| GET | `/personalization/projection/pathway` | Student | Pathway projection for current user |
+| GET | `/personalization/projection/pathway/{user_id}` | Teacher | Pathway projection for user |
 
 ### Automation (`/api/automation/`)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/automation/class-digest/{course_id}` | Teacher | Trigger weekly class digest |
-| POST | `/automation/student-digest/{user_id}` | Teacher | Trigger student progress digest |
-| POST | `/automation/remediation/{user_id}` | Teacher | Generate remediation plan |
-| POST | `/automation/inactivity-check` | Teacher | Check for inactive students |
-| GET | `/automation/logs` | Teacher | View automation job logs |
-| PATCH | `/automation/job/{job_id}/enable` | Teacher | Enable or disable a job |
+| GET | `/automation/jobs` | Teacher | List automation jobs |
+| POST | `/automation/run/weekly-digest` | Teacher | Trigger weekly class digest |
+| POST | `/automation/run/remediation` | Teacher | Generate remediation plan |
+| POST | `/automation/run/inactivity-alert` | Teacher | Check for inactive students |
+| POST | `/automation/run/progress-digest` | Teacher | Student progress digest |
+| POST | `/automation/run/profile-refresh` | Teacher | Refresh KPI/risk signals for all profiles |
 
 ### Community (`/api/community/`)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/community/messages` | Any | List community messages |
+| GET | `/community/data` | Any | List channels + messages |
+| POST | `/community/send` | Student | Send a community message |
 | POST | `/community/messages` | Any | Post message |
 
 ### Admin (`/api/admin/`)
@@ -407,27 +429,37 @@ GENERAL      → TutorAgent (fallback)
 **Purpose:** Primary student-facing AI tutor. RAG-powered, subject-aware, learner-profile-aware.
 
 **Key Functions:**
-- `_detect_request_mode(user_query)` → Returns: `timeline | comparison | quiz | summary | explain | general`
-- `_extract_context_points(context_text)` → Extracts learner profile signals
-- `process_input(user_input, context)` → Main entry point
+- `infer_subject_mode(user_query, topic, context_filters)` → `math | science | coding | language | general`
+- `_detect_request_mode(user_query)` → `timeline | comparison | quiz | summary | explain`
+- `generate_response(...)` → A2UI JSON response with calibration prompt + subject mode metadata
 
-**RAG Integration:** Calls `backend/ai_engine/rag.py` → `backend/app/rag/retrieval.py` → ChromaDB
+**RAG Integration:** `backend/app/rag/retrieval.py` → ChromaDB (hybrid search)
 
-**Explanation Planner Integration:** Reads learner profile → calls `personalization/explanation_planner.py` → selects explanation strategy (visual, step-by-step, Socratic, etc.)
+**Explanation Planner Integration:** Reads learner profile → `personalization/explanation_planner.py` → selects strategy (visual, step-by-step, Socratic, etc.)
 
 **LLM Provider:** `backend/ai_engine/llm.py` — abstracts Gemini vs Ollama
 
-**Session Memory:** `backend/ai_engine/tutor_state.py` stores conversation history per session
+**Persistent Tutor Memory:** `backend/app/store/tutor_memory_store.py` (Supabase conversations when available, local JSON fallback)
 
-**System Prompt:** `backend/ai_engine/prompts.py` → `TUTOR_SYSTEM_PROMPT`
+**Session Memory (avoid repeats):** `backend/ai_engine/tutor_state.py`
 
-**Output format:**
+**System Prompt:** `backend/ai_engine/prompts.py` → `A2UI_SYSTEM_PROMPT`
+
+**Output format (A2UI v2):**
 ```python
 {
-  "response": str,           # Formatted explanation
-  "mode": str,               # Detected mode
-  "sources": list,           # RAG sources used
-  "strategy": str            # Explanation strategy used
+  "meta": {
+    "topic": "Topic Name",
+    "difficulty": "easy|medium|hard",
+    "estimated_time_min": 5,
+    "exportable": false,
+    "subject_mode": "math|science|coding|language|general"
+  },
+  "flow": [
+    {"type": "concept", "title": "...", "summary": "...", "key_points": ["..."]},
+    {"type": "steps", "title": "...", "steps": ["..."]},
+    {"type": "reflection", "prompt": "...", "placeholder": "..."}
+  ]
 }
 ```
 
@@ -486,28 +518,28 @@ start_session()
 **Key Endpoints consumed by agent:**
 - Reads learner mastery: `GET /assessment/mastery/{user_id}`
 - Writes mastery updates: internal via assessment engine
-- Generates remediation: triggers `POST /automation/remediation/{user_id}`
+- Generates remediation: inline remediation plan (assessment engine) and optional automation job
 
 **Question Generation:** `app/assessment/llm/` — uses Gemini to generate questions from topic + difficulty
 
-**Where mastery updates go:** Currently writes to assessment session store. **Gap:** Does not yet update the unified learner profile in Supabase `learner_profiles` table.
+**Where mastery updates go:** Assessment events update the unified learner profile via `PersonalizationService`.
 
 ---
 
 ### Intervention Agent (`intervention.py`)
 
-**Status: SKELETAL — needs real implementation**
+**Status: OPERATIONAL — backed by learner profile signals**
 
 **Purpose:** Detects at-risk students and generates teacher action recommendations.
 
-**Intended Pipeline:**
+**Pipeline (implemented via `PersonalizationService` + intervention queue):**
 ```
 Learner profile signals:
-  - days_since_last_login
-  - recent_assessment_scores (trend)
-  - assignment_completion_rate
-  - tutor_confusion_signals
-  → risk_classifier() → "low" | "medium" | "high"
+  - cognitive_load
+  - weak_topics
+  - recent_average_score
+  - engagement_summary
+  → risk_classifier() → "low" | "medium" | "high" | "critical"
   → action_generator() → recommended teacher message + next step
   → confidence_scorer()
   → InterventionRecommendation (written to DB)
@@ -549,7 +581,7 @@ PDF upload (multipart form)
 **Also available:** Standalone `Handwriting_Analysis_Project/` with its own Next.js + FastAPI ML service using TrOCR
 
 **Integration into main pipeline (Phase 5):**
-- Connect `POST /handwriting/analyze` result → assignment submission grading pipeline
+- Connect `POST /handwriting/upload` result → assignment submission grading pipeline
 - Store results in Supabase `submission_scorecards` table alongside other grades
 
 ---
@@ -737,36 +769,36 @@ STUDENT ACTION
 | Dashboard | `/student/dashboard` | Student profile, courses, progress | `GET /student/dashboard` |
 | AI Tutor | `/student/ai_tutor` | Course context, session | `POST /chat` |
 | Assessment | `/student/assessment` | Session state, questions | `POST /assessment/session/start`, `/submit` |
-| Assignments | `/student/assignments` | Submissions, grades | `POST /assignments/submit`, `GET /assignments/user/{id}` |
-| Courses | `/student/courses` | Enrolled courses | `GET /courses/` |
-| Course Explorer | `/student/course_explorer` | All published courses | `GET /courses/` |
-| Lesson | `/student/lesson_page` | Lesson content | `GET /courses/{id}`, `POST /complete-lesson` |
-| Handwriting | `/student/handwriting` | Upload result | `POST /handwriting/analyze`, `GET /handwriting/history/{id}` |
-| Progress | `/student/progress` | Mastery, completions | `GET /student/progress`, `GET /assessment/mastery/{id}` |
-| Notes | `/student/my_notes` | Saved notes | `POST /student/note`, student profile |
+| Assignments | `/student/assignments` | Submissions, grades | `GET /assignments/list?student_id=...`, `POST /assignments/submit` |
+| Courses | `/student/courses` | Enrolled courses | `GET /courses/`, `GET /courses/list` |
+| Course Explorer | `/student/course_explorer` | All published courses | `GET /courses/`, `GET /courses/list` |
+| Lesson | `/student/lesson_page` | Lesson content | `GET /courses/{id}`, `POST /student/complete-lesson` |
+| Handwriting | `/student/handwriting` | Upload result | `POST /handwriting/upload`, `GET /handwriting/list?type=...` |
+| Progress | `/student/progress` | Mastery, completions | `GET /student/profile/analytics`, `GET /assessment/student/mastery` |
+| Notes | `/student/my_notes` | Saved notes | `GET /student/notes`, `POST /student/notes` |
 | Profile | `/student/profile` | Learner profile | `GET /student/profile` |
-| Achievements | `/student/achievements` | Badges, streak | `GET /student/dashboard` |
-| Community | `/student/community` | Messages | `GET /community/messages` |
+| Achievements | `/student/achievements` | Badges, streak | `GET /student/badges`, `GET /student/dashboard` |
+| Community | `/student/community` | Messages | `GET /community/data`, `POST /community/send` |
 
 ### Teacher Pages (`/teacher/`)
 
 | Page | Key APIs Called |
 |------|----------------|
-| Dashboard | `GET /teacher/dashboard`, `GET /courses/teacher/dashboard` |
+| Dashboard | `GET /courses/teacher/dashboard`, `GET /teacher/dashboard/summary` |
 | My Courses | `GET /courses/teacher/list` |
 | Course Editor | `POST /courses/`, `PATCH /courses/{id}`, module/lesson CRUD |
-| Students | `GET /teacher/students` |
-| Grading Queue | `GET /teacher/grading-queue`, `POST /assignments/{id}/grade` |
-| AI Generator | `POST /generate-course`, `POST /generate-ppt` |
-| Automation | `GET /automation/logs`, `PATCH /automation/job/{id}/enable` |
+| Students | `GET /courses/teacher/students` |
+| Grading Queue | `GET /assignments/list`, `GET /assignments/{id}/submissions` |
+| AI Generator | `POST /ai/generate-course`, `POST /ai/tutor/generate-ppt` |
+| Automation | `GET /api/automation/jobs`, `POST /api/automation/run/*` |
 
 ### Admin Pages (`/admin/`)
 
 | Page | Key APIs Called |
 |------|----------------|
 | Users | `GET /admin/users`, `DELETE /admin/users/{id}` |
-| Logs | `GET /admin/logs` |
-| Stats | `GET /admin/stats` |
+| Logs | `GET /admin/logs/ai`, `GET /admin/logs/chat` |
+| Stats | `GET /admin/dashboard`, `GET /admin/students-progress` |
 | Health | `GET /health` |
 
 ---
@@ -783,7 +815,8 @@ SUPABASE_ANON_KEY=<anon_key>
 SUPABASE_SERVICE_ROLE_KEY=<service_role_key>  # For admin operations
 REDIS_URL=redis://localhost:6379
 CHROMA_DB_PATH=./chroma_db
-MONGODB_URI=mongodb://localhost:27017/lumina   # Legacy, being phased out
+LUMINA_FORCE_LOCAL_STORE=false                 # Use local JSON fallback for dev/tests
+MONGODB_URI=mongodb://localhost:27017/lumina   # Legacy, optional (docker only)
 
 # ── AI PROVIDERS ───────────────────────────────────────────────
 GEMINI_API_KEY=<your_gemini_api_key>           # Google AI Studio
@@ -799,6 +832,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES=11520              # 8 days default
 API_V1_STR=/api
 FRONTEND_URL=http://localhost:3000             # For CORS
 DOMAIN_NAME=localhost                          # For CORS
+NEXT_PUBLIC_API_URL=http://localhost:8000      # Frontend -> backend
 
 # ── MONITORING ─────────────────────────────────────────────────
 SENTRY_DSN=<optional>                          # Error tracking
@@ -839,8 +873,8 @@ GEMINI_API_KEY=<same_key>
 | AI course generation | ✅ Done | `routers/ai.py` | Topic → full course |
 | AI PPT generation | ✅ Done | `routers/ai.py` | Lesson → PPTX |
 | Explanation planner | ✅ Done | `personalization/explanation_planner.py` | Strategy selection |
-| Tutor session memory | ✅ Done | `ai_engine/tutor_state.py` | Per-session history |
-| Subject tutor modes | ⚠️ Partial | `swarm/tutor.py` | Generic only; no Math/Science/Coding specialization |
+| Tutor session memory | ✅ Done | `ai_engine/tutor_state.py`, `app/store/tutor_memory_store.py` | Session history + cross-session memory |
+| Subject tutor modes | ✅ Done | `swarm/tutor.py` | Math/Science/Coding/Language prompt specialization |
 
 ### Assessment
 
@@ -850,10 +884,10 @@ GEMINI_API_KEY=<same_key>
 | BKT mastery tracking | ✅ Done | `app/assessment/engine/` | Per-topic probabilities |
 | LLM question generation | ✅ Done | `app/assessment/llm/` | Gemini-generated questions |
 | Session reports | ✅ Done | Assessment router | Score, weak topics |
-| Mastery → learner profile sync | ⚠️ Gap | — | Assessment writes to session store but NOT to `learner_profiles` Supabase table |
-| Concept graph linking | ❌ Missing | — | Questions not mapped to concept nodes yet |
-| IRT scoring | ❌ Missing | `app/assessment/models/` | Skeleton only |
-| Misconception detection | ❌ Missing | — | Wrong-answer pattern analysis not built |
+| Mastery → learner profile sync | ✅ Done | `assessment/engine/session_manager.py` | Assessment events now update learner profiles |
+| Concept graph linking | ✅ Done | `assessment/models/`, `knowledge-graph` | Questions carry concept metadata |
+| IRT scoring | ✅ Done | `assessment/engine/irt.py` | Ability updates per response |
+| Misconception detection | ✅ Done | `personalization_service.py` | Aggregated from wrong-answer patterns |
 
 ### Pathway
 
@@ -874,8 +908,8 @@ GEMINI_API_KEY=<same_key>
 | Assignment submission | ✅ Done | `routers/assignments.py` | File upload |
 | Tesseract OCR extraction | ✅ Done | `routers/assignments.py` | Text from uploaded files |
 | AI semantic grading | ✅ Done | Gemini + sentence-transformers | Score + feedback |
-| Rubric-aware grading | ⚠️ Partial | `assignment_rubrics` table exists | Not yet linked in grading pipeline |
-| Confidence scoring | ⚠️ Partial | `submission_scorecards` schema | Schema exists; not consistently populated |
+| Rubric-aware grading | ✅ Done | `assignment_rubrics`, `worker.py` | Rubrics applied when present |
+| Confidence scoring | ✅ Done | `submission_scorecards` | Always populated during grading |
 | Teacher review/override | ⚠️ Partial | `teacher/grading-queue` | UI exists; override flow incomplete |
 | Handwriting grading (main pipeline) | ❌ Missing | — | Phase 5 integration needed |
 
@@ -911,9 +945,9 @@ GEMINI_API_KEY=<same_key>
 | KPI calculation | ✅ Done | `personalization/kpi_engine.py` | Engagement, mastery, growth |
 | Explanation strategy planner | ✅ Done | `personalization/explanation_planner.py` | Visual/step-by-step/Socratic |
 | Authenticity scoring | ✅ Done | `personalization/authenticity_engine.py` | Academic integrity |
-| Unified profile (single source) | ⚠️ Gap | `learner_profiles` table | Profile not fully updated by all events |
-| Behavior signal collection | ⚠️ Partial | `learning_events` | Collected but not fully analyzed |
-| Risk level detection | ❌ Missing | — | Needs intervention agent implementation |
+| Unified profile (single source) | ✅ Done | `learner_profiles` table | Events update profile in real time |
+| Behavior signal collection | ✅ Done | `learning_events` | Cognitive load + KPIs computed |
+| Risk level detection | ✅ Done | `personalization_service.py` | Drives intervention queue |
 
 ---
 
@@ -984,19 +1018,12 @@ After implementing, update:
 
 | Gap | Impact | Fix Location |
 |-----|--------|-------------|
-| Assessment session does NOT update `learner_profiles.mastery_state` in Supabase | Tutor and pathway agents read stale mastery; personalization doesn't compound | `app/assessment/engine/` → add Supabase write after session complete |
-| `intervention_recommendations` table exists but no service writes to it | Teacher risk queue is empty; intervention agent does nothing | `swarm/intervention.py` → implement risk detection logic |
-| `learner_profiles.behavior_signals` not populated from `learning_events` | KPI engine has no signals to work with | Add job to aggregate `learning_events` into `learner_profiles` |
-| Rubric table exists but not linked in `assignments/{id}/grade` grading pipeline | All grading is generic, not rubric-aware | `routers/assignments.py` → load rubric from `assignment_rubrics` table |
+| Supabase learner profile schema not migrated to include Phase 1 fields | Profile upserts can fail on hosted DB until migration applied | Apply `backend/app/database/sql/001_personal_lms_foundation.sql` |
 
 ### Schema Misalignments
 
-| Table | Issue |
-|-------|-------|
-| `submission_scorecards` | Created by migration but grading pipeline may not populate `confidence` or `review_required` fields |
-| `assignment_summary` in `learner_profiles` | Not updated when assignments are graded |
-| `risk_summary` in `learner_profiles` | Field exists but nothing writes to it |
-| `behavior_signals` | Collected as events but not aggregated into the profile |
+No remaining schema mismatches observed after Phase 1 updates, assuming the latest
+`001_personal_lms_foundation.sql` migration is applied.
 
 ### Row-Level Security (RLS) Gaps
 
@@ -1007,17 +1034,18 @@ These tables need RLS policies in Supabase to be production-safe:
 - `intervention_recommendations` — only teachers should read
 - `automation_job_logs` — only teachers/admins
 
-### No Test Coverage
+### Test Coverage Gaps
 
-No formal test suite found. Before Phase 1 milestone, add:
+Core tests exist under `backend/tests/`, but coverage is still uneven.
+Before Phase 1 milestone, add:
 - Unit tests for `assessment/engine/` mastery calculations
-- Integration tests for `POST /chat` → tutor response
-- Integration tests for `POST /assessment/session/start` → complete flow
+- Integration tests for `POST /api/tutor/chat` → tutor response
+- Integration tests for `POST /api/assessment/start` → complete flow
 - Contract tests for learner profile read/write
 
 ### Dead Code / Legacy
 
-- `MongoDB` referenced in docker-compose but being phased out; can be removed
+- `MongoDB` is still referenced in docker-compose for legacy paths; not required for core flows
 - `tutor_state (1).py` in `ai_engine/` is a duplicate; use `tutor_state.py`
 - `handwriting_simple.py` router appears to duplicate `handwriting.py`
 
@@ -1039,6 +1067,12 @@ cp .env.example .env              # Fill in all env vars
 # OR start individually:
 ./start_backend.sh               # FastAPI on :8000
 ./start_frontend.sh              # Next.js on :3000
+
+# Optional local JSON fallback (skip Supabase)
+export LUMINA_FORCE_LOCAL_STORE=true
+
+# Frontend API base (if backend is not on :8000)
+export NEXT_PUBLIC_API_URL=http://localhost:8000
 
 # 3. Standalone handwriting module
 cd Handwriting_Analysis_Project

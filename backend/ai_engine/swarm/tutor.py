@@ -4,10 +4,12 @@ import asyncio
 import json
 import re
 from ai_engine.llm import OllamaProvider, get_llm_provider, is_provider_error
+from ai_engine.tutor_state import get_tutor_state
 from app.rag.retrieval import RetrievalService
 from ai_engine.prompts import A2UI_SYSTEM_PROMPT
 from app.personalization.explanation_planner import ExplanationPlanner
 from app.personalization.schemas import LearnerProfileRecord
+from app.store.tutor_memory_store import TutorMemoryStore
 
 
 def _normalize_spaces(value: str) -> str:
@@ -44,6 +46,113 @@ def _meta_topic_label(topic: str) -> str:
     return aliases.get(normalized.lower(), normalized)
 
 
+SUBJECT_MODE_KEYWORDS = {
+    "math": [
+        "equation",
+        "algebra",
+        "calculus",
+        "integral",
+        "derivative",
+        "geometry",
+        "trigonometry",
+        "matrix",
+        "probability",
+        "statistics",
+    ],
+    "science": [
+        "physics",
+        "chemistry",
+        "biology",
+        "experiment",
+        "hypothesis",
+        "reaction",
+        "cell",
+        "energy",
+        "force",
+        "genetics",
+    ],
+    "coding": [
+        "code",
+        "bug",
+        "debug",
+        "python",
+        "javascript",
+        "typescript",
+        "java",
+        "c++",
+        "algorithm",
+        "data structure",
+        "function",
+        "class",
+        "stack trace",
+    ],
+    "language": [
+        "grammar",
+        "essay",
+        "paragraph",
+        "vocabulary",
+        "writing",
+        "thesis",
+        "pronunciation",
+        "literature",
+        "comprehension",
+        "reading",
+    ],
+}
+
+SUBJECT_MODE_INSTRUCTIONS = {
+    "math": (
+        "You are a Math tutor. Show step-by-step reasoning, keep notation clear, "
+        "and ask for intermediate steps before giving final answers. Emphasize units, "
+        "assumptions, and checks for common mistakes."
+    ),
+    "science": (
+        "You are a Science tutor. Encourage hypothesis formation, cause-effect reasoning, "
+        "and experiment or observation framing. Use clear conceptual language before formulas."
+    ),
+    "coding": (
+        "You are a Coding tutor. Give hints and debugging steps first, avoid giving full "
+        "solutions immediately, and ask the learner to reason about inputs/outputs, edge cases, "
+        "and tests. Provide pseudocode or minimal diffs when helpful."
+    ),
+    "language": (
+        "You are a Language tutor. Focus on structure, grammar, vocabulary, and clarity. "
+        "Offer corrections with short explanations and ask the learner to revise."
+    ),
+    "general": "You are a cross-subject tutor. Keep explanations structured and adaptive.",
+}
+
+
+def infer_subject_mode(
+    user_query: str,
+    topic: str = "",
+    context_filters: dict | None = None,
+) -> str:
+    filters = context_filters or {}
+    explicit_subject = filters.get("subject") or filters.get("course_subject") or filters.get("lesson_subject")
+    if isinstance(explicit_subject, str) and explicit_subject.strip():
+        lowered = explicit_subject.lower()
+        for mode in SUBJECT_MODE_KEYWORDS:
+            if mode in lowered:
+                return mode
+
+    haystack = " ".join(
+        [
+            str(user_query or ""),
+            str(topic or ""),
+            str(filters.get("lesson", "")),
+            str(filters.get("assignment", "")),
+            str(filters.get("context", "")),
+        ]
+    ).lower()
+
+    for mode, keywords in SUBJECT_MODE_KEYWORDS.items():
+        if any(keyword in haystack for keyword in keywords):
+            return mode
+
+    return "general"
+
+
 def _detect_request_mode(user_query: str) -> str:
     lower = (user_query or "").lower()
     if any(token in lower for token in ["timeline", "time line", "history", "evolution"]):
@@ -55,6 +164,91 @@ def _detect_request_mode(user_query: str) -> str:
     if any(token in lower for token in ["summarize", "summary", "brief", "overview"]):
         return "summary"
     return "explain"
+
+
+def _extract_weak_topics(learner_profile: dict | None, limit: int = 3) -> list[str]:
+    if not learner_profile:
+        return []
+
+    mastery = learner_profile.get("mastery_scores") or learner_profile.get("mastery_map") or {}
+    if isinstance(mastery, list):
+        mastery = {item.get("topic"): item.get("score") for item in mastery if isinstance(item, dict)}
+
+    if not isinstance(mastery, dict):
+        return []
+
+    scored = [
+        (topic, score)
+        for topic, score in mastery.items()
+        if isinstance(topic, str) and isinstance(score, (int, float))
+    ]
+    scored.sort(key=lambda item: item[1])
+    return [topic for topic, _ in scored[:limit]]
+
+
+def _format_memory_snippet(messages: list[dict], limit: int = 6) -> str:
+    if not messages:
+        return ""
+
+    trimmed: list[str] = []
+    for msg in messages[-limit:]:
+        role = msg.get("role", "user")
+        content = _normalize_spaces(str(msg.get("content", "")))
+        if not content:
+            continue
+        shortened = content[:180] + ("…" if len(content) > 180 else "")
+        trimmed.append(f"{role}: {shortened}")
+    return "\n".join(trimmed)
+
+
+def _format_context_block(label: str, payload: dict | str | None) -> str:
+    if not payload:
+        return ""
+    if isinstance(payload, str):
+        return f"{label}: {payload}"
+    if not isinstance(payload, dict):
+        return ""
+
+    title = payload.get("title") or payload.get("name") or payload.get("id")
+    description = payload.get("description") or payload.get("summary") or payload.get("content")
+    lines = []
+    if title:
+        lines.append(f"{label} Title: {title}")
+    if description:
+        snippet = _normalize_spaces(str(description))
+        lines.append(f"{label} Details: {snippet[:260]}")
+    return "\n".join(lines)
+
+
+def _ensure_calibration_prompt(payload: dict) -> dict:
+    if not isinstance(payload, dict):
+        return payload
+    flow = payload.get("flow")
+    if not isinstance(flow, list):
+        return payload
+
+    calibration_prompt = (
+        "On a scale of 1-5, how confident do you feel about this topic now? "
+        "Which step is still the most unclear?"
+    )
+
+    for block in flow:
+        if isinstance(block, dict) and block.get("type") == "reflection":
+            prompt = block.get("prompt") or ""
+            if "confident" not in str(prompt).lower():
+                block["prompt"] = f"{prompt.rstrip()} {calibration_prompt}".strip()
+            if not block.get("placeholder"):
+                block["placeholder"] = "Example: 3/5. I still mix up step 2."
+            return payload
+
+    flow.append(
+        {
+            "type": "reflection",
+            "prompt": calibration_prompt,
+            "placeholder": "Example: 4/5. I want more practice on the example.",
+        }
+    )
+    return payload
 
 
 def _extract_context_points(context_text: str, limit: int = 4) -> list[str]:
@@ -156,6 +350,7 @@ def build_tutor_degraded_response(
     learner_profile: dict | None = None,
     context_text: str = "",
     profile_context: str = "",
+    subject_mode: str = "general",
 ) -> dict:
     raw_topic = _normalize_spaces(topic) or "General"
     meta_topic = _meta_topic_label(raw_topic)
@@ -255,20 +450,25 @@ def build_tutor_degraded_response(
     flow.append(
         {
             "type": "reflection",
-            "prompt": f"What do you want next for {normalized_topic}: an example, a quiz, or a shorter explanation?",
-            "placeholder": "Example: give me one easy example first.",
+            "prompt": (
+                f"What do you want next for {normalized_topic}: an example, a quiz, or a shorter explanation? "
+                "Also rate your confidence 1-5."
+            ),
+            "placeholder": "Example: 3/5. Give me one easy example first.",
         }
     )
 
-    return {
+    payload = {
         "meta": {
             "topic": meta_topic,
             "difficulty": difficulty,
             "estimated_time_min": 5,
             "exportable": False,
+            "subject_mode": subject_mode,
         },
         "flow": flow,
     }
+    return _ensure_calibration_prompt(payload)
 
 
 def _coerce_local_a2ui_payload(payload: dict, topic: str) -> dict | None:
@@ -338,6 +538,7 @@ class TutorAgent:
     def __init__(self, provider: str = "auto"):
         self.llm = get_llm_provider(provider)
         self.retrieval = get_rag_engine(provider=provider)
+        self.memory_store = TutorMemoryStore()
 
     def _is_local_ollama(self) -> bool:
         return isinstance(self.llm, OllamaProvider)
@@ -349,6 +550,12 @@ class TutorAgent:
         learner_profile: dict | None,
         context_text: str,
         profile_context: str,
+        subject_mode: str,
+        lesson_context: dict | str | None,
+        assignment_context: dict | str | None,
+        weak_topics: list[str],
+        memory_snippet: str,
+        avoid_context: str,
     ) -> tuple[str, str]:
         cognitive_load = (learner_profile or {}).get("cognitive_load", 50)
         detail_instruction = (
@@ -356,6 +563,10 @@ class TutorAgent:
             if cognitive_load > 70
             else "Keep the response concise and practical."
         )
+        subject_instruction = SUBJECT_MODE_INSTRUCTIONS.get(subject_mode, SUBJECT_MODE_INSTRUCTIONS["general"])
+        lesson_block = _format_context_block("Lesson", lesson_context)
+        assignment_block = _format_context_block("Assignment", assignment_context)
+        weak_topic_block = ", ".join(weak_topics) if weak_topics else "None"
         system_prompt = """
 You are Lumina's local AI tutor.
 Return only valid JSON with this exact top-level shape:
@@ -364,7 +575,7 @@ Allowed block types: concept, steps, quiz, table, flashcards, reflection, text.
 Use exactly 3 blocks in this order:
 1. concept
 2. steps
-3. reflection or quiz
+3. reflection
 Do not use markdown fences.
 """.strip()
         prompt = f"""
@@ -372,12 +583,19 @@ Topic: {topic}
 User question: {user_query}
 Course context: {(context_text or 'None')[:1200]}
 Learner context: {(profile_context or 'None')[:400]}
+Subject mode: {subject_mode}
+Subject instruction: {subject_instruction}
+Weak topics: {weak_topic_block}
+{lesson_block}
+{assignment_block}
+Persistent memory: {(memory_snippet or 'None')[:600]}
+Avoid repeating: {(avoid_context or 'None')[:400]}
 Instruction: {detail_instruction}
 
 Return a simple teaching response with:
 - one concept block,
 - one steps block,
-- one reflection or quiz block.
+- one reflection block that asks for confidence rating (1-5).
 Keep arrays short and educational.
 """.strip()
         return system_prompt, prompt
@@ -389,6 +607,7 @@ Keep arrays short and educational.
         learner_profile: dict = None,
         context_text: str = "",
         profile_context: str = "",
+        subject_mode: str = "general",
     ) -> dict:
         return build_tutor_degraded_response(
             topic,
@@ -396,6 +615,7 @@ Keep arrays short and educational.
             learner_profile=learner_profile,
             context_text=context_text,
             profile_context=profile_context,
+            subject_mode=subject_mode,
         )
 
     async def generate_response(
@@ -405,6 +625,12 @@ Keep arrays short and educational.
         history: list,
         learner_profile: dict | LearnerProfileRecord = None,
         profile_context: str = "",
+        subject_mode: str = "general",
+        lesson_context: dict | str | None = None,
+        assignment_context: dict | str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+        comprehension_signal: str | None = None,
     ) -> dict:
         """
         Generates a Socratic response using Semantic RAG and learner profile context.
@@ -421,6 +647,19 @@ Keep arrays short and educational.
 
         context_text = "\n".join(context_docs or [])
 
+        weak_topics = _extract_weak_topics(
+            learner_profile if isinstance(learner_profile, dict) else None
+        )
+        memory_messages = (
+            await self.memory_store.get_recent_messages(user_id, limit=6)
+            if user_id
+            else []
+        )
+        memory_snippet = _format_memory_snippet(memory_messages)
+        avoid_context = ""
+        if session_id:
+            avoid_context = await get_tutor_state().get_avoid_context(session_id)
+
         # 2. Build Socratic Prompt
         socratic_instruction = """
         You are a Socratic tutor. Your goal is NOT to give direct answers immediately, 
@@ -432,6 +671,33 @@ Keep arrays short and educational.
         If the student is confused, break down the concept into smaller pieces.
         Adjust your complexity based on the learner's mastery levels and cognitive load.
         """
+        subject_instruction = SUBJECT_MODE_INSTRUCTIONS.get(
+            subject_mode, SUBJECT_MODE_INSTRUCTIONS["general"]
+        )
+        socratic_instruction += f"\n\nSUBJECT MODE: {subject_mode}\n{subject_instruction}"
+
+        if weak_topics:
+            socratic_instruction += f"\n\nWEAK TOPICS TO PRIORITIZE: {', '.join(weak_topics)}"
+
+        lesson_block = _format_context_block("Lesson", lesson_context)
+        assignment_block = _format_context_block("Assignment", assignment_context)
+        if lesson_block:
+            socratic_instruction += f"\n\n{lesson_block}"
+        if assignment_block:
+            socratic_instruction += f"\n\n{assignment_block}"
+
+        if memory_snippet:
+            socratic_instruction += (
+                "\n\nPERSISTENT MEMORY (recent tutor sessions):\n" + memory_snippet
+            )
+
+        if avoid_context:
+            socratic_instruction += "\n\nAVOID repeating these recent questions:\n" + avoid_context
+
+        socratic_instruction += (
+            "\n\nAlways end with a reflection question that asks for confidence (1-5) "
+            "and one point of confusion."
+        )
         
         explanation_plan = None
         if learner_profile:
@@ -451,8 +717,8 @@ Keep arrays short and educational.
             service = get_personalization_service()
             
             # If we don't have a full record, try to get it
-            user_id = learner_profile.get("user_id") if isinstance(learner_profile, dict) else getattr(learner_profile, "user_id", None)
-            full_profile = await service.get_profile(user_id) if user_id else None
+            profile_user_id = learner_profile.get("user_id") if isinstance(learner_profile, dict) else getattr(learner_profile, "user_id", None)
+            full_profile = await service.get_profile(profile_user_id) if profile_user_id else None
             
             if full_profile:
                 explanation_plan = ExplanationPlanner.generate_plan(full_profile)
@@ -473,6 +739,12 @@ Keep arrays short and educational.
                 learner_profile,
                 context_text,
                 profile_context,
+                subject_mode,
+                lesson_context,
+                assignment_context,
+                weak_topics,
+                memory_snippet,
+                avoid_context,
             )
         else:
             system_prompt = A2UI_SYSTEM_PROMPT + "\n\n" + socratic_instruction
@@ -480,6 +752,11 @@ Keep arrays short and educational.
             Topic: {topic}
             Context from materials: {context_text}
             Learner profile context: {profile_context}
+            Subject mode: {subject_mode}
+            Weak topics: {", ".join(weak_topics) if weak_topics else "None"}
+            Lesson context: {lesson_block or "None"}
+            Assignment context: {assignment_block or "None"}
+            Persistent memory: {(memory_snippet or "None")[:800]}
             
             User Query: {user_query}
             History: {history}
@@ -495,6 +772,7 @@ Keep arrays short and educational.
                 learner_profile=learner_profile,
                 context_text=context_text,
                 profile_context=profile_context,
+                subject_mode=subject_mode,
             )
         
         # Strip potential markdown code blocks if the LLM added them
@@ -508,8 +786,11 @@ Keep arrays short and educational.
             if self._is_local_ollama():
                 normalized = _coerce_local_a2ui_payload(parsed, topic)
                 if normalized:
-                    return normalized
-            return parsed
+                    parsed = normalized
+            parsed = _ensure_calibration_prompt(parsed)
+            if isinstance(parsed, dict):
+                parsed.setdefault("meta", {})
+                parsed["meta"]["subject_mode"] = subject_mode
         except Exception as e:
             print(f"Failed to parse AI response as JSON: {e}")
             # Fallback if LLM fails to return JSON
@@ -522,5 +803,44 @@ Keep arrays short and educational.
         if explanation_plan:
             if isinstance(parsed, dict):
                 parsed["explanation_plan"] = explanation_plan.model_dump()
-            
+                parsed.setdefault("meta", {})
+                parsed["meta"]["subject_mode"] = subject_mode
+
+        if isinstance(parsed, dict):
+            parsed = _ensure_calibration_prompt(parsed)
+            parsed.setdefault("meta", {})
+            parsed["meta"]["subject_mode"] = subject_mode
+
+        if user_id:
+            await self.memory_store.append_message(
+                user_id,
+                "user",
+                user_query,
+                metadata={
+                    "session_id": session_id,
+                    "subject_mode": subject_mode,
+                    "signal": comprehension_signal,
+                },
+            )
+            assistant_summary = ""
+            if isinstance(parsed, dict):
+                flow = parsed.get("flow", [])
+                if flow and isinstance(flow, list):
+                    concept = next(
+                        (b.get("summary") for b in flow if isinstance(b, dict) and b.get("type") == "concept"),
+                        None,
+                    )
+                    assistant_summary = _normalize_spaces(str(concept or ""))
+            await self.memory_store.append_message(
+                user_id,
+                "assistant",
+                assistant_summary or json.dumps(parsed)[:600],
+                metadata={"session_id": session_id, "subject_mode": subject_mode},
+            )
+
+        if comprehension_signal:
+            await self.memory_store.record_signal(
+                user_id, comprehension_signal, note="user_message"
+            )
+
         return parsed

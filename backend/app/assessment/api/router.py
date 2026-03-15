@@ -9,6 +9,7 @@ from app.assessment.models.schemas import (
     AssessmentReport,
 )
 from app.assessment.engine.session_manager import session_manager
+from app.assessment.engine.remediation import build_remediation_plan
 from typing import Optional
 from app.database.supabase_manager import supabase_db
 from app.routers.auth import get_current_user
@@ -189,12 +190,19 @@ async def get_result(session_id: str):
 
     total_questions = len(session.responses)
     correct_answers = sum(1 for r in session.responses if r.is_correct)
+    confidence_values = [
+        r.analysis.confidence_estimate
+        for r in session.responses
+        if r.analysis and r.analysis.confidence_estimate is not None
+    ]
+    confidence_avg = round(sum(confidence_values) / len(confidence_values), 2) if confidence_values else 0.5
 
     return AssessmentResult(
         session_id=session.id,
         total_questions=total_questions,
         correct_answers=correct_answers,
         final_ability_estimate=session.current_difficulty,
+        confidence_avg=confidence_avg,
         message="Assessment Completed",
     )
 
@@ -247,6 +255,27 @@ async def get_report(session_id: str):
     correct_answers = sum(1 for r in session.responses if r.is_correct)
     accuracy = (correct_answers / total_questions) if total_questions else 0.0
     ability = float(session.current_difficulty)
+    confidence_values = [
+        r.analysis.confidence_estimate
+        for r in session.responses
+        if r.analysis and r.analysis.confidence_estimate is not None
+    ]
+    confidence_avg = round(sum(confidence_values) / len(confidence_values), 2) if confidence_values else 0.5
+    misconceptions = []
+    for r in session.responses:
+        if r.analysis and r.analysis.misconceptions:
+            misconceptions.extend(r.analysis.misconceptions)
+    remediation_plan = None
+    if accuracy < 0.7:
+        try:
+            profile = await get_personalization_service().get_profile(session.student_id)
+            remediation_plan = build_remediation_plan(
+                session.topic,
+                profile,
+                misconceptions=misconceptions,
+            )
+        except Exception:
+            remediation_plan = None
 
     # Simple level classification based on ability estimate
     if ability < 0.4:
@@ -269,7 +298,10 @@ async def get_report(session_id: str):
         correct_answers=correct_answers,
         accuracy=round(accuracy, 2),
         final_ability_estimate=ability,
+        confidence_avg=confidence_avg,
         level=level,
         summary=summary,
-        analysis_history=[r.analysis for r in session.responses if r.analysis]
+        analysis_history=[r.analysis for r in session.responses if r.analysis],
+        misconceptions=misconceptions,
+        remediation_plan=remediation_plan,
     )

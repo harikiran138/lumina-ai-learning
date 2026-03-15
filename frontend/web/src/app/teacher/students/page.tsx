@@ -63,6 +63,7 @@ export default function TeacherStudents() {
                 <th className="px-6 py-4">Name</th>
                 <th className="px-6 py-4">Courses</th>
                 <th className="px-6 py-4">Progress</th>
+                <th className="px-6 py-4">Risk</th>
                 <th className="px-6 py-4">Last Active</th>
                 <th className="px-6 py-4">Actions</th>
               </tr>
@@ -105,16 +106,36 @@ export default function TeacherStudents() {
                         <div className="w-24 bg-white/10 rounded-full h-1.5">
                           <div
                             className="bg-lumina-primary h-1.5 rounded-full"
-                            style={{ width: `${student.progress}%` }}
+                            style={{ width: `${student.progress ?? student.averageProgress ?? 0}%` }}
                           ></div>
                         </div>
                         <span className="text-xs text-gray-400">
-                          {student.progress}%
+                          {student.progress ?? student.averageProgress ?? 0}%
                         </span>
                       </div>
                     </td>
+                    <td className="px-6 py-4 text-sm">
+                      <span
+                        className={
+                          student.riskLevel === "high" || student.riskLevel === "critical"
+                            ? "text-red-300"
+                            : student.riskLevel === "medium"
+                              ? "text-amber-300"
+                              : "text-emerald-300"
+                        }
+                      >
+                        {(student.riskLevel || "low").toString().replace("-", " ")}
+                      </span>
+                      {student.weakTopics?.length ? (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Focus: {student.weakTopics[0]}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-400">
-                      {new Date(student.lastActive).toLocaleDateString()}
+                      {student.lastActive
+                        ? new Date(student.lastActive).toLocaleDateString()
+                        : "No activity"}
                     </td>
                     <td className="px-6 py-4">
                       <button className="p-2 text-gray-400 hover:text-white transition-colors">
@@ -126,7 +147,7 @@ export default function TeacherStudents() {
               ) : (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     No students found in your courses.

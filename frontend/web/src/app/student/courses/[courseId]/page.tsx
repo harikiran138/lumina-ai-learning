@@ -77,7 +77,22 @@ export default function CourseDetails({
         { role: "user", content: userMsg },
       ];
 
-      const response = await api.chatWithAI(messages); // Assuming this returns string or { content: string }
+      const lessonContext = activeLesson
+        ? {
+            id: activeLesson.id,
+            title: activeLesson.title,
+            description:
+              activeLesson.description ||
+              (activeLesson.content || "").slice(0, 280),
+          }
+        : undefined;
+      const contextFilters = {
+        context,
+        lesson: lessonContext,
+        subject: course?.title || course?.name,
+        course_id: courseId,
+      };
+      const response = await api.chatWithAI(messages, contextFilters); // Assuming this returns string or { content: string }
       const aiText =
         typeof response === "string"
           ? response
