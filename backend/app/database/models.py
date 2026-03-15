@@ -18,7 +18,7 @@ def current_time_iso() -> str:
 
 
 class User(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     email: EmailStr
     hashed_password: str
     full_name: str
@@ -30,7 +30,7 @@ class User(BaseModel):
 
 
 class Session(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     user_id: str
     token: str
     expires_at: str
@@ -48,7 +48,7 @@ class MasteryLevel(BaseModel):
 
 
 class LearnerProfile(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     user_id: str
     # Map of topic_id -> MasteryLevel
     mastery_levels: Dict[str, MasteryLevel] = {}
@@ -59,8 +59,8 @@ class LearnerProfile(BaseModel):
     updated_at: str = Field(default_factory=current_time_iso)
 
 
-class BehaviorLog(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+class LearningEvent(BaseModel):
+    id: str = Field(default_factory=generate_id)
     user_id: str
     action: str  # e.g., "view_lesson", "complete_quiz", "ask_tutor"
     metadata: Dict[str, Any] = {}
@@ -71,7 +71,7 @@ class BehaviorLog(BaseModel):
 
 
 class AgentMemory(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     agent_id: str  # e.g., "tutor_v1"
     user_id: str
     context_key: str  # e.g., "last_discussed_topic"
@@ -86,7 +86,7 @@ class Message(BaseModel):
 
 
 class Conversation(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     user_id: str
     agent_id: str
     messages: List[Message] = []
@@ -117,7 +117,7 @@ class Module(BaseModel):
 
 
 class Course(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     title: str
     description: str
     instructor_id: str
@@ -126,6 +126,16 @@ class Course(BaseModel):
     thumbnail_url: Optional[str] = None
     created_at: str = Field(default_factory=current_time_iso)
     updated_at: str = Field(default_factory=current_time_iso)
+
+
+class Enrollment(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    user_id: str
+    course_id: str
+    status: str = "active"  # active, completed, dropped
+    progress: float = 0.0
+    last_accessed: str = Field(default_factory=current_time_iso)
+    enrolled_at: str = Field(default_factory=current_time_iso)
 
 
 # --- 5. ASSESSMENT ENGINE ---
@@ -141,7 +151,7 @@ class Question(BaseModel):
 
 
 class Quiz(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     course_id: Optional[str] = None
     module_id: Optional[str] = None
     title: str
@@ -151,7 +161,7 @@ class Quiz(BaseModel):
 
 
 class QuizAttempt(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     user_id: str
     quiz_id: str
     score: float
@@ -160,11 +170,32 @@ class QuizAttempt(BaseModel):
     timestamp: str = Field(default_factory=current_time_iso)
 
 
+class Assignment(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    course_id: str
+    title: str
+    description: str
+    due_date: Optional[str] = None
+    max_points: int = 100
+    created_at: str = Field(default_factory=current_time_iso)
+
+
+class AssignmentSubmission(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    assignment_id: str
+    student_id: str
+    submission_content: str
+    file_url: Optional[str] = None
+    grade: Optional[float] = None
+    feedback: Optional[str] = None
+    submitted_at: str = Field(default_factory=current_time_iso)
+
+
 # --- 6. DASHBOARDS (Aggregated) ---
 
 
 class TeacherStats(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     teacher_id: str
     total_students: int = 0
     active_courses: int = 0
@@ -174,7 +205,7 @@ class TeacherStats(BaseModel):
 
 
 class StudentStats(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     user_id: str
     streak_days: int = 0
     total_learning_minutes: int = 0
@@ -187,7 +218,7 @@ class StudentStats(BaseModel):
 
 
 class AnalyticsEvent(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     type: str  # click, view, submit, error
     user_id: Optional[str] = None
     metadata: Dict[str, Any] = {}
@@ -195,7 +226,7 @@ class AnalyticsEvent(BaseModel):
 
 
 class TutorSession(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     session_id: str
     asked_hashes: List[str] = []
     asked_questions_preview: List[str] = []
@@ -207,7 +238,7 @@ class TutorSession(BaseModel):
 
 
 class Institution(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     institution_name: str
     email: Optional[EmailStr] = None
     institution_type: Optional[str] = None  # Private, Government, Deemed, Trust
@@ -224,7 +255,7 @@ class Institution(BaseModel):
 
 
 class Department(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     institution_id: str
     department_name: str
     hod_name: Optional[str] = None
@@ -235,7 +266,7 @@ class Department(BaseModel):
 
 
 class Program(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     institution_id: str
     program_name: str
     degree: Optional[str] = None
@@ -247,7 +278,7 @@ class Program(BaseModel):
 
 
 class Stakeholder(BaseModel):
-    id: str = Field(default_factory=generate_id, alias="_id")
+    id: str = Field(default_factory=generate_id)
     program_id: Optional[str] = None
     institution_id: Optional[str] = None
     user_id: Optional[str] = None  # Link to User if they are a login user
