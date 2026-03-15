@@ -7,9 +7,8 @@ from app.dependencies import get_course_store
 from .auth import get_current_user
 from app.core.cache import cached
 from app.database.supabase_manager import supabase_db
-from app.store.analytics_store import AnalyticsStore
-from app.services.personalization_service import get_personalization_service
-from app.personalization.schemas import InterventionStatus
+from app.dependencies import get_course_store, get_analytics_store
+from .auth import get_current_user
 
 router = APIRouter()
 
@@ -115,11 +114,13 @@ async def get_course(course_id: str, store: CourseStore = Depends(get_course_sto
 # ─── Teacher-Specific Endpoints ─────────────────────────────────────────────
 
 @router.get("/teacher/dashboard")
-async def teacher_dashboard(current_user: dict = Depends(get_current_user)):
+async def teacher_dashboard(
+    current_user: dict = Depends(get_current_user),
+    analytics: AnalyticsStore = Depends(get_analytics_store),
+):
     """Teacher dashboard stats with role check"""
     if current_user.get("role") not in ["teacher", "admin"]:
         raise HTTPException(status_code=403, detail="Teacher access required")
-    analytics = AnalyticsStore()
     overview = await analytics.get_teacher_dashboard_overview(current_user["id"])
     stats = await analytics.get_teacher_dashboard_stats(current_user["id"])
     personalization = get_personalization_service()
@@ -246,20 +247,24 @@ async def teacher_dashboard(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/teacher/list")
-async def teacher_courses(current_user: dict = Depends(get_current_user)):
+async def teacher_courses(
+    current_user: dict = Depends(get_current_user),
+    store: CourseStore = Depends(get_course_store),
+):
     """List courses created by the authenticated teacher."""
     if current_user["role"] not in ("teacher", "admin"):
         raise HTTPException(status_code=403, detail="Teacher access required")
-    store = CourseStore()
     return await store.get_courses_by_teacher(current_user["id"])
 
 
 @router.get("/teacher/students")
-async def teacher_students(current_user: dict = Depends(get_current_user)):
+async def teacher_students(
+    current_user: dict = Depends(get_current_user),
+    analytics: AnalyticsStore = Depends(get_analytics_store),
+):
     """Get students enrolled in the teacher's courses."""
     if current_user["role"] not in ("teacher", "admin"):
         raise HTTPException(status_code=403, detail="Teacher access required")
-    analytics = AnalyticsStore()
     snapshot = await analytics.get_teacher_students_snapshot(current_user["id"])
     personalization = get_personalization_service()
     student_ids = [item.get("id") for item in snapshot if item.get("id")]

@@ -1,9 +1,8 @@
-from typing import Optional, List
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
 from app.database.supabase_manager import supabase_db
 from app.core.logging import structlog
-from app.store.local_store import LocalJsonStore
 
 log = structlog.get_logger()
 
@@ -14,56 +13,30 @@ class InstitutionStore:
     """
 
     def __init__(self):
-        self.client = supabase_db.get_client()
-        self.local = LocalJsonStore()
+        self.db = supabase_db
 
     # --- Institution CRUD ---
 
     async def create_institution(self, data: dict) -> dict:
-        if self.client is None:
-            payload = self.local.read()
-            if "institutions" not in payload:
-                payload["institutions"] = []
-            
-            record = {
-                "id": str(uuid.uuid4()),
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
-                **data
-            }
-            payload["institutions"].append(record)
-            self.local.write(payload)
-            return record
-
         try:
-            response = self.client.table("institutions").insert(data).execute()
-            if not response.data:
-                raise Exception("Failed to create institution")
-            return response.data[0]
+            result = await self.db.upsert("institutions", data)
+            if result:
+                return result[0]
+            raise Exception("Failed to create institution")
         except Exception as e:
             log.error("create_institution_failed", error=str(e))
             raise e
 
     async def get_institution(self, inst_id: str) -> Optional[dict]:
-        if self.client is None:
-            payload = self.local.read()
-            return next((item for item in payload.get("institutions", []) if item.get("id") == inst_id), None)
-        
         try:
-            response = self.client.table("institutions").select("*").eq("id", inst_id).execute()
-            return response.data[0] if response.data else None
+            return await self.db.fetch_one("institutions", {"id": inst_id})
         except Exception as e:
             log.error("get_institution_failed", error=str(e))
             return None
 
     async def list_institutions(self) -> List[dict]:
-        if self.client is None:
-            payload = self.local.read()
-            return payload.get("institutions", [])
-        
         try:
-            response = self.client.table("institutions").select("*").execute()
-            return response.data
+            return await self.db.fetch_all("institutions")
         except Exception as e:
             log.error("list_institutions_failed", error=str(e))
             return []
@@ -71,170 +44,74 @@ class InstitutionStore:
     # --- Department CRUD ---
 
     async def create_department(self, data: dict) -> dict:
-        if self.client is None:
-            payload = self.local.read()
-            if "departments" not in payload:
-                payload["departments"] = []
-            
-            record = {
-                "id": str(uuid.uuid4()),
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
-                **data
-            }
-            payload["departments"].append(record)
-            self.local.write(payload)
-            return record
-
         try:
-            response = self.client.table("departments").insert(data).execute()
-            if not response.data:
-                raise Exception("Failed to create department")
-            return response.data[0]
+            result = await self.db.upsert("departments", data)
+            if result:
+                return result[0]
+            raise Exception("Failed to create department")
         except Exception as e:
             log.error("create_department_failed", error=str(e))
             raise e
 
     async def list_departments(self, inst_id: str) -> List[dict]:
-        if self.client is None:
-            payload = self.local.read()
-            return [d for d in payload.get("departments", []) if d.get("institution_id") == inst_id]
-        
         try:
-            response = self.client.table("departments").select("*").eq("institution_id", inst_id).execute()
-            return response.data
+            return await self.db.fetch_all("departments", {"institution_id": inst_id})
         except Exception as e:
-            log.error("list_departments_failed", error=str(e))
+            log.error("list_departments_failed", error=str(e), inst_id=inst_id)
             return []
 
     # --- Program CRUD ---
 
     async def create_program(self, data: dict) -> dict:
-        if self.client is None:
-            payload = self.local.read()
-            if "programs" not in payload:
-                payload["programs"] = []
-            
-            record = {
-                "id": str(uuid.uuid4()),
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
-                **data
-            }
-            payload["programs"].append(record)
-            self.local.write(payload)
-            return record
-
         try:
-            response = self.client.table("programs").insert(data).execute()
-            if not response.data:
-                raise Exception("Failed to create program")
-            return response.data[0]
+            result = await self.db.upsert("programs", data)
+            if result:
+                return result[0]
+            raise Exception("Failed to create program")
         except Exception as e:
             log.error("create_program_failed", error=str(e))
             raise e
 
     async def list_programs(self, inst_id: str) -> List[dict]:
-        if self.client is None:
-            payload = self.local.read()
-            return [p for p in payload.get("programs", []) if p.get("institution_id") == inst_id]
-        
         try:
-            response = self.client.table("programs").select("*").eq("institution_id", inst_id).execute()
-            return response.data
+            return await self.db.fetch_all("programs", {"institution_id": inst_id})
         except Exception as e:
-            log.error("list_programs_failed", error=str(e))
+            log.error("list_programs_failed", error=str(e), inst_id=inst_id)
             return []
 
     # --- Stakeholder CRUD (Connections) ---
 
     async def create_stakeholder(self, data: dict) -> dict:
-        if self.client is None:
-            payload = self.local.read()
-            if "stakeholders" not in payload:
-                payload["stakeholders"] = []
-
-            existing = next(
-                (
-                    item
-                    for item in payload["stakeholders"]
-                    if item.get("user_id") == data.get("user_id")
-                    and item.get("institution_id") == data.get("institution_id")
-                    and item.get("program_id") == data.get("program_id")
-                ),
-                None,
-            )
-
-            if existing:
-                existing.update(
-                    {
-                        **data,
-                        "updated_at": datetime.utcnow().isoformat(),
-                    }
-                )
-                self.local.write(payload)
-                return existing
-
-            record = {
-                "id": str(uuid.uuid4()),
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
-                **data,
-            }
-            payload["stakeholders"].append(record)
-            self.local.write(payload)
-            return record
-
         try:
-            duplicate_query = self.client.table("stakeholders").select("*")
+            # Attempt to find existing stakeholder to update
+            client = self.db.get_client()
+            query = client.table("stakeholders").select("*")
             if data.get("user_id"):
-                duplicate_query = duplicate_query.eq("user_id", data["user_id"])
+                query = query.eq("user_id", data["user_id"])
             if data.get("institution_id"):
-                duplicate_query = duplicate_query.eq("institution_id", data["institution_id"])
+                query = query.eq("institution_id", data["institution_id"])
             if data.get("program_id"):
-                duplicate_query = duplicate_query.eq("program_id", data["program_id"])
+                query = query.eq("program_id", data["program_id"])
 
-            duplicate_response = duplicate_query.limit(1).execute()
-            if duplicate_response.data:
-                existing = duplicate_response.data[0]
-                update_payload = data.copy()
-                update_payload["updated_at"] = datetime.utcnow().isoformat()
-                response = (
-                    self.client.table("stakeholders")
-                    .update(update_payload)
-                    .eq("id", existing["id"])
-                    .execute()
-                )
-                if response.data:
-                    return response.data[0]
-                return {**existing, **update_payload}
+            existing = query.limit(1).execute()
+            if existing.data:
+                sid = existing.data[0]["id"]
+                data["updated_at"] = datetime.utcnow().isoformat()
+                res = client.table("stakeholders").update(data).eq("id", sid).execute()
+                return res.data[0] if res.data else existing.data[0]
 
-            response = self.client.table("stakeholders").insert(data).execute()
-            if not response.data:
-                raise Exception("Failed to create stakeholder")
-            return response.data[0]
+            res = client.table("stakeholders").insert(data).execute()
+            return res.data[0]
         except Exception as e:
             log.error("create_stakeholder_failed", error=str(e))
             raise e
 
     async def list_stakeholders(self, inst_id: Optional[str] = None, program_id: Optional[str] = None) -> List[dict]:
-        if self.client is None:
-            payload = self.local.read()
-            stakeholders = payload.get("stakeholders", [])
-            if inst_id:
-                stakeholders = [s for s in stakeholders if s.get("institution_id") == inst_id]
-            if program_id:
-                stakeholders = [s for s in stakeholders if s.get("program_id") == program_id]
-            return stakeholders
-        
         try:
-            query = self.client.table("stakeholders").select("*")
-            if inst_id:
-                query = query.eq("institution_id", inst_id)
-            if program_id:
-                query = query.eq("program_id", program_id)
-            response = query.execute()
-            return response.data
+            filters = {}
+            if inst_id: filters["institution_id"] = inst_id
+            if program_id: filters["program_id"] = program_id
+            return await self.db.fetch_all("stakeholders", filters)
         except Exception as e:
             log.error("list_stakeholders_failed", error=str(e))
             return []

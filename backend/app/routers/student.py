@@ -14,7 +14,7 @@ from app.services.personalization_service import get_personalization_service
 from app.store.user_data_store import UserDataStore
 from app.store.student_store import StudentStore
 from app.store.assignment_store import AssignmentStore
-from app.dependencies import get_user_data_store, get_student_store
+from app.dependencies import get_user_data_store, get_student_store, get_assignment_store, get_analytics_store
 from .auth import get_current_user
 
 router = APIRouter()
@@ -180,8 +180,8 @@ def _pick_resume_course(courses: List[Dict[str, Any]]) -> Optional[Dict[str, Any
 async def _build_due_assignments(
     courses: List[Dict[str, Any]],
     student_id: str,
+    store: AssignmentStore,
 ) -> List[Dict[str, Any]]:
-    store = AssignmentStore()
     deduped: Dict[str, Dict[str, Any]] = {}
     course_map = {
         str(course.get("id")): (course.get("name") or course.get("title") or "Course")
@@ -573,13 +573,12 @@ async def delete_note(
 @router.get("/dashboard")
 async def get_student_dashboard(
     current_user: dict = Depends(get_current_user),
+    analytics: AnalyticsStore = Depends(get_analytics_store),
+    assignment_store: AssignmentStore = Depends(get_assignment_store),
 ):
     """
     Get the full student dashboard data (courses, progress, stats).
     """
-    from app.store.analytics_store import AnalyticsStore
-
-    analytics = AnalyticsStore()
     personalization = get_personalization_service()
 
     dashboard_data = await analytics.get_student_full_dashboard(current_user["id"])
@@ -603,7 +602,7 @@ async def get_student_dashboard(
     enrolled_courses = dashboard_data.get("enrolledCourses", [])
     weak_topics = _build_weak_topics(profile)
     weekly_activity = _build_weekly_activity(events)
-    due_assignments = await _build_due_assignments(enrolled_courses, current_user["id"])
+    due_assignments = await _build_due_assignments(enrolled_courses, current_user["id"], assignment_store)
     resume_course = _pick_resume_course(enrolled_courses)
     next_action = _build_next_action(
         due_assignments,
