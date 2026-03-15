@@ -34,14 +34,60 @@ class KPIEngine:
         lag_zone = cls._calculate_lag_zone(assessment_events)
         auth_score = cls._calculate_authenticity(assessment_events, profile)
         exp_effectiveness = cls._calculate_explanation_effectiveness(profile)
+        engagement = cls._calculate_engagement(relevant_events, profile)
+        persistence = cls._calculate_persistence(relevant_events)
+        readiness = cls._calculate_readiness(profile)
 
         return KPISnapshot(
             growth_velocity=growth_vel,
             lag_zone_score=lag_zone,
             authenticity_score=auth_score,
             explanation_effectiveness=exp_effectiveness,
+            engagement_score=engagement,
+            persistence=persistence,
+            readiness=readiness,
             recorded_at=now
         )
+
+    @staticmethod
+    def _calculate_engagement(events: List[LearningEventRecord], profile: LearnerProfileRecord) -> float:
+        """
+        Calculates engagement based on recent event frequency and streak.
+        """
+        base_score = min(len(events) / 20.0, 1.0) # Cap at 20 events per week
+        streak_bonus = min(profile.engagement_summary.current_streak / 10.0, 0.5)
+        return min(round(base_score + streak_bonus, 2), 1.0)
+
+    @staticmethod
+    def _calculate_persistence(events: List[LearningEventRecord]) -> float:
+        """
+        Measures the likelihood of retrying after failure.
+        """
+        assessment_events = [e for e in events if e.event_type == LearningEventType.ASSESSMENT_ANSWER]
+        if not assessment_events:
+            return 0.5
+        
+        retries = 0
+        failures = 0
+        for e in assessment_events:
+            if e.payload.get("is_correct") is False:
+                failures += 1
+            if e.payload.get("attempt_number", 1) > 1:
+                retries += 1
+                
+        if failures == 0:
+            return 1.0
+        return min(round(retries / float(failures), 2), 1.0)
+
+    @staticmethod
+    def _calculate_readiness(profile: LearnerProfileRecord) -> float:
+        """
+        Determines overall readiness to tackle new/advanced topics.
+        """
+        performance = profile.performance_summary.recent_average_score / 100.0
+        if performance == 0:
+            return 0.5
+        return min(round(performance, 2), 1.0)
 
     @staticmethod
     def _calculate_growth_velocity(events: List[LearningEventRecord]) -> float:

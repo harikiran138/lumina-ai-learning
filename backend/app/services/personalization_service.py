@@ -604,6 +604,11 @@ class PersonalizationService:
             profile.intervention_history.resolved_count += 1
             profile.intervention_history.total_interventions += 1 # Ensure this is tracked
             await self.store.upsert_profile(profile)
+        elif status == InterventionStatus.DISMISSED:
+            profile = await self.get_profile(intervention.user_id)
+            profile.intervention_history.dismissed_count += 1
+            profile.intervention_history.total_interventions += 1
+            await self.store.upsert_profile(profile)
 
         return await self.store.upsert_intervention(intervention)
 

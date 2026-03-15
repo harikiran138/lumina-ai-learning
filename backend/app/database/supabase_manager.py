@@ -139,6 +139,27 @@ class SupabaseManager:
             log.error("upsert_failed", table=table, error=str(e))
             return None
 
+    async def insert(self, table: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Helper to insert records."""
+        try:
+            response = self.client.table(table).insert(data).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            log.error("insert_failed", table=table, error=str(e))
+            return None
+
+    async def update(self, table: str, data: Dict[str, Any], query_filter: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Helper to update records."""
+        try:
+            query = self.client.table(table).update(data)
+            for key, value in query_filter.items():
+                query = query.eq(key, value)
+            response = query.execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            log.error("update_failed", table=table, error=str(e))
+            return None
+
     async def delete(self, table: str, query_filter: Dict[str, Any]) -> bool:
         """Helper to delete records."""
         try:

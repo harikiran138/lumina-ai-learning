@@ -67,9 +67,9 @@ class CourseStore:
         }
 
         try:
-            result = await self.db.upsert("courses", course_data)
+            result = await self.db.insert("courses", course_data)
             if result:
-                return self._normalize_course(result[0])
+                return self._normalize_course(result)
             raise Exception("Failed to create course")
         except Exception as e:
             log.error("create_course_failed", error=str(e), code=code)
@@ -93,9 +93,9 @@ class CourseStore:
         }
 
         try:
-            result = await self.db.upsert("courses", course_data)
+            result = await self.db.insert("courses", course_data)
             if result:
-                return self._normalize_course(result[0])
+                return self._normalize_course(result)
             raise Exception("Failed to create course from blueprint")
         except Exception as e:
             log.error("create_course_from_blueprint_failed", error=str(e), code=code)
