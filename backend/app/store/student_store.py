@@ -1,9 +1,8 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from app.database.supabase_manager import supabase_db
 from app.core.logging import structlog
 from datetime import datetime
 import re
-from app.store.local_store import LocalJsonStore
 
 log = structlog.get_logger()
 
@@ -11,44 +10,20 @@ log = structlog.get_logger()
 class StudentStore:
     """
     Store for student-specific operations: Enrollment, Progress, Badges, Certificates.
+    Operates on 'enrollments' and 'users' tables in Supabase.
     """
 
     def __init__(self):
-        self.client = supabase_db.get_client()
-        self.local = LocalJsonStore()
-
-    @property
-    def progress_collection(self):
-        if self.client is None:
-            return None
-        return self.client.table("progress")
-
-    @property
-    def users_collection(self):
-        if self.client is None:
-            return None
-        return self.client.table("users")
-
-    @property
-    def courses_collection(self):
-        if self.client is None:
-            return None
-        return self.client.table("courses")
-
-    @property
-    def certificates_collection(self):
-        if self.client is None:
-            return None
-        return self.client.table("certificates")
+        self.db = supabase_db
 
     def _parse_timestamp(self, value: str):
         if not value:
             return None
-
         normalized = value.replace("Z", "+00:00")
         try:
             return datetime.fromisoformat(normalized)
         except ValueError:
+            # Handle potential fractional precision issues
             match = re.match(
                 r"^(?P<head>.+?\.)?(?P<fraction>\d+)(?P<tz>[+-]\d{2}:\d{2})$",
                 normalized,
@@ -61,123 +36,68 @@ class StudentStore:
                 if not head.endswith("."):
                     head = f"{head}."
                 return datetime.fromisoformat(f"{head}{padded}{tz}")
-            raise
+            return None
 
     async def enroll_in_course(self, student_id: str, course_id: str) -> bool:
         """
-        Enrolls a student in a course. Creates a progress record.
+        Enrolls a student in a course. Creates an enrollment record.
         """
-        if self.client is None:
-            payload = self.local.read()
-            existing = next(
-                (
-                    item
-                    for item in payload["progress"]
-                    if item.get("userId") == student_id and item.get("courseId") == course_id
-                ),
-                None,
-            )
-            if existing:
-                return False
-
-            payload["progress"].append(
-                {
-                    "userId": student_id,
-                    "courseId": course_id,
-                    "progress": 0,
-                    "mastery": 0,
-                    "streak": 0,
-                    "completedLessons": [],
-                    "hoursSpent": 0,
-                    "lastAccessed": datetime.utcnow().isoformat(),
-                    "enrolledAt": datetime.utcnow().isoformat(),
-                }
-            )
-            self.local.write(payload)
-            return True
-
-        try:
-            # Check if already enrolled
-            response = self.progress_collection.select("*").eq("userId", student_id).eq("courseId", course_id).execute()
-            if response.data:
-                return False
-
-            # Create progress record
-            progress_record = {
-                "userId": student_id,
-                "courseId": course_id,
-                "progress": 0,
+        enrollment_data = {
+            "student_id": student_id,
+            "course_id": course_id,
+            "progress": {
+                "percentage": 0,
                 "mastery": 0,
                 "streak": 0,
                 "completedLessons": [],
-                "lastAccessed": datetime.utcnow().isoformat(),
-                "enrolledAt": datetime.utcnow().isoformat(),
-            }
+                "hoursSpent": 0,
+                "lastAccessed": datetime.utcnow().isoformat()
+            },
+            "status": "active"
+        }
 
-            self.progress_collection.insert(progress_record).execute()
+        try:
+            # Check if already enrolled
+            client = self.db.get_client()
+            response = client.table("enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).execute()
+            if response.data:
+                return False
 
-            # Increment course enrollment count
-            # Note: Supabase doesn't have native '$inc', we might need to fetch and update or use an RPC
-            # For now, let's just attempt a basic update if needed, but 'enrolledCount' might not be in the current schema
+            # Create record
+            await self.db.upsert("enrollments", enrollment_data)
             return True
         except Exception as e:
-            log.error(
-                "enroll_in_course_failed", student_id=student_id, course_id=course_id, error=str(e)
-            )
+            log.error("enroll_in_course_failed", student_id=student_id, course_id=course_id, error=str(e))
             return False
+
+    async def get_enrollment(self, student_id: str, course_id: str) -> Optional[dict]:
+        try:
+            client = self.db.get_client()
+            response = client.table("enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            log.error("get_enrollment_failed", student_id=student_id, course_id=course_id, error=str(e))
+            return None
 
     async def complete_lesson(
         self, student_id: str, course_id: str, lesson_id: str
     ) -> Dict[str, Any]:
         """
-        Marks a lesson as complete.
+        Marks a lesson as complete within the enrollment progress.
         """
-        if self.client is None:
-            payload = self.local.read()
-            record = next(
-                (
-                    item
-                    for item in payload["progress"]
-                    if item.get("userId") == student_id and item.get("courseId") == course_id
-                ),
-                None,
-            )
-            if not record:
-                return {"success": False}
-
-            completed_lessons = record.get("completedLessons", [])
-            if lesson_id not in completed_lessons:
-                completed_lessons.append(lesson_id)
-
-            course = next(
-                (item for item in payload["courses"] if item.get("id") == course_id),
-                None,
-            )
-            total_lessons = 0
-            if course:
-                for module in course.get("modules", []):
-                    total_lessons += len(module.get("lessons", []))
-
-            progress_pct = (len(completed_lessons) / total_lessons * 100) if total_lessons > 0 else 0
-            progress_value = int(round(progress_pct))
-            record["completedLessons"] = completed_lessons
-            record["progress"] = progress_value
-            record["lastAccessed"] = datetime.utcnow().isoformat()
-            self.local.write(payload)
-            return {"success": True, "lesson_id": lesson_id, "progress": progress_pct}
-
         try:
-            # Fetch current progress to append lesson_id
-            response = self.progress_collection.select("completedLessons").eq("userId", student_id).eq("courseId", course_id).execute()
-            if not response.data:
-                return {"success": False}
+            enrollment = await self.get_enrollment(student_id, course_id)
+            if not enrollment:
+                return {"success": False, "error": "Not enrolled"}
 
-            completed_lessons = response.data[0].get("completedLessons", [])
+            progress = enrollment.get("progress") or {}
+            completed_lessons = progress.get("completedLessons", [])
             if lesson_id not in completed_lessons:
                 completed_lessons.append(lesson_id)
             
-            # Fetch total lessons for this course to calculate progress %
-            course_res = self.courses_collection.select("modules").eq("id", course_id).execute()
+            # Fetch course to calculate progress percentage
+            client = self.db.get_client()
+            course_res = client.table("courses").select("modules").eq("id", course_id).execute()
             total_lessons = 0
             if course_res.data:
                 modules = course_res.data[0].get("modules", [])
@@ -185,138 +105,82 @@ class StudentStore:
                     total_lessons += len(m.get("lessons", []))
             
             progress_pct = (len(completed_lessons) / total_lessons * 100) if total_lessons > 0 else 0
-            progress_value = int(round(progress_pct))
             
-            self.progress_collection.update({
+            progress.update({
                 "completedLessons": completed_lessons,
-                "progress": progress_value,
+                "percentage": int(round(progress_pct)),
                 "lastAccessed": datetime.utcnow().isoformat()
-            }).eq("userId", student_id).eq("courseId", course_id).execute()
+            })
+            
+            client.table("enrollments").update({"progress": progress}).eq("id", enrollment["id"]).execute()
 
             return {"success": True, "lesson_id": lesson_id, "progress": progress_pct}
         except Exception as e:
-            log.error(
-                "complete_lesson_failed", student_id=student_id, lesson_id=lesson_id, error=str(e)
-            )
+            log.error("complete_lesson_failed", student_id=student_id, lesson_id=lesson_id, error=str(e))
             return {"success": False}
 
     async def get_certificates(self, student_id: str) -> List[Dict]:
         """
-        Fetches all certificates for a student.
+        Fetches certificates (stored in progress metadata or separate table).
+        For now, returns empty or from a dedicated table if we decide to add it.
         """
-        if self.client is None:
-            payload = self.local.read()
-            return [
-                item.copy() for item in payload["certificates"] if item.get("userId") == student_id
-            ]
-        try:
-            response = self.certificates_collection.select("*").eq("userId", student_id).order("issueDate", desc=True).execute()
-            return response.data
-        except Exception as e:
-            log.error("get_certificates_failed", student_id=student_id, error=str(e))
-            return []
+        return []
 
     async def get_badges(self, student_id: str) -> List[Dict]:
         """
-        Fetches all badges for a student from their user record.
+        Fetches badges from user profile metadata.
         """
-        if self.client is None:
-            payload = self.local.read()
-            user = next((item for item in payload["users"] if item.get("id") == student_id), None)
-            return (user or {}).get("badges", [])
         try:
-            response = self.users_collection.select("badges").eq("id", student_id).execute()
-            if response.data and "badges" in response.data[0]:
-                return response.data[0]["badges"]
+            client = self.db.get_client()
+            # Badges might be in learner_profiles
+            response = client.table("learner_profiles").select("metadata").eq("user_id", student_id).execute()
+            if response.data:
+                return response.data[0].get("metadata", {}).get("badges", [])
         except Exception as e:
             log.error("get_badges_failed", student_id=student_id, error=str(e))
         return []
 
     async def log_activity(self, student_id: str, course_id: str, duration_minutes: int) -> bool:
         """
-        Logs student activity time and updates the streak.
-        duration_minutes: session length in minutes.
+        Logs activity time and updates streak in enrollment progress.
         """
-        if self.client is None:
-            payload = self.local.read()
-            record = next(
-                (
-                    item
-                    for item in payload["progress"]
-                    if item.get("userId") == student_id and item.get("courseId") == course_id
-                ),
-                None,
-            )
-            if not record:
-                return False
-
-            current_hours = record.get("hoursSpent", 0)
-            current_streak = record.get("streak", 0)
-            last_accessed_str = record.get("lastAccessed")
-            now = datetime.utcnow()
-
-            new_hours = current_hours + (duration_minutes / 60.0)
-            new_streak = current_streak
-            if last_accessed_str:
-                last_accessed = self._parse_timestamp(last_accessed_str)
-                delta = (now.date() - last_accessed.date()).days
-                if delta == 1:
-                    new_streak += 1
-                elif delta > 1:
-                    new_streak = 1
-                elif current_streak == 0:
-                    new_streak = 1
-            else:
-                new_streak = 1
-
-            record["hoursSpent"] = round(new_hours, 2)
-            record["streak"] = new_streak
-            record["lastAccessed"] = now.isoformat()
-            self.local.write(payload)
-            return True
-
         try:
-            # 1. Fetch current progress
-            response = self.progress_collection.select("hoursSpent, lastAccessed, streak").eq("userId", student_id).eq("courseId", course_id).execute()
-            if not response.data:
+            enrollment = await self.get_enrollment(student_id, course_id)
+            if not enrollment:
                 return False
 
-            record = response.data[0]
-            current_hours = record.get("hoursSpent", 0)
-            current_streak = record.get("streak", 0)
-            last_accessed_str = record.get("lastAccessed")
-
-            # 2. Update hours
-            new_hours = current_hours + (duration_minutes / 60.0)
-
-            # 3. Calculate Streak
+            progress = enrollment.get("progress") or {}
+            current_hours = progress.get("hoursSpent", 0)
+            current_streak = progress.get("streak", 0)
+            last_accessed_str = progress.get("lastAccessed")
+            
             now = datetime.utcnow()
+            new_hours = current_hours + (duration_minutes / 60.0)
             new_streak = current_streak
             
             if last_accessed_str:
                 last_accessed = self._parse_timestamp(last_accessed_str)
-                # If last activity was on a different day
-                delta = (now.date() - last_accessed.date()).days
-                
-                if delta == 1:
-                    new_streak += 1
-                elif delta > 1:
-                    new_streak = 1
-                # If delta == 0, keep same streak
-                
-                # Special case: if current streak is data-corrupted or 0 but we have activity
-                if current_streak == 0:
+                if last_accessed:
+                    delta = (now.date() - last_accessed.date()).days
+                    if delta == 1:
+                        new_streak += 1
+                    elif delta > 1:
+                        new_streak = 1
+                    elif current_streak == 0:
+                        new_streak = 1
+                else:
                     new_streak = 1
             else:
                 new_streak = 1
 
-            # 4. Update DB
-            self.progress_collection.update({
+            progress.update({
                 "hoursSpent": round(new_hours, 2),
                 "streak": new_streak,
                 "lastAccessed": now.isoformat()
-            }).eq("userId", student_id).eq("courseId", course_id).execute()
+            })
 
+            client = self.db.get_client()
+            client.table("enrollments").update({"progress": progress}).eq("id", enrollment["id"]).execute()
             return True
         except Exception as e:
             log.error("log_activity_failed", student_id=student_id, error=str(e))
