@@ -963,3 +963,94 @@ async def get_profile(
         "notes": notes,
         "user_info": {"name": display_name, "email": current_user.get("email")},
     }
+
+
+@router.get("/leaderboard")
+async def get_leaderboard(
+    timeframe: str = "weekly",
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Returns a ranked leaderboard of students ordered by computed XP from learner_events.
+    """
+    from app.database.supabase_manager import supabase_db
+    from collections import defaultdict
+
+    client = supabase_db.get_client()
+    entries: List[Dict[str, Any]] = []
+
+    if client:
+        try:
+            events_res = (
+                client.table("learner_events")
+                .select("user_id, event_type, payload")
+                .order("created_at", desc=True)
+                .limit(2000)
+                .execute()
+            )
+            events = events_res.data or []
+
+            xp_map: Dict[str, int] = defaultdict(int)
+            for ev in events:
+                uid = ev.get("user_id")
+                if not uid:
+                    continue
+                ev_type = ev.get("event_type", "")
+                payload = ev.get("payload") or {}
+                if ev_type == "quiz_submitted":
+                    xp_map[uid] += max(0, int(float(payload.get("score", 0)) * 1.5))
+                elif ev_type == "lesson_completed":
+                    xp_map[uid] += 50
+                elif ev_type == "activity_logged":
+                    xp_map[uid] += min(int(payload.get("duration_minutes", 0)), 60)
+
+            top_user_ids = sorted(xp_map, key=lambda u: xp_map[u], reverse=True)[:50]
+
+            if top_user_ids:
+                users_res = (
+                    client.table("users")
+                    .select("id, name, full_name, avatar")
+                    .in_("id", top_user_ids)
+                    .execute()
+                )
+                user_info = {u["id"]: u for u in (users_res.data or [])}
+
+                streak_map: Dict[str, int] = defaultdict(int)
+                progress_res = (
+                    client.table("progress")
+                    .select("user_id, streak")
+                    .in_("user_id", top_user_ids)
+                    .execute()
+                )
+                for p in (progress_res.data or []):
+                    uid = p["user_id"]
+                    streak_map[uid] = max(streak_map[uid], p.get("streak") or 0)
+
+                for rank, uid in enumerate(top_user_ids, start=1):
+                    u = user_info.get(uid, {})
+                    display = u.get("name") or u.get("full_name") or "Anonymous"
+                    entries.append({
+                        "rank": rank,
+                        "userId": uid,
+                        "name": display,
+                        "avatar": u.get("avatar") or f"https://ui-avatars.com/api/?name={display}&background=random",
+                        "xp": xp_map[uid],
+                        "streak": streak_map.get(uid, 0),
+                        "isCurrentUser": uid == current_user.get("id"),
+                    })
+        except Exception as exc:
+            log.warning("leaderboard_fetch_failed", error=str(exc))
+
+    if not entries:
+        name = current_user.get("name") or current_user.get("full_name") or "You"
+        entries = [{
+            "rank": 1,
+            "userId": current_user.get("id"),
+            "name": name,
+            "avatar": current_user.get("avatar") or f"https://ui-avatars.com/api/?name={name}&background=random",
+            "xp": 0,
+            "streak": 0,
+            "isCurrentUser": True,
+        }]
+
+    return {"timeframe": timeframe, "entries": entries}

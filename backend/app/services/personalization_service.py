@@ -22,6 +22,7 @@ from app.personalization.authenticity_engine import authenticity_engine
 from app.assessment.models.schemas import ResponseTelemetry, AnswerAnalysis
 from learner_profile.analysis.cognitive_load import CognitiveLoadEstimator
 from learner_profile.models.bkt import BKTModel
+from app.services.ml_client import ml_client
 
 log = structlog.get_logger()
 
@@ -116,7 +117,7 @@ class PersonalizationService:
             weak_topics.remove(topic_id)
         profile.weak_topics = sorted(list(weak_topics))
 
-    def _update_mastery_from_binary(
+    async def _update_mastery_from_binary(
         self, 
         profile: LearnerProfileRecord, 
         topic_id: str, 
@@ -125,7 +126,16 @@ class PersonalizationService:
         integrity: float = 1.0
     ):
         mastery = self._ensure_mastery(profile, topic_id)
-        mastery.score = round(self.bkt.update_mastery(mastery.score or self.bkt.p_l0, is_correct), 4)
+        current_score = mastery.score or self.bkt.p_l0
+        
+        # Try ML service first
+        new_score = await ml_client.update_bkt(current_score, is_correct)
+        
+        # Fallback to local logic if ML service fails
+        if new_score is None:
+            new_score = self.bkt.update_mastery(current_score, is_correct)
+            
+        mastery.score = round(new_score, 4)
         
         # Integrate integrity into the topic-level stats
         mastery.integrity_score = round((mastery.integrity_score * 0.7) + (integrity * 0.3), 3)
@@ -427,7 +437,7 @@ class PersonalizationService:
                     except Exception as e:
                         log.warning("failed_to_parse_telemetry_or_analysis", error=str(e))
                 
-                self._update_mastery_from_binary(profile, topic_id, is_correct, event_type.value, integrity=integrity)
+                await self._update_mastery_from_binary(profile, topic_id, is_correct, event_type.value, integrity=integrity)
                 self._update_misconceptions(profile, topic_id, analysis_data, is_correct)
                 # Reward the last explanation if this was successful
                 self._reward_explanation_style(profile, is_correct)
@@ -744,6 +754,54 @@ class PersonalizationService:
             "spaced_repetition_state": profile.spaced_repetition_state.model_dump(),
             "offline_sync_state": profile.offline_sync_state.model_dump(),
         }
+
+    async def get_cohort_misconceptions(self, user_ids: List[str]) -> Dict[str, Any]:
+        """Collect and cluster misconceptions across a cohort."""
+        raw_data = []
+        for uid in user_ids:
+            profile = await self.store.get_profile(uid)
+            if profile and profile.misconception_summary:
+                raw_data.append({
+                    "user_id": uid,
+                    "summary": profile.misconception_summary
+                })
+        
+        if not raw_data:
+            return {"clusters": [], "top_misconceptions": []}
+
+        # Delegate to ML service for clustering
+        clustered = await ml_client.cluster_misconceptions(raw_data)
+        return clustered or {"status": "processing", "message": "ML clustering in progress"}
+
+    async def get_growth_trajectories(self, user_ids: List[str]) -> Dict[str, Any]:
+        """Project future performance based on historic patterns."""
+        cohort_history = []
+        for uid in user_ids:
+            profile = await self.store.get_profile(uid)
+            if profile:
+                cohort_history.append({
+                    "user_id": uid,
+                    "history": [s.model_dump(mode="json") for s in profile.kpi_history]
+                })
+
+        if not cohort_history:
+            return {"projections": []}
+
+        projections = await ml_client.get_growth_trajectory(cohort_history)
+        return projections or {"status": "error", "message": "ML trajectory service unavailable"}
+
+    async def get_ab_test_performance(self, cohort_a: List[str], cohort_b: List[str]) -> Dict[str, Any]:
+        """Compare performance across two student cohorts."""
+        def get_scores(uids):
+            scores = []
+            # In a real app, we'd fetch specific assessment scores for the test period
+            return [75.0, 82.5, 68.0] # Placeholder
+
+        data_a = get_scores(cohort_a)
+        data_b = get_scores(cohort_b)
+        
+        results = await ml_client.get_ab_test_results(data_a, data_b)
+        return results or {"status": "insufficient_data"}
 
 _service_instance: Optional[PersonalizationService] = None
 

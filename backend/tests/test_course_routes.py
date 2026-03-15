@@ -57,7 +57,7 @@ async def test_create_course(ac, teacher_user):
     
     assert res.status_code == 200 # endpoint returns 200
     course = res.json()
-    assert course["course_code"] == code
+    assert course["code"] == code
     
     store = CourseStore()
     await store.delete_course(course["id"])

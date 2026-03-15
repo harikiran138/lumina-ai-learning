@@ -908,6 +908,93 @@ class RealAPI {
     if (!res.ok) return [];
     return await res.json();
   }
+
+  // --- V2.0 Content Pipeline ---
+
+  async logContentUpload(data: {
+    original_filename: string;
+    storage_url: string;
+    file_type: string;
+    file_size_bytes: number;
+  }): Promise<any> {
+    const query = new URLSearchParams({
+      original_filename: data.original_filename,
+      storage_url: data.storage_url,
+      file_type: data.file_type,
+      file_size_bytes: data.file_size_bytes.toString(),
+    });
+    const res = await this.fetchAuthorized(`/api/teacher/content/upload?${query.toString()}`, {
+      method: "POST",
+    });
+    return await res.json();
+  }
+
+  async getUploadedScaffold(uploadId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/teacher/content/scaffold/${uploadId}`);
+    return await res.json();
+  }
+
+  async approveScaffold(uploadId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/teacher/content/scaffold/approve/${uploadId}`, {
+      method: "POST",
+    });
+    return await res.json();
+  }
+
+  // --- V2.0 AI Answer Verification ---
+
+  async getVerificationQueue(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/teacher/verification/queue");
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async updateVerificationStatus(itemId: string, status: string, editedAnswer?: string): Promise<any> {
+    let url = `/api/teacher/verification/queue/${itemId}?status=${status}`;
+    if (editedAnswer) {
+      url += `&teacher_edited_answer=${encodeURIComponent(editedAnswer)}`;
+    }
+    const res = await this.fetchAuthorized(url, {
+      method: "PATCH",
+    });
+    return await res.json();
+  }
+
+  // --- V2.0 Physical Submissions ---
+
+  async processPhysicalSubmission(submissionId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/teacher/submissions/physical/process/${submissionId}`, {
+      method: "POST",
+    });
+    return await res.json();
+  }
+
+  async getPhysicalSubmission(submissionId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/teacher/submissions/physical/${submissionId}`);
+    return await res.json();
+  }
+
+  // --- Analytical Endpoints ---
+
+  async getMisconceptionClusters(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/personalization/analytics/misconceptions");
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async getGrowthTrajectories(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/personalization/analytics/growth-trajectories");
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async getABTestPerformance(variantA: string, variantB: string): Promise<any> {
+    const res = await this.fetchAuthorized(
+      `/api/personalization/analytics/ab-test?variant_a=${variantA}&variant_b=${variantB}`
+    );
+    if (!res.ok) return null;
+    return await res.json();
+  }
 }
 
 export const api = RealAPI.getInstance();
