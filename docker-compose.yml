@@ -36,16 +36,6 @@ services:
       timeout: 5s
       retries: 5
 
-  mongo:
-    image: mongo:latest
-    restart: always
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-    networks:
-      - app-network
-
   # --- Application Services ---
   backend:
     build:
@@ -60,7 +50,6 @@ services:
     environment:
       - DATABASE_URL=postgresql://lumina:lumina_password@db:5432/lumina_db
       - REDIS_URL=redis://redis:6379/0
-      - MONGODB_URI=mongodb://mongo:27017
       - CHROMA_DB_PATH=/app/db/chroma
       - OLLAMA_HOST=http://host.docker.internal:11434
     depends_on:
@@ -68,8 +57,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      mongo:
-        condition: service_started
     networks:
       - app-network
 
@@ -84,7 +71,6 @@ services:
     environment:
       - DATABASE_URL=postgresql://lumina:lumina_password@db:5432/lumina_db
       - REDIS_URL=redis://redis:6379/0
-      - MONGODB_URI=mongodb://mongo:27017
       - CHROMA_DB_PATH=/app/db/chroma
       - OLLAMA_HOST=http://host.docker.internal:11434
       - CELERY_BROKER_URL=redis://redis:6379/0
@@ -94,7 +80,6 @@ services:
       - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
     depends_on:
       - redis
-      - mongo
     networks:
       - app-network
 
