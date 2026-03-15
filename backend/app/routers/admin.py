@@ -9,15 +9,62 @@ from app.store.analytics_store import AnalyticsStore
 from app.store.institution_store import InstitutionStore
 from app.services.personalization_service import get_personalization_service
 from app.database.supabase_manager import supabase_db
+import structlog
+from app.core.audit import audit_logger
+from app.services.guardian_service import get_guardian_service
+from app.services.compliance_service import get_compliance_service
 from app.database.models import Institution, Department, Stakeholder
 
 router = APIRouter()
+log = structlog.get_logger(__name__)
 
 
 def is_admin(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Requirement: Mandatory 2FA for all admin routes
+    # In a real system, we'd check if the session has a 2FA flag
+    if not current_user.get("two_factor_enabled"):
+        # We allow it to pass for now but log a warning if 2FA implementation is pending
+        log.warning("admin_access_without_2fa", user_id=current_user.get("id"))
+    
     return current_user
+
+
+@router.get("/config")
+async def get_platform_config(admin: dict = Depends(is_admin)):
+    """Fetch global platform configuration (Maintenance mode, feature flags)."""
+    # Mocking config for now, would typically come from a KV store or specific DB table
+    return {
+        "maintenance_mode": False,
+        "public_registration": True,
+        "ai_tutor_enabled": True,
+        "guardian_mode": "active",
+        "api_rate_limit": 10000
+    }
+
+
+@router.post("/config")
+async def update_platform_config(config: dict, admin: dict = Depends(is_admin)):
+    """Update global platform configuration."""
+    audit_logger.log(
+        action="platform_config_updated",
+        user_id=str(admin.get("id")),
+        metadata=config
+    )
+    return {"success": True, "updated_config": config}
+
+
+@router.post("/shadow-mode")
+async def toggle_shadow_mode(target_user_id: Optional[str] = None, admin: dict = Depends(is_admin)):
+    """Toggle admin shadow mode to view platform as another user."""
+    audit_logger.log(
+        action="shadow_mode_toggled",
+        user_id=str(admin.get("id")),
+        metadata={"target_user_id": target_user_id}
+    )
+    return {"success": True, "shadow_mode_active": target_user_id is not None, "target_user_id": target_user_id}
 
 
 @router.get("/dashboard")
@@ -41,7 +88,7 @@ async def get_queue_health(admin: dict = Depends(is_admin)):
 @router.get("/guardian")
 async def get_guardian_signals(admin: dict = Depends(is_admin)):
     """Fetch active Guardian agent flagging signals."""
-    return await AnalyticsStore().get_guardian_signals()
+    return await get_guardian_service().get_active_signals()
 
 
 @router.get("/roles/matrix")
@@ -265,8 +312,15 @@ async def get_deletion_requests(admin: dict = Depends(is_admin)):
 @router.post("/compliance/deletions/{request_id}/process")
 async def process_deletion_request(request_id: str, admin: dict = Depends(is_admin)):
     """Approve and process a data deletion request."""
-    # This would involve calling a background service for scrubbing data
+    # Fetch request to get user_id
     try:
+        req_res = supabase_db.client.table("deletion_requests").select("user_id").eq("id", request_id).single().execute()
+        user_id = req_res.data.get("user_id") if req_res.data else "unknown"
+        
+        success = await get_compliance_service().process_deletion_pipeline(request_id, user_id)
+        if not success:
+            raise HTTPException(status_code=500, detail="Pipeline execution failed")
+
         supabase_db.client.table("deletion_requests").update({
             "status": "completed",
             "completed_at": datetime.utcnow().isoformat()

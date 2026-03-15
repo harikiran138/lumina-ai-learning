@@ -16,22 +16,90 @@ import {
   X,
   Brain,
   ChevronLeft,
+  Users,
+  Calendar,
+  CheckCircle,
+  Bell,
+  Search,
+  Target,
+  Award,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 
-const navItems = [
-  { name: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard },
-  { name: "Assignments", href: "/student/assignments", icon: FileText },
-  { name: "AI Tutor", href: "/student/ai_tutor", icon: Bot },
-  { name: "Assessment", href: "/student/assessment", icon: Brain },
-  { name: "My Courses", href: "/student/courses", icon: BookOpen },
-  { name: "My Notes", href: "/student/my_notes", icon: FileText },
-  { name: "Community", href: "/student/community", icon: MessageSquare },
-  { name: "Progress", href: "/student/progress", icon: BarChart2 },
-  { name: "Profile", href: "/student/profile", icon: User },
-  { name: "Settings", href: "/student/settings", icon: Settings },
-];
+const roleNavItems: Record<string, any[]> = {
+  student: [
+    { name: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard },
+    { name: "Assignments", href: "/student/assignments", icon: FileText },
+    { name: "AI Tutor", href: "/student/ai_tutor", icon: Bot },
+    { name: "Assessment", href: "/student/assessment", icon: Brain },
+    { name: "My Courses", href: "/student/courses", icon: BookOpen },
+    { name: "Progress", href: "/student/progress", icon: BarChart2 },
+    { name: "Community", href: "/student/community", icon: MessageSquare },
+    { name: "Profile", href: "/student/profile", icon: User },
+    { name: "Settings", href: "/student/settings", icon: Settings },
+  ],
+  parent: [
+    { name: "Dashboard", href: "/parent/dashboard", icon: LayoutDashboard },
+    { name: "Progress", href: "/parent/progress", icon: BarChart2 },
+    { name: "Goals", href: "/parent/goals", icon: Target },
+    { name: "Messages", href: "/parent/messages", icon: MessageSquare },
+    { name: "Settings", href: "/parent/settings", icon: Settings },
+  ],
+  mentor: [
+    { name: "Dashboard", href: "/mentor/dashboard", icon: LayoutDashboard },
+    { name: "Matches", href: "/mentor/matches", icon: Users },
+    { name: "Sessions", href: "/mentor/sessions", icon: Calendar },
+    { name: "Reviews", href: "/mentor/reviews", icon: CheckCircle },
+    { name: "Settings", href: "/mentor/settings", icon: Settings },
+  ],
+  peer_tutor: [
+    { name: "Dashboard", href: "/peer-tutor/dashboard", icon: LayoutDashboard },
+    { name: "Sessions", href: "/peer-tutor/sessions", icon: Clock },
+    { name: "Training", href: "/peer-tutor/training", icon: Brain },
+    { name: "Settings", href: "/peer-tutor/settings", icon: Settings },
+  ],
+  counselor: [
+    { name: "Dashboard", href: "/counselor/dashboard", icon: LayoutDashboard },
+    { name: "Students", href: "/counselor/students", icon: Users },
+    { name: "Crisis Cases", href: "/counselor/crisis", icon: Bell },
+    { name: "Notes", href: "/counselor/notes", icon: FileText },
+    { name: "Settings", href: "/counselor/settings", icon: Settings },
+  ],
+  content_creator: [
+    { name: "Dashboard", href: "/creator/dashboard", icon: LayoutDashboard },
+    { name: "Blueprints", href: "/creator/blueprints", icon: FileText },
+    { name: "Question Bank", href: "/creator/questions", icon: Brain },
+    { name: "Settings", href: "/creator/settings", icon: Settings },
+  ],
+  researcher: [
+    { name: "Dashboard", href: "/researcher/dashboard", icon: LayoutDashboard },
+    { name: "Datasets", href: "/researcher/datasets", icon: BarChart2 },
+    { name: "Queries", href: "/researcher/queries", icon: Search },
+    { name: "Settings", href: "/researcher/settings", icon: Settings },
+  ],
+  alumni: [
+    { name: "Dashboard", href: "/alumni/dashboard", icon: LayoutDashboard },
+    { name: "Mentorship", href: "/alumni/mentorship", icon: Users },
+    { name: "Portfolio", href: "/alumni/portfolio", icon: Award },
+    { name: "Settings", href: "/alumni/settings", icon: Settings },
+  ],
+  teacher: [
+    { name: "Dashboard", href: "/teacher/dashboard", icon: LayoutDashboard },
+    { name: "Courses", href: "/teacher/courses", icon: BookOpen },
+    { name: "Students", href: "/teacher/students", icon: Users },
+    { name: "Verification", href: "/teacher/verification", icon: CheckCircle },
+    { name: "Settings", href: "/teacher/settings", icon: Settings },
+  ],
+  admin: [
+    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+    { name: "Users", href: "/admin/users", icon: Users },
+    { name: "Institutions", href: "/admin/institutions", icon: BookOpen },
+    { name: "Analytics", href: "/admin/analytics", icon: BarChart2 },
+    { name: "Settings", href: "/admin/settings", icon: Settings },
+  ],
+};
 
 export default function Sidebar({
   isOpen,
@@ -60,6 +128,9 @@ export default function Sidebar({
     await api.logout();
     router.push("/login");
   };
+
+  const currentRole = user?.role || "student";
+  const navItems = roleNavItems[currentRole] || roleNavItems["student"];
 
   return (
     <aside
@@ -107,7 +178,7 @@ export default function Sidebar({
       </div>
 
       <nav className="p-4 space-y-1.5 flex-1 overflow-y-auto hide-scrollbar">
-        {navItems.map((item) => {
+        {navItems.map((item: any) => {
           const isActive = pathname === item.href;
           return (
             <Link
@@ -162,7 +233,7 @@ export default function Sidebar({
         {/* User Profile Snippet */}
         {user && (
           <Link
-            href="/student/profile"
+            href={`/${currentRole}/profile`}
             className={cn(
               "flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-500 cursor-pointer overflow-hidden",
               isCollapsed && !isHovered ? "justify-center p-2" : "p-3",
