@@ -14,6 +14,7 @@ class AutomationJobType(str, Enum):
     POST_ASSESSMENT_REMEDIATION = "post_assessment_remediation"
     INACTIVITY_ALERT = "inactivity_alert"
     PROGRESS_DIGEST = "progress_digest"
+    PROFILE_REFRESH = "profile_refresh"
 
 
 class AutomationJobStatus(str, Enum):

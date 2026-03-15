@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Form, File, UploadFile, Depends
 from typing import Optional
 from app.store.assignment_store import AssignmentStore
 from app.store.course_store import CourseStore
+from app.store.personalization_store import PersonalizationStore
 from pydantic import BaseModel
 import os
 import uuid
@@ -114,12 +115,15 @@ async def grade_submission(assignment_id: str, submission_id: str):
     # We no longer wait for OCR/Grading here. We return "Accepted" immediately.
     from app.worker import task_grade_submission
 
+    rubric = await PersonalizationStore().get_rubric(assignment_id)
+    rubric_payload = rubric.model_dump(mode="json") if rubric else None
+
     # Pass file_path (which is either local path or s3:// key)
     # The worker will handle downloading.
     print(f"Dispatching grading task for {submission['id']}")
 
     task = task_grade_submission.delay(
-        assignment_id, submission_id, description, submission["file_path"]
+        assignment_id, submission_id, description, submission["file_path"], rubric_payload
     )
 
     return {
@@ -238,6 +242,9 @@ async def get_submission_report(assignment_id: str, submission_id: str):
     grade = submission.get("grade")
     feedback = submission.get("feedback")
     ocr_text = submission.get("ocr_text")
+    scorecard = await PersonalizationStore().get_scorecard(submission_id)
+    confidence = scorecard.confidence if scorecard else None
+    review_required = scorecard.review_required if scorecard else None
 
     # Derive simple level label from numeric grade if present (0–100 assumed)
     level = None
@@ -264,6 +271,8 @@ async def get_submission_report(assignment_id: str, submission_id: str):
             "status": submission.get("status"),
         },
         "score": grade,
+        "confidence": confidence,
+        "review_required": review_required,
         "level": level,
         "feedback": feedback,
         "ocr_text": ocr_text,

@@ -1,6 +1,7 @@
 import logging
 import requests
 import json
+import uuid
 from typing import Optional, List, Dict, Any
 from app.assessment.models.schemas import (
     Question, 
@@ -177,19 +178,30 @@ class GeminiGenerator:
         """Fallback question generator."""
         logger.info(f"Fallback triggered for {format}")
         if format == QuestionFormat.MCQ:
+            options = [Option(text="True"), Option(text="False")]
             return Question(
                 text=f"True or False: {topic} is a key concept in this domain.",
-                options=[Option(text="True"), Option(text="False")],
-                correct_option_id="opt-true",
+                options=options,
+                correct_option_id=options[0].id,
                 difficulty=difficulty,
-                topic=topic
+                topic=topic,
+                metadata=QuestionMetadata(
+                    question_id=str(uuid.uuid4()),
+                    concepts=[topic],
+                    difficulty=difficulty,
+                ),
             )
         return Question(
             format=format,
             text=f"Explain what you know about {topic} in your own words.",
             difficulty=difficulty,
             topic=topic,
-            explanation=f"A basic overview of {topic}."
+            explanation=f"A basic overview of {topic}.",
+            metadata=QuestionMetadata(
+                question_id=str(uuid.uuid4()),
+                concepts=[topic],
+                difficulty=difficulty,
+            ),
         )
 
 

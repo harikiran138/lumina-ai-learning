@@ -17,6 +17,7 @@ import {
   BarChart2,
   BookOpen,
 } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function AssignmentSubmissionsPage() {
   const params = useParams();

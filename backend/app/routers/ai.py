@@ -316,6 +316,19 @@ def _normalize_tutor_payload(result: Any, topic: str) -> Dict[str, Any]:
     return _wrap_text_payload(result, topic)
 
 
+def _infer_comprehension_signal(message: str) -> Optional[str]:
+    if not message:
+        return None
+    lower = message.lower()
+    if any(token in lower for token in ["i don't understand", "confused", "still unclear", "not sure", "lost"]):
+        return "confused"
+    if any(token in lower for token in ["makes sense", "got it", "understand now", "clear now", "that helps"]):
+        return "understood"
+    if any(token in lower for token in ["kind of", "sort of", "partly", "somewhat"]):
+        return "partial"
+    return None
+
+
 # ... (IngestRequest remains same)
 
 # Note: We need to instantiate LLM per request to support dynamic provider switching,
@@ -494,6 +507,10 @@ async def tutor_chat(request: TutorChatRequest):
         # 2. Get Learner Profile for context
         profile = await personalization.get_legacy_state(request.user_id)
         topic = _infer_tutor_topic(request.message, profile, request.context_filters)
+        filters = request.context_filters or {}
+        lesson_context = filters.get("lesson") or filters.get("lesson_context")
+        assignment_context = filters.get("assignment") or filters.get("assignment_context")
+        comprehension_signal = _infer_comprehension_signal(request.message)
 
         # 3. Route via Orchestrator
         # Context for the agents
@@ -504,6 +521,9 @@ async def tutor_chat(request: TutorChatRequest):
             "filters": request.context_filters,
             "profile_context": (request.context_filters or {}).get("context", ""),
             "topic": topic,
+            "lesson_context": lesson_context,
+            "assignment_context": assignment_context,
+            "comprehension_signal": comprehension_signal,
         }
         
         # [NEW] The Swarm handles safety, intent classification, and RAG
@@ -531,6 +551,17 @@ async def tutor_chat(request: TutorChatRequest):
         if isinstance(result, dict):
             normalized_payload = _normalize_tutor_payload(result, topic)
             response_text = json.dumps(normalized_payload)
+            subject_mode = (
+                normalized_payload.get("meta", {}).get("subject_mode")
+                if isinstance(normalized_payload, dict)
+                else None
+            ) or filters.get("subject") or "general"
+            context_payload = {
+                "lesson": lesson_context,
+                "assignment": assignment_context,
+                "comprehension_signal": comprehension_signal,
+                "subject_mode": subject_mode,
+            }
             personalization_payload = TutorInteractionPayload(
                 message=request.message,
                 response=response_text,
@@ -539,6 +570,8 @@ async def tutor_chat(request: TutorChatRequest):
                 recommendation=profile.get("risk_summary", {}).get("risk_level") if isinstance(profile.get("risk_summary"), dict) else getattr(profile.get("risk_summary", {}), "risk_level", None),
                 topic=topic,
                 explanation_plan=result.get("explanation_plan"),
+                strategy_used=subject_mode,
+                context=context_payload,
             ).model_dump(exclude_none=True)
             await personalization.record_event(
                 request.user_id,
@@ -563,6 +596,17 @@ async def tutor_chat(request: TutorChatRequest):
         # Fallback for string responses
         normalized_payload = _normalize_tutor_payload(result, topic)
         response_text = json.dumps(normalized_payload)
+        subject_mode = (
+            normalized_payload.get("meta", {}).get("subject_mode")
+            if isinstance(normalized_payload, dict)
+            else None
+        ) or (request.context_filters or {}).get("subject") or "general"
+        context_payload = {
+            "lesson": lesson_context,
+            "assignment": assignment_context,
+            "comprehension_signal": comprehension_signal,
+            "subject_mode": subject_mode,
+        }
         await personalization.record_event(
             request.user_id,
             LearningEventType.TUTOR_INTERACTION,
@@ -572,6 +616,8 @@ async def tutor_chat(request: TutorChatRequest):
                 session_id=request.session_id,
                 behavior=profile.get("behavior_label", "neutral"),
                 topic=topic,
+                strategy_used=subject_mode,
+                context=context_payload,
             ).model_dump(exclude_none=True),
             source="ai_router",
             topic_id=topic,

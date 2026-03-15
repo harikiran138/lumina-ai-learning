@@ -12,9 +12,11 @@ from app.automation.schemas import (
     RemediationPlan,
     StudentProgressDigest,
 )
+from app.core.async_utils import run_async
 from app.database.supabase_manager import supabase_db
 from app.pathway.optimizer import CurriculumOptimizer
 from app.personalization.schemas import LearnerProfileRecord
+from app.services.personalization_service import get_personalization_service
 
 log = logging.getLogger(__name__)
 
@@ -286,3 +288,25 @@ def run_student_progress_digest(
         next_recommended_concept=next_concept,
         motivation_message=motivation,
     )
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# AUTO-005: Profile Refresh (backfill KPIs/risk)
+# ────────────────────────────────────────────────────────────────────────────
+
+def run_profile_refresh(limit: int = 500) -> dict:
+    """
+    Recomputes KPI/risk/cognitive-load signals for all learner profiles.
+    Helpful after offline sync or schema changes.
+    """
+    service = get_personalization_service()
+    profiles = run_async(service.store.list_profiles(limit=limit))
+    updated = 0
+    for profile in profiles:
+        run_async(service.refresh_profile(profile.user_id, role=profile.role))
+        updated += 1
+
+    return {
+        "updated_profiles": updated,
+        "total_profiles": len(profiles),
+    }

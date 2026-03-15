@@ -272,6 +272,13 @@ Parent/guardian-facing summary and escalation agent.
 - Key backend modules pass syntax checks
 - Docs clearly describe the real current state
 
+### Recent Progress (2026-03-14)
+
+- Supabase service-role fallback + local JSON store auto-enabled for tests and dev
+- Frontend API base alignment (`NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_API_BASE`)
+- Assignment creation now uses authenticated backend route (no more unauthenticated POST)
+- Tutor RAG engine mockability fixed for swarm tests
+
 ---
 
 ## 6. Phase 1 — Unify Learner State
@@ -279,6 +286,8 @@ Parent/guardian-facing summary and escalation agent.
 **Goal:** Create one real learner-profile service that becomes the single source of truth for personalization.
 
 **Priority:** Highest
+
+**Status:** Completed (2026-03-14)
 
 ### Tasks
 
@@ -305,6 +314,10 @@ Parent/guardian-facing summary and escalation agent.
   "misconception_clusters": [...],
   "preferred_pace": "fast|normal|slow",
   "preferred_modality": "visual|text|audio",
+  "language": { "primary": "en", "secondary": ["hi-IN"], "locale": "en-IN" },
+  "knowledge_graph_state": { "graph_id": "...", "graph_version": "..." },
+  "spaced_repetition_state": { "algorithm": "fsrs", "pending_review_count": 0 },
+  "offline_sync_state": { "enabled": false, "last_synced_at": null },
   "tutor_interaction_history": [...],
   "assignment_performance": {...},
   "attention_signals": {...},
@@ -327,11 +340,21 @@ Parent/guardian-facing summary and escalation agent.
 - Profile updates when a student completes a lesson, quiz, or assignment
 - Tutor and teacher dashboard read from the same source
 
+### Recent Progress (2026-03-14)
+
+- Added knowledge graph, spaced repetition, and offline sync fields to the canonical learner profile schema
+- Added multilingual preference fields in learner preferences
+- Added tutor/teacher/pathway projections under `/api/personalization/projection/*`
+- Added AUTO-005 profile refresh job and manual trigger endpoint
+- Grading pipeline now attaches rubric metadata and rubric scorecards when available
+
 ---
 
 ## 7. Phase 2 — Adaptive Assessment Engine
 
 **Goal:** Strengthen assessment with concept-aware adaptive learning.
+
+**Status:** Completed (2026-03-14)
 
 ### Tasks
 
@@ -370,11 +393,21 @@ Growth            10%    Improvement delta from prior
 - Remediation plans are generated from assessment evidence
 - Wrong-answer patterns are stored and surfaced to teachers
 
+### Recent Progress (2026-03-14)
+
+- Knowledge graph storage added (`knowledge_nodes`) with API to upsert/list nodes
+- IRT-based ability updates wired into assessment session flow
+- Questions now carry concept metadata across generators
+- Misconception tracking aggregated into learner profiles
+- Remediation plans generated on low-confidence/low-accuracy sessions
+
 ---
 
 ## 8. Phase 3 — Teacher Intervention System
 
 **Goal:** Give teachers action-oriented intelligence, not just reports.
+
+**Status:** Completed (2026-03-14)
 
 ### Teacher Intervention Object (Target)
 
@@ -416,6 +449,13 @@ Growth            10%    Improvement delta from prior
 - Teachers see a prioritized list of students needing intervention
 - Each intervention card includes evidence, suggested action, and confidence
 - Teachers can mark interventions as reviewed or override them
+
+### Recent Progress (2026-03-14)
+
+- Teacher dashboard now includes intervention queue, concept heatmap, and support clusters
+- Intervention queue supports acknowledge/resolve/override actions
+- Misconception summaries are surfaced in teacher-facing views
+- Risk badges are driven from canonical learner profile signals
 
 ---
 
@@ -459,6 +499,15 @@ Growth            10%    Improvement delta from prior
 - Coding tutor gives hints rather than full solutions
 - Tutor reads student's weak topics from learner profile and adapts difficulty
 - Tutor memory persists across multiple sessions
+
+### Recent Progress (2026-03-14)
+
+- Added subject-mode routing in the Orchestrator with keyword + context heuristics
+- Built subject-specific prompt layers for math, science, coding, and language
+- Tutor now ingests lesson + assignment context and prioritizes weak topics
+- Added persistent tutor memory store (Supabase when available, local JSON fallback)
+- Added metacognitive calibration prompts with confidence rating (1–5)
+- Tutor interactions now log strategy + comprehension signal for effectiveness tracking
 
 ---
 
@@ -636,6 +685,10 @@ In Phase 5, this module will be wired into Lumina's main assignment grading pipe
 - The AI grades and scores them automatically
 - Results appear in the teacher's grading interface with confidence labels
 - Analysis history is stored in Supabase alongside other assignment records
+
+Current state:
+- The standalone handwriting module stores history in SQLite.
+- The main Lumina app uses a JSON fallback store for handwriting artifacts when Supabase is not configured.
 
 ---
 

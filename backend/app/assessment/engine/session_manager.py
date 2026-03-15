@@ -15,6 +15,8 @@ from app.assessment.models.schemas import (
 # Switch to Gemini Generator
 from app.assessment.llm.gemini_generator import gemini_generator as question_generator
 from app.assessment.engine.adaptive_logic import adaptive_logic
+from app.assessment.engine.irt import irt_model
+from app.assessment.engine.remediation import build_remediation_plan
 from app.assessment.question.selector import QuestionSelector
 from app.database.supabase_manager import supabase_db
 from datetime import datetime
@@ -156,17 +158,47 @@ class SessionManager:
         if not question:
              raise ValueError("Question not found in session history")
 
+        personalization = get_personalization_service()
+
         # Analysis logic
         analysis = None
         is_correct = False
         score = 0.0
+        target_concepts = question.metadata.concepts if question.metadata else [session.topic]
+        question_difficulty = (
+            question.metadata.difficulty
+            if question.metadata and question.metadata.difficulty is not None
+            else question.difficulty
+        )
+        discrimination = (
+            question.metadata.discrimination
+            if question.metadata and question.metadata.discrimination is not None
+            else 1.0
+        )
+        guessing = (
+            question.metadata.guessing
+            if question.metadata and question.metadata.guessing is not None
+            else 0.0
+        )
+        theta_before = session.current_difficulty
 
         if question.format == QuestionFormat.MCQ:
             is_correct = question.correct_option_id == selected_option_id
             score = 1.0 if is_correct else 0.0
+            selected_option = next(
+                (opt for opt in question.options if opt.id == selected_option_id),
+                None,
+            )
+            misconceptions = []
+            if not is_correct and selected_option:
+                misconceptions.append(f"chose:{selected_option.text}")
             analysis = AnswerAnalysis(
                 correctness=score,
-                feedback="Correct!" if is_correct else f"Hint: {question.explanation}"
+                concepts_demonstrated=target_concepts if is_correct else [],
+                concepts_missing=target_concepts if not is_correct else [],
+                misconceptions=misconceptions,
+                confidence_estimate=irt_model.confidence(theta_before, question_difficulty, discrimination, guessing),
+                feedback="Correct!" if is_correct else f"Hint: {question.explanation}",
             )
         else:
             # Semantic analysis for open-ended formats
@@ -176,17 +208,27 @@ class SessionManager:
             )
             is_correct = analysis.correctness > 0.7
             score = analysis.correctness
+            if analysis.confidence_estimate is None:
+                analysis.confidence_estimate = irt_model.confidence(theta_before, question_difficulty, discrimination, guessing)
 
-        # Update difficulty (using original adaptive logic for now, but scaled by score)
-        new_difficulty = adaptive_logic.calculate_next_difficulty(
-            session.current_difficulty, is_correct
-        )
+        # Update ability estimate with IRT (fallback to adaptive logic on error)
+        try:
+            new_difficulty = irt_model.update_theta(
+                theta_before,
+                question_difficulty,
+                score,
+                discrimination,
+                guessing,
+            )
+        except Exception:
+            new_difficulty = adaptive_logic.calculate_next_difficulty(
+                session.current_difficulty, is_correct
+            )
 
         # Update MasteryState
-        if session.topic in session.mastery_state.concept_mastery:
-             # simple rolling average or update
-             current = session.mastery_state.concept_mastery[session.topic]
-             session.mastery_state.concept_mastery[session.topic] = round((current + score) / 2.0, 3)
+        for concept in target_concepts:
+            current = session.mastery_state.concept_mastery.get(concept, session.current_difficulty)
+            session.mastery_state.concept_mastery[concept] = round((current + score) / 2.0, 3)
 
         # Record response
         response = StudentResponse(
@@ -205,7 +247,6 @@ class SessionManager:
 
         # --- Personalization Integration (WS4) ---
         try:
-            personalization = get_personalization_service()
             payload = AssessmentAnswerPayload(
                 session_id=session.id,
                 topic=session.topic,
@@ -231,6 +272,32 @@ class SessionManager:
             session.is_completed = True
             session.end_time = datetime.utcnow()
             session.final_score = adaptive_logic.calculate_final_score(session.current_difficulty)
+            accuracy = (
+                sum(1 for r in session.responses if r.is_correct) / len(session.responses)
+                if session.responses
+                else 0
+            )
+            confidence_values = [
+                r.analysis.confidence_estimate
+                for r in session.responses
+                if r.analysis and r.analysis.confidence_estimate is not None
+            ]
+            confidence_avg = round(sum(confidence_values) / len(confidence_values), 2) if confidence_values else 0.5
+            misconceptions = []
+            for r in session.responses:
+                if r.analysis and r.analysis.misconceptions:
+                    misconceptions.extend(r.analysis.misconceptions)
+            remediation_plan = None
+            if accuracy < 0.7:
+                try:
+                    profile = await personalization.get_profile(session.student_id)
+                    remediation_plan = build_remediation_plan(
+                        session.topic,
+                        profile,
+                        misconceptions=misconceptions,
+                    )
+                except Exception:
+                    remediation_plan = None
             
             # Record Assessment Completed event
             try:
@@ -240,12 +307,11 @@ class SessionManager:
                     payload=AssessmentCompletedPayload(
                         session_id=session.id,
                         topic=session.topic,
-                        accuracy=(
-                            sum(1 for r in session.responses if r.is_correct) / len(session.responses)
-                            if session.responses
-                            else 0
-                        ),
+                        accuracy=accuracy,
                         total_questions=len(session.responses),
+                        confidence_avg=confidence_avg,
+                        misconceptions=misconceptions,
+                        remediation_plan=remediation_plan,
                     ).model_dump(exclude_none=True),
                     source="session_manager",
                     topic_id=session.topic,

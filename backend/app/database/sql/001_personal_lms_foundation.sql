@@ -15,6 +15,14 @@ create table if not exists learner_profiles (
   engagement_summary jsonb not null default '{}'::jsonb,
   performance_summary jsonb not null default '{}'::jsonb,
   risk_summary jsonb not null default '{}'::jsonb,
+  explanation_profile jsonb not null default '{}'::jsonb,
+  kpi_snapshot jsonb not null default '{}'::jsonb,
+  kpi_history jsonb not null default '[]'::jsonb,
+  intervention_history jsonb not null default '{}'::jsonb,
+  misconception_summary jsonb not null default '{}'::jsonb,
+  knowledge_graph_state jsonb not null default '{}'::jsonb,
+  spaced_repetition_state jsonb not null default '{}'::jsonb,
+  offline_sync_state jsonb not null default '{}'::jsonb,
   tutor_summary jsonb not null default '{}'::jsonb,
   assignment_summary jsonb not null default '{}'::jsonb,
   assessment_summary jsonb not null default '{}'::jsonb,
@@ -89,3 +97,20 @@ create table if not exists submission_scorecards (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+create table if not exists knowledge_nodes (
+  id uuid primary key default gen_random_uuid(),
+  course_id text not null,
+  concept text not null,
+  difficulty text not null default 'beginner',
+  prerequisites jsonb not null default '[]'::jsonb,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_knowledge_nodes_course
+  on knowledge_nodes (course_id);
+
+create unique index if not exists idx_knowledge_nodes_course_concept
+  on knowledge_nodes (course_id, concept);

@@ -40,6 +40,8 @@ from .routers import (  # noqa: E402
     admin,
     pathway,
     teacher,
+    knowledge_graph,
+    generation,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
@@ -188,6 +190,7 @@ app.add_middleware(CacheControlMiddleware)
 Instrumentator().instrument(app).expose(app)
 
 app.include_router(ai.router, prefix="/api", tags=["AI"])
+app.include_router(generation.router)
 app.include_router(handwriting.router, prefix="/api/handwriting", tags=["Handwriting"])
 app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignments"])
 
@@ -211,6 +214,7 @@ app.include_router(community.router, prefix="/api/community", tags=["Community"]
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(pathway.router, prefix="/api/pathway", tags=["Pathway"])
 app.include_router(teacher.router, prefix="/api/teacher", tags=["Teacher Dashboard"])
+app.include_router(knowledge_graph.router, prefix="/api/knowledge-graph", tags=["Knowledge Graph"])
 
 
 # --- Performance & Security Polish ---
