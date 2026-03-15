@@ -13,21 +13,31 @@ import {
   Sparkles,
   X,
   PlusCircle,
-  ChevronLeft,
+  BarChart3,
+  Calendar,
+  GraduationCap,
+  ClipboardCheck,
+  MessageSquare,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 
 const navItems = [
   { name: "Dashboard", href: "/teacher/dashboard", icon: LayoutDashboard },
+  { name: "Analytics", href: "/teacher/analytics", icon: BarChart3 },
   { name: "My Courses", href: "/teacher/courses", icon: BookOpen },
+  { name: "Calendar", href: "/teacher/calendar", icon: Calendar },
+  { name: "Students", href: "/teacher/students", icon: Users },
+  { name: "Gradebook", href: "/teacher/gradebook", icon: GraduationCap },
+  { name: "Assignments", href: "/teacher/assignments", icon: ClipboardCheck },
   {
     name: "Create Assignment",
     href: "/teacher/assignments/create",
     icon: PlusCircle,
   },
+  { name: "Grading", href: "/teacher/grading", icon: FileText },
   { name: "AI Course Creator", href: "/teacher/ai-generator", icon: Sparkles },
-  { name: "Students", href: "/teacher/students", icon: Users },
   { name: "Resources", href: "/teacher/resources", icon: FileText },
   { name: "Settings", href: "/teacher/settings", icon: Settings },
 ];
@@ -43,6 +53,7 @@ export default function TeacherSidebar({
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(3);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -99,7 +110,7 @@ export default function TeacherSidebar({
 
       <nav className="p-4 space-y-1.5 flex-1 overflow-y-auto hide-scrollbar">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
           return (
             <Link
               key={item.name}
@@ -148,6 +159,39 @@ export default function TeacherSidebar({
           !isHovered && "px-3",
         )}
       >
+        {/* Notifications */}
+        <Link
+          href="/teacher/notifications"
+          className={cn(
+            "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group",
+            !isHovered ? "justify-center px-0" : "px-4",
+            "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
+          )}
+        >
+          <div className="relative">
+            <Bell
+              className={cn(
+                "h-5 w-5 transition-all duration-500",
+                !isHovered ? "mr-0 scale-110" : "mr-3",
+                "text-gray-500 group-hover:text-gray-300",
+              )}
+            />
+            {notificationCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {notificationCount}
+              </span>
+            )}
+          </div>
+          <span
+            className={cn(
+              "transition-all duration-500 whitespace-nowrap overflow-hidden",
+              !isHovered ? "opacity-0 w-0" : "opacity-100 w-auto",
+            )}
+          >
+            Notifications
+          </span>
+        </Link>
+
         {/* User Profile Snippet */}
         {user && (
           <Link

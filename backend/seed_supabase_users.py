@@ -47,9 +47,7 @@ async def seed_users():
                 "password_hash": hashed,
                 "name": user["name"],
                 "role": user["role"],
-                "status": "active",
                 "is_active": True,
-                "avatar": f"https://ui-avatars.com/api/?name={user['name'].replace(' ', '+')}&background=random",
             }
             client.table("users").insert(new_user).execute()
 

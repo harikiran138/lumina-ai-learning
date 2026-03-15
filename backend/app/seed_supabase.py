@@ -63,7 +63,12 @@ async def seed_data():
             teachers.append(teacher)
             print(f"     ✅ Created {email}")
         except Exception as e:
-            print(f"     ❌ Failed {email}: {e}")
+            if "already registered" in str(e).lower():
+                teacher = await user_store.get_user_by_email(email)
+                teachers.append(teacher)
+                print(f"     ℹ️  Using existing teacher: {email}")
+            else:
+                print(f"     ❌ Failed {email}: {e}")
 
     # 2. Create Students
     students = []
@@ -80,7 +85,12 @@ async def seed_data():
             students.append(student)
             print(f"     ✅ Created {email}")
         except Exception as e:
-            print(f"     ❌ Failed {email}: {e}")
+            if "already registered" in str(e).lower():
+                student = await user_store.get_user_by_email(email)
+                students.append(student)
+                print(f"     ℹ️  Using existing student: {email}")
+            else:
+                print(f"     ❌ Failed {email}: {e}")
 
     # 3. Create Courses
     courses = []
@@ -111,6 +121,7 @@ async def seed_data():
     print("   - Generating Progress & Assignments...")
     for course in courses:
         # Create an assignment for each course
+        assignment = None
         try:
             assignment = await assignment_store.create_assignment(
                 title=f"Assessment: {course['name']}",
@@ -133,22 +144,20 @@ async def seed_data():
                 await student_store.log_activity(student["id"], course["id"], random.randint(30, 120))
                 print(f"     👤 Enrolled {student['email']} in {course['name']}")
                 
-                # Create a submission for the assignment
-                await assignment_store.submit_assignment(
-                    assignment_id=assignment["id"],
-                    student_id=student["id"],
-                    file_path="https://example.com/submission.pdf",
-                    content=fake.paragraph()
-                )
-                print(f"     📄 Added Submission for {student['email']}")
+                # Create a submission for the assignment if created
+                if assignment:
+                    await assignment_store.submit_assignment(
+                        assignment_id=assignment["id"],
+                        student_id=student["id"],
+                        file_path="https://example.com/submission.pdf",
+                        content=fake.paragraph()
+                    )
+                    print(f"     📄 Added Submission for {student['email']}")
             except Exception as e:
                 print(f"     ❌ Failed Lifecycle for {student['email']} -> {course['name']}: {e}")
 
     print("\n✅ Seeding Complete!")
     print("   - Login with student1@lumina.ai / password123")
-
-if __name__ == "__main__":
-    asyncio.run(seed_data())
 
 if __name__ == "__main__":
     asyncio.run(seed_data())
