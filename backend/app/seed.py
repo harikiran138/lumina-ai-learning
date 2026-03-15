@@ -5,26 +5,38 @@ import asyncio
 from faker import Faker
 from app.store.user_store import UserStore
 from app.store.course_store import CourseStore
-from app.database.manager import db
+from app.database.supabase_manager import supabase_db
 
 fake = Faker()
 user_store = UserStore()
 course_store = CourseStore()
 
+LUMINA_TABLES = [
+    "user_data",
+    "student_pathways",
+    "skill_mastery",
+    "quiz_attempts",
+    "quizzes",
+    "conversations",
+    "enrollments",
+    "courses",
+    "users"
+]
 
 async def clear_database():
-    print("🧹 Clearing Database...")
-    _db = db.get_db()
-    if _db is not None:
-        collections = await _db.list_collection_names()
-        for col in collections:
-            if not col.startswith("system."):
-                await _db[col].delete_many({})
-        print(f"   - Cleared {len(collections)} collections")
-
+    print("🧹 Clearing Supabase Lumina Tables...")
+    for table in LUMINA_TABLES:
+        try:
+            # Delete all rows if allowed by RLS or Service Role
+            # We use the direct client for administrative clearing
+            client = supabase_db.get_client()
+            client.table(table).delete().neq("id", uuid.uuid4()).execute()
+            print(f"   - Cleared {table}")
+        except Exception as e:
+            print(f"   ⚠️ Could not clear {table}: {e}")
 
 async def seed_data(clear=False):
-    await db.connect()
+    await supabase_db.connect()
 
     if clear:
         await clear_database()
@@ -34,34 +46,30 @@ async def seed_data(clear=False):
     # 1. Create Teachers
     teachers = []
     print("   - Generating Teachers...")
-    for _ in range(10):
-        email = fake.unique.email()
-        teacher = await user_store.create_user(
-            email=email, password="password123", full_name=fake.name(), role="teacher"
-        )
-        teachers.append(teacher)
+    for _ in range(5):
+        email = f"teacher_{fake.unique.email()}"
+        try:
+            teacher = await user_store.create_user(
+                email=email, password="password123", full_name=fake.name(), role="teacher"
+            )
+            teachers.append(teacher)
+        except Exception as e:
+            print(f"      ⚠️ Failed to create teacher: {e}")
+            
     print(f"   - Created {len(teachers)} Teachers")
 
     # 2. Create Courses
     courses = []
     print("   - Generating Courses...")
     course_topics = [
-        ("Calculus", "Mathematics"),
-        ("Quantum Mechanics", "Physics"),
-        ("Organic Chemistry", "Science"),
-        ("Microbiology", "Science"),
-        ("Machine Learning", "Technology"),
-        ("Ancient History", "Humanities"),
-        ("Post-Modern Literature", "Humanities"),
-        ("Artificial Intelligence", "Technology"),
-        ("Neuroscience", "Science"),
-        ("Macroeconomics", "Business"),
+        "Calculus", "Quantum Mechanics", "Organic Chemistry", "Microbiology",
+        "Machine Learning", "Ancient History", "Post-Modern Literature",
+        "Artificial Intelligence", "Neuroscience", "Macroeconomics"
     ]
 
-    for _ in range(30):
-        topic, category = random.choice(course_topics)
+    for topic in course_topics:
         name = f"{topic}: {fake.catch_phrase()}"
-        code = f"{topic[:2].upper()}{random.randint(100, 999)}-{uuid.uuid4().hex[:4].upper()}"
+        code = f"{topic[:3].upper()}-{random.randint(100, 999)}"
         teacher = random.choice(teachers)
 
         try:
@@ -80,17 +88,45 @@ async def seed_data(clear=False):
     # 3. Create Students and Enrollments
     students = []
     print("   - Generating Students & Enrollments...")
-    for _ in range(50):
-        student = await user_store.create_user(
-            email=fake.unique.email(), password="password123", full_name=fake.name(), role="student"
-        )
-        students.append(student)
+    for _ in range(20):
+        try:
+            student = await user_store.create_user(
+                email=f"student_{fake.unique.email()}", password="password123", full_name=fake.name(), role="student"
+            )
+            students.append(student)
 
-        # Simulate enrollment in 1-3 courses (Future Phase)
+            # Enroll in 2 random courses
+            enrolled_courses = random.sample(courses, 2)
+            for course in enrolled_courses:
+                await supabase_db.insert("enrollments", {
+                    "student_id": student["id"],
+                    "course_id": course["id"],
+                    "status": "active",
+                    "progress": random.randint(0, 100)
+                })
+        except Exception as e:
+            print(f"      ⚠️ Failed to create student/enrollment: {e}")
 
     print(f"   - Created {len(students)} Students")
-    print("✅ Seeding Complete! Login with any email and 'password123'")
 
+    # 4. Create Quizzes for Courses
+    print("   - Generating Quizzes...")
+    for course in courses:
+        try:
+            await supabase_db.insert("quizzes", {
+                "course_id": course["id"],
+                "title": f"Intro to {course['title']}",
+                "description": "Initial assessment",
+                "is_published": True,
+                "questions": [
+                    {"q": "What is Lumina AI?", "a": "A learning platform"},
+                    {"q": "Who is the instructor?", "a": "AI Agent"}
+                ]
+            })
+        except Exception as e:
+            print(f"      ⚠️ Failed to create quiz for {course['code']}: {e}")
+
+    print("✅ Seeding Complete! Login with 'password123'")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Seed the Lumina database.")

@@ -13,9 +13,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://lumina:lumina_password@localhost:5432/lumina_db"
     
     # Supabase
-    SUPABASE_URL: str = "https://ncofwpuabtxddvdjljgj.supabase.co"
-    SUPABASE_ANON_KEY: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jb2Z3cHVhYnR4ZGR2ZGpsamdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4ODQ0MTQsImV4cCI6MjA4NjQ2MDQxNH0.PxwtYleG7O977lC4uYzatPodJ2GHGAxbMVr263en6ac"
-    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
+    SUPABASE_URL: str = "https://odyjksznsdeyweylovzl.supabase.co"
+    SUPABASE_ANON_KEY: Optional[str] = os.getenv("SUPABASE_ANON_KEY")
+    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
     # Server
     HOST: str = "0.0.0.0"

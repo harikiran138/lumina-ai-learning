@@ -1,6 +1,6 @@
 -- Lumina AI LMS - RLS Policies
--- Version: 1.0.0
--- Description: Basic Row-Level Security policies for core tables.
+-- Version: 1.1.0
+-- Description: Comprehensive Row-Level Security policies for core tables complying with FERPA/GDPR.
 
 -- Enable RLS on all tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -17,57 +17,132 @@ ALTER TABLE automation_job_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE knowledge_nodes ENABLE ROW LEVEL SECURITY;
 
 -- 1. Users Policies
--- Users can read their own data
-CREATE POLICY "Users can view own data" ON users
+CREATE POLICY "Users can read their own profile" ON users
     FOR SELECT USING (auth.uid() = id);
 
--- Admins can view all users (if we have an admin role check)
--- For now, let's keep it simple or allow service role
--- Note: Service role bypasses RLS anyway.
+CREATE POLICY "Users can update their own profile" ON users
+    FOR UPDATE USING (auth.uid() = id);
 
 -- 2. Courses Policies
--- Anyone can view published courses
-CREATE POLICY "Public can view published courses" ON courses
+CREATE POLICY "Anyone can view published courses" ON courses
     FOR SELECT USING (is_published = TRUE);
 
--- Teachers can view and edit their own courses
+CREATE POLICY "Teachers can view all courses" ON courses
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role IN ('teacher', 'admin'))
+    );
+
 CREATE POLICY "Teachers can manage own courses" ON courses
     USING (auth.uid() = teacher_id);
 
 -- 3. Enrollments Policies
--- Users can view their own enrollments
-CREATE POLICY "Users can view own enrollments" ON enrollments
+CREATE POLICY "Students can view own enrollments" ON enrollments
     FOR SELECT USING (auth.uid() = student_id);
 
+CREATE POLICY "Teachers can view enrollments for their courses" ON enrollments
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM courses 
+            WHERE courses.id = enrollments.course_id AND courses.teacher_id = auth.uid()
+        )
+    );
+
 -- 4. Learner Profiles Policies
-CREATE POLICY "Users can view and edit own profile" ON learner_profiles
-    USING (auth.uid() = user_id);
-
--- 5. Learning Events Policies
-CREATE POLICY "Users can insert own events" ON learning_events
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can view own events" ON learning_events
+CREATE POLICY "Students can view own profile" ON learner_profiles
     FOR SELECT USING (auth.uid() = user_id);
 
+CREATE POLICY "Teachers can view profiles of their enrolled students" ON learner_profiles
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM enrollments
+            JOIN courses ON enrollments.course_id = courses.id
+            WHERE enrollments.student_id = learner_profiles.user_id 
+              AND courses.teacher_id = auth.uid()
+        )
+    );
+
+-- 5. Learning Events Policies
+CREATE POLICY "Students can insert own events" ON learning_events
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Students can view own events" ON learning_events
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Teachers can view events of their enrolled students" ON learning_events
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM enrollments
+            JOIN courses ON enrollments.course_id = courses.id
+            WHERE enrollments.student_id = learning_events.user_id 
+              AND courses.teacher_id = auth.uid()
+        )
+    );
+
 -- 6. Assessment Sessions Policies
-CREATE POLICY "Users can manage own assessment sessions" ON assessment_sessions
+CREATE POLICY "Students can manage own sessions" ON assessment_sessions
     USING (auth.uid() = user_id);
 
+CREATE POLICY "Teachers can view sessions for their courses" ON assessment_sessions
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM courses 
+            WHERE courses.id = assessment_sessions.course_id AND courses.teacher_id = auth.uid()
+        )
+    );
+
 -- 7. Assignment Policies
--- Students can view rubrics for courses they are enrolled in
--- For simplification in v1:
 CREATE POLICY "Anyone can view rubrics" ON assignment_rubrics
     FOR SELECT USING (TRUE);
 
--- Students can manage their own submissions
-CREATE POLICY "Students can manage own submissions" ON assignment_submissions
-    USING (auth.uid() = student_id);
+CREATE POLICY "Students can view own submissions" ON assignment_submissions
+    FOR SELECT USING (auth.uid() = student_id);
 
--- 8. Intervention Recommendations
-CREATE POLICY "Users can view own recommendations" ON intervention_recommendations
-    FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Students can insert own submissions" ON assignment_submissions
+    FOR INSERT WITH CHECK (auth.uid() = student_id);
 
--- 9. Knowledge Nodes
+CREATE POLICY "Teachers can manage submissions for their courses" ON assignment_submissions
+    USING (
+        EXISTS (
+            SELECT 1 FROM courses 
+            WHERE courses.id = assignment_submissions.course_id AND courses.teacher_id = auth.uid()
+        )
+    );
+
+-- 8. Submission Scorecards
+CREATE POLICY "Students can view scorecards for own submissions" ON submission_scorecards
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM assignment_submissions 
+            WHERE assignment_submissions.id = submission_scorecards.submission_id 
+              AND assignment_submissions.student_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Teachers can manage scorecards for their courses" ON submission_scorecards
+    USING (
+        EXISTS (
+            SELECT 1 FROM assignment_submissions
+            JOIN courses ON assignment_submissions.course_id = courses.id
+            WHERE assignment_submissions.id = submission_scorecards.submission_id 
+              AND courses.teacher_id = auth.uid()
+        )
+    );
+
+-- 9. Intervention Recommendations
+CREATE POLICY "Teachers can view and update recommendations for their courses" ON intervention_recommendations
+    USING (
+        EXISTS (
+            SELECT 1 FROM courses 
+            WHERE courses.id = intervention_recommendations.course_id AND courses.teacher_id = auth.uid()
+        )
+    );
+
+-- 10. Automation Job Logs
+CREATE POLICY "Only admins and teachers can view job logs" ON automation_job_logs
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role IN ('admin', 'teacher'))
+    );
+
+-- 11. Knowledge Nodes
 CREATE POLICY "Anyone can view knowledge nodes" ON knowledge_nodes
     FOR SELECT USING (TRUE);

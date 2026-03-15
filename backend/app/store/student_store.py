@@ -64,7 +64,7 @@ class StudentStore:
                 return False
 
             # Create record
-            await self.db.upsert("enrollments", enrollment_data)
+            await self.db.insert("enrollments", enrollment_data)
             return True
         except Exception as e:
             log.error("enroll_in_course_failed", student_id=student_id, course_id=course_id, error=str(e))
@@ -112,7 +112,7 @@ class StudentStore:
                 "lastAccessed": datetime.utcnow().isoformat()
             })
             
-            client.table("enrollments").update({"progress": progress}).eq("id", enrollment["id"]).execute()
+            await self.db.update("enrollments", {"progress": progress}, {"id": enrollment["id"]})
 
             return {"success": True, "lesson_id": lesson_id, "progress": progress_pct}
         except Exception as e:
@@ -179,8 +179,7 @@ class StudentStore:
                 "lastAccessed": now.isoformat()
             })
 
-            client = self.db.get_client()
-            client.table("enrollments").update({"progress": progress}).eq("id", enrollment["id"]).execute()
+            await self.db.update("enrollments", {"progress": progress}, {"id": enrollment["id"]})
             return True
         except Exception as e:
             log.error("log_activity_failed", student_id=student_id, error=str(e))
