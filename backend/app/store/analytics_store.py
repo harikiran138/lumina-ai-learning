@@ -6,8 +6,6 @@ from typing import Any, Dict, List, Optional
 
 from app.core.logging import structlog
 from app.database.supabase_manager import supabase_db
-from app.store.local_store import LocalJsonStore
-
 log = structlog.get_logger()
 
 
@@ -17,20 +15,15 @@ class AnalyticsStore:
     """
 
     def __init__(self):
-        self.client = supabase_db.get_client()
-        self.local = LocalJsonStore()
+        self.db = supabase_db
 
     @property
     def sessions_collection(self):
-        if self.client is None:
-            return None
-        return self.client.table("assessment_sessions")
+        return self.db.get_client().table("assessment_sessions")
 
     @property
     def user_data_collection(self):
-        if self.client is None:
-            return None
-        return self.client.table("user_data")
+        return self.db.get_client().table("user_data")
 
     def _coalesce(self, item: Dict[str, Any], *keys: str, default: Any = None) -> Any:
         for key in keys:
@@ -84,10 +77,6 @@ class AnalyticsStore:
             f"{name.replace(' ', '+')}&background=111827&color=F9FAFB"
         )
 
-    def _read_local_table(self, name: str) -> List[dict]:
-        payload = self.local.read()
-        return payload.get(name, [])
-
     async def _read_table(
         self,
         name: str,
@@ -96,11 +85,9 @@ class AnalyticsStore:
         desc: bool = False,
         limit: Optional[int] = None,
     ) -> List[dict]:
-        if self.client is None:
-            return self._read_local_table(name)
-
         try:
-            query = self.client.table(name).select("*")
+            client = self.db.get_client()
+            query = client.table(name).select("*")
             if order_by:
                 query = query.order(order_by, desc=desc)
             if limit:
@@ -109,7 +96,7 @@ class AnalyticsStore:
             return response.data or []
         except Exception as e:
             log.warning("analytics_table_read_failed", table=name, error=str(e))
-            return self._read_local_table(name)
+            return []
 
     def _normalize_user(self, user: dict) -> dict:
         name = self._coalesce(user, "name", "full_name", default="Unnamed User")
@@ -1124,28 +1111,6 @@ class AnalyticsStore:
         }
 
     async def get_student_dashboard_stats(self, student_id: str) -> Dict:
-        if self.client is None:
-            payload = self.local.read()
-            progress_data = [p for p in payload["progress"] if p.get("userId") == student_id]
-            if not progress_data:
-                return {"avg_score": 0, "total_sessions": 0, "topic_count": 0, "latest_activity": None}
-
-            avg_score = (
-                sum(item.get("mastery", 0) for item in progress_data) / len(progress_data)
-                if progress_data
-                else 0
-            )
-            latest_activity = max(
-                (item.get("lastAccessed") for item in progress_data if item.get("lastAccessed")),
-                default=None,
-            )
-            return {
-                "avg_score": round(avg_score, 2),
-                "total_sessions": len(progress_data),
-                "topic_count": len({item.get("courseId") for item in progress_data if item.get("courseId")}),
-                "latest_activity": latest_activity,
-            }
-
         try:
             response = self.sessions_collection.select("current_difficulty, topic, timestamp").eq("student_id", student_id).execute()
             data = response.data
@@ -1173,67 +1138,9 @@ class AnalyticsStore:
             return {"avg_score": 0, "total_sessions": 0, "topic_count": 0}
 
     async def get_student_full_dashboard(self, student_id: str) -> Dict:
-        if self.client is None:
-            payload = self.local.read()
-            progress_data = [p for p in payload["progress"] if p.get("userId") == student_id]
-            if not progress_data:
-                return {
-                    "currentStreak": 0,
-                    "enrolledCourses": [],
-                    "overallMastery": 0,
-                    "totalHours": 0,
-                    "badges": [],
-                }
-
-            courses_map = {str(item.get("id")).lower(): item for item in payload["courses"]}
-            enrolled_courses = []
-            for p in progress_data:
-                cid = p.get("courseId") or p.get("courseid") or p.get("course_id")
-                if not cid:
-                    continue
-                course = courses_map.get(str(cid).lower())
-                if not course:
-                    continue
-                course_name = (
-                    course.get("course_name")
-                    or course.get("title")
-                    or course.get("name")
-                    or "Untitled Course"
-                )
-                enrolled_courses.append(
-                    {
-                        "id": str(cid).lower(),
-                        "name": course_name,
-                        "title": course_name,
-                        "code": course.get("course_code") or course.get("code"),
-                        "description": course.get("description"),
-                        "thumbnail": course.get("thumbnail"),
-                        "progress": p.get("progress", 0),
-                        "mastery": p.get("mastery", 0),
-                        "streak": p.get("streak", 0),
-                        "lastAccessed": p.get("lastAccessed") or p.get("lastaccessed"),
-                        "hoursSpent": p.get("hoursSpent", 0) or p.get("hours_spent", 0) or 0,
-                    }
-                )
-
-            current_streak = max([c.get("streak", 0) for c in enrolled_courses] + [0])
-            avg_mastery = (
-                round(sum([c.get("mastery", 0) for c in enrolled_courses]) / len(enrolled_courses))
-                if enrolled_courses
-                else 0
-            )
-            total_hours = sum([c.get("hoursSpent", 0) for c in enrolled_courses])
-            user = next((item for item in payload["users"] if item.get("id") == student_id), None)
-            return {
-                "currentStreak": current_streak,
-                "enrolledCourses": enrolled_courses,
-                "overallMastery": avg_mastery,
-                "totalHours": total_hours,
-                "badges": (user or {}).get("badges", []),
-            }
-
         try:
-            progress_response = self.client.table("progress").select("*").eq("userId", student_id).execute()
+            client = self.db.get_client()
+            progress_response = client.table("progress").select("*").eq("userId", student_id).execute()
             progress_data = progress_response.data
 
             log.info("dashboard_progress_check", student_id=student_id, count=len(progress_data) if progress_data else 0)
@@ -1310,8 +1217,6 @@ class AnalyticsStore:
             return {}
 
     async def get_top_performing_topics(self, limit: int = 5) -> List[Dict]:
-        if self.client is None:
-            return []
         try:
             response = self.sessions_collection.select("topic, current_difficulty").execute()
             data = response.data

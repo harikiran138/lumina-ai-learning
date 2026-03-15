@@ -4,7 +4,6 @@ import uuid
 
 from app.core.logging import structlog
 from app.database.supabase_manager import supabase_db
-from app.store.local_store import LocalJsonStore
 
 log = structlog.get_logger()
 
@@ -15,23 +14,7 @@ class GenerationStore:
     """
 
     def __init__(self):
-        self.client = supabase_db.get_client()
-        self.local = LocalJsonStore()
-
-    @property
-    def assets_collection(self):
-        if self.client is None:
-            return None
-        return self.client.table("generation_assets")
-
-    def _fallback_read(self) -> List[Dict[str, Any]]:
-        payload = self.local.read()
-        return payload.get("generation_assets", [])
-
-    def _fallback_write(self, assets: List[Dict[str, Any]]):
-        payload = self.local.read()
-        payload["generation_assets"] = assets
-        self.local.write(payload)
+        self.db = supabase_db
 
     async def create_asset(
         self,
@@ -59,23 +42,14 @@ class GenerationStore:
             "updated_at": datetime.utcnow().isoformat(),
         }
 
-        if self.client is None:
-            assets = self._fallback_read()
-            assets.append(asset)
-            self._fallback_write(assets)
-            return asset
-
         try:
-            response = self.assets_collection.insert(asset).execute()
-            if response.data:
-                return response.data[0]
+            result = await self.db.upsert("generation_assets", asset)
+            if result:
+                return result[0]
+            return asset
         except Exception as exc:
-            log.warning("generation_asset_insert_failed", error=str(exc))
-
-        assets = self._fallback_read()
-        assets.append(asset)
-        self._fallback_write(assets)
-        return asset
+            log.warning("generation_asset_insert_failed", error=str(exc), created_by=created_by)
+            return asset
 
     async def list_assets(
         self,
@@ -84,44 +58,30 @@ class GenerationStore:
         created_by: Optional[str] = None,
         limit: int = 50,
     ) -> List[Dict[str, Any]]:
-        if self.client is not None:
-            try:
-                query = self.assets_collection.select("*").order("created_at", desc=True).limit(limit)
-                if asset_type:
-                    query = query.eq("asset_type", asset_type)
-                if status:
-                    query = query.eq("status", status)
-                if created_by:
-                    query = query.eq("created_by", created_by)
-                response = query.execute()
-                return response.data or []
-            except Exception as exc:
-                log.warning("generation_asset_list_failed", error=str(exc))
-
-        assets = self._fallback_read()
-        if asset_type:
-            assets = [a for a in assets if a.get("asset_type") == asset_type]
-        if status:
-            assets = [a for a in assets if a.get("status") == status]
-        if created_by:
-            assets = [a for a in assets if a.get("created_by") == created_by]
-        return assets[-limit:][::-1]
+        try:
+            filters = {}
+            if asset_type: filters["asset_type"] = asset_type
+            if status: filters["status"] = status
+            if created_by: filters["created_by"] = created_by
+            
+            client = self.db.get_client()
+            query = client.table("generation_assets").select("*").order("created_at", desc=True).limit(limit)
+            for k, v in filters.items():
+                query = query.eq(k, v)
+            
+            response = query.execute()
+            return response.data or []
+        except Exception as exc:
+            log.warning("generation_asset_list_failed", error=str(exc))
+            return []
 
     async def update_asset(self, asset_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         updates = {**updates, "updated_at": datetime.utcnow().isoformat()}
-
-        if self.client is not None:
-            try:
-                response = self.assets_collection.update(updates).eq("id", asset_id).execute()
-                if response.data:
-                    return response.data[0]
-            except Exception as exc:
-                log.warning("generation_asset_update_failed", error=str(exc))
-
-        assets = self._fallback_read()
-        for asset in assets:
-            if asset.get("id") == asset_id:
-                asset.update(updates)
-                self._fallback_write(assets)
-                return asset
+        try:
+            client = self.db.get_client()
+            response = client.table("generation_assets").update(updates).eq("id", asset_id).execute()
+            if response.data:
+                return response.data[0]
+        except Exception as exc:
+            log.warning("generation_asset_update_failed", error=str(exc), asset_id=asset_id)
         return None
