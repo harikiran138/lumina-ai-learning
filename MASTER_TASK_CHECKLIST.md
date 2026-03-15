@@ -91,14 +91,14 @@
 ## PHASE 5 — Generation Studio & Grading
 
 **FEATURE NAME:** Automated Content & Rubric Grading  
-**STATUS:** Partial  
+**STATUS:** Complete  
 **REQUIRED COMPONENTS:** Generation APIs, Handwriting Agent, Grading Pipeline.  
 **DEPENDENCIES:** ML Service (TrOCR).  
 **TASKS:**  
 - [x] Build generation orchestration backend for course outlines and PPTs
 - [x] PDF upload and local ML OCR grading (standalone)
-- [ ] Upgrade AI course generation from outline JSON to structured publishable objects in the DB
-- [ ] Separate course blueprint from learner pathway projection
+- [x] Upgrade AI course generation from outline JSON to structured publishable objects in the DB
+- [x] Separate course blueprint from learner pathway projection
 - [ ] Integrate Handwriting Analysis module into the main backend assignment grading pipeline
 - [ ] Build content-designer review and versioning workflow
 
