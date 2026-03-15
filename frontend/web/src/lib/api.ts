@@ -281,23 +281,17 @@ class RealAPI {
     return res.ok ? await res.json() : null;
   }
 
-  // --- Counselor Methods ---
-  async getCounselorStudents(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/counselor/students");
-    return res.ok ? await res.json() : [];
-  }
-
-  async getCrisisCases(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/counselor/crisis");
-    return res.ok ? await res.json() : [];
-  }
-
-  async addCounselingNote(studentId: string, encryptedContent: string): Promise<any> {
-    const res = await this.fetchAuthorized("/api/counselor/notes", {
+  async getTeacherDashboardSummary(studentIds: string[]): Promise<any> {
+    const res = await this.fetchAuthorized("/api/courses/teacher/dashboard", {
       method: "POST",
-      body: JSON.stringify({ student_id: studentId, encrypted_content: encryptedContent }),
+      body: JSON.stringify({ student_ids: studentIds }),
     });
-    return await res.json();
+    return res.ok ? await res.json() : {};
+  }
+
+  async getCreatorVerificationQueue(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/content_creator/verification-queue");
+    return res.ok ? await res.json() : [];
   }
 
   async revealStudentIdentity(studentId: string, reason: string): Promise<any> {
@@ -1089,7 +1083,7 @@ class RealAPI {
 
   // --- V2.0 AI Answer Verification ---
 
-  async getVerificationQueue(): Promise<any[]> {
+  async getTeacherVerificationQueue(): Promise<any[]> {
     const res = await this.fetchAuthorized("/api/teacher/verification/queue");
     if (!res.ok) return [];
     return await res.json();

@@ -111,9 +111,14 @@ export default function LoginPage() {
 
   const quickLogin = async (role: string) => {
     const defaultUsers: any = {
-      admin: { email: "admin@lumina.com", password: "Admin@123" },
-      teacher: { email: "teacher@lumina.com", password: "teacher123" },
-      student: { email: "student@lumina.com", password: "student123" },
+      admin: { email: "admin@lumina.ai", password: "DemoPassword123!" },
+      teacher: { email: "teacher@lumina.ai", password: "DemoPassword123!" },
+      student: { email: "student@lumina.ai", password: "DemoPassword123!" },
+      parent: { email: "parent@lumina.ai", password: "DemoPassword123!" },
+      mentor: { email: "mentor@lumina.ai", password: "DemoPassword123!" },
+      counselor: { email: "counselor@lumina.ai", password: "DemoPassword123!" },
+      researcher: { email: "researcher@lumina.ai", password: "DemoPassword123!" },
+      creator: { email: "creator@lumina.ai", password: "DemoPassword123!" },
     };
     const userData = defaultUsers[role];
     if (userData) {
@@ -191,30 +196,70 @@ export default function LoginPage() {
         </div>
 
         {/* Demo Login Buttons */}
-        <div className="flex justify-center space-x-2 mt-4">
+        <div className="flex flex-wrap justify-center gap-2 mt-4">
           <button
             type="button"
             suppressHydrationWarning
             onClick={() => quickLogin("student")}
-            className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-3 rounded border border-gray-600 transition-colors"
+            className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors"
           >
-            Demo Student
+            Student
           </button>
           <button
             type="button"
             suppressHydrationWarning
             onClick={() => quickLogin("teacher")}
-            className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-3 rounded border border-gray-600 transition-colors"
+            className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors"
           >
-            Demo Teacher
+            Teacher
           </button>
           <button
             type="button"
             suppressHydrationWarning
             onClick={() => quickLogin("admin")}
-            className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-3 rounded border border-gray-600 transition-colors"
+            className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors"
           >
-            Demo Admin
+            Admin
+          </button>
+          <button
+            type="button"
+            suppressHydrationWarning
+            onClick={() => quickLogin("parent")}
+            className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors"
+          >
+            Parent
+          </button>
+          <button
+            type="button"
+            suppressHydrationWarning
+            onClick={() => quickLogin("mentor")}
+            className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors"
+          >
+            Mentor
+          </button>
+          <button
+            type="button"
+            suppressHydrationWarning
+            onClick={() => quickLogin("counselor")}
+            className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors"
+          >
+            Counselor
+          </button>
+          <button
+            type="button"
+            suppressHydrationWarning
+            onClick={() => quickLogin("researcher")}
+            className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors"
+          >
+            Researcher
+          </button>
+          <button
+            type="button"
+            suppressHydrationWarning
+            onClick={() => quickLogin("creator")}
+            className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors"
+          >
+            Creator
           </button>
         </div>
 
@@ -412,12 +457,14 @@ export default function LoginPage() {
                   >
                     Select your role
                   </option>
-                  <option value="student" className="bg-gray-900 text-white">
-                    Student
-                  </option>
-                  <option value="teacher" className="bg-gray-900 text-white">
-                    Teacher
-                  </option>
+                  <option value="student" className="bg-gray-900 text-white">Student</option>
+                  <option value="teacher" className="bg-gray-900 text-white">Teacher</option>
+                  <option value="admin" className="bg-gray-900 text-white">Administrator</option>
+                  <option value="parent" className="bg-gray-900 text-white">Parent</option>
+                  <option value="mentor" className="bg-gray-900 text-white">Industry Mentor</option>
+                  <option value="counselor" className="bg-gray-900 text-white">Counselor</option>
+                  <option value="researcher" className="bg-gray-900 text-white">Researcher</option>
+                  <option value="content_creator" className="bg-gray-900 text-white">Content Creator</option>
                 </select>
               </div>
             </div>
