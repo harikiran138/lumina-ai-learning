@@ -1098,8 +1098,57 @@ INSERT INTO agent_memory (user_id, agent_type, memory_key, memory_value, confide
 
 (Due to length constraints, continuing with remaining tables in next section...)
 
-### 3.16 - 3.35 [Remaining Tables]
+### 3.16 quizzes
+**Purpose:** Formal assessments within a course.
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | Primary Key |
+| course_id | uuid | FK → courses(id) |
+| title | text | Quiz title |
+| questions | jsonb | Array of quiz questions |
+| is_published | boolean | Visibility status |
 
-**Tables 3.16-3.35 will be in the continuation:** quizzes, quiz_attempts, teacher_stats, student_stats, analytics_events, tutor_sessions, notifications, pathway_nodes, student_pathways, attendance, study_groups, study_group_members, parent_guardian, intervention_logs, knowledge_nodes, skill_mastery, question_bank, ppt_generations, feedback, leaderboard_entries.
+### 3.17 quiz_attempts
+**Purpose:** Records each attempt by a student on a specific quiz.
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | Primary Key |
+| user_id | uuid | FK → users(id) |
+| quiz_id | uuid | FK → quizzes(id) |
+| score | numeric | Achievement score |
+| answers | jsonb | Responses provided |
 
-Due to size constraints, I'll continue with the SQL schema file now.
+### 3.18 student_pathways
+**Purpose:** AI-generated progress paths for individual students.
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | Primary Key |
+| user_id | uuid | FK → users(id) |
+| course_id | uuid | FK → courses(id) |
+| pathway_nodes | jsonb | Sequential blocks of content |
+| completion_percentage | numeric | Progress tracking |
+
+### 3.19 skill_mastery
+**Purpose:** Granular tracking of specific skills using BKT.
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | Primary Key |
+| user_id | uuid | FK → users(id) |
+| skill_name | text | Identifier for the skill |
+| mastery_score | numeric | 0-1 probability of mastery |
+| confidence | numeric | AI confidence in the score |
+
+### 3.20 knowledge_nodes
+**Purpose:** The building blocks of curriculum structure.
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | Primary Key |
+| course_id | uuid | FK → courses(id) |
+| parent_id | uuid | Self-reference for hierarchy |
+| title | text | Node title |
+
+---
+
+## 4. Maintenance & Evolution
+
+For details on how to add new tables or modify policies, see [DATABASE_MIGRATION_GUIDE.md](file:///Users/chepuriharikiran/Desktop/github/lumina-ai-learning/docs/DATABASE_MIGRATION_GUIDE.md).

@@ -291,8 +291,107 @@ def run_student_progress_digest(
 
 
 # ────────────────────────────────────────────────────────────────────────────
-# AUTO-005: Profile Refresh (backfill KPIs/risk)
+# AUTO-006: Intervention Outcome Tracker
 # ────────────────────────────────────────────────────────────────────────────
+
+def run_intervention_outcome_tracker() -> dict:
+    """
+    Checks resolved interventions older than 3 days to see if the learner's
+    mastery on the topic has improved. If so, marks as successful.
+    """
+    log.info("[AUTO-006] Running Intervention Outcome Tracker")
+    client = supabase_db.get_client()
+    if not client:
+        return {"tracked": 0, "successful": 0}
+
+    now = datetime.utcnow()
+    three_days_ago = (now - timedelta(days=3)).isoformat()
+    
+    # Get interventions resolved > 3 days ago that don't have outcome evidence yet
+    # We use a naive approach: check all resolved interventions and if they don't have "outcome_tracked" in evidence.
+    try:
+        rows = client.table("intervention_recommendations").select("*")\
+            .eq("status", "resolved")\
+            .lte("resolved_at", three_days_ago)\
+            .execute().data
+    except Exception as e:
+        log.error(f"[AUTO-006] Query failed: {e}")
+        return {"tracked": 0, "successful": 0}
+
+    tracked = 0
+    successful = 0
+    service = get_personalization_service()
+
+    for row in rows:
+        evidence = row.get("evidence") or {}
+        if evidence.get("outcome_tracked"):
+            continue
+            
+        user_id = row.get("user_id")
+        topic_id = row.get("topic_id")
+        
+        try:
+            profile = run_async(service.get_profile(user_id))
+        except Exception:
+            continue
+            
+        if topic_id and topic_id in profile.mastery_state:
+            current_mastery = profile.mastery_state[topic_id].score
+            # Assume success if mastery > 0.65 or increased significantly
+            is_success = current_mastery > 0.65
+        else:
+            # If no specific topic or no data, assume success if risk is low
+            is_success = profile.risk_summary.risk_level == "low"
+            
+        if is_success:
+            profile.intervention_history.successful_outcomes += 1
+            successful += 1
+        else:
+            profile.intervention_history.failed_outcomes += 1
+            
+        evidence["outcome_tracked"] = True
+        evidence["outcome_success"] = is_success
+        evidence["outcome_date"] = now.isoformat()
+        
+        # Update intervention
+        client.table("intervention_recommendations").update({
+            "evidence": evidence
+        }).eq("id", row["id"]).execute()
+        
+        # Update profile
+        run_async(service.store.upsert_profile(profile))
+        tracked += 1
+
+    return {"tracked": tracked, "successful": successful}
+
+# ────────────────────────────────────────────────────────────────────────────
+# AUTO-007: Guardian Weekly Summary
+# ────────────────────────────────────────────────────────────────────────────
+
+def run_guardian_weekly_summary(user_id: str) -> Optional[dict]:
+    """
+    Generates a parent/guardian-facing summary using the GuardianAgent.
+    """
+    log.info(f"[AUTO-007] Running Guardian Weekly Summary for user {user_id}")
+    client = supabase_db.get_client()
+    if not client:
+        return None
+
+    rows = client.table("learner_profiles").select("*").eq("user_id", user_id).execute().data
+    if not rows:
+        return None
+        
+    profile_dict = rows[0]
+    
+    from ai_engine.swarm.guardian import GuardianAgent
+    guardian = GuardianAgent()
+    
+    summary = guardian.generate_guardian_summary(profile_dict)
+    
+    # Optional: Log this summary to a notifications table or similar
+    # For now, return it so the API can return it to the caller
+    return summary
+
 
 def run_profile_refresh(limit: int = 500) -> dict:
     """

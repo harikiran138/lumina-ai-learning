@@ -27,9 +27,9 @@ class AssignmentStore:
             "created_by": created_by
         }
         try:
-            result = await self.db.upsert("assignments", assignment_data)
+            result = await self.db.insert("assignments", assignment_data)
             if result:
-                return result[0]
+                return result
             raise Exception("Failed to insert assignment")
         except Exception as e:
             log.error("create_assignment_failed", error=str(e), title=title)
@@ -59,9 +59,9 @@ class AssignmentStore:
             if assignment:
                 submission_data["course_id"] = assignment.get("course_id")
 
-            result = await self.db.upsert("assignment_submissions", submission_data)
+            result = await self.db.insert("assignment_submissions", submission_data)
             if result:
-                return result[0]
+                return result
             raise Exception("Failed to submit assignment")
         except Exception as e:
             log.error("submit_assignment_failed", error=str(e), assignment_id=assignment_id)

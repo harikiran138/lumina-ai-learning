@@ -60,12 +60,12 @@ class UserStore:
         }
 
         try:
-            # Use SupabaseManager's upsert (acts as insert here)
-            result = await self.db.upsert("users", user_data)
+            # Use SupabaseManager's insert
+            result = await self.db.insert("users", user_data)
             if not result:
                 raise Exception("Failed to create user record")
             
-            return self._sanitize_user(result[0])
+            return self._sanitize_user(result)
 
         except Exception as e:
             if "duplicate key" in str(e).lower():

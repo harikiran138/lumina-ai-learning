@@ -6,12 +6,8 @@ from app.store.personalization_store import PersonalizationStore
 from pydantic import BaseModel
 import os
 import uuid
+from app.dependencies import get_assignment_store, get_course_store, get_personalization_store
 from .auth import get_current_user
-from app.personalization.schemas import LearningEventType, AssignmentSubmittedPayload
-from app.services.personalization_service import get_personalization_service
-
-router = APIRouter()
-store = AssignmentStore()
 
 UPLOAD_DIR = "data/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -32,6 +28,7 @@ async def create_assignment(
     description: str = Form(...),
     due_date: str = Form(...),
     current_user: dict = Depends(get_current_user),
+    store: AssignmentStore = Depends(get_assignment_store),
 ):
     """
     Create a new assignment definition. Requires Teacher role.
@@ -53,6 +50,7 @@ async def submit_assignment(
     assignment_id: str = Form(...),
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user),
+    store: AssignmentStore = Depends(get_assignment_store),
 ):
     """
     Submit an assignment.
@@ -91,7 +89,12 @@ async def submit_assignment(
 
 
 @router.post("/{assignment_id}/submissions/{submission_id}/grade")
-async def grade_submission(assignment_id: str, submission_id: str):
+async def grade_submission(
+    assignment_id: str, 
+    submission_id: str,
+    store: AssignmentStore = Depends(get_assignment_store),
+    personalization_store: PersonalizationStore = Depends(get_personalization_store),
+):
     """
     Grade a submission using AI.
     """
@@ -115,7 +118,7 @@ async def grade_submission(assignment_id: str, submission_id: str):
     # We no longer wait for OCR/Grading here. We return "Accepted" immediately.
     from app.worker import task_grade_submission
 
-    rubric = await PersonalizationStore().get_rubric(assignment_id)
+    rubric = await personalization_store.get_rubric(assignment_id)
     rubric_payload = rubric.model_dump(mode="json") if rubric else None
 
     # Pass file_path (which is either local path or s3:// key)
@@ -135,7 +138,12 @@ async def grade_submission(assignment_id: str, submission_id: str):
 
 
 @router.put("/{assignment_id}/submissions/{submission_id}/score")
-async def update_submission_score(assignment_id: str, submission_id: str, data: dict):
+async def update_submission_score(
+    assignment_id: str, 
+    submission_id: str, 
+    data: dict,
+    store: AssignmentStore = Depends(get_assignment_store),
+):
     """
     Manually update/edit a submission score and feedback.
     """
@@ -149,12 +157,16 @@ async def update_submission_score(assignment_id: str, submission_id: str, data: 
 
 
 @router.get("/list")
-async def list_assignments(course_id: Optional[str] = None, student_id: Optional[str] = None):
+async def list_assignments(
+    course_id: Optional[str] = None, 
+    student_id: Optional[str] = None,
+    store: AssignmentStore = Depends(get_assignment_store),
+    course_store: CourseStore = Depends(get_course_store),
+):
     """
     List assignment definitions with submission counts and student status.
     """
     assignments = await store.list_assignments(course_id)
-    course_store = CourseStore()
     course_lookup = {}
     for course in await course_store.list_courses():
         course_lookup[str(course.get("id"))] = course
@@ -182,7 +194,10 @@ async def list_assignments(course_id: Optional[str] = None, student_id: Optional
 
 
 @router.get("/{assignment_id}/submissions")
-async def get_assignment_submissions(assignment_id: str):
+async def get_assignment_submissions(
+    assignment_id: str,
+    store: AssignmentStore = Depends(get_assignment_store),
+):
     """
     Get all submissions for a specific assignment.
     """
@@ -190,7 +205,10 @@ async def get_assignment_submissions(assignment_id: str):
 
 
 @router.get("/{assignment_id}/analytics")
-async def get_assignment_analytics(assignment_id: str):
+async def get_assignment_analytics(
+    assignment_id: str,
+    store: AssignmentStore = Depends(get_assignment_store),
+):
     """Return basic analytics for an assignment (scores, counts, averages)."""
     submissions = await store.get_submissions(assignment_id)
     if not submissions:
@@ -227,7 +245,12 @@ async def get_assignment_analytics(assignment_id: str):
 
 
 @router.get("/{assignment_id}/submissions/{submission_id}/report")
-async def get_submission_report(assignment_id: str, submission_id: str):
+async def get_submission_report(
+    assignment_id: str, 
+    submission_id: str,
+    store: AssignmentStore = Depends(get_assignment_store),
+    personalization_store: PersonalizationStore = Depends(get_personalization_store),
+):
     """Detailed report for a single submission (score, feedback, OCR text)."""
     # Get assignment and submission
     assignment = await store.get_assignment(assignment_id)
@@ -242,7 +265,7 @@ async def get_submission_report(assignment_id: str, submission_id: str):
     grade = submission.get("grade")
     feedback = submission.get("feedback")
     ocr_text = submission.get("ocr_text")
-    scorecard = await PersonalizationStore().get_scorecard(submission_id)
+    scorecard = await personalization_store.get_scorecard(submission_id)
     confidence = scorecard.confidence if scorecard else None
     review_required = scorecard.review_required if scorecard else None
 

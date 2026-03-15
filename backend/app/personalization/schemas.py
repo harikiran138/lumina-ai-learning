@@ -126,6 +126,9 @@ class KPISnapshot(BaseModel):
     lag_zone_score: float = 0.0
     authenticity_score: float = 1.0
     explanation_effectiveness: float = 0.0
+    engagement_score: float = 0.0
+    persistence: float = 0.0
+    readiness: float = 0.0
     recorded_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -166,6 +169,8 @@ class InterventionHistory(BaseModel):
     total_interventions: int = 0
     resolved_count: int = 0
     dismissed_count: int = 0
+    successful_outcomes: int = 0
+    failed_outcomes: int = 0
 
 
 class LearnerProfileRecord(BaseModel):
