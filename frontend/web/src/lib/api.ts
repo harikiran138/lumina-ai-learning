@@ -213,6 +213,39 @@ class RealAPI {
     return await res.json();
   }
 
+  async getPersonalizationProfile(userId?: string): Promise<any> {
+    const path = userId
+      ? `/api/personalization/profile/${userId}`
+      : "/api/personalization/profile";
+    const res = await this.fetchAuthorized(path);
+    if (!res.ok) return null;
+    return await res.json();
+  }
+
+  async getTutorProjection(userId?: string): Promise<any> {
+    const path = userId
+      ? `/api/personalization/projection/tutor/${userId}`
+      : "/api/personalization/projection/tutor";
+    const res = await this.fetchAuthorized(path);
+    if (!res.ok) return null;
+    return await res.json();
+  }
+
+  async getTeacherProjection(userId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/personalization/projection/teacher/${userId}`);
+    if (!res.ok) return null;
+    return await res.json();
+  }
+
+  async getPathwayProjection(userId?: string): Promise<any> {
+    const path = userId
+      ? `/api/personalization/projection/pathway/${userId}`
+      : "/api/personalization/projection/pathway";
+    const res = await this.fetchAuthorized(path);
+    if (!res.ok) return null;
+    return await res.json();
+  }
+
   async getStudentProgress(): Promise<any> {
     const [dashboardRes, analyticsRes, profileRes] = await Promise.all([
       this.fetchAuthorized("/api/student/dashboard"),
@@ -414,6 +447,20 @@ class RealAPI {
     return await res.json();
   }
 
+  async getKnowledgeGraph(courseId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(`/api/knowledge-graph/${courseId}`);
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async upsertKnowledgeGraph(courseId: string, nodes: any[]): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/knowledge-graph/${courseId}/nodes`, {
+      method: "POST",
+      body: JSON.stringify({ nodes }),
+    });
+    return await res.json();
+  }
+
   async getEnrolledCourses(): Promise<any> {
     const progress = await this.getStudentProgress();
     return progress?.enrolledCourses || [];
@@ -444,6 +491,14 @@ class RealAPI {
   async getTeacherCourses(): Promise<any> {
     const res = await this.fetchAuthorized("/api/courses/teacher/list");
     if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async updateIntervention(interventionId: string, payload: any): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/teacher/interventions/${interventionId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
     return await res.json();
   }
 
@@ -675,7 +730,10 @@ class RealAPI {
     return await res.json();
   }
 
-  async chatWithAI(messages: any[]): Promise<any> {
+  async chatWithAI(
+    messages: any[],
+    contextFilters?: Record<string, any>,
+  ): Promise<any> {
     // This is often a separate direct call to tutor/chat
     const lastMsg = messages[messages.length - 1];
     const res = await this.fetchAuthorized("/api/tutor/chat", {
@@ -683,6 +741,7 @@ class RealAPI {
       body: JSON.stringify({
         message: lastMsg.content || lastMsg.text,
         user_id: this.currentUser?.id,
+        context_filters: contextFilters,
       }),
     });
     return await res.json();

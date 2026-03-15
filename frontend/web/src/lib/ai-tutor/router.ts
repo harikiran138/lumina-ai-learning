@@ -16,6 +16,9 @@ export interface ProcessMessageOptions {
   sessionId?: string;
   provider?: string;
   topic?: string;
+  subject?: string;
+  lessonContext?: Record<string, any>;
+  assignmentContext?: Record<string, any>;
   history?: Array<{ sender: string; text: string; timestamp?: string | Date }>;
 }
 
@@ -52,6 +55,9 @@ export const processMessage = async (
     sessionId,
     provider = "auto",
     topic,
+    subject,
+    lessonContext,
+    assignmentContext,
     history = [],
   } = options;
 
@@ -107,10 +113,13 @@ export const processMessage = async (
             timestamp: item.timestamp,
           })),
           context_filters:
-            userContext || topic
+            userContext || topic || lessonContext || assignmentContext || subject
               ? {
                   context: userContext,
                   topic,
+                  subject,
+                  lesson: lessonContext,
+                  assignment: assignmentContext,
                 }
               : undefined,
         }),

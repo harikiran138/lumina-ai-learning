@@ -25,6 +25,8 @@ class QuestionMetadata(BaseModel):
     question_id: str
     concepts: List[str] = Field(default_factory=list)
     difficulty: float = 0.5
+    discrimination: Optional[float] = None
+    guessing: Optional[float] = None
     blooms_level: Optional[str] = None
     evidence_goal: Optional[str] = None  # e.g., "recognition", "recall", "transfer"
     expected_time_seconds: Optional[int] = None
@@ -134,6 +136,7 @@ class AssessmentResult(BaseModel):
     total_questions: int
     correct_answers: int
     final_ability_estimate: float
+    confidence_avg: Optional[float] = None
     message: str
 
 
@@ -145,6 +148,9 @@ class AssessmentReport(BaseModel):
     correct_answers: int
     accuracy: float
     final_ability_estimate: float
+    confidence_avg: Optional[float] = None
     level: str
     summary: str
     analysis_history: List[AnswerAnalysis] = []
+    misconceptions: List[str] = []
+    remediation_plan: Optional[Dict[str, Any]] = None

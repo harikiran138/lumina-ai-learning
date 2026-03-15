@@ -47,12 +47,20 @@ class ConceptMastery(BaseModel):
     last_source: Optional[str] = None
 
 
+class LanguagePreferences(BaseModel):
+    locale: Optional[str] = None
+    primary_language: Optional[str] = None
+    secondary_languages: List[str] = Field(default_factory=list)
+    translation_enabled: bool = True
+
+
 class LearnerPreferences(BaseModel):
     preferred_modalities: List[str] = Field(default_factory=list)
     preferred_difficulty: Optional[str] = None
     preferred_session_minutes: Optional[int] = None
     study_goals: List[str] = Field(default_factory=list)
     accessibility_needs: List[str] = Field(default_factory=list)
+    language: LanguagePreferences = Field(default_factory=LanguagePreferences)
 
 
 class EngagementSummary(BaseModel):
@@ -121,6 +129,36 @@ class KPISnapshot(BaseModel):
     recorded_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class KnowledgeGraphState(BaseModel):
+    graph_id: Optional[str] = None
+    graph_version: Optional[str] = None
+    concept_ids: List[str] = Field(default_factory=list)
+    last_synced_at: Optional[datetime] = None
+
+
+class SpacedRepetitionItem(BaseModel):
+    concept_id: str
+    stability: float = 0.0
+    difficulty: float = 0.0
+    repetitions: int = 0
+    last_reviewed_at: Optional[datetime] = None
+    next_review_at: Optional[datetime] = None
+
+
+class SpacedRepetitionState(BaseModel):
+    algorithm: str = "fsrs"
+    items: Dict[str, SpacedRepetitionItem] = Field(default_factory=dict)
+    pending_review_count: int = 0
+    last_updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class OfflineSyncState(BaseModel):
+    enabled: bool = False
+    last_synced_at: Optional[datetime] = None
+    pending_event_count: int = 0
+    device_ids: List[str] = Field(default_factory=list)
+    sync_version: int = 1
+
 
 
 
@@ -147,6 +185,9 @@ class LearnerProfileRecord(BaseModel):
     kpi_history: List[KPISnapshot] = Field(default_factory=list)
     intervention_history: InterventionHistory = Field(default_factory=InterventionHistory)
     misconception_summary: Dict[str, Any] = Field(default_factory=dict)
+    knowledge_graph_state: KnowledgeGraphState = Field(default_factory=KnowledgeGraphState)
+    spaced_repetition_state: SpacedRepetitionState = Field(default_factory=SpacedRepetitionState)
+    offline_sync_state: OfflineSyncState = Field(default_factory=OfflineSyncState)
     tutor_summary: Dict[str, Any] = Field(default_factory=dict)
     assignment_summary: Dict[str, Any] = Field(default_factory=dict)
     assessment_summary: Dict[str, Any] = Field(default_factory=dict)
@@ -208,6 +249,9 @@ class AssessmentCompletedPayload(BaseModel):
     total_questions: Optional[int] = None
     duration: Optional[float] = None
     details: Optional[Dict[str, Any]] = None
+    confidence_avg: Optional[float] = None
+    misconceptions: Optional[List[str]] = None
+    remediation_plan: Optional[Dict[str, Any]] = None
 
 
 class AssignmentSubmittedPayload(BaseModel):

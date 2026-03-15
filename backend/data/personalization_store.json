@@ -1,6 +1,2068 @@
 {
-  "profiles": {},
-  "events": [],
+  "profiles": {
+    "user_123": {
+      "user_id": "user_123",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": [],
+        "language": {
+          "locale": null,
+          "primary_language": null,
+          "secondary_languages": [],
+          "translation_enabled": true
+        }
+      },
+      "mastery_state": {
+        "1": {
+          "score": 1.0,
+          "confidence": 0.74,
+          "integrity_score": 1.0,
+          "attempts": 6,
+          "successes": 6,
+          "last_assessed_at": "2026-03-14T18:15:08.940323",
+          "last_source": "assessment_answer"
+        }
+      },
+      "weak_topics": [],
+      "behavior_signals": {
+        "cognitive_load": 0.0,
+        "behavior_label": "neutral"
+      },
+      "engagement_summary": {
+        "total_minutes": 0.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 0,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 0,
+        "current_streak": 0,
+        "last_activity_at": null
+      },
+      "performance_summary": {
+        "recent_average_score": 0.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 0.0,
+        "low_score_count": 0,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "medium",
+        "risk_score": 0.39999999999999997,
+        "confidence": 0.7,
+        "reasons": [
+          "recent scores are low",
+          "limited recent activity"
+        ],
+        "last_evaluated_at": "2026-03-14T18:15:08.941390"
+      },
+      "explanation_profile": {
+        "strategies": {},
+        "primary_mode": null,
+        "last_plan": null,
+        "updated_at": "2026-03-14T17:04:39.994224"
+      },
+      "kpi_snapshot": {
+        "growth_velocity": 1.0,
+        "lag_zone_score": 0.0,
+        "authenticity_score": 1.0,
+        "explanation_effectiveness": 0.5,
+        "recorded_at": "2026-03-14T18:15:08.941353"
+      },
+      "kpi_history": [
+        {
+          "growth_velocity": 1.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:04:39.996315"
+        },
+        {
+          "growth_velocity": 1.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:28:18.249848"
+        },
+        {
+          "growth_velocity": 1.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:44:31.089809"
+        },
+        {
+          "growth_velocity": 1.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:57:26.958252"
+        },
+        {
+          "growth_velocity": 1.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T18:13:53.890307"
+        },
+        {
+          "growth_velocity": 1.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T18:15:08.941353"
+        }
+      ],
+      "intervention_history": {
+        "total_interventions": 0,
+        "resolved_count": 0,
+        "dismissed_count": 0
+      },
+      "misconception_summary": {
+        "concepts": {},
+        "labels": {},
+        "recent": []
+      },
+      "knowledge_graph_state": {
+        "graph_id": null,
+        "graph_version": null,
+        "concept_ids": [],
+        "last_synced_at": null
+      },
+      "spaced_repetition_state": {
+        "algorithm": "fsrs",
+        "items": {},
+        "pending_review_count": 0,
+        "last_updated_at": "2026-03-14T17:28:18.248891"
+      },
+      "offline_sync_state": {
+        "enabled": false,
+        "last_synced_at": null,
+        "pending_event_count": 0,
+        "device_ids": [],
+        "sync_version": 1
+      },
+      "tutor_summary": {},
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {
+        "last_event_type": "assessment_answer",
+        "last_event_at": "2026-03-14T18:15:08.936936"
+      },
+      "created_at": "2026-03-14T17:04:39.994236",
+      "updated_at": "2026-03-14T18:15:08.940274"
+    },
+    "test_user_reward": {
+      "user_id": "test_user_reward",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": [],
+        "language": {
+          "locale": null,
+          "primary_language": null,
+          "secondary_languages": [],
+          "translation_enabled": true
+        }
+      },
+      "mastery_state": {
+        "variable_scope": {
+          "score": 0.8945,
+          "confidence": 0.98,
+          "integrity_score": 1.0,
+          "attempts": 12,
+          "successes": 6,
+          "last_assessed_at": "2026-03-14T18:15:13.194451",
+          "last_source": "assessment_answer"
+        }
+      },
+      "weak_topics": [],
+      "behavior_signals": {
+        "cognitive_load": 17.15,
+        "behavior_label": "frustrated"
+      },
+      "engagement_summary": {
+        "total_minutes": 0.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 0,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 6,
+        "current_streak": 0,
+        "last_activity_at": null
+      },
+      "performance_summary": {
+        "recent_average_score": 0.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 0.0,
+        "low_score_count": 0,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "medium",
+        "risk_score": 0.49999999999999994,
+        "confidence": 0.7,
+        "reasons": [
+          "recent scores are low",
+          "frequent help requests with limited progress",
+          "limited recent activity"
+        ],
+        "last_evaluated_at": "2026-03-14T18:15:13.194905"
+      },
+      "explanation_profile": {
+        "strategies": {
+          "Story": {
+            "mode_name": "Story",
+            "effectiveness_score": 0.46,
+            "total_uses": 12,
+            "success_count": 6,
+            "updated_at": "2026-03-14T18:15:13.194467"
+          }
+        },
+        "primary_mode": "Story",
+        "last_plan": {
+          "plan_id": "58570d28-a59b-42bc-a5dc-5a196e20c958",
+          "objective": "explain",
+          "strategy": "step_by_step",
+          "mode": "Story",
+          "vocabulary_band": "simple",
+          "depth": "concise",
+          "pace": "slow",
+          "chunk_size": 1,
+          "socratic_ratio": 0.0,
+          "modalities": [],
+          "confidence": 1.0,
+          "created_at": "2026-03-14T18:15:13.174453"
+        },
+        "updated_at": "2026-03-14T18:15:13.194469"
+      },
+      "kpi_snapshot": {
+        "growth_velocity": 0.5,
+        "lag_zone_score": 0.12,
+        "authenticity_score": 1.0,
+        "explanation_effectiveness": 0.46,
+        "recorded_at": "2026-03-14T18:15:13.194871"
+      },
+      "kpi_history": [
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:04:44.205280"
+        },
+        {
+          "growth_velocity": 1.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.6,
+          "recorded_at": "2026-03-14T17:04:44.206611"
+        },
+        {
+          "growth_velocity": 0.5,
+          "lag_zone_score": 0.02,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.48,
+          "recorded_at": "2026-03-14T17:04:44.208126"
+        },
+        {
+          "growth_velocity": 0.5,
+          "lag_zone_score": 0.02,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.48,
+          "recorded_at": "2026-03-14T17:28:22.597992"
+        },
+        {
+          "growth_velocity": 0.67,
+          "lag_zone_score": 0.02,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.58,
+          "recorded_at": "2026-03-14T17:28:22.600663"
+        },
+        {
+          "growth_velocity": 0.5,
+          "lag_zone_score": 0.04,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.46,
+          "recorded_at": "2026-03-14T17:28:22.603337"
+        },
+        {
+          "growth_velocity": 0.5,
+          "lag_zone_score": 0.04,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.46,
+          "recorded_at": "2026-03-14T17:44:35.438763"
+        },
+        {
+          "growth_velocity": 0.6,
+          "lag_zone_score": 0.04,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.57,
+          "recorded_at": "2026-03-14T17:44:35.442382"
+        },
+        {
+          "growth_velocity": 0.5,
+          "lag_zone_score": 0.06,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.46,
+          "recorded_at": "2026-03-14T17:44:35.445950"
+        },
+        {
+          "growth_velocity": 0.5,
+          "lag_zone_score": 0.06,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.46,
+          "recorded_at": "2026-03-14T17:57:31.189977"
+        },
+        {
+          "growth_velocity": 0.57,
+          "lag_zone_score": 0.06,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.57,
+          "recorded_at": "2026-03-14T17:57:31.194054"
+        },
+        {
+          "growth_velocity": 0.5,
+          "lag_zone_score": 0.08,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.46,
+          "recorded_at": "2026-03-14T17:57:31.198200"
+        },
+        {
+          "growth_velocity": 0.5,
+          "lag_zone_score": 0.08,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.46,
+          "recorded_at": "2026-03-14T18:13:58.104919"
+        },
+        {
+          "growth_velocity": 0.56,
+          "lag_zone_score": 0.08,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.57,
+          "recorded_at": "2026-03-14T18:13:58.109427"
+        },
+        {
+          "growth_velocity": 0.5,
+          "lag_zone_score": 0.1,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.46,
+          "recorded_at": "2026-03-14T18:13:58.114103"
+        },
+        {
+          "growth_velocity": 0.5,
+          "lag_zone_score": 0.1,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.46,
+          "recorded_at": "2026-03-14T18:15:13.177826"
+        },
+        {
+          "growth_velocity": 0.55,
+          "lag_zone_score": 0.1,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.57,
+          "recorded_at": "2026-03-14T18:15:13.184348"
+        },
+        {
+          "growth_velocity": 0.5,
+          "lag_zone_score": 0.12,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.46,
+          "recorded_at": "2026-03-14T18:15:13.194871"
+        }
+      ],
+      "intervention_history": {
+        "total_interventions": 0,
+        "resolved_count": 0,
+        "dismissed_count": 0
+      },
+      "misconception_summary": {
+        "concepts": {
+          "variable_scope": 4
+        },
+        "labels": {},
+        "recent": [
+          {
+            "type": "concept",
+            "value": "variable_scope",
+            "at": "2026-03-14T17:44:35.445656"
+          },
+          {
+            "type": "concept",
+            "value": "variable_scope",
+            "at": "2026-03-14T17:57:31.197879"
+          },
+          {
+            "type": "concept",
+            "value": "variable_scope",
+            "at": "2026-03-14T18:13:58.113552"
+          },
+          {
+            "type": "concept",
+            "value": "variable_scope",
+            "at": "2026-03-14T18:15:13.194459"
+          }
+        ]
+      },
+      "knowledge_graph_state": {
+        "graph_id": null,
+        "graph_version": null,
+        "concept_ids": [],
+        "last_synced_at": null
+      },
+      "spaced_repetition_state": {
+        "algorithm": "fsrs",
+        "items": {},
+        "pending_review_count": 0,
+        "last_updated_at": "2026-03-14T17:28:22.597658"
+      },
+      "offline_sync_state": {
+        "enabled": false,
+        "last_synced_at": null,
+        "pending_event_count": 0,
+        "device_ids": [],
+        "sync_version": 1
+      },
+      "tutor_summary": {
+        "last_session_id": null,
+        "last_topic": null,
+        "last_recommendation": null,
+        "last_behavior": null,
+        "total_sessions": 6
+      },
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {
+        "last_event_type": "assessment_answer",
+        "last_event_at": "2026-03-14T18:15:13.189086"
+      },
+      "created_at": "2026-03-14T17:04:44.203977",
+      "updated_at": "2026-03-14T18:15:13.194430"
+    },
+    "5074d969-3984-40d3-ac85-e3bc7d98be96": {
+      "user_id": "5074d969-3984-40d3-ac85-e3bc7d98be96",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": []
+      },
+      "mastery_state": {
+        "quadratics": {
+          "score": 0.18,
+          "confidence": 0.55,
+          "integrity_score": 1.0,
+          "attempts": 1,
+          "successes": 0,
+          "last_assessed_at": "2026-03-14T17:04:45.133164",
+          "last_source": "quiz_result"
+        }
+      },
+      "weak_topics": [
+        "quadratics"
+      ],
+      "behavior_signals": {
+        "cognitive_load": 20.0,
+        "behavior_label": "neutral"
+      },
+      "engagement_summary": {
+        "total_minutes": 25.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 1,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 0,
+        "current_streak": 0,
+        "last_activity_at": "2026-03-14T17:04:45.139423"
+      },
+      "performance_summary": {
+        "recent_average_score": 45.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 45.0,
+        "low_score_count": 1,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "medium",
+        "risk_score": 0.35,
+        "confidence": 0.7,
+        "reasons": [
+          "recent scores are low"
+        ],
+        "last_evaluated_at": "2026-03-14T17:04:45.139628"
+      },
+      "explanation_profile": {
+        "strategies": {},
+        "primary_mode": null,
+        "last_plan": null,
+        "updated_at": "2026-03-14T17:04:45.132353"
+      },
+      "kpi_snapshot": {
+        "growth_velocity": 0.0,
+        "lag_zone_score": 0.0,
+        "authenticity_score": 1.0,
+        "explanation_effectiveness": 0.5,
+        "recorded_at": "2026-03-14T17:04:45.139610"
+      },
+      "kpi_history": [
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:04:45.133425"
+        },
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:04:45.139610"
+        }
+      ],
+      "intervention_history": {
+        "total_interventions": 0,
+        "resolved_count": 0,
+        "dismissed_count": 0
+      },
+      "misconception_summary": {},
+      "tutor_summary": {},
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {
+        "last_event_type": "activity_logged",
+        "last_event_at": "2026-03-14T17:04:45.138399",
+        "skill_sequence": [
+          965
+        ],
+        "correct_sequence": [
+          0
+        ]
+      },
+      "created_at": "2026-03-14T17:04:45.132358",
+      "updated_at": "2026-03-14T17:04:45.139404"
+    },
+    "00000000-0000-0000-0000-000000000001": {
+      "user_id": "00000000-0000-0000-0000-000000000001",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": [],
+        "language": {
+          "locale": null,
+          "primary_language": null,
+          "secondary_languages": [],
+          "translation_enabled": true
+        }
+      },
+      "mastery_state": {},
+      "weak_topics": [],
+      "behavior_signals": {
+        "cognitive_load": 0.0,
+        "behavior_label": "neutral"
+      },
+      "engagement_summary": {
+        "total_minutes": 0.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 0,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 0,
+        "current_streak": 0,
+        "last_activity_at": null
+      },
+      "performance_summary": {
+        "recent_average_score": 0.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 0.0,
+        "low_score_count": 0,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "medium",
+        "risk_score": 0.39999999999999997,
+        "confidence": 0.7,
+        "reasons": [
+          "recent scores are low",
+          "limited recent activity"
+        ],
+        "last_evaluated_at": "2026-03-14T18:15:14.174132"
+      },
+      "explanation_profile": {
+        "strategies": {},
+        "primary_mode": null,
+        "last_plan": null,
+        "updated_at": "2026-03-14T17:04:45.152726"
+      },
+      "kpi_snapshot": {
+        "growth_velocity": 0.0,
+        "lag_zone_score": 0.0,
+        "authenticity_score": 1.0,
+        "explanation_effectiveness": 0.5,
+        "recorded_at": "2026-03-14T18:15:14.174111"
+      },
+      "kpi_history": [
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:04:45.153748"
+        },
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:28:23.569555"
+        },
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:44:36.409342"
+        },
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:57:32.169971"
+        },
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T18:13:59.064125"
+        },
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T18:15:14.174111"
+        }
+      ],
+      "intervention_history": {
+        "total_interventions": 0,
+        "resolved_count": 0,
+        "dismissed_count": 0
+      },
+      "misconception_summary": {},
+      "knowledge_graph_state": {
+        "graph_id": null,
+        "graph_version": null,
+        "concept_ids": [],
+        "last_synced_at": null
+      },
+      "spaced_repetition_state": {
+        "algorithm": "fsrs",
+        "items": {},
+        "pending_review_count": 0,
+        "last_updated_at": "2026-03-14T17:28:23.569250"
+      },
+      "offline_sync_state": {
+        "enabled": false,
+        "last_synced_at": null,
+        "pending_event_count": 0,
+        "device_ids": [],
+        "sync_version": 1
+      },
+      "tutor_summary": {},
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {
+        "last_event_type": "note_added",
+        "last_event_at": "2026-03-14T18:15:14.169734",
+        "notes": [
+          {
+            "content": "This is a test note content.",
+            "created_at": "2026-03-14T17:04:45.153519"
+          },
+          {
+            "content": "This is a test note content.",
+            "created_at": "2026-03-14T17:28:23.569279"
+          },
+          {
+            "content": "This is a test note content.",
+            "created_at": "2026-03-14T17:44:36.409057"
+          },
+          {
+            "content": "This is a test note content.",
+            "created_at": "2026-03-14T17:57:32.169614"
+          },
+          {
+            "content": "This is a test note content.",
+            "created_at": "2026-03-14T18:13:59.063613"
+          },
+          {
+            "content": "This is a test note content.",
+            "created_at": "2026-03-14T18:15:14.173682"
+          }
+        ]
+      },
+      "created_at": "2026-03-14T17:04:45.152731",
+      "updated_at": "2026-03-14T18:15:14.173670"
+    },
+    "70474e11-d07b-42bd-9794-814f9f9f5c55": {
+      "user_id": "70474e11-d07b-42bd-9794-814f9f9f5c55",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": [],
+        "language": {
+          "locale": null,
+          "primary_language": null,
+          "secondary_languages": [],
+          "translation_enabled": true
+        }
+      },
+      "mastery_state": {
+        "quadratics": {
+          "score": 0.18,
+          "confidence": 0.55,
+          "integrity_score": 1.0,
+          "attempts": 1,
+          "successes": 0,
+          "last_assessed_at": "2026-03-14T17:28:23.546979",
+          "last_source": "quiz_result"
+        }
+      },
+      "weak_topics": [
+        "quadratics"
+      ],
+      "behavior_signals": {
+        "cognitive_load": 20.0,
+        "behavior_label": "neutral"
+      },
+      "engagement_summary": {
+        "total_minutes": 25.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 1,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 0,
+        "current_streak": 0,
+        "last_activity_at": "2026-03-14T17:28:23.554108"
+      },
+      "performance_summary": {
+        "recent_average_score": 45.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 45.0,
+        "low_score_count": 1,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "medium",
+        "risk_score": 0.35,
+        "confidence": 0.7,
+        "reasons": [
+          "recent scores are low"
+        ],
+        "last_evaluated_at": "2026-03-14T17:28:23.554380"
+      },
+      "explanation_profile": {
+        "strategies": {},
+        "primary_mode": null,
+        "last_plan": null,
+        "updated_at": "2026-03-14T17:28:23.545906"
+      },
+      "kpi_snapshot": {
+        "growth_velocity": 0.0,
+        "lag_zone_score": 0.0,
+        "authenticity_score": 1.0,
+        "explanation_effectiveness": 0.5,
+        "recorded_at": "2026-03-14T17:28:23.554363"
+      },
+      "kpi_history": [
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:28:23.547287"
+        },
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:28:23.554363"
+        }
+      ],
+      "intervention_history": {
+        "total_interventions": 0,
+        "resolved_count": 0,
+        "dismissed_count": 0
+      },
+      "misconception_summary": {},
+      "knowledge_graph_state": {
+        "graph_id": null,
+        "graph_version": null,
+        "concept_ids": [],
+        "last_synced_at": null
+      },
+      "spaced_repetition_state": {
+        "algorithm": "fsrs",
+        "items": {},
+        "pending_review_count": 0,
+        "last_updated_at": "2026-03-14T17:28:23.545916"
+      },
+      "offline_sync_state": {
+        "enabled": false,
+        "last_synced_at": null,
+        "pending_event_count": 0,
+        "device_ids": [],
+        "sync_version": 1
+      },
+      "tutor_summary": {},
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {
+        "last_event_type": "activity_logged",
+        "last_event_at": "2026-03-14T17:28:23.552609",
+        "skill_sequence": [
+          965
+        ],
+        "correct_sequence": [
+          0
+        ]
+      },
+      "created_at": "2026-03-14T17:28:23.545920",
+      "updated_at": "2026-03-14T17:28:23.554095"
+    },
+    "33fc35f2-6350-4388-93b0-1aa0b620a237": {
+      "user_id": "33fc35f2-6350-4388-93b0-1aa0b620a237",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": [],
+        "language": {
+          "locale": null,
+          "primary_language": null,
+          "secondary_languages": [],
+          "translation_enabled": true
+        }
+      },
+      "mastery_state": {
+        "quadratics": {
+          "score": 0.18,
+          "confidence": 0.55,
+          "integrity_score": 1.0,
+          "attempts": 1,
+          "successes": 0,
+          "last_assessed_at": "2026-03-14T17:44:36.387255",
+          "last_source": "quiz_result"
+        }
+      },
+      "weak_topics": [
+        "quadratics"
+      ],
+      "behavior_signals": {
+        "cognitive_load": 20.0,
+        "behavior_label": "neutral"
+      },
+      "engagement_summary": {
+        "total_minutes": 25.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 1,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 0,
+        "current_streak": 0,
+        "last_activity_at": "2026-03-14T17:44:36.394980"
+      },
+      "performance_summary": {
+        "recent_average_score": 45.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 45.0,
+        "low_score_count": 1,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "medium",
+        "risk_score": 0.35,
+        "confidence": 0.7,
+        "reasons": [
+          "recent scores are low"
+        ],
+        "last_evaluated_at": "2026-03-14T17:44:36.395281"
+      },
+      "explanation_profile": {
+        "strategies": {},
+        "primary_mode": null,
+        "last_plan": null,
+        "updated_at": "2026-03-14T17:44:36.385842"
+      },
+      "kpi_snapshot": {
+        "growth_velocity": 0.0,
+        "lag_zone_score": 0.0,
+        "authenticity_score": 1.0,
+        "explanation_effectiveness": 0.5,
+        "recorded_at": "2026-03-14T17:44:36.395266"
+      },
+      "kpi_history": [
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:44:36.387603"
+        },
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:44:36.395266"
+        }
+      ],
+      "intervention_history": {
+        "total_interventions": 0,
+        "resolved_count": 0,
+        "dismissed_count": 0
+      },
+      "misconception_summary": {},
+      "knowledge_graph_state": {
+        "graph_id": null,
+        "graph_version": null,
+        "concept_ids": [],
+        "last_synced_at": null
+      },
+      "spaced_repetition_state": {
+        "algorithm": "fsrs",
+        "items": {},
+        "pending_review_count": 0,
+        "last_updated_at": "2026-03-14T17:44:36.385850"
+      },
+      "offline_sync_state": {
+        "enabled": false,
+        "last_synced_at": null,
+        "pending_event_count": 0,
+        "device_ids": [],
+        "sync_version": 1
+      },
+      "tutor_summary": {},
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {
+        "last_event_type": "activity_logged",
+        "last_event_at": "2026-03-14T17:44:36.392982",
+        "skill_sequence": [
+          965
+        ],
+        "correct_sequence": [
+          0
+        ]
+      },
+      "created_at": "2026-03-14T17:44:36.385853",
+      "updated_at": "2026-03-14T17:44:36.394968"
+    },
+    "928ffcd7-2af2-4531-a625-6f138bb03097": {
+      "user_id": "928ffcd7-2af2-4531-a625-6f138bb03097",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": [],
+        "language": {
+          "locale": null,
+          "primary_language": null,
+          "secondary_languages": [],
+          "translation_enabled": true
+        }
+      },
+      "mastery_state": {
+        "quadratics": {
+          "score": 0.18,
+          "confidence": 0.55,
+          "integrity_score": 1.0,
+          "attempts": 1,
+          "successes": 0,
+          "last_assessed_at": "2026-03-14T17:57:32.144325",
+          "last_source": "quiz_result"
+        }
+      },
+      "weak_topics": [
+        "quadratics"
+      ],
+      "behavior_signals": {
+        "cognitive_load": 20.0,
+        "behavior_label": "neutral"
+      },
+      "engagement_summary": {
+        "total_minutes": 25.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 1,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 0,
+        "current_streak": 0,
+        "last_activity_at": "2026-03-14T17:57:32.153381"
+      },
+      "performance_summary": {
+        "recent_average_score": 45.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 45.0,
+        "low_score_count": 1,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "medium",
+        "risk_score": 0.35,
+        "confidence": 0.7,
+        "reasons": [
+          "recent scores are low"
+        ],
+        "last_evaluated_at": "2026-03-14T17:57:32.153728"
+      },
+      "explanation_profile": {
+        "strategies": {},
+        "primary_mode": null,
+        "last_plan": null,
+        "updated_at": "2026-03-14T17:57:32.141459"
+      },
+      "kpi_snapshot": {
+        "growth_velocity": 0.0,
+        "lag_zone_score": 0.0,
+        "authenticity_score": 1.0,
+        "explanation_effectiveness": 0.5,
+        "recorded_at": "2026-03-14T17:57:32.153710"
+      },
+      "kpi_history": [
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:57:32.144721"
+        },
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T17:57:32.153710"
+        }
+      ],
+      "intervention_history": {
+        "total_interventions": 0,
+        "resolved_count": 0,
+        "dismissed_count": 0
+      },
+      "misconception_summary": {},
+      "knowledge_graph_state": {
+        "graph_id": null,
+        "graph_version": null,
+        "concept_ids": [],
+        "last_synced_at": null
+      },
+      "spaced_repetition_state": {
+        "algorithm": "fsrs",
+        "items": {},
+        "pending_review_count": 0,
+        "last_updated_at": "2026-03-14T17:57:32.141466"
+      },
+      "offline_sync_state": {
+        "enabled": false,
+        "last_synced_at": null,
+        "pending_event_count": 0,
+        "device_ids": [],
+        "sync_version": 1
+      },
+      "tutor_summary": {},
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {
+        "last_event_type": "activity_logged",
+        "last_event_at": "2026-03-14T17:57:32.151146",
+        "skill_sequence": [
+          965
+        ],
+        "correct_sequence": [
+          0
+        ]
+      },
+      "created_at": "2026-03-14T17:57:32.141470",
+      "updated_at": "2026-03-14T17:57:32.153367"
+    },
+    "7fdf02c3-04bc-4c0e-9df8-fa5f5b02ec1b": {
+      "user_id": "7fdf02c3-04bc-4c0e-9df8-fa5f5b02ec1b",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": [],
+        "language": {
+          "locale": null,
+          "primary_language": null,
+          "secondary_languages": [],
+          "translation_enabled": true
+        }
+      },
+      "mastery_state": {
+        "quadratics": {
+          "score": 0.18,
+          "confidence": 0.55,
+          "integrity_score": 1.0,
+          "attempts": 1,
+          "successes": 0,
+          "last_assessed_at": "2026-03-14T18:13:59.037626",
+          "last_source": "quiz_result"
+        }
+      },
+      "weak_topics": [
+        "quadratics"
+      ],
+      "behavior_signals": {
+        "cognitive_load": 20.0,
+        "behavior_label": "neutral"
+      },
+      "engagement_summary": {
+        "total_minutes": 25.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 1,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 0,
+        "current_streak": 0,
+        "last_activity_at": "2026-03-14T18:13:59.047974"
+      },
+      "performance_summary": {
+        "recent_average_score": 45.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 45.0,
+        "low_score_count": 1,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "medium",
+        "risk_score": 0.35,
+        "confidence": 0.7,
+        "reasons": [
+          "recent scores are low"
+        ],
+        "last_evaluated_at": "2026-03-14T18:13:59.048393"
+      },
+      "explanation_profile": {
+        "strategies": {},
+        "primary_mode": null,
+        "last_plan": null,
+        "updated_at": "2026-03-14T18:13:59.033853"
+      },
+      "kpi_snapshot": {
+        "growth_velocity": 0.0,
+        "lag_zone_score": 0.0,
+        "authenticity_score": 1.0,
+        "explanation_effectiveness": 0.5,
+        "recorded_at": "2026-03-14T18:13:59.048373"
+      },
+      "kpi_history": [
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T18:13:59.038039"
+        },
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T18:13:59.048373"
+        }
+      ],
+      "intervention_history": {
+        "total_interventions": 0,
+        "resolved_count": 0,
+        "dismissed_count": 0
+      },
+      "misconception_summary": {},
+      "knowledge_graph_state": {
+        "graph_id": null,
+        "graph_version": null,
+        "concept_ids": [],
+        "last_synced_at": null
+      },
+      "spaced_repetition_state": {
+        "algorithm": "fsrs",
+        "items": {},
+        "pending_review_count": 0,
+        "last_updated_at": "2026-03-14T18:13:59.033861"
+      },
+      "offline_sync_state": {
+        "enabled": false,
+        "last_synced_at": null,
+        "pending_event_count": 0,
+        "device_ids": [],
+        "sync_version": 1
+      },
+      "tutor_summary": {},
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {
+        "last_event_type": "activity_logged",
+        "last_event_at": "2026-03-14T18:13:59.044820",
+        "skill_sequence": [
+          965
+        ],
+        "correct_sequence": [
+          0
+        ]
+      },
+      "created_at": "2026-03-14T18:13:59.033865",
+      "updated_at": "2026-03-14T18:13:59.047955"
+    },
+    "d3c0c2a6-b0d7-4819-8e55-359d056ae1f2": {
+      "user_id": "d3c0c2a6-b0d7-4819-8e55-359d056ae1f2",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": [],
+        "language": {
+          "locale": null,
+          "primary_language": null,
+          "secondary_languages": [],
+          "translation_enabled": true
+        }
+      },
+      "mastery_state": {
+        "quadratics": {
+          "score": 0.18,
+          "confidence": 0.55,
+          "integrity_score": 1.0,
+          "attempts": 1,
+          "successes": 0,
+          "last_assessed_at": "2026-03-14T18:15:14.137149",
+          "last_source": "quiz_result"
+        }
+      },
+      "weak_topics": [
+        "quadratics"
+      ],
+      "behavior_signals": {
+        "cognitive_load": 20.0,
+        "behavior_label": "neutral"
+      },
+      "engagement_summary": {
+        "total_minutes": 25.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 1,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 0,
+        "current_streak": 0,
+        "last_activity_at": "2026-03-14T18:15:14.153598"
+      },
+      "performance_summary": {
+        "recent_average_score": 45.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 45.0,
+        "low_score_count": 1,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "medium",
+        "risk_score": 0.35,
+        "confidence": 0.7,
+        "reasons": [
+          "recent scores are low"
+        ],
+        "last_evaluated_at": "2026-03-14T18:15:14.154028"
+      },
+      "explanation_profile": {
+        "strategies": {},
+        "primary_mode": null,
+        "last_plan": null,
+        "updated_at": "2026-03-14T18:15:14.134070"
+      },
+      "kpi_snapshot": {
+        "growth_velocity": 0.0,
+        "lag_zone_score": 0.0,
+        "authenticity_score": 1.0,
+        "explanation_effectiveness": 0.5,
+        "recorded_at": "2026-03-14T18:15:14.154001"
+      },
+      "kpi_history": [
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T18:15:14.137586"
+        },
+        {
+          "growth_velocity": 0.0,
+          "lag_zone_score": 0.0,
+          "authenticity_score": 1.0,
+          "explanation_effectiveness": 0.5,
+          "recorded_at": "2026-03-14T18:15:14.154001"
+        }
+      ],
+      "intervention_history": {
+        "total_interventions": 0,
+        "resolved_count": 0,
+        "dismissed_count": 0
+      },
+      "misconception_summary": {},
+      "knowledge_graph_state": {
+        "graph_id": null,
+        "graph_version": null,
+        "concept_ids": [],
+        "last_synced_at": null
+      },
+      "spaced_repetition_state": {
+        "algorithm": "fsrs",
+        "items": {},
+        "pending_review_count": 0,
+        "last_updated_at": "2026-03-14T18:15:14.134080"
+      },
+      "offline_sync_state": {
+        "enabled": false,
+        "last_synced_at": null,
+        "pending_event_count": 0,
+        "device_ids": [],
+        "sync_version": 1
+      },
+      "tutor_summary": {},
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {
+        "last_event_type": "activity_logged",
+        "last_event_at": "2026-03-14T18:15:14.150224",
+        "skill_sequence": [
+          965
+        ],
+        "correct_sequence": [
+          0
+        ]
+      },
+      "created_at": "2026-03-14T18:15:14.134084",
+      "updated_at": "2026-03-14T18:15:14.153580"
+    }
+  },
+  "events": [
+    {
+      "id": "82b01482-db2c-43ca-aad0-58b1a655bfc9",
+      "user_id": "user_123",
+      "event_type": "assessment_answer",
+      "source": "legacy_profile_engine",
+      "course_id": null,
+      "topic_id": "1",
+      "session_id": null,
+      "payload": {
+        "is_correct": true,
+        "question_id": "legacy-engine-event",
+        "topic": "1"
+      },
+      "created_at": "2026-03-14T17:04:39.995443"
+    },
+    {
+      "id": "0f80c168-e731-4410-9788-3e63a8860e67",
+      "user_id": "test_user_reward",
+      "event_type": "tutor_interaction",
+      "source": "system",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "message": "tell me a story about loops",
+        "explanation_plan": {
+          "plan_id": "15152824-95f5-44c5-b0d6-c4bf6f9d1297",
+          "objective": "explain",
+          "strategy": "step_by_step",
+          "mode": "Story",
+          "vocabulary_band": "simple",
+          "depth": "concise",
+          "pace": "slow",
+          "chunk_size": 1,
+          "socratic_ratio": 0.0,
+          "modalities": [],
+          "confidence": 1.0,
+          "created_at": "2026-03-14T17:04:44.204530"
+        }
+      },
+      "created_at": "2026-03-14T17:04:44.204554"
+    },
+    {
+      "id": "5ded443b-8f25-47eb-97da-972079aed5a2",
+      "user_id": "test_user_reward",
+      "event_type": "assessment_answer",
+      "source": "system",
+      "course_id": null,
+      "topic_id": "variable_scope",
+      "session_id": null,
+      "payload": {
+        "is_correct": true
+      },
+      "created_at": "2026-03-14T17:04:44.205846"
+    },
+    {
+      "id": "aad62287-f9ad-42f5-8d94-beab63723b46",
+      "user_id": "test_user_reward",
+      "event_type": "assessment_answer",
+      "source": "system",
+      "course_id": null,
+      "topic_id": "variable_scope",
+      "session_id": null,
+      "payload": {
+        "is_correct": false
+      },
+      "created_at": "2026-03-14T17:04:44.207347"
+    },
+    {
+      "id": "914a6e97-c46e-43a2-9505-35b36410f207",
+      "user_id": "5074d969-3984-40d3-ac85-e3bc7d98be96",
+      "event_type": "quiz_result",
+      "source": "student_router",
+      "course_id": "ff1f5ead-736d-46f8-9030-aef220886d29",
+      "topic_id": "quadratics",
+      "session_id": null,
+      "payload": {
+        "score": 45.0,
+        "difficulty": "medium"
+      },
+      "created_at": "2026-03-14T17:04:45.131481"
+    },
+    {
+      "id": "1f8ba762-bb93-47d4-b26c-61008c09966d",
+      "user_id": "5074d969-3984-40d3-ac85-e3bc7d98be96",
+      "event_type": "activity_logged",
+      "source": "student_router",
+      "course_id": "ff1f5ead-736d-46f8-9030-aef220886d29",
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "course_id": "ff1f5ead-736d-46f8-9030-aef220886d29",
+        "duration_minutes": 25.0
+      },
+      "created_at": "2026-03-14T17:04:45.138399"
+    },
+    {
+      "id": "ba81158d-32ed-49b9-8bbe-bbfd462b67e5",
+      "user_id": "00000000-0000-0000-0000-000000000001",
+      "event_type": "note_added",
+      "source": "student_router",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "title": "Test Note",
+        "subject": "Testing",
+        "content": "This is a test note content."
+      },
+      "created_at": "2026-03-14T17:04:45.151754"
+    },
+    {
+      "id": "1edcb1d9-1f21-411b-ba57-6005b241ac8a",
+      "user_id": "user_123",
+      "event_type": "assessment_answer",
+      "source": "legacy_profile_engine",
+      "course_id": null,
+      "topic_id": "1",
+      "session_id": null,
+      "payload": {
+        "is_correct": true,
+        "question_id": "legacy-engine-event",
+        "topic": "1"
+      },
+      "created_at": "2026-03-14T17:28:18.246845"
+    },
+    {
+      "id": "e955a11b-afbd-4ae3-8c91-e714e3c236ba",
+      "user_id": "test_user_reward",
+      "event_type": "tutor_interaction",
+      "source": "system",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "message": "tell me a story about loops",
+        "explanation_plan": {
+          "plan_id": "2c3114d3-5b1e-4694-b6d8-aa4b02cfda7c",
+          "objective": "explain",
+          "strategy": "step_by_step",
+          "mode": "Story",
+          "vocabulary_band": "simple",
+          "depth": "concise",
+          "pace": "slow",
+          "chunk_size": 1,
+          "socratic_ratio": 0.0,
+          "modalities": [],
+          "confidence": 1.0,
+          "created_at": "2026-03-14T17:28:22.596440"
+        }
+      },
+      "created_at": "2026-03-14T17:28:22.596475"
+    },
+    {
+      "id": "9044076d-a2ec-47b7-a8db-004cc7d04c6c",
+      "user_id": "test_user_reward",
+      "event_type": "assessment_answer",
+      "source": "system",
+      "course_id": null,
+      "topic_id": "variable_scope",
+      "session_id": null,
+      "payload": {
+        "is_correct": true
+      },
+      "created_at": "2026-03-14T17:28:22.599155"
+    },
+    {
+      "id": "387d17e3-db82-4065-bc54-68d9c8111117",
+      "user_id": "test_user_reward",
+      "event_type": "assessment_answer",
+      "source": "system",
+      "course_id": null,
+      "topic_id": "variable_scope",
+      "session_id": null,
+      "payload": {
+        "is_correct": false
+      },
+      "created_at": "2026-03-14T17:28:22.602021"
+    },
+    {
+      "id": "dd4532ba-9143-4689-a0a8-5b7cf0c03cd2",
+      "user_id": "70474e11-d07b-42bd-9794-814f9f9f5c55",
+      "event_type": "quiz_result",
+      "source": "student_router",
+      "course_id": "4e3b3c26-9f8f-4e44-898b-1c9a6cc0b4a6",
+      "topic_id": "quadratics",
+      "session_id": null,
+      "payload": {
+        "score": 45.0,
+        "difficulty": "medium"
+      },
+      "created_at": "2026-03-14T17:28:23.544650"
+    },
+    {
+      "id": "2be29461-9f93-45a7-aef2-47cfe1696b25",
+      "user_id": "70474e11-d07b-42bd-9794-814f9f9f5c55",
+      "event_type": "activity_logged",
+      "source": "student_router",
+      "course_id": "4e3b3c26-9f8f-4e44-898b-1c9a6cc0b4a6",
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "course_id": "4e3b3c26-9f8f-4e44-898b-1c9a6cc0b4a6",
+        "duration_minutes": 25.0
+      },
+      "created_at": "2026-03-14T17:28:23.552609"
+    },
+    {
+      "id": "4cf4006d-7b52-4660-acb8-c4c19783485f",
+      "user_id": "00000000-0000-0000-0000-000000000001",
+      "event_type": "note_added",
+      "source": "student_router",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "title": "Test Note",
+        "subject": "Testing",
+        "content": "This is a test note content."
+      },
+      "created_at": "2026-03-14T17:28:23.567827"
+    },
+    {
+      "id": "b8039980-0c5e-4b5d-9605-a0b45bfee752",
+      "user_id": "user_123",
+      "event_type": "assessment_answer",
+      "source": "legacy_profile_engine",
+      "course_id": null,
+      "topic_id": "1",
+      "session_id": null,
+      "payload": {
+        "is_correct": true,
+        "question_id": "legacy-engine-event",
+        "topic": "1"
+      },
+      "created_at": "2026-03-14T17:44:31.085709"
+    },
+    {
+      "id": "91a51bc3-422e-481b-82ef-2b566ee29441",
+      "user_id": "test_user_reward",
+      "event_type": "tutor_interaction",
+      "source": "system",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "message": "tell me a story about loops",
+        "explanation_plan": {
+          "plan_id": "e3a806a5-9657-480d-b760-12302a71a579",
+          "objective": "explain",
+          "strategy": "step_by_step",
+          "mode": "Story",
+          "vocabulary_band": "simple",
+          "depth": "concise",
+          "pace": "slow",
+          "chunk_size": 1,
+          "socratic_ratio": 0.0,
+          "modalities": [],
+          "confidence": 1.0,
+          "created_at": "2026-03-14T17:44:35.436828"
+        }
+      },
+      "created_at": "2026-03-14T17:44:35.436855"
+    },
+    {
+      "id": "122e6a36-159c-44c1-a5dc-c78e8ce68fbd",
+      "user_id": "test_user_reward",
+      "event_type": "assessment_answer",
+      "source": "system",
+      "course_id": null,
+      "topic_id": "variable_scope",
+      "session_id": null,
+      "payload": {
+        "is_correct": true
+      },
+      "created_at": "2026-03-14T17:44:35.440464"
+    },
+    {
+      "id": "13986d06-c69f-43bf-99bb-dc22207f3544",
+      "user_id": "test_user_reward",
+      "event_type": "assessment_answer",
+      "source": "system",
+      "course_id": null,
+      "topic_id": "variable_scope",
+      "session_id": null,
+      "payload": {
+        "is_correct": false
+      },
+      "created_at": "2026-03-14T17:44:35.444159"
+    },
+    {
+      "id": "58e2c8ab-ccb6-48a6-b197-e51fa0e5b04a",
+      "user_id": "33fc35f2-6350-4388-93b0-1aa0b620a237",
+      "event_type": "quiz_result",
+      "source": "student_router",
+      "course_id": "9d3c73fe-3650-4925-9365-a5750f7bf460",
+      "topic_id": "quadratics",
+      "session_id": null,
+      "payload": {
+        "score": 45.0,
+        "difficulty": "medium"
+      },
+      "created_at": "2026-03-14T17:44:36.383735"
+    },
+    {
+      "id": "a927fa52-130f-463d-a0bb-15515dbb9031",
+      "user_id": "33fc35f2-6350-4388-93b0-1aa0b620a237",
+      "event_type": "activity_logged",
+      "source": "student_router",
+      "course_id": "9d3c73fe-3650-4925-9365-a5750f7bf460",
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "course_id": "9d3c73fe-3650-4925-9365-a5750f7bf460",
+        "duration_minutes": 25.0
+      },
+      "created_at": "2026-03-14T17:44:36.392982"
+    },
+    {
+      "id": "acc00484-7403-4ba8-988b-2ba93f69912e",
+      "user_id": "00000000-0000-0000-0000-000000000001",
+      "event_type": "note_added",
+      "source": "student_router",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "title": "Test Note",
+        "subject": "Testing",
+        "content": "This is a test note content."
+      },
+      "created_at": "2026-03-14T17:44:36.407120"
+    },
+    {
+      "id": "5d747f69-1c7d-430e-aa1d-27dca0c9d0f0",
+      "user_id": "user_123",
+      "event_type": "assessment_answer",
+      "source": "legacy_profile_engine",
+      "course_id": null,
+      "topic_id": "1",
+      "session_id": null,
+      "payload": {
+        "is_correct": true,
+        "question_id": "legacy-engine-event",
+        "topic": "1"
+      },
+      "created_at": "2026-03-14T17:57:26.954449"
+    },
+    {
+      "id": "30e4c44f-9af7-4553-8d29-d8b88a72fdba",
+      "user_id": "test_user_reward",
+      "event_type": "tutor_interaction",
+      "source": "system",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "message": "tell me a story about loops",
+        "explanation_plan": {
+          "plan_id": "fc7d9d39-55f6-4b16-9cae-3ad01f35d29b",
+          "objective": "explain",
+          "strategy": "step_by_step",
+          "mode": "Story",
+          "vocabulary_band": "simple",
+          "depth": "concise",
+          "pace": "slow",
+          "chunk_size": 1,
+          "socratic_ratio": 0.0,
+          "modalities": [],
+          "confidence": 1.0,
+          "created_at": "2026-03-14T17:57:31.187713"
+        }
+      },
+      "created_at": "2026-03-14T17:57:31.187740"
+    },
+    {
+      "id": "a2357668-f6d1-44ce-8740-e3953f60f8a8",
+      "user_id": "test_user_reward",
+      "event_type": "assessment_answer",
+      "source": "system",
+      "course_id": null,
+      "topic_id": "variable_scope",
+      "session_id": null,
+      "payload": {
+        "is_correct": true
+      },
+      "created_at": "2026-03-14T17:57:31.191967"
+    },
+    {
+      "id": "1f2f0f98-5daf-4dd9-85df-e28d54890f23",
+      "user_id": "test_user_reward",
+      "event_type": "assessment_answer",
+      "source": "system",
+      "course_id": null,
+      "topic_id": "variable_scope",
+      "session_id": null,
+      "payload": {
+        "is_correct": false
+      },
+      "created_at": "2026-03-14T17:57:31.195986"
+    },
+    {
+      "id": "23506891-29da-44c8-9f40-c99f6d7d3239",
+      "user_id": "928ffcd7-2af2-4531-a625-6f138bb03097",
+      "event_type": "quiz_result",
+      "source": "student_router",
+      "course_id": "792cf25c-b226-4501-9a6e-fcb95c2c0347",
+      "topic_id": "quadratics",
+      "session_id": null,
+      "payload": {
+        "score": 45.0,
+        "difficulty": "medium"
+      },
+      "created_at": "2026-03-14T17:57:32.138768"
+    },
+    {
+      "id": "2b7f6872-f26f-46d7-ac61-0166d6b7ded3",
+      "user_id": "928ffcd7-2af2-4531-a625-6f138bb03097",
+      "event_type": "activity_logged",
+      "source": "student_router",
+      "course_id": "792cf25c-b226-4501-9a6e-fcb95c2c0347",
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "course_id": "792cf25c-b226-4501-9a6e-fcb95c2c0347",
+        "duration_minutes": 25.0
+      },
+      "created_at": "2026-03-14T17:57:32.151146"
+    },
+    {
+      "id": "f7f64696-6579-4d2b-9876-a82c51b89587",
+      "user_id": "00000000-0000-0000-0000-000000000001",
+      "event_type": "note_added",
+      "source": "student_router",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "title": "Test Note",
+        "subject": "Testing",
+        "content": "This is a test note content."
+      },
+      "created_at": "2026-03-14T17:57:32.167330"
+    },
+    {
+      "id": "92a5741d-0d79-4f39-b173-bd2c7f5370d6",
+      "user_id": "user_123",
+      "event_type": "assessment_answer",
+      "source": "legacy_profile_engine",
+      "course_id": null,
+      "topic_id": "1",
+      "session_id": null,
+      "payload": {
+        "is_correct": true,
+        "question_id": "legacy-engine-event",
+        "topic": "1"
+      },
+      "created_at": "2026-03-14T18:13:53.886663"
+    },
+    {
+      "id": "64ed4df7-22b8-4303-a709-034258698c01",
+      "user_id": "test_user_reward",
+      "event_type": "tutor_interaction",
+      "source": "system",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "message": "tell me a story about loops",
+        "explanation_plan": {
+          "plan_id": "3e7bcb13-9b49-44d3-a148-75d3cf7f02b6",
+          "objective": "explain",
+          "strategy": "step_by_step",
+          "mode": "Story",
+          "vocabulary_band": "simple",
+          "depth": "concise",
+          "pace": "slow",
+          "chunk_size": 1,
+          "socratic_ratio": 0.0,
+          "modalities": [],
+          "confidence": 1.0,
+          "created_at": "2026-03-14T18:13:58.102428"
+        }
+      },
+      "created_at": "2026-03-14T18:13:58.102454"
+    },
+    {
+      "id": "1ae23a78-531c-4bb5-9423-88999932344a",
+      "user_id": "test_user_reward",
+      "event_type": "assessment_answer",
+      "source": "system",
+      "course_id": null,
+      "topic_id": "variable_scope",
+      "session_id": null,
+      "payload": {
+        "is_correct": true
+      },
+      "created_at": "2026-03-14T18:13:58.107072"
+    },
+    {
+      "id": "b2a41ca6-e1e9-4f2e-b0d4-3c11ef63e845",
+      "user_id": "test_user_reward",
+      "event_type": "assessment_answer",
+      "source": "system",
+      "course_id": null,
+      "topic_id": "variable_scope",
+      "session_id": null,
+      "payload": {
+        "is_correct": false
+      },
+      "created_at": "2026-03-14T18:13:58.111623"
+    },
+    {
+      "id": "b355a1dd-2539-4e5e-91b7-614ac79eac2a",
+      "user_id": "7fdf02c3-04bc-4c0e-9df8-fa5f5b02ec1b",
+      "event_type": "quiz_result",
+      "source": "student_router",
+      "course_id": "ed70f2b4-0a11-40f6-af3e-b68cb3258583",
+      "topic_id": "quadratics",
+      "session_id": null,
+      "payload": {
+        "score": 45.0,
+        "difficulty": "medium"
+      },
+      "created_at": "2026-03-14T18:13:59.031482"
+    },
+    {
+      "id": "33b16274-4125-4870-ad86-23fcf6e4ddf7",
+      "user_id": "7fdf02c3-04bc-4c0e-9df8-fa5f5b02ec1b",
+      "event_type": "activity_logged",
+      "source": "student_router",
+      "course_id": "ed70f2b4-0a11-40f6-af3e-b68cb3258583",
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "course_id": "ed70f2b4-0a11-40f6-af3e-b68cb3258583",
+        "duration_minutes": 25.0
+      },
+      "created_at": "2026-03-14T18:13:59.044820"
+    },
+    {
+      "id": "9c2501cf-5d9c-4c4e-b09c-bfb750359b53",
+      "user_id": "00000000-0000-0000-0000-000000000001",
+      "event_type": "note_added",
+      "source": "student_router",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "title": "Test Note",
+        "subject": "Testing",
+        "content": "This is a test note content."
+      },
+      "created_at": "2026-03-14T18:13:59.061321"
+    },
+    {
+      "id": "f2d2911e-c66c-41b2-8ec7-f0a3da19b694",
+      "user_id": "user_123",
+      "event_type": "assessment_answer",
+      "source": "legacy_profile_engine",
+      "course_id": null,
+      "topic_id": "1",
+      "session_id": null,
+      "payload": {
+        "is_correct": true,
+        "question_id": "legacy-engine-event",
+        "topic": "1"
+      },
+      "created_at": "2026-03-14T18:15:08.936936"
+    },
+    {
+      "id": "fc11944d-2f64-4248-9fd0-35ceb9d3ccc8",
+      "user_id": "test_user_reward",
+      "event_type": "tutor_interaction",
+      "source": "system",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "message": "tell me a story about loops",
+        "explanation_plan": {
+          "plan_id": "58570d28-a59b-42bc-a5dc-5a196e20c958",
+          "objective": "explain",
+          "strategy": "step_by_step",
+          "mode": "Story",
+          "vocabulary_band": "simple",
+          "depth": "concise",
+          "pace": "slow",
+          "chunk_size": 1,
+          "socratic_ratio": 0.0,
+          "modalities": [],
+          "confidence": 1.0,
+          "created_at": "2026-03-14T18:15:13.174453"
+        }
+      },
+      "created_at": "2026-03-14T18:15:13.174477"
+    },
+    {
+      "id": "18c294e0-5062-4bb5-8b75-24b41fb7bf2c",
+      "user_id": "test_user_reward",
+      "event_type": "assessment_answer",
+      "source": "system",
+      "course_id": null,
+      "topic_id": "variable_scope",
+      "session_id": null,
+      "payload": {
+        "is_correct": true
+      },
+      "created_at": "2026-03-14T18:15:13.180944"
+    },
+    {
+      "id": "67d83e00-e984-42ed-9bca-657c0c6cda43",
+      "user_id": "test_user_reward",
+      "event_type": "assessment_answer",
+      "source": "system",
+      "course_id": null,
+      "topic_id": "variable_scope",
+      "session_id": null,
+      "payload": {
+        "is_correct": false
+      },
+      "created_at": "2026-03-14T18:15:13.189086"
+    },
+    {
+      "id": "1a40f37e-a7a4-4fc4-84c3-f046c3a46760",
+      "user_id": "d3c0c2a6-b0d7-4819-8e55-359d056ae1f2",
+      "event_type": "quiz_result",
+      "source": "student_router",
+      "course_id": "d238cb8a-555d-4eeb-adb2-1136df471032",
+      "topic_id": "quadratics",
+      "session_id": null,
+      "payload": {
+        "score": 45.0,
+        "difficulty": "medium"
+      },
+      "created_at": "2026-03-14T18:15:14.127838"
+    },
+    {
+      "id": "79d2d1dd-3da2-479b-a049-3d31e7d5cbda",
+      "user_id": "d3c0c2a6-b0d7-4819-8e55-359d056ae1f2",
+      "event_type": "activity_logged",
+      "source": "student_router",
+      "course_id": "d238cb8a-555d-4eeb-adb2-1136df471032",
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "course_id": "d238cb8a-555d-4eeb-adb2-1136df471032",
+        "duration_minutes": 25.0
+      },
+      "created_at": "2026-03-14T18:15:14.150224"
+    },
+    {
+      "id": "bf0a5f34-4938-443c-a62e-7dbb33f50023",
+      "user_id": "00000000-0000-0000-0000-000000000001",
+      "event_type": "note_added",
+      "source": "student_router",
+      "course_id": null,
+      "topic_id": null,
+      "session_id": null,
+      "payload": {
+        "title": "Test Note",
+        "subject": "Testing",
+        "content": "This is a test note content."
+      },
+      "created_at": "2026-03-14T18:15:14.169734"
+    }
+  ],
   "interventions": [],
   "rubrics": {},
   "scorecards": {}

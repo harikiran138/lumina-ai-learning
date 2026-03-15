@@ -4,7 +4,7 @@ import json
 import random
 import os
 from typing import Optional
-from app.assessment.models.schemas import Question, Option
+from app.assessment.models.schemas import Question, Option, QuestionMetadata
 import uuid
 
 # Configure logging
@@ -106,6 +106,11 @@ class OllamaGenerator:
                     correct_option_id=options[correct_idx].id,
                     difficulty=difficulty,
                     topic=topic,
+                    metadata=QuestionMetadata(
+                        question_id=str(uuid.uuid4()),
+                        concepts=[topic],
+                        difficulty=difficulty,
+                    ),
                 )
 
             except json.JSONDecodeError:
@@ -138,6 +143,11 @@ class OllamaGenerator:
             correct_option_id=options[correct_index].id,
             difficulty=difficulty,
             topic=topic,
+            metadata=QuestionMetadata(
+                question_id=str(uuid.uuid4()),
+                concepts=[topic],
+                difficulty=difficulty,
+            ),
         )
 
 

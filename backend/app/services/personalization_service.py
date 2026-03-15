@@ -235,6 +235,44 @@ class PersonalizationService:
             self.cognitive_load.estimate_load(event_payloads), 2
         )
 
+    def _update_misconceptions(
+        self,
+        profile: LearnerProfileRecord,
+        topic_id: Optional[str],
+        analysis_data: Optional[Dict[str, Any]],
+        is_correct: bool,
+    ):
+        summary = profile.misconception_summary or {}
+        concept_counts = summary.get("concepts", {})
+        label_counts = summary.get("labels", {})
+        recent = summary.get("recent", [])
+
+        if not is_correct and topic_id:
+            concept_counts[topic_id] = concept_counts.get(topic_id, 0) + 1
+            recent.append(
+                {
+                    "type": "concept",
+                    "value": topic_id,
+                    "at": datetime.utcnow().isoformat(),
+                }
+            )
+
+        if analysis_data and analysis_data.get("misconceptions"):
+            for label in analysis_data.get("misconceptions", []):
+                label_counts[label] = label_counts.get(label, 0) + 1
+                recent.append(
+                    {
+                        "type": "label",
+                        "value": label,
+                        "at": datetime.utcnow().isoformat(),
+                    }
+                )
+
+        summary["concepts"] = concept_counts
+        summary["labels"] = label_counts
+        summary["recent"] = recent[-20:]
+        profile.misconception_summary = summary
+
     async def get_profile(self, user_id: str, role: str = "student") -> LearnerProfileRecord:
         profile = await self.store.get_profile(user_id)
         if profile:
@@ -371,6 +409,7 @@ class PersonalizationService:
                         log.warning("failed_to_parse_telemetry_or_analysis", error=str(e))
                 
                 self._update_mastery_from_binary(profile, topic_id, is_correct, event_type.value, integrity=integrity)
+                self._update_misconceptions(profile, topic_id, analysis_data, is_correct)
                 # Reward the last explanation if this was successful
                 self._reward_explanation_style(profile, is_correct)
 
@@ -389,6 +428,13 @@ class PersonalizationService:
             )
             if topic_id:
                 self._update_mastery_from_score(profile, topic_id, accuracy, event_type.value)
+            profile.assessment_summary["last_session_id"] = payload.get("session_id")
+            profile.assessment_summary["last_accuracy"] = accuracy
+            profile.assessment_summary["last_confidence"] = payload.get("confidence_avg")
+            if payload.get("misconceptions"):
+                profile.assessment_summary["last_misconceptions"] = payload.get("misconceptions")
+            if payload.get("remediation_plan"):
+                profile.assessment_summary["last_remediation_plan"] = payload.get("remediation_plan")
 
         elif event_type == LearningEventType.ASSIGNMENT_SUBMITTED:
             engagement.total_assignment_submissions += 1
@@ -480,6 +526,53 @@ class PersonalizationService:
         await self.store.upsert_profile(profile)
         await self._maybe_create_intervention(profile, event)
         return profile
+
+    async def refresh_profile(self, user_id: str, role: str = "student") -> LearnerProfileRecord:
+        """
+        Recompute derived profile signals (KPIs, cognitive load, risk) from recent events.
+        Useful for offline sync or periodic backfills.
+        """
+        profile = await self.get_profile(user_id, role=role)
+        recent_events = await self.store.list_events(user_id, limit=200)
+        self._refresh_cognitive_load(profile, recent_events)
+
+        new_kpi = KPIEngine.compute_snapshot(profile, recent_events)
+        profile.kpi_snapshot = new_kpi
+        profile.kpi_history.append(new_kpi)
+        if len(profile.kpi_history) > 30:
+            profile.kpi_history = profile.kpi_history[-30:]
+
+        profile.risk_summary = self._risk_from_profile(profile)
+        profile.updated_at = datetime.utcnow()
+        profile.metadata["last_refresh_at"] = profile.updated_at.isoformat()
+        await self.store.upsert_profile(profile)
+        return profile
+
+    async def save_remediation_plan(
+        self,
+        user_id: str,
+        remediation_plan: dict,
+        topic: Optional[str] = None,
+        source: str = "automation",
+    ) -> LearnerProfileRecord:
+        profile = await self.get_profile(user_id, role="student")
+        profile.assessment_summary["last_remediation_plan"] = remediation_plan
+        if topic:
+            profile.assessment_summary["last_remediation_topic"] = topic
+        profile.assessment_summary.setdefault("remediation_history", [])
+        profile.assessment_summary["remediation_history"] = (
+            profile.assessment_summary["remediation_history"]
+            + [
+                {
+                    "topic": topic,
+                    "plan": remediation_plan,
+                    "source": source,
+                    "created_at": datetime.utcnow().isoformat(),
+                }
+            ]
+        )[-20:]
+        return await self.store.upsert_profile(profile)
+
     async def get_interventions(self, user_id: Optional[str] = None):
         return await self.store.list_interventions(user_id=user_id)
 
@@ -613,6 +706,9 @@ class PersonalizationService:
             "weak_topics": profile.weak_topics,
             "readiness_score": profile.performance_summary.recent_average_score / 100.0,
             "kpi_snapshot": profile.kpi_snapshot.model_dump(),
+            "knowledge_graph_state": profile.knowledge_graph_state.model_dump(),
+            "spaced_repetition_state": profile.spaced_repetition_state.model_dump(),
+            "offline_sync_state": profile.offline_sync_state.model_dump(),
         }
 
 _service_instance: Optional[PersonalizationService] = None

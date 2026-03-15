@@ -13,6 +13,14 @@ DEFAULT_LOCAL_DB = {
     "submissions": [],
     "user_data": [],
     "assessment_sessions": [],
+    "knowledge_nodes": [],
+    "generation_assets": [],
+    "automation_settings": [],
+    "audit_logs": [],
+    "ai_usage_logs": [],
+    "experiments": [],
+    "integration_events": [],
+    "role_links": [],
 }
 
 

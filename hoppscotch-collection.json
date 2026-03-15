@@ -28,6 +28,44 @@
         "contentType": "application/x-www-form-urlencoded",
         "body": "username=test@example.com&password=password123"
       }
+    },
+    {
+      "name": "Get Personalization Profile",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/api/personalization/profile"
+    },
+    {
+      "name": "Get Tutor Projection (Self)",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/api/personalization/projection/tutor"
+    },
+    {
+      "name": "Get Pathway Projection (Self)",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/api/personalization/projection/pathway"
+    },
+    {
+      "name": "Run Profile Refresh",
+      "method": "POST",
+      "endpoint": "http://localhost:8000/api/automation/run/profile-refresh",
+      "body": {
+        "contentType": "application/json",
+        "body": "{\\n  \\\"limit\\\": 100\\n}"
+      }
+    },
+    {
+      "name": "List Knowledge Graph Nodes",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/api/knowledge-graph/demo-course"
+    },
+    {
+      "name": "Upsert Knowledge Graph Nodes",
+      "method": "POST",
+      "endpoint": "http://localhost:8000/api/knowledge-graph/demo-course/nodes",
+      "body": {
+        "contentType": "application/json",
+        "body": "{\\n  \\\"nodes\\\": [\\n    {\\n      \\\"concept\\\": \\\"arrays\\\",\\n      \\\"difficulty\\\": \\\"beginner\\\",\\n      \\\"prerequisites\\\": []\\n    },\\n    {\\n      \\\"concept\\\": \\\"recursion\\\",\\n      \\\"difficulty\\\": \\\"intermediate\\\",\\n      \\\"prerequisites\\\": [\\\"arrays\\\"]\\n    }\\n  ]\\n}"
+      }
     }
   ]
 }

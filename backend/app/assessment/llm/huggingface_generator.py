@@ -3,7 +3,7 @@ from typing import Optional, List
 import json
 import random
 from transformers import pipeline
-from app.assessment.models.schemas import Question, Option
+from app.assessment.models.schemas import Question, Option, QuestionMetadata
 import uuid
 
 # Configure logging
@@ -91,6 +91,11 @@ class HuggingFaceGenerator:
             correct_option_id=options[correct_index].id,
             difficulty=difficulty,
             topic=topic,
+            metadata=QuestionMetadata(
+                question_id=str(uuid.uuid4()),
+                concepts=[topic],
+                difficulty=difficulty,
+            ),
         )
 
 

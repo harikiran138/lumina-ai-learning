@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from app.automation.jobs import (
     run_inactivity_alert_scan,
     run_post_assessment_remediation,
+    run_profile_refresh,
     run_student_progress_digest,
     run_weekly_class_digest,
 )
@@ -240,6 +241,37 @@ def trigger_progress_digest(req: ProgressDigestRequest):
     except Exception as e:
         _persist_job_log(
             AutomationJobType.PROGRESS_DIGEST,
+            {},
+            status=AutomationJobStatus.FAILED,
+            error_message=str(e),
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /api/automation/run/profile-refresh
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ProfileRefreshRequest(BaseModel):
+    limit: int = 500
+
+
+@router.post("/run/profile-refresh")
+def trigger_profile_refresh(req: ProfileRefreshRequest):
+    """Recompute KPI/risk/cognitive-load signals for all profiles."""
+    t0 = time.time()
+    try:
+        result = run_profile_refresh(req.limit)
+        duration = int((time.time() - t0) * 1000)
+        _persist_job_log(
+            AutomationJobType.PROFILE_REFRESH,
+            result,
+            duration_ms=duration,
+        )
+        return result
+    except Exception as e:
+        _persist_job_log(
+            AutomationJobType.PROFILE_REFRESH,
             {},
             status=AutomationJobStatus.FAILED,
             error_message=str(e),

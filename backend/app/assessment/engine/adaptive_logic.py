@@ -11,7 +11,8 @@ class AdaptiveLogic:
         - If correct: Increase difficulty by 0.1 (capped at 1.0)
         - If incorrect: Decrease difficulty by 0.1 (floored at 0.1)
 
-        Future improvement: Use IRT (Item Response Theory).
+        Note: IRT-based ability updates are now handled in session_manager; this
+        remains as a safe fallback for simple flows.
         """
         if is_correct:
             # Increase difficulty

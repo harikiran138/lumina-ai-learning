@@ -106,6 +106,18 @@ class PersonalizationStore:
         self._write_fallback(payload)
         return profile
 
+    async def list_profiles(self, limit: int = 5000) -> List[LearnerProfileRecord]:
+        if self.client:
+            try:
+                response = self.client.table("learner_profiles").select("*").limit(limit).execute()
+                return [LearnerProfileRecord(**item) for item in response.data]
+            except Exception as exc:
+                log.warning("learner_profiles_list_failed", limit=limit, error=str(exc))
+
+        payload = self._read_fallback()
+        profiles = list(payload.get("profiles", {}).values())
+        return [LearnerProfileRecord(**item) for item in profiles[:limit]]
+
     async def append_event(self, event: LearningEventRecord) -> LearningEventRecord:
         record = event.model_dump(mode="json")
         if self.client and self._supports_remote_user_id(event.user_id):

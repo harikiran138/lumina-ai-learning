@@ -88,6 +88,37 @@ interface TeacherPriorityItem {
   href: string;
 }
 
+interface TeacherIntervention {
+  id: string;
+  studentId: string;
+  studentName: string;
+  riskLevel: string;
+  topicId?: string | null;
+  priority: string;
+  status: string;
+  recommendedAction: string;
+  reason: string;
+  confidence: number;
+  evidence?: Record<string, any>;
+  suggestedMessage?: string;
+  misconceptions?: any[];
+  weakTopics?: string[];
+}
+
+interface TeacherHeatmapItem {
+  topic_id: string;
+  average_mastery: number;
+  student_count: number;
+  risk_count: number;
+}
+
+interface TeacherSupportCluster {
+  topic: string;
+  students: { id: string; name: string }[];
+  riskCount: number;
+  recommendedAction: string;
+}
+
 interface TeacherWeeklySnapshot {
   publishedCourses: number;
   draftCourses: number;
@@ -102,6 +133,9 @@ interface TeacherDashboardData {
   studentMomentum?: TeacherStudentMomentum[];
   priorityItems?: TeacherPriorityItem[];
   weeklySnapshot?: Partial<TeacherWeeklySnapshot>;
+  interventionQueue?: TeacherIntervention[];
+  conceptHeatmap?: TeacherHeatmapItem[];
+  supportClusters?: TeacherSupportCluster[];
 }
 
 const EMPTY_SUMMARY: TeacherSummary = {
@@ -221,6 +255,7 @@ export default function TeacherDashboard() {
   const [data, setData] = useState<TeacherDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingInterventionId, setUpdatingInterventionId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -262,6 +297,45 @@ export default function TeacherDashboard() {
   const momentum = data?.studentMomentum || [];
   const priorityItems = data?.priorityItems || [];
   const weeklySnapshot = { ...EMPTY_SNAPSHOT, ...(data?.weeklySnapshot || {}) };
+  const interventionQueue = data?.interventionQueue || [];
+  const heatmap = data?.conceptHeatmap || [];
+  const supportClusters = data?.supportClusters || [];
+
+  const updateIntervention = async (
+    interventionId: string,
+    status: "acknowledged" | "resolved",
+    actionTaken?: string,
+  ) => {
+    setUpdatingInterventionId(interventionId);
+    try {
+      const payload = await api.updateIntervention(interventionId, {
+        status,
+        action_taken: actionTaken,
+      });
+      setData((prev) => {
+        if (!prev) return prev;
+        const updatedQueue = (prev.interventionQueue || [])
+          .map((item) =>
+            item.id === interventionId
+              ? { ...item, status: payload?.status || status }
+              : item,
+          )
+          .filter((item) => item.status !== "resolved");
+        return { ...prev, interventionQueue: updatedQueue };
+      });
+    } finally {
+      setUpdatingInterventionId(null);
+    }
+  };
+
+  const overrideIntervention = async (item: TeacherIntervention) => {
+    const override = window.prompt(
+      "Override recommended action",
+      item.recommendedAction,
+    );
+    if (!override) return;
+    await updateIntervention(item.id, "acknowledged", override);
+  };
 
   return (
     <div className="space-y-8">
@@ -504,6 +578,157 @@ export default function TeacherDashboard() {
                 tone={summary.avgMastery < 70 ? "warning" : "good"}
               />
             </div>
+          </Panel>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
+        <Panel
+          title="Intervention Queue"
+          subtitle="Prioritized learners who need intervention, with evidence and suggested action."
+        >
+          {interventionQueue.length === 0 ? (
+            <EmptyState
+              icon={CheckCircle2}
+              title="No active interventions"
+              detail="When a learner is flagged as at-risk, they will appear here with a suggested action."
+            />
+          ) : (
+            <div className="space-y-4">
+              {interventionQueue.slice(0, 6).map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-white">
+                        {item.studentName}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-400">
+                        {item.topicId || "General"} • Risk: {item.riskLevel}
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
+                        item.priority === "critical" || item.priority === "high"
+                          ? "border-red-400/20 bg-red-400/10 text-red-300"
+                          : item.priority === "medium"
+                            ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
+                            : "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+                      )}
+                    >
+                      {item.priority}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm text-gray-300">{item.reason}</p>
+                  <p className="mt-2 text-xs text-gray-400">
+                    Suggested action:{" "}
+                    <span className="text-white">{item.recommendedAction}</span>
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Confidence: {Math.round((item.confidence || 0) * 100)}%
+                  </p>
+                  {item.weakTopics?.length ? (
+                    <p className="mt-2 text-xs text-gray-500">
+                      Weak topics: {item.weakTopics.slice(0, 3).join(", ")}
+                    </p>
+                  ) : null}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      className="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-white hover:border-white/20"
+                      onClick={() => updateIntervention(item.id, "acknowledged")}
+                      disabled={updatingInterventionId === item.id}
+                    >
+                      Mark reviewed
+                    </button>
+                    <button
+                      className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200 hover:border-emerald-300/40"
+                      onClick={() => updateIntervention(item.id, "resolved")}
+                      disabled={updatingInterventionId === item.id}
+                    >
+                      Resolve
+                    </button>
+                    <button
+                      className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-200 hover:border-amber-300/40"
+                      onClick={() => overrideIntervention(item)}
+                      disabled={updatingInterventionId === item.id}
+                    >
+                      Override action
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+
+        <div className="space-y-6">
+          <Panel title="Concept Heatmap" subtitle="Class-wide mastery by topic.">
+            {heatmap.length === 0 ? (
+              <EmptyState
+                icon={TrendingUp}
+                title="No concept signals yet"
+                detail="Once assessments run, concept mastery data will appear here."
+                compact
+              />
+            ) : (
+              <div className="space-y-3">
+                {heatmap.slice(0, 8).map((item) => (
+                  <div
+                    key={item.topic_id}
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"
+                  >
+                    <div className="flex items-center justify-between text-sm text-white">
+                      <span>{item.topic_id}</span>
+                      <span className="text-xs text-gray-400">
+                        {Math.round(item.average_mastery * 100)}%
+                      </span>
+                    </div>
+                    <div className="mt-2 h-2 rounded-full bg-white/10">
+                      <div
+                        className="h-2 rounded-full bg-emerald-400"
+                        style={{ width: `${Math.round(item.average_mastery * 100)}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500">
+                      {item.student_count} students • {item.risk_count} at risk
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="Support Clusters" subtitle="Suggested regrouping for focused remediation.">
+            {supportClusters.length === 0 ? (
+              <EmptyState
+                icon={Users}
+                title="No clusters yet"
+                detail="Clusters appear when multiple students share the same weak topic."
+                compact
+              />
+            ) : (
+              <div className="space-y-3">
+                {supportClusters.slice(0, 4).map((cluster) => (
+                  <div
+                    key={cluster.topic}
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"
+                  >
+                    <p className="text-sm font-semibold text-white">
+                      {cluster.topic}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-400">
+                      {cluster.students.map((student) => student.name).join(", ")}
+                    </p>
+                    <p className="mt-2 text-xs text-gray-500">
+                      {cluster.recommendedAction}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </Panel>
         </div>
       </div>
