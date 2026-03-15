@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     ASSESSMENT_API_KEY: Optional[str] = None
     SENTRY_DSN: Optional[str] = None
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=(".env", "../.env", "../../.env"), extra="ignore")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

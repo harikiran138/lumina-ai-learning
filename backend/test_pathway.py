@@ -1,3 +1,4 @@
+import pytest
 import asyncio
 from datetime import datetime
 from app.pathway.schemas import PathwayInput, MasteryDetail, EngagementState, Constraints, PathwayAction
@@ -34,14 +35,15 @@ def build_mock_context(learner_id: str, fatigue: float = 0.2, config: str = "ave
         constraints=Constraints(maxSessionTimeMinutes=60, availableEnergy=80)
     )
 
-def test_pathway_logic():
+@pytest.mark.asyncio
+async def test_pathway_logic():
     print("🚀 Running Pathway Agent Logic Tests...")
     orchestrator = PathwayOrchestrator()
     
     # Test 1: Struggling Learner (Should output REVIEW for concept_2)
     print("\n--- Test 1: Struggling Learner ---")
     struggling_context = build_mock_context(learner_id="u_struggle", config="struggling")
-    decision1 = orchestrator.run_decision_cycle(struggling_context)
+    decision1 = await orchestrator.run_decision_cycle(struggling_context)
     print(f"Action: {decision1.action}")
     print(f"Target: {decision1.targetConcept}")
     print(f"Reasoning: {decision1.reasoning}")
@@ -51,7 +53,7 @@ def test_pathway_logic():
     # Test 2: Fast Learner (Should output ADVANCE)
     print("\n--- Test 2: Fast Learner ---")
     fast_context = build_mock_context(learner_id="u_fast", config="fast")
-    decision2 = orchestrator.run_decision_cycle(fast_context)
+    decision2 = await orchestrator.run_decision_cycle(fast_context)
     print(f"Action: {decision2.action}")
     print(f"Target: {decision2.targetConcept}")
     print(f"Reasoning: {decision2.reasoning}")
@@ -60,7 +62,7 @@ def test_pathway_logic():
     # Test 3: Exhausted Learner (Should output REST)
     print("\n--- Test 3: Exhausted Learner ---")
     exhaust_context = build_mock_context(learner_id="u_exhausted", fatigue=0.9)
-    decision3 = orchestrator.run_decision_cycle(exhaust_context)
+    decision3 = await orchestrator.run_decision_cycle(exhaust_context)
     print(f"Action: {decision3.action}")
     print(f"Reasoning: {decision3.reasoning}")
     assert decision3.action == PathwayAction.REST, "Exhausted learner should be set to REST"
@@ -68,7 +70,7 @@ def test_pathway_logic():
     # Test 4: Average Learner (Should output CONTINUE)
     print("\n--- Test 4: Average Learner ---")
     avg_context = build_mock_context(learner_id="u_avg", config="average")
-    decision4 = orchestrator.run_decision_cycle(avg_context)
+    decision4 = await orchestrator.run_decision_cycle(avg_context)
     print(f"Action: {decision4.action}")
     print(f"Reasoning: {decision4.reasoning}")
     assert decision4.action == PathwayAction.CONTINUE, "Average learner should CONTINUE"
@@ -76,4 +78,4 @@ def test_pathway_logic():
     print("\n🎉 All tests passed successfully!")
 
 if __name__ == "__main__":
-    test_pathway_logic()
+    asyncio.run(test_pathway_logic())

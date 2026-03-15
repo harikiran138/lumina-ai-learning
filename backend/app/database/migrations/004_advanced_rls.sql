@@ -66,7 +66,7 @@ CREATE POLICY "Allow anon to insert users" ON users FOR INSERT WITH CHECK (true)
 
 -- Student Pathways
 CREATE POLICY "Users can view and manage own pathways" ON student_pathways
-    USING (auth.uid() = user_id OR auth.uid() IS NULL); -- Allow null for seeding
+    FOR ALL USING (auth.uid() = user_id OR auth.uid() IS NULL); -- Allow null for seeding
 
 -- Skill Mastery
 CREATE POLICY "Users can view own mastery" ON skill_mastery
@@ -77,7 +77,7 @@ CREATE POLICY "Anyone can view published quizzes" ON quizzes
     FOR SELECT USING (is_published = TRUE);
 
 CREATE POLICY "Teachers can manage own quizzes" ON quizzes
-    ALL USING (true); -- Permissive for dev
+    FOR ALL USING (true); -- Permissive for dev
 
 -- Quiz Attempts
 CREATE POLICY "Users can view own attempts" ON quiz_attempts
@@ -88,13 +88,13 @@ CREATE POLICY "Users can insert own attempts" ON quiz_attempts
 
 -- Conversations
 CREATE POLICY "Users can manage own conversations" ON conversations
-    USING (auth.uid() = user_id OR auth.uid() IS NULL);
+    FOR ALL USING (auth.uid() = user_id OR auth.uid() IS NULL);
 
 -- User Data
 CREATE POLICY "Users can view and edit own data" ON user_data
-    USING (auth.uid() = user_id OR auth.uid() IS NULL);
+    FOR ALL USING (auth.uid() = user_id OR auth.uid() IS NULL);
 
 -- Enrollments (if not already handled)
 ALTER TABLE enrollments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow anon enrollments" ON enrollments;
-CREATE POLICY "Allow anon enrollments" ON enrollments ALL USING (true);
+CREATE POLICY "Allow anon enrollments" ON enrollments FOR ALL USING (true);
