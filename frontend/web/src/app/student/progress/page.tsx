@@ -237,10 +237,19 @@ export default function StudentProgress() {
           </section>
 
           <section className="glass-card p-6">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-              <Brain className="w-5 h-5 text-lumina-primary" />
-              Mastery Breakdown
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                <Brain className="w-5 h-5 text-lumina-primary" />
+                Mastery Breakdown
+              </h2>
+              <Link
+                href="/student/progress/knowledge-graph"
+                className="text-xs text-lumina-primary hover:underline flex items-center gap-1"
+              >
+                View Interaction Graph
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
             <div className="space-y-4">
               {masteryBreakdown.length > 0 ? (
                 masteryBreakdown.map((item) => (
@@ -314,10 +323,18 @@ export default function StudentProgress() {
           </section>
 
           <section className="glass-card p-6">
-            <h2 className="text-xl font-semibold text-white mb-5 flex items-center gap-2">
-              <Award className="w-5 h-5 text-lumina-primary" />
-              Achievement Snapshot
-            </h2>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                <Award className="w-5 h-5 text-lumina-primary" />
+                Achievement Snapshot
+              </h2>
+              <Link
+                href="/student/leaderboard"
+                className="text-xs text-lumina-primary hover:underline"
+              >
+                Leaderboard
+              </Link>
+            </div>
             <div className="space-y-3">
               {(data?.achievements || []).length > 0 ? (
                 data?.achievements?.map((achievement) => (

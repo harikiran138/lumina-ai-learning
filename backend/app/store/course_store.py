@@ -71,16 +71,14 @@ class CourseStore:
         code = blueprint.get("code") or f"c-{str(uuid.uuid4())[:8]}"
         
         course_data = {
-            "title": title,
-            "course_name": title,
+            "name": title,
             "code": code,
-            "course_code": code,
             "description": blueprint.get("description", ""),
             "teacher_id": teacher_id,
+            "subject": blueprint.get("subject", "general"),
+            "difficulty_level": blueprint.get("difficulty_level", "beginner"),
             "modules": blueprint.get("modules", []),
-            "estimated_duration": blueprint.get("estimated_duration", ""),
-            "is_published": False,
-            "metadata": blueprint.get("metadata", {})
+            "is_published": False
         }
 
         try:
