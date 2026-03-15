@@ -10,7 +10,7 @@ log = structlog.get_logger()
 class StudentStore:
     """
     Store for student-specific operations: Enrollment, Progress, Badges, Certificates.
-    Operates on 'enrollments' and 'users' tables in Supabase.
+    Operates on 'progress' and 'users' tables in Supabase.
     """
 
     def __init__(self):
@@ -40,31 +40,30 @@ class StudentStore:
 
     async def enroll_in_course(self, student_id: str, course_id: str) -> bool:
         """
-        Enrolls a student in a course. Creates an enrollment record.
+        Enrolls a student in a course. Creates a progress record.
         """
-        enrollment_data = {
-            "student_id": student_id,
+        progress_data = {
+            "user_id": student_id,
             "course_id": course_id,
-            "progress": {
-                "percentage": 0,
-                "mastery": 0,
-                "streak": 0,
-                "completedLessons": [],
-                "hoursSpent": 0,
-                "lastAccessed": datetime.utcnow().isoformat()
-            },
-            "status": "active"
+            "mastery": 0.0,
+            "completed_lessons": [],
+            "hours_spent": 0.0,
+            "current_module_index": 0,
+            "current_lesson_index": 0,
+            "daily_streak": 0,
+            "last_accessed": datetime.utcnow().isoformat(),
+            "started_at": datetime.utcnow().isoformat()
         }
 
         try:
             # Check if already enrolled
             client = self.db.get_client()
-            response = client.table("enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).execute()
+            response = client.table("progress").select("*").eq("user_id", student_id).eq("course_id", course_id).execute()
             if response.data:
                 return False
 
             # Create record
-            await self.db.insert("enrollments", enrollment_data)
+            await self.db.insert("progress", progress_data)
             return True
         except Exception as e:
             log.error("enroll_in_course_failed", student_id=student_id, course_id=course_id, error=str(e))
@@ -73,7 +72,7 @@ class StudentStore:
     async def get_enrollment(self, student_id: str, course_id: str) -> Optional[dict]:
         try:
             client = self.db.get_client()
-            response = client.table("enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).execute()
+            response = client.table("progress").select("*").eq("user_id", student_id).eq("course_id", course_id).execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("get_enrollment_failed", student_id=student_id, course_id=course_id, error=str(e))
@@ -106,13 +105,12 @@ class StudentStore:
             
             progress_pct = (len(completed_lessons) / total_lessons * 100) if total_lessons > 0 else 0
             
-            progress.update({
-                "completedLessons": completed_lessons,
-                "percentage": int(round(progress_pct)),
-                "lastAccessed": datetime.utcnow().isoformat()
-            })
+            updates = {
+                "completed_lessons": completed_lessons,
+                "last_accessed": datetime.utcnow().isoformat()
+            }
             
-            await self.db.update("enrollments", {"progress": progress}, {"id": enrollment["id"]})
+            await self.db.update("progress", updates, {"id": enrollment["id"]})
 
             return {"success": True, "lesson_id": lesson_id, "progress": progress_pct}
         except Exception as e:
@@ -139,6 +137,27 @@ class StudentStore:
         except Exception as e:
             log.error("get_badges_failed", student_id=student_id, error=str(e))
         return []
+
+    async def update_mastery(self, student_id: str, course_id: str, mastery_score: float) -> bool:
+        """
+        Updates the mastery score in the enrollment progress.
+        """
+        try:
+            enrollment = await self.get_enrollment(student_id, course_id)
+            if not enrollment:
+                return False
+
+            updates = {
+                "mastery": round(mastery_score, 2),
+                "last_accessed": datetime.utcnow().isoformat()
+            }
+
+            client = self.db.get_client()
+            client.table("progress").update(updates).eq("id", enrollment["id"]).execute()
+            return True
+        except Exception as e:
+            log.error("update_mastery_failed", student_id=student_id, course_id=course_id, error=str(e))
+            return False
 
     async def log_activity(self, student_id: str, course_id: str, duration_minutes: int) -> bool:
         """
@@ -173,13 +192,13 @@ class StudentStore:
             else:
                 new_streak = 1
 
-            progress.update({
-                "hoursSpent": round(new_hours, 2),
-                "streak": new_streak,
-                "lastAccessed": now.isoformat()
-            })
+            updates = {
+                "hours_spent": round(new_hours, 2),
+                "daily_streak": new_streak,
+                "last_accessed": now.isoformat()
+            }
 
-            await self.db.update("enrollments", {"progress": progress}, {"id": enrollment["id"]})
+            await self.db.update("progress", updates, {"id": enrollment["id"]})
             return True
         except Exception as e:
             log.error("log_activity_failed", student_id=student_id, error=str(e))

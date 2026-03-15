@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://lumina:lumina_password@localhost:5432/lumina_db"
     
     # Supabase
-    SUPABASE_URL: str = "https://odyjksznsdeyweylovzl.supabase.co"
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://odyjksznsdeyweylovzl.supabase.co")
     SUPABASE_ANON_KEY: Optional[str] = os.getenv("SUPABASE_ANON_KEY")
     SUPABASE_SERVICE_ROLE_KEY: Optional[str] = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 

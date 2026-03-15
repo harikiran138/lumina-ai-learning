@@ -1393,6 +1393,98 @@
       },
       "created_at": "2026-03-14T18:15:14.134084",
       "updated_at": "2026-03-14T18:15:14.153580"
+    },
+    "bef7583e-4670-4be1-b0d5-d7b9f3c3f3e1": {
+      "user_id": "bef7583e-4670-4be1-b0d5-d7b9f3c3f3e1",
+      "role": "student",
+      "grade_level": null,
+      "goals": [],
+      "preferences": {
+        "preferred_modalities": [],
+        "preferred_difficulty": null,
+        "preferred_session_minutes": null,
+        "study_goals": [],
+        "accessibility_needs": [],
+        "language": {
+          "locale": null,
+          "primary_language": null,
+          "secondary_languages": [],
+          "translation_enabled": true
+        }
+      },
+      "mastery_state": {},
+      "weak_topics": [],
+      "behavior_signals": {},
+      "engagement_summary": {
+        "total_minutes": 0.0,
+        "total_lessons_completed": 0,
+        "total_quiz_attempts": 0,
+        "total_assessments_completed": 0,
+        "total_assignment_submissions": 0,
+        "total_tutor_interactions": 0,
+        "current_streak": 0,
+        "last_activity_at": null
+      },
+      "performance_summary": {
+        "recent_average_score": 0.0,
+        "assignment_average": 0.0,
+        "assessment_average": 0.0,
+        "quiz_average": 0.0,
+        "low_score_count": 0,
+        "high_score_count": 0
+      },
+      "risk_summary": {
+        "risk_level": "low",
+        "risk_score": 0.0,
+        "confidence": 0.5,
+        "reasons": [],
+        "last_evaluated_at": null
+      },
+      "explanation_profile": {
+        "strategies": {},
+        "primary_mode": null,
+        "last_plan": null,
+        "updated_at": "2026-03-15T01:52:22.125825"
+      },
+      "kpi_snapshot": {
+        "growth_velocity": 0.0,
+        "lag_zone_score": 0.0,
+        "authenticity_score": 1.0,
+        "explanation_effectiveness": 0.0,
+        "recorded_at": "2026-03-15T01:52:22.125849"
+      },
+      "kpi_history": [],
+      "intervention_history": {
+        "total_interventions": 0,
+        "resolved_count": 0,
+        "dismissed_count": 0
+      },
+      "misconception_summary": {},
+      "knowledge_graph_state": {
+        "graph_id": null,
+        "graph_version": null,
+        "concept_ids": [],
+        "last_synced_at": null
+      },
+      "spaced_repetition_state": {
+        "algorithm": "fsrs",
+        "items": {},
+        "pending_review_count": 0,
+        "last_updated_at": "2026-03-15T01:52:22.125890"
+      },
+      "offline_sync_state": {
+        "enabled": false,
+        "last_synced_at": null,
+        "pending_event_count": 0,
+        "device_ids": [],
+        "sync_version": 1
+      },
+      "tutor_summary": {},
+      "assignment_summary": {},
+      "assessment_summary": {},
+      "metadata": {},
+      "created_at": "2026-03-15T01:52:22.125918",
+      "updated_at": "2026-03-15T01:52:22.125918"
     }
   },
   "events": [

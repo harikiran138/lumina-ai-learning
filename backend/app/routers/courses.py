@@ -3,11 +3,11 @@ from fastapi import APIRouter, HTTPException, Depends, Body
 from pydantic import BaseModel
 from typing import Optional, List, Any
 from app.store.course_store import CourseStore
-from app.dependencies import get_course_store
-from .auth import get_current_user
-from app.core.cache import cached
-from app.database.supabase_manager import supabase_db
+from app.store.analytics_store import AnalyticsStore
+from app.services.personalization_service import get_personalization_service
+from app.personalization.schemas import InterventionStatus
 from app.dependencies import get_course_store, get_analytics_store
+from app.core.cache import cached
 from .auth import get_current_user
 
 router = APIRouter()

@@ -7,6 +7,7 @@ from app.pathway.orchestrator import PathwayOrchestrator
 
 def build_mock_context(learner_id: str, fatigue: float = 0.2, config: str = "average") -> PathwayInput:
     mastery = {}
+    readiness = 0.5
     
     if config == "struggling":
         mastery = {
@@ -18,6 +19,7 @@ def build_mock_context(learner_id: str, fatigue: float = 0.2, config: str = "ave
             "concept_1": MasteryDetail(conceptId="concept_1", probabilityCorrect=0.95, confidence=0.95, stability=90.0),
             "concept_2": MasteryDetail(conceptId="concept_2", probabilityCorrect=0.90, confidence=0.92, stability=30.0),
         }
+        readiness = 0.8
     else: # Average
         mastery = {
             "concept_1": MasteryDetail(conceptId="concept_1", probabilityCorrect=0.6, confidence=0.6, stability=10.0),
@@ -27,6 +29,7 @@ def build_mock_context(learner_id: str, fatigue: float = 0.2, config: str = "ave
         learnerId=learner_id,
         currentTimestamp=datetime.utcnow(),
         masteryState=mastery,
+        readinessScore=readiness,
         engagementState=EngagementState(
             currentSessionDurationMinutes=30,
             cognitiveLoadIndex=4.0,
@@ -40,9 +43,15 @@ async def test_pathway_logic():
     print("🚀 Running Pathway Agent Logic Tests...")
     orchestrator = PathwayOrchestrator()
     
+    # Use real UUIDs to satisfy database constraints if service tries to fetch
+    u_struggle = "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1"
+    u_fast = "b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2"
+    u_exhausted = "c3c3c3c3-c3c3-c3c3-c3c3-c3c3c3c3c3c3"
+    u_avg = "d4d4d4d4-d4d4-d4d4-d4d4-d4d4d4d4d4d4"
+
     # Test 1: Struggling Learner (Should output REVIEW for concept_2)
     print("\n--- Test 1: Struggling Learner ---")
-    struggling_context = build_mock_context(learner_id="u_struggle", config="struggling")
+    struggling_context = build_mock_context(learner_id=u_struggle, config="struggling")
     decision1 = await orchestrator.run_decision_cycle(struggling_context)
     print(f"Action: {decision1.action}")
     print(f"Target: {decision1.targetConcept}")
@@ -52,7 +61,7 @@ async def test_pathway_logic():
 
     # Test 2: Fast Learner (Should output ADVANCE)
     print("\n--- Test 2: Fast Learner ---")
-    fast_context = build_mock_context(learner_id="u_fast", config="fast")
+    fast_context = build_mock_context(learner_id=u_fast, config="fast")
     decision2 = await orchestrator.run_decision_cycle(fast_context)
     print(f"Action: {decision2.action}")
     print(f"Target: {decision2.targetConcept}")
@@ -61,7 +70,7 @@ async def test_pathway_logic():
     
     # Test 3: Exhausted Learner (Should output REST)
     print("\n--- Test 3: Exhausted Learner ---")
-    exhaust_context = build_mock_context(learner_id="u_exhausted", fatigue=0.9)
+    exhaust_context = build_mock_context(learner_id=u_exhausted, fatigue=0.9)
     decision3 = await orchestrator.run_decision_cycle(exhaust_context)
     print(f"Action: {decision3.action}")
     print(f"Reasoning: {decision3.reasoning}")
@@ -69,7 +78,7 @@ async def test_pathway_logic():
 
     # Test 4: Average Learner (Should output CONTINUE)
     print("\n--- Test 4: Average Learner ---")
-    avg_context = build_mock_context(learner_id="u_avg", config="average")
+    avg_context = build_mock_context(learner_id=u_avg, config="average")
     decision4 = await orchestrator.run_decision_cycle(avg_context)
     print(f"Action: {decision4.action}")
     print(f"Reasoning: {decision4.reasoning}")
