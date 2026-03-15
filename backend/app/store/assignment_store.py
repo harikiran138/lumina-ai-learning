@@ -24,8 +24,8 @@ class AssignmentStore:
             "course_id": course_id,
             "description": description,
             "due_date": due_date,
-            "creator_id": created_by,
-            "assignment_type": "essay"  # Default for v2.0
+            "created_by": created_by
+            # "assignment_type": "essay"  # Optional, rely on DB default
         }
         try:
             result = await self.db.insert("assignments", assignment_data)
