@@ -45,7 +45,8 @@ async def seed_data():
     """
     Seeds the Supabase database with realistic data.
     """
-    await clear_database()
+    # Database is already cleared via MCP schema recreate
+    print("🌱 Seeding Supabase Lumina Database...")
     print("🌱 Seeding Supabase Lumina Database...")
 
     user_store = UserStore()
