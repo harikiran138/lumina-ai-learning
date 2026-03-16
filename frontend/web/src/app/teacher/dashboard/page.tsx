@@ -17,6 +17,9 @@ import {
   Sparkles,
   TrendingUp,
   Users,
+  Zap,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -563,19 +566,19 @@ export default function TeacherDashboard() {
                 icon={AlertTriangle}
                 label="Students needing intervention"
                 value={summary.atRiskStudents}
-                tone={summary.atRiskStudents > 0 ? "warning" : "good"}
+                tone={summary.atRiskStudents > 0 ? "warning" : "gold"}
               />
               <SignalRow
                 icon={CalendarDays}
                 label="Deadlines approaching"
                 value={summary.upcomingDeadlines}
-                tone={summary.upcomingDeadlines > 0 ? "warning" : "good"}
+                tone={summary.upcomingDeadlines > 0 ? "warning" : "gold"}
               />
               <SignalRow
                 icon={GraduationCap}
                 label="Average mastery"
                 value={`${summary.avgMastery}%`}
-                tone={summary.avgMastery < 70 ? "warning" : "good"}
+                tone={summary.avgMastery < 70 ? "warning" : "gold"}
               />
             </div>
           </Panel>
@@ -981,7 +984,7 @@ function SignalRow({
         <div
           className={cn(
             "rounded-xl p-2",
-            tone === "good" ? "bg-amber-100/10 text-amber-100" : "bg-lumina-highlight/10 text-lumina-highlight",
+            tone === "gold" ? "bg-amber-100/10 text-amber-100" : "bg-lumina-highlight/10 text-lumina-highlight",
           )}
         >
           <Icon className="h-4 w-4" />

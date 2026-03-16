@@ -72,7 +72,7 @@ export default function ClassReportsPage() {
       {
         label: "Completion Rate (%)",
         data: [100, 95, 88, 72, 45],
-        backgroundColor: "rgba(59, 130, 246, 0.6)",
+        backgroundColor: "rgba(251, 191, 36, 0.6)",
         borderRadius: 8,
       }
     ],
@@ -84,9 +84,9 @@ export default function ClassReportsPage() {
       {
         data: [30, 45, 15, 10],
         backgroundColor: [
-          "rgba(52, 211, 153, 0.6)",
-          "rgba(59, 130, 246, 0.6)",
+          "rgba(251, 191, 36, 0.8)",
           "rgba(251, 191, 36, 0.6)",
+          "rgba(251, 191, 36, 0.4)",
           "rgba(248, 113, 113, 0.6)",
         ],
         borderWidth: 0,
