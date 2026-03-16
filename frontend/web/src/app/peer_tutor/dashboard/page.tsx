@@ -98,11 +98,11 @@ export default function PeerTutorDashboard() {
             className={cn(
               "flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg",
               isOnline 
-                ? "bg-green-500/20 text-green-400 border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.2)]" 
+                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]" 
                 : "bg-white/5 text-gray-400 border border-white/10"
             )}
           >
-            <div className={cn("w-2 h-2 rounded-full", isOnline ? "bg-green-400 animate-pulse" : "bg-gray-600")} />
+            <div className={cn("w-2 h-2 rounded-full", isOnline ? "bg-amber-400 animate-pulse" : "bg-gray-600")} />
             {isOnline ? "Go Offline" : "Go Online"}
           </button>
           <Link href="/peer-tutor/training">
@@ -147,7 +147,7 @@ export default function PeerTutorDashboard() {
                       </div>
                       <span className={cn(
                         "px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider",
-                        mod.status === 'certified' ? "bg-green-500/10 text-green-400" : "bg-lumina-primary/10 text-lumina-primary"
+                        mod.status === 'certified' ? "bg-amber-500/10 text-amber-400" : "bg-lumina-primary/10 text-lumina-primary"
                       )}>
                         {mod.status}
                       </span>
@@ -155,7 +155,7 @@ export default function PeerTutorDashboard() {
                     <h4 className="font-bold text-white text-sm mb-3">{mod.title}</h4>
                     <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
                        <div 
-                        className={cn("h-full transition-all duration-1000", mod.status === 'certified' ? "bg-green-500" : "bg-lumina-primary")}
+                        className={cn("h-full transition-all duration-1000", mod.status === 'certified' ? "bg-amber-500" : "bg-lumina-primary")}
                         style={{ width: `${mod.progress}%` }}
                        />
                     </div>
@@ -168,8 +168,8 @@ export default function PeerTutorDashboard() {
            <GlassCard className="p-8">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-2xl bg-green-500/10">
-                    <Zap className="w-6 h-6 text-green-400" />
+                  <div className="p-3 rounded-2xl bg-amber-500/10">
+                    <Zap className="w-6 h-6 text-amber-400" />
                   </div>
                   <h2 className="text-2xl font-bold text-white">Live Queue</h2>
                 </div>
@@ -187,7 +187,7 @@ export default function PeerTutorDashboard() {
                   { name: 'Erling H.', subject: 'Physics: Forces', waitTime: '8m', priority: 'medium' }
                 ].map((peer, idx) => (
                   <div key={idx} className="flex items-center gap-5 p-5 rounded-2xl glass-v2 border-white/5 hover:bg-white/[0.05] transition-all group">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center font-bold text-white text-lg">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500/20 to-yellow-500/20 flex items-center justify-center font-bold text-white text-lg">
                       {peer.name[0]}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -259,14 +259,14 @@ export default function PeerTutorDashboard() {
               </div>
            </GlassCard>
 
-           <GlassCard className="p-8 bg-gradient-to-br from-indigo-500/10 to-transparent">
+           <GlassCard className="p-8 bg-gradient-to-br from-yellow-500/10 to-transparent">
               <div className="flex items-center gap-3 mb-6">
-                <Target className="w-6 h-6 text-indigo-400" />
+                <Target className="w-6 h-6 text-yellow-400" />
                 <h3 className="font-bold text-white">Subject Badges</h3>
               </div>
               <div className="flex flex-wrap gap-3">
                  {[
-                   { label: 'Math Wizard', color: 'indigo' },
+                   { label: 'Math Wizard', color: 'yellow' },
                    { label: 'Code Ninja', color: 'lumina' },
                    { label: 'History Buff', color: 'amber' },
                    { label: 'Science Pro', color: 'green' }

@@ -12,7 +12,7 @@ export default function CTASection() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
         <div className="glass-panel max-w-5xl mx-auto rounded-[2rem] p-8 md:p-16 border border-white/10 relative overflow-hidden bg-surface-950/80">
           <div className="absolute top-0 right-0 w-64 h-64 bg-lumina-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
           
           <div className="relative z-10 max-w-3xl mx-auto">
             <h2 className="text-4xl sm:text-5xl font-bold text-white mb-8 leading-tight">

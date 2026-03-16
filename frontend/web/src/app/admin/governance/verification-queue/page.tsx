@@ -54,7 +54,7 @@ export default function VerificationQueue() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -71,7 +71,7 @@ export default function VerificationQueue() {
             <input 
               type="text" 
               placeholder="Search questions..." 
-              className="w-64 rounded-xl border border-white/10 bg-white/5 py-2 pl-10 pr-4 text-sm text-white placeholder:text-gray-500 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+              className="w-64 rounded-xl border border-white/10 bg-white/5 py-2 pl-10 pr-4 text-sm text-white placeholder:text-gray-500 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
             />
           </div>
           <button className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">
@@ -92,19 +92,19 @@ export default function VerificationQueue() {
           label="Verified Today" 
           value={stats?.total_verified || 0} 
           icon={CheckCircle2} 
-          color="emerald" 
+          color="gold" 
         />
         <StatItem 
           label="Avg Wait" 
           value={stats?.avg_verification_time || "1.4h"} 
           icon={Activity} 
-          color="blue" 
+          color="gold" 
         />
         <StatItem 
           label="Backlog Trend" 
           value={stats?.backlog_trend || "Stable"} 
           icon={ShieldCheck} 
-          color="purple" 
+          color="gold" 
         />
       </div>
 
@@ -122,7 +122,7 @@ export default function VerificationQueue() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 space-y-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Question</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Question</span>
                     <span className="text-xs text-gray-500">• {new Date(item.created_at).toLocaleString()}</span>
                   </div>
                   <p className="text-lg font-medium text-white">{item.student_question}</p>
@@ -133,11 +133,11 @@ export default function VerificationQueue() {
                 <div className="flex flex-col items-end gap-3 min-w-[140px]">
                   <div className={cn(
                     "rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em]",
-                    item.ai_confidence > 0.8 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                    item.ai_confidence > 0.8 ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                   )}>
                     {Math.round(item.ai_confidence * 100)}% Match
                   </div>
-                  <button className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white transition-transform hover:scale-105 active:scale-95">
+                  <button className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white transition-transform hover:scale-105 active:scale-95">
                     Verify
                     <ArrowRight className="h-3 w-3" />
                   </button>
@@ -159,9 +159,9 @@ export default function VerificationQueue() {
 function StatItem({ label, value, icon: Icon, color }: any) {
   const colors: any = {
     amber: "from-amber-500/20 to-amber-500/5 text-amber-300 border-amber-400/20",
-    emerald: "from-emerald-500/20 to-emerald-500/5 text-emerald-300 border-emerald-400/20",
-    blue: "from-blue-500/20 to-blue-500/5 text-blue-300 border-blue-400/20",
-    purple: "from-purple-500/20 to-purple-500/5 text-purple-300 border-purple-400/20",
+    emerald: "from-yellow-500/20 to-yellow-500/5 text-yellow-300 border-yellow-400/20",
+    blue: "from-amber-500/20 to-amber-500/5 text-amber-300 border-amber-400/20",
+    purple: "from-yellow-500/20 to-yellow-500/5 text-yellow-300 border-yellow-400/20",
   };
   return (
     <div className={cn("glass-v2 bg-gradient-to-br p-6 border", colors[color])}>
@@ -184,8 +184,8 @@ function Tab({ label, active, onClick, count }: any) {
       )}
     >
       {label}
-      {count ? <span className="ml-2 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] text-blue-400 border border-blue-500/20">{count}</span> : null}
-      {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />}
+      {count ? <span className="ml-2 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400 border border-amber-500/20">{count}</span> : null}
+      {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />}
     </button>
   );
 }

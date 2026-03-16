@@ -98,14 +98,14 @@ export default function AlumniPortfolio() {
               </div>
            </GlassCard>
 
-           <GlassCard className="p-8 bg-gradient-to-br from-indigo-500/10 to-transparent">
+           <GlassCard className="p-8 bg-gradient-to-br from-yellow-500/10 to-transparent">
               <div className="flex items-center gap-3 mb-6">
-                 <Award className="w-5 h-5 text-indigo-400" />
+                 <Award className="w-5 h-5 text-yellow-400" />
                  <h4 className="font-bold text-white text-xs uppercase tracking-widest">Verified Badges</h4>
               </div>
               <div className="flex flex-wrap gap-3">
                  {[1, 2, 3, 4, 5].map(i => (
-                    <div key={i} className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-500 hover:text-indigo-400 transition-colors">
+                    <div key={i} className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-500 hover:text-yellow-400 transition-colors">
                        <Sparkles className="w-5 h-5" />
                     </div>
                  ))}
@@ -128,14 +128,14 @@ export default function AlumniPortfolio() {
                   { title: 'AI-First Education Bot', desc: 'A custom transformer model trained on Lumina open datasets.', tags: ['NLP', 'React', 'FastAPI'] },
                   { title: 'Campus Engagement Portal', desc: 'Real-time dashboard for student wellness monitoring.', tags: ['WebSockets', 'Go', 'Redis'] }
                 ].map((project, idx) => (
-                  <GlassCard key={idx} className="p-8 group hover:border-indigo-500/20 transition-all flex flex-col h-full">
+                  <GlassCard key={idx} className="p-8 group hover:border-yellow-500/20 transition-all flex flex-col h-full">
                      <div className="flex items-center justify-between mb-8">
-                        <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                        <div className="w-12 h-12 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-400">
                            <Layout className="w-6 h-6" />
                         </div>
                         <div className="flex gap-2">
                            <button className="p-2 rounded-xl hover:bg-white/5 text-gray-700 hover:text-white transition-colors"><Settings className="w-4 h-4" /></button>
-                           <button className="p-2 rounded-xl hover:bg-white/5 text-gray-700 hover:text-rose-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                           <button className="p-2 rounded-xl hover:bg-white/5 text-gray-700 hover:text-amber-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
                         </div>
                      </div>
                      <h3 className="text-2xl font-bold text-white lowercase tracking-tighter mb-3 leading-tight group-hover:gradient-text transition-all">{project.title}</h3>
@@ -152,7 +152,7 @@ export default function AlumniPortfolio() {
               )}
            </div>
 
-           <button className="w-full py-8 rounded-3xl border-2 border-dashed border-white/5 text-gray-600 hover:text-indigo-400 hover:border-indigo-500/20 transition-all font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-3">
+           <button className="w-full py-8 rounded-3xl border-2 border-dashed border-white/5 text-gray-600 hover:text-yellow-400 hover:border-yellow-500/20 transition-all font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-3">
               <Plus className="w-6 h-6" /> Architect New Showcase Item
            </button>
         </div>

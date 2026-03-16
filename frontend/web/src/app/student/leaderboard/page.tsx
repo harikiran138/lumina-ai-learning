@@ -235,7 +235,7 @@ function PodiumCard({ entry, rank, gold, silver, bronze }: { entry?: Leaderboard
 }
 
 function TrendIndicator({ trend }: { trend: LeaderboardEntry["trend"] }) {
-  if (trend === "up") return <ArrowUp className="w-3 h-3 text-emerald-500" />;
+  if (trend === "up") return <ArrowUp className="w-3 h-3 text-yellow-500" />;
   if (trend === "down") return <ArrowDown className="w-3 h-3 text-red-500" />;
   return <Minus className="w-3 h-3 text-gray-600" />;
 }

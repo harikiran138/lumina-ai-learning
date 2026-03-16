@@ -97,7 +97,7 @@ function ProgressRing({
   value: number;
   size?: number;
   strokeWidth?: number;
-  color?: "amber" | "emerald" | "blue" | "red";
+  color?: "amber" | "yellow" | "amber" | "red";
 }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -105,8 +105,8 @@ function ProgressRing({
 
   const colors = {
     amber: "text-amber-400",
-    emerald: "text-emerald-400",
-    blue: "text-blue-400",
+    emerald: "text-yellow-400",
+    blue: "text-amber-400",
     red: "text-red-400",
   };
 
@@ -256,8 +256,8 @@ export default function StudentDetailPage() {
   }
 
   const riskColors = {
-    low: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    medium: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    low: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+    medium: "bg-amber-500/10 text-amber-400 border-amber-500/20",
     high: "bg-amber-500/10 text-amber-400 border-amber-500/20",
     critical: "bg-red-500/10 text-red-400 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]",
   };
@@ -358,7 +358,7 @@ export default function StudentDetailPage() {
                    <div className="flex flex-col items-center justify-center p-8 bg-white/[0.01] rounded-2xl border border-white/5">
                       <ProgressRing
                         value={student.stats.overallMastery}
-                        color={student.stats.overallMastery >= 70 ? "emerald" : "amber"}
+                        color={student.stats.overallMastery >= 70 ? "yellow" : "amber"}
                       />
                       <p className="mt-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Mastery Index</p>
                    </div>
@@ -399,15 +399,15 @@ export default function StudentDetailPage() {
                )}
                {activeTab === "topics" && (
                   <div className="grid gap-6 md:grid-cols-2">
-                    <section className="glass-v2 border-white/5 p-8 rounded-3xl bg-emerald-500/[0.02]">
+                    <section className="glass-v2 border-white/5 p-8 rounded-3xl bg-yellow-500/[0.02]">
                       <h3 className="text-sm font-bold text-white mb-6 uppercase flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-emerald-400" />
+                        <Zap className="h-4 w-4 text-yellow-400" />
                         Strengths
                       </h3>
                       <div className="space-y-3">
                         {student.strongTopics.map((topic) => (
                           <div key={topic} className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-white/5">
-                            <CheckCircle className="h-4 w-4 text-emerald-400" />
+                            <CheckCircle className="h-4 w-4 text-yellow-400" />
                             <span className="text-[10px] font-bold text-gray-300 uppercase">{topic}</span>
                           </div>
                         ))}

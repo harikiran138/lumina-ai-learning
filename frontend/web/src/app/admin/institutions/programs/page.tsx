@@ -73,7 +73,7 @@ export default function ProgramControl() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -82,13 +82,13 @@ export default function ProgramControl() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <GraduationCap className="h-8 w-8 text-blue-500" />
+            <GraduationCap className="h-8 w-8 text-amber-500" />
             Program Control
           </h1>
           <p className="mt-1 text-gray-400">Configure learning tracks, degree paths, and curriculum modularity.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 transition-colors">
+          <button className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500 transition-colors">
             <Plus className="h-4 w-4" />
             New Program
           </button>
@@ -120,17 +120,17 @@ export default function ProgramControl() {
           {programs.map((program) => (
             <div key={program.id} className="glass-v2 border-white/5 p-5 hover:bg-white/[0.02] transition-all group">
               <div className="flex items-start justify-between mb-4">
-                <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
                   <BookMarked className="h-5 w-5" />
                 </div>
                 <div className={cn(
                   "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border",
-                  program.status === "active" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                  program.status === "active" ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400" : "bg-amber-500/10 border-amber-500/20 text-amber-400"
                 )}>
                   {program.status}
                 </div>
               </div>
-              <h3 className="text-sm font-bold text-white mb-1 group-hover:text-blue-400 transition-colors">{program.program_name}</h3>
+              <h3 className="text-sm font-bold text-white mb-1 group-hover:text-amber-400 transition-colors">{program.program_name}</h3>
               <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-6">ID: {program.id}</p>
               
               <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
@@ -138,7 +138,7 @@ export default function ProgramControl() {
                   <Calendar className="h-3 w-3" />
                   {program.duration}
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-emerald-400 font-semibold uppercase">
+                <div className="flex items-center gap-2 text-[10px] text-yellow-400 font-semibold uppercase">
                   <Settings2 className="h-3 w-3" />
                   Configure
                 </div>
@@ -155,7 +155,7 @@ function StatCard({ label, value, sub, icon: Icon }: any) {
   return (
     <div className="glass-v2 border-white/5 p-6 relative overflow-hidden group">
       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-        <Icon className="h-16 w-16 text-blue-400" />
+        <Icon className="h-16 w-16 text-amber-400" />
       </div>
       <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{label}</p>
       <p className="mt-2 text-3xl font-display font-bold text-white">{value}</p>

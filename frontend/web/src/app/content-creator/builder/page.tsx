@@ -49,8 +49,8 @@ export default function CourseBuilder() {
     <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-           <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-              <Layers className="w-8 h-8 text-indigo-400" />
+           <div className="w-14 h-14 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+              <Layers className="w-8 h-8 text-yellow-400" />
            </div>
            <div>
               <h1 className="text-3xl font-display font-bold text-white tracking-tight lowercase">
@@ -76,12 +76,12 @@ export default function CourseBuilder() {
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] mb-8">Lesson Toolbox</h3>
               <div className="space-y-4">
                  {[
-                   { icon: Play, label: 'Video Lecture', color: 'text-indigo-400' },
-                   { icon: BookOpen, label: 'Written Explainer', color: 'text-teal-400' },
+                   { icon: Play, label: 'Video Lecture', color: 'text-yellow-400' },
+                   { icon: BookOpen, label: 'Written Explainer', color: 'text-gold-400' },
                    { icon: Sparkles, label: 'AI Interactive Lab', color: 'text-amber-400' },
-                   { icon: MessageSquare, label: 'Problem Set', color: 'text-rose-400' }
+                   { icon: MessageSquare, label: 'Problem Set', color: 'text-amber-400' }
                  ].map((tool, i) => (
-                   <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-indigo-500/20 transition-all cursor-grab group">
+                   <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-yellow-500/20 transition-all cursor-grab group">
                       <div className="flex items-center gap-3">
                          <tool.icon className={cn("w-5 h-5", tool.color)} />
                          <span className="text-xs font-bold text-white uppercase tracking-tighter">{tool.label}</span>
@@ -90,8 +90,8 @@ export default function CourseBuilder() {
                    </div>
                  ))}
               </div>
-              <div className="mt-10 p-5 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 italic text-[10px] text-gray-500 font-medium leading-relaxed">
-                 <Info className="w-4 h-4 text-indigo-400 mb-2" />
+              <div className="mt-10 p-5 rounded-2xl bg-yellow-500/5 border border-yellow-500/10 italic text-[10px] text-gray-500 font-medium leading-relaxed">
+                 <Info className="w-4 h-4 text-yellow-400 mb-2" />
                  Lumina AI can auto-generate question banks based on your lesson content. Toggle 'AI Verification' in settings.
               </div>
            </GlassCard>
@@ -106,15 +106,15 @@ export default function CourseBuilder() {
            <Reorder.Group axis="y" values={items} onReorder={setItems} className="space-y-4">
               {items.map((item) => (
                 <Reorder.Item key={item.id} value={item}>
-                   <GlassCard className="p-6 group hover:border-indigo-500/30 transition-all flex items-center gap-6">
+                   <GlassCard className="p-6 group hover:border-yellow-500/30 transition-all flex items-center gap-6">
                       <div className="cursor-grab active:cursor-grabbing text-gray-700 hover:text-white transition-colors">
                          <GripVertical className="w-5 h-5" />
                       </div>
                       
                       <div className={cn(
                         "w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0",
-                        item.type === 'video' ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" :
-                        item.type === 'explainer' ? "bg-teal-500/10 text-teal-400 border-teal-500/20" :
+                        item.type === 'video' ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" :
+                        item.type === 'explainer' ? "bg-gold-500/10 text-gold-400 border-gold-500/20" :
                         "bg-amber-500/10 text-amber-400 border-amber-500/20"
                       )}>
                          {item.type === 'video' ? <Play className="w-5 h-5" /> : 
@@ -135,7 +135,7 @@ export default function CourseBuilder() {
                          <button className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-gray-600 hover:text-white transition-all">
                             <Settings className="w-4 h-4" />
                          </button>
-                         <button className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-gray-600 hover:text-rose-400 transition-all">
+                         <button className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-gray-600 hover:text-amber-400 transition-all">
                             <Trash2 className="w-4 h-4" />
                          </button>
                       </div>
@@ -144,7 +144,7 @@ export default function CourseBuilder() {
               ))}
            </Reorder.Group>
 
-           <button className="w-full py-6 rounded-3xl border-2 border-dashed border-white/5 text-gray-600 hover:text-indigo-400 hover:border-indigo-500/20 transition-all font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-3">
+           <button className="w-full py-6 rounded-3xl border-2 border-dashed border-white/5 text-gray-600 hover:text-yellow-400 hover:border-yellow-500/20 transition-all font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-3">
               <Plus className="w-5 h-5" /> Add Lesson Module
            </button>
         </div>

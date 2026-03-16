@@ -26,7 +26,7 @@ export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
   return (
     <div className="my-6 space-y-4">
       <div className="flex items-center gap-2 mb-2">
-        <BrainCircuit className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+        <BrainCircuit className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
         <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
           Knowledge Check
         </h3>
@@ -80,7 +80,7 @@ export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
                 } else {
                   if (isSelected) {
                     optionClass +=
-                      "bg-purple-50 dark:bg-purple-900/20 border-purple-500 text-purple-700 dark:text-purple-300";
+                      "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-500 text-yellow-700 dark:text-yellow-300";
                   } else {
                     optionClass +=
                       "border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400";

@@ -81,7 +81,7 @@ export default function VerificationQueuePage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold flex items-center gap-2">
+          <div className="px-4 py-2 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm font-bold flex items-center gap-2">
             <ShieldCheck className="h-4 w-4" />
             System Status: Secure
           </div>
@@ -128,7 +128,7 @@ export default function VerificationQueuePage() {
                           "rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
                           item.priority === "High" ? "bg-red-500/10 text-red-400 border border-red-500/20" :
                           item.priority === "Medium" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
-                          "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                          "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                         )}>
                           {item.priority} Priority
                         </span>
@@ -148,7 +148,7 @@ export default function VerificationQueuePage() {
                         <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">AI Confidence</p>
                         <p className={cn(
                           "text-xl font-display font-bold",
-                          item.ai_confidence > 80 ? "text-emerald-400" : "text-amber-400"
+                          item.ai_confidence > 80 ? "text-yellow-400" : "text-amber-400"
                         )}>{item.ai_confidence}%</p>
                       </div>
                       <ChevronRight className={cn("h-5 w-5 text-gray-600 transition-all", selectedId === item.id ? "translate-x-1 text-amber-400" : "")} />
@@ -160,7 +160,7 @@ export default function VerificationQueuePage() {
             
             {items.length === 0 && (
               <div className="h-64 flex flex-col items-center justify-center text-center space-y-4">
-                <div className="h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                <div className="h-16 w-16 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500">
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
                 <div>
@@ -273,7 +273,7 @@ export default function VerificationQueuePage() {
                   <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Auto-Approval Rate</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-display font-bold text-emerald-400">+4%</p>
+                  <p className="text-2xl font-display font-bold text-yellow-400">+4%</p>
                   <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Growth vs Last Week</p>
                 </div>
               </div>

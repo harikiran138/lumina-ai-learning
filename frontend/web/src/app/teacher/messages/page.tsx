@@ -51,12 +51,12 @@ export default function parentMessagingPage() {
         <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4">
            <div className="text-right">
              <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">Response Rate</p>
-             <p className="text-xl font-display font-bold text-emerald-400">98%</p>
+             <p className="text-xl font-display font-bold text-yellow-400">98%</p>
            </div>
            <div className="h-10 w-px bg-white/10" />
            <div className="text-right">
              <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">Avg. Response Time</p>
-             <p className="text-xl font-display font-bold text-blue-400">14m</p>
+             <p className="text-xl font-display font-bold text-amber-400">14m</p>
            </div>
         </div>
       </header>
@@ -87,7 +87,7 @@ export default function parentMessagingPage() {
                   <div className="h-12 w-12 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-sm font-bold text-white uppercase italic">
                     {chat.name.split(' ').map(n => n[0]).join('')}
                   </div>
-                  {chat.online && <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-black" />}
+                  {chat.online && <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-yellow-500 border-2 border-black" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
@@ -117,7 +117,7 @@ export default function parentMessagingPage() {
                  <p className="text-sm font-bold text-white uppercase tracking-tight">{chats.find(c => c.id === selectedId)?.name}</p>
                  <p className="text-[10px] text-gray-600 font-bold uppercase flex items-center gap-2">
                    {chats.find(c => c.id === selectedId)?.online ? "Active Now" : "Seen 2h ago"}
-                   <div className={cn("h-1.5 w-1.5 rounded-full", chats.find(c => c.id === selectedId)?.online ? "bg-emerald-500" : "bg-gray-700")} />
+                   <div className={cn("h-1.5 w-1.5 rounded-full", chats.find(c => c.id === selectedId)?.online ? "bg-yellow-500" : "bg-gray-700")} />
                  </p>
                </div>
             </div>
@@ -145,7 +145,7 @@ export default function parentMessagingPage() {
                   Hi Mei, I've noticed Alice is struggling a bit with the new Asynchronous JS module. I've assigned a personalized interactive lab for her to help clarify the concepts.
                 </div>
                 <div className="flex items-center justify-end gap-1.5 text-[10px] text-gray-600 font-bold uppercase">
-                  1:45 PM <CheckCheck className="h-3 w-3 text-blue-400" />
+                  1:45 PM <CheckCheck className="h-3 w-3 text-amber-400" />
                 </div>
               </div>
             </div>
@@ -161,14 +161,14 @@ export default function parentMessagingPage() {
               </div>
             </div>
 
-            <div className="p-6 rounded-3xl bg-blue-500/10 border border-blue-500/20 flex gap-4 items-start">
-               <Sparkles className="h-5 w-5 text-blue-400 shrink-0 mt-1" />
+            <div className="p-6 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex gap-4 items-start">
+               <Sparkles className="h-5 w-5 text-amber-400 shrink-0 mt-1" />
                <div className="space-y-2">
-                 <p className="text-sm font-bold text-blue-100 uppercase tracking-wider">AI Suggestion</p>
-                 <p className="text-xs text-blue-200/60 leading-relaxed italic">
+                 <p className="text-sm font-bold text-amber-100 uppercase tracking-wider">AI Suggestion</p>
+                 <p className="text-xs text-amber-200/60 leading-relaxed italic">
                    "You're welcome! If she needs more help, there's a live tutoring session tomorrow at 4 PM. Would you like me to reserve a spot for her?"
                  </p>
-                 <button className="text-xs font-bold text-blue-400 hover:text-white transition-colors">Apply context aware response</button>
+                 <button className="text-xs font-bold text-amber-400 hover:text-white transition-colors">Apply context aware response</button>
                </div>
             </div>
           </div>

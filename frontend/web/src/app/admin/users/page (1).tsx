@@ -67,7 +67,7 @@ export default function AdminUsers() {
         </div>
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+          className="flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors"
         >
           Add User
         </button>
@@ -80,7 +80,7 @@ export default function AdminUsers() {
           <input
             type="text"
             placeholder="Search users..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-amber-500 outline-none"
           />
         </div>
         <div className="flex gap-2 w-full md:w-auto">
@@ -129,7 +129,7 @@ export default function AdminUsers() {
                         ? "bg-amber-900/30 text-amber-400"
                         : user.role === "admin"
                           ? "bg-red-900/30 text-red-400"
-                          : "bg-blue-900/30 text-blue-400"
+                          : "bg-amber-900/30 text-amber-400"
                     }`}
                   >
                     {user.role}
@@ -146,7 +146,7 @@ export default function AdminUsers() {
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <button className="p-2 text-gray-400 hover:text-blue-400 transition-colors">
+                    <button className="p-2 text-gray-400 hover:text-amber-400 transition-colors">
                       <Edit className="w-4 h-4" />
                     </button>
                     <button className="p-2 text-gray-400 hover:text-red-400 transition-colors">
@@ -183,7 +183,7 @@ export default function AdminUsers() {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-amber-500 outline-none"
                   placeholder="John Doe"
                 />
               </div>
@@ -198,7 +198,7 @@ export default function AdminUsers() {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-amber-500 outline-none"
                   placeholder="john@example.com"
                 />
               </div>
@@ -213,7 +213,7 @@ export default function AdminUsers() {
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-amber-500 outline-none"
                   placeholder="••••••••"
                 />
               </div>
@@ -226,7 +226,7 @@ export default function AdminUsers() {
                   onChange={(e) =>
                     setFormData({ ...formData, role: e.target.value })
                   }
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-amber-500 outline-none"
                 >
                   <option value="student">Student</option>
                   <option value="teacher">Teacher</option>
@@ -235,7 +235,7 @@ export default function AdminUsers() {
               </div>
               <button
                 type="submit"
-                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors mt-4"
+                className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition-colors mt-4"
               >
                 Create User
               </button>

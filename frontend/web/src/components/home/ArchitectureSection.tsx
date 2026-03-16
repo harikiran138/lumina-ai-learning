@@ -32,11 +32,11 @@ export default function ArchitectureSection() {
                    <div className="z-10 w-20 h-20 rounded-2xl bg-lumina-primary/20 border border-lumina-primary/30 flex items-center justify-center shadow-gold-glow">
                       <Globe className="h-10 w-10 text-lumina-primary" />
                    </div>
-                   <div className="absolute top-1/2 left-20 right-20 h-0.5 bg-gradient-to-r from-lumina-primary/20 via-white/10 to-blue-500/20 -translate-y-1/2 hidden sm:block" />
-                   <div className="z-10 w-20 h-20 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
-                      <Server className="h-10 w-10 text-blue-400" />
+                   <div className="absolute top-1/2 left-20 right-20 h-0.5 bg-gradient-to-r from-lumina-primary/20 via-white/10 to-amber-500/20 -translate-y-1/2 hidden sm:block" />
+                   <div className="z-10 w-20 h-20 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                      <Server className="h-10 w-10 text-amber-400" />
                    </div>
-                   <div className="absolute top-1/2 left-20 right-20 h-0.5 bg-gradient-to-r from-blue-500/20 via-white/10 to-green-500/20 -translate-y-1/2 hidden sm:block rotate-180" />
+                   <div className="absolute top-1/2 left-20 right-20 h-0.5 bg-gradient-to-r from-amber-500/20 via-white/10 to-green-500/20 -translate-y-1/2 hidden sm:block rotate-180" />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-6 pt-8">

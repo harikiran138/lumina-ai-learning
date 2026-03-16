@@ -110,12 +110,12 @@ export default function FeedbackLoopPage() {
                        <div className={cn(
                          "flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-bold uppercase border",
                          thread.status === 'pending-teacher' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
-                         thread.status === 'pending-student' ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
-                         "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                         thread.status === 'pending-student' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                         "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
                        )}>
                           <div className={cn("h-1 w-1 rounded-full", 
                              thread.status === 'pending-teacher' ? "bg-amber-400" :
-                             thread.status === 'pending-student' ? "bg-blue-400" : "bg-emerald-400"
+                             thread.status === 'pending-student' ? "bg-amber-400" : "bg-yellow-400"
                           )} />
                           {thread.status.replace('-', ' ')}
                        </div>
@@ -171,10 +171,10 @@ export default function FeedbackLoopPage() {
                            <div className={cn(
                               "max-w-[80%] rounded-2xl p-4 relative",
                               msg.sender === 'teacher' ? "bg-amber-400 text-black font-bold text-xs" : 
-                              msg.sender === 'ai' ? "bg-blue-500/10 border border-blue-500/20 text-blue-400 italic text-[11px]" :
+                              msg.sender === 'ai' ? "bg-amber-500/10 border border-amber-500/20 text-amber-400 italic text-[11px]" :
                               "bg-white/5 border border-white/10 text-gray-300 text-sm"
                            )}>
-                              {msg.sender === 'ai' && <Zap className="h-3 w-3 absolute -top-1.5 -left-1.5 text-blue-400" />}
+                              {msg.sender === 'ai' && <Zap className="h-3 w-3 absolute -top-1.5 -left-1.5 text-amber-400" />}
                               <p className="leading-relaxed">{msg.content}</p>
                               <span className={cn(
                                  "text-[8px] block mt-2 uppercase font-bold",

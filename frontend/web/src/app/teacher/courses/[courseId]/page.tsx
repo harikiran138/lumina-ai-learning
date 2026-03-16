@@ -211,7 +211,7 @@ export default function CourseManagementPage() {
           <div className="glass-card p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-purple-400" />
+                <BookOpen className="w-5 h-5 text-yellow-400" />
                 Course Curriculum
               </h2>
               <button
@@ -316,7 +316,7 @@ export default function CourseManagementPage() {
                               className="flex items-center justify-between p-2 rounded hover:bg-white/5 group"
                             >
                               <div className="flex items-center gap-3">
-                                <PlayCircle className="w-4 h-4 text-blue-400" />
+                                <PlayCircle className="w-4 h-4 text-amber-400" />
                                 <span className="text-sm text-gray-300">
                                   {lesson.title}
                                 </span>
@@ -440,14 +440,14 @@ export default function CourseManagementPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-white flex items-center gap-2">
-                  <Users className="w-4 h-4 text-blue-400" />
+                  <Users className="w-4 h-4 text-amber-400" />
                   Enrolled Students
                 </span>
                 <span className="font-bold text-white">{course.students}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-white flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-purple-400" />
+                  <BookOpen className="w-4 h-4 text-yellow-400" />
                   Modules
                 </span>
                 <span className="font-bold text-white">

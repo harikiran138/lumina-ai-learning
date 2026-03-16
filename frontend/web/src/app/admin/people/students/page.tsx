@@ -46,7 +46,7 @@ export default function StudentsScreen() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -55,13 +55,13 @@ export default function StudentsScreen() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <GraduationCap className="h-8 w-8 text-blue-500" />
+            <GraduationCap className="h-8 w-8 text-amber-500" />
             Student Database
           </h1>
           <p className="mt-1 text-gray-400">Comprehensive view of learner enrollment, progress, and platform engagement.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 transition-colors">
+          <button className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500 transition-colors">
             <Plus className="h-4 w-4" />
             Register Student
           </button>
@@ -69,9 +69,9 @@ export default function StudentsScreen() {
       </header>
 
       <div className="grid gap-6 md:grid-cols-4">
-        <StatCard label="Total Students" value={students.length.toString()} sub="Across all institutions" icon={Users} color="blue" />
-        <StatCard label="Active Now" value="1,240" sub="Concurrent users" icon={Activity} color="emerald" />
-        <StatCard label="Avg. Engagement" value="84%" sub="+2% this month" icon={Award} color="purple" />
+        <StatCard label="Total Students" value={students.length.toString()} sub="Across all institutions" icon={Users} color="gold" />
+        <StatCard label="Active Now" value="1,240" sub="Concurrent users" icon={Activity} color="gold" />
+        <StatCard label="Avg. Engagement" value="84%" sub="+2% this month" icon={Award} color="gold" />
         <StatCard label="Enrolled Courses" value="450" sub="Total offerings" icon={BookOpen} color="amber" />
       </div>
 
@@ -120,7 +120,7 @@ export default function StudentsScreen() {
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="flex-1 h-1.5 w-24 bg-white/5 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-500" style={{ width: '75%' }} />
+                        <div className="h-full bg-amber-500" style={{ width: '75%' }} />
                       </div>
                       <span className="text-[10px] font-bold text-white">75%</span>
                     </div>
@@ -143,9 +143,9 @@ export default function StudentsScreen() {
 
 function StatCard({ label, value, sub, icon: Icon, color }: any) {
   const colors: any = {
-    blue: "text-blue-400 bg-blue-500/5 border-blue-500/10",
-    emerald: "text-emerald-400 bg-emerald-500/5 border-emerald-500/10",
-    purple: "text-purple-400 bg-purple-500/5 border-purple-500/10",
+    blue: "text-amber-400 bg-amber-500/5 border-amber-500/10",
+    emerald: "text-yellow-400 bg-yellow-500/5 border-yellow-500/10",
+    purple: "text-yellow-400 bg-yellow-500/5 border-yellow-500/10",
     amber: "text-amber-400 bg-amber-500/5 border-amber-500/10",
   };
   return (

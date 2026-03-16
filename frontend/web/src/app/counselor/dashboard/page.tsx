@@ -117,7 +117,7 @@ export default function CounselorDashboard() {
         {/* Risk Alerts & Cases */}
         <div className="lg:col-span-2 space-y-8">
            {/* High-Risk Alerts */}
-           <GlassCard className="p-8 border-l-4 border-l-rose-500/50">
+           <GlassCard className="p-8 border-l-4 border-l-amber-500/50">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                   <div className="p-3 rounded-2xl bg-lumina-highlight/10">

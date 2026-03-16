@@ -80,20 +80,20 @@ export default function PeerTutorSessions() {
               [1, 2, 3].map(i => <div key={i} className="h-32 bg-white/5 rounded-3xl animate-pulse"></div>)
             ) : sessions.length > 0 ? (
               sessions.map((session) => (
-                <GlassCard key={session.id} className="p-6 hover:border-indigo-500/20 transition-all group">
+                <GlassCard key={session.id} className="p-6 hover:border-yellow-500/20 transition-all group">
                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div className="flex items-center gap-5">
-                         <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center font-bold text-indigo-400 text-xl shadow-inner border border-indigo-500/10">
+                         <div className="w-16 h-16 rounded-2xl bg-yellow-500/10 flex items-center justify-center font-bold text-yellow-400 text-xl shadow-inner border border-yellow-500/10">
                             {session.peerName?.[0] || 'P'}
                          </div>
                          <div className="min-w-0">
                             <h4 className="font-bold text-white text-lg truncate group-hover:gradient-text transition-all lowercase tracking-tighter">{session.topic || 'Subject Support'}</h4>
                             <div className="flex items-center gap-4 mt-1">
                                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                                 <Users className="w-3.5 h-3.5 text-indigo-400" /> {session.peerName || 'Peer'}
+                                 <Users className="w-3.5 h-3.5 text-yellow-400" /> {session.peerName || 'Peer'}
                                </p>
                                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                                 <Clock className="w-3.5 h-3.5 text-indigo-400" /> {session.duration || '30m'}
+                                 <Clock className="w-3.5 h-3.5 text-yellow-400" /> {session.duration || '30m'}
                                </p>
                             </div>
                          </div>

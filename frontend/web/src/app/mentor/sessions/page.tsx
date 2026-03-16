@@ -110,7 +110,7 @@ export default function MentorSessions() {
             </div>
           </GlassCard>
 
-          <GlassCard className="p-6 bg-gradient-to-br from-indigo-500/10 to-transparent">
+          <GlassCard className="p-6 bg-gradient-to-br from-yellow-500/10 to-transparent">
              <h4 className="font-bold text-white text-sm mb-3">Sync Calendar</h4>
              <p className="text-[11px] text-gray-400 mb-4 leading-relaxed font-medium">Link your Google or Outlook calendar to automatically avoid conflicts.</p>
              <button className="w-full py-2 rounded-xl glass-v2 border-white/10 text-xs font-bold text-white hover:bg-white/5 transition-colors">
@@ -132,21 +132,21 @@ export default function MentorSessions() {
               [1, 2, 3].map(i => <div key={i} className="h-24 bg-white/5 rounded-3xl animate-pulse"></div>)
             ) : sessions.length > 0 ? (
               sessions.map((session) => (
-                <GlassCard key={session.id} className="p-6 group hover:border-indigo-500/10 transition-all">
+                <GlassCard key={session.id} className="p-6 group hover:border-yellow-500/10 transition-all">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-center gap-5">
-                       <div className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-white/5 border border-white/5 group-hover:border-indigo-500/20 transition-all">
-                          <span className="text-[10px] font-bold text-indigo-400 uppercase">{session.date?.split(' ')[0] || 'JAN'}</span>
+                       <div className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-white/5 border border-white/5 group-hover:border-yellow-500/20 transition-all">
+                          <span className="text-[10px] font-bold text-yellow-400 uppercase">{session.date?.split(' ')[0] || 'JAN'}</span>
                           <span className="text-xl font-bold text-white leading-none">{session.date?.split(' ')[1] || '15'}</span>
                        </div>
                        <div className="min-w-0">
                           <h4 className="font-bold text-white text-lg truncate group-hover:gradient-text transition-all">{session.topic || 'Advanced Architecture Review'}</h4>
                           <div className="flex items-center gap-4 mt-1">
                              <p className="text-xs text-gray-500 flex items-center gap-1.5 font-bold uppercase tracking-tight">
-                               <Users className="w-3.5 h-3.5 text-indigo-400" /> {session.menteeName || 'Sarah Chen'}
+                               <Users className="w-3.5 h-3.5 text-yellow-400" /> {session.menteeName || 'Sarah Chen'}
                              </p>
                              <p className="text-xs text-gray-500 flex items-center gap-1.5 font-bold uppercase tracking-tight">
-                               <Clock className="w-3.5 h-3.5 text-indigo-400" /> {session.time || '2:30 PM'}
+                               <Clock className="w-3.5 h-3.5 text-yellow-400" /> {session.time || '2:30 PM'}
                              </p>
                           </div>
                        </div>
@@ -154,7 +154,7 @@ export default function MentorSessions() {
                     
                     <div className="flex items-center gap-3">
                        <button className="flex items-center gap-2 px-4 py-2 rounded-xl glass-v2 border-white/10 text-xs font-bold text-white hover:bg-white/5 transition-all">
-                         <Video className="w-4 h-4 text-indigo-400" /> Join Meeting
+                         <Video className="w-4 h-4 text-yellow-400" /> Join Meeting
                        </button>
                        <button className="p-2 rounded-xl glass-v2 border-white/10 text-gray-500 hover:text-white hover:bg-white/5 transition-all">
                          <MoreVertical className="w-5 h-5" />

@@ -73,7 +73,7 @@ export default function InstitutionMap() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -82,13 +82,13 @@ export default function InstitutionMap() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <Network className="h-8 w-8 text-blue-500" />
+            <Network className="h-8 w-8 text-amber-500" />
             Institution Map
           </h1>
           <p className="mt-1 text-gray-400">Hierarchical overview of multi-tenant scaling and logical boundaries.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 transition-colors">
+          <button className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500 transition-colors">
             <Plus className="h-4 w-4" />
             Add Institution
           </button>
@@ -102,13 +102,13 @@ export default function InstitutionMap() {
             <input 
               type="text" 
               placeholder="Search hierarchy..." 
-              className="w-full rounded-xl border border-white/10 bg-white/5 py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-blue-500/50"
+              className="w-full rounded-xl border border-white/10 bg-white/5 py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-amber-500/50"
             />
           </div>
           <div className="flex items-center gap-4 text-xs font-bold text-gray-500 uppercase tracking-widest">
-            <div className="flex items-center gap-1.5"><Building2 className="h-3 w-3 text-blue-400" /> Institution</div>
-            <div className="flex items-center gap-1.5"><School className="h-3 w-3 text-purple-400" /> Department</div>
-            <div className="flex items-center gap-1.5"><BookOpen className="h-3 w-3 text-emerald-400" /> Program</div>
+            <div className="flex items-center gap-1.5"><Building2 className="h-3 w-3 text-amber-400" /> Institution</div>
+            <div className="flex items-center gap-1.5"><School className="h-3 w-3 text-yellow-400" /> Department</div>
+            <div className="flex items-center gap-1.5"><BookOpen className="h-3 w-3 text-yellow-400" /> Program</div>
           </div>
         </div>
 
@@ -124,7 +124,7 @@ export default function InstitutionMap() {
               >
                 <div className="flex items-center gap-4">
                   {expanded[inst.id] ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
-                  <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                  <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
                     <Building2 className="h-6 w-6" />
                   </div>
                   <div>
@@ -152,7 +152,7 @@ export default function InstitutionMap() {
                   {inst.departments?.map((dept) => (
                     <div key={dept.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-white/[0.02] border border-transparent hover:border-white/5 transition-all group/dept">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400">
+                        <div className="h-8 w-8 rounded-lg bg-yellow-500/10 flex items-center justify-center text-yellow-400">
                           <School className="h-4 w-4" />
                         </div>
                         <span className="text-xs font-semibold text-gray-300">{dept.name}</span>
@@ -169,7 +169,7 @@ export default function InstitutionMap() {
                   {(!inst.departments || inst.departments.length === 0) && (
                     <p className="text-[10px] text-gray-600 italic py-2">No departments registered</p>
                   )}
-                  <button className="flex items-center gap-2 text-[10px] font-bold text-blue-500/70 hover:text-blue-400 py-2 px-3 transition-colors">
+                  <button className="flex items-center gap-2 text-[10px] font-bold text-amber-500/70 hover:text-amber-400 py-2 px-3 transition-colors">
                     <Plus className="h-3 w-3" />
                     REGISTER NEW UNIT
                   </button>

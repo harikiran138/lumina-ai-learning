@@ -52,7 +52,7 @@ export default function HeroSection() {
 
         {/* Product Preview Mockup */}
         <div className="mt-24 relative max-w-6xl mx-auto group">
-          <div className="absolute -inset-4 bg-gradient-to-r from-lumina-highlight/20 via-orange-500/10 to-lumina-highlight/20 rounded-[2.5rem] blur-3xl opacity-30 group-hover:opacity-50 transition-opacity duration-700" />
+          <div className="absolute -inset-4 bg-gradient-to-r from-lumina-highlight/20 via-amber-500/10 to-lumina-highlight/20 rounded-[2.5rem] blur-3xl opacity-30 group-hover:opacity-50 transition-opacity duration-700" />
           <div className="relative glass-panel rounded-[2rem] border border-white/10 overflow-hidden shadow-2xl aspect-video bg-surface-950">
              <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-full h-full bg-[#020617] relative overflow-hidden">
@@ -97,7 +97,7 @@ export default function HeroSection() {
       
       {/* Background Orbs */}
       <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-lumina-highlight/10 rounded-full blur-[120px] pointer-events-none -translate-x-1/2" />
-      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-orange-500/5 rounded-full blur-[150px] pointer-events-none translate-x-1/4 translate-y-1/4" />
+      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[150px] pointer-events-none translate-x-1/4 translate-y-1/4" />
     </section>
   );
 }

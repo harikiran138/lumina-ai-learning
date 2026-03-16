@@ -200,21 +200,21 @@ export default function StudentDashboard() {
           value={dashboardData?.enrolledCourses?.length || 0}
           subtitle="Currently enrolled"
           icon={BookOpen}
-          color="blue"
+          color="gold"
         />
         <StatCard
           title="Total Learning"
           value={`${dashboardData?.totalHours || 0}h`}
           subtitle="Hours spent"
           icon={Clock}
-          color="green"
+          color="gold"
         />
         <StatCard
           title="Average Mastery"
           value={`${dashboardData?.overallMastery || 0}%`}
           subtitle="Across all courses"
           icon={Target}
-          color="purple"
+          color="gold"
         />
       </DashboardGrid>
 
@@ -303,13 +303,13 @@ export default function StudentDashboard() {
 
               <Link
                 href="/student/assessment"
-                className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-purple-500/30 transition-all group"
+                className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-yellow-500/30 transition-all group"
               >
-                <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-all duration-500 shadow-purple-500/5 group-hover:shadow-purple-500/20">
+                <div className="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center text-yellow-400 group-hover:scale-110 transition-all duration-500 shadow-yellow-500/5 group-hover:shadow-yellow-500/20">
                   <PenTool className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="font-bold text-white group-hover:text-purple-400 transition-colors">
+                  <p className="font-bold text-white group-hover:text-yellow-400 transition-colors">
                     Assessments
                   </p>
                   <p className="text-xs text-gray-400 font-medium tracking-tight">
@@ -413,11 +413,11 @@ export default function StudentDashboard() {
 
                     <div className="flex gap-6 py-4 border-t border-white/5">
                       <div className="flex items-center gap-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-tight">
-                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
                         {course.mastery || 0}% Rank
                       </div>
                       <div className="flex items-center gap-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-tight">
-                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
                         {course.streak || 0} Streak
                       </div>
                     </div>

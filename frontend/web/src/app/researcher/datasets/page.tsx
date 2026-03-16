@@ -17,7 +17,8 @@ import {
   BarChart3,
   ExternalLink,
   MoreVertical,
-  Info
+  Info,
+  CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
@@ -83,7 +84,7 @@ export default function DatasetExplorer() {
               <input 
                 type="text" 
                 placeholder="Search datasets..." 
-                className="w-full pl-12 pr-4 py-3.5 rounded-2xl glass-v2 border-white/10 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-all font-medium shadow-inner"
+                className="w-full pl-12 pr-4 py-3.5 rounded-2xl glass-v2 border-white/10 text-sm text-white focus:outline-none focus:border-gold-500/50 transition-all font-medium shadow-inner"
               />
            </div>
 
@@ -103,8 +104,8 @@ export default function DatasetExplorer() {
                     <div className="space-y-2">
                        {['P-Value Verified', 'Entropy Audited', 'Differentially Private'].map(v => (
                           <label key={v} className="flex items-center gap-3 cursor-pointer group">
-                             <div className="w-4 h-4 rounded border border-white/10 bg-white/5 flex items-center justify-center group-hover:border-teal-500 transition-all">
-                                <div className="w-2 h-2 rounded-sm bg-teal-500 opacity-0 group-hover:opacity-40 transition-opacity"></div>
+                             <div className="w-4 h-4 rounded border border-white/10 bg-white/5 flex items-center justify-center group-hover:border-gold-500 transition-all">
+                                <div className="w-2 h-2 rounded-sm bg-gold-500 opacity-0 group-hover:opacity-40 transition-opacity"></div>
                              </div>
                              <span className="text-[10px] text-gray-500 group-hover:text-gray-300 font-bold uppercase tracking-widest">{v}</span>
                           </label>
@@ -114,8 +115,8 @@ export default function DatasetExplorer() {
               </div>
            </GlassCard>
 
-           <div className="p-6 rounded-3xl border border-teal-500/10 bg-teal-500/[0.02] flex items-center gap-4">
-              <ShieldCheck className="w-6 h-6 text-teal-400" />
+           <div className="p-6 rounded-3xl border border-gold-500/10 bg-gold-500/[0.02] flex items-center gap-4">
+              <ShieldCheck className="w-6 h-6 text-gold-400" />
               <div>
                  <p className="text-[10px] text-white font-bold uppercase tracking-widest leading-none">Safe Environment</p>
                  <p className="text-[9px] text-gray-500 mt-1">Research token active</p>
@@ -129,12 +130,12 @@ export default function DatasetExplorer() {
               [1, 2, 3].map(i => <div key={i} className="h-40 bg-white/5 rounded-3xl animate-pulse"></div>)
            ) : datasets.length > 0 ? (
              datasets.map((ds) => (
-               <GlassCard key={ds.id} className="p-8 group hover:border-teal-500/20 transition-all">
+               <GlassCard key={ds.id} className="p-8 group hover:border-gold-500/20 transition-all">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
                      <div className="flex items-start gap-6">
                         <div className={cn(
                           "w-16 h-16 rounded-2xl border flex items-center justify-center shrink-0 shadow-premium",
-                          ds.status === 'verified' ? "bg-teal-500/10 text-teal-400 border-teal-500/20" : "bg-white/5 text-gray-600 border-white/10"
+                          ds.status === 'verified' ? "bg-gold-500/10 text-gold-400 border-gold-500/20" : "bg-white/5 text-gray-600 border-white/10"
                         )}>
                            <Database className="w-8 h-8" />
                         </div>
@@ -158,7 +159,7 @@ export default function DatasetExplorer() {
                               </div>
                               <div>
                                  <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest mb-0.5">Stat Verification</p>
-                                 <div className="flex items-center gap-1 text-teal-500">
+                                 <div className="flex items-center gap-1 text-gold-500">
                                     <CheckCircle2 className="w-3.5 h-3.5" />
                                     <span className="text-[9px] font-bold uppercase">Passed</span>
                                  </div>
@@ -173,7 +174,7 @@ export default function DatasetExplorer() {
                         </button>
                         <button className={cn(
                           "px-8 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all",
-                          ds.status === 'verified' ? "bg-teal-600 text-white shadow-lg shadow-teal-600/20 hover:scale-105" : "bg-white/5 text-gray-600 cursor-not-allowed"
+                          ds.status === 'verified' ? "bg-gold-600 text-white shadow-lg shadow-gold-600/20 hover:scale-105" : "bg-white/5 text-gray-600 cursor-not-allowed"
                         )}>
                            {ds.status === 'verified' ? 'Explore Data' : 'Locked'}
                         </button>
@@ -188,8 +189,8 @@ export default function DatasetExplorer() {
       </div>
 
       {/* Lab Tips Section */}
-      <GlassCard className="p-10 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent flex flex-col md:flex-row items-center gap-10">
-         <div className="p-5 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+      <GlassCard className="p-10 bg-gradient-to-br from-yellow-500/10 via-transparent to-transparent flex flex-col md:flex-row items-center gap-10">
+         <div className="p-5 rounded-3xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400">
             <Info className="w-10 h-10" />
          </div>
          <div className="flex-1">

@@ -62,8 +62,8 @@ export default function StudentProgress() {
 
         <div className="glass-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-blue-500/20 rounded-lg">
-              <Trophy className="w-6 h-6 text-blue-500" />
+            <div className="p-2 bg-amber-500/20 rounded-lg">
+              <Trophy className="w-6 h-6 text-amber-500" />
             </div>
             <span className="text-xs font-semibold text-gray-400">Level 5</span>
           </div>
@@ -77,8 +77,8 @@ export default function StudentProgress() {
 
         <div className="glass-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-purple-500/20 rounded-lg">
-              <Target className="w-6 h-6 text-purple-500" />
+            <div className="p-2 bg-yellow-500/20 rounded-lg">
+              <Target className="w-6 h-6 text-yellow-500" />
             </div>
             <span className="text-xs font-semibold text-green-400">
               {data?.stats?.avgAccuracy || 0}%
@@ -94,8 +94,8 @@ export default function StudentProgress() {
 
         <div className="glass-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-emerald-500/20 rounded-lg">
-              <Clock className="w-6 h-6 text-emerald-500" />
+            <div className="p-2 bg-yellow-500/20 rounded-lg">
+              <Clock className="w-6 h-6 text-yellow-500" />
             </div>
             <span className="text-xs font-semibold text-gray-400">Total</span>
           </div>

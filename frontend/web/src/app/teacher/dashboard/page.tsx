@@ -222,12 +222,12 @@ function QuickAction({
   icon: typeof PlusCircle;
   title: string;
   description: string;
-  tone: "gold" | "blue" | "green";
+  tone: "gold" | "amber" | "yellow";
 }) {
   const toneStyles = {
     gold: "from-lumina-highlight/20 to-lumina-highlight/5 border-lumina-highlight/20 text-lumina-highlight",
-    blue: "from-blue-500/20 to-blue-500/5 border-blue-400/20 text-blue-200",
-    green: "from-emerald-500/20 to-emerald-500/5 border-emerald-400/20 text-emerald-200",
+    amber: "from-amber-500/20 to-amber-500/5 border-amber-400/20 text-amber-200",
+    yellow: "from-amber-400/20 to-amber-600/5 border-amber-400/20 text-amber-500",
   };
 
   return (
@@ -366,14 +366,14 @@ export default function TeacherDashboard() {
                 icon={ClipboardCheck}
                 title="Create assignment"
                 description="Set deadlines, collect submissions, and push work into grading."
-                tone="blue"
+                tone="amber"
               />
               <QuickAction
                 href="/teacher/ai-generator"
                 icon={Sparkles}
                 title="Generate with AI"
                 description="Draft content faster with the course generator and tutor tooling."
-                tone="green"
+                tone="gold"
               />
             </div>
           </div>
@@ -412,7 +412,7 @@ export default function TeacherDashboard() {
           value={summary.totalStudents}
           subtitle="Tracked across your courses"
           icon={Users}
-          color="blue"
+          color="gold"
         />
         <StatCard
           title="Active Courses"
@@ -426,14 +426,14 @@ export default function TeacherDashboard() {
           value={`${summary.avgMastery}%`}
           subtitle="Current learner comprehension"
           icon={TrendingUp}
-          color="green"
+          color="gold"
         />
         <StatCard
           title="Pending Grading"
           value={summary.pendingGrading}
           subtitle={`${summary.upcomingDeadlines} tasks need attention`}
           icon={ClipboardCheck}
-          color="purple"
+          color="gold"
         />
       </div>
 
@@ -481,7 +481,7 @@ export default function TeacherDashboard() {
                         className={cn(
                           "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
                           course.attention === "healthy"
-                            ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                            ? "border-lumina-highlight/20 bg-lumina-highlight/10 text-lumina-highlight"
                             : "border-amber-400/20 bg-amber-400/10 text-amber-300",
                         )}
                       >
@@ -498,7 +498,7 @@ export default function TeacherDashboard() {
 
                     <div className="space-y-2">
                       <ProgressBar label="Average progress" value={course.averageProgress} />
-                      <ProgressBar label="Average mastery" value={course.averageMastery} accent="emerald" />
+                      <ProgressBar label="Average mastery" value={course.averageMastery} accent="yellow" />
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-gray-400">
@@ -536,7 +536,7 @@ export default function TeacherDashboard() {
                           ? "bg-red-500/10 text-red-300"
                           : item.tone === "watch"
                             ? "bg-amber-400/10 text-amber-300"
-                            : "bg-blue-500/10 text-blue-300",
+                            : "bg-amber-500/10 text-amber-300",
                       )}
                     >
                       {item.kind === "student" ? (
@@ -616,7 +616,7 @@ export default function TeacherDashboard() {
                           ? "border-red-400/20 bg-red-400/10 text-red-300"
                           : item.priority === "medium"
                             ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
-                            : "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+                            : "border-amber-200/20 bg-amber-200/10 text-amber-200",
                       )}
                     >
                       {item.priority}
@@ -644,7 +644,7 @@ export default function TeacherDashboard() {
                       Mark reviewed
                     </button>
                     <button
-                      className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200 hover:border-emerald-300/40"
+                      className="rounded-full border border-yellow-400/20 bg-yellow-400/10 px-3 py-1 text-xs font-semibold text-yellow-200 hover:border-yellow-300/40"
                       onClick={() => updateIntervention(item.id, "resolved")}
                       disabled={updatingInterventionId === item.id}
                     >
@@ -688,7 +688,7 @@ export default function TeacherDashboard() {
                     </div>
                     <div className="mt-2 h-2 rounded-full bg-white/10">
                       <div
-                        className="h-2 rounded-full bg-emerald-400"
+                        className="h-2 rounded-full bg-lumina-highlight"
                         style={{ width: `${Math.round(item.average_mastery * 100)}%` }}
                       />
                     </div>
@@ -785,7 +785,7 @@ export default function TeacherDashboard() {
                           "rounded-full border px-2.5 py-1 text-xs font-semibold",
                           item.pendingGrading > 0
                             ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
-                            : "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+                            : "border-yellow-400/20 bg-yellow-400/10 text-yellow-300",
                         )}
                       >
                         {item.pendingGrading > 0
@@ -841,7 +841,7 @@ export default function TeacherDashboard() {
                         className={cn(
                           "rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em]",
                           student.status === "on-track"
-                            ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                            ? "border-lumina-highlight/20 bg-lumina-highlight/10 text-lumina-highlight"
                             : student.status === "watch"
                               ? "border-amber-400/20 bg-amber-400/10 text-lumina-highlight"
                               : "border-red-400/20 bg-red-400/10 text-red-300",
@@ -859,7 +859,7 @@ export default function TeacherDashboard() {
 
                 <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[360px] lg:grid-cols-3">
                   <ProgressChip label="Progress" value={student.averageProgress} accent="amber" />
-                  <ProgressChip label="Mastery" value={student.averageMastery} accent="emerald" />
+                  <ProgressChip label="Mastery" value={student.averageMastery} accent="yellow" />
                   <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Last Active</p>
                     <p className="mt-2 text-sm font-medium text-white">
@@ -943,7 +943,7 @@ function ProgressBar({
 }: {
   label: string;
   value: number;
-  accent?: "amber" | "emerald";
+  accent?: "amber" | "yellow";
 }) {
   return (
     <div>
@@ -955,7 +955,7 @@ function ProgressBar({
         <div
           className={cn(
             "h-2 rounded-full",
-            accent === "amber" ? "bg-lumina-highlight" : "bg-emerald-400",
+            accent === "amber" ? "bg-lumina-highlight" : "bg-amber-400",
           )}
           style={{ width: `${value}%` }}
         />
@@ -973,7 +973,7 @@ function SignalRow({
   icon: typeof AlertTriangle;
   label: string;
   value: string | number;
-  tone: "warning" | "good";
+  tone: "warning" | "gold";
 }) {
   return (
     <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
@@ -981,7 +981,7 @@ function SignalRow({
         <div
           className={cn(
             "rounded-xl p-2",
-            tone === "good" ? "bg-emerald-400/10 text-emerald-300" : "bg-lumina-highlight/10 text-lumina-highlight",
+            tone === "good" ? "bg-amber-100/10 text-amber-100" : "bg-lumina-highlight/10 text-lumina-highlight",
           )}
         >
           <Icon className="h-4 w-4" />
@@ -1000,7 +1000,7 @@ function ProgressChip({
 }: {
   label: string;
   value: number;
-  accent: "amber" | "emerald";
+  accent: "amber" | "yellow";
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
@@ -1010,7 +1010,7 @@ function ProgressChip({
           <div
             className={cn(
               "h-2 rounded-full",
-              accent === "amber" ? "bg-lumina-highlight" : "bg-emerald-400",
+              accent === "amber" ? "bg-lumina-highlight" : "bg-amber-200",
             )}
             style={{ width: `${value}%` }}
           />

@@ -24,7 +24,7 @@ export default function ComplianceDashboard() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -33,7 +33,7 @@ export default function ComplianceDashboard() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <ShieldAlert className="h-8 w-8 text-blue-500" />
+            <ShieldAlert className="h-8 w-8 text-amber-500" />
             Compliance Dashboard
           </h1>
           <p className="mt-1 text-gray-400">Monitor data privacy, GDPR compliance, and legal audit readiness across Lumina.</p>
@@ -77,7 +77,7 @@ export default function ComplianceDashboard() {
                   <p className="text-sm font-bold text-white">PII Redaction</p>
                   <p className="text-[10px] text-gray-500">Automated masking in logs</p>
                 </div>
-                <div className="h-6 w-11 rounded-full bg-blue-600 relative cursor-pointer shadow-[0_0_10px_rgba(37,99,235,0.4)]">
+                <div className="h-6 w-11 rounded-full bg-amber-600 relative cursor-pointer shadow-[0_0_10px_rgba(37,99,235,0.4)]">
                   <div className="h-4 w-4 rounded-full bg-white absolute top-1 right-1" />
                 </div>
               </div>
@@ -96,7 +96,7 @@ export default function ComplianceDashboard() {
               <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Quick Actions</h4>
               <div className="grid gap-2">
                 <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-xs font-bold text-white text-left group">
-                  <EyeOff className="h-4 w-4 text-gray-500 group-hover:text-blue-400" />
+                  <EyeOff className="h-4 w-4 text-gray-500 group-hover:text-amber-400" />
                   Request Data Obfuscation
                 </button>
                 <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-xs font-bold text-white text-left group">
@@ -114,9 +114,9 @@ export default function ComplianceDashboard() {
 
 function ComplianceMetric({ label, value, sub, state }: any) {
   const colors: any = {
-    success: "text-emerald-400 bg-emerald-500/5 border-emerald-500/10 shadow-[0_4px_20px_rgba(16,185,129,0.05)]",
+    success: "text-yellow-400 bg-yellow-500/5 border-yellow-500/10 shadow-[0_4px_20px_rgba(16,185,129,0.05)]",
     warning: "text-amber-400 bg-amber-500/5 border-amber-500/10 shadow-[0_4px_20px_rgba(245,158,11,0.05)]",
-    info: "text-blue-400 bg-blue-500/5 border-blue-500/10 shadow-[0_4px_20px_rgba(59,130,246,0.05)]",
+    info: "text-amber-400 bg-amber-500/5 border-amber-500/10 shadow-[0_4px_20px_rgba(59,130,246,0.05)]",
   };
   return (
     <div className={cn("glass-v2 border p-6 relative overflow-hidden group", colors[state])}>
@@ -140,16 +140,16 @@ function AuditItem({ title, status, date, isUrgent }: any) {
           "h-10 w-10 rounded-xl flex items-center justify-center border",
           isUrgent ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-white/5 border-white/10 text-gray-500"
         )}>
-          {status === 'Signed' ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <AlertCircle className="h-5 w-5" />}
+          {status === 'Signed' ? <CheckCircle2 className="h-5 w-5 text-yellow-500" /> : <AlertCircle className="h-5 w-5" />}
         </div>
         <div>
-          <h4 className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">{title}</h4>
+          <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">{title}</h4>
           <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter mt-1">{date}</p>
         </div>
       </div>
       <div className={cn(
         "px-2 py-0.5 rounded-lg border text-[9px] font-bold uppercase",
-        status === 'Signed' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
+        status === 'Signed' ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400" :
         isUrgent ? "bg-red-500/10 border-red-500/20 text-red-500" : "bg-white/5 border-white/10 text-gray-500"
       )}>
         {status}

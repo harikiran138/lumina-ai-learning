@@ -51,7 +51,7 @@ export default function SystemHealthPage() {
 
   if (loading && !health) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -105,7 +105,7 @@ export default function SystemHealthPage() {
           <div className="glass-v2 border-white/5 overflow-hidden">
             <div className="border-b border-white/5 p-4 flex items-center justify-between">
               <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">Core Services</h2>
-              <span className="text-[10px] font-bold text-emerald-400 border border-emerald-500/20 bg-emerald-500/5 px-2 py-0.5 rounded-full uppercase">All Systems Normal</span>
+              <span className="text-[10px] font-bold text-yellow-400 border border-yellow-500/20 bg-yellow-500/5 px-2 py-0.5 rounded-full uppercase">All Systems Normal</span>
             </div>
             <div className="divide-y divide-white/5">
               {health?.services.map((service) => (
@@ -113,7 +113,7 @@ export default function SystemHealthPage() {
                   <div className="flex items-center gap-4">
                     <div className={cn(
                       "rounded-lg p-2 border",
-                      service.status === "operational" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                      service.status === "operational" ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400" : "bg-amber-500/10 border-amber-500/20 text-amber-400"
                     )}>
                       {service.status === "operational" ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
                     </div>
@@ -135,7 +135,7 @@ export default function SystemHealthPage() {
         <div className="space-y-6">
           <div className="glass-v2 border-white/5 p-6 space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
-              <Globe className="h-4 w-4 text-blue-400" />
+              <Globe className="h-4 w-4 text-amber-400" />
               Infrastructure Detail
             </h3>
             <div className="space-y-4">
@@ -146,7 +146,7 @@ export default function SystemHealthPage() {
             </div>
           </div>
 
-          <div className="glass-v2 border-white/5 p-6 space-y-4 bg-gradient-to-br from-blue-500/5 to-transparent">
+          <div className="glass-v2 border-white/5 p-6 space-y-4 bg-gradient-to-br from-amber-500/5 to-transparent">
             <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
               <Clock className="h-4 w-4 text-gray-400" />
               Incidents
@@ -184,7 +184,7 @@ function ResourceItem({ label, value }: { label: string; value: number }) {
         <div 
           className={cn(
             "h-full transition-all duration-1000",
-            value > 80 ? "bg-red-500" : value > 60 ? "bg-amber-500" : "bg-blue-500"
+            value > 80 ? "bg-red-500" : value > 60 ? "bg-amber-500" : "bg-amber-500"
           )} 
           style={{ width: `${value}%` }} 
         />

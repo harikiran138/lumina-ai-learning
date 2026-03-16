@@ -107,7 +107,7 @@ export default function StudentProfile() {
                 <Edit2 className="w-4 h-4 text-gray-400" />
               </button>
 
-              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-lumina-primary to-purple-600 p-[2px] mb-4">
+              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-lumina-primary to-yellow-600 p-[2px] mb-4">
                 <div className="w-full h-full rounded-full overflow-hidden border-2 border-black">
                   <img
                     src={
@@ -173,7 +173,7 @@ export default function StudentProfile() {
 
             {/* AI Tutor Card */}
             <div className="glass-card p-6 relative overflow-hidden group backdrop-blur-md bg-black/40 border-white/10">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 to-amber-600/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-2 relative z-10 flex items-center">
                 <Bot className="w-4 h-4 mr-2 text-lumina-primary" />
                 AI Tutor
@@ -183,7 +183,7 @@ export default function StudentProfile() {
               </p>
               <a
                 href="/student/ai_tutor"
-                className="flex items-center justify-center w-full py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg font-medium transition-all relative z-10 shadow-lg shadow-purple-900/20"
+                className="flex items-center justify-center w-full py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 text-white rounded-lg font-medium transition-all relative z-10 shadow-lg shadow-yellow-900/20"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Open AI Tutor
@@ -212,7 +212,7 @@ export default function StudentProfile() {
                         </div>
                         <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-pink-500 to-purple-500 transition-all duration-1000"
+                            className="h-full bg-gradient-to-r from-pink-500 to-yellow-500 transition-all duration-1000"
                             style={{ width: `${score * 100}%` }}
                           />
                         </div>
@@ -254,7 +254,7 @@ export default function StudentProfile() {
                         key={badge.id}
                         className="flex flex-col items-center p-3 rounded-xl bg-white/5 border border-white/10 hover:border-lumina-primary/50 transition-colors group"
                       >
-                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full flex items-center justify-center text-purple-400 mb-2 group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-gradient-to-br from-yellow-500/20 to-amber-500/20 rounded-full flex items-center justify-center text-yellow-400 mb-2 group-hover:scale-110 transition-transform">
                           <IconComponent className="w-6 h-6" />
                         </div>
                         <p className="text-sm text-white font-medium text-center line-clamp-1">
@@ -357,7 +357,7 @@ export default function StudentProfile() {
                       {activity.type === "quiz" ? (
                         <Award className="w-5 h-5 text-amber-500" />
                       ) : (
-                        <BookOpen className="w-5 h-5 text-blue-500" />
+                        <BookOpen className="w-5 h-5 text-amber-500" />
                       )}
                     </div>
                     <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-white/10 bg-black/40 backdrop-blur-md shadow-sm">

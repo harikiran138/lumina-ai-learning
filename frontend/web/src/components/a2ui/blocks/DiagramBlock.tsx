@@ -21,7 +21,7 @@ export const DiagramResult: React.FC<DiagramResultProps> = ({ block }) => {
   return (
     <div className="my-6">
       <div className="flex items-center gap-2 mb-3">
-        <Network className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+        <Network className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
         {block.title && (
           <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
             {block.title}

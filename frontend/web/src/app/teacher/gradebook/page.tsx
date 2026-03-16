@@ -178,7 +178,7 @@ export default function GradebookPage() {
 
   const getScoreColor = (score: number, maxScore: number) => {
     const percentage = (score / maxScore) * 100;
-    if (percentage >= 80) return "text-emerald-400";
+    if (percentage >= 80) return "text-yellow-400";
     if (percentage >= 60) return "text-amber-400";
     return "text-red-400";
   };
@@ -186,11 +186,11 @@ export default function GradebookPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "graded":
-        return <CheckCircle className="w-4 h-4 text-emerald-400" />;
+        return <CheckCircle className="w-4 h-4 text-yellow-400" />;
       case "submitted":
         return <Clock className="w-4 h-4 text-amber-400" />;
       case "late":
-        return <AlertCircle className="w-4 h-4 text-orange-400" />;
+        return <AlertCircle className="w-4 h-4 text-amber-400" />;
       case "missing":
         return <Minus className="w-4 h-4 text-red-400" />;
       default:
@@ -263,7 +263,7 @@ export default function GradebookPage() {
             className="p-4 rounded-xl bg-white/5 border border-white/5"
           >
             <div className="flex items-start justify-between mb-3">
-              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
                 <FileText className="w-5 h-5" />
               </div>
               <span className="text-xs text-gray-400">
@@ -279,7 +279,7 @@ export default function GradebookPage() {
                 className={cn(
                   "font-medium",
                   assignment.averageScore >= 80
-                    ? "text-emerald-400"
+                    ? "text-yellow-400"
                     : assignment.averageScore >= 60
                     ? "text-amber-400"
                     : "text-red-400"
@@ -352,7 +352,7 @@ export default function GradebookPage() {
                         className={cn(
                           "text-lg font-bold",
                           entry.overallGrade >= 80
-                            ? "text-emerald-400"
+                            ? "text-yellow-400"
                             : entry.overallGrade >= 60
                             ? "text-amber-400"
                             : "text-red-400"
@@ -417,12 +417,12 @@ export default function GradebookPage() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+        <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
           <div className="flex items-center gap-3">
-            <TrendingUp className="w-8 h-8 text-emerald-400" />
+            <TrendingUp className="w-8 h-8 text-yellow-400" />
             <div>
               <p className="text-sm text-gray-400">Class Average</p>
-              <p className="text-2xl font-bold text-emerald-400">
+              <p className="text-2xl font-bold text-yellow-400">
                 {Math.round(
                   entries.reduce((sum, e) => sum + e.overallGrade, 0) / (entries.length || 1)
                 )}

@@ -77,7 +77,7 @@ export const Spinner: React.FC<{
   return (
     <div className={`${sizeClasses[size]} ${className}`}>
       <svg
-        className="animate-spin text-blue-600"
+        className="animate-spin text-amber-600"
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
@@ -114,7 +114,7 @@ export const ProgressBar: React.FC<{
     <div className={`w-full ${className}`}>
       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
         <div
-          className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+          className="bg-amber-600 h-2.5 rounded-full transition-all duration-300"
           style={{ width: `${clampedProgress}%` }}
         />
       </div>
@@ -208,8 +208,8 @@ export const PulsingDot: React.FC<{ className?: string }> = ({
 }) => {
   return (
     <span className={`relative flex h-3 w-3 ${className}`}>
-      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-      <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500" />
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+      <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500" />
     </span>
   );
 };

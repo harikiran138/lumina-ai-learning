@@ -49,7 +49,7 @@ export default function HandwritingUpload({
       <h3 className="text-lg font-semibold mb-4 capitalize">Upload {type}</h3>
 
       <div className="flex flex-col gap-4">
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-amber-500 transition-colors">
           <input
             type="file"
             accept="image/*,.pdf"
@@ -71,7 +71,7 @@ export default function HandwritingUpload({
         <button
           onClick={handleUpload}
           disabled={!file || loading}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2"
+          className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -101,7 +101,7 @@ export default function HandwritingUpload({
                   <p className="mt-2">
                     <strong>AI Summary & Improvements:</strong>
                   </p>
-                  <div className="bg-blue-50/10 p-2 rounded max-h-40 overflow-y-auto text-xs whitespace-pre-wrap">
+                  <div className="bg-amber-50/10 p-2 rounded max-h-40 overflow-y-auto text-xs whitespace-pre-wrap">
                     {result.ai_analysis}
                   </div>
                 </>

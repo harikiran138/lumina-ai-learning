@@ -118,8 +118,8 @@ export default function ParentDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white pb-12">
       {/* Animated background blobs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 -left-40 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-600/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 -left-40 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10">
@@ -128,7 +128,7 @@ export default function ParentDashboard() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-lumina-highlight to-orange-600 flex items-center justify-center shadow-lg shadow-lumina-highlight/20">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-lumina-highlight to-amber-600 flex items-center justify-center shadow-lg shadow-lumina-highlight/20">
                   <BookOpen className="h-5 w-5 text-black" />
                 </div>
                 <div>
@@ -195,7 +195,7 @@ export default function ParentDashboard() {
                           {child.name?.[0] || 'S'}
                         </div>
                         {child.verified && (
-                          <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-0.5 border-2 border-slate-900">
+                          <div className="absolute -bottom-1 -right-1 bg-amber-500 text-white rounded-full p-0.5 border-2 border-slate-900">
                             <CheckCircle className="h-3 w-3" />
                           </div>
                         )}
@@ -216,7 +216,7 @@ export default function ParentDashboard() {
                           <motion.div 
                             initial={{ width: 0 }}
                             animate={{ width: `${child.mastery || 0}%` }}
-                            className="h-full bg-gradient-to-r from-lumina-highlight to-orange-500 rounded-full"
+                            className="h-full bg-gradient-to-r from-lumina-highlight to-amber-500 rounded-full"
                           />
                         </div>
                       </div>
@@ -253,7 +253,7 @@ export default function ParentDashboard() {
               <section>
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-blue-400" />
+                    <Activity className="h-5 w-5 text-amber-400" />
                     Recent Activity
                   </h3>
                   <div className="flex items-center gap-2">
@@ -277,7 +277,7 @@ export default function ParentDashboard() {
                     >
                       <div className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between hover:bg-white/[0.07] transition-all group">
                         <div className="flex items-center gap-4">
-                          <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+                          <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
                             {activity.type === 'assignment' ? <Target className="h-5 w-5" /> : <BookOpen className="h-5 w-5" />}
                           </div>
                           <div>
@@ -355,7 +355,7 @@ export default function ParentDashboard() {
                 <div className="space-y-3">
                   {(dashboardData.messages || []).slice(0, 3).map((msg: any) => (
                     <div key={msg.id} className="flex gap-4 p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-white/10">
-                      <div className="h-10 w-10 shrink-0 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 text-sm font-bold">
+                      <div className="h-10 w-10 shrink-0 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-sm font-bold">
                         {msg.from?.[0] || 'L'}
                       </div>
                       <div className="min-w-0">
@@ -408,7 +408,7 @@ export default function ParentDashboard() {
                     </div>
                     <p className="text-sm text-gray-400">{msg.preview}</p>
                     <div className="mt-3 flex gap-2">
-                       {msg.unread && <Badge className="bg-blue-500/20 text-blue-400 border-none h-5 px-1.5 text-[10px]">NEW</Badge>}
+                       {msg.unread && <Badge className="bg-amber-500/20 text-amber-400 border-none h-5 px-1.5 text-[10px]">NEW</Badge>}
                        {msg.starred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
                     </div>
                   </div>

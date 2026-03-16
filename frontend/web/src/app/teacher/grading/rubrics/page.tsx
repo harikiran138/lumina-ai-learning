@@ -118,9 +118,9 @@ export default function RubricManagerPage() {
 
            <div className="glass-v2 border-white/5 rounded-3xl p-6">
               <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">AI Grading Status</h3>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                 <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                 <span className="text-[10px] font-bold text-emerald-400 uppercase">Semantic Synced</span>
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                 <ShieldCheck className="h-4 w-4 text-yellow-400" />
+                 <span className="text-[10px] font-bold text-yellow-400 uppercase">Semantic Synced</span>
               </div>
            </div>
         </aside>

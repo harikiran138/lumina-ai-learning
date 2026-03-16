@@ -91,7 +91,7 @@ export default function ParentMessagesPage() {
                     {chat.from[0]}
                   </div>
                   {chat.unread && (
-                    <div className="absolute -top-1 -right-1 h-4 w-4 bg-blue-500 rounded-full border-4 border-slate-900 shadow-lg"></div>
+                    <div className="absolute -top-1 -right-1 h-4 w-4 bg-amber-500 rounded-full border-4 border-slate-900 shadow-lg"></div>
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -166,8 +166,8 @@ export default function ParentMessagesPage() {
               {/* Input Area */}
               <div className="p-8 border-t border-white/5 bg-slate-900/40 backdrop-blur-xl">
                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-[2rem] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
-                    <div className="relative flex items-end gap-3 bg-white/5 border border-white/10 p-3 rounded-[2rem] focus-within:border-purple-500/40 transition-all">
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-[2rem] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
+                    <div className="relative flex items-end gap-3 bg-white/5 border border-white/10 p-3 rounded-[2rem] focus-within:border-yellow-500/40 transition-all">
                        <Button variant="ghost" size="icon" className="h-12 w-12 rounded-full text-gray-500 hover:text-white shrink-0">
                           <Paperclip className="h-5 w-5" />
                        </Button>
@@ -182,7 +182,7 @@ export default function ParentMessagesPage() {
                        </Button>
                        <Button 
                         size="icon" 
-                        className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 hover:scale-105 transition-transform shrink-0 shadow-lg shadow-purple-500/20"
+                        className="h-12 w-12 rounded-full bg-gradient-to-br from-yellow-500 to-amber-500 hover:scale-105 transition-transform shrink-0 shadow-lg shadow-yellow-500/20"
                        >
                           <Send className="h-5 w-5" />
                        </Button>
