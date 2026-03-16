@@ -153,13 +153,13 @@ function ProgressBar({
   size = "md",
 }: {
   value: number;
-  color?: "amber" | "yellow" | "amber" | "red";
+  color?: "amber" | "yellow" | "gold" | "red";
   size?: "sm" | "md" | "lg";
 }) {
   const colors = {
     amber: "bg-amber-400",
-    emerald: "bg-yellow-400",
-    blue: "bg-amber-400",
+    yellow: "bg-yellow-400",
+    gold: "bg-lumina-highlight",
     red: "bg-red-400",
   };
   const heights = {
@@ -575,7 +575,7 @@ export default function TeacherAnalytics() {
                 </div>
                 <ProgressBar
                   value={topic.avgMastery}
-                  color={topic.avgMastery >= 70 ? "yellow" : topic.avgMastery >= 40 ? "amber" : "red"}
+                  color={topic.avgMastery >= 70 ? "gold" : topic.avgMastery >= 40 ? "amber" : "red"}
                   size="sm"
                 />
               </div>
