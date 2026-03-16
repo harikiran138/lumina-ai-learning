@@ -72,7 +72,7 @@ export default function SecurityAuditor() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <Lock className="h-8 w-8 text-blue-500" />
+            <Lock className="h-8 w-8 text-amber-500" />
             Security Auditor
           </h1>
           <p className="mt-1 text-gray-400">Immutable trace of all administrative actions and system events.</p>
@@ -86,10 +86,10 @@ export default function SecurityAuditor() {
       </header>
 
       <div className="grid gap-6 md:grid-cols-4">
-        <AuditSummaryCard label="Total Events" value="12,450" icon={Activity} color="blue" />
+        <AuditSummaryCard label="Total Events" value="12,450" icon={Activity} color="gold" />
         <AuditSummaryCard label="Critical Actions" value="124" icon={AlertCircle} color="amber" />
-        <AuditSummaryCard label="Active Admins" value="8" icon={User} color="emerald" />
-        <AuditSummaryCard label="Unique IPs" value="45" icon={Globe} color="purple" />
+        <AuditSummaryCard label="Active Admins" value="8" icon={User} color="gold" />
+        <AuditSummaryCard label="Unique IPs" value="45" icon={Globe} color="gold" />
       </div>
 
       <div className="glass-v2 border-white/5 overflow-hidden">
@@ -134,7 +134,7 @@ export default function SecurityAuditor() {
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       <div className="h-6 w-6 rounded-lg bg-white/5 flex items-center justify-center">
-                        <User className="h-3 w-3 text-blue-400" />
+                        <User className="h-3 w-3 text-amber-400" />
                       </div>
                       <span className="text-xs text-white">{log.admin_user_id}</span>
                     </div>
@@ -142,9 +142,9 @@ export default function SecurityAuditor() {
                   <td className="p-4">
                     <span className={cn(
                       "px-2 py-0.5 rounded-full text-[10px] font-bold border",
-                      log.action_type.includes("LOGIN") ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
+                      log.action_type.includes("LOGIN") ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400" :
                       log.action_type.includes("EXPORT") ? "bg-amber-500/10 border-amber-500/20 text-amber-400" :
-                      "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                      "bg-amber-500/10 border-amber-500/20 text-amber-400"
                     )}>
                       {log.action_type}
                     </span>
@@ -159,7 +159,7 @@ export default function SecurityAuditor() {
                     </div>
                   </td>
                   <td className="p-4 text-right pr-6">
-                    <button className="text-[10px] font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 ml-auto">
+                    <button className="text-[10px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 ml-auto">
                       View Payload
                       <ExternalLink className="h-2.5 w-2.5" />
                     </button>
@@ -176,10 +176,10 @@ export default function SecurityAuditor() {
 
 function AuditSummaryCard({ label, value, icon: Icon, color }: any) {
   const colors: any = {
-    blue: "text-blue-400 bg-blue-500/5 border-blue-500/10",
+    blue: "text-amber-400 bg-amber-500/5 border-amber-500/10",
     amber: "text-amber-400 bg-amber-500/5 border-amber-500/10",
-    emerald: "text-emerald-400 bg-emerald-500/5 border-emerald-500/10",
-    purple: "text-purple-400 bg-purple-500/5 border-purple-500/10",
+    emerald: "text-yellow-400 bg-yellow-500/5 border-yellow-500/10",
+    purple: "text-yellow-400 bg-yellow-500/5 border-yellow-500/10",
   };
   return (
     <div className={cn("glass-v2 border p-5", colors[color])}>

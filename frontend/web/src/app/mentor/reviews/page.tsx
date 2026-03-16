@@ -97,7 +97,7 @@ export default function MentorReviews() {
             <input 
               type="text"
               placeholder="Search submissions..."
-              className="w-full pl-10 pr-4 py-3 rounded-2xl glass-v2 border-white/10 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all font-medium"
+              className="w-full pl-10 pr-4 py-3 rounded-2xl glass-v2 border-white/10 text-sm text-white focus:outline-none focus:border-yellow-500/50 transition-all font-medium"
             />
           </div>
 
@@ -111,7 +111,7 @@ export default function MentorReviews() {
                 className={cn(
                   "p-5 rounded-3xl border transition-all cursor-pointer group",
                   selectedReview?.id === review.id 
-                    ? "bg-purple-500/10 border-purple-500/30 ring-1 ring-purple-500/20" 
+                    ? "bg-yellow-500/10 border-yellow-500/30 ring-1 ring-yellow-500/20" 
                     : "bg-white/[0.03] border-white/5 hover:bg-white/[0.05]"
                 )}
               >
@@ -124,7 +124,7 @@ export default function MentorReviews() {
                   </span>
                   <span className="text-[10px] text-gray-500 font-bold uppercase">{review.submittedAt}</span>
                 </div>
-                <h4 className="font-bold text-white text-lg truncate group-hover:text-purple-400 transition-colors uppercase tracking-tighter leading-none mb-1">{review.title}</h4>
+                <h4 className="font-bold text-white text-lg truncate group-hover:text-yellow-400 transition-colors uppercase tracking-tighter leading-none mb-1">{review.title}</h4>
                 <div className="flex items-center gap-3">
                   <p className="text-xs text-gray-400 font-medium">{review.menteeName}</p>
                   <span className="text-[10px] text-gray-600 font-bold uppercase tracking-widest bg-white/5 px-1.5 rounded-md">{review.type}</span>
@@ -143,7 +143,7 @@ export default function MentorReviews() {
                    <h2 className="text-3xl font-bold text-white uppercase tracking-tighter mb-2">{selectedReview.title}</h2>
                    <div className="flex items-center gap-4">
                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-xs font-bold text-purple-400">
+                        <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-xs font-bold text-yellow-400">
                           {selectedReview.menteeName[0]}
                         </div>
                         <span className="text-sm font-bold text-white">{selectedReview.menteeName}</span>
@@ -196,7 +196,7 @@ export default function MentorReviews() {
                    <div>
                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Mentor Feedback</label>
                      <textarea 
-                        className="w-full h-40 p-6 rounded-3xl bg-black/40 border border-white/10 text-white placeholder:text-gray-700 focus:outline-none focus:border-purple-500/50 transition-all text-sm font-medium resize-none shadow-inner"
+                        className="w-full h-40 p-6 rounded-3xl bg-black/40 border border-white/10 text-white placeholder:text-gray-700 focus:outline-none focus:border-yellow-500/50 transition-all text-sm font-medium resize-none shadow-inner"
                         placeholder="Provide constructive insights, suggest improvements, or validate excellence..."
                         value={feedback}
                         onChange={(e) => setFeedback(e.target.value)}
@@ -215,7 +215,7 @@ export default function MentorReviews() {
                  <button 
                     onClick={handleSubmitReview}
                     disabled={!feedback || rating === 0}
-                    className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-sm hover:scale-105 transition-all shadow-lg disabled:opacity-50 disabled:scale-100"
+                    className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-yellow-600 to-yellow-600 text-white font-bold text-sm hover:scale-105 transition-all shadow-lg disabled:opacity-50 disabled:scale-100"
                  >
                    Submit Validation <Send className="w-4 h-4 ml-1" />
                  </button>

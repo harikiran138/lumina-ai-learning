@@ -117,7 +117,7 @@ export default function AlumniDashboard() {
                  [1, 2].map(i => <div key={i} className="h-24 bg-white/5 rounded-3xl animate-pulse"></div>)
               ) : mentees.length > 0 ? (
                 mentees.map((mentee) => (
-                  <GlassCard key={mentee.id} className="p-6 group hover:border-rose-500/20 transition-all flex items-center justify-between gap-6">
+                  <GlassCard key={mentee.id} className="p-6 group hover:border-amber-500/20 transition-all flex items-center justify-between gap-6">
                      <div className="flex items-center gap-5">
                         <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center font-bold text-white text-xl uppercase shadow-inner overflow-hidden">
                            <img src={mentee.avatar || `https://ui-avatars.com/api/?name=${mentee.name || 'M'}&background=random`} alt="" className="w-full h-full object-cover" />
@@ -126,7 +126,7 @@ export default function AlumniDashboard() {
                            <h4 className="font-bold text-white text-lg lowercase tracking-tighter truncate">{mentee.name || "Mentee"}</h4>
                            <div className="flex items-center gap-4">
                               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{mentee.major || "Computer Science"}</span>
-                              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-rose-500/10 text-rose-400 text-[9px] font-bold uppercase tracking-widest">
+                              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-400 text-[9px] font-bold uppercase tracking-widest">
                                  Impact +12
                               </div>
                            </div>
@@ -149,7 +149,7 @@ export default function AlumniDashboard() {
 
            <div className="flex items-center justify-between border-b border-white/5 pb-4 pt-4">
               <h2 className="text-2xl font-bold text-white lowercase tracking-tighter">Portfolio Snapshot</h2>
-              <Link href="/alumni/portfolio" className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest">Manage All Projects</Link>
+              <Link href="/alumni/portfolio" className="text-[10px] font-bold text-yellow-400 hover:text-yellow-300 transition-colors uppercase tracking-widest">Manage All Projects</Link>
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -157,7 +157,7 @@ export default function AlumniDashboard() {
                 { title: 'Neural Network Visualizer', role: 'Lead Architect', year: '2024' },
                 { title: 'Lumina Engagement Study', role: 'Data Researcher', year: '2025' }
               ].map((project, i) => (
-                <GlassCard key={i} className="p-8 group hover:border-indigo-500/20 transition-all cursor-pointer relative overflow-hidden">
+                <GlassCard key={i} className="p-8 group hover:border-yellow-500/20 transition-all cursor-pointer relative overflow-hidden">
                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                       <ExternalLink className="w-5 h-5 text-gray-500" />
                    </div>
@@ -172,9 +172,9 @@ export default function AlumniDashboard() {
         </div>
 
         <div className="space-y-8">
-           <GlassCard className="p-8 bg-gradient-to-br from-rose-500/10 to-transparent">
+           <GlassCard className="p-8 bg-gradient-to-br from-amber-500/10 to-transparent">
               <div className="flex items-center gap-3 mb-8">
-                 <Star className="w-6 h-6 text-rose-400" />
+                 <Star className="w-6 h-6 text-amber-400" />
                  <h2 className="text-2xl font-bold text-white lowercase tracking-tighter">Impact Ranking</h2>
               </div>
               <div className="flex items-center justify-between mb-8">
@@ -190,7 +190,7 @@ export default function AlumniDashboard() {
               </div>
               <div className="space-y-4">
                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-rose-500 w-4/5 shadow-premium"></div>
+                    <div className="h-full bg-amber-500 w-4/5 shadow-premium"></div>
                  </div>
                  <p className="text-[10px] text-gray-500 font-medium italic leading-relaxed text-center">
                    "You are 2 sessions away from the 'Foundational Pillar' medal!"
@@ -200,14 +200,14 @@ export default function AlumniDashboard() {
 
            <GlassCard className="p-8">
               <div className="flex items-center gap-3 mb-6">
-                 <TrendingUp className="w-5 h-5 text-teal-400" />
+                 <TrendingUp className="w-5 h-5 text-gold-400" />
                  <h4 className="font-bold text-white text-xs uppercase tracking-widest">Network Insights</h4>
               </div>
               <ul className="space-y-6">
                  {[
-                   { label: 'Mentee Growth', value: '+24%', color: 'text-teal-400' },
-                   { label: 'System Adoption', value: 'High', color: 'text-indigo-400' },
-                   { label: 'Skill Endorsements', value: '86', color: 'text-rose-400' }
+                   { label: 'Mentee Growth', value: '+24%', color: 'text-gold-400' },
+                   { label: 'System Adoption', value: 'High', color: 'text-yellow-400' },
+                   { label: 'Skill Endorsements', value: '86', color: 'text-amber-400' }
                  ].map((insight, i) => (
                     <li key={i} className="flex items-center justify-between border-b border-white/5 pb-4 last:border-0 last:pb-0">
                        <span className="text-[11px] text-gray-500 font-bold uppercase tracking-widest">{insight.label}</span>
@@ -217,9 +217,9 @@ export default function AlumniDashboard() {
               </ul>
            </GlassCard>
 
-           <GlassCard className="p-8 border-l-4 border-indigo-500/30">
+           <GlassCard className="p-8 border-l-4 border-yellow-500/30">
               <div className="flex items-center gap-2 mb-3">
-                 <Globe className="w-4 h-4 text-indigo-400" />
+                 <Globe className="w-4 h-4 text-yellow-400" />
                  <h4 className="text-[10px] font-bold text-white uppercase tracking-widest">Alumni Perk</h4>
               </div>
               <p className="text-[10px] text-gray-500 leading-relaxed font-medium">

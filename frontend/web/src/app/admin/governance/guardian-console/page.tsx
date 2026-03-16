@@ -51,7 +51,7 @@ export default function GuardianConsole() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <ShieldAlert className="h-8 w-8 text-blue-500" />
+            <ShieldAlert className="h-8 w-8 text-amber-500" />
             Guardian Console
           </h1>
           <p className="mt-1 text-gray-400">Autonomous safety agent monitoring system-wide activity.</p>
@@ -64,7 +64,7 @@ export default function GuardianConsole() {
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             Sync Signals
           </button>
-          <button className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 transition-colors">
+          <button className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500 transition-colors">
             Configure Agent
           </button>
         </div>
@@ -110,7 +110,7 @@ export default function GuardianConsole() {
                   "mt-1 rounded-full p-2 border",
                   signal.severity === "high" ? "bg-red-500/10 border-red-500/20 text-red-400" :
                   signal.severity === "medium" ? "bg-amber-500/10 border-amber-500/20 text-amber-400" :
-                  "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                  "bg-amber-500/10 border-amber-500/20 text-amber-400"
                 )}>
                   {signal.flag_type === "PII" ? <UserX className="h-4 w-4" /> : 
                    signal.flag_type === "INAPPROPRIATE" ? <MessageSquareOff className="h-4 w-4" /> : 
@@ -130,13 +130,13 @@ export default function GuardianConsole() {
                     </div>
                   </div>
                   <p className="text-sm text-gray-400">
-                    User <code className="text-blue-400">{signal.user_id.slice(0, 8)}</code> triggered a security flag in institution <code className="text-blue-400">{signal.institution_id?.slice(0, 8) || "System"}</code>.
+                    User <code className="text-amber-400">{signal.user_id.slice(0, 8)}</code> triggered a security flag in institution <code className="text-amber-400">{signal.institution_id?.slice(0, 8) || "System"}</code>.
                   </p>
                   <div className="flex items-center gap-4 pt-2">
-                    <button className="text-xs font-bold text-blue-400 hover:underline flex items-center gap-1">
+                    <button className="text-xs font-bold text-amber-400 hover:underline flex items-center gap-1">
                       View Context <Terminal className="h-3 w-3" />
                     </button>
-                    <button className="text-xs font-bold text-emerald-400 hover:underline flex items-center gap-1">
+                    <button className="text-xs font-bold text-yellow-400 hover:underline flex items-center gap-1">
                       Resolve <ShieldCheck className="h-3 w-3" />
                     </button>
                     <button className="text-xs font-bold text-red-400 hover:underline flex items-center gap-1">
@@ -163,16 +163,16 @@ function MonitorBox({ title, value, status, detail, icon: Icon }: any) {
     <div className="glass-v2 border-white/5 p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-blue-500/10 p-2 text-blue-400 ring-1 ring-blue-500/20">
+          <div className="rounded-xl bg-amber-500/10 p-2 text-amber-400 ring-1 ring-amber-500/20">
             <Icon className="h-5 w-5" />
           </div>
           <span className="text-sm font-semibold text-gray-400">{title}</span>
         </div>
         <div className={cn(
           "h-2 w-2 rounded-full",
-          status === "online" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : 
+          status === "online" ? "bg-yellow-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : 
           status === "warning" ? "bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" : 
-          "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+          "bg-amber-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"
         )} />
       </div>
       <div>

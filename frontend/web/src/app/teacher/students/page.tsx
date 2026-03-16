@@ -127,14 +127,14 @@ export default function StudentMasterListPage() {
                 <td className="px-8 py-6">
                    <div className={cn(
                      "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
-                     student.risk === "low" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
-                     student.risk === "medium" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                     student.risk === "low" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" :
+                     student.risk === "medium" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
                      student.risk === "high" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
                      "bg-red-500/10 text-red-400 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]"
                    )}>
                      <div className={cn("h-1.5 w-1.5 rounded-full", 
-                        student.risk === "low" ? "bg-emerald-500" :
-                        student.risk === "medium" ? "bg-blue-500" :
+                        student.risk === "low" ? "bg-yellow-500" :
+                        student.risk === "medium" ? "bg-amber-500" :
                         student.risk === "high" ? "bg-amber-500" : "bg-red-500"
                      )} />
                      {student.risk}
@@ -144,7 +144,7 @@ export default function StudentMasterListPage() {
                    <div className="space-y-2 max-w-[120px]">
                       <div className="flex justify-between text-[10px] font-bold text-gray-500">
                         <span className="text-white">{student.mastery}%</span>
-                        <TrendingUp className="h-3 w-3 text-emerald-400" />
+                        <TrendingUp className="h-3 w-3 text-yellow-400" />
                       </div>
                       <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                         <div className="h-full bg-amber-400" style={{ width: `${student.mastery}%` }} />

@@ -124,7 +124,7 @@ export default function InstitutionManagementPage() {
       <section className="glass-v2 border-white/5 overflow-hidden">
         <div className="grid gap-6 p-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(360px,1fr)]">
           <div>
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-300/80">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-lumina-highlight/80">
               Institution Graph
             </p>
             <h1 className="text-4xl font-display font-bold tracking-tight text-white">
@@ -149,7 +149,7 @@ export default function InstitutionManagementPage() {
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-emerald-500"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-lumina-primary px-4 py-3 font-semibold text-black transition-colors hover:bg-lumina-secondary shadow-gold-glow"
             >
               <Plus className="h-4 w-4" />
               Add institution
@@ -180,7 +180,7 @@ export default function InstitutionManagementPage() {
 
         {loading ? (
           <div className="flex min-h-[280px] items-center justify-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-emerald-400" />
+            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-yellow-400" />
           </div>
         ) : institutions.length === 0 ? (
           <EmptyInstitutions />
@@ -206,8 +206,9 @@ export default function InstitutionManagementPage() {
                       className={cn(
                         "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
                         stakeholderCount > 0
-                          ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
-                          : "border-amber-400/20 bg-amber-400/10 text-amber-300",
+                          ? "border-lumina-primary/20 bg-lumina-primary/10 text-lumina-primary"
+                          : "border-lumina-highlight/20 bg-lumina-highlight/10 text-lumina-highlight"
+,
                       )}
                     >
                       {stakeholderCount > 0 ? "Connected" : "Needs links"}
@@ -254,7 +255,7 @@ export default function InstitutionManagementPage() {
 
         {loading ? (
           <div className="flex min-h-[220px] items-center justify-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-emerald-400" />
+            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-yellow-400" />
           </div>
         ) : connections.length === 0 ? (
           <EmptyConnections />
@@ -274,7 +275,7 @@ export default function InstitutionManagementPage() {
                       {connection.user_email || "No email"} • {connection.user_role || connection.category}
                     </p>
                   </div>
-                  <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                  <span className="rounded-full border border-lumina-primary/20 bg-lumina-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-lumina-primary">
                     {connection.category}
                   </span>
                 </div>
@@ -320,7 +321,7 @@ export default function InstitutionManagementPage() {
                       institution_name: event.target.value,
                     }))
                   }
-                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-emerald-400/40"
+                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-yellow-400/40"
                   placeholder="Lumina Academy"
                 />
               </Field>
@@ -335,7 +336,7 @@ export default function InstitutionManagementPage() {
                         city: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-emerald-400/40"
+                    className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-yellow-400/40"
                     placeholder="Bengaluru"
                   />
                 </Field>
@@ -348,7 +349,7 @@ export default function InstitutionManagementPage() {
                         state: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-emerald-400/40"
+                    className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-yellow-400/40"
                     placeholder="Karnataka"
                   />
                 </Field>
@@ -363,7 +364,7 @@ export default function InstitutionManagementPage() {
                       institution_type: event.target.value,
                     }))
                   }
-                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-emerald-400/40"
+                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-yellow-400/40"
                 >
                   <option value="Private">Private</option>
                   <option value="Government">Government</option>
@@ -375,7 +376,7 @@ export default function InstitutionManagementPage() {
               <button
                 onClick={createInstitution}
                 disabled={savingInstitution || !newInstitution.institution_name.trim()}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-yellow-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-yellow-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {savingInstitution ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -452,7 +453,7 @@ function ConnectionComposer({ onCreated }: { onCreated: () => Promise<void> | vo
     <section className="glass-v2 border-white/5 overflow-hidden">
       <div className="border-b border-white/5 p-6">
         <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-emerald-500/10 p-3 text-emerald-300">
+          <div className="rounded-2xl bg-yellow-500/10 p-3 text-yellow-300">
             <Link2 className="h-5 w-5" />
           </div>
           <div>
@@ -472,7 +473,7 @@ function ConnectionComposer({ onCreated }: { onCreated: () => Promise<void> | vo
             value={selectedUser}
             onChange={(event) => setSelectedUser(event.target.value)}
             disabled={loading || submitting}
-            className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-emerald-400/40 disabled:opacity-60"
+            className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-yellow-400/40 disabled:opacity-60"
           >
             <option value="">Select a user</option>
             {users.map((user) => (
@@ -488,7 +489,7 @@ function ConnectionComposer({ onCreated }: { onCreated: () => Promise<void> | vo
             value={selectedInstitution}
             onChange={(event) => setSelectedInstitution(event.target.value)}
             disabled={loading || submitting}
-            className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-emerald-400/40 disabled:opacity-60"
+            className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-yellow-400/40 disabled:opacity-60"
           >
             <option value="">Select an institution</option>
             {institutions.map((institution) => (
@@ -504,7 +505,7 @@ function ConnectionComposer({ onCreated }: { onCreated: () => Promise<void> | vo
             value={category}
             onChange={(event) => setCategory(event.target.value)}
             disabled={loading || submitting}
-            className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-emerald-400/40 disabled:opacity-60"
+            className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-yellow-400/40 disabled:opacity-60"
           >
             <option value="Teacher">Teacher</option>
             <option value="Student">Student</option>
@@ -518,7 +519,7 @@ function ConnectionComposer({ onCreated }: { onCreated: () => Promise<void> | vo
       <div className="flex flex-col gap-3 border-t border-white/5 p-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="text-sm text-gray-400">
           {message ? (
-            <span className="inline-flex items-center gap-2 text-emerald-200">
+            <span className="inline-flex items-center gap-2 text-yellow-200">
               <CheckCircle2 className="h-4 w-4" />
               {message}
             </span>
@@ -530,7 +531,7 @@ function ConnectionComposer({ onCreated }: { onCreated: () => Promise<void> | vo
         <button
           onClick={createConnection}
           disabled={loading || submitting || !selectedUser || !selectedInstitution}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-yellow-600 px-5 py-3 font-semibold text-white transition-colors hover:bg-yellow-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading || submitting ? (
             <Loader2 className="h-4 w-4 animate-spin" />

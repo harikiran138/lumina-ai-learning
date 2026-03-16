@@ -217,7 +217,7 @@ export default function CounselorNotes() {
                       <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5">
                          <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Intervention Status</h4>
                          <div className="flex items-center gap-3">
-                            <div className="w-3 h-3 rounded-full bg-teal-500 shadow-[0_0_8px_rgba(45,212,191,0.5)]"></div>
+                            <div className="w-3 h-3 rounded-full bg-gold-500 shadow-[0_0_8px_rgba(45,212,191,0.5)]"></div>
                             <span className="text-sm font-bold text-white">Active Monitoring</span>
                          </div>
                       </div>
@@ -266,11 +266,11 @@ export default function CounselorNotes() {
                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
                  className="relative w-full max-w-lg p-8 rounded-3xl bg-zinc-900 border border-white/10 shadow-2xl overflow-hidden"
                >
-                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-rose-500/50"></div>
+                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-amber-500/50"></div>
                   <div className="flex items-center justify-between mb-8">
                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-rose-500/10">
-                           <AlertTriangle className="w-6 h-6 text-rose-400" />
+                        <div className="p-2 rounded-xl bg-amber-500/10">
+                           <AlertTriangle className="w-6 h-6 text-amber-400" />
                         </div>
                         <h3 className="text-2xl font-bold text-white lowercase tracking-tighter">Safeguarding Log Required</h3>
                      </div>
@@ -287,7 +287,7 @@ export default function CounselorNotes() {
                      <div className="space-y-2">
                         <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Reveal Justification</label>
                         <textarea 
-                           className="w-full h-32 p-5 rounded-2xl bg-black border border-white/10 text-white placeholder:text-gray-700 focus:outline-none focus:border-rose-500/40 transition-all font-medium resize-none shadow-inner text-sm"
+                           className="w-full h-32 p-5 rounded-2xl bg-black border border-white/10 text-white placeholder:text-gray-700 focus:outline-none focus:border-amber-500/40 transition-all font-medium resize-none shadow-inner text-sm"
                            placeholder="e.g., Escalation to senior safeguarding lead due to high-risk sentiment markers..."
                            value={revealJustification}
                            onChange={(e) => setRevealJustification(e.target.value)}
@@ -304,7 +304,7 @@ export default function CounselorNotes() {
                         <button 
                            onClick={handleRevealIdentity}
                            disabled={!revealJustification}
-                           className="flex-1 py-4 rounded-2xl bg-rose-600 text-white font-bold text-xs hover:scale-105 transition-all shadow-lg shadow-rose-600/20 disabled:opacity-50 disabled:scale-100 uppercase tracking-widest"
+                           className="flex-1 py-4 rounded-2xl bg-amber-600 text-white font-bold text-xs hover:scale-105 transition-all shadow-lg shadow-amber-600/20 disabled:opacity-50 disabled:scale-100 uppercase tracking-widest"
                         >
                            Log & Reveal
                         </button>

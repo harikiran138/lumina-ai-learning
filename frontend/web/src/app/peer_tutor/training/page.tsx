@@ -20,18 +20,21 @@ import {
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 
-const GlassCard: React.FC<{ className?: string; children: React.ReactNode }> = ({ className, children }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
-    className={cn(
-      'rounded-3xl border border-white/5 bg-white/[0.03] backdrop-blur-2xl shadow-premium overflow-hidden',
-      className
-    )}
-  >
-    {children}
-  </motion.div>
-);
+function GlassCard({ className, children, onClick }: { className?: string; children: React.ReactNode; onClick?: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      onClick={onClick}
+      className={cn(
+        'rounded-3xl border border-white/5 bg-white/[0.03] backdrop-blur-2xl shadow-premium overflow-hidden',
+        className
+      )}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export default function PeerTutorTraining() {
   const [modules, setModules] = useState<any[]>([]);
@@ -65,9 +68,9 @@ export default function PeerTutorTraining() {
         <div className="flex items-center gap-4">
           <div className="text-right">
              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] block mb-1">Rank</span>
-             <span className="text-lg font-bold text-indigo-400 uppercase tracking-tighter">Elite Explainer</span>
+             <span className="text-lg font-bold text-lumina-highlight uppercase tracking-tighter">Elite Explainer</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center font-bold text-indigo-400">
+          <div className="w-12 h-12 rounded-2xl bg-lumina-primary/10 border border-lumina-primary/20 flex items-center justify-center font-bold text-lumina-primary shadow-gold-glow">
              <Trophy className="w-6 h-6" />
           </div>
         </div>
@@ -80,7 +83,7 @@ export default function PeerTutorTraining() {
             <input 
               type="text"
               placeholder="Search training modules or subject certifications..."
-              className="w-full pl-12 pr-6 py-4 rounded-3xl glass-v2 border-white/10 text-white font-medium focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner"
+              className="w-full pl-12 pr-6 py-4 rounded-3xl glass-v2 border-white/10 text-white font-medium focus:outline-none focus:border-lumina-primary/50 transition-all shadow-inner"
             />
           </div>
 
@@ -93,7 +96,7 @@ export default function PeerTutorTraining() {
                     <div className="flex items-start justify-between mb-6">
                        <div className={cn(
                         "p-4 rounded-2xl transition-all",
-                        mod.status === 'certified' ? "bg-green-500/10 text-green-400" : "bg-indigo-500/10 text-indigo-400"
+                         mod.status === 'certified' ? "bg-green-500/10 text-green-400" : "bg-lumina-primary/10 text-lumina-primary"
                        )}>
                           {mod.status === 'certified' ? <CheckCircle2 className="w-6 h-6" /> : <BookOpen className="w-6 h-6" />}
                        </div>
@@ -113,7 +116,7 @@ export default function PeerTutorTraining() {
                            <Zap className="w-3.5 h-3.5 text-lumina-primary" />
                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">+{mod.credits || 150} Credits</span>
                         </div>
-                        <button className="flex items-center gap-1 text-xs font-bold text-indigo-400 group-hover:gap-2 transition-all">
+                         <button className="flex items-center gap-1 text-xs font-bold text-lumina-highlight group-hover:gap-2 transition-all">
                           {mod.status === 'certified' ? 'Recap Module' : 'Start Module'} <ChevronRight className="w-4 h-4" />
                         </button>
                     </div>
@@ -126,9 +129,9 @@ export default function PeerTutorTraining() {
         </div>
 
         <div className="space-y-8">
-           <GlassCard className="p-8 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent">
+           <GlassCard className="p-8 bg-gradient-to-br from-lumina-primary/10 via-transparent to-transparent">
               <div className="flex items-center gap-3 mb-8">
-                 <Brain className="w-6 h-6 text-indigo-400" />
+                 <Brain className="w-6 h-6 text-lumina-primary" />
                  <h2 className="text-2xl font-bold text-white lowercase tracking-tighter">Your Journey</h2>
               </div>
               
@@ -142,8 +145,8 @@ export default function PeerTutorTraining() {
                    <div key={i} className="flex items-start gap-6 relative">
                       <div className={cn(
                         "w-5 h-5 rounded-full z-10 border-2 transition-all shadow-lg",
-                        step.status === 'completed' ? "bg-green-500 border-green-400" : 
-                        step.status === 'in-progress' ? "bg-indigo-500 border-indigo-400 animate-pulse" : "bg-zinc-900 border-white/5"
+                         step.status === 'completed' ? "bg-green-500 border-green-400" : 
+                        step.status === 'in-progress' ? "bg-lumina-primary border-lumina-highlight animate-pulse shadow-gold-glow" : "bg-zinc-900 border-white/5"
                       )}></div>
                       <div className="min-w-0">
                          <h4 className={cn(

@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  --color-lumina-primary: #4F46E5; /* Deep Indigo / AI Blue */
-  --color-lumina-secondary: #0ea5e9; /* Sky Blue */
-  --color-lumina-accent: #14B8A6; /* Teal / Emerald */
+  --color-lumina-primary: #FFD700; /* Gold */
+  --color-lumina-secondary: #FDB931; /* Darker Gold */
+  --color-lumina-accent: #F59E0B; /* Soft Orange */
   --color-lumina-highlight: #F59E0B; /* Soft Orange */
-  --color-lumina-academic: #1e1b4b; /* Deep Indigo Navy */
-  --color-lumina-success: #10b981; /* Emerald */
+  --color-lumina-academic: #FFD700; /* Remapped to Gold */
+  --color-lumina-success: #F59E0B; /* Remapped to Amber/Yellow */
   --color-lumina-warning: #f59e0b; /* Amber */
-  --color-lumina-error: #ef4444; /* Red */
+  --color-lumina-error: #ef4444; /* Red - keeping for safety */
 
-  --color-surface-950: #020617; /* Slate 950 */
-  --color-surface-900: #0f172a; /* Slate 900 (Requested Background) */
+  --color-surface-950: #060606; /* Deep Neutral Black */
+  --color-surface-900: #0c0c0c; /* Deep Neutral Gray/Black */
   --color-surface-800: #1e293b; /* Slate 800 */
   --color-surface-700: #334155; /* Slate 700 */
 
@@ -20,7 +20,7 @@
   --font-mono: "JetBrains Mono", monospace;
 
   --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.5);
-  --shadow-primary: 0 0 30px rgba(79, 70, 229, 0.1);
+  --shadow-primary: 0 0 30px rgba(253, 185, 49, 0.1);
 }
 
 :root {
@@ -43,7 +43,7 @@
 
 body {
   color: #e2e8f0; /* Text Color from user request */
-  background: radial-gradient(circle at 50% 0%, #0f172a 0%, #020617 100%);
+  background: radial-gradient(circle at 50% 0%, #0c0c0c 0%, #060606 100%);
   background-attachment: fixed;
   min-height: 100vh;
   font-family: var(--font-sans);
@@ -61,7 +61,7 @@ body::before {
   height: 50vw;
   background: radial-gradient(
     circle,
-    rgba(79, 70, 229, 0.05) 0%,
+    rgba(253, 185, 49, 0.05) 0%,
     transparent 70%
   );
   filter: blur(100px);
@@ -78,7 +78,7 @@ body::after {
   height: 50vw;
   background: radial-gradient(
     circle,
-    rgba(20, 184, 166, 0.03) 0%,
+    rgba(245, 158, 11, 0.03) 0%,
     transparent 70%
   );
   filter: blur(100px);
@@ -93,11 +93,11 @@ body::after {
 
   /* Premium Text Styles */
   .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-lumina-primary via-blue-400 to-lumina-accent;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-lumina-primary via-yellow-400 to-lumina-accent;
   }
 
   .gradient-text-orange {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-lumina-highlight to-orange-400;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-lumina-highlight to-amber-400;
   }
 
   /* Core Glassmorphism System */
@@ -111,7 +111,7 @@ body::after {
 
   .glass-card:hover {
     @apply bg-surface-800/60 border-lumina-primary/30 shadow-xl;
-    box-shadow: 0 0 20px rgba(79, 70, 229, 0.05);
+    box-shadow: 0 0 20px rgba(253, 185, 49, 0.05);
     transform: translateY(-2px);
   }
 
@@ -142,7 +142,7 @@ body::after {
   }
 
   .shadow-primary-glow {
-    box-shadow: 0 0 20px rgba(79, 70, 229, 0.15);
+    box-shadow: 0 0 20px rgba(253, 185, 49, 0.15);
   }
 
   .hide-scrollbar {
@@ -156,15 +156,15 @@ body::after {
 
   /* Lumina V2: Command Center Aesthetics */
   .command-center-bg {
-    @apply bg-[#020617] relative overflow-hidden;
+    @apply bg-[#060606] relative overflow-hidden;
     background-image: radial-gradient(
         circle at 50% -20%,
-        rgba(79, 70, 229, 0.08) 0%,
+        rgba(253, 185, 49, 0.08) 0%,
         transparent 50%
       ),
       radial-gradient(
         circle at 0% 100%,
-        rgba(20, 184, 166, 0.05) 0%,
+        rgba(245, 158, 11, 0.05) 0%,
         transparent 40%
       );
   }
@@ -176,9 +176,9 @@ body::after {
     background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
       linear-gradient(
         90deg,
-        rgba(255, 0, 0, 0.01),
-        rgba(0, 255, 0, 0.005),
-        rgba(0, 255, 255, 0.01)
+        rgba(253, 185, 49, 0.005),
+        rgba(253, 185, 49, 0.01),
+        rgba(253, 185, 49, 0.005)
       );
     background-size:
       100% 2px,
@@ -230,11 +230,11 @@ body::after {
     box-shadow: var(--shadow-premium);
     border-radius: 1.5rem;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(79, 70, 229, 0.1);
+    border: 1px solid rgba(253, 185, 49, 0.1);
   }
 
   .glass-v2-primary:hover {
-    border-color: rgba(79, 70, 229, 0.3);
+    border-color: rgba(253, 185, 49, 0.3);
     box-shadow: var(--shadow-primary);
   }
 
@@ -249,7 +249,7 @@ body::after {
     background: linear-gradient(
       45deg,
       transparent,
-      rgba(59, 130, 246, 0.3),
+      rgba(253, 185, 49, 0.3),
       transparent
     );
     border-radius: inherit;

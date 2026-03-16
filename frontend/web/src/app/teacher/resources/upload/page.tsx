@@ -136,7 +136,7 @@ export default function TextbookUploadPage() {
                     <div className="flex flex-col items-center">
                       <div className={cn(
                         "h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all",
-                        step.status === "completed" ? "bg-emerald-500 border-emerald-500 text-black" :
+                        step.status === "completed" ? "bg-yellow-500 border-yellow-500 text-black" :
                         step.status === "processing" ? "bg-amber-400/20 border-amber-400 text-amber-400" :
                         "bg-white/5 border-white/10 text-gray-600"
                       )}>
@@ -147,7 +147,7 @@ export default function TextbookUploadPage() {
                       {i < steps.length - 1 && (
                         <div className={cn(
                           "w-px flex-1 my-1",
-                          step.status === "completed" ? "bg-emerald-500" : "bg-white/10"
+                          step.status === "completed" ? "bg-yellow-500" : "bg-white/10"
                         )} />
                       )}
                     </div>
@@ -170,12 +170,12 @@ export default function TextbookUploadPage() {
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col items-center text-center gap-4"
+                  className="p-6 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex flex-col items-center text-center gap-4"
                 >
-                  <p className="text-sm text-emerald-300 font-semibold">Pipeline Complete! Knowledge Graph generated.</p>
+                  <p className="text-sm text-yellow-300 font-semibold">Pipeline Complete! Knowledge Graph generated.</p>
                   <Link 
                     href="/teacher/create-course?blueprint=extracted"
-                    className="rounded-xl bg-emerald-500 px-6 py-2 text-sm font-bold text-black hover:bg-emerald-400 transition-all"
+                    className="rounded-xl bg-yellow-500 px-6 py-2 text-sm font-bold text-black hover:bg-yellow-400 transition-all"
                   >
                     Open Course Blueprint
                   </Link>
@@ -188,16 +188,16 @@ export default function TextbookUploadPage() {
         <div className="space-y-6">
           <section className="glass-v2 border-white/5 p-8 rounded-3xl">
             <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-              <Database className="h-5 w-5 text-blue-400" />
+              <Database className="h-5 w-5 text-amber-400" />
               Content Guidelines
             </h3>
             <ul className="space-y-4">
               <li className="flex gap-3 text-sm text-gray-400">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="h-4 w-4 text-yellow-400 shrink-0" />
                 Textbooks with index/TOC work best for concept mapping.
               </li>
               <li className="flex gap-3 text-sm text-gray-400">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="h-4 w-4 text-yellow-400 shrink-0" />
                 Supports diagrams, formulas, and multi-column layouts.
               </li>
               <li className="flex gap-3 text-sm text-gray-400">

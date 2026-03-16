@@ -18,7 +18,9 @@ import {
   Moon,
   Save,
   Info,
-  Briefcase
+  Briefcase,
+  X,
+  Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
@@ -65,8 +67,8 @@ export default function PeerTutorSettings() {
           </h1>
           <p className="text-gray-400 mt-1 font-medium italic">Customize your tutoring presence and preferences</p>
         </div>
-        <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lumina-primary text-black font-bold text-sm hover:scale-105 transition-all shadow-gold-glow">
-          <Save className="w-4 h-4" /> Save Profile
+        <button className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-lumina-primary to-lumina-highlight text-black font-bold text-sm hover:scale-105 transition-all shadow-lg">
+          <Save className="w-4 h-4" /> Save Changes
         </button>
       </div>
 
@@ -101,8 +103,8 @@ export default function PeerTutorSettings() {
                       <Camera className="w-6 h-6 text-white" />
                    </div>
                 </div>
-                <div className="absolute -bottom-2 -right-2 p-2 rounded-xl bg-green-500 text-black shadow-lg">
-                   <CheckCircle2 className="w-4 h-4" />
+                <div className="absolute -bottom-2 -right-2 p-2 rounded-xl bg-lumina-primary text-black shadow-gold-glow">
+                   <Shield className="w-4 h-4" />
                 </div>
               </div>
               <h3 className="text-xl font-bold text-white mb-1 uppercase tracking-tighter">{user?.name || "Peer Tutor"}</h3>
@@ -119,9 +121,9 @@ export default function PeerTutorSettings() {
               </div>
            </GlassCard>
 
-           <GlassCard className="p-6 bg-gradient-to-br from-indigo-500/10 to-transparent">
+           <GlassCard className="p-6 bg-gradient-to-br from-yellow-500/10 to-transparent">
               <div className="flex items-center gap-3 mb-4">
-                <Zap className="w-5 h-5 text-indigo-400" />
+                <Zap className="w-5 h-5 text-yellow-400" />
                 <h4 className="font-bold text-white text-sm">Academy Insight</h4>
               </div>
               <p className="text-[11px] text-gray-400 font-medium leading-relaxed italic">
@@ -202,9 +204,9 @@ export default function PeerTutorSettings() {
                     { subject: 'Introduction to AI', score: 'A+' },
                     { subject: 'Academic Writing', score: 'Verified' }
                   ].map((sub) => (
-                    <div key={sub.subject} className="flex items-center justify-between p-5 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-indigo-500/20 transition-all">
+                    <div key={sub.subject} className="flex items-center justify-between p-5 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-yellow-500/20 transition-all">
                        <span className="text-sm font-bold text-white">{sub.subject}</span>
-                       <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-lg uppercase">{sub.score}</span>
+                       <span className="text-[10px] font-bold text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded-lg uppercase">{sub.score}</span>
                     </div>
                   ))}
                   <button className="col-span-full py-4 rounded-3xl border-2 border-dashed border-white/5 text-gray-500 hover:text-white hover:border-white/10 transition-all font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2">

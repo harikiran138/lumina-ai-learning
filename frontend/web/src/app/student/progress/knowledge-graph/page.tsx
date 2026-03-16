@@ -160,7 +160,7 @@ export default function KnowledgeGraphPage() {
             <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Total Coverage</p>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold text-white">{coverage}%</span>
-              <span className="text-xs text-emerald-500 font-medium">+5%</span>
+              <span className="text-xs text-yellow-500 font-medium">+5%</span>
             </div>
             <div className="mt-2 h-1 bg-white/10 rounded-full">
               <div className="h-full bg-lumina-primary rounded-full transition-all duration-1000" style={{ width: `${coverage}%` }} />
@@ -168,7 +168,7 @@ export default function KnowledgeGraphPage() {
           </div>
           
           <div className="flex gap-2">
-             <LegendItem color="bg-emerald-500" label="Mastered" />
+             <LegendItem color="bg-yellow-500" label="Mastered" />
              <LegendItem color="bg-amber-500" label="In Progress" />
              <LegendItem color="bg-gray-700" label="Locked" />
           </div>
@@ -230,7 +230,7 @@ export default function KnowledgeGraphPage() {
                   cy={node.y}
                   r={12}
                   className={`transition-all duration-300 ${
-                    node.status === "mastered" ? "fill-emerald-500" : 
+                    node.status === "mastered" ? "fill-yellow-500" : 
                     node.status === "learning" ? "fill-amber-500" : "fill-gray-800"
                   } ${selectedNode?.id === node.id ? "r-16" : ""}`}
                   filter={node.status !== "locked" ? "url(#glow)" : ""}
@@ -268,7 +268,7 @@ export default function KnowledgeGraphPage() {
               <div className="mt-8 space-y-6">
                 <div>
                   <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
-                    selectedNode.status === "mastered" ? "bg-emerald-500/15 text-emerald-400" :
+                    selectedNode.status === "mastered" ? "bg-yellow-500/15 text-yellow-400" :
                     selectedNode.status === "learning" ? "bg-amber-500/15 text-amber-400" : "bg-white/5 text-gray-500"
                   }`}>
                     {selectedNode.status.replace("-", " ")}
@@ -295,7 +295,7 @@ export default function KnowledgeGraphPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/5 text-xs text-gray-300">
                       <span>Propositional Logic</span>
-                      <span className="text-emerald-500 font-bold">100%</span>
+                      <span className="text-yellow-500 font-bold">100%</span>
                     </div>
                     <div className="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/5 text-xs text-gray-300">
                       <span>Set Theory</span>

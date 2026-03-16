@@ -208,8 +208,8 @@ export default function MentorDashboard() {
         <div className="space-y-8">
           <GlassCard className="p-8">
             <div className="flex items-center gap-3 mb-8">
-              <div className="p-3 rounded-2xl bg-indigo-500/10">
-                <Calendar className="w-6 h-6 text-indigo-400" />
+              <div className="p-3 rounded-2xl bg-yellow-500/10">
+                <Calendar className="w-6 h-6 text-yellow-400" />
               </div>
               <h2 className="text-xl font-bold text-white">Sessions</h2>
             </div>
@@ -221,9 +221,9 @@ export default function MentorDashboard() {
                 </div>
               ) : sessions.length > 0 ? (
                 sessions.slice(0, 3).map((session) => (
-                  <div key={session.id} className="p-5 rounded-2xl glass-v2 border-white/5 hover:border-indigo-500/20 transition-all cursor-pointer">
+                  <div key={session.id} className="p-5 rounded-2xl glass-v2 border-white/5 hover:border-yellow-500/20 transition-all cursor-pointer">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="px-2 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase tracking-wider">
+                      <span className="px-2 py-1 rounded-lg bg-yellow-500/10 text-yellow-400 text-[10px] font-bold uppercase tracking-wider">
                         {session.time || '2:00 PM'}
                       </span>
                       <span className="text-[10px] text-gray-400 font-bold">{session.date || 'Today'}</span>
@@ -238,7 +238,7 @@ export default function MentorDashboard() {
                 <div className="p-10 flex flex-col items-center justify-center text-center">
                   <Clock className="w-10 h-10 text-gray-600 mb-4 opacity-50" />
                   <p className="text-gray-500 text-sm font-medium mb-4">No upcoming sessions</p>
-                  <button className="text-xs font-bold text-indigo-400 hover:underline">Pick a slot</button>
+                  <button className="text-xs font-bold text-yellow-400 hover:underline">Pick a slot</button>
                 </div>
               )}
             </div>
@@ -264,12 +264,12 @@ export default function MentorDashboard() {
         <GlassCard className="p-8">
            <div className="flex items-center justify-between mb-8">
              <div className="flex items-center gap-3">
-               <div className="p-3 rounded-2xl bg-purple-500/10">
-                 <FileText className="w-6 h-6 text-purple-400" />
+               <div className="p-3 rounded-2xl bg-yellow-500/10">
+                 <FileText className="w-6 h-6 text-yellow-400" />
                </div>
                <h2 className="text-xl font-bold text-white">Review Queue</h2>
              </div>
-             <span className="px-2 py-1 rounded-lg bg-purple-500/10 text-purple-400 text-[10px] font-bold">3 PENDING</span>
+             <span className="px-2 py-1 rounded-lg bg-yellow-500/10 text-yellow-400 text-[10px] font-bold">3 PENDING</span>
            </div>
            
            <div className="space-y-4">

@@ -54,7 +54,7 @@ const Certificate: React.FC<CertificateProps> = ({
         <div className="flex justify-end gap-3 mb-4">
           <button
             onClick={handleDownload}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors font-medium shadow-lg hover:shadow-blue-500/25"
+            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg transition-colors font-medium shadow-lg hover:shadow-amber-500/25"
           >
             <Download className="w-4 h-4" />
             Download PDF
@@ -89,7 +89,7 @@ const Certificate: React.FC<CertificateProps> = ({
           <div className="absolute inset-0 flex flex-col items-center justify-center p-16 text-center">
             {/* Logo/Header */}
             <div className="mb-8 flex flex-col items-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center mb-4 shadow-lg text-white">
+              <div className="w-16 h-16 bg-gradient-to-br from-amber-600 to-yellow-600 rounded-xl flex items-center justify-center mb-4 shadow-lg text-white">
                 <Award className="w-8 h-8" />
               </div>
               <h1 className="text-4xl font-serif text-gray-900 tracking-wider">
@@ -106,7 +106,7 @@ const Certificate: React.FC<CertificateProps> = ({
                 This is to certify that
               </p>
 
-              <h2 className="text-5xl font-serif text-blue-900 py-4 border-b border-gray-200 inline-block min-w-[400px]">
+              <h2 className="text-5xl font-serif text-amber-900 py-4 border-b border-gray-200 inline-block min-w-[400px]">
                 {studentName}
               </h2>
 

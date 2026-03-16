@@ -286,7 +286,7 @@ export default function AssessmentPage() {
     <div className="min-h-screen bg-black text-white p-8 pl-80">
       <div className="max-w-3xl mx-auto space-y-8">
         <header>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 to-pink-600 bg-clip-text text-transparent mb-2">
             Adaptive Assessment
           </h1>
           <p className="text-gray-400">
@@ -303,8 +303,8 @@ export default function AssessmentPage() {
             >
               <Card className="bg-white/5 border-white/10 backdrop-blur-xl">
                 <CardHeader>
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mb-4">
-                    <Brain className="w-8 h-8 text-purple-400" />
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-pink-500/20 flex items-center justify-center mb-4">
+                    <Brain className="w-8 h-8 text-yellow-400" />
                   </div>
                   <CardTitle className="text-2xl text-white">
                     Ready for your assessment?
@@ -355,7 +355,7 @@ export default function AssessmentPage() {
               animate={{ opacity: 1 }}
               className="flex justify-center py-20"
             >
-              <Loader2 className="w-12 h-12 text-purple-500 animate-spin" />
+              <Loader2 className="w-12 h-12 text-yellow-500 animate-spin" />
             </motion.div>
           )}
 
@@ -393,7 +393,7 @@ export default function AssessmentPage() {
                           <RadioGroupItem
                             value={opt.id}
                             id={`opt-${opt.id}`}
-                            className="border-white/20 text-purple-500"
+                            className="border-white/20 text-yellow-500"
                           />
                           <Label
                             htmlFor={`opt-${opt.id}`}
@@ -407,7 +407,7 @@ export default function AssessmentPage() {
                   ) : (
                     <div className="space-y-4">
                       <textarea
-                        className="w-full h-32 bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-mono text-sm"
+                        className="w-full h-32 bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/50 transition-all font-mono text-sm"
                         placeholder="Type your answer here..."
                         value={selectedAnswer}
                         onChange={(e) => {
@@ -422,7 +422,7 @@ export default function AssessmentPage() {
                         onPaste={handlePaste}
                       />
                       <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
                         Semantic Analysis Active
                       </p>
                     </div>
@@ -432,7 +432,7 @@ export default function AssessmentPage() {
                   <Button
                     onClick={submitAnswer}
                     disabled={question.format === "mcq" ? !selectedOptionId : !selectedAnswer}
-                    className="bg-purple-600 hover:bg-purple-700 ml-4"
+                    className="bg-yellow-600 hover:bg-yellow-700 ml-4"
                   >
                     Submit Answer
                   </Button>
@@ -504,7 +504,7 @@ export default function AssessmentPage() {
               animate={{ opacity: 1 }}
               className="text-center py-20 space-y-6"
             >
-              <div className="w-24 h-24 bg-gradient-to-tr from-yellow-400 to-orange-500 rounded-full mx-auto flex items-center justify-center mb-6 shadow-glow">
+              <div className="w-24 h-24 bg-gradient-to-tr from-yellow-400 to-amber-500 rounded-full mx-auto flex items-center justify-center mb-6 shadow-glow">
                 <Brain className="w-12 h-12 text-white" />
               </div>
               <div>

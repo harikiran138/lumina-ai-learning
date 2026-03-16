@@ -81,7 +81,7 @@ export default function LessonPage() {
               router.push(`/student/courses/${courseId}`);
             }
           }}
-          className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors"
+          className="px-6 py-3 bg-amber-600 hover:bg-amber-500 rounded-lg font-medium transition-colors"
         >
           Mark as Complete
         </button>

@@ -116,7 +116,7 @@ function StatCard({
           {change !== undefined && (
             <div className="flex items-center gap-1 mt-2">
               {trend === "up" ? (
-                <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                <ArrowUpRight className="w-4 h-4 text-yellow-400" />
               ) : trend === "down" ? (
                 <ArrowDownRight className="w-4 h-4 text-red-400" />
               ) : null}
@@ -124,7 +124,7 @@ function StatCard({
                 className={cn(
                   "text-sm",
                   trend === "up"
-                    ? "text-emerald-400"
+                    ? "text-yellow-400"
                     : trend === "down"
                     ? "text-red-400"
                     : "text-gray-400"
@@ -153,13 +153,13 @@ function ProgressBar({
   size = "md",
 }: {
   value: number;
-  color?: "amber" | "emerald" | "blue" | "red";
+  color?: "amber" | "yellow" | "amber" | "red";
   size?: "sm" | "md" | "lg";
 }) {
   const colors = {
     amber: "bg-amber-400",
-    emerald: "bg-emerald-400",
-    blue: "bg-blue-400",
+    emerald: "bg-yellow-400",
+    blue: "bg-amber-400",
     red: "bg-red-400",
   };
   const heights = {
@@ -441,7 +441,7 @@ export default function TeacherAnalytics() {
                         <span className="text-gray-400">Completion</span>
                         <span className="text-white">{course.completionRate}%</span>
                       </div>
-                      <ProgressBar value={course.completionRate} color="emerald" size="sm" />
+                      <ProgressBar value={course.completionRate} color="gold" size="sm" />
                     </div>
                   </div>
                 </div>
@@ -461,7 +461,7 @@ export default function TeacherAnalytics() {
             data={data.weeklyActivity.map((d) => ({
               label: d.day,
               value: d.submissions,
-              color: "bg-blue-500/60",
+              color: "bg-amber-500/60",
             }))}
             maxValue={Math.max(...data.weeklyActivity.map((d) => d.submissions), 1)}
           />
@@ -502,7 +502,7 @@ export default function TeacherAnalytics() {
                     <p className="text-xs text-gray-400">{student.course}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-emerald-400">
+                    <p className="text-sm font-semibold text-yellow-400">
                       {student.mastery}%
                     </p>
                     <p className="text-xs text-gray-400">mastery</p>
@@ -575,7 +575,7 @@ export default function TeacherAnalytics() {
                 </div>
                 <ProgressBar
                   value={topic.avgMastery}
-                  color={topic.avgMastery >= 70 ? "emerald" : topic.avgMastery >= 40 ? "amber" : "red"}
+                  color={topic.avgMastery >= 70 ? "yellow" : topic.avgMastery >= 40 ? "amber" : "red"}
                   size="sm"
                 />
               </div>

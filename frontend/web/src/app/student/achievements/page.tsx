@@ -37,7 +37,7 @@ export default function AchievementsPage() {
             Track your learning milestones and earned badges.
           </p>
         </div>
-        <div className="glass-card px-6 py-3 bg-gradient-to-r from-amber-500/20 to-purple-500/20 border border-amber-500/30">
+        <div className="glass-card px-6 py-3 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30">
           <span className="text-2xl font-bold text-white">{badges.length}</span>
           <span className="text-sm text-gray-400 ml-2">Total Badges</span>
         </div>

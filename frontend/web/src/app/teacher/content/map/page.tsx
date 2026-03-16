@@ -89,18 +89,18 @@ export default function CurriculumMapPage() {
                   <div className="flex items-start justify-between mb-4">
                     <div className={cn(
                       "p-3 rounded-xl",
-                      node.type === "module" ? "bg-blue-500/20 text-blue-400" :
+                      node.type === "module" ? "bg-amber-500/20 text-amber-400" :
                       node.type === "concept" ? "bg-amber-500/20 text-amber-400" :
-                      "bg-purple-500/20 text-purple-400"
+                      "bg-yellow-500/20 text-yellow-400"
                     )}>
                       {node.type === "module" ? <Layers className="h-5 w-5" /> :
                        node.type === "concept" ? <BookOpen className="h-5 w-5" /> :
                        <Zap className="h-5 w-5" />}
                     </div>
-                    {node.status === "completed" ? <CheckCircle className="h-4 w-4 text-emerald-500" /> :
+                    {node.status === "completed" ? <CheckCircle className="h-4 w-4 text-yellow-500" /> :
                      node.status === "needs-attention" ? <AlertCircle className="h-4 w-4 text-red-500 animate-pulse" /> :
                      node.status === "locked" ? <Lock className="h-4 w-4 text-gray-600" /> :
-                     <Activity className="h-4 w-4 text-blue-500" />}
+                     <Activity className="h-4 w-4 text-amber-500" />}
                   </div>
 
                   <h3 className="text-sm font-bold text-white uppercase tracking-tight group-hover:text-amber-400 transition-colors">

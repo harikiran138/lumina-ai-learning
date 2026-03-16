@@ -24,7 +24,7 @@ export default function InstitutionAnalytics() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -33,7 +33,7 @@ export default function InstitutionAnalytics() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <BarChart3 className="h-8 w-8 text-blue-500" />
+            <BarChart3 className="h-8 w-8 text-amber-500" />
             Institution Analytics
           </h1>
           <p className="mt-1 text-gray-400">Macro-level insights into academic performance, equity gaps, and institutional ROI.</p>
@@ -59,11 +59,11 @@ export default function InstitutionAnalytics() {
             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Enrollment Growth</h3>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-blue-500" />
+                <div className="h-2 w-2 rounded-full bg-amber-500" />
                 <span className="text-[10px] font-bold text-gray-500">2023</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-purple-500" />
+                <div className="h-2 w-2 rounded-full bg-yellow-500" />
                 <span className="text-[10px] font-bold text-gray-500">2024</span>
               </div>
             </div>
@@ -72,8 +72,8 @@ export default function InstitutionAnalytics() {
             {[45, 60, 48, 75, 90, 65, 80].map((val, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
                 <div className="w-full flex justify-center gap-1">
-                  <div className="w-2.5 bg-blue-500/20 rounded-t-sm group-hover:bg-blue-500/40 transition-all" style={{ height: `${val-10}%` }} />
-                  <div className="w-2.5 bg-blue-500 rounded-t-sm group-hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all" style={{ height: `${val}%` }} />
+                  <div className="w-2.5 bg-amber-500/20 rounded-t-sm group-hover:bg-amber-500/40 transition-all" style={{ height: `${val-10}%` }} />
+                  <div className="w-2.5 bg-amber-500 rounded-t-sm group-hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all" style={{ height: `${val}%` }} />
                 </div>
                 <span className="text-[9px] font-bold text-gray-600 uppercase">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}</span>
               </div>
@@ -102,7 +102,7 @@ export default function InstitutionAnalytics() {
       <div className="glass-v2 border-white/5 p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Institutional Leaders</h3>
-          <button className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors uppercase">View All Units</button>
+          <button className="text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors uppercase">View All Units</button>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <LeaderUnit name="Engineering" efficiency="94%" users="4,250" courses="24" />
@@ -118,14 +118,14 @@ function MetricCard({ label, value, trend, icon: Icon }: any) {
   return (
     <div className="glass-v2 border-white/5 p-6 relative overflow-hidden group">
       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-        <Icon className="h-16 w-16 text-blue-400" />
+        <Icon className="h-16 w-16 text-amber-400" />
       </div>
       <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{label}</p>
       <div className="flex items-baseline gap-2 mt-2">
         <p className="text-2xl font-display font-bold text-white">{value}</p>
         <span className={cn(
           "text-[10px] font-bold px-1.5 py-0.5 rounded-md border",
-          trend === 'up' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
+          trend === 'up' ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400" :
           trend === 'down' ? "bg-red-500/10 border-red-500/20 text-red-400" :
           "bg-white/5 border-white/10 text-gray-500"
         )}>
@@ -139,7 +139,7 @@ function MetricCard({ label, value, trend, icon: Icon }: any) {
 function CompetencyNode({ label, value }: any) {
   return (
     <div className="text-center group">
-      <p className="text-xs font-bold text-gray-500 tracking-wider mb-1 group-hover:text-blue-400 transition-colors">{label}</p>
+      <p className="text-xs font-bold text-gray-500 tracking-wider mb-1 group-hover:text-amber-400 transition-colors">{label}</p>
       <p className="text-2xl font-display font-bold text-white group-hover:scale-110 transition-transform">{value}</p>
     </div>
   );
@@ -150,7 +150,7 @@ function LeaderUnit({ name, efficiency, users, courses }: any) {
     <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-all">
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm font-bold text-white">{name}</span>
-        <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-bold text-emerald-400">{efficiency} EFFICIENCY</span>
+        <span className="px-2 py-0.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-[9px] font-bold text-yellow-400">{efficiency} EFFICIENCY</span>
       </div>
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">

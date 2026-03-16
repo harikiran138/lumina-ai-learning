@@ -100,7 +100,7 @@ export default function TeacherSettingsPage() {
                 <section className="space-y-4">
                    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
                       <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                        <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
                            <MessageSquare className="h-5 w-5" />
                         </div>
                         <div>
@@ -115,7 +115,7 @@ export default function TeacherSettingsPage() {
 
                    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
                       <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
+                        <div className="h-10 w-10 rounded-xl bg-yellow-500/10 flex items-center justify-center text-yellow-400">
                            <Zap className="h-5 w-5" />
                         </div>
                         <div>

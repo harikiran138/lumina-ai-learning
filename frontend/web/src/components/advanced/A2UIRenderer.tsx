@@ -534,7 +534,7 @@ const FlashcardComponent = ({
         {/* Front */}
         <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-gradient-to-br from-[#1a1a2e] to-[#16213e]">
           <div className="absolute top-0 right-0 w-32 h-32 bg-lumina-primary/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl -ml-12 -mb-12 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-yellow-500/10 rounded-full blur-2xl -ml-12 -mb-12 pointer-events-none"></div>
 
           <div className="h-full flex flex-col p-8 relative z-10">
             <div className="flex justify-between items-center mb-6">
@@ -596,13 +596,13 @@ const CourseCardComponent = ({
   return (
     <Card className="my-4 backdrop-blur-md bg-white/5 border-white/10 hover:border-lumina-primary/50 transition-all duration-300 group cursor-pointer hover:translate-x-1 shadow-lg">
       <CardContent className="p-4 flex gap-4">
-        <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0 group-hover:bg-purple-500/40 transition-colors">
-          <PlayCircle className="w-6 h-6 text-purple-400" />
+        <div className="w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center shrink-0 group-hover:bg-yellow-500/40 transition-colors">
+          <PlayCircle className="w-6 h-6 text-yellow-400" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start">
             <div>
-              <h4 className="text-white font-semibold truncate group-hover:text-purple-300 transition-colors">
+              <h4 className="text-white font-semibold truncate group-hover:text-yellow-300 transition-colors">
                 {title}
               </h4>
               <p className="text-xs text-gray-500 font-mono mb-1">{code}</p>
@@ -1369,10 +1369,10 @@ export const A2UIRenderer = memo(
                     <motion.div
                       variants={itemVariants}
                       key={`${keyPrefix}-${index}`}
-                      className={`prose prose-sm max-w-none break-words ${
+                      className={`prose pamber-sm max-w-none break-words ${
                         isUser
-                          ? "prose-black text-black"
-                          : "prose-invert text-gray-200"
+                          ? "pamber-black text-black"
+                          : "pamber-invert text-gray-200"
                       }`}
                     >
                       <ReactMarkdown>{item.content}</ReactMarkdown>
@@ -1441,8 +1441,8 @@ export const A2UIRenderer = memo(
               return (
                 <div className="space-y-4">
                   {preText && (
-                    <div className={`prose prose-sm max-w-none break-words ${
-                        isUser ? "prose-black text-black" : "prose-invert text-gray-200"
+                    <div className={`prose pamber-sm max-w-none break-words ${
+                        isUser ? "pamber-black text-black" : "pamber-invert text-gray-200"
                       }`}>
                       <ReactMarkdown>{preText}</ReactMarkdown>
                     </div>
@@ -1451,8 +1451,8 @@ export const A2UIRenderer = memo(
                   {renderBlocks(parsed, "embedded-json")}
                   
                   {postText && (
-                    <div className={`prose prose-sm max-w-none break-words ${
-                        isUser ? "prose-black text-black" : "prose-invert text-gray-200"
+                    <div className={`prose pamber-sm max-w-none break-words ${
+                        isUser ? "pamber-black text-black" : "pamber-invert text-gray-200"
                       }`}>
                       <ReactMarkdown>{postText}</ReactMarkdown>
                     </div>
@@ -1530,10 +1530,10 @@ export const A2UIRenderer = memo(
             return (
               <div
                 key={index}
-                className={`prose prose-sm max-w-none break-words ${
+                className={`prose pamber-sm max-w-none break-words ${
                   isUser
-                    ? "prose-black text-black"
-                    : "prose-invert text-gray-200"
+                    ? "pamber-black text-black"
+                    : "pamber-invert text-gray-200"
                 }`}
               >
                 <ReactMarkdown>{part}</ReactMarkdown>

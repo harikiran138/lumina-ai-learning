@@ -137,7 +137,7 @@ export default function GradingPage() {
                 </div>
                 <div className="flex flex-col items-end">
                    {sub.status === "graded" ? (
-                     <span className="text-xs font-bold text-emerald-400">{sub.score}/{sub.max_score}</span>
+                     <span className="text-xs font-bold text-yellow-400">{sub.score}/{sub.max_score}</span>
                    ) : (
                      <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
                    )}
@@ -180,12 +180,12 @@ export default function GradingPage() {
                 </div>
               </section>
 
-              <div className="p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/20">
+              <div className="p-6 rounded-3xl bg-yellow-500/10 border border-yellow-500/20">
                 <div className="flex gap-4">
-                  <Sparkles className="h-6 w-6 text-emerald-400 shrink-0" />
+                  <Sparkles className="h-6 w-6 text-yellow-400 shrink-0" />
                   <div className="space-y-2">
-                    <p className="text-sm font-bold text-emerald-100 uppercase tracking-wider">AI Evaluation</p>
-                    <p className="text-xs text-emerald-200/60 leading-relaxed italic">
+                    <p className="text-sm font-bold text-yellow-100 uppercase tracking-wider">AI Evaluation</p>
+                    <p className="text-xs text-yellow-200/60 leading-relaxed italic">
                       {selectedSub.ai_feedback}
                     </p>
                   </div>
@@ -256,12 +256,12 @@ export default function GradingPage() {
                 </div>
               </section>
 
-              <div className="p-6 rounded-3xl bg-blue-500/10 border border-blue-500/20">
+              <div className="p-6 rounded-3xl bg-amber-500/10 border border-amber-500/20">
                 <div className="flex gap-4">
-                  <AlertCircle className="h-6 w-6 text-blue-400 shrink-0" />
+                  <AlertCircle className="h-6 w-6 text-amber-400 shrink-0" />
                   <div className="space-y-2">
-                    <p className="text-sm font-bold text-blue-100 uppercase tracking-wider">Semantic Similarity Low</p>
-                    <p className="text-xs text-blue-200/60 leading-relaxed italic">
+                    <p className="text-sm font-bold text-amber-100 uppercase tracking-wider">Semantic Similarity Low</p>
+                    <p className="text-xs text-amber-200/60 leading-relaxed italic">
                       This student's answer deviate significantly from the reference key. We recommend double-checking the definition of 'pointer closure'.
                     </p>
                   </div>

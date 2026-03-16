@@ -371,21 +371,21 @@ export default function StudentDashboard() {
           value={dashboardData?.pendingAssignments || 0}
           subtitle="Awaiting action"
           icon={Clock}
-          color="purple"
+          color="gold"
         />
         <StatCard
           title="Weekly Focus"
           value={`${roundValue(dashboardData?.weeklyMinutes || 0)}m`}
           subtitle="Focused minutes logged"
           icon={Target}
-          color="blue"
+          color="gold"
         />
         <StatCard
           title="Avg. Mastery"
           value={`${roundValue(dashboardData?.overallMastery || 0)}%`}
           subtitle="Skill proficiency"
           icon={BarChart}
-          color="green"
+          color="gold"
         />
       </DashboardGrid>
 
@@ -550,7 +550,7 @@ export default function StudentDashboard() {
                   <div className={cn(
                     "w-8 h-8 rounded-full border flex items-center justify-center shrink-0 z-10 transition-all duration-500",
                     item.status === "completed" 
-                      ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" 
+                      ? "bg-lumina-highlight/20 border-lumina-highlight/50 text-lumina-highlight" 
                       : index === 0 
                         ? "bg-lumina-highlight/10 border-lumina-highlight/30 text-lumina-highlight group-hover:scale-125 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
                         : "bg-white/5 border-white/10 text-gray-400"
@@ -944,7 +944,7 @@ export default function StudentDashboard() {
           className="relative h-16 w-16 md:h-20 md:w-20 rounded-full bg-lumina-highlight text-black flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300"
         >
           <Bot className="w-8 h-8 md:w-10 md:h-10" />
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-900" />
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-lumina-highlight rounded-full border-2 border-slate-900" />
           
           {/* Tooltip */}
           <div className="absolute right-full mr-4 px-4 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold whitespace-nowrap opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all pointer-events-none">
@@ -1029,7 +1029,7 @@ function StatusPill({
   const tones = {
     accent: "bg-lumina-primary/10 text-lumina-primary border-lumina-primary/20",
     neutral: "bg-white/[0.04] text-gray-300 border-white/10",
-    success: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+    success: "bg-lumina-highlight/10 text-lumina-highlight border-lumina-highlight/20",
     warning: "bg-amber-500/10 text-amber-300 border-amber-500/20",
     danger: "bg-red-500/10 text-red-300 border-red-500/20",
   };
@@ -1093,25 +1093,25 @@ function getAssignmentTone(status: DueAssignment["status"]) {
 }
 
 function getLoadBarTone(value: number) {
-  if (value >= 75) return "from-red-500 to-orange-400";
+  if (value >= 75) return "from-red-500 to-amber-400";
   if (value >= 50) return "from-amber-400 to-lumina-primary";
-  return "from-emerald-400 to-lumina-primary";
+  return "from-amber-300 to-lumina-primary";
 }
 
 function getRiskBarTone(riskLevel: string) {
   if (riskLevel === "critical" || riskLevel === "high") {
-    return "from-red-500 to-orange-400";
+    return "from-red-500 to-amber-400";
   }
   if (riskLevel === "medium") {
     return "from-amber-400 to-yellow-300";
   }
-  return "from-emerald-400 to-lumina-primary";
+  return "from-amber-300 to-lumina-primary";
 }
 
 function getTopicBarTone(status: WeakTopic["status"]) {
-  if (status === "urgent") return "from-red-500 to-orange-400";
+  if (status === "urgent") return "from-red-500 to-amber-400";
   if (status === "developing") return "from-amber-400 to-yellow-300";
-  return "from-emerald-400 to-lumina-primary";
+  return "from-yellow-400 to-lumina-primary";
 }
 
 function formatDueDate(value?: string) {

@@ -128,7 +128,7 @@ export default function InterventionHubPage() {
                         "h-16 w-16 rounded-2xl flex items-center justify-center border transition-all",
                         item.priority === 'critical' ? "bg-red-500/10 border-red-500/30 text-red-400 shadow-[0_0_20px_rgba(239,68,68,0.1)]" :
                         item.priority === 'high' ? "bg-amber-500/10 border-amber-500/30 text-amber-400" :
-                        "bg-blue-500/10 border-blue-500/30 text-blue-400"
+                        "bg-amber-500/10 border-amber-500/30 text-amber-400"
                       )}>
                          <ShieldAlert className={cn("h-8 w-8", item.priority === 'critical' && "animate-pulse")} />
                       </div>
@@ -171,7 +171,7 @@ export default function InterventionHubPage() {
                                </button>
                             </>
                          ) : (
-                            <div className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
+                            <div className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-[10px] font-bold text-yellow-400 uppercase tracking-widest">
                                <CheckCircle2 className="h-4 w-4" />
                                {item.status}
                             </div>
@@ -199,8 +199,8 @@ export default function InterventionHubPage() {
 
          {interventions.length === 0 && (
             <div className="glass-v2 border-white/5 rounded-3xl p-20 text-center">
-               <div className="h-24 w-24 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-8 shadow-[0_0_50px_rgba(16,185,129,0.1)]">
-                  <CheckCircle className="h-12 w-12 text-emerald-400" />
+               <div className="h-24 w-24 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center mx-auto mb-8 shadow-[0_0_50px_rgba(16,185,129,0.1)]">
+                  <CheckCircle className="h-12 w-12 text-yellow-400" />
                </div>
                <h2 className="text-3xl font-display font-bold text-white uppercase italic tracking-tighter mb-4">No Active Interventions</h2>
                <p className="text-gray-500 text-sm max-w-sm mx-auto">All students are currently performing within expected cognitive and mastery thresholds.</p>

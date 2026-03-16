@@ -47,7 +47,7 @@ export default function TeachersScreen() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -56,13 +56,13 @@ export default function TeachersScreen() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <Users className="h-8 w-8 text-blue-500" />
+            <Users className="h-8 w-8 text-amber-500" />
             Teacher Directory
           </h1>
           <p className="mt-1 text-gray-400">Manage educator accounts, permissions, and platform access.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 transition-colors">
+          <button className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500 transition-colors">
             <Plus className="h-4 w-4" />
             Invite Teacher
           </button>
@@ -119,20 +119,20 @@ export default function TeachersScreen() {
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       {t.status === "active" ? (
-                        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                        <CheckCircle2 className="h-3 w-3 text-yellow-500" />
                       ) : (
                         <XCircle className="h-3 w-3 text-gray-500" />
                       )}
                       <span className={cn(
                         "text-[10px] font-bold uppercase",
-                        t.status === "active" ? "text-emerald-400" : "text-gray-500"
+                        t.status === "active" ? "text-yellow-400" : "text-gray-500"
                       )}>{t.status}</span>
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <Shield className="h-3 w-3 text-blue-400" />
-                      <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">{t.role}</span>
+                      <Shield className="h-3 w-3 text-amber-400" />
+                      <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">{t.role}</span>
                     </div>
                   </td>
                   <td className="p-4">

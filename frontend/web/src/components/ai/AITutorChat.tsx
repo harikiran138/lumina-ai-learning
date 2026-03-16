@@ -150,7 +150,7 @@ export function AITutorChat({
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
-                isLoading ? "bg-amber-400 animate-pulse" : "bg-emerald-500"
+                isLoading ? "bg-amber-400 animate-pulse" : "bg-yellow-500"
               }`}
             />
             {isLoading ? "Processing" : "Ready"}

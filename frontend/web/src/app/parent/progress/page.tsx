@@ -48,7 +48,7 @@ export default function ParentProgressPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="h-12 w-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="h-12 w-12 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     )
   }
@@ -71,7 +71,7 @@ export default function ParentProgressPage() {
                 onClick={() => setSelectedChild(child.id)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   selectedChild === child.id 
-                    ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20" 
+                    ? "bg-yellow-600 text-white shadow-lg shadow-yellow-500/20" 
                     : "text-gray-400 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -87,7 +87,7 @@ export default function ParentProgressPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="bg-white/5 border-white/10 p-6">
                 <div className="flex justify-between items-start mb-4">
-                  <div className="p-3 bg-purple-500/10 rounded-xl text-purple-400">
+                  <div className="p-3 bg-yellow-500/10 rounded-xl text-yellow-400">
                     <TrendingUp className="h-6 w-6" />
                   </div>
                   <Badge className="bg-green-500/10 text-green-400 border-none">+5% vs last month</Badge>
@@ -98,10 +98,10 @@ export default function ParentProgressPage() {
 
               <Card className="bg-white/5 border-white/10 p-6">
                 <div className="flex justify-between items-start mb-4">
-                  <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400">
+                  <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400">
                     <Target className="h-6 w-6" />
                   </div>
-                  <Badge className="bg-blue-500/10 text-blue-400 border-none">On Track</Badge>
+                  <Badge className="bg-amber-500/10 text-amber-400 border-none">On Track</Badge>
                 </div>
                 <h3 className="text-gray-400 text-sm mb-1">Learning Consistency</h3>
                 <p className="text-3xl font-bold">92%</p>
@@ -109,10 +109,10 @@ export default function ParentProgressPage() {
 
               <Card className="bg-white/5 border-white/10 p-6">
                 <div className="flex justify-between items-start mb-4">
-                  <div className="p-3 bg-orange-500/10 rounded-xl text-orange-400">
+                  <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400">
                     <Award className="h-6 w-6" />
                   </div>
-                  <Badge className="bg-orange-500/10 text-orange-400 border-none">12 Unlocked</Badge>
+                  <Badge className="bg-amber-500/10 text-amber-400 border-none">12 Unlocked</Badge>
                 </div>
                 <h3 className="text-gray-400 text-sm mb-1">Skill Milestones</h3>
                 <p className="text-3xl font-bold">48</p>
@@ -134,15 +134,15 @@ export default function ParentProgressPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <Card className="bg-white/5 border-white/10 p-8">
                 <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-purple-400" />
+                  <BookOpen className="h-5 w-5 text-yellow-400" />
                   Subject Mastery
                 </h3>
                 <div className="space-y-6">
                   {[
-                    { subject: "Advanced Mathematics", mastery: 88, color: "bg-blue-500" },
-                    { subject: "Quantum Physics", mastery: 72, color: "bg-purple-500" },
+                    { subject: "Advanced Mathematics", mastery: 88, color: "bg-amber-500" },
+                    { subject: "Quantum Physics", mastery: 72, color: "bg-yellow-500" },
                     { subject: "Computer Science", mastery: 94, color: "bg-green-500" },
-                    { subject: "World History", mastery: 65, color: "bg-orange-500" },
+                    { subject: "World History", mastery: 65, color: "bg-amber-500" },
                   ].map((sub) => (
                     <div key={sub.subject}>
                       <div className="flex justify-between text-sm mb-2">
@@ -162,8 +162,8 @@ export default function ParentProgressPage() {
               </Card>
 
               <Card className="bg-white/5 border-white/10 p-8 flex flex-col justify-center items-center text-center">
-                <div className="h-32 w-32 rounded-full border-8 border-purple-500/20 flex items-center justify-center mb-6 relative">
-                   <div className="absolute inset-0 rounded-full border-8 border-purple-500 border-t-transparent animate-[spin_3s_linear_infinite]"></div>
+                <div className="h-32 w-32 rounded-full border-8 border-yellow-500/20 flex items-center justify-center mb-6 relative">
+                   <div className="absolute inset-0 rounded-full border-8 border-yellow-500 border-t-transparent animate-[spin_3s_linear_infinite]"></div>
                    <div className="text-center">
                      <span className="text-2xl font-bold">85%</span>
                      <p className="text-[10px] text-gray-500 uppercase tracking-widest">Efficiency</p>
@@ -190,7 +190,7 @@ export default function ParentProgressPage() {
             <Card className="bg-white/5 border-white/10 p-8">
                <div className="flex items-center justify-between mb-8">
                  <h3 className="text-lg font-bold flex items-center gap-2">
-                   <BarChart2 className="h-5 w-5 text-blue-400" />
+                   <BarChart2 className="h-5 w-5 text-amber-400" />
                    Growth Trajectory
                  </h3>
                  <div className="flex items-center gap-2">
@@ -217,7 +217,7 @@ export default function ParentProgressPage() {
                       initial={{ height: 0 }}
                       animate={{ height: `${val}%` }}
                       transition={{ delay: i * 0.05 }}
-                      className="flex-1 bg-gradient-to-t from-purple-600/40 to-blue-500/60 rounded-t-sm relative group cursor-pointer"
+                      className="flex-1 bg-gradient-to-t from-yellow-600/40 to-amber-500/60 rounded-t-sm relative group cursor-pointer"
                     >
                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-[10px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                         {val}%

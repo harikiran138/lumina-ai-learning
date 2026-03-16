@@ -280,7 +280,7 @@ export default function AssignmentSubmissionsPage() {
               {analytics?.submission_count ?? 0}
             </div>
           </div>
-          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400">
+          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400">
             <User className="w-5 h-5" />
           </div>
         </div>
@@ -312,7 +312,7 @@ export default function AssignmentSubmissionsPage() {
               Ungraded: {analytics?.ungraded_count ?? 0}
             </div>
           </div>
-          <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400">
+          <div className="p-3 rounded-xl bg-yellow-500/10 text-yellow-400">
             <FileText className="w-5 h-5" />
           </div>
         </div>
@@ -368,7 +368,7 @@ export default function AssignmentSubmissionsPage() {
                   >
                     <td className="p-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-xs font-bold text-white">
                           {sub.student_id
                             ? sub.student_id.substring(0, 2).toUpperCase()
                             : "ST"}
@@ -414,7 +414,7 @@ export default function AssignmentSubmissionsPage() {
                         <button
                           onClick={() => handleGrade(sub.id)}
                           disabled={gradingId === sub.id}
-                          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-all disabled:opacity-50"
+                          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-all disabled:opacity-50"
                         >
                           {gradingId === sub.id ? (
                             <Loader2 className="animate-spin w-4 h-4" />
@@ -426,7 +426,7 @@ export default function AssignmentSubmissionsPage() {
                         {sub.grade !== null && (
                           <button
                             onClick={() => handleViewReport(sub.id)}
-                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 rounded-lg transition-all"
+                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-all"
                           >
                             Details
                           </button>
@@ -444,7 +444,7 @@ export default function AssignmentSubmissionsPage() {
                               setEditingScore(sub.grade);
                               setEditingFeedback(sub.feedback || "");
                             }}
-                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all"
+                            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-all"
                           >
                             Edit
                           </button>
@@ -475,7 +475,7 @@ export default function AssignmentSubmissionsPage() {
             <div className="p-6 space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Sparkles className="text-purple-400" />
+                  <Sparkles className="text-yellow-400" />
                   AI Grading Results
                 </h2>
                 <button
@@ -519,7 +519,7 @@ export default function AssignmentSubmissionsPage() {
                   value={editingFeedback}
                   onChange={(e) => setEditingFeedback(e.target.value)}
                   rows={4}
-                  className="w-full bg-black/20 text-gray-300 leading-relaxed p-3 rounded-lg border border-white/10 focus:outline-none focus:border-blue-500 resize-none"
+                  className="w-full bg-black/20 text-gray-300 leading-relaxed p-3 rounded-lg border border-white/10 focus:outline-none focus:border-amber-500 resize-none"
                 />
               </div>
 
@@ -629,7 +629,7 @@ export default function AssignmentSubmissionsPage() {
               <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-emerald-400" />
+                    <BookOpen className="w-5 h-5 text-yellow-400" />
                     <h3 className="text-sm font-semibold text-white">
                       AI Personalized Course Plan
                     </h3>
@@ -642,7 +642,7 @@ export default function AssignmentSubmissionsPage() {
                         )
                       }
                       disabled={courseLoading}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 text-black text-sm font-semibold hover:bg-emerald-400 transition-colors disabled:opacity-50"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-500 text-black text-sm font-semibold hover:bg-yellow-400 transition-colors disabled:opacity-50"
                     >
                       {courseLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -681,7 +681,7 @@ export default function AssignmentSubmissionsPage() {
                       ))}
                     </ul>
                     {savedCourseId && (
-                      <p className="text-[10px] text-emerald-400 mt-2">
+                      <p className="text-[10px] text-yellow-400 mt-2">
                         Saved as draft course. You can manage it under Teacher →
                         Courses.
                       </p>

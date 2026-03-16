@@ -55,8 +55,8 @@ export default function ContentCreatorDashboard() {
   }, []);
 
   const stats = [
-    { label: 'Active Blueprints', value: '12', icon: Layers, color: 'text-indigo-400' },
-    { label: 'Question Bank', value: '1.4k', icon: Database, color: 'text-teal-400' },
+    { label: 'Active Blueprints', value: '12', icon: Layers, color: 'text-yellow-400' },
+    { label: 'Question Bank', value: '1.4k', icon: Database, color: 'text-gold-400' },
     { label: 'Avg Quality Score', value: '94%', icon: Sparkles, color: 'text-amber-400' }
   ];
 
@@ -111,12 +111,12 @@ export default function ContentCreatorDashboard() {
                  [1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-white/5 rounded-3xl animate-pulse"></div>)
               ) : blueprints.length > 0 ? (
                 blueprints.map((bp) => (
-                  <GlassCard key={bp.id} className="p-8 group hover:border-indigo-500/20 transition-all cursor-pointer relative overflow-hidden">
+                  <GlassCard key={bp.id} className="p-8 group hover:border-yellow-500/20 transition-all cursor-pointer relative overflow-hidden">
                      <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                         <MoreVertical className="w-5 h-5 text-gray-500" />
                      </div>
                      <div className="mb-6 flex items-center justify-between">
-                        <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                        <div className="p-3 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400">
                            <BookOpen className="w-6 h-6" />
                         </div>
                         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
@@ -135,7 +135,7 @@ export default function ContentCreatorDashboard() {
                               <div key={i} className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-gray-500">A</div>
                            ))}
                         </div>
-                        <button className="flex items-center gap-1.5 text-xs font-bold text-indigo-400 group-hover:gap-2.5 transition-all uppercase tracking-widest">
+                        <button className="flex items-center gap-1.5 text-xs font-bold text-yellow-400 group-hover:gap-2.5 transition-all uppercase tracking-widest">
                            Edit Builder <ChevronRight className="w-4 h-4" />
                         </button>
                      </div>
@@ -148,9 +148,9 @@ export default function ContentCreatorDashboard() {
         </div>
 
         <div className="space-y-8">
-           <GlassCard className="p-8 bg-gradient-to-br from-indigo-500/10 to-transparent">
+           <GlassCard className="p-8 bg-gradient-to-br from-yellow-500/10 to-transparent">
               <div className="flex items-center gap-3 mb-6">
-                 <Rocket className="w-6 h-6 text-indigo-400" />
+                 <Rocket className="w-6 h-6 text-yellow-400" />
                  <h2 className="text-2xl font-bold text-white lowercase tracking-tighter">Content Reach</h2>
               </div>
               <p className="text-[11px] text-gray-400 font-medium leading-relaxed italic mb-8">
@@ -163,7 +163,7 @@ export default function ContentCreatorDashboard() {
                        <span className="text-[10px] text-white font-bold">4.9 / 5.0</span>
                     </div>
                     <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                       <div className="h-full bg-indigo-500 w-[98%] shadow-premium"></div>
+                       <div className="h-full bg-yellow-500 w-[98%] shadow-premium"></div>
                     </div>
                  </div>
                  <div>
@@ -172,7 +172,7 @@ export default function ContentCreatorDashboard() {
                        <span className="text-[10px] text-white font-bold">82%</span>
                     </div>
                     <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                       <div className="h-full bg-teal-500 w-[82%] shadow-premium"></div>
+                       <div className="h-full bg-gold-500 w-[82%] shadow-premium"></div>
                     </div>
                  </div>
               </div>
@@ -189,11 +189,11 @@ export default function ContentCreatorDashboard() {
                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/5 transition-all group">
                       <div>
                          <p className="text-xs font-bold text-white uppercase tracking-tighter">{quest.title}</p>
-                         <p className="text-[9px] text-indigo-400 font-bold mt-1">{quest.bonus}</p>
+                         <p className="text-[9px] text-yellow-400 font-bold mt-1">{quest.bonus}</p>
                       </div>
                       <div className={cn(
                         "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
-                        quest.active ? "border-indigo-500 text-indigo-400" : "border-gray-700 text-gray-700"
+                        quest.active ? "border-yellow-500 text-yellow-400" : "border-gray-700 text-gray-700"
                       )}>
                          {quest.active && <Zap className="w-3 h-3 fill-current" />}
                       </div>

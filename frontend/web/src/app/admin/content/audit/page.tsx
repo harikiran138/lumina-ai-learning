@@ -65,7 +65,7 @@ export default function CourseAudit() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <FileSearch className="h-8 w-8 text-blue-500" />
+            <FileSearch className="h-8 w-8 text-amber-500" />
             Curriculum Audit
           </h1>
           <p className="mt-1 text-gray-400">Validate AI knowledge mapping, course quality, and structural integrity.</p>
@@ -79,8 +79,8 @@ export default function CourseAudit() {
       </header>
 
       <div className="grid gap-6 md:grid-cols-4">
-        <AuditSummaryCard label="Global Score" value="84.2%" sub="System Average" icon={Zap} color="blue" />
-        <AuditSummaryCard label="Verified Nodes" value="4,250" sub="Mapped knowledge" icon={Layers} color="purple" />
+        <AuditSummaryCard label="Global Score" value="84.2%" sub="System Average" icon={Zap} color="gold" />
+        <AuditSummaryCard label="Verified Nodes" value="4,250" sub="Mapped knowledge" icon={Layers} color="gold" />
         <AuditSummaryCard label="Flagged Content" value="24" sub="Action Required" icon={AlertCircle} color="red" />
         <AuditSummaryCard label="Review Queue" value="12" sub="Pending Audits" icon={Clock} color="amber" />
       </div>
@@ -99,7 +99,7 @@ export default function CourseAudit() {
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-              <span className="h-2 w-2 rounded-full bg-emerald-500/20 border border-emerald-500/40" />
+              <span className="h-2 w-2 rounded-full bg-yellow-500/20 border border-yellow-500/40" />
               Review Mode: Active
             </div>
           </div>
@@ -111,7 +111,7 @@ export default function CourseAudit() {
               <div className="flex items-center gap-6">
                 <div className={cn(
                   "h-14 w-14 rounded-2xl flex items-center justify-center border",
-                  course.status === 'reviewed' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
+                  course.status === 'reviewed' ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400" :
                   course.status === 'flagged' ? "bg-red-500/10 border-red-500/20 text-red-500" :
                   "bg-amber-500/10 border-amber-500/20 text-amber-500"
                 )}>
@@ -119,7 +119,7 @@ export default function CourseAudit() {
                 </div>
                 <div>
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">{course.title}</h3>
+                    <h3 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">{course.title}</h3>
                     <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-mono text-gray-500 uppercase">
                       {course.code}
                     </span>
@@ -130,7 +130,7 @@ export default function CourseAudit() {
                       <span className="text-[10px] font-bold text-gray-500 uppercase">Audit: {course.last_audit}</span>
                     </div>
                     {course.status === 'reviewed' && (
-                      <div className="flex items-center gap-1.5 text-emerald-400">
+                      <div className="flex items-center gap-1.5 text-yellow-400">
                         <CheckCircle2 className="h-3 w-3" />
                         <span className="text-[10px] font-bold uppercase">Verified Quality</span>
                       </div>
@@ -143,7 +143,7 @@ export default function CourseAudit() {
                 <div className="text-right">
                   <p className={cn(
                     "text-lg font-display font-bold",
-                    course.quality_score > 90 ? "text-emerald-400" : course.quality_score > 70 ? "text-amber-400" : "text-red-400"
+                    course.quality_score > 90 ? "text-yellow-400" : course.quality_score > 70 ? "text-amber-400" : "text-red-400"
                   )}>
                     {course.quality_score > 0 ? `${course.quality_score}%` : 'N/A'}
                   </p>
@@ -164,8 +164,8 @@ export default function CourseAudit() {
 
 function AuditSummaryCard({ label, value, sub, icon: Icon, color }: any) {
   const colors: any = {
-    blue: "text-blue-400 bg-blue-500/5 border-blue-500/10",
-    purple: "text-purple-400 bg-purple-500/5 border-purple-500/10",
+    blue: "text-amber-400 bg-amber-500/5 border-amber-500/10",
+    purple: "text-yellow-400 bg-yellow-500/5 border-yellow-500/10",
     red: "text-red-400 bg-red-500/5 border-red-500/10",
     amber: "text-amber-400 bg-amber-500/5 border-amber-500/10",
   };

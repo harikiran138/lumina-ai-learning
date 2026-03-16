@@ -136,19 +136,19 @@ export default function StudentProgress() {
           hint="Consistency drives retention"
         />
         <StatCard
-          icon={<Trophy className="w-6 h-6 text-blue-500" />}
+          icon={<Trophy className="w-6 h-6 text-amber-500" />}
           label="Learning XP"
           value={String(stats.totalXP || 0)}
           hint="Built from milestones and mastery"
         />
         <StatCard
-          icon={<Target className="w-6 h-6 text-purple-500" />}
+          icon={<Target className="w-6 h-6 text-yellow-500" />}
           label="Average Accuracy"
           value={`${stats.avgAccuracy || 0}%`}
           hint="Recent mastery performance"
         />
         <StatCard
-          icon={<Clock className="w-6 h-6 text-emerald-500" />}
+          icon={<Clock className="w-6 h-6 text-yellow-500" />}
           label="Study Time"
           value={stats.learningTime || "0h 0m"}
           hint="This week"
@@ -270,7 +270,7 @@ export default function StudentProgress() {
                             ? "bg-red-500"
                             : item.score < 70
                               ? "bg-amber-500"
-                              : "bg-emerald-500"
+                              : "bg-yellow-500"
                         }`}
                         style={{ width: `${Math.max(4, item.score)}%` }}
                       />
@@ -305,7 +305,7 @@ export default function StudentProgress() {
                             ? "bg-red-500/15 text-red-400"
                             : topic.status === "developing"
                               ? "bg-amber-500/15 text-amber-400"
-                              : "bg-emerald-500/15 text-emerald-400"
+                              : "bg-yellow-500/15 text-yellow-400"
                         }`}
                       >
                         {topic.status}

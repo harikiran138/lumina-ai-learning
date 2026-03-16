@@ -206,10 +206,10 @@ export default function ResearcherDashboard() {
                        <span>k=20</span>
                     </div>
                     <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden relative">
-                       <div className="h-full bg-teal-500 w-[60%] shadow-premium"></div>
-                       <div className="absolute top-1/2 left-[60%] -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 border-teal-500 shadow-xl"></div>
+                       <div className="h-full bg-gold-500 w-[60%] shadow-premium"></div>
+                       <div className="absolute top-1/2 left-[60%] -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 border-gold-500 shadow-xl"></div>
                     </div>
-                    <p className="text-[9px] text-teal-400 font-bold mt-2 uppercase tracking-widest text-right">Target k=12</p>
+                    <p className="text-[9px] text-gold-400 font-bold mt-2 uppercase tracking-widest text-right">Target k=12</p>
                  </div>
                  <button className="w-full py-3.5 rounded-xl bg-white/5 border border-white/10 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all group">
                     Schedule Generation <ChevronRight className="w-4 h-4 inline ml-1 group-hover:translate-x-1 transition-transform" />
@@ -219,7 +219,7 @@ export default function ResearcherDashboard() {
 
            <GlassCard className="p-8">
               <div className="flex items-center gap-3 mb-6">
-                 <History className="w-5 h-5 text-indigo-400" />
+                 <History className="w-5 h-5 text-yellow-400" />
                  <h4 className="font-bold text-white text-xs uppercase tracking-widest">Recent Queries</h4>
               </div>
               <ul className="space-y-5">
@@ -229,7 +229,7 @@ export default function ResearcherDashboard() {
                    'Engagement vs burnout markers y3'
                  ].map((query, i) => (
                     <li key={i} className="flex items-start gap-3 group cursor-pointer">
-                       <Zap className="w-3.5 h-3.5 text-gray-700 group-hover:text-teal-400 shrink-0 mt-0.5" />
+                       <Zap className="w-3.5 h-3.5 text-gray-700 group-hover:text-gold-400 shrink-0 mt-0.5" />
                        <span className="text-[11px] text-gray-500 group-hover:text-white transition-colors font-medium leading-tight italic line-clamp-2">{query}</span>
                     </li>
                  ))}

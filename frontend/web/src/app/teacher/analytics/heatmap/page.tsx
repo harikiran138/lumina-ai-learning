@@ -94,7 +94,7 @@ export default function LiveHeatmapPage() {
   const getMasteryColor = (mastery: number) => {
     if (mastery < 0.4) return "bg-red-500/40 border-red-500/20";
     if (mastery < 0.7) return "bg-amber-500/40 border-amber-500/20";
-    return "bg-emerald-500/40 border-emerald-500/20";
+    return "bg-yellow-500/40 border-yellow-500/20";
   };
 
   const getCellFor = (studentId: string, topicId: string) => {
@@ -123,7 +123,7 @@ export default function LiveHeatmapPage() {
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
           <div className={cn(
             "h-3 w-3 rounded-full animate-pulse",
-            isConnected ? "bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.5)]" : "bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]"
+            isConnected ? "bg-yellow-400 shadow-[0_0_12px_rgba(52,211,153,0.5)]" : "bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]"
           )} />
           <div>
             <p className="text-sm font-semibold text-white">
@@ -202,7 +202,7 @@ export default function LiveHeatmapPage() {
             <div className="flex gap-6 items-center">
               <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Legend:</p>
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded bg-emerald-500/40 border border-emerald-500/20" />
+                <div className="h-4 w-4 rounded bg-yellow-500/40 border border-yellow-500/20" />
                 <span className="text-xs text-gray-400">Mastered (70%+)</span>
               </div>
               <div className="flex items-center gap-2">
@@ -240,7 +240,7 @@ export default function LiveHeatmapPage() {
               <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
                 <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Most Improved</p>
                 <p className="text-xl font-bold text-white">Student G</p>
-                <p className="mt-2 text-sm text-emerald-400 flex items-center gap-1">
+                <p className="mt-2 text-sm text-yellow-400 flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3" />
                   +25% mastery in 20m
                 </p>
@@ -250,7 +250,7 @@ export default function LiveHeatmapPage() {
 
           <section className="glass-v2 border-white/5 p-6 rounded-3xl">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-400" />
+              <Users className="h-5 w-5 text-amber-400" />
               Class Summary
             </h3>
             <div className="grid grid-cols-2 gap-4">
@@ -269,7 +269,7 @@ export default function LiveHeatmapPage() {
                 <span className="text-white">62%</span>
               </div>
               <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                <div className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] w-[62%]" />
+                <div className="h-full bg-amber-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] w-[62%]" />
               </div>
             </div>
           </section>

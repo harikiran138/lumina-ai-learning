@@ -177,7 +177,7 @@ export default function StudentSettings() {
             <div className="space-y-6">
               <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
                 <div className="flex items-center gap-4">
-                  <div className="p-2 bg-blue-500/20 rounded-lg text-blue-500">
+                  <div className="p-2 bg-amber-500/20 rounded-lg text-amber-500">
                     <Mail className="w-6 h-6" />
                   </div>
                   <div>
@@ -207,7 +207,7 @@ export default function StudentSettings() {
 
               <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
                 <div className="flex items-center gap-4">
-                  <div className="p-2 bg-purple-500/20 rounded-lg text-purple-500">
+                  <div className="p-2 bg-yellow-500/20 rounded-lg text-yellow-500">
                     <Smartphone className="w-6 h-6" />
                   </div>
                   <div>

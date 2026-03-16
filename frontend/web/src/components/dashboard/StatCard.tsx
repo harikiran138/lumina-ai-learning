@@ -11,7 +11,7 @@ interface StatCardProps {
     isPositive: boolean;
   };
   className?: string;
-  color?: "gold" | "blue" | "green" | "purple" | "default";
+  color?: "gold" | "amber" | "green" | "purple" | "default";
 }
 
 export function StatCard({
@@ -25,9 +25,9 @@ export function StatCard({
 }: StatCardProps) {
   const colorStyles = {
     gold: "text-lumina-highlight bg-lumina-highlight/10",
-    blue: "text-blue-400 bg-blue-500/10",
-    green: "text-emerald-400 bg-emerald-500/10",
-    purple: "text-purple-400 bg-purple-500/10",
+    blue: "text-amber-400 bg-amber-500/10",
+    green: "text-yellow-400 bg-yellow-500/10",
+    purple: "text-amber-400 bg-amber-500/10",
     default: "text-gray-400 bg-white/5",
   };
 
@@ -53,7 +53,7 @@ export function StatCard({
                 className={cn(
                   "text-xs font-bold px-2 py-0.5 rounded-md",
                   trend.isPositive
-                    ? "text-emerald-400 bg-emerald-400/10 border border-emerald-400/20"
+                    ? "text-yellow-400 bg-yellow-400/10 border border-yellow-400/20"
                     : "text-red-400 bg-red-400/10 border border-red-400/20",
                 )}
               >
