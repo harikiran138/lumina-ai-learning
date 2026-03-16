@@ -118,7 +118,7 @@ export default function LoginPage() {
       mentor: { email: "mentor@lumina.ai", password: "DemoPassword123!" },
       counselor: { email: "counselor@lumina.ai", password: "DemoPassword123!" },
       researcher: { email: "researcher@lumina.ai", password: "DemoPassword123!" },
-      creator: { email: "creator@lumina.ai", password: "DemoPassword123!" },
+      content_creator: { email: "creator@lumina.ai", password: "DemoPassword123!" },
     };
     const userData = defaultUsers[role];
     if (userData) {
@@ -256,7 +256,7 @@ export default function LoginPage() {
           <button
             type="button"
             suppressHydrationWarning
-            onClick={() => quickLogin("creator")}
+            onClick={() => quickLogin("content_creator")}
             className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors"
           >
             Creator

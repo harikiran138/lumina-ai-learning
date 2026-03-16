@@ -9,12 +9,12 @@ class ContentCreatorStore:
     def __init__(self):
         self.db = supabase_db
 
-    async def create_blueprint(self, creator_id: str, title: str, structure: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def create_blueprint(self, creator_id: str, title: str, objectives_json: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         try:
             blueprint_data = {
                 "creator_id": creator_id,
                 "title": title,
-                "structure": structure,
+                "objectives_json": objectives_json,
                 "status": "draft"
             }
             return await self.db.insert("course_blueprints", blueprint_data)
@@ -22,11 +22,11 @@ class ContentCreatorStore:
             log.error("create_blueprint_failed", creator_id=creator_id, error=str(e))
             return None
 
-    async def add_lesson_sequence(self, blueprint_id: str, sequence_data: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    async def add_lesson_sequence(self, blueprint_id: str, sequence_json: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         try:
             data = {
                 "blueprint_id": blueprint_id,
-                "sequence_data": sequence_data
+                "sequence_json": sequence_json
             }
             return await self.db.insert("lesson_sequences", data)
         except Exception as e:

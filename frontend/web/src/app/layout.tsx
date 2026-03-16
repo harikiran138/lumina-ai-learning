@@ -14,20 +14,41 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Lumina - AI-Powered Learning",
+  title: "Lumina | The AI Learning Platform That Adapts to Every Student",
   description:
-    "Personalized learning pathways powered by AI. Transform your course materials into adaptive learning experiences.",
+    "A privacy-first, teacher-verified AI learning system that personalizes education for every learner through adaptive knowledge modeling and Human-in-the-Loop verification.",
   keywords: [
-    "AI learning",
-    "personalized education",
-    "adaptive learning",
-    "online courses",
+    "AI learning platform",
+    "adaptive education",
+    "AI tutor",
+    "smart classroom",
+    "learning analytics",
+    "teacher verification system",
+    "personalized learning pathways",
+    "k-anonymity",
+    "BKT mastery tracking",
+    "DKT deep knowledge modeling"
   ],
   authors: [{ name: "Lumina Team" }],
   openGraph: {
-    title: "Lumina - AI-Powered Learning",
-    description: "Personalized learning pathways powered by AI",
+    title: "Lumina | The AI Learning Platform That Adapts to Every Student",
+    description: "Privacy-first, teacher-verified AI learning system that personalizes education for every learner.",
     type: "website",
+    url: "https://lumina.ai",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Lumina AI Learning Platform",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Lumina | The AI Learning Platform That Adapts to Every Student",
+    description: "Privacy-first, teacher-verified AI learning system that personalizes education for every learner.",
+    images: ["/og-image.png"],
   },
 };
 
