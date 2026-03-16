@@ -13,7 +13,9 @@ import {
   Search,
   Settings2,
   Share2,
-  Plus
+  Plus,
+  Zap,
+  Activity
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";

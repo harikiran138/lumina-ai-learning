@@ -105,8 +105,8 @@ function ProgressRing({
 
   const colors = {
     amber: "text-amber-400",
-    emerald: "text-yellow-400",
-    blue: "text-amber-400",
+    yellow: "text-yellow-400",
+    gold: "text-lumina-highlight",
     red: "text-red-400",
   };
 
