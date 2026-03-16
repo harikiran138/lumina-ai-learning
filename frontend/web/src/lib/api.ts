@@ -303,6 +303,11 @@ export class RealAPI {
   }
 
   // --- Content Creator Methods ---
+  async getContentCreatorBlueprints(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/content_creator/blueprints");
+    return res.ok ? await res.json() : [];
+  }
+
   async createCourseBlueprint(title: string, structure: any): Promise<any> {
     const res = await this.fetchAuthorized("/api/content_creator/blueprints", {
       method: "POST",

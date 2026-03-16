@@ -24,7 +24,7 @@ export function StatCard({
   color = "default",
 }: StatCardProps) {
   const colorStyles = {
-    gold: "text-lumina-primary bg-lumina-primary/10",
+    gold: "text-lumina-highlight bg-lumina-highlight/10",
     blue: "text-blue-400 bg-blue-500/10",
     green: "text-emerald-400 bg-emerald-500/10",
     purple: "text-purple-400 bg-purple-500/10",

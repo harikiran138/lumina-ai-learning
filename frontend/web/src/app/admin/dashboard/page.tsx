@@ -210,13 +210,13 @@ export default function AdminDashboard() {
       <section className="glass-v2 border-white/5 overflow-hidden">
         <div className="grid gap-6 p-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(360px,1fr)]">
           <div>
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-blue-300/80">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-lumina-highlight">
               Admin Control Center
             </p>
-            <h1 className="max-w-3xl text-4xl font-display font-bold tracking-tight text-white md:text-5xl">
-              Govern the platform with live operational context.
+            <h1 className="max-w-3xl text-4xl font-display font-bold tracking-tight text-white md:text-6xl">
+              Govern the platform with <span className="text-lumina-highlight border-b-4 border-lumina-highlight/30">live operational context.</span>
             </h1>
-            <p className="mt-4 max-w-2xl text-base text-gray-300">
+            <p className="mt-6 max-w-2xl text-lg text-gray-400 leading-relaxed">
               Users, institutions, access risk, and delivery throughput are now
               connected into one dashboard instead of isolated placeholder pages.
             </p>
@@ -241,7 +241,7 @@ export default function AdminDashboard() {
                 icon={Shield}
                 title="Review security"
                 description="Audit suspended accounts, elevated access, and system signals."
-                tone="amber"
+                tone="gold"
               />
             </div>
           </div>
@@ -258,7 +258,7 @@ export default function AdminDashboard() {
                 className={cn(
                   "rounded-2xl border px-4 py-2 text-sm font-semibold",
                   summary.securityAlerts > 0
-                    ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
+                    ? "border-lumina-highlight/20 bg-lumina-highlight/10 text-lumina-highlight"
                     : "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
                 )}
               >
@@ -332,7 +332,7 @@ export default function AdminDashboard() {
           action={
             <Link
               href="/admin/security"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-blue-300 transition-colors hover:text-white"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-lumina-highlight transition-colors hover:text-white"
             >
               Open security
               <ArrowRight className="h-4 w-4" />
@@ -412,7 +412,7 @@ export default function AdminDashboard() {
           action={
             <Link
               href="/admin/institution"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-blue-300 transition-colors hover:text-white"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-lumina-highlight transition-colors hover:text-white"
             >
               Open institutions
               <ArrowRight className="h-4 w-4" />
@@ -517,7 +517,7 @@ export default function AdminDashboard() {
           action={
             <Link
               href="/admin/users"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-blue-300 transition-colors hover:text-white"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-lumina-highlight transition-colors hover:text-white"
             >
               Open users
               <ArrowRight className="h-4 w-4" />
@@ -613,12 +613,12 @@ function DashboardLink({
   icon: typeof UserCog;
   title: string;
   description: string;
-  tone: "blue" | "emerald" | "amber";
+  tone: "blue" | "emerald" | "gold";
 }) {
   const toneStyles = {
     blue: "from-blue-500/20 to-blue-500/5 border-blue-400/20 text-blue-200",
     emerald: "from-emerald-500/20 to-emerald-500/5 border-emerald-400/20 text-emerald-200",
-    amber: "from-amber-500/20 to-amber-500/5 border-amber-400/20 text-amber-200",
+    gold: "from-lumina-highlight/20 to-lumina-highlight/5 border-lumina-highlight/20 text-lumina-highlight",
   };
 
   return (
@@ -654,7 +654,7 @@ function SignalRow({
   return (
     <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
       <div className="flex items-center gap-3">
-        <div className="rounded-xl bg-white/5 p-2 text-blue-300">
+        <div className="rounded-xl bg-white/5 p-2 text-lumina-highlight">
           <Icon className="h-4 w-4" />
         </div>
         <p className="text-sm text-white">{label}</p>

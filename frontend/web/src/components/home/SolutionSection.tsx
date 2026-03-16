@@ -1,6 +1,16 @@
 "use client";
 
-import { Sparkles, ShieldCheck, Zap, Layers, Users2 } from "lucide-react";
+import { 
+  Sparkles, 
+  ShieldCheck, 
+  Zap, 
+  Layers, 
+  Users2, 
+  Brain, 
+  UserCheck, 
+  FileText, 
+  BarChart4 
+} from "lucide-react";
 
 const solutions = [
   {
@@ -39,12 +49,12 @@ export default function SolutionSection() {
   return (
     <section className="py-24 relative overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-20">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-            A Complete Learning Ecosystem
+        <div className="text-center max-w-3xl mx-auto mb-24">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-6 font-display leading-tight">
+            The <span className="text-lumina-highlight">Intelligent</span> Solution
           </h2>
-          <p className="text-lg text-gray-400">
-            Lumina is more than an LMS. It's an intelligent platform designed to empower every stakeholder in the education process.
+          <p className="text-xl text-slate-400 font-sans max-w-2xl mx-auto">
+            Lumina bridges the gap between raw AI power and pedagogical integrity with six core architectural pillars.
           </p>
         </div>
 

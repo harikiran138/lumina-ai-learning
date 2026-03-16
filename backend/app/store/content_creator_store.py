@@ -32,3 +32,12 @@ class ContentCreatorStore:
         except Exception as e:
             log.error("add_lesson_sequence_failed", blueprint_id=blueprint_id, error=str(e))
             return None
+
+    async def get_blueprints(self, creator_id: str) -> List[Dict[str, Any]]:
+        try:
+            client = self.db.get_client()
+            response = client.table("course_blueprints").select("*").eq("creator_id", creator_id).execute()
+            return response.data
+        except Exception as e:
+            log.error("get_blueprints_failed", creator_id=creator_id, error=str(e))
+            return []

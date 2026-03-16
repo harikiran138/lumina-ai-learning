@@ -42,3 +42,12 @@ async def add_lesson_sequence(
     if not sequence:
         raise HTTPException(status_code=500, detail="Failed to add lesson sequence")
     return {"status": "success", "sequence": sequence}
+
+@router.get("/blueprints")
+async def get_my_blueprints(
+    current_user: dict = Depends(get_current_user),
+    store: ContentCreatorStore = Depends(get_content_creator_store)
+):
+    if current_user.get("role") != "content_creator":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return await store.get_blueprints(current_user["id"])

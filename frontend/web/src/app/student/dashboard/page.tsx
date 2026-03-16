@@ -6,17 +6,20 @@ import { Line } from "react-chartjs-2";
 import {
   AlertTriangle,
   ArrowRight,
+  BarChart,
   BookOpen,
   Bot,
   Brain,
   CalendarClock,
   CheckCircle2,
+  Clock,
   Clock3,
   Flame,
   Sparkles,
   Target,
   TrendingUp,
   Trophy,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -33,6 +36,7 @@ import {
 import { api } from "@/lib/api";
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { MasteryOrb } from "@/components/student/MasteryOrb";
 import { cn } from "@/lib/utils";
 
 ChartJS.register(
@@ -97,7 +101,7 @@ interface DashboardAction {
 interface StudyPlanItem {
   title: string;
   detail: string;
-  status: "urgent" | "planned" | "focus" | "recommended";
+  status: "urgent" | "planned" | "focus" | "recommended" | "completed";
   href: string;
   ctaLabel: string;
   kind: string;
@@ -298,9 +302,15 @@ export default function StudentDashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
-        <div className="max-w-3xl">
-          <div className="flex flex-wrap items-center gap-3 mb-4">
+      <div className="flex flex-col xl:flex-row gap-10 bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8 lg:p-12 relative overflow-hidden group">
+        {/* Abstract Background for Header */}
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-lumina-primary/5 rounded-full blur-[100px] -mr-48 -mt-48 transition-all duration-700 group-hover:bg-lumina-highlight/5" />
+        
+        <div className="flex-1 z-10">
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <div className="px-3 py-1 rounded-full bg-lumina-highlight/10 border border-lumina-highlight/20 text-lumina-highlight text-[10px] font-black uppercase tracking-[0.2em]">
+               System Status: Optimized
+            </div>
             <StatusPill tone="accent">
               {normalizeLabel(learningSignals?.behaviorLabel || "steady")} mode
             </StatusPill>
@@ -309,36 +319,41 @@ export default function StudentDashboard() {
             >
               Risk {normalizeLabel(learningSignals?.riskLevel || "low")}
             </StatusPill>
-            <StatusPill tone="neutral">
-              {dashboardData?.pendingAssignments || 0} pending tasks
-            </StatusPill>
           </div>
-          <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight text-white">
-            Welcome back,{" "}
-            <span className="gradient-text">
-              {dashboardData?.studentName || "Scholar"}
+          
+          <h1 className="text-5xl md:text-7xl font-display font-bold tracking-tight text-white mb-6">
+            Hey, <span className="text-lumina-highlight">
+              {dashboardData?.studentName?.split(' ')[0] || "Scholar"}
             </span>
           </h1>
-          <p className="text-gray-400 text-lg mt-3 max-w-2xl leading-relaxed">
-            Your dashboard is now centered on what matters most: the next action
-            to take, the concepts that need support, and the work that is coming
-            due.
+          
+          <p className="text-gray-400 text-xl max-w-2xl leading-relaxed mb-10">
+            You're on a <span className="text-white font-bold">{dashboardData?.currentStreak || 0} day streak</span>. 
+            Keep the momentum high to unlock your next achievement.
           </p>
+
+          <div className="flex flex-wrap gap-4">
+            <Link
+              href={nextAction?.href || "/student/ai_tutor"}
+              className="h-14 px-8 rounded-2xl bg-lumina-highlight text-black font-black inline-flex items-center gap-3 hover:scale-105 transition-all shadow-xl hover:shadow-lumina-highlight/20"
+            >
+              {nextAction?.ctaLabel || "Start Session"}
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+            <Link
+              href="/student/course_explorer"
+              className="h-14 px-8 rounded-2xl border border-white/10 text-white font-bold inline-flex items-center gap-3 hover:bg-white/5 transition-all"
+            >
+              Course Explorer
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href={nextAction?.href || "/student/ai_tutor"}
-            className="h-12 px-5 rounded-2xl bg-lumina-primary text-black font-semibold inline-flex items-center gap-2 hover:brightness-110 transition-all shadow-gold-glow"
-          >
-            {nextAction?.ctaLabel || "Open tutor"}
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link
-            href="/student/course_explorer"
-            className="h-12 px-5 rounded-2xl border border-white/10 text-white font-semibold inline-flex items-center gap-2 hover:border-lumina-primary/30 hover:text-lumina-primary transition-all"
-          >
-            Explore Catalog
-          </Link>
+
+        <div className="flex items-center justify-center xl:justify-end z-10 shrink-0">
+          <MasteryOrb 
+            progress={roundValue(dashboardData?.overallMastery || 0)} 
+            size="lg"
+          />
         </div>
       </div>
 
@@ -346,30 +361,31 @@ export default function StudentDashboard() {
         <StatCard
           title="Current Streak"
           value={dashboardData?.currentStreak || 0}
-          subtitle="Days in a row"
-          icon={Flame}
+          subtitle="Days of consistency"
+          icon={Zap}
           color="gold"
+          trend={{ value: "+2", isPositive: true }}
         />
         <StatCard
           title="Pending Work"
           value={dashboardData?.pendingAssignments || 0}
-          subtitle="Assignments to close"
-          icon={CalendarClock}
+          subtitle="Awaiting action"
+          icon={Clock}
           color="purple"
         />
         <StatCard
           title="Weekly Focus"
           value={`${roundValue(dashboardData?.weeklyMinutes || 0)}m`}
           subtitle="Focused minutes logged"
-          icon={Clock3}
-          color="green"
-        />
-        <StatCard
-          title="Overall Mastery"
-          value={`${roundValue(dashboardData?.overallMastery || 0)}%`}
-          subtitle="Across active courses"
           icon={Target}
           color="blue"
+        />
+        <StatCard
+          title="Avg. Mastery"
+          value={`${roundValue(dashboardData?.overallMastery || 0)}%`}
+          subtitle="Skill proficiency"
+          icon={BarChart}
+          color="green"
         />
       </DashboardGrid>
 
@@ -518,50 +534,71 @@ export default function StudentDashboard() {
           </div>
         </SectionCard>
 
-        <SectionCard
-          title="Today's Study Plan"
-          subtitle="A focused task queue built from weak topics, pending work, and course momentum."
-          icon={CheckCircle2}
-        >
-          <div className="space-y-3">
+      <SectionCard
+        title="Today's Recommended Pathway"
+        subtitle="AI-curated sequence optimized for your current cognitive load."
+        icon={CheckCircle2}
+      >
+        <div className="relative mt-4 ml-4">
+          {/* Vertical line connecting steps */}
+          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-white/5" />
+          
+          <div className="space-y-8 relative">
             {todayPlan.length > 0 ? (
               todayPlan.map((item, index) => (
-                <div
-                  key={`${item.title}-${index}`}
-                  className="rounded-2xl border border-white/5 bg-white/[0.02] p-4"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        <StatusPill tone={getPlanTone(item.status)}>
-                          {normalizeLabel(item.status)}
-                        </StatusPill>
-                        <StatusPill tone="neutral">
-                          {normalizeLabel(item.kind)}
-                        </StatusPill>
-                      </div>
-                      <h3 className="text-white font-semibold">{item.title}</h3>
-                      <p className="text-sm text-gray-400 mt-1">
-                        {item.detail}
-                      </p>
+                <div key={`${item.title}-${index}`} className="flex gap-8 group">
+                  <div className={cn(
+                    "w-8 h-8 rounded-full border flex items-center justify-center shrink-0 z-10 transition-all duration-500",
+                    item.status === "completed" 
+                      ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" 
+                      : index === 0 
+                        ? "bg-lumina-highlight/10 border-lumina-highlight/30 text-lumina-highlight group-hover:scale-125 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                        : "bg-white/5 border-white/10 text-gray-400"
+                  )}>
+                    {item.status === "completed" ? (
+                      <CheckCircle2 className="w-4 h-4" />
+                    ) : (
+                      <div className={cn(
+                        "w-2 h-2 rounded-full",
+                        index === 0 ? "bg-lumina-highlight animate-pulse" : "bg-gray-600"
+                      )} />
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 bg-white/[0.02] border border-white/5 rounded-2xl p-6 transition-all group-hover:bg-white/[0.04] group-hover:border-white/10">
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
+                      <h4 className="text-lg font-bold text-white group-hover:text-lumina-highlight transition-colors">
+                        {item.title}
+                      </h4>
+                      <StatusPill tone={getPlanTone(item.status as any)}>
+                        {normalizeLabel(item.status)}
+                      </StatusPill>
                     </div>
-                    <Link
-                      href={item.href}
-                      className="text-sm font-semibold text-lumina-primary hover:text-white transition-colors shrink-0"
-                    >
-                      {item.ctaLabel}
-                    </Link>
+                    <p className="text-sm text-gray-400 mb-6">{item.detail}</p>
+                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <Clock className="w-3 h-3" />
+                          {item.kind === "assignment" ? "30m" : "15m"}
+                        </div>
+                        <Link
+                          href={item.href}
+                          className="text-xs font-black text-white hover:text-lumina-highlight flex items-center gap-1 uppercase tracking-widest transition-all"
+                        >
+                          Launch {normalizeLabel(item.kind)} <ArrowRight className="w-3 h-3" />
+                        </Link>
+                    </div>
                   </div>
                 </div>
               ))
             ) : (
               <EmptyState
-                title="No study plan yet"
-                description="Complete a quiz, lesson, or assignment and your plan will begin to adapt."
+                title="Your pathway is generating"
+                description="We're analyzing your latest activity to build your optimal learning route."
               />
             )}
           </div>
-        </SectionCard>
+        </div>
+      </SectionCard>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -898,6 +935,23 @@ export default function StudentDashboard() {
           />
         )}
       </SectionCard>
+
+      {/* Global AI Tutor Quick-Access (Floating/Fixed) */}
+      <div className="fixed bottom-8 right-8 z-[100] group">
+        <div className="absolute inset-0 bg-lumina-highlight/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <Link
+          href="/student/ai_tutor"
+          className="relative h-16 w-16 md:h-20 md:w-20 rounded-full bg-lumina-highlight text-black flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300"
+        >
+          <Bot className="w-8 h-8 md:w-10 md:h-10" />
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-900" />
+          
+          {/* Tooltip */}
+          <div className="absolute right-full mr-4 px-4 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs font-bold whitespace-nowrap opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all pointer-events-none">
+            Launch AI Tutor
+          </div>
+        </Link>
+      </div>
     </div>
   );
 }
@@ -1021,6 +1075,7 @@ function getPlanTone(status: StudyPlanItem["status"]) {
   if (status === "urgent") return "danger";
   if (status === "focus") return "warning";
   if (status === "recommended") return "accent";
+  if (status === "completed") return "success";
   return "neutral";
 }
 

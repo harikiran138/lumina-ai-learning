@@ -225,7 +225,7 @@ function QuickAction({
   tone: "gold" | "blue" | "green";
 }) {
   const toneStyles = {
-    gold: "from-amber-500/20 to-amber-500/5 border-amber-400/20 text-amber-200",
+    gold: "from-lumina-highlight/20 to-lumina-highlight/5 border-lumina-highlight/20 text-lumina-highlight",
     blue: "from-blue-500/20 to-blue-500/5 border-blue-400/20 text-blue-200",
     green: "from-emerald-500/20 to-emerald-500/5 border-emerald-400/20 text-emerald-200",
   };
@@ -342,13 +342,13 @@ export default function TeacherDashboard() {
       <section className="glass-v2 border-white/5 overflow-hidden">
         <div className="grid gap-6 p-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(340px,1fr)]">
           <div>
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-amber-300/80">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-lumina-highlight">
               Teacher Command Center
             </p>
-            <h1 className="max-w-3xl text-4xl font-display font-bold tracking-tight text-white md:text-5xl">
-              Run your classroom from one live operating view.
+            <h1 className="max-w-3xl text-4xl font-display font-bold tracking-tight text-white md:text-6xl">
+              Run your classroom from one <span className="text-lumina-highlight border-b-4 border-lumina-highlight/30">live operating view.</span>
             </h1>
-            <p className="mt-4 max-w-2xl text-base text-gray-300">
+            <p className="mt-6 max-w-2xl text-lg text-gray-400 leading-relaxed">
               Course health, grading load, and student momentum are connected now,
               so you can move from insight to action without jumping between pages.
             </p>
@@ -431,7 +431,7 @@ export default function TeacherDashboard() {
         <StatCard
           title="Pending Grading"
           value={summary.pendingGrading}
-          subtitle={`${summary.upcomingDeadlines} deadline(s) need attention`}
+          subtitle={`${summary.upcomingDeadlines} tasks need attention`}
           icon={ClipboardCheck}
           color="purple"
         />
@@ -444,7 +444,7 @@ export default function TeacherDashboard() {
           action={
             <Link
               href="/teacher/courses"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-amber-300 transition-colors hover:text-white"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-lumina-highlight transition-colors hover:text-white"
             >
               View all courses
               <ArrowRight className="h-4 w-4" />
@@ -843,7 +843,7 @@ export default function TeacherDashboard() {
                           student.status === "on-track"
                             ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
                             : student.status === "watch"
-                              ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
+                              ? "border-amber-400/20 bg-amber-400/10 text-lumina-highlight"
                               : "border-red-400/20 bg-red-400/10 text-red-300",
                         )}
                       >
@@ -886,9 +886,9 @@ function SnapshotTile({
   value: number;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
+    <div className="rounded-2xl border border-white/10 bg-black/10 p-4 hover:border-white/20 transition-colors">
       <div className="flex items-center gap-3">
-        <div className="rounded-xl bg-white/5 p-2 text-amber-300">
+        <div className="rounded-xl bg-white/5 p-2 text-lumina-highlight">
           <Icon className="h-4 w-4" />
         </div>
         <div>
@@ -955,7 +955,7 @@ function ProgressBar({
         <div
           className={cn(
             "h-2 rounded-full",
-            accent === "amber" ? "bg-amber-400" : "bg-emerald-400",
+            accent === "amber" ? "bg-lumina-highlight" : "bg-emerald-400",
           )}
           style={{ width: `${value}%` }}
         />
@@ -981,7 +981,7 @@ function SignalRow({
         <div
           className={cn(
             "rounded-xl p-2",
-            tone === "good" ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-300",
+            tone === "good" ? "bg-emerald-400/10 text-emerald-300" : "bg-lumina-highlight/10 text-lumina-highlight",
           )}
         >
           <Icon className="h-4 w-4" />
@@ -1010,7 +1010,7 @@ function ProgressChip({
           <div
             className={cn(
               "h-2 rounded-full",
-              accent === "amber" ? "bg-amber-400" : "bg-emerald-400",
+              accent === "amber" ? "bg-lumina-highlight" : "bg-emerald-400",
             )}
             style={{ width: `${value}%` }}
           />

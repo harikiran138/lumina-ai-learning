@@ -152,21 +152,12 @@ export default function Sidebar({
       >
         <Link
           href="/"
-          className="text-2xl font-display font-bold flex items-center gap-2"
+          className="text-2xl font-display font-black flex items-center gap-2"
         >
-          <span className="gradient-text">
+          <span className="text-white">
             {isCollapsed && !isHovered ? "L" : "Lumina"}
           </span>
-          <span
-            className={cn(
-              "transition-all duration-500",
-              isCollapsed && !isHovered
-                ? "opacity-0 w-0 overflow-hidden"
-                : "opacity-100 w-auto",
-            )}
-          >
-            ✨
-          </span>
+          <span className="text-lumina-highlight">AI</span>
         </Link>
         {/* Mobile Close Button */}
         <button
@@ -190,7 +181,7 @@ export default function Sidebar({
                 "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group",
                 isCollapsed && !isHovered ? "justify-center px-0" : "px-4",
                 isActive
-                  ? "bg-lumina-primary/10 text-lumina-primary border border-lumina-primary/20 shadow-gold-glow"
+                  ? "bg-lumina-highlight/10 text-lumina-highlight border border-lumina-highlight/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]"
                   : "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
               )}
             >
@@ -199,7 +190,7 @@ export default function Sidebar({
                   "h-5 w-5 transition-all duration-500",
                   isCollapsed && !isHovered ? "mr-0 scale-110" : "mr-3",
                   isActive
-                    ? "text-lumina-primary"
+                    ? "text-lumina-highlight"
                     : "text-gray-500 group-hover:text-gray-300",
                 )}
               />

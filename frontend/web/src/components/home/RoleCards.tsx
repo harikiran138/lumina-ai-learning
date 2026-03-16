@@ -69,12 +69,12 @@ export default function RoleCards() {
   return (
     <section id="roles" className="py-24 relative overflow-hidden bg-slate-950">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-20">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-6 font-display">
-            A Platform Built for <span className="gradient-text">Every Role</span>
+        <div className="text-center max-w-4xl mx-auto mb-24">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-6 font-display leading-tight">
+            One Platform, <span className="text-lumina-highlight">10 Defined Roles</span>
           </h2>
-          <p className="text-lg text-slate-400 font-sans">
-            Lumina provides a tailored experience for all 10 educational stakeholders, each with specific tools and strict data sovereignty.
+          <p className="text-xl text-slate-400 font-sans max-w-2xl mx-auto leading-relaxed">
+            Lumina is architected to serve the entire educational ecosystem, with distinct data boundaries and specialized interfaces for every human in the loop.
           </p>
         </div>
 

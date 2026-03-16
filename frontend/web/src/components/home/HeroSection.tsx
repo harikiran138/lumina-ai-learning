@@ -12,13 +12,13 @@ export default function HeroSection() {
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-lumina-primary/10 border border-lumina-primary/20 mb-8 animate-fade-in shadow-primary-glow">
-            <span className="w-2 h-2 rounded-full bg-lumina-accent animate-pulse" />
-            <span className="text-sm font-medium text-lumina-primary-foreground/80">Lumina v2.0 Platform Live</span>
+          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-lumina-highlight/10 border border-lumina-highlight/20 mb-8 animate-fade-in shadow-xl">
+            <span className="w-2 h-2 rounded-full bg-lumina-highlight animate-pulse" />
+            <span className="text-sm font-black text-lumina-highlight uppercase tracking-[0.2em]">Lumina v2.0 Platform Live</span>
           </div>
           
           <h1 className="text-5xl sm:text-6xl lg:text-8xl font-black text-white leading-[1.05] tracking-tight mb-8 font-display">
-            Lumina — The AI Learning Platform That <span className="gradient-text">Adapts to Every Student</span>
+            Lumina <span className="text-lumina-highlight">AI</span> — The Platform That <span className="gradient-text-orange">Adapts to Every Student</span>
           </h1>
           
           <p className="text-lg sm:text-xl text-slate-400 mb-12 leading-relaxed max-w-3xl mx-auto font-sans">
