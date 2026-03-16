@@ -4,34 +4,34 @@ import { Sparkles, ShieldCheck, Zap, Layers, Users2 } from "lucide-react";
 
 const solutions = [
   {
+    icon: Brain,
+    title: "AI Tutor",
+    description: "24/7 personalized AI support that understands each student's unique knowledge graph and learning pace."
+  },
+  {
     icon: Zap,
-    title: "AI Tutoring",
-    description: "24/7 personalized AI support that understands each student's unique knowledge graph."
+    title: "Adaptive Learning Engine",
+    description: "Deep Knowledge Tracing (DKT) and BKT models that adjust curriculum difficulty in real-time."
   },
   {
-    icon: Layers,
-    title: "Adaptive Engine",
-    description: "Deep Knowledge Tracing (DKT) and Bayesian Knowledge Tracing (BKT) to model mastery."
+    icon: UserCheck,
+    title: "Teacher Verification System",
+    description: "A unique human-in-the-loop system ensuring all AI-generated content is accurate and educator-approved."
   },
   {
-    icon: ShieldCheck,
-    title: "Teacher Verified",
-    description: "Human-in-the-loop system ensures every AI-generated response is accurate and approved."
+    icon: FileText,
+    title: "Real Paper Assignments",
+    description: "Bridge the digital-physical gap with AI-assisted grading of handwritten assignments and paper exams."
   },
   {
-    icon: ShieldCheck,
-    title: "Privacy First",
-    description: "Enterprise-grade security with role-based access and anonymized research data protection."
+    icon: BarChart4,
+    title: "Learning Analytics",
+    description: "Deep insights into student mastery, engagement, and dropout prediction with privacy-safe data."
   },
   {
     icon: Users2,
     title: "Multi-Role Collaboration",
-    description: "Seamless coordination between students, teachers, parents, and administrative staff."
-  },
-  {
-    icon: Sparkles,
-    title: "Instant Content",
-    description: "Automatically transform curriculum documents into interactive learning pathways."
+    description: "Seamless coordination between students, teachers, parents, and admins within a unified ecosystem."
   }
 ];
 
