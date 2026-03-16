@@ -8,40 +8,18 @@ import { DottedSurface } from "@/components/ui/DottedSurface";
 import HeroSection from "@/components/home/HeroSection";
 
 // Lazy load heavy sections
-const ProblemSection = dynamic(() => import("@/components/home/ProblemSection"), { ssr: false });
-const SolutionSection = dynamic(() => import("@/components/home/SolutionSection"), { ssr: false });
-const HowItWorksSection = dynamic(() => import("@/components/home/HowItWorksSection"), { ssr: false });
-const RoleCards = dynamic(() => import("@/components/home/RoleCards"), { ssr: false });
-const EngineSection = dynamic(() => import("@/components/home/EngineSection"), { ssr: false });
-const VerificationSection = dynamic(() => import("@/components/home/VerificationSection"), { ssr: false });
-const PrivacySection = dynamic(() => import("@/components/home/PrivacySection"), { ssr: false });
-const ArchitectureSection = dynamic(() => import("@/components/home/ArchitectureSection"), { ssr: false });
-const BenefitsSection = dynamic(() => import("@/components/home/BenefitsSection"), { ssr: false });
-const ScreenshotsSection = dynamic(() => import("@/components/home/ScreenshotsSection"), { ssr: false });
-const ImpactSection = dynamic(() => import("@/components/home/ImpactSection"), { ssr: false });
-const PricingSection = dynamic(() => import("@/components/home/PricingSection"), { ssr: false });
+const ServicesSection = dynamic(() => import("@/components/home/ServicesSection"), { ssr: false });
+const AboutSection = dynamic(() => import("@/components/home/AboutSection"), { ssr: false });
 const CTASection = dynamic(() => import("@/components/home/CTASection"), { ssr: false });
 const Footer = dynamic(() => import("@/components/layout/Footer"), { ssr: false });
 const StructuredData = dynamic(() => import("@/components/seo/StructuredData"), { ssr: false });
-
-// Keeping existing sections for fallback/compatibility if needed
 const TestimonialsSection = dynamic(() => import("@/components/home/TestimonialsSection"), { ssr: false });
 
 export default function Home() {
   const [sectionsVisible, setSectionsVisible] = useState({
-    problem: false,
-    solution: false,
-    howItWorks: false,
-    roles: false,
-    engine: false,
-    verification: false,
-    privacy: false,
-    architecture: false,
-    benefits: false,
-    screenshots: false,
-    impact: false,
+    services: false,
+    about: false,
     testimonials: false,
-    pricing: false,
     cta: false,
   });
 
@@ -61,11 +39,7 @@ export default function Home() {
       { rootMargin: "200px" },
     );
 
-    const sections = [
-      "problem", "solution", "how-it-works", "roles", 
-      "engine", "verification", "privacy", "architecture", 
-      "benefits", "screenshots", "impact", "testimonials", "pricing", "cta"
-    ];
+    const sections = ["services", "about", "testimonials", "cta"];
 
     sections.forEach((id) => {
       const element = document.getElementById(id);
@@ -88,13 +62,18 @@ export default function Home() {
             </div>
             
             <nav className="hidden lg:flex md:items-center md:space-x-8">
-              {["Features", "Roles", "Engine", "Privacy", "Impact"].map((item) => (
+              {[
+                { label: "Home", href: "#" },
+                { label: "Services", href: "#services" },
+                { label: "About", href: "#about" },
+                { label: "FAQ", href: "#" }
+              ].map((item) => (
                 <Link
-                  key={item}
-                  href={`#${item.toLowerCase()}`}
+                  key={item.label}
+                  href={item.href}
                   className="text-sm font-medium text-gray-400 hover:text-lumina-primary transition-colors"
                 >
-                  {item}
+                  {item.label}
                 </Link>
               ))}
             </nav>
@@ -121,56 +100,16 @@ export default function Home() {
       <main>
         <HeroSection />
         
-        <div id="problem">
-          {sectionsVisible.problem && <ProblemSection />}
+        <div id="services">
+          {sectionsVisible.services && <ServicesSection />}
         </div>
         
-        <div id="solution">
-          {sectionsVisible.solution && <SolutionSection />}
+        <div id="about">
+          {sectionsVisible.about && <AboutSection />}
         </div>
-        
-        <div id="how-it-works">
-          {sectionsVisible.howItWorks && <HowItWorksSection />}
-        </div>
-        
-        <div id="roles">
-          {sectionsVisible.roles && <RoleCards />}
-        </div>
-        
-        <div id="engine">
-          {sectionsVisible.engine && <EngineSection />}
-        </div>
-        
-        <div id="verification">
-          {sectionsVisible.verification && <VerificationSection />}
-        </div>
-        
-        <div id="privacy">
-          {sectionsVisible.privacy && <PrivacySection />}
-        </div>
-        
-        <div id="architecture">
-          {sectionsVisible.architecture && <ArchitectureSection />}
-        </div>
-        
-        <div id="benefits">
-          {sectionsVisible.benefits && <BenefitsSection />}
-        </div>
-        
-        <div id="screenshots">
-          {sectionsVisible.screenshots && <ScreenshotsSection />}
-        </div>
-        
-        <div id="impact">
-          {sectionsVisible.impact && <ImpactSection />}
-        </div>
-        
+
         <div id="testimonials">
           {sectionsVisible.testimonials && <TestimonialsSection />}
-        </div>
-        
-        <div id="pricing">
-          {sectionsVisible.pricing && <PricingSection />}
         </div>
         
         <div id="cta">

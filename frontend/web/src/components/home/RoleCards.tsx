@@ -67,33 +67,36 @@ const roles = [
 
 export default function RoleCards() {
   return (
-    <section className="py-24 relative overflow-hidden bg-surface-950/30">
+    <section id="roles" className="py-24 relative overflow-hidden bg-slate-950">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-20">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-            Designed for Every Role
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-6 font-display">
+            A Platform Built for <span className="gradient-text">Every Role</span>
           </h2>
-          <p className="text-lg text-gray-400">
-            Lumina provides a tailored experience for all 10 platform roles, each with strict data access boundaries.
+          <p className="text-lg text-slate-400 font-sans">
+            Lumina provides a tailored experience for all 10 educational stakeholders, each with specific tools and strict data sovereignty.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
           {roles.map((role, index) => (
-            <div key={index} className="glass-v2 p-6 flex flex-col items-center text-center group">
-              <div className="w-12 h-12 rounded-full bg-lumina-primary/10 flex items-center justify-center mb-4 group-hover:bg-lumina-primary/30 transition-all duration-300 transform group-hover:scale-110">
-                <role.icon className="h-6 w-6 text-lumina-primary" />
+            <div key={index} className="glass-v2-primary p-7 flex flex-col items-center text-center group hover:-translate-y-2 transition-all duration-500">
+              <div className="w-16 h-16 rounded-2xl bg-lumina-primary/10 flex items-center justify-center mb-6 group-hover:bg-lumina-primary/20 transition-all duration-300 transform group-hover:rotate-6 shadow-primary-glow">
+                <role.icon className="h-8 w-8 text-lumina-primary" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">{role.title}</h3>
-              <p className="text-sm text-lumina-primary/80 mb-2 font-medium">{role.purpose}</p>
-              <div className="mt-auto pt-4 border-t border-white/5 w-full">
-                <span className="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">Access Boundary</span>
-                <span className="text-xs text-gray-400">{role.dataAccess}</span>
+              <h3 className="text-lg font-bold text-white mb-2 font-display">{role.title}</h3>
+              <p className="text-xs text-lumina-accent mb-4 font-bold uppercase tracking-wider">{role.purpose}</p>
+              <div className="mt-auto pt-5 border-t border-white/5 w-full">
+                <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold mb-2">Access Boundary</p>
+                <p className="text-xs text-slate-400 font-sans leading-tight">{role.dataAccess}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Background Neural Grid */}
+      <div className="absolute inset-0 opacity-[0.03] neural-mesh pointer-events-none" />
     </section>
   );
 }

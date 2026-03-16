@@ -51,7 +51,7 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-bold mb-6 uppercase tracking-widest text-xs">Institutional</h4>
             <ul className="space-y-4">
-              {["Pilot Programs", "Research Partners", "Case Studies", "Adoption Guide", "Pricing"].map((item) => (
+              {["Pilot Programs", "Research Partners", "Case Studies", "Adoption Guide"].map((item) => (
                 <li key={item}>
                   <Link href="#" className="text-gray-500 hover:text-lumina-primary text-sm transition-colors">
                     {item}
@@ -61,14 +61,20 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Policy Column */}
+          {/* Company Column */}
           <div>
             <h4 className="text-white font-bold mb-6 uppercase tracking-widest text-xs">Company</h4>
             <ul className="space-y-4">
-              {["About Lumina", "Privacy Policy", "Trust Center", "API Status", "Contact"].map((item) => (
-                <li key={item}>
-                  <Link href="#" className="text-gray-500 hover:text-lumina-primary text-sm transition-colors">
-                    {item}
+              {[
+                { label: "About Lumina", href: "#about" },
+                { label: "Our Services", href: "#services" },
+                { label: "Privacy Policy", href: "#" },
+                { label: "Contact", href: "#" },
+                { label: "Trust Center", href: "#" }
+              ].map((item) => (
+                <li key={item.label}>
+                  <Link href={item.href} className="text-gray-500 hover:text-lumina-primary text-sm transition-colors">
+                    {item.label}
                   </Link>
                 </li>
               ))}
