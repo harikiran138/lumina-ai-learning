@@ -40,10 +40,10 @@ export default function HowItWorksSection() {
     <section id="how-it-works" className="py-24 relative overflow-hidden bg-surface-900">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-20">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-6 font-display">
-            How <span className="text-lumina-accent">Lumina Works</span>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-6 font-display leading-tight">
+            <span className="text-lumina-highlight">6 Steps</span> to Mastery
           </h2>
-          <p className="text-lg text-slate-400 font-sans">
+          <p className="text-xl text-slate-400 font-sans max-w-2xl mx-auto leading-relaxed">
             A seamless bridge between high-quality educational materials and adaptive AI-driven mastery.
           </p>
         </div>

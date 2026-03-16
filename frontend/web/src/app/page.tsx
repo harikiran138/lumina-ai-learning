@@ -7,18 +7,33 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import { DottedSurface } from "@/components/ui/DottedSurface";
 import HeroSection from "@/components/home/HeroSection";
 
-// Lazy load heavy sections
-const ServicesSection = dynamic(() => import("@/components/home/ServicesSection"), { ssr: false });
-const AboutSection = dynamic(() => import("@/components/home/AboutSection"), { ssr: false });
-const CTASection = dynamic(() => import("@/components/home/CTASection"), { ssr: false });
+const ProblemSection = dynamic(() => import("@/components/home/ProblemSection"), { ssr: false });
+const SolutionSection = dynamic(() => import("@/components/home/SolutionSection"), { ssr: false });
+const HowItWorksSection = dynamic(() => import("@/components/home/HowItWorksSection"), { ssr: false });
+const RoleCards = dynamic(() => import("@/components/home/RoleCards"), { ssr: false });
+const AIEngineSection = dynamic(() => import("@/components/home/AIEngineSection"), { ssr: false });
+const TeacherVerifySection = dynamic(() => import("@/components/home/TeacherVerifySection"), { ssr: false });
+const PrivacySection = dynamic(() => import("@/components/home/PrivacySection"), { ssr: false });
+const ProductCarousel = dynamic(() => import("@/components/home/ProductCarousel"), { ssr: false });
+const BenefitsSection = dynamic(() => import("@/components/home/BenefitsSection"), { ssr: false });
+const ResearchSection = dynamic(() => import("@/components/home/ResearchSection"), { ssr: false });
+const TestimonialsSection = dynamic(() => import("@/components/home/TestimonialsSection"), { ssr: false });
+const FinalCTASection = dynamic(() => import("@/components/home/FinalCTASection"), { ssr: false });
 const Footer = dynamic(() => import("@/components/layout/Footer"), { ssr: false });
 const StructuredData = dynamic(() => import("@/components/seo/StructuredData"), { ssr: false });
-const TestimonialsSection = dynamic(() => import("@/components/home/TestimonialsSection"), { ssr: false });
 
 export default function Home() {
   const [sectionsVisible, setSectionsVisible] = useState({
-    services: false,
-    about: false,
+    problem: false,
+    solution: false,
+    howItWorks: false,
+    roles: false,
+    aiEngine: false,
+    verification: false,
+    privacy: false,
+    productScreens: false,
+    benefits: false,
+    research: false,
     testimonials: false,
     cta: false,
   });
@@ -29,17 +44,20 @@ export default function Home() {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const sectionId = entry.target.id;
-            // Map hyphenated IDs to state keys
             const stateKey = sectionId.replace(/-([a-z])/g, (g) => g[1].toUpperCase()) as keyof typeof sectionsVisible;
             setSectionsVisible((prev) => ({ ...prev, [stateKey]: true }));
             observer.unobserve(entry.target);
           }
         });
       },
-      { rootMargin: "200px" },
+      { rootMargin: "400px" },
     );
 
-    const sections = ["services", "about", "testimonials", "cta"];
+    const sections = [
+      "problem", "solution", "how-it-works", "roles", 
+      "ai-engine", "verification", "privacy", "product-screens", 
+      "benefits", "research", "testimonials", "cta"
+    ];
 
     sections.forEach((id) => {
       const element = document.getElementById(id);
@@ -50,28 +68,31 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="text-white min-h-screen bg-surface-950">
+    <div className="text-white min-h-screen bg-slate-950 selection:bg-lumina-primary/30 selection:text-white">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5 bg-surface-950/50 backdrop-blur-xl">
+      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex-shrink-0">
-              <Link href="/" className="text-2xl font-bold text-white flex items-center">
-                <span className="gradient-text">Lumina</span> ✨
+              <Link href="/" className="text-2xl font-black text-white flex items-center font-display tracking-tight">
+                <span className="gradient-text">Lumina</span>
+                <span className="ml-1 text-lumina-accent">AI</span>
               </Link>
             </div>
             
-            <nav className="hidden lg:flex md:items-center md:space-x-8">
+            <nav className="hidden xl:flex md:items-center md:space-x-8">
               {[
-                { label: "Home", href: "#" },
-                { label: "Services", href: "#services" },
-                { label: "About", href: "#about" },
-                { label: "FAQ", href: "#" }
+                { label: "Features", href: "#solution" },
+                { label: "Workflow", href: "#how-it-works" },
+                { label: "Roles", href: "#roles" },
+                { label: "Verification", href: "#verification" },
+                { label: "Privacy", href: "#privacy" },
+                { label: "Impact", href: "#benefits" }
               ].map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-sm font-medium text-gray-400 hover:text-lumina-primary transition-colors"
+                  className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-lumina-primary transition-all duration-300"
                 >
                   {item.label}
                 </Link>
@@ -81,13 +102,13 @@ export default function Home() {
             <div className="flex items-center space-x-6">
               <Link
                 href="/login"
-                className="text-sm font-medium text-gray-400 hover:text-white transition-colors hidden sm:block"
+                className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors hidden sm:block"
               >
                 Sign In
               </Link>
               <Link
                 href="/login"
-                className="bg-lumina-primary text-black font-bold py-2.5 px-6 rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="bg-lumina-primary text-white text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all shadow-primary-glow"
               >
                 Get Started
               </Link>
@@ -97,15 +118,47 @@ export default function Home() {
         </div>
       </header>
 
-      <main>
+      <main className="relative">
         <HeroSection />
         
-        <div id="services">
-          {sectionsVisible.services && <ServicesSection />}
+        <div id="problem">
+          {sectionsVisible.problem && <ProblemSection />}
         </div>
         
-        <div id="about">
-          {sectionsVisible.about && <AboutSection />}
+        <div id="solution">
+          {sectionsVisible.solution && <SolutionSection />}
+        </div>
+
+        <div id="how-it-works">
+          {sectionsVisible.howItWorks && <HowItWorksSection />}
+        </div>
+
+        <div id="roles">
+          {sectionsVisible.roles && <RoleCards />}
+        </div>
+
+        <div id="ai-engine">
+          {sectionsVisible.aiEngine && <AIEngineSection />}
+        </div>
+
+        <div id="verification">
+          {sectionsVisible.verification && <TeacherVerifySection />}
+        </div>
+
+        <div id="privacy">
+          {sectionsVisible.privacy && <PrivacySection />}
+        </div>
+
+        <div id="product-screens">
+          {sectionsVisible.productScreens && <ProductCarousel />}
+        </div>
+
+        <div id="benefits">
+          {sectionsVisible.benefits && <BenefitsSection />}
+        </div>
+
+        <div id="research">
+          {sectionsVisible.research && <ResearchSection />}
         </div>
 
         <div id="testimonials">
@@ -113,15 +166,18 @@ export default function Home() {
         </div>
         
         <div id="cta">
-          {sectionsVisible.cta && <CTASection />}
+          {sectionsVisible.cta && <FinalCTASection />}
         </div>
       </main>
 
       <Footer />
       <StructuredData />
       
-      {/* Global Background Dots */}
+      {/* Global Background Elements */}
       <DottedSurface />
+      <div className="fixed inset-0 pointer-events-none -z-10">
+         <div className="absolute top-0 left-0 w-full h-full neural-mesh opacity-[0.03]" />
+      </div>
     </div>
   );
 }
