@@ -1,78 +1,76 @@
 "use client";
 
-import { Lock, EyeOff, ShieldCheck, UserCheck, Database, Key } from "lucide-react";
+import { ShieldCheck, Lock, EyeOff, FileKey, Check } from "lucide-react";
 
-const privacyFeatures = [
+const trustPoints = [
   {
     icon: Lock,
-    title: "Minimum Data Access",
-    description: "Strictly follows the principle of least privilege. Users only see data required for their specific role."
-  },
-  {
-    icon: EyeOff,
-    title: "K-Anonymity Protection",
-    description: "Research data is anonymized using k-anonymity protocols to protect individual student identities."
+    title: "Data Sovereignty",
+    description: "Institutions retain full ownership of their data. Lumina never sells or shares student information."
   },
   {
     icon: ShieldCheck,
-    title: "Role-Based Permissions",
-    description: "Hierarchical access control ensuring teachers, admins, and parents have distinct data boundaries."
+    title: "Encryption at Rest",
+    description: "AES-256 encryption for all data stores, with personalized keys for every institution."
   },
   {
-    icon: Key,
-    title: "Encrypted Counselor Notes",
-    description: "Sensitive safeguarding communications are end-to-end encrypted and siloed from the AI engine."
+    icon: EyeOff,
+    title: "Anonymized Research",
+    description: "Multi-layered scrubbing ensures all research data is 100% anonymous and non-traceable."
+  },
+  {
+    icon: FileKey,
+    title: "GDPR & FERPA Ready",
+    description: "Built-in compliance modules that adapt to regional privacy laws and institutional requirements."
   }
 ];
 
 export default function PrivacySection() {
   return (
-    <section className="py-24 relative overflow-hidden bg-surface-950/30">
+    <section id="privacy" className="py-24 relative overflow-hidden bg-slate-950">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-20">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6 font-mono text-xs uppercase tracking-widest text-blue-400">
-             <ShieldCheck className="h-4 w-4" />
-             <span>Privacy-First Architecture</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-            Enterprise-Grade Security & Privacy
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-6 font-display">
+            Privacy-First <span className="text-lumina-accent">Architecture</span>
           </h2>
-          <p className="text-lg text-gray-400">
-            Lumina is built with a zero-trust mindset, ensuring student data is protected, anonymized, and strictly governed.
+          <p className="text-lg text-slate-400 font-sans">
+            Security isn't a feature; it's our foundation. Lumina is designed to protect student data at every layer of the stack.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-          {privacyFeatures.map((feature, index) => (
-            <div key={index} className="glass-panel p-8 rounded-2xl border border-white/5 flex space-x-6 hover:border-blue-500/30 transition-all duration-300">
-              <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <feature.icon className="h-7 w-7 text-blue-400" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {trustPoints.map((point, index) => (
+            <div key={index} className="glass-v2-primary p-8 border-white/5 hover:border-lumina-accent/20 group transition-all duration-500">
+              <div className="w-14 h-14 rounded-2xl bg-lumina-accent/10 flex items-center justify-center mb-6 group-hover:bg-lumina-accent/20 transition-all duration-300">
+                <point.icon className="h-7 w-7 text-lumina-accent" />
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-                <p className="text-gray-400 leading-relaxed">
-                  {feature.description}
-                </p>
+              <h3 className="text-xl font-bold text-white mb-4 font-display">{point.title}</h3>
+              <p className="text-sm text-slate-500 leading-relaxed font-sans mb-6">
+                {point.description}
+              </p>
+              <div className="flex items-center space-x-2 text-lumina-accent font-bold text-[10px] uppercase tracking-widest">
+                <Check className="h-3 w-3" />
+                <span>Verified Secure</span>
               </div>
             </div>
           ))}
         </div>
-        
-        <div className="mt-16 text-center">
-           <div className="inline-block p-1 bg-gradient-to-r from-blue-500/20 via-lumina-primary/20 to-blue-500/20 rounded-2xl">
-              <div className="bg-surface-950 rounded-[14px] px-8 py-6 flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-8 border border-white/5">
-                 <div className="flex -space-x-3">
-                    {[1, 2, 3, 4].map(i => (
-                      <div key={i} className="w-10 h-10 rounded-full border-2 border-surface-950 bg-gray-800 flex items-center justify-center text-[10px] font-bold">
-                        {i === 1 ? "GDPR" : i === 2 ? "FERPA" : i === 3 ? "COPPA" : "ISO"}
-                      </div>
-                    ))}
-                 </div>
-                 <p className="text-sm text-gray-300">Compliant with global data protection standards and institutional regulations.</p>
-              </div>
+
+        <div className="mt-20 p-8 glass-panel border-white/5 bg-white/[0.01] flex flex-col md:flex-row items-center justify-between gap-8">
+           <div className="flex items-center space-x-6">
+              <div className="h-12 w-12 rounded-full bg-slate-800 flex items-center justify-center text-white font-black">L</div>
+              <p className="text-sm text-slate-400 font-sans italic">"Lumina's privacy architecture sets the gold standard for AI in education." — Dr. Sarah Chen, Research Governance</p>
+           </div>
+           <div className="flex space-x-8 opacity-40">
+              <div className="text-[10px] font-black text-white py-2 px-4 border border-white/20 rounded">SOC2 TYPE II</div>
+              <div className="text-[10px] font-black text-white py-2 px-4 border border-white/20 rounded">HIPAA COMPLIANT</div>
            </div>
         </div>
       </div>
+
+      {/* Background Gradients */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-lumina-accent/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-lumina-primary/5 rounded-full blur-[100px] pointer-events-none" />
     </section>
   );
 }

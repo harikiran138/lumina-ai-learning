@@ -17,7 +17,7 @@ export interface User {
 
 // Authentication is now handled directly via FastAPI endpoints in this class
 
-class RealAPI {
+export class RealAPI {
   private static instance: RealAPI;
   private currentUser: User | null = null;
   private token: string | null = null;
