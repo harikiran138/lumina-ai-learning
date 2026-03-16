@@ -79,8 +79,8 @@ export default function ResearcherDashboard() {
     <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-           <div className="w-14 h-14 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center">
-              <Beaker className="w-8 h-8 text-teal-400" />
+           <div className="w-14 h-14 rounded-2xl bg-lumina-highlight/10 border border-lumina-highlight/20 flex items-center justify-center">
+              <Beaker className="w-8 h-8 text-lumina-highlight" />
            </div>
            <div>
               <h1 className="text-3xl font-display font-bold text-white tracking-tight lowercase">
@@ -92,9 +92,9 @@ export default function ResearcherDashboard() {
         
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all font-bold text-sm uppercase tracking-widest">
-            <ShieldCheck className="w-4 h-4 text-teal-400" /> Ethics Audit
+            <ShieldCheck className="w-4 h-4 text-lumina-highlight" /> Ethics Audit
           </button>
-          <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lumina-primary text-black font-bold text-sm hover:scale-105 transition-all shadow-gold-glow">
+          <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lumina-highlight text-black font-bold text-sm hover:scale-105 transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)]">
             <Search className="w-4 h-4" /> New Query
           </button>
         </div>
@@ -106,8 +106,8 @@ export default function ResearcherDashboard() {
            <GlassCard className="p-8">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-2xl bg-indigo-500/10">
-                    <Network className="w-6 h-6 text-indigo-400" />
+                  <div className="p-3 rounded-2xl bg-lumina-highlight/10">
+                    <Network className="w-6 h-6 text-lumina-highlight" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-white lowercase tracking-tighter">Cohort Anonymity</h2>
@@ -129,12 +129,12 @@ export default function ResearcherDashboard() {
                          cursor={{fill: '#ffffff05'}}
                          contentStyle={{backgroundColor: '#000', border: '1px solid #ffffff10', borderRadius: '12px'}}
                        />
-                       <Bar dataKey="k" fill="#2dd4bf" radius={[4, 4, 0, 0]} barSize={40} />
+                       <Bar dataKey="k" fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={40} />
                     </BarChart>
                  </ResponsiveContainer>
               </div>
-              <div className="mt-8 flex items-center gap-3 p-4 rounded-2xl bg-teal-500/5 border border-teal-500/10">
-                 <Info className="w-4 h-4 text-teal-400 shrink-0" />
+              <div className="mt-8 flex items-center gap-3 p-4 rounded-2xl bg-lumina-highlight/5 border border-lumina-highlight/10">
+                 <Info className="w-4 h-4 text-lumina-highlight shrink-0" />
                  <p className="text-[10px] text-gray-500 font-medium italic leading-relaxed">
                    Current policy requires <span className="text-white font-bold">k ≥ 5</span> for all exported snapshots. All active cohorts currently meet or exceed this requirement.
                  </p>
@@ -153,11 +153,11 @@ export default function ResearcherDashboard() {
                     [1, 2, 3].map(i => <div key={i} className="h-32 bg-white/5 rounded-3xl animate-pulse"></div>)
                  ) : snapshots.length > 0 ? (
                     snapshots.map((snap, idx) => (
-                      <GlassCard key={idx} className="p-6 group hover:border-teal-500/20 transition-all cursor-pointer">
+                      <GlassCard key={idx} className="p-6 group hover:border-lumina-highlight/20 transition-all cursor-pointer">
                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-5">
                                <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center">
-                                  <FileJson className="w-6 h-6 text-gray-500 group-hover:text-teal-400 transition-colors" />
+                                  <FileJson className="w-6 h-6 text-gray-500 group-hover:text-lumina-highlight transition-colors" />
                                </div>
                                <div>
                                   <h4 className="text-lg font-bold text-white lowercase tracking-tighter mb-1 truncate">{snap.name || "Snapshot_2024_Q1"}</h4>
@@ -172,7 +172,7 @@ export default function ResearcherDashboard() {
                                <button className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-gray-600 hover:text-white transition-all">
                                   <Share2 className="w-4 h-4" />
                                </button>
-                               <button className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-teal-600 text-white font-bold text-[10px] hover:scale-105 transition-all shadow-lg shadow-teal-600/20 uppercase tracking-widest">
+                               <button className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-lumina-highlight text-black font-bold text-[10px] hover:scale-105 transition-all shadow-lg shadow-lumina-highlight/20 uppercase tracking-widest">
                                   Process Query
                                </button>
                             </div>
@@ -188,7 +188,7 @@ export default function ResearcherDashboard() {
 
         {/* Researcher Sidebar */}
         <div className="space-y-8">
-           <GlassCard className="p-8 bg-gradient-to-br from-indigo-500/10 to-transparent">
+           <GlassCard className="p-8 bg-gradient-to-br from-lumina-highlight/10 to-transparent">
               <h3 className="text-2xl font-bold text-white lowercase tracking-tighter mb-8">Snapshot Builder</h3>
               <div className="space-y-6">
                  <div className="space-y-2">
@@ -236,7 +236,7 @@ export default function ResearcherDashboard() {
               </ul>
            </GlassCard>
 
-           <GlassCard className="p-8 border-l-4 border-teal-500/30">
+           <GlassCard className="p-8 border-l-4 border-lumina-highlight/30">
               <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Ethical Reminder</h4>
               <p className="text-[10px] text-gray-500 leading-relaxed font-medium">
                  All data exports are strictly controlled. Any attempt to de-anonymize student data will be logged and may result in immediate revocation of research privileges.

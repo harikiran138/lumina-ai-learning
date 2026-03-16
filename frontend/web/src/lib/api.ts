@@ -352,6 +352,29 @@ export class RealAPI {
     return await res.json();
   }
 
+  async getAlumniMentorshipMentees(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/alumni/mentees");
+    return res.ok ? await res.json() : [];
+  }
+
+  async getCounselorCases(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/counselor/cases");
+    return res.ok ? await res.json() : [];
+  }
+
+  async getRiskAlerts(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/counselor/risk-alerts");
+    return res.ok ? await res.json() : [];
+  }
+
+  async logSafeguardingEvent(event: any): Promise<any> {
+    const res = await this.fetchAuthorized("/api/counselor/safeguarding", {
+      method: "POST",
+      body: JSON.stringify(event),
+    });
+    return await res.json();
+  }
+
   async getStudentProfile(): Promise<any> {
     const res = await this.fetchAuthorized("/api/student/profile");
     if (!res.ok) return null;

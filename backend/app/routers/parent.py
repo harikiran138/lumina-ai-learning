@@ -27,21 +27,30 @@ async def get_parent_dashboard(
             mastery = await store.get_child_mastery(child_id)
             assignments = await store.get_child_assignments(child_id)
             children_data.append({
-                "child_id": child_id,
+                "id": child_id,
+                "name": link["child_name"],
                 "verified": True,
                 "mastery": mastery,
                 "assignments": assignments
             })
         else:
             children_data.append({
-                "child_id": child_id,
+                "id": child_id,
+                "name": link["child_name"],
                 "verified": False,
                 "status": "Pending verification"
             })
     
+    # Fetch additional dashboard sections
+    messages = await store.get_messages(current_user["id"])
+    # goals = await store.get_goals(current_user["id"]) # Need to implement get_goals in store
+    
     return {
         "parent_id": current_user["id"],
-        "children": children_data
+        "children": children_data,
+        "recent_activity": [],
+        "goals": [],
+        "messages": messages
     }
 
 @router.get("/messages")

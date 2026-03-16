@@ -66,12 +66,12 @@ export default function ContentCreatorDashboard() {
           <p className="text-gray-400 mt-1 font-medium italic">Architecting the adaptive knowledge graph</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button className="bg-lumina-primary text-black rounded-xl font-bold hover:scale-105 transition-transform shadow-gold-glow">
+          <Button className="bg-lumina-highlight text-black rounded-xl font-bold hover:scale-105 transition-transform shadow-[0_0_20px_rgba(245,158,11,0.3)]">
             <Plus className="w-4 h-4 mr-2" />
             New Course Blueprint
           </Button>
-          <Button variant="outline" className="glass-v2 border-white/10 text-white rounded-xl font-bold">
-            <UploadCloud className="w-4 h-4 mr-2" />
+          <Button variant="outline" className="glass-v2 border-white/10 text-white rounded-xl font-bold hover:border-lumina-highlight/30">
+            <UploadCloud className="w-4 h-4 mr-2 text-lumina-highlight" />
             Bulk Upload
           </Button>
         </div>
@@ -80,15 +80,15 @@ export default function ContentCreatorDashboard() {
       {/* Workflow Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Books Digitized', value: '1,248', icon: BookOpen, color: 'blue' },
-          { label: 'Scaffolds Pending', value: '42', icon: Clock, color: 'orange' },
-          { label: 'Graph Nodes', value: '8,402', icon: Layers, color: 'purple' },
+          { label: 'Total Books Digitized', value: '1,248', icon: BookOpen, color: 'lumina-highlight' },
+          { label: 'Scaffolds Pending', value: '42', icon: Clock, color: 'lumina-highlight' },
+          { label: 'Graph Nodes', value: '8,402', icon: Layers, color: 'lumina-highlight' },
           { label: 'AI QA Coverage', value: '94%', icon: Cpu, color: 'green' }
         ].map((stat, idx) => (
           <GlassCard key={idx} className="p-6">
              <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{stat.label}</span>
-                <stat.icon className={cn("w-5 h-5", `text-${stat.color}-400`)} />
+                <stat.icon className={cn("w-5 h-5", stat.color === 'lumina-highlight' ? "text-lumina-highlight" : `text-${stat.color}-400`)} />
              </div>
              <div className="text-3xl font-bold text-white">{stat.value}</div>
           </GlassCard>
@@ -97,11 +97,11 @@ export default function ContentCreatorDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Verification Queue (V2.0 Core) */}
-        <GlassCard className="lg:col-span-2 p-8 border-indigo-500/10">
+        <GlassCard className="lg:col-span-2 p-8 border-lumina-highlight/10">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-indigo-500/10">
-                <Zap className="w-6 h-6 text-indigo-400" />
+              <div className="p-3 rounded-2xl bg-lumina-highlight/10">
+                <Zap className="w-6 h-6 text-lumina-highlight" />
               </div>
               <h2 className="text-2xl font-bold text-white">Verification Queue</h2>
             </div>
@@ -113,29 +113,29 @@ export default function ContentCreatorDashboard() {
           <div className="space-y-4">
             {loading ? (
               <div className="h-64 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-lumina-highlight"></div>
               </div>
             ) : uploads.length > 0 ? (
               uploads.map((item) => (
-                <div key={item.id} className="p-5 rounded-2xl glass-v2 border-white/5 hover:border-indigo-500/20 transition-all group">
+                <div key={item.id} className="p-5 rounded-2xl glass-v2 border-white/5 hover:border-lumina-highlight/20 transition-all group">
                    <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
-                         <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-                            <FileJson className="w-5 h-5 text-indigo-400" />
+                         <div className="w-10 h-10 rounded-xl bg-lumina-highlight/10 flex items-center justify-center">
+                            <FileJson className="w-5 h-5 text-lumina-highlight" />
                          </div>
                          <div>
                             <h4 className="font-bold text-white truncate max-w-xs">{item.original_filename || "Mastering Physics V2.pdf"}</h4>
                             <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Uploaded 4h ago</p>
                          </div>
                       </div>
-                      <Badge className="bg-indigo-500 text-white">AI GENERATED SCAFFOLD</Badge>
+                      <Badge className="bg-lumina-highlight text-black font-bold uppercase tracking-widest text-[9px]">AI GENERATED SCAFFOLD</Badge>
                    </div>
                    
                    <div className="flex gap-2">
                       <Button variant="outline" size="sm" className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10 text-xs font-bold">
                         Inspect Graph
                       </Button>
-                      <Button size="sm" className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold">
+                      <Button size="sm" className="flex-1 bg-lumina-highlight hover:bg-lumina-highlight/80 text-black font-bold text-xs uppercase tracking-widest px-6 active:scale-95 transition-all">
                         Approve & Deploy
                       </Button>
                       <Button variant="ghost" size="icon" className="text-gray-500 hover:text-red-400">
@@ -174,7 +174,7 @@ export default function ContentCreatorDashboard() {
                        <div 
                          className={cn(
                            "h-full rounded-full",
-                           item.value > 80 ? "bg-green-500" : item.value > 40 ? "bg-indigo-500" : "bg-red-500"
+                           item.value > 80 ? "bg-green-500" : item.value > 40 ? "bg-lumina-highlight" : "bg-red-500"
                          )} 
                          style={{ width: `${item.value}%` }} 
                        />
@@ -184,10 +184,10 @@ export default function ContentCreatorDashboard() {
              </div>
           </GlassCard>
 
-          <GlassCard className="p-8 bg-gradient-to-br from-indigo-500/10 to-transparent">
+          <GlassCard className="p-8 bg-gradient-to-br from-lumina-highlight/10 to-transparent">
              <div className="flex items-center gap-3 mb-4">
-                <UploadCloud className="w-6 h-6 text-indigo-400" />
-                <h3 className="font-bold text-white">AI Copilot</h3>
+                <UploadCloud className="w-6 h-6 text-lumina-highlight" />
+                <h3 className="font-bold text-white uppercase tracking-widest text-xs">AI Copilot</h3>
              </div>
              <p className="text-sm text-gray-400 leading-relaxed mb-6">
                 "I've detected a logic gap in the **Quantum Mechanics** scaffold. Would you like me to auto-generate the prerequisite nodes?"

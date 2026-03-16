@@ -18,7 +18,8 @@ import {
   Sparkles,
   History,
   TrendingUp,
-  Globe
+  Globe,
+  Eye
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
@@ -61,9 +62,9 @@ export default function AlumniDashboard() {
   }, []);
 
   const stats = [
-    { label: 'Mentorship Hours', value: '48h', icon: Heart, color: 'text-rose-400' },
-    { label: 'Portfolio Views', value: '2.4k', icon: Eye, color: 'text-indigo-400' },
-    { label: 'Success Badges', value: '12', icon: Trophy, color: 'text-amber-400' }
+    { label: 'Mentorship Hours', value: '48h', icon: Heart, color: 'text-lumina-highlight' },
+    { label: 'Portfolio Views', value: '2.4k', icon: Eye, color: 'text-lumina-highlight' },
+    { label: 'Success Badges', value: '12', icon: Trophy, color: 'text-lumina-highlight' }
   ];
 
   return (
@@ -79,10 +80,10 @@ export default function AlumniDashboard() {
         <div className="flex items-center gap-3">
           <Link href="/alumni/portfolio">
             <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all font-bold text-sm uppercase tracking-widest">
-              <Briefcase className="w-4 h-4 text-indigo-400" /> My Portfolio
+              <Briefcase className="w-4 h-4 text-lumina-highlight" /> My Portfolio
             </button>
           </Link>
-          <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lumina-primary text-black font-bold text-sm hover:scale-105 transition-all shadow-gold-glow">
+          <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lumina-highlight text-black font-bold text-sm hover:scale-105 transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)]">
             <Plus className="w-4 h-4" /> Open Availability
           </button>
         </div>
