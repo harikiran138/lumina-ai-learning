@@ -1,53 +1,64 @@
+"use client";
+
+import { Upload, Cpu, GraduationCap, CheckCircle } from "lucide-react";
+
+const steps = [
+  {
+    icon: Upload,
+    title: "Upload Materials",
+    description: "Import textbooks, PDFs, or lecture notes directly into the platform."
+  },
+  {
+    icon: Cpu,
+    title: "AI Analysis",
+    description: "Lumina builds a semantic knowledge graph and generates adaptive nodes."
+  },
+  {
+    icon: CheckCircle,
+    title: "Teacher Verify",
+    description: "Instructors audit AI-generated content to ensure 100% accuracy."
+  },
+  {
+    icon: GraduationCap,
+    title: "Personalized Study",
+    description: "Students learn with a verified AI tutor on custom pathways."
+  }
+];
+
 export default function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="min-h-screen flex items-center">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold gradient-text">
-            A Seamless Workflow
+    <section className="py-24 relative overflow-hidden">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
+            The Lumina Workflow
           </h2>
-          <p className="mt-4 text-lg text-gray-300">
-            From raw text to personalized education in a few simple steps.
+          <p className="text-lg text-gray-400">
+            From raw content to mastery. See how Lumina transforms the educational experience in four simple steps.
           </p>
         </div>
-        <div className="mt-12 relative">
-          <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gray-300 dark:bg-gray-700 -translate-y-1/2"></div>
-          <div className="grid gap-12 md:grid-cols-3 relative">
-            <div className="flex flex-col items-center text-center">
-              <div className="bg-white/10 dark:bg-white/5 backdrop-blur-lg border-2 border-white/20 h-16 w-16 rounded-full flex items-center justify-center text-amber-500 font-bold text-2xl relative z-10">
-                1
+
+        <div className="relative">
+          {/* Connecting line */}
+          <div className="hidden lg:block absolute top-10 left-[10%] right-[10%] h-0.5 bg-gradient-to-r from-lumina-primary/0 via-lumina-primary/20 to-lumina-primary/0" />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {steps.map((step, index) => (
+              <div key={index} className="flex flex-col items-center text-center group">
+                <div className="w-20 h-20 rounded-2xl bg-surface-900 border border-white/5 flex items-center justify-center mb-6 relative z-10 group-hover:border-lumina-primary/30 transition-all duration-300 shadow-xl group-hover:shadow-gold-glow">
+                  <step.icon className="h-10 w-10 text-lumina-primary" />
+                  <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-lumina-primary text-black text-xs font-bold flex items-center justify-center">
+                    {index + 1}
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-4 group-hover:text-lumina-primary transition-colors">
+                  {step.title}
+                </h3>
+                <p className="text-gray-400 leading-relaxed">
+                  {step.description}
+                </p>
               </div>
-              <h3 className="mt-4 text-xl font-semibold gradient-text">
-                Upload Content
-              </h3>
-              <p className="mt-2 text-gray-300">
-                Teachers upload textbooks, syllabi, or any course document.
-              </p>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <div className="bg-white/10 dark:bg-white/5 backdrop-blur-lg border-2 border-white/20 h-16 w-16 rounded-full flex items-center justify-center text-amber-500 font-bold text-2xl relative z-10">
-                2
-              </div>
-              <h3 className="mt-4 text-xl font-semibold gradient-text">
-                AI Generates Pathway
-              </h3>
-              <p className="mt-2 text-gray-300">
-                Lumina processes the content and creates a structured, adaptive
-                course.
-              </p>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <div className="bg-white/10 dark:bg-white/5 backdrop-blur-lg border-2 border-white/20 h-16 w-16 rounded-full flex items-center justify-center text-amber-500 font-bold text-2xl relative z-10">
-                3
-              </div>
-              <h3 className="mt-4 text-xl font-semibold gradient-text">
-                Students Engage & Grow
-              </h3>
-              <p className="mt-2 text-gray-300">
-                Students follow their unique path, take quizzes, and track their
-                progress.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </div>

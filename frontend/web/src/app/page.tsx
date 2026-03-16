@@ -2,105 +2,71 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { DottedSurface } from "@/components/ui/DottedSurface";
+import HeroSection from "@/components/home/HeroSection";
 
-// Lazy load heavy sections with ssr disabled for better performance
-const FeaturesSection = dynamic(
-  () => import("@/components/home/FeaturesSection"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-96 flex items-center justify-center">
-        <div className="animate-pulse space-y-4 w-full max-w-4xl px-4">
-          <div className="h-8 bg-gray-700 rounded w-3/4 mx-auto"></div>
-          <div className="h-4 bg-gray-700 rounded w-1/2 mx-auto"></div>
-          <div className="grid grid-cols-3 gap-4 mt-8">
-            <div className="h-32 bg-gray-700 rounded"></div>
-            <div className="h-32 bg-gray-700 rounded"></div>
-            <div className="h-32 bg-gray-700 rounded"></div>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-);
+// Lazy load heavy sections
+const ProblemSection = dynamic(() => import("@/components/home/ProblemSection"), { ssr: false });
+const SolutionSection = dynamic(() => import("@/components/home/SolutionSection"), { ssr: false });
+const HowItWorksSection = dynamic(() => import("@/components/home/HowItWorksSection"), { ssr: false });
+const RoleCards = dynamic(() => import("@/components/home/RoleCards"), { ssr: false });
+const EngineSection = dynamic(() => import("@/components/home/EngineSection"), { ssr: false });
+const VerificationSection = dynamic(() => import("@/components/home/VerificationSection"), { ssr: false });
+const PrivacySection = dynamic(() => import("@/components/home/PrivacySection"), { ssr: false });
+const ArchitectureSection = dynamic(() => import("@/components/home/ArchitectureSection"), { ssr: false });
+const BenefitsSection = dynamic(() => import("@/components/home/BenefitsSection"), { ssr: false });
+const ScreenshotsSection = dynamic(() => import("@/components/home/ScreenshotsSection"), { ssr: false });
+const ImpactSection = dynamic(() => import("@/components/home/ImpactSection"), { ssr: false });
+const PricingSection = dynamic(() => import("@/components/home/PricingSection"), { ssr: false });
+const CTASection = dynamic(() => import("@/components/home/CTASection"), { ssr: false });
+const Footer = dynamic(() => import("@/components/layout/Footer"), { ssr: false });
+const StructuredData = dynamic(() => import("@/components/seo/StructuredData"), { ssr: false });
 
-const ForWhoSection = dynamic(() => import("@/components/home/ForWhoSection"), {
-  ssr: false,
-  loading: () => (
-    <div className="h-96 flex items-center justify-center">
-      <div className="animate-pulse space-y-4 w-full max-w-4xl px-4">
-        <div className="h-8 bg-gray-700 rounded w-2/3 mx-auto"></div>
-        <div className="h-4 bg-gray-700 rounded w-1/3 mx-auto"></div>
-      </div>
-    </div>
-  ),
-});
-
-const HowItWorksSection = dynamic(
-  () => import("@/components/home/HowItWorksSection"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-96 flex items-center justify-center">
-        <div className="animate-pulse space-y-4 w-full max-w-4xl px-4">
-          <div className="h-8 bg-gray-700 rounded w-3/4 mx-auto"></div>
-          <div className="space-y-2 mt-8">
-            <div className="h-4 bg-gray-700 rounded"></div>
-            <div className="h-4 bg-gray-700 rounded"></div>
-            <div className="h-4 bg-gray-700 rounded w-5/6"></div>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-);
-
-const TestimonialsSection = dynamic(
-  () => import("@/components/home/TestimonialsSection"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-96 flex items-center justify-center">
-        <div className="animate-pulse space-y-4 w-full max-w-4xl px-4">
-          <div className="h-8 bg-gray-700 rounded w-1/2 mx-auto"></div>
-          <div className="grid grid-cols-2 gap-4 mt-8">
-            <div className="h-40 bg-gray-700 rounded"></div>
-            <div className="h-40 bg-gray-700 rounded"></div>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-);
+// Keeping existing sections for fallback/compatibility if needed
+const TestimonialsSection = dynamic(() => import("@/components/home/TestimonialsSection"), { ssr: false });
 
 export default function Home() {
   const [sectionsVisible, setSectionsVisible] = useState({
-    features: false,
-    forWho: false,
+    problem: false,
+    solution: false,
     howItWorks: false,
+    roles: false,
+    engine: false,
+    verification: false,
+    privacy: false,
+    architecture: false,
+    benefits: false,
+    screenshots: false,
+    impact: false,
     testimonials: false,
+    pricing: false,
+    cta: false,
   });
 
   useEffect(() => {
-    // Use Intersection Observer for lazy loading sections
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const sectionId = entry.target.id;
-            setSectionsVisible((prev) => ({ ...prev, [sectionId]: true }));
+            // Map hyphenated IDs to state keys
+            const stateKey = sectionId.replace(/-([a-z])/g, (g) => g[1].toUpperCase()) as keyof typeof sectionsVisible;
+            setSectionsVisible((prev) => ({ ...prev, [stateKey]: true }));
             observer.unobserve(entry.target);
           }
         });
       },
-      { rootMargin: "100px" },
+      { rootMargin: "200px" },
     );
 
-    // Observe section placeholders
-    const sections = ["features", "for-who", "how-it-works", "testimonials"];
+    const sections = [
+      "problem", "solution", "how-it-works", "roles", 
+      "engine", "verification", "privacy", "architecture", 
+      "benefits", "screenshots", "impact", "testimonials", "pricing", "cta"
+    ];
+
     sections.forEach((id) => {
       const element = document.getElementById(id);
       if (element) observer.observe(element);
@@ -110,46 +76,39 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="text-white min-h-screen">
+    <div className="text-white min-h-screen bg-surface-950">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
+      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5 bg-surface-950/50 backdrop-blur-xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
             <div className="flex-shrink-0">
-              <Link href="/" className="text-2xl font-bold text-white">
+              <Link href="/" className="text-2xl font-bold text-white flex items-center">
                 <span className="gradient-text">Lumina</span> ✨
               </Link>
             </div>
-            <div className="hidden md:flex md:items-center md:space-x-8">
-              <Link
-                href="#features"
-                className="text-gray-300 hover:text-amber-400 transition-colors"
-              >
-                Features
-              </Link>
-              <Link
-                href="#for-who"
-                className="text-gray-300 hover:text-amber-400 transition-colors"
-              >
-                For Who?
-              </Link>
-              <Link
-                href="#testimonials"
-                className="text-gray-300 hover:text-amber-400 transition-colors"
-              >
-                Testimonials
-              </Link>
+            
+            <nav className="hidden lg:flex md:items-center md:space-x-8">
+              {["Features", "Roles", "Engine", "Privacy", "Impact"].map((item) => (
+                <Link
+                  key={item}
+                  href={`#${item.toLowerCase()}`}
+                  className="text-sm font-medium text-gray-400 hover:text-lumina-primary transition-colors"
+                >
+                  {item}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="flex items-center space-x-6">
               <Link
                 href="/login"
-                className="text-gray-300 hover:text-amber-400 transition-colors"
+                className="text-sm font-medium text-gray-400 hover:text-white transition-colors hidden sm:block"
               >
                 Sign In
               </Link>
-            </div>
-            <div className="flex items-center space-x-4">
               <Link
                 href="/login"
-                className="hidden md:inline-block bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors"
+                className="bg-lumina-primary text-black font-bold py-2.5 px-6 rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
                 Get Started
               </Link>
@@ -160,59 +119,70 @@ export default function Home() {
       </header>
 
       <main>
-        {/* Hero Section */}
-        <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-          <DottedSurface />
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center py-16">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
-              The Future of Learning, <br />{" "}
-              <span className="gradient-text">Personalized for You.</span>
-            </h1>
-            <p className="mt-6 max-w-2xl mx-auto text-lg text-gray-300">
-              Lumina is an AI-driven, self-hosted platform that transforms your
-              course materials into adaptive learning pathways, automated
-              assessments, and engaging experiences.
-            </p>
-            <div className="mt-8 flex justify-center space-x-4">
-              <Link
-                href="/login"
-                className="bg-amber-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-amber-600 transition-colors text-lg shadow-lg shadow-amber-500/20"
-              >
-                Start Learning
-              </Link>
-              <Link
-                href="#features"
-                className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-bold py-3 px-8 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-lg shadow-lg dark:shadow-white/5"
-              >
-                Learn More
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Lazy loaded sections */}
-        <div id="features">
-          {sectionsVisible.features && <FeaturesSection />}
+        <HeroSection />
+        
+        <div id="problem">
+          {sectionsVisible.problem && <ProblemSection />}
         </div>
-        <div id="for-who">{sectionsVisible.forWho && <ForWhoSection />}</div>
+        
+        <div id="solution">
+          {sectionsVisible.solution && <SolutionSection />}
+        </div>
+        
         <div id="how-it-works">
           {sectionsVisible.howItWorks && <HowItWorksSection />}
         </div>
+        
+        <div id="roles">
+          {sectionsVisible.roles && <RoleCards />}
+        </div>
+        
+        <div id="engine">
+          {sectionsVisible.engine && <EngineSection />}
+        </div>
+        
+        <div id="verification">
+          {sectionsVisible.verification && <VerificationSection />}
+        </div>
+        
+        <div id="privacy">
+          {sectionsVisible.privacy && <PrivacySection />}
+        </div>
+        
+        <div id="architecture">
+          {sectionsVisible.architecture && <ArchitectureSection />}
+        </div>
+        
+        <div id="benefits">
+          {sectionsVisible.benefits && <BenefitsSection />}
+        </div>
+        
+        <div id="screenshots">
+          {sectionsVisible.screenshots && <ScreenshotsSection />}
+        </div>
+        
+        <div id="impact">
+          {sectionsVisible.impact && <ImpactSection />}
+        </div>
+        
         <div id="testimonials">
           {sectionsVisible.testimonials && <TestimonialsSection />}
         </div>
+        
+        <div id="pricing">
+          {sectionsVisible.pricing && <PricingSection />}
+        </div>
+        
+        <div id="cta">
+          {sectionsVisible.cta && <CTASection />}
+        </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white/5 backdrop-blur-sm border-t border-white/10">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-600 dark:text-gray-400">
-            <span className="gradient-text font-semibold">
-              &copy; 2025 Lumina. All rights reserved.
-            </span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
+      <StructuredData />
+      
+      {/* Global Background Dots */}
+      <DottedSurface />
     </div>
   );
 }
