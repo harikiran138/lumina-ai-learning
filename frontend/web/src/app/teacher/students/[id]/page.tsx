@@ -1,46 +1,265 @@
 "use client";
 
-import { useState } from "react";
-import { 
-  ArrowLeft, 
-  Target, 
-  TrendingUp, 
-  Clock, 
-  MessageSquare, 
-  AlertTriangle, 
-  CheckCircle2,
-  ChevronRight,
-  GraduationCap,
-  Sparkles,
-  Zap,
-  Activity,
-  Calendar,
-  Mail,
-  MoreVertical
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import {
+  ArrowLeft,
+  Mail,
+  Calendar,
+  TrendingUp,
+  Award,
+  Clock,
+  BookOpen,
+  AlertTriangle,
+  CheckCircle,
+  Target,
+  MessageSquare,
+  FileText,
+  BarChart3,
+  Search,
+  Filter,
+  Download,
+  MoreVertical,
+  Activity,
+  Zap,
+  Sparkles
+} from "lucide-react";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
-export default function StudentProfilePage({ params }: { params: { id: string } }) {
-  const [activeTab, setActiveTab] = useState("Mastery");
+interface StudentDetail {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  joinedAt: string;
+  courses: Array<{
+    id: string;
+    name: string;
+    progress: number;
+    mastery: number;
+    lastAccessed: string;
+  }>;
+  stats: {
+    overallProgress: number;
+    overallMastery: number;
+    assignmentsCompleted: number;
+    assignmentsTotal: number;
+    averageScore: number;
+    streak: number;
+    totalTime: number;
+  };
+  recentActivity: Array<{
+    id: string;
+    type: "lesson" | "assignment" | "quiz";
+    title: string;
+    course: string;
+    timestamp: string;
+    score?: number;
+  }>;
+  weakTopics: string[];
+  strongTopics: string[];
+  riskLevel: "low" | "medium" | "high" | "critical";
+  lastActive: string;
+}
 
-  const student = {
-    name: "Alice Chen",
-    id: params.id || "STU-8821",
-    grade: "Grade 11",
-    email: "alice.chen@lumina.edu",
-    status: "At Risk",
-    overall_mastery: 68,
-    attendance: 94,
-    predicted_dropout_prob: 0.12,
-    strengths: ["Logical Logic", "Data Structures"],
-    weaknesses: ["Asynchronous Execution", "Resource Management"],
-    recent_activity: [
-      { action: "Submited Quiz", item: "Module 3: Async JS", score: "4.5/5", date: "2 hours ago" },
-      { action: "Joined Live Class", item: "Event Loop Deep-dive", duration: "42m", date: "1 day ago" },
-      { action: "Spent 2h on Resource", item: "MDN Guide: Closures", date: "2 days ago" }
-    ]
+const EMPTY_STUDENT: StudentDetail = {
+  id: "",
+  name: "",
+  email: "",
+  avatar: "",
+  joinedAt: "",
+  courses: [],
+  stats: {
+    overallProgress: 0,
+    overallMastery: 0,
+    assignmentsCompleted: 0,
+    assignmentsTotal: 0,
+    averageScore: 0,
+    streak: 0,
+    totalTime: 0,
+  },
+  recentActivity: [],
+  weakTopics: [],
+  strongTopics: [],
+  riskLevel: "low",
+  lastActive: "",
+};
+
+function ProgressRing({
+  value,
+  size = 120,
+  strokeWidth = 8,
+  color = "amber",
+}: {
+  value: number;
+  size?: number;
+  strokeWidth?: number;
+  color?: "amber" | "emerald" | "blue" | "red";
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (value / 100) * circumference;
+
+  const colors = {
+    amber: "text-amber-400",
+    emerald: "text-emerald-400",
+    blue: "text-blue-400",
+    red: "text-red-400",
+  };
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg className="transform -rotate-90 w-full h-full">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          className="text-white/10"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className={cn("transition-all duration-1000", colors[color])}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className={cn("text-2xl font-bold", colors[color])}>{value}%</span>
+      </div>
+    </div>
+  );
+}
+
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+  subtext,
+}: {
+  icon: any;
+  label: string;
+  value: string | number;
+  subtext?: string;
+}) {
+  return (
+    <div className="glass-v2 border-white/5 p-6 rounded-3xl">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-1">{label}</p>
+          <h3 className="text-2xl font-display font-bold text-white">{value}</h3>
+        </div>
+        <div className="p-2.5 rounded-xl bg-white/5 text-amber-400">
+          <Icon className="h-4 w-4" />
+        </div>
+      </div>
+      {subtext && <p className="mt-4 text-[10px] font-bold text-gray-700 uppercase tracking-widest">{subtext}</p>}
+    </div>
+  );
+}
+
+export default function StudentDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
+  const [student, setStudent] = useState<StudentDetail>(EMPTY_STUDENT);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"overview" | "activity" | "topics">("overview");
+
+  useEffect(() => {
+    if (id) {
+      loadStudentData();
+    }
+  }, [id]);
+
+  const loadStudentData = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch student profile and progress data
+      const [profileData, progressData] = await Promise.all([
+        api.getPersonalizationProfile(id),
+        api.getStudentProgress(),
+      ]);
+
+      // Transform the data
+      const studentData: StudentDetail = {
+        id: id,
+        name: profileData?.name || "Student",
+        email: profileData?.email || "",
+        avatar:
+          profileData?.avatar ||
+          `https://ui-avatars.com/api/?name=${profileData?.name || "S"}&background=random`,
+        joinedAt: profileData?.created_at || new Date().toISOString(),
+        courses: progressData?.recentCourses?.map((c: any) => ({
+          id: c.id,
+          name: c.courseName,
+          progress: c.progress,
+          mastery: c.mastery,
+          lastAccessed: new Date().toISOString(),
+        })) || [],
+        stats: {
+          overallProgress: Math.round(progressData?.overallMastery || 0),
+          overallMastery: Math.round(profileData?.overall_mastery * 100 || 0),
+          assignmentsCompleted: progressData?.stats?.assignmentsCompleted || 0,
+          assignmentsTotal: 10,
+          averageScore: Math.round(profileData?.overall_mastery * 100 || 0),
+          streak: progressData?.stats?.currentStreak || 0,
+          totalTime: 24,
+        },
+        recentActivity: [
+          {
+            id: "1",
+            type: "lesson",
+            title: "Completed Introduction to Calculus",
+            course: "Mathematics 101",
+            timestamp: new Date(Date.now() - 86400000).toISOString(),
+          },
+          {
+            id: "2",
+            type: "assignment",
+            title: "Submitted Assignment: Derivatives",
+            course: "Mathematics 101",
+            timestamp: new Date(Date.now() - 172800000).toISOString(),
+            score: 85,
+          },
+        ],
+        weakTopics: profileData?.weak_topics || [],
+        strongTopics: profileData?.strong_topics || [],
+        riskLevel: profileData?.risk_summary?.risk_level || "low",
+        lastActive: profileData?.last_active || new Date().toISOString(),
+      };
+
+      setStudent(studentData);
+    } catch (error) {
+      console.error("Failed to load student data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  const riskColors = {
+    low: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    medium: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    high: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    critical: "bg-red-500/10 text-red-400 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]",
   };
 
   return (
@@ -59,14 +278,14 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                 {student.name}
               </h1>
               <span className={cn(
-                "rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest",
-                student.status === "At Risk" ? "bg-red-500/10 text-red-400 border border-red-500/20" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                "rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest border",
+                riskColors[student.riskLevel]
               )}>
-                {student.status}
+                {student.riskLevel} Risk
               </span>
             </div>
             <div className="flex items-center gap-4 text-sm text-gray-500 font-bold uppercase tracking-widest">
-              <span className="flex items-center gap-1"><GraduationCap className="h-4 w-4" /> {student.grade}</span>
+              <span className="flex items-center gap-1"><Calendar className="h-4 w-4" /> Joined {new Date(student.joinedAt).toLocaleDateString()}</span>
               <div className="h-1 w-1 rounded-full bg-gray-800" />
               <span className="flex items-center gap-1"><Mail className="h-4 w-4" /> {student.email}</span>
             </div>
@@ -74,11 +293,11 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-all">
+          <button className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all">
             <MessageSquare className="h-4 w-4" />
             Message Parent
           </button>
-          <button className="flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2 text-sm font-bold text-black hover:bg-amber-300 transition-all shadow-[0_0_20px_rgba(251,191,36,0.2)]">
+          <button className="flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-bold text-black hover:bg-amber-300 transition-all shadow-[0_0_20px_rgba(251,191,36,0.2)]">
             <Sparkles className="h-4 w-4" />
             Gen. Intervention
           </button>
@@ -86,43 +305,42 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
       </header>
 
       <div className="grid gap-8 lg:grid-cols-4">
-        {[
-          { label: "Overall Mastery", value: `${student.overall_mastery}%`, icon: Target, color: "text-amber-400", trend: "+3.2% vs avg" },
-          { label: "Attendance", value: `${student.attendance}%`, icon: Calendar, color: "text-blue-400", trend: "High Consistency" },
-          { label: "Dropout Risk", value: `${student.predicted_dropout_prob * 100}%`, icon: AlertTriangle, color: "text-red-400", trend: "Stability Low" },
-          { label: "Engagement", value: "8.4h", icon: Clock, color: "text-emerald-400", trend: "Last 7 Days" }
-        ].map((stat, i) => (
-          <motion.div 
-            key={i}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.1 }}
-            className="glass-v2 border-white/5 p-6 rounded-3xl"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-1">{stat.label}</p>
-                <h3 className="text-2xl font-display font-bold text-white">{stat.value}</h3>
-              </div>
-              <div className={cn("p-2.5 rounded-xl bg-white/5", stat.color)}>
-                <stat.icon className="h-4 w-4" />
-              </div>
-            </div>
-            <p className="mt-4 text-[10px] font-bold text-gray-700 uppercase tracking-widest">{stat.trend}</p>
-          </motion.div>
-        ))}
+        <StatTile
+          icon={Target}
+          label="Overall Progress"
+          value={`${student.stats.overallProgress}%`}
+          subtext="Course completion"
+        />
+        <StatTile
+          icon={Award}
+          label="Mastery Score"
+          value={`${student.stats.overallMastery}%`}
+          subtext="Avg vs concept goal"
+        />
+        <StatTile
+          icon={FileText}
+          label="Assignments"
+          value={`${student.stats.assignmentsCompleted}/${student.stats.assignmentsTotal}`}
+          subtext={`${student.stats.averageScore}% average`}
+        />
+        <StatTile
+          icon={TrendingUp}
+          label="Engagement"
+          value={`${student.stats.streak}d`}
+          subtext="Current streak"
+        />
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-8">
            <section className="glass-v2 border-white/5 rounded-3xl overflow-hidden">
              <div className="border-b border-white/5 flex">
-               {["Mastery", "Activity", "Assessments"].map(tab => (
+               {(["overview", "activity", "topics"] as const).map(tab => (
                  <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
                     className={cn(
-                      "px-8 py-4 text-xs font-bold uppercase tracking-widest transition-all relative",
+                      "px-8 py-4 text-[10px] font-bold uppercase tracking-widest transition-all relative",
                       activeTab === tab ? "text-amber-400" : "text-gray-500 hover:text-white"
                     )}
                  >
@@ -134,154 +352,118 @@ export default function StudentProfilePage({ params }: { params: { id: string } 
                ))}
              </div>
              <div className="p-8">
-               {activeTab === "Mastery" && (
+               {activeTab === "overview" && (
                  <div className="space-y-8">
-                   <div className="flex items-center justify-between mb-4">
-                     <h3 className="text-xl font-bold text-white uppercase tracking-tight">Concept Mastery Radar</h3>
-                     <TrendingUp className="h-5 w-5 text-gray-600" />
+                   <h3 className="text-xl font-bold text-white uppercase tracking-tight">Performance Overview</h3>
+                   <div className="flex flex-col items-center justify-center p-8 bg-white/[0.01] rounded-2xl border border-white/5">
+                      <ProgressRing
+                        value={student.stats.overallMastery}
+                        color={student.stats.overallMastery >= 70 ? "emerald" : "amber"}
+                      />
+                      <p className="mt-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Mastery Index</p>
                    </div>
                    <div className="space-y-6">
-                     {[
-                       { name: "Asynchronous Logic", score: 42, color: "bg-red-400" },
-                       { name: "Structural Logic", score: 88, color: "bg-emerald-400" },
-                       { name: "Memory Management", score: 64, color: "bg-amber-400" },
-                       { name: "DOM Interfaces", score: 75, color: "bg-blue-400" }
-                     ].map((item, i) => (
-                       <div key={i} className="space-y-2">
-                         <div className="flex justify-between text-xs font-bold mb-1">
-                           <span className="text-white uppercase">{item.name}</span>
-                           <span className="text-gray-500">{item.score}%</span>
-                         </div>
-                         <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                           <motion.div 
-                              initial={{ width: 0 }}
-                              animate={{ width: `${item.score}%` }}
-                              className={cn("h-full rounded-full", item.color)}
-                           />
-                         </div>
-                       </div>
-                     ))}
+                      {student.courses.map((course) => (
+                        <div key={course.id} className="p-4 rounded-xl bg-white/5 border border-white/5">
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="font-bold text-white uppercase text-sm tracking-tight">{course.name}</p>
+                            <span className="text-amber-400 font-bold text-sm">{course.mastery}%</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-amber-400/50" style={{ width: `${course.progress}%` }} />
+                          </div>
+                        </div>
+                      ))}
                    </div>
                  </div>
                )}
-               {activeTab === "Activity" && (
+               {activeTab === "activity" && (
                  <div className="space-y-6">
-                   {student.recent_activity.map((act, i) => (
-                     <div key={i} className="flex gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/5 transition-all">
+                   {student.recentActivity.map((act) => (
+                     <div key={act.id} className="flex gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/5 transition-all">
                        <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-500 group-hover:text-amber-400">
-                          {act.action.includes("Quiz") ? <CheckCircle2 className="h-5 w-5" /> : <Activity className="h-5 w-5" />}
+                          {act.type === "lesson" && <BookOpen className="h-5 w-5" />}
+                          {act.type === "assignment" && <FileText className="h-5 w-5" />}
+                          {act.type === "quiz" && <Target className="h-5 w-5" />}
                        </div>
                        <div className="flex-1">
                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-bold text-white uppercase">{act.action}</p>
-                            <span className="text-[10px] text-gray-700 font-bold uppercase">{act.date}</span>
+                            <p className="text-xs font-bold text-white uppercase">{act.title}</p>
+                            <span className="text-[10px] text-gray-700 font-bold uppercase">{new Date(act.timestamp).toLocaleDateString()}</span>
                          </div>
-                         <p className="text-xs text-gray-500 mt-1">{act.item} {act.score && `• ${act.score}`}</p>
+                         <p className="text-[10px] text-gray-500 font-bold uppercase mt-1">{act.course} {act.score && `• Score: ${act.score}%`}</p>
                        </div>
                      </div>
                    ))}
                  </div>
                )}
+               {activeTab === "topics" && (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <section className="glass-v2 border-white/5 p-8 rounded-3xl bg-emerald-500/[0.02]">
+                      <h3 className="text-sm font-bold text-white mb-6 uppercase flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-emerald-400" />
+                        Strengths
+                      </h3>
+                      <div className="space-y-3">
+                        {student.strongTopics.map((topic) => (
+                          <div key={topic} className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-white/5">
+                            <CheckCircle className="h-4 w-4 text-emerald-400" />
+                            <span className="text-[10px] font-bold text-gray-300 uppercase">{topic}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                    <section className="glass-v2 border-white/5 p-8 rounded-3xl bg-red-500/[0.02]">
+                      <h3 className="text-sm font-bold text-white mb-6 uppercase flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                        Frictions
+                      </h3>
+                      <div className="space-y-3">
+                        {student.weakTopics.map((topic) => (
+                          <div key={topic} className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-white/5">
+                            <AlertTriangle className="h-4 w-4 text-red-400" />
+                            <span className="text-[10px] font-bold text-gray-300 uppercase">{topic}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </div>
+               )}
              </div>
            </section>
-
-           <div className="grid gap-6 md:grid-cols-2">
-             <section className="glass-v2 border-white/5 p-8 rounded-3xl bg-emerald-500/[0.02]">
-               <h3 className="text-lg font-bold text-white mb-6 uppercase flex items-center gap-2">
-                 <Zap className="h-5 w-5 text-emerald-400" />
-                 Cognitive Strengths
-               </h3>
-               <div className="space-y-3">
-                 {student.strengths.map((str, i) => (
-                   <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-white/5">
-                     <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                     <span className="text-xs font-bold text-gray-300 uppercase">{str}</span>
-                   </div>
-                 ))}
-               </div>
-             </section>
-             <section className="glass-v2 border-white/5 p-8 rounded-3xl bg-red-500/[0.02]">
-               <h3 className="text-lg font-bold text-white mb-6 uppercase flex items-center gap-2">
-                 <AlertTriangle className="h-5 w-5 text-red-500" />
-                 Learning Frictions
-               </h3>
-               <div className="space-y-3">
-                 {student.weaknesses.map((weak, i) => (
-                   <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-white/5">
-                     <XCircle className="h-4 w-4 text-red-400" />
-                     <span className="text-xs font-bold text-gray-300 uppercase">{weak}</span>
-                   </div>
-                 ))}
-               </div>
-             </section>
-           </div>
         </div>
 
         <div className="space-y-6">
           <section className="glass-v2 border-white/5 p-8 rounded-3xl">
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-tight">
-              <Sparkles className="h-5 w-5 text-amber-400" />
-              AI Insight
+            <h3 className="text-[14px] font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-tight">
+              <Sparkles className="h-4 w-4 text-amber-400" />
+              AI Diagnosis
             </h3>
             <div className="p-4 rounded-2xl bg-amber-400/5 border border-amber-400/10 space-y-4">
               <p className="text-xs text-amber-200/80 leading-relaxed italic">
-                "{student.name}'s mastery in Concurrency dipped significantly after Lesson 3.2. Patterns suggest they are misinterpreting Microtasks as synchronous calls."
+                "{student.name}'s performance pattern suggests high cognitive load in abstract modeling sections. Intervention recommended."
               </p>
               <div className="h-px bg-amber-400/20" />
-              <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Recommended Action</p>
-              <p className="text-xs text-amber-100/90 leading-relaxed">
-                Assign the "Microtask Visual Tracer" interactive lab. It has a 88% success rate for students with similar profiles.
-              </p>
-              <button className="w-full py-2.5 rounded-xl bg-amber-400 text-black text-xs font-bold hover:bg-amber-300 transition-all">
-                Execute Intervention
+              <button className="w-full py-2.5 rounded-xl bg-amber-400 text-black text-[10px] font-bold hover:bg-amber-300 transition-all uppercase tracking-widest">
+                Deploy Pathway Adjust
               </button>
             </div>
           </section>
 
           <section className="glass-v2 border-white/5 p-8 rounded-3xl">
-             <h3 className="text-lg font-bold text-white mb-6 uppercase flex items-center justify-between">
-               Parent Connection
+             <h3 className="text-sm font-bold text-white mb-6 uppercase flex items-center justify-between">
+               Contact Student
                <MoreVertical className="h-4 w-4 text-gray-600" />
              </h3>
              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center text-gray-500 font-bold">
-                    MC
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-white uppercase">Mei Chen</p>
-                    <p className="text-[10px] text-gray-600 font-bold uppercase">Mother • Last seen 2d ago</p>
-                  </div>
-                </div>
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 italic text-[11px] text-gray-500">
-                  "Alice has been working extra hard on her laptop lately. Is there anything specific we should focus on at home?"
-                </div>
-                <button className="w-full py-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                <button className="w-full py-3 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-bold text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 uppercase tracking-widest">
                   <Mail className="h-4 w-4" />
-                  Compose Reply
+                  Send Email
                 </button>
              </div>
           </section>
         </div>
       </div>
     </div>
-  );
-}
-
-function XCircle({ className }: { className?: string }) {
-  return (
-    <svg 
-      className={className} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="m15 9-6 6" />
-      <path d="m9 9 6 6" />
-    </svg>
   );
 }
