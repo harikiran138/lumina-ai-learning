@@ -60,7 +60,7 @@ export default function ParentGoalsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="h-12 w-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="h-12 w-12 border-4 border-lumina-highlight border-t-transparent rounded-full animate-spin"></div>
       </div>
     )
   }
@@ -78,7 +78,7 @@ export default function ParentGoalsPage() {
           </div>
           <Button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg shadow-purple-500/20"
+            className="bg-lumina-highlight hover:bg-lumina-highlight/80 text-black font-bold uppercase tracking-widest shadow-lg shadow-lumina-highlight/20 px-6"
           >
             <Plus className="h-4 w-4 mr-2" />
             New Goal
@@ -96,13 +96,13 @@ export default function ParentGoalsPage() {
               >
                 <Card className="bg-white/5 border-white/10 p-6 hover:bg-white/[0.07] transition-all group">
                   <div className="flex flex-col md:flex-row gap-6 md:items-center">
-                    <div className="h-14 w-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 shrink-0 border border-purple-500/20">
+                    <div className="h-14 w-14 rounded-2xl bg-lumina-highlight/10 flex items-center justify-center text-lumina-highlight shrink-0 border border-lumina-highlight/20">
                       <Target className="h-7 w-7" />
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-xl font-bold group-hover:text-purple-400 transition-colors">{goal.title}</h3>
+                        <h3 className="text-xl font-bold group-hover:text-lumina-highlight transition-colors">{goal.title}</h3>
                         <Badge className="bg-green-500/10 text-green-400 border-none">ACTIVE</Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -117,13 +117,13 @@ export default function ParentGoalsPage() {
                       </div>
                     </div>
 
-                    <div className="w-full md:w-64 space-y-2">
+                     <div className="w-full md:w-64 space-y-2">
                        <div className="flex justify-between text-xs font-medium mb-1.5">
                          <span className="text-gray-500">Current Progress</span>
-                         <span className="text-purple-400">45%</span>
+                         <span className="text-lumina-highlight">45%</span>
                        </div>
                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                         <div className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full w-[45%] shadow-[0_0_10px_rgba(168,85,247,0.5)]"></div>
+                         <div className="h-full bg-lumina-highlight rounded-full w-[45%] shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
                        </div>
                     </div>
 
@@ -131,7 +131,7 @@ export default function ParentGoalsPage() {
                       <Button variant="ghost" size="icon" className="text-gray-500 hover:text-white hover:bg-white/10">
                         <MoreVertical className="h-5 w-5" />
                       </Button>
-                      <Button variant="outline" size="sm" className="hidden md:flex border-white/10 hover:bg-white/10 gap-2">
+                      <Button variant="outline" size="sm" className="hidden md:flex border-white/10 hover:border-lumina-highlight/30 hover:bg-lumina-highlight/5 gap-2 text-[10px] font-bold uppercase tracking-widest transition-all">
                          Details
                          <ChevronRight className="h-4 w-4" />
                       </Button>
@@ -151,7 +151,7 @@ export default function ParentGoalsPage() {
               <p className="text-gray-500 max-w-sm mx-auto mb-8">
                 Break down complex academic challenges into achievable milestones for your child.
               </p>
-              <Button onClick={() => setIsModalOpen(true)} className="bg-purple-600 hover:bg-purple-700">
+              <Button onClick={() => setIsModalOpen(true)} className="bg-lumina-highlight hover:bg-lumina-highlight/80 text-black font-bold uppercase tracking-widest px-8">
                 Set First Goal
               </Button>
             </div>
@@ -173,10 +173,10 @@ export default function ParentGoalsPage() {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="relative w-full max-w-md bg-slate-900 border border-white/10 p-8 rounded-3xl shadow-2xl"
+                className="relative w-full max-w-md bg-slate-900 border border-lumina-highlight/20 p-8 rounded-3xl shadow-2xl shadow-lumina-highlight/5"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-bold text-white">New Academic Goal</h3>
+                  <h3 className="text-2xl font-bold text-white tracking-tight">New Academic Goal</h3>
                   <Button variant="ghost" size="icon" onClick={() => setIsModalOpen(false)}>
                     <X className="h-5 w-5" />
                   </Button>
@@ -184,21 +184,21 @@ export default function ParentGoalsPage() {
 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Goal Title</label>
+                    <label className="block text-sm font-medium text-gray-400 mb-2 uppercase tracking-widest text-[10px]">Goal Title</label>
                     <Input 
                        placeholder="e.g., Complete Algebra Mastery" 
-                       className="bg-white/5 border-white/10 focus:ring-purple-500 h-12 rounded-xl"
+                       className="bg-white/5 border-white/10 focus:ring-lumina-highlight h-12 rounded-xl"
                        value={newGoal.title}
-                       onChange={(e) => setNewGoal({...newGoal, title: e.target.value})}
+                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewGoal({...newGoal, title: e.target.value})}
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Assign to Child</label>
+                    <label className="block text-sm font-medium text-gray-400 mb-2 uppercase tracking-widest text-[10px]">Assign to Child</label>
                     <select 
-                      className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:outline-none focus:ring-2 focus:ring-lumina-highlight"
                       value={newGoal.student_id}
-                      onChange={(e) => setNewGoal({...newGoal, student_id: e.target.value})}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewGoal({...newGoal, student_id: e.target.value})}
                     >
                       <option value="" disabled className="bg-slate-900 text-gray-400">Select Child</option>
                       {children.map((c: any) => (
@@ -208,18 +208,18 @@ export default function ParentGoalsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Target Date</label>
+                    <label className="block text-sm font-medium text-gray-400 mb-2 uppercase tracking-widest text-[10px]">Target Date</label>
                     <Input 
                        type="date"
-                       className="bg-white/5 border-white/10 focus:ring-purple-500 h-12 rounded-xl"
+                       className="bg-white/5 border-white/10 focus:ring-lumina-highlight h-12 rounded-xl"
                        value={newGoal.target_date}
-                       onChange={(e) => setNewGoal({...newGoal, target_date: e.target.value})}
+                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewGoal({...newGoal, target_date: e.target.value})}
                     />
                   </div>
 
                   <div className="pt-4 flex gap-4">
-                    <Button variant="ghost" fullWidth onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                    <Button fullWidth className="bg-purple-600 hover:bg-purple-700" onClick={handleCreateGoal}>Create Goal</Button>
+                    <Button variant="ghost" className="w-full" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                    <Button className="w-full bg-lumina-highlight hover:bg-lumina-highlight/80 text-black font-bold uppercase tracking-widest" onClick={handleCreateGoal}>Create Goal</Button>
                   </div>
                 </div>
               </motion.div>

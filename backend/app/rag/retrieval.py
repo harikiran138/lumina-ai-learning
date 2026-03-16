@@ -1,6 +1,6 @@
 import functools
 import asyncio
-from typing import List, Dict
+from typing import List, Dict, Any
 from app.rag.vector_store import VectorStore
 from app.rag.embeddings import EmbeddingService
 from ai_engine.llm import get_llm_provider
@@ -11,6 +11,12 @@ class RetrievalService:
         self.vector_store = VectorStore()
         self.embedding_service = EmbeddingService.get_embeddings()
         self.llm = get_llm_provider(provider)
+
+    def ingest_text(self, text: str, metadata: Dict[str, Any] = None):
+        """
+        Ingests text into the vector store.
+        """
+        self.vector_store.add_documents([text], [metadata] if metadata else None)
 
     async def expand_query(self, query: str) -> List[str]:
         """

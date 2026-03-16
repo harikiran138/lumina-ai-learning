@@ -16,8 +16,22 @@ class ParentStore:
     async def get_linked_children(self, parent_id: str) -> List[Dict[str, Any]]:
         try:
             client = self.db.get_client()
-            response = client.table("parent_child_links").select("child_id, verified_by_admin").eq("parent_id", parent_id).execute()
-            return response.data
+            # Join with users to get child names
+            # Note: supabase-py might need a slightly different format for joins depending on version
+            # Using 'users!child_id(full_name)' or just 'users(full_name)' if there's an FK
+            response = client.table("parent_child_links").select(
+                "child_id, verified_by_admin, users!child_id(name)"
+            ).eq("parent_id", parent_id).execute()
+            
+            result = []
+            for r in response.data:
+                child_name = r.get("users", {}).get("name", "Unknown Student")
+                result.append({
+                    "child_id": r["child_id"],
+                    "child_name": child_name,
+                    "verified_by_admin": r["verified_by_admin"]
+                })
+            return result
         except Exception as e:
             log.error("get_linked_children_failed", parent_id=parent_id, error=str(e))
             return []
@@ -50,8 +64,17 @@ class ParentStore:
     async def get_messages(self, parent_id: str) -> List[Dict[str, Any]]:
         try:
             client = self.db.get_client()
-            response = client.table("parent_messages").select("*").eq("parent_id", parent_id).order("created_at", desc=True).execute()
-            return response.data
+            # Join with users (teacher) to get sender names
+            response = client.table("parent_messages").select(
+                "*, users!teacher_id(name)"
+            ).eq("parent_id", parent_id).order("created_at", desc=True).execute()
+            
+            result = []
+            for r in response.data:
+                sender_name = r.get("users", {}).get("name", "Lumina System")
+                r["from"] = sender_name
+                result.append(r)
+            return result
         except Exception as e:
             log.error("get_messages_failed", parent_id=parent_id, error=str(e))
             return []

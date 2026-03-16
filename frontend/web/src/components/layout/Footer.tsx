@@ -57,10 +57,10 @@ export default function Footer() {
             <h4 className="text-white font-bold mb-6 uppercase tracking-[0.2em] text-[10px] font-display">Roles</h4>
             <ul className="space-y-4">
               {[
-                { label: "Student Home", href: "/roles/student" },
-                { label: "Teacher Dashboard", href: "/roles/teacher" },
-                { label: "Admin Portal", href: "/roles/admin" },
-                { label: "Parent View", href: "/roles/parent" }
+                { label: "Platform", href: "/platform" },
+                { label: "Technology", href: "/technology" },
+                { label: "Roles", href: "/roles" },
+                { label: "Pricing", href: "/pricing" }
               ].map((item) => (
                 <li key={item.label}>
                   <Link href={item.href} className="text-slate-500 hover:text-lumina-primary text-xs font-bold uppercase tracking-widest transition-colors">
@@ -76,10 +76,10 @@ export default function Footer() {
             <h4 className="text-white font-bold mb-6 uppercase tracking-[0.2em] text-[10px] font-display">Resources</h4>
             <ul className="space-y-4">
               {[
-                { label: "Research Lab", href: "#research" },
-                { label: "Testimonials", href: "#testimonials" },
-                { label: "Case Studies", href: "#" },
-                { label: "Governance FAQ", href: "#" }
+                { label: "Research Lab", href: "/research" },
+                { label: "Privacy Policy", href: "/privacy" },
+                { label: "Contact Us", href: "/contact" },
+                { label: "Governance FAQ", href: "/privacy" }
               ].map((item) => (
                 <li key={item.label}>
                   <Link href={item.href} className="text-slate-500 hover:text-lumina-primary text-xs font-bold uppercase tracking-widest transition-colors">

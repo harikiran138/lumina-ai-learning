@@ -102,7 +102,7 @@ export default function ParentDashboard() {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="h-12 w-12 border-4 border-lumina-highlight border-t-transparent rounded-full animate-spin"></div>
           <p className="text-gray-400">Loading your dashboard...</p>
         </div>
       </div>
@@ -128,8 +128,8 @@ export default function ParentDashboard() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                  <BookOpen className="h-5 w-5" />
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-lumina-highlight to-orange-600 flex items-center justify-center shadow-lg shadow-lumina-highlight/20">
+                  <BookOpen className="h-5 w-5 text-black" />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
@@ -142,7 +142,7 @@ export default function ParentDashboard() {
                 <Button variant="ghost" size="icon" className="relative text-gray-400 hover:text-white">
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 h-4 w-4 bg-purple-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold">
+                    <span className="absolute top-0 right-0 h-4 w-4 bg-lumina-highlight rounded-full text-[10px] flex items-center justify-center text-black font-bold">
                       {unreadCount}
                     </span>
                   )}
@@ -155,7 +155,7 @@ export default function ParentDashboard() {
                 >
                   <MessageSquare className="h-5 w-5" />
                 </Button>
-                <div className="h-9 w-9 bg-purple-500/20 border border-purple-500/30 rounded-full flex items-center justify-center text-purple-400 font-bold">
+                <div className="h-9 w-9 bg-lumina-highlight/20 border border-lumina-highlight/30 rounded-full flex items-center justify-center text-lumina-highlight font-bold">
                   P
                 </div>
               </div>
@@ -174,10 +174,10 @@ export default function ParentDashboard() {
           <section className="mb-12">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Users className="h-5 w-5 text-purple-400" />
+                <Users className="h-5 w-5 text-lumina-highlight" />
                 Your Children
               </h3>
-              <Button variant="link" className="text-purple-400 text-sm p-0">Manage Verification</Button>
+              <Button variant="link" className="text-lumina-highlight text-sm p-0">Manage Verification</Button>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -188,11 +188,11 @@ export default function ParentDashboard() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
                 >
-                  <Card className="bg-white/5 border-white/10 backdrop-blur-md overflow-hidden hover:border-purple-500/30 transition-all p-6">
+                  <Card className="bg-white/5 border-white/10 backdrop-blur-md overflow-hidden hover:border-lumina-highlight/30 transition-all p-6 group">
                     <div className="flex items-center gap-4 mb-6">
                       <div className="relative">
-                        <div className="h-14 w-14 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center text-xl font-bold">
-                          {child.name[0]}
+                        <div className="h-14 w-14 rounded-full bg-gradient-to-br from-lumina-highlight/20 to-gold-500/20 border border-white/10 flex items-center justify-center text-xl font-bold text-lumina-highlight">
+                          {child.name?.[0] || 'S'}
                         </div>
                         {child.verified && (
                           <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-0.5 border-2 border-slate-900">
@@ -216,7 +216,7 @@ export default function ParentDashboard() {
                           <motion.div 
                             initial={{ width: 0 }}
                             animate={{ width: `${child.mastery || 0}%` }}
-                            className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
+                            className="h-full bg-gradient-to-r from-lumina-highlight to-orange-500 rounded-full"
                           />
                         </div>
                       </div>
@@ -225,7 +225,7 @@ export default function ParentDashboard() {
                         <Button variant="outline" size="sm" className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10">
                           View Activity
                         </Button>
-                        <Button size="sm" className="flex-1 bg-purple-600 hover:bg-purple-700 text-white">
+                        <Button size="sm" className="flex-1 bg-lumina-highlight hover:bg-lumina-highlight/80 text-black font-bold">
                           Set Goal
                         </Button>
                       </div>
@@ -241,7 +241,7 @@ export default function ParentDashboard() {
                   </div>
                   <h4 className="font-semibold text-white">No children linked</h4>
                   <p className="text-sm text-gray-500 mt-1 max-w-[200px]">Link your children via their unique ID to monitor progress.</p>
-                  <Button variant="link" className="text-purple-400 mt-2">Link Account</Button>
+                  <Button variant="link" className="text-lumina-highlight mt-2">Link Account</Button>
                 </Card>
               )}
             </div>
@@ -260,7 +260,7 @@ export default function ParentDashboard() {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                       <input 
-                        className="bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 w-48"
+                        className="bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-lumina-highlight w-48"
                         placeholder="Search..."
                       />
                     </div>
@@ -319,13 +319,13 @@ export default function ParentDashboard() {
                     <div key={goal.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
                       <div className="flex justify-between mb-3">
                         <h6 className="text-sm font-semibold text-white">{goal.title}</h6>
-                        <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-400 border-green-500/20">
+                        <Badge variant="outline" className="text-[10px] bg-lumina-highlight/10 text-lumina-highlight border-lumina-highlight/20">
                           ON TRACK
                         </Badge>
                       </div>
                       <div className="space-y-2">
                         <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full bg-green-500 rounded-full" style={{ width: '45%' }}></div>
+                          <div className="h-full bg-lumina-highlight rounded-full" style={{ width: '45%' }}></div>
                         </div>
                         <div className="flex justify-between text-[10px] text-gray-500">
                           <span>{goal.child_name}</span>
@@ -346,28 +346,28 @@ export default function ParentDashboard() {
               <section>
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-orange-400" />
+                    <MessageSquare className="h-5 w-5 text-lumina-highlight" />
                     Messages
                   </h3>
-                  {unreadCount > 0 && <Badge className="bg-purple-500">{unreadCount}</Badge>}
+                  {unreadCount > 0 && <Badge className="bg-lumina-highlight text-black font-bold">{unreadCount}</Badge>}
                 </div>
 
                 <div className="space-y-3">
                   {(dashboardData.messages || []).slice(0, 3).map((msg: any) => (
                     <div key={msg.id} className="flex gap-4 p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-white/10">
                       <div className="h-10 w-10 shrink-0 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 text-sm font-bold">
-                        {msg.from[0]}
+                        {msg.from?.[0] || 'L'}
                       </div>
                       <div className="min-w-0">
                         <div className="flex justify-between items-center mb-0.5">
-                          <h6 className="text-sm font-bold text-white truncate">{msg.from}</h6>
-                          <span className="text-[10px] text-gray-500">2h</span>
+                          <h6 className="text-sm font-bold text-white truncate">{msg.from || 'Lumina System'}</h6>
+                          <span className="text-[10px] text-gray-500">{msg.created_at ? new Date(msg.created_at).toLocaleDateString() : '2h'}</span>
                         </div>
-                        <p className="text-xs text-gray-400 truncate">{msg.preview}</p>
+                        <p className="text-xs text-gray-400 truncate">{msg.content || 'No preview available'}</p>
                       </div>
                     </div>
                   ))}
-                  <Button variant="ghost" fullWidth className="text-gray-500 text-xs mt-2">View All Messages</Button>
+                  <Button variant="ghost" className="w-full text-gray-500 text-xs mt-2">View All Messages</Button>
                 </div>
               </section>
             </div>
@@ -401,7 +401,7 @@ export default function ParentDashboard() {
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {(dashboardData.messages || []).map((msg: any) => (
-                  <div key={msg.id} className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/20 transition-all cursor-pointer">
+                  <div key={msg.id} className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-lumina-highlight/20 transition-all cursor-pointer">
                     <div className="flex justify-between items-start mb-2">
                        <span className="text-sm font-bold text-white">{msg.from}</span>
                        <span className="text-[10px] text-gray-500">{msg.timestamp}</span>
@@ -415,7 +415,7 @@ export default function ParentDashboard() {
                 ))}
               </div>
               <div className="p-6 border-t border-white/10">
-                <Button fullWidth className="bg-purple-600 hover:bg-purple-700">New Conversation</Button>
+                <Button className="w-full bg-lumina-highlight hover:bg-lumina-highlight/80 text-black font-bold">New Conversation</Button>
               </div>
             </motion.div>
           </>

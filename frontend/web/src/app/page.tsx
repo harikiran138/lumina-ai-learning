@@ -68,7 +68,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="text-white min-h-screen bg-slate-950 selection:bg-lumina-primary/30 selection:text-white">
+    <div className="text-white min-h-screen bg-slate-950 selection:bg-lumina-highlight/30 selection:text-white">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -76,23 +76,22 @@ export default function Home() {
             <div className="flex-shrink-0">
               <Link href="/" className="text-2xl font-black text-white flex items-center font-display tracking-tight">
                 <span className="gradient-text">Lumina</span>
-                <span className="ml-1 text-lumina-accent">AI</span>
+                <span className="ml-1 text-lumina-highlight">AI</span>
               </Link>
             </div>
             
             <nav className="hidden xl:flex md:items-center md:space-x-8">
               {[
-                { label: "Features", href: "#solution" },
-                { label: "Workflow", href: "#how-it-works" },
-                { label: "Roles", href: "#roles" },
-                { label: "Verification", href: "#verification" },
-                { label: "Privacy", href: "#privacy" },
-                { label: "Impact", href: "#benefits" }
+                { label: "Platform", href: "/platform" },
+                { label: "Technology", href: "/technology" },
+                { label: "Roles", href: "/roles" },
+                { label: "Privacy", href: "/privacy" },
+                { label: "Research", href: "/research" }
               ].map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-lumina-primary transition-all duration-300"
+                  className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-lumina-highlight transition-all duration-300"
                 >
                   {item.label}
                 </Link>
@@ -108,7 +107,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/login"
-                className="bg-lumina-primary text-white text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all shadow-primary-glow"
+                className="bg-lumina-highlight text-black text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all shadow-lumina-highlight/20"
               >
                 Get Started
               </Link>

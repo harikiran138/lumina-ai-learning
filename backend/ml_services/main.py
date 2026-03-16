@@ -17,9 +17,10 @@ import base64
 app = FastAPI(title="Lumina Unified ML Service", version="1.0.0")
 
 # Initialize models
+from app.rag.retrieval import RetrievalService
 bkt_model = BKTModel()
 dkt_model = DKTModel() # Uses default params
-rag_engine = get_rag_engine()
+rag_engine = RetrievalService()
 ocr_service = OCRService()
 
 class BKTUpdate(BaseModel):

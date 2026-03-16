@@ -114,6 +114,30 @@ async def seed_roles():
         if researcher_id:
             print("Seeding Researcher data...")
             await researcher_store.log_query(researcher_id, {"subject": "STEM", "metric": "average_mastery", "year": 2026})
+            
+            # Seed Anonymised Snapshots
+            snapshots = [
+                {
+                    "snapshot_date": "2026-03-01",
+                    "dataset_type": "STEM_Mastery_Q1",
+                    "data_json": {"metrics": {"avg_mastery": 0.85}, "cohort_size": 1200},
+                    "institution_id_hash": "hash_stem_001"
+                },
+                {
+                    "snapshot_date": "2026-03-05",
+                    "dataset_type": "Humanities_Engagement",
+                    "data_json": {"metrics": {"engagement_score": 92}, "cohort_size": 850},
+                    "institution_id_hash": "hash_hum_002"
+                },
+                {
+                    "snapshot_date": "2026-03-10",
+                    "dataset_type": "Global_Peer_Network",
+                    "data_json": {"metrics": {"network_density": 0.45}, "cohort_size": 2100},
+                    "institution_id_hash": "hash_global_003"
+                }
+            ]
+            for snap in snapshots:
+                await researcher_store.db.insert("anonymised_snapshots", snap)
 
         # 5. Creator Data
         creator_id = created_users.get("content_creator", {}).get("id")
@@ -128,6 +152,18 @@ async def seed_roles():
                 await creator_store.add_lesson_sequence(blueprint["id"], [
                     {"title": "Introduction to Qubits", "type": "video", "order": 1},
                     {"title": "The Bloch Sphere", "type": "interactive", "order": 2}
+                ])
+                
+            # Add another blueprint for variety
+            bp2 = await creator_store.create_blueprint(
+                creator_id,
+                "Ethics in Artificial Intelligence",
+                {"objectives": ["Bias Detection", "Transparency", "Accountability"]}
+            )
+            if bp2:
+                await creator_store.add_lesson_sequence(bp2["id"], [
+                    {"title": "Historical Context of Bias", "type": "text", "order": 1},
+                    {"title": "Algorithmic Fairness", "type": "quiz", "order": 2}
                 ])
 
     print("\n--- Seeding Complete ---")

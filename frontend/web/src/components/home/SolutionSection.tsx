@@ -61,10 +61,10 @@ export default function SolutionSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {solutions.map((solution, index) => (
             <div key={index} className="glass-v2-gold p-8 group">
-              <div className="w-12 h-12 rounded-xl bg-lumina-primary/10 flex items-center justify-center mb-6 group-hover:bg-lumina-primary/20 transition-colors">
-                <solution.icon className="h-6 w-6 text-lumina-primary" />
+              <div className="w-12 h-12 rounded-xl bg-lumina-highlight/10 flex items-center justify-center mb-6 group-hover:bg-lumina-highlight/20 transition-colors">
+                <solution.icon className="h-6 w-6 text-lumina-highlight" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-4 group-hover:text-lumina-primary transition-colors">
+              <h3 className="text-xl font-bold text-white mb-4 group-hover:text-lumina-highlight transition-colors">
                 {solution.title}
               </h3>
               <p className="text-gray-400 leading-relaxed">
@@ -76,7 +76,7 @@ export default function SolutionSection() {
       </div>
       
       {/* Decorative gradient */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-4xl max-h-4xl bg-lumina-primary/5 rounded-full blur-[180px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-4xl max-h-4xl bg-lumina-highlight/5 rounded-full blur-[180px] pointer-events-none" />
     </section>
   );
 }

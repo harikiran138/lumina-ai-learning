@@ -52,9 +52,9 @@ const GlassCard: React.FC<{ className?: string; children: React.ReactNode }> = (
 );
 
 const riskDistributionData = [
-  { name: 'Low', value: 65, color: '#2dd4bf' },
-  { name: 'Moderate', value: 25, color: '#f59e0b' },
-  { name: 'High', value: 10, color: '#f43f5e' }
+  { name: 'Low', value: 65, color: '#14B8A6' },
+  { name: 'Moderate', value: 25, color: '#F59E0B' },
+  { name: 'High', value: 10, color: '#ef4444' }
 ];
 
 const sentimentTrend = [
@@ -104,10 +104,10 @@ export default function CounselorDashboard() {
         <div className="flex items-center gap-3">
           <Link href="/counselor/safeguarding">
             <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all font-bold text-sm uppercase tracking-widest">
-              <Shield className="w-4 h-4 text-teal-400" /> Safeguarding Logs
+              <Shield className="w-4 h-4 text-lumina-highlight" /> Safeguarding Logs
             </button>
           </Link>
-          <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lumina-primary text-black font-bold text-sm hover:scale-105 transition-all shadow-gold-glow">
+          <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lumina-highlight text-black font-bold text-sm hover:scale-105 transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)]">
              New Session Request
           </button>
         </div>
@@ -120,15 +120,15 @@ export default function CounselorDashboard() {
            <GlassCard className="p-8 border-l-4 border-l-rose-500/50">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-2xl bg-rose-500/10">
-                    <AlertCircle className="w-6 h-6 text-rose-400" />
+                  <div className="p-3 rounded-2xl bg-lumina-highlight/10">
+                    <AlertCircle className="w-6 h-6 text-lumina-highlight" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-white lowercase tracking-tighter">Critical Alerts</h2>
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">Immediate attention required</p>
                   </div>
                 </div>
-                <span className="px-3 py-1 rounded-full bg-rose-500/10 text-rose-400 text-[10px] font-bold border border-rose-500/20 uppercase tracking-widest">
+                <span className="px-3 py-1 rounded-full bg-lumina-highlight/10 text-lumina-highlight text-[10px] font-bold border border-lumina-highlight/20 uppercase tracking-widest">
                   {loading ? '...' : alerts.length} Active
                 </span>
               </div>
@@ -138,8 +138,8 @@ export default function CounselorDashboard() {
                     <div className="h-32 bg-white/5 rounded-3xl animate-pulse"></div>
                 ) : alerts.length > 0 ? (
                   alerts.map((alert, idx) => (
-                    <div key={idx} className="flex items-start gap-5 p-5 rounded-2xl glass-v2 border-white/5 hover:bg-rose-500/[0.03] transition-all group border-l-2 border-l-rose-500/20">
-                      <div className="w-12 h-12 rounded-xl bg-rose-500/10 flex items-center justify-center font-bold text-rose-400 text-lg uppercase">
+                    <div key={idx} className="flex items-start gap-5 p-5 rounded-2xl glass-v2 border-white/5 hover:bg-lumina-highlight/[0.03] transition-all group border-l-2 border-l-lumina-highlight/20">
+                      <div className="w-12 h-12 rounded-xl bg-lumina-highlight/10 flex items-center justify-center font-bold text-lumina-highlight text-lg uppercase">
                          {alert.student_initials || 'S'}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -152,7 +152,7 @@ export default function CounselorDashboard() {
                         </p>
                       </div>
                       <div className="flex flex-col gap-2">
-                         <button className="p-2.5 rounded-xl bg-rose-500 text-white font-bold text-[10px] hover:scale-105 transition-all uppercase tracking-widest">
+                         <button className="p-2.5 rounded-xl bg-lumina-highlight text-black font-bold text-[10px] hover:scale-105 transition-all uppercase tracking-widest">
                             Reveal
                          </button>
                          <button className="p-2.5 rounded-xl bg-white/5 text-gray-500 hover:text-white transition-all border border-white/5">
@@ -173,8 +173,8 @@ export default function CounselorDashboard() {
            <GlassCard className="p-8">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-2xl bg-teal-500/10">
-                    <Users className="w-6 h-6 text-teal-400" />
+                  <div className="p-3 rounded-2xl bg-lumina-highlight/10">
+                    <Users className="w-6 h-6 text-lumina-highlight" />
                   </div>
                   <h2 className="text-2xl font-bold text-white lowercase tracking-tighter">Active Caseload</h2>
                 </div>
@@ -193,7 +193,7 @@ export default function CounselorDashboard() {
                     [1, 2, 3].map(i => <div key={i} className="h-24 bg-white/5 rounded-3xl animate-pulse"></div>)
                 ) : cases.length > 0 ? (
                   cases.map((scase, idx) => (
-                    <div key={idx} className="flex items-center gap-5 p-5 rounded-3xl glass-v2 border-white/5 hover:border-teal-500/20 transition-all group">
+                    <div key={idx} className="flex items-center gap-5 p-5 rounded-3xl glass-v2 border-white/5 hover:border-lumina-highlight/20 transition-all group">
                        <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center font-bold text-white text-xl uppercase shadow-inner border border-white/5">
                           {scase.student_initials || 'J'}
                        </div>
@@ -201,18 +201,18 @@ export default function CounselorDashboard() {
                           <h4 className="font-bold text-white text-lg lowercase tracking-tighter mb-0.5">Assigned ID: {scase.case_id || 'C-1204'}</h4>
                           <div className="flex items-center gap-4">
                              <div className="flex items-center gap-1.5">
-                                <Activity className="w-3.5 h-3.5 text-teal-400" />
+                                <Activity className="w-3.5 h-3.5 text-lumina-highlight" />
                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Active Monitoring</span>
                              </div>
                              <div className="flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 text-teal-400" />
+                                <Clock className="w-3.5 h-3.5 text-lumina-highlight" />
                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Next 2D</span>
                              </div>
                           </div>
                        </div>
                        <Link href="/counselor/notes">
-                         <button className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold text-white hover:bg-white/10 transition-all group-hover:border-teal-500/30">
-                            <Lock className="w-3.5 h-3.5 text-teal-400" /> Open Secure Notes
+                         <button className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-xs font-bold text-white hover:bg-white/10 transition-all group-hover:border-lumina-highlight/30">
+                            <Lock className="w-3.5 h-3.5 text-lumina-highlight" /> Open Secure Notes
                          </button>
                        </Link>
                     </div>
@@ -235,8 +235,8 @@ export default function CounselorDashboard() {
                     <AreaChart data={sentimentTrend}>
                        <defs>
                           <linearGradient id="colorSentiment" x1="0" y1="0" x2="0" y2="1">
-                             <stop offset="5%" stopColor="#2dd4bf" stopOpacity={0.3} />
-                             <stop offset="95%" stopColor="#2dd4bf" stopOpacity={0} />
+                             <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3} />
+                             <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
                           </linearGradient>
                        </defs>
                        <XAxis dataKey="day" hide />
@@ -253,13 +253,13 @@ export default function CounselorDashboard() {
                              return null;
                           }}
                        />
-                       <Area type="monotone" dataKey="sentiment" stroke="#2dd4bf" fillOpacity={1} fill="url(#colorSentiment)" strokeWidth={3} />
+                       <Area type="monotone" dataKey="sentiment" stroke="#F59E0B" fillOpacity={1} fill="url(#colorSentiment)" strokeWidth={3} />
                     </AreaChart>
                  </ResponsiveContainer>
               </div>
               <div className="mt-6 flex items-center justify-between">
                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-teal-400" />
+                    <TrendingUp className="w-4 h-4 text-lumina-highlight" />
                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">+12% vs LW</span>
                  </div>
                  <span className="text-[10px] text-gray-500 font-medium italic">Avg Sentiment: 74.0</span>
@@ -299,9 +299,9 @@ export default function CounselorDashboard() {
               </div>
            </GlassCard>
 
-           <GlassCard className="p-8 bg-gradient-to-br from-teal-500/10 to-transparent">
+           <GlassCard className="p-8 bg-gradient-to-br from-lumina-highlight/10 to-transparent">
               <div className="flex items-center gap-3 mb-4">
-                 <Info className="w-5 h-5 text-teal-400" />
+                 <Info className="w-5 h-5 text-lumina-highlight" />
                  <h3 className="font-bold text-white text-sm lowercase tracking-tighter">Proactive Message</h3>
               </div>
               <p className="text-[11px] text-gray-400 leading-relaxed font-medium italic mb-6">

@@ -18,7 +18,8 @@ import {
   Clock,
   Info,
   CheckCircle2,
-  X
+  X,
+  MoreVertical
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
@@ -101,7 +102,7 @@ export default function CounselorNotes() {
               <input 
                 type="text" 
                 placeholder="Search secure cases..." 
-                className="w-full pl-12 pr-4 py-3 rounded-2xl glass-v2 border-white/10 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all font-medium shadow-inner"
+                className="w-full pl-12 pr-4 py-3 rounded-2xl glass-v2 border-white/10 text-sm text-white focus:outline-none focus:border-lumina-highlight/50 transition-all font-medium shadow-inner"
               />
            </div>
 
@@ -119,13 +120,13 @@ export default function CounselorNotes() {
                     className={cn(
                       "p-5 rounded-3xl border transition-all cursor-pointer group",
                       selectedCase?.case_id === scase.case_id 
-                        ? "bg-indigo-500/10 border-indigo-500/30 ring-1 ring-indigo-500/20" 
+                        ? "bg-lumina-highlight/10 border-lumina-highlight/30 ring-1 ring-lumina-highlight/20" 
                         : "bg-white/[0.03] border-white/5 hover:bg-white/[0.05]"
                     )}
                   >
                     <div className="flex items-center justify-between mb-2">
                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Case {scase.case_id}</span>
-                       <Lock className={cn("w-3.5 h-3.5", selectedCase?.case_id === scase.case_id ? "text-indigo-400" : "text-gray-700")} />
+                       <Lock className={cn("w-3.5 h-3.5", selectedCase?.case_id === scase.case_id ? "text-lumina-highlight" : "text-gray-700")} />
                     </div>
                     <h4 className="font-bold text-white text-base lowercase tracking-tighter truncate">
                        {isEncrypted && selectedCase?.case_id === scase.case_id ? "******** ********" : scase.student_initials || "Session Participant"}
@@ -145,8 +146,8 @@ export default function CounselorNotes() {
              <GlassCard className="p-8 h-full flex flex-col min-h-[600px]">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-white/5 mb-8">
                    <div className="flex items-center gap-5">
-                      <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-                         <Shield className="w-8 h-8 text-indigo-400" />
+                      <div className="w-16 h-16 rounded-2xl bg-lumina-highlight/10 border border-lumina-highlight/20 flex items-center justify-center">
+                         <Shield className="w-8 h-8 text-lumina-highlight" />
                       </div>
                       <div>
                          <div className="flex items-center gap-3">
@@ -182,8 +183,8 @@ export default function CounselorNotes() {
                 </div>
 
                 <div className="flex-1 space-y-6">
-                   <div className="flex items-center gap-3 p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10">
-                      <Info className="w-4 h-4 text-indigo-400 shrink-0" />
+                   <div className="flex items-center gap-3 p-4 rounded-2xl bg-lumina-highlight/5 border border-lumina-highlight/10">
+                      <Info className="w-4 h-4 text-lumina-highlight shrink-0" />
                       <p className="text-[10px] text-gray-500 font-medium italic">
                          Lumina zero-knowledge encryption: These notes are encrypted using your session key. Even Lumina administrators cannot read these contents without your explicit authorization.
                       </p>
@@ -191,13 +192,13 @@ export default function CounselorNotes() {
 
                    <div className="relative group">
                       <textarea 
-                        className="w-full h-80 p-8 rounded-3xl bg-black/40 border border-white/10 text-white placeholder:text-gray-800 focus:outline-none focus:border-indigo-500/40 transition-all text-sm font-medium resize-none shadow-inner leading-relaxed"
+                        className="w-full h-80 p-8 rounded-3xl bg-black/40 border border-white/10 text-white placeholder:text-gray-800 focus:outline-none focus:border-lumina-highlight/40 transition-all text-sm font-medium resize-none shadow-inner leading-relaxed"
                         placeholder="Begin documenting session outcomes, risk observations, and intervention strategies..."
                         value={noteContent}
                         onChange={(e) => setNoteContent(e.target.value)}
                       ></textarea>
                       <div className="absolute top-4 right-4 flex items-center gap-2 pointer-events-none opacity-50">
-                         <Lock className="w-3.5 h-3.5 text-indigo-400" />
+                         <Lock className="w-3.5 h-3.5 text-lumina-highlight" />
                          <span className="text-[8px] font-bold text-gray-500 uppercase tracking-[0.2em]">End-to-End Secure</span>
                       </div>
                    </div>
@@ -231,7 +232,7 @@ export default function CounselorNotes() {
                       </div>
                       <span className="text-[10px] text-gray-700 font-medium">15:42 GMT</span>
                    </div>
-                   <button className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-indigo-600 text-white font-bold text-sm hover:scale-105 transition-all shadow-lg hover:shadow-indigo-500/20">
+                   <button className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-lumina-highlight text-black font-bold text-sm hover:scale-105 transition-all shadow-lg hover:shadow-lumina-highlight/20">
                       Finalize Documentation <Save className="w-4 h-4 ml-1" />
                    </button>
                 </div>
