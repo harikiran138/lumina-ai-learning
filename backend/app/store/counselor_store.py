@@ -26,12 +26,12 @@ class CounselorStore:
             log.error("get_crisis_cases_failed", error=str(e))
             return []
 
-    async def add_note(self, counselor_id: str, student_id: str, encrypted_content: str) -> Optional[Dict[str, Any]]:
+    async def add_note(self, counselor_id: str, student_id: str, ciphertext: str) -> Optional[Dict[str, Any]]:
         try:
             note_data = {
                 "counselor_id": counselor_id,
                 "student_id": student_id,
-                "encrypted_content": encrypted_content
+                "ciphertext": ciphertext
             }
             return await self.db.insert("counseling_notes", note_data)
         except Exception as e:

@@ -17,11 +17,11 @@ class ResearcherStore:
             log.error("get_snapshots_failed", error=str(e))
             return []
 
-    async def log_query(self, researcher_id: str, query_text: str) -> Optional[Dict[str, Any]]:
+    async def log_query(self, researcher_id: str, query_config_json: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         try:
             query_data = {
                 "researcher_id": researcher_id,
-                "query_text": query_text
+                "query_config_json": query_config_json
             }
             return await self.db.insert("research_queries", query_data)
         except Exception as e:
