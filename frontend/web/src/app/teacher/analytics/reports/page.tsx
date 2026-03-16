@@ -159,7 +159,7 @@ export default function ClassReportsPage() {
           <ChevronDown className="h-4 w-4 text-gray-500" />
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white">
-          <Calendar className="h-4 w-4 text-blue-400" />
+          <Calendar className="h-4 w-4 text-amber-400" />
           <span className="font-semibold">{timeRange}</span>
           <ChevronDown className="h-4 w-4 text-gray-500" />
         </div>
@@ -172,10 +172,10 @@ export default function ClassReportsPage() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Completion Rate", value: "82.4%", trend: "+5.2%", icon: BookOpen, color: "text-blue-400" },
+          { label: "Completion Rate", value: "82.4%", trend: "+5.2%", icon: BookOpen, color: "text-amber-400" },
           { label: "Avg Mastery", value: "78%", trend: "+3.1%", icon: TrendingUp, color: "text-amber-400" },
-          { label: "Active Learners", value: "48/52", trend: "Stable", icon: Users, color: "text-emerald-400" },
-          { label: "Avg Time", value: "42m", trend: "-12%", icon: Clock, color: "text-purple-400" }
+          { label: "Active Learners", value: "48/52", trend: "Stable", icon: Users, color: "text-yellow-400" },
+          { label: "Avg Time", value: "42m", trend: "-12%", icon: Clock, color: "text-yellow-400" }
         ].map((stat, i) => (
           <motion.div 
             key={i}
@@ -195,7 +195,7 @@ export default function ClassReportsPage() {
             </div>
             <p className={cn(
               "mt-4 text-xs font-bold",
-              stat.trend.startsWith('+') ? "text-emerald-400" : stat.trend === "Stable" ? "text-gray-400" : "text-amber-400"
+              stat.trend.startsWith('+') ? "text-yellow-400" : stat.trend === "Stable" ? "text-gray-400" : "text-amber-400"
             )}>
               {stat.trend} <span className="text-gray-600 font-normal ml-1">vs prev. period</span>
             </p>

@@ -25,7 +25,7 @@ const roles = [
     description: "Personalized AI tutoring and mastery-based learning paths.",
     icon: GraduationCap,
     href: "/student/dashboard",
-    color: "blue"
+    color: "gold"
   },
   {
     id: "teacher",
@@ -33,7 +33,7 @@ const roles = [
     description: "Verification queue and live operational classroom insights.",
     icon: User,
     href: "/teacher/dashboard",
-    color: "emerald"
+    color: "amber"
   },
   {
     id: "admin",
@@ -49,7 +49,7 @@ const roles = [
     description: "Privacy-safe progress monitoring and growth trajectory view.",
     icon: Heart,
     href: "/parent/dashboard",
-    color: "rose"
+    color: "amber"
   },
   {
     id: "mentor",
@@ -57,7 +57,7 @@ const roles = [
     description: "Guided support and advanced feedback for specialized learners.",
     icon: Users,
     href: "/mentor/dashboard",
-    color: "indigo"
+    color: "gold"
   },
   {
     id: "content-creator",
@@ -65,7 +65,7 @@ const roles = [
     description: "Building blueprints and pedagogical rules for the AI engine.",
     icon: BookOpen,
     href: "/content-creator/dashboard",
-    color: "purple"
+    color: "amber"
   },
   {
     id: "counselor",
@@ -73,7 +73,7 @@ const roles = [
     description: "Well-being monitoring and intervention strategy support.",
     icon: MessageSquare,
     href: "/counselor/dashboard",
-    color: "teal"
+    color: "gold"
   },
   {
     id: "researcher",
@@ -81,7 +81,7 @@ const roles = [
     description: "Deep data access and cognitive modeling experimentation.",
     icon: Search,
     href: "/researcher/dashboard",
-    color: "orange"
+    color: "amber"
   },
   {
     id: "peer-tutor",
@@ -89,7 +89,7 @@ const roles = [
     description: "Collaborative learning and verified peer-to-peer support.",
     icon: Clock,
     href: "/peer-tutor/dashboard",
-    color: "cyan"
+    color: "gold"
   },
   {
     id: "alumni",
@@ -97,7 +97,7 @@ const roles = [
     description: "Post-course resource access and lifelong learning graph.",
     icon: Sparkles,
     href: "/alumni/dashboard",
-    color: "slate"
+    color: "amber"
   }
 ];
 

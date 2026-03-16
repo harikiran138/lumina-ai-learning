@@ -625,11 +625,11 @@ export default function CourseDetails({
                             >
                               <div className="flex items-center gap-3">
                                 {lesson.type === "quiz" ? (
-                                  <HelpCircle className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
+                                  <HelpCircle className="w-5 h-5 text-yellow-400 group-hover:scale-110 transition-transform" />
                                 ) : lesson.type === "slides" ? (
-                                  <LayoutDashboard className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
+                                  <LayoutDashboard className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
                                 ) : (
-                                  <BookOpen className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                                  <BookOpen className="w-5 h-5 text-yellow-400 group-hover:scale-110 transition-transform" />
                                 )}
                                 <span
                                   className={`transition-colors ${
@@ -729,7 +729,7 @@ export default function CourseDetails({
 
                                   {/* Text Content Viewer */}
                                   {activeLesson.type === "text" && (
-                                    <div className="prose prose-invert max-w-none">
+                                    <div className="prose pamber-invert max-w-none">
                                       {(() => {
                                         try {
                                           const parsed = JSON.parse(
@@ -812,9 +812,9 @@ export default function CourseDetails({
                                                         {block.type ===
                                                           "code" && (
                                                           <div className="relative group">
-                                                            <div className="absolute -inset-1 bg-gradient-to-r from-lumina-primary/20 to-purple-600/20 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                                                            <div className="absolute -inset-1 bg-gradient-to-r from-lumina-primary/20 to-yellow-600/20 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
                                                             <pre className="relative bg-black border border-white/10 p-6 rounded-xl overflow-x-auto">
-                                                              <code className="text-blue-300 font-mono text-sm">
+                                                              <code className="text-amber-300 font-mono text-sm">
                                                                 {block.content}
                                                               </code>
                                                             </pre>
@@ -833,7 +833,7 @@ export default function CourseDetails({
                                                         )}
                                                         {block.type ===
                                                           "tip" && (
-                                                          <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl flex gap-3 text-emerald-200">
+                                                          <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl flex gap-3 text-yellow-200">
                                                             <div className="mt-1">
                                                               💡
                                                             </div>
@@ -909,7 +909,7 @@ export default function CourseDetails({
                                         }
                                         // Fallback
                                         return activeLesson.content ? (
-                                          <div className="prose prose-invert max-w-none">
+                                          <div className="prose pamber-invert max-w-none">
                                             {activeLesson.content
                                               .split("\n")
                                               .map(

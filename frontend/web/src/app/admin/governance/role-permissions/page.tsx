@@ -41,7 +41,7 @@ export default function RolePermissions() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -50,13 +50,13 @@ export default function RolePermissions() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <Shield className="h-8 w-8 text-blue-500" />
+            <Shield className="h-8 w-8 text-amber-500" />
             Role Permissions
           </h1>
           <p className="mt-1 text-gray-400">Map system permissions to various Lumina roles (RBAC).</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 transition-colors">
+          <button className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500 transition-colors">
             <Save className="h-4 w-4" />
             Save Changes
           </button>
@@ -72,7 +72,7 @@ export default function RolePermissions() {
                 {matrix?.roles.map((role) => (
                   <th key={role} className="p-6 text-center">
                     <div className="flex flex-col items-center gap-2">
-                      <div className="rounded-full bg-blue-500/10 p-2 text-blue-400">
+                      <div className="rounded-full bg-amber-500/10 p-2 text-amber-400">
                         <UserCircle className="h-5 w-5" />
                       </div>
                       <span className="text-xs font-bold text-white uppercase tracking-wider">{role}</span>
@@ -97,7 +97,7 @@ export default function RolePermissions() {
                         <button className={cn(
                           "mx-auto flex h-8 w-8 items-center justify-center rounded-lg transition-all",
                           hasAccess 
-                            ? "bg-emerald-500/10 text-emerald-400 shadow-[inset_0_0_12px_rgba(16,185,129,0.1)] hover:bg-emerald-500/20" 
+                            ? "bg-yellow-500/10 text-yellow-400 shadow-[inset_0_0_12px_rgba(16,185,129,0.1)] hover:bg-yellow-500/20" 
                             : "bg-white/5 text-gray-600 hover:text-gray-400 hover:bg-white/10"
                         )}>
                           {hasAccess ? <Check className="h-4 w-4" /> : <Lock className="h-3 w-3" />}
@@ -112,13 +112,13 @@ export default function RolePermissions() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 flex items-start gap-4">
-        <AlertCircle className="h-5 w-5 text-blue-400 shrink-0 mt-0.5" />
+      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6 flex items-start gap-4">
+        <AlertCircle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
         <div className="space-y-1">
           <p className="text-sm font-bold text-white">Dynamic RBAC Enforcement</p>
           <p className="text-sm text-gray-400 leading-relaxed">
             Changes to the permission matrix are applied instantly to the backend middleware. 
-            Ensure you audit the impact on "Institutional Stakeholders" before restricting <code className="text-blue-400">analytics_view</code>.
+            Ensure you audit the impact on "Institutional Stakeholders" before restricting <code className="text-amber-400">analytics_view</code>.
           </p>
         </div>
       </div>

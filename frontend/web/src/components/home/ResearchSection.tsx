@@ -23,7 +23,7 @@ export default function ResearchSection() {
                     
                     <div className="space-y-6">
                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full w-3/4 bg-gradient-to-r from-lumina-accent to-emerald-500 animate-pulse" />
+                          <div className="h-full w-3/4 bg-gradient-to-r from-lumina-accent to-yellow-500 animate-pulse" />
                        </div>
                        <div className="grid grid-cols-2 gap-4">
                           <div className="p-4 rounded-xl bg-white/5 border border-white/5">

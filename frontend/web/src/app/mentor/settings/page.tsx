@@ -17,7 +17,9 @@ import {
   Zap,
   Lock,
   Moon,
-  Info
+  Info,
+  X,
+  Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
@@ -64,7 +66,7 @@ export default function MentorSettings() {
           </h1>
           <p className="text-gray-400 mt-1 font-medium italic">Manage your mentorship profile and availability</p>
         </div>
-        <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lumina-primary text-black font-bold text-sm hover:scale-105 transition-all shadow-gold-glow">
+        <button className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-lumina-primary to-lumina-highlight text-black font-bold text-sm hover:scale-105 transition-all shadow-lg">
           <Save className="w-4 h-4" /> Save Changes
         </button>
       </div>
@@ -76,8 +78,8 @@ export default function MentorSettings() {
             onClick={() => setActiveTab(tab.id as any)}
             className={cn(
               "flex items-center gap-2 px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-widest",
-              activeTab === tab.id 
-                ? "bg-lumina-primary text-black shadow-gold-glow" 
+              activeTab === tab.id
+                ? "bg-lumina-primary text-black shadow-gold-glow"
                 : "text-gray-500 hover:text-white"
             )}
           >
@@ -91,13 +93,13 @@ export default function MentorSettings() {
            <GlassCard className="p-8 flex flex-col items-center">
               <div className="relative mb-6">
                 <div className="w-32 h-32 rounded-3xl overflow-hidden border-2 border-white/10 group">
-                   <img 
-                    src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name}&background=random`} 
-                    alt="Profile" 
+                   <img
+                    src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name}&background=random`}
+                    alt="Profile"
                     className="w-full h-full object-cover transition-transform group-hover:scale-110"
                    />
                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
-                      <Camera className="w-6 h-6 text-white" />
+                      <Camera className="w-6 h-6 text-lumina-primary" />
                    </div>
                 </div>
                 <div className="absolute -bottom-2 -right-2 p-2 rounded-xl bg-lumina-primary text-black shadow-gold-glow">
@@ -106,11 +108,11 @@ export default function MentorSettings() {
               </div>
               <h3 className="text-xl font-bold text-white mb-1 uppercase tracking-tighter">{user?.name || "Lumina Mentor"}</h3>
               <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">{user?.role || "Mentor"}</p>
-              
+
               <div className="w-full mt-8 pt-8 border-t border-white/5 space-y-4">
                  <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Trust Score</span>
-                    <span className="text-xs font-bold text-lumina-primary">9.8/10</span>
+                    <span className="text-xs font-bold text-lumina-highlight">9.8/10</span>
                  </div>
                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
                     <div className="h-full bg-lumina-primary w-[98%] shadow-gold-glow"></div>
@@ -137,8 +139,8 @@ export default function MentorSettings() {
                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Full Name</label>
                     <div className="relative">
                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-                       <input 
-                        className="w-full pl-12 pr-4 py-3 rounded-2xl glass-v2 border-white/10 text-white text-sm font-medium focus:outline-none focus:border-lumina-primary/40 transition-all shadow-inner" 
+                       <input
+                        className="w-full pl-12 pr-4 py-3 rounded-2xl glass-v2 border-white/10 text-white text-sm font-medium focus:outline-none focus:border-lumina-primary/40 transition-all shadow-inner"
                         defaultValue={user?.name}
                        />
                     </div>
@@ -147,8 +149,8 @@ export default function MentorSettings() {
                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Email Address</label>
                     <div className="relative">
                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-                       <input 
-                        className="w-full pl-12 pr-4 py-3 rounded-2xl glass-v2 border-white/10 text-white text-sm font-medium focus:outline-none focus:border-lumina-primary/40 transition-all shadow-inner" 
+                       <input
+                        className="w-full pl-12 pr-4 py-3 rounded-2xl glass-v2 border-white/10 text-white text-sm font-medium focus:outline-none focus:border-lumina-primary/40 transition-all shadow-inner"
                         defaultValue={user?.email}
                        />
                     </div>
@@ -157,7 +159,7 @@ export default function MentorSettings() {
 
                <div className="space-y-2">
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Professional Bio</label>
-                  <textarea 
+                  <textarea
                     className="w-full h-32 p-6 rounded-3xl glass-v2 border-white/10 text-white text-sm font-medium focus:outline-none focus:border-lumina-primary/40 transition-all resize-none shadow-inner"
                     placeholder="Describe your expertise and what you look for in mentees..."
                     defaultValue={user?.bio}

@@ -65,17 +65,17 @@ export default function LearningObjectives() {
               <input 
                 type="text" 
                 placeholder="Search learning objectives or KSAs..." 
-                className="w-full pl-12 pr-4 py-3.5 rounded-2xl glass-v2 border-white/10 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner font-medium"
+                className="w-full pl-12 pr-4 py-3.5 rounded-2xl glass-v2 border-white/10 text-sm text-white focus:outline-none focus:border-yellow-500/50 transition-all shadow-inner font-medium"
               />
            </div>
 
            <div className="space-y-4">
               {objectives.map((obj) => (
-                <GlassCard key={obj.id} className="p-6 group hover:border-indigo-500/20 transition-all flex items-center justify-between gap-6">
+                <GlassCard key={obj.id} className="p-6 group hover:border-yellow-500/20 transition-all flex items-center justify-between gap-6">
                    <div className="flex items-center gap-5">
                       <div className={cn(
                         "w-14 h-14 rounded-2xl border flex items-center justify-center shrink-0",
-                        obj.status === 'verified' ? "bg-teal-500/10 text-teal-400 border-teal-500/20" : "bg-white/5 text-gray-500 border-white/10"
+                        obj.status === 'verified' ? "bg-gold-500/10 text-gold-400 border-gold-500/20" : "bg-white/5 text-gray-500 border-white/10"
                       )}>
                          <Target className="w-6 h-6" />
                       </div>
@@ -85,9 +85,9 @@ export default function LearningObjectives() {
                             <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">{obj.mapping}</span>
                          </div>
                          <div className="flex items-center gap-4">
-                            <span className="text-[9px] text-indigo-400 font-bold uppercase tracking-widest">{obj.level} Level</span>
+                            <span className="text-[9px] text-yellow-400 font-bold uppercase tracking-widest">{obj.level} Level</span>
                             <div className="flex items-center gap-1.5">
-                               {obj.status === 'verified' ? <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" /> : <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+                               {obj.status === 'verified' ? <CheckCircle2 className="w-3.5 h-3.5 text-gold-400" /> : <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
                                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">{obj.status}</span>
                             </div>
                          </div>
@@ -104,13 +104,13 @@ export default function LearningObjectives() {
         <div className="space-y-8">
            <GlassCard className="p-8">
               <div className="flex items-center gap-3 mb-8">
-                 <Brain className="w-6 h-6 text-indigo-400" />
+                 <Brain className="w-6 h-6 text-yellow-400" />
                  <h2 className="text-2xl font-bold text-white lowercase tracking-tighter">Taxonomy Alignment</h2>
               </div>
               <div className="space-y-8">
                  {[
-                   { label: 'Bloom\'s Taxonomy', value: 'Create', color: 'bg-indigo-500' },
-                   { label: 'Deep Knowledge', value: 'Synthesis', color: 'bg-teal-500' },
+                   { label: 'Bloom\'s Taxonomy', value: 'Create', color: 'bg-yellow-500' },
+                   { label: 'Deep Knowledge', value: 'Synthesis', color: 'bg-gold-500' },
                    { label: 'Cognitive Load', value: 'Moderate', color: 'bg-amber-500' }
                  ].map((tax, i) => (
                     <div key={i}>
@@ -126,7 +126,7 @@ export default function LearningObjectives() {
               </div>
            </GlassCard>
 
-           <GlassCard className="p-8 bg-gradient-to-br from-indigo-500/10 to-transparent">
+           <GlassCard className="p-8 bg-gradient-to-br from-yellow-500/10 to-transparent">
               <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6">Objective Audit</h4>
               <p className="text-[11px] text-gray-400 font-medium leading-relaxed italic mb-8">
                  "3 objectives are currently unmapped to any lesson modules. Consider updating your 'Optimization' blueprint."

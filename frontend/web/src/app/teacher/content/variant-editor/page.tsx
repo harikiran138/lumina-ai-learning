@@ -85,7 +85,7 @@ export default function VariantEditorPage() {
                       <div className="flex items-center gap-3">
                          <div className={cn(
                            "h-1.5 w-1.5 rounded-full",
-                           v.isActive ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-gray-700"
+                           v.isActive ? "bg-yellow-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-gray-700"
                          )} />
                          <span className={cn("text-xs font-bold uppercase tracking-tight", selectedVariant === v.id ? "text-amber-400" : "text-gray-400")}>
                            {v.label}
@@ -136,7 +136,7 @@ export default function VariantEditorPage() {
                             <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">Status</p>
                             <label className="flex items-center gap-2 cursor-pointer group">
                                <input type="checkbox" checked={v.isActive} className="hidden" />
-                               <div className={cn("h-5 w-10 rounded-full border border-white/10 relative transition-all", v.isActive ? "bg-emerald-500" : "bg-white/5")}>
+                               <div className={cn("h-5 w-10 rounded-full border border-white/10 relative transition-all", v.isActive ? "bg-yellow-500" : "bg-white/5")}>
                                   <div className={cn("absolute top-0.5 h-3.5 w-3.5 rounded-full bg-white transition-all", v.isActive ? "left-5.5" : "left-1")} />
                                </div>
                                <span className="text-[10px] font-bold text-white uppercase">{v.isActive ? 'Active' : 'Draft'}</span>
@@ -205,7 +205,7 @@ export default function VariantEditorPage() {
                    <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between text-[10px] font-bold text-gray-700 tracking-widest uppercase italic">
                       <div>Last saved: 12:45 PM by System</div>
                       <div className="flex items-center gap-4">
-                         <span className="flex items-center gap-1.5"><CheckCircle className="h-3 w-3 text-emerald-500" /> Safe for deployment</span>
+                         <span className="flex items-center gap-1.5"><CheckCircle className="h-3 w-3 text-yellow-500" /> Safe for deployment</span>
                          <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> Auto-sync enabled</span>
                       </div>
                    </div>

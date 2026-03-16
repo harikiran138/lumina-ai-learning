@@ -182,7 +182,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex min-h-[420px] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-blue-400" />
+        <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-amber-400" />
       </div>
     );
   }
@@ -227,14 +227,14 @@ export default function AdminDashboard() {
                 icon={UserCog}
                 title="Manage users"
                 description="Create accounts, adjust roles, and clean up dormant access."
-                tone="blue"
+                tone="gold"
               />
               <DashboardLink
                 href="/admin/institution"
                 icon={Building2}
                 title="Manage institutions"
                 description="Connect stakeholders, departments, and onboarding flows."
-                tone="emerald"
+                tone="gold"
               />
               <DashboardLink
                 href="/admin/security"
@@ -259,7 +259,7 @@ export default function AdminDashboard() {
                   "rounded-2xl border px-4 py-2 text-sm font-semibold",
                   summary.securityAlerts > 0
                     ? "border-lumina-highlight/20 bg-lumina-highlight/10 text-lumina-highlight"
-                    : "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+                    : "border-yellow-400/20 bg-yellow-400/10 text-yellow-300",
                 )}
               >
                 {summary.securityAlerts > 0
@@ -300,7 +300,7 @@ export default function AdminDashboard() {
           value={summary.totalUsers}
           subtitle={`${summary.totalStudents} students / ${summary.totalTeachers} teachers`}
           icon={Users}
-          color="blue"
+          color="gold"
         />
         <StatCard
           title="Course Catalog"
@@ -314,14 +314,14 @@ export default function AdminDashboard() {
           value={summary.totalInstitutions}
           subtitle={`${summary.totalConnections} stakeholder connections`}
           icon={Building2}
-          color="green"
+          color="gold"
         />
         <StatCard
           title="Security"
           value={summary.securityAlerts === 0 ? "Secure" : summary.securityAlerts}
           subtitle={`${summary.attentionRequired} operational issue(s)`}
           icon={Shield}
-          color="purple"
+          color="gold"
         />
       </div>
 
@@ -389,7 +389,7 @@ export default function AdminDashboard() {
                     className={cn(
                       "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
                       service.status === "healthy"
-                        ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                        ? "border-yellow-400/20 bg-yellow-400/10 text-yellow-300"
                         : service.status === "watch"
                           ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
                           : "border-red-400/20 bg-red-400/10 text-red-300",
@@ -398,7 +398,7 @@ export default function AdminDashboard() {
                     {service.status}
                   </span>
                 </div>
-                <p className="mt-3 text-sm font-medium text-blue-200">{service.metric}</p>
+                <p className="mt-3 text-sm font-medium text-amber-200">{service.metric}</p>
               </div>
             ))}
           </div>
@@ -448,7 +448,7 @@ export default function AdminDashboard() {
                       className={cn(
                         "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
                         institution.health === "connected"
-                          ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                          ? "border-yellow-400/20 bg-yellow-400/10 text-yellow-300"
                           : "border-amber-400/20 bg-amber-400/10 text-amber-300",
                       )}
                     >
@@ -493,7 +493,7 @@ export default function AdminDashboard() {
                         {connection.userEmail || "No email"} • {connection.userRole || connection.category}
                       </p>
                     </div>
-                    <span className="rounded-full border border-blue-400/20 bg-blue-400/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-300">
+                    <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300">
                       {connection.category}
                     </span>
                   </div>
@@ -577,8 +577,8 @@ export default function AdminDashboard() {
                     className={cn(
                       "rounded-xl p-2",
                       item.tone === "success"
-                        ? "bg-emerald-400/10 text-emerald-300"
-                        : "bg-blue-400/10 text-blue-300",
+                        ? "bg-yellow-400/10 text-yellow-300"
+                        : "bg-amber-400/10 text-amber-300",
                     )}
                   >
                     {item.tone === "success" ? (
@@ -613,11 +613,11 @@ function DashboardLink({
   icon: typeof UserCog;
   title: string;
   description: string;
-  tone: "blue" | "emerald" | "gold";
+  tone: "amber" | "yellow" | "gold";
 }) {
   const toneStyles = {
-    blue: "from-blue-500/20 to-blue-500/5 border-blue-400/20 text-blue-200",
-    emerald: "from-emerald-500/20 to-emerald-500/5 border-emerald-400/20 text-emerald-200",
+    amber: "from-amber-500/20 to-amber-500/5 border-amber-400/20 text-amber-200",
+    yellow: "from-yellow-500/20 to-yellow-500/5 border-yellow-400/20 text-yellow-200",
     gold: "from-lumina-highlight/20 to-lumina-highlight/5 border-lumina-highlight/20 text-lumina-highlight",
   };
 

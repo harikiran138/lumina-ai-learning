@@ -167,14 +167,14 @@ export default function AtRiskAlertsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="glass-v2 border-white/5 p-8 rounded-3xl">
           <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-tight">
-             <Activity className="h-5 w-5 text-blue-400" />
+             <Activity className="h-5 w-5 text-amber-400" />
              At-Risk Distribution
           </h3>
           <div className="space-y-6">
              {[
                { name: "Academic performance", count: 8, color: "bg-red-400" },
                { name: "Attendance / Participation", count: 12, color: "bg-amber-400" },
-               { name: "Behavioral Anomaly", count: 3, color: "bg-blue-400" }
+               { name: "Behavioral Anomaly", count: 3, color: "bg-amber-400" }
              ].map((stat, i) => (
                <div key={i} className="space-y-2">
                  <div className="flex justify-between text-xs font-bold">

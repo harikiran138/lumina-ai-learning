@@ -179,11 +179,11 @@ function AssignmentsList({
               >
                 <td className="p-6">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition-colors">
+                    <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 transition-colors">
                       <FileText className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
+                      <h3 className="font-semibold text-white group-hover:text-amber-400 transition-colors">
                         {assignment.title}
                       </h3>
                       <p className="text-sm text-gray-400 line-clamp-1">
@@ -222,7 +222,7 @@ function AssignmentsList({
                 <td className="p-6 text-right">
                   <Link
                     href={`/teacher/assignments/${assignment.id}/submissions`}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-all"
                   >
                     <Eye size={16} />
                     View Submissions

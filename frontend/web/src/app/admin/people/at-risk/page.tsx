@@ -80,7 +80,7 @@ export default function AtRiskOverview() {
       <div className="grid gap-6 md:grid-cols-3">
         <RiskCard label="Critical Risk" value="42" sub="Immediate intervention needed" color="red" />
         <RiskCard label="Declining Trend" value="156" sub="+12% since last week" color="amber" />
-        <RiskCard label="Interventions" value="89" sub="Resolved this month" color="emerald" />
+        <RiskCard label="Interventions" value="89" sub="Resolved this month" color="gold" />
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
@@ -141,17 +141,17 @@ export default function AtRiskOverview() {
             <div className="space-y-4">
               <RiskFactor label="Academic Performance" percentage={65} color="bg-red-500" />
               <RiskFactor label="Platform Activity" percentage={25} color="bg-amber-500" />
-              <RiskFactor label="Submission Delays" percentage={10} color="bg-blue-500" />
+              <RiskFactor label="Submission Delays" percentage={10} color="bg-amber-500" />
             </div>
             
             <div className="pt-6 border-t border-white/5">
-              <div className="rounded-xl bg-blue-500/5 border border-blue-500/10 p-4">
+              <div className="rounded-xl bg-amber-500/5 border border-amber-500/10 p-4">
                 <div className="flex items-center gap-3 mb-2">
-                  <BarChart3 className="h-4 w-4 text-blue-400" />
+                  <BarChart3 className="h-4 w-4 text-amber-400" />
                   <span className="text-xs font-bold text-white">Lumina Insight</span>
                 </div>
                 <p className="text-[10px] leading-relaxed text-gray-400">
-                  Engagement drop-offs typically precede grade decline by <span className="text-blue-400 font-bold">12.4 days</span>. Automated interventions are scheduled for students with a &gt;40% risk score.
+                  Engagement drop-offs typically precede grade decline by <span className="text-amber-400 font-bold">12.4 days</span>. Automated interventions are scheduled for students with a &gt;40% risk score.
                 </p>
               </div>
             </div>
@@ -171,7 +171,7 @@ function RiskCard({ label, value, sub, color }: any) {
   const colors: any = {
     red: "bg-red-500/5 border-red-500/10 text-red-400",
     amber: "bg-amber-500/5 border-amber-500/10 text-amber-400",
-    emerald: "bg-emerald-500/5 border-emerald-500/10 text-emerald-400",
+    emerald: "bg-yellow-500/5 border-yellow-500/10 text-yellow-400",
   };
   return (
     <div className={cn("glass-v2 border p-6", colors[color])}>

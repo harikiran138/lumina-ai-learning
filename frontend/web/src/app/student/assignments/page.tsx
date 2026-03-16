@@ -76,7 +76,7 @@ export default function StudentAssignmentsPage() {
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+          <Loader2 className="animate-spin text-amber-500 w-8 h-8" />
         </div>
       ) : (
         <div className="grid gap-6">
@@ -87,11 +87,11 @@ export default function StudentAssignmentsPage() {
           {assignments.map((asm: any) => (
             <div
               key={asm.id}
-              className="backdrop-blur-xl bg-white/5 border border-white/10 p-6 rounded-2xl flex flex-col md:flex-row justify-between gap-6 hover:border-blue-500/30 transition-colors"
+              className="backdrop-blur-xl bg-white/5 border border-white/10 p-6 rounded-2xl flex flex-col md:flex-row justify-between gap-6 hover:border-amber-500/30 transition-colors"
             >
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="bg-blue-900/40 text-blue-400 text-xs px-2 py-1 rounded uppercase tracking-wide font-semibold">
+                  <span className="bg-amber-900/40 text-amber-400 text-xs px-2 py-1 rounded uppercase tracking-wide font-semibold">
                     {asm.course_id}
                   </span>
                   <span className="text-gray-400 text-sm flex items-center gap-1">
@@ -155,7 +155,7 @@ export default function StudentAssignmentsPage() {
                                         ${
                                           submitting === asm.id
                                             ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                                            : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/20"
+                                            : "bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-900/20"
                                         }
                                     `}
                   >

@@ -47,7 +47,7 @@ export default function StakeholderMatrix() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -56,13 +56,13 @@ export default function StakeholderMatrix() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <Users className="h-8 w-8 text-blue-500" />
+            <Users className="h-8 w-8 text-amber-500" />
             Stakeholder Matrix
           </h1>
           <p className="mt-1 text-gray-400">Map and manage the intricate graph of people, institutions, and roles.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 transition-colors">
+          <button className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500 transition-colors">
             <Link2 className="h-4 w-4" />
             Link Stakeholder
           </button>
@@ -87,7 +87,7 @@ export default function StakeholderMatrix() {
           </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" />
+              <div className="h-2 w-2 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" />
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Global Synced</span>
             </div>
           </div>
@@ -110,7 +110,7 @@ export default function StakeholderMatrix() {
                 <tr key={c.id} className="hover:bg-white/[0.02] transition-colors group">
                   <td className="p-4 pl-6">
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 text-blue-400 group-hover:border-blue-500/30 transition-all">
+                      <div className="h-8 w-8 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 text-amber-400 group-hover:border-amber-500/30 transition-all">
                         <Users className="h-4 w-4" />
                       </div>
                       <div>
@@ -120,7 +120,7 @@ export default function StakeholderMatrix() {
                     </div>
                   </td>
                   <td className="p-4">
-                    <span className="px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[9px] font-bold text-blue-400 uppercase">
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[9px] font-bold text-amber-400 uppercase">
                       {c.user_role || "User"}
                     </span>
                   </td>
@@ -138,8 +138,8 @@ export default function StakeholderMatrix() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <Shield className="h-3 w-3 text-purple-400" />
-                      <span className="text-[10px] font-bold text-purple-400 uppercase">{c.role || "MEMBER"}</span>
+                      <Shield className="h-3 w-3 text-yellow-400" />
+                      <span className="text-[10px] font-bold text-yellow-400 uppercase">{c.role || "MEMBER"}</span>
                     </div>
                   </td>
                   <td className="p-4 text-right pr-6">
@@ -157,7 +157,7 @@ export default function StakeholderMatrix() {
                         <Search className="h-6 w-6" />
                       </div>
                       <p className="text-sm font-semibold text-gray-500">No stakeholder connections found.</p>
-                      <button className="text-xs font-bold text-blue-500 hover:text-blue-400 uppercase tracking-widest mt-2">
+                      <button className="text-xs font-bold text-amber-500 hover:text-amber-400 uppercase tracking-widest mt-2">
                         Initialize Stakeholder Link
                       </button>
                     </div>

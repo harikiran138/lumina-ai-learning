@@ -94,7 +94,7 @@ export default function ScaffoldApprovalPage() {
                 <div className="absolute top-0 right-0 p-4">
                    <div className={cn(
                      "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border",
-                     scaffold.confidence > 0.9 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                     scaffold.confidence > 0.9 ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                    )}>
                      {Math.round(scaffold.confidence * 100)}% Match
                    </div>
@@ -151,8 +151,8 @@ export default function ScaffoldApprovalPage() {
 
            {scaffolds.filter(s => s.status === 'pending').length === 0 && (
               <div className="glass-v2 rounded-3xl border-white/5 p-12 text-center">
-                 <div className="h-20 w-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle2 className="h-10 w-10 text-emerald-400" />
+                 <div className="h-20 w-20 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle2 className="h-10 w-10 text-yellow-400" />
                  </div>
                  <h2 className="text-2xl font-bold text-white uppercase italic mb-2">Queue Clear</h2>
                  <p className="text-gray-500 text-sm">All generated scaffolds have been reviewed and applied.</p>
@@ -166,7 +166,7 @@ export default function ScaffoldApprovalPage() {
               <div className="space-y-4">
                  <div className="flex justify-between items-center text-sm font-medium">
                     <span className="text-gray-400">AI Consistency</span>
-                    <span className="text-emerald-400">98.2%</span>
+                    <span className="text-yellow-400">98.2%</span>
                  </div>
                  <div className="flex justify-between items-center text-sm font-medium">
                     <span className="text-gray-400">Teacher Override Rate</span>
@@ -183,9 +183,9 @@ export default function ScaffoldApprovalPage() {
               <h4 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-6 border-b border-white/5 pb-4">Strategy Breakdown</h4>
               <div className="space-y-6">
                  {[
-                   { label: "Scaffolding", pct: 65, color: "bg-blue-400" },
+                   { label: "Scaffolding", pct: 65, color: "bg-amber-400" },
                    { label: "Fading", pct: 20, color: "bg-amber-400" },
-                   { label: "Modeling", pct: 15, color: "bg-purple-400" }
+                   { label: "Modeling", pct: 15, color: "bg-yellow-400" }
                  ].map(item => (
                    <div key={item.label} className="space-y-2">
                       <div className="flex justify-between text-[10px] font-bold uppercase tracking-tight">

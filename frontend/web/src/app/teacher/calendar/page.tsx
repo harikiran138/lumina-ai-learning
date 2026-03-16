@@ -150,11 +150,11 @@ export default function TeacherCalendar() {
   const getEventTypeColor = (type: string) => {
     switch (type) {
       case "assignment":
-        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
       case "class":
-        return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
       case "meeting":
-        return "bg-purple-500/20 text-purple-400 border-purple-500/30";
+        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
       case "deadline":
         return "bg-red-500/20 text-red-400 border-red-500/30";
       case "reminder":

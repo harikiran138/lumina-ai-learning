@@ -120,10 +120,10 @@ export default function ContentGeneratorPage() {
                 onClick={() => setFormat("pdf")}
                 className={cn(
                   "p-6 rounded-2xl border-2 transition-all cursor-pointer group",
-                  format === "pdf" ? "border-blue-400 bg-blue-400/5" : "border-white/5 bg-white/[0.02] hover:border-white/10"
+                  format === "pdf" ? "border-amber-400 bg-amber-400/5" : "border-white/5 bg-white/[0.02] hover:border-white/10"
                 )}
               >
-                <FileText className={cn("h-8 w-8 mb-4 transition-colors", format === "pdf" ? "text-blue-400" : "text-gray-500")} />
+                <FileText className={cn("h-8 w-8 mb-4 transition-colors", format === "pdf" ? "text-amber-400" : "text-gray-500")} />
                 <h4 className="font-bold text-white">Revision Guide (PDF)</h4>
                 <p className="text-xs text-gray-500 mt-1">Dense summary of concepts, definitions, and examples.</p>
               </div>
@@ -208,7 +208,7 @@ export default function ContentGeneratorPage() {
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "h-8 w-8 rounded-lg flex items-center justify-center",
-                      asset.type === "ppt" ? "bg-amber-400/10 text-amber-400" : "bg-blue-400/10 text-blue-400"
+                      asset.type === "ppt" ? "bg-amber-400/10 text-amber-400" : "bg-amber-400/10 text-amber-400"
                     )}>
                       {asset.type === "ppt" ? <Presentation className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
                     </div>
@@ -223,12 +223,12 @@ export default function ContentGeneratorPage() {
             </div>
           </section>
 
-          <div className="p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/20">
+          <div className="p-6 rounded-3xl bg-yellow-500/10 border border-yellow-500/20">
             <div className="flex gap-4">
-              <CheckCircle2 className="h-6 w-6 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="h-6 w-6 text-yellow-400 shrink-0" />
               <div className="space-y-2">
-                <p className="text-sm font-bold text-emerald-100">Live Preview Ready</p>
-                <p className="text-xs text-emerald-200/60 leading-relaxed">
+                <p className="text-sm font-bold text-yellow-100">Live Preview Ready</p>
+                <p className="text-xs text-yellow-200/60 leading-relaxed">
                   Lumina generates high-fidelity previews. You can edit individual slides directly in the generated output before downloading.
                 </p>
               </div>

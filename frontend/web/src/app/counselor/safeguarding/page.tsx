@@ -60,9 +60,9 @@ export default function SafeguardingLogs() {
 
   const getSeverityStyles = (severity: string) => {
     switch (severity) {
-      case 'high': return 'bg-rose-500/10 text-rose-500 border-rose-500/20';
+      case 'high': return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
       case 'medium': return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
-      default: return 'bg-teal-500/10 text-teal-500 border-teal-500/20';
+      default: return 'bg-gold-500/10 text-gold-500 border-gold-500/20';
     }
   };
 
@@ -105,20 +105,20 @@ export default function SafeguardingLogs() {
                        <option>Case Closures</option>
                     </select>
                  </div>
-                 <button className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-600/20">Apply Filters</button>
+                 <button className="w-full py-2.5 rounded-xl bg-yellow-600 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-yellow-600/20">Apply Filters</button>
               </div>
            </GlassCard>
 
-           <GlassCard className="p-8 bg-gradient-to-br from-teal-500/10 to-transparent border-teal-500/20">
+           <GlassCard className="p-8 bg-gradient-to-br from-gold-500/10 to-transparent border-gold-500/20">
               <div className="flex items-center gap-3 mb-4">
-                 <Shield className="w-5 h-5 text-teal-400" />
+                 <Shield className="w-5 h-5 text-gold-400" />
                  <h4 className="font-bold text-white text-xs uppercase tracking-widest">Compliance Status</h4>
               </div>
-              <p className="text-[10px] text-teal-400/80 font-medium leading-relaxed italic mb-4">
+              <p className="text-[10px] text-gold-400/80 font-medium leading-relaxed italic mb-4">
                  All logs are being synchronized with the Lumina Secure Vault. Last audited 4h ago.
               </p>
               <div className="flex items-center gap-2">
-                 <CheckCircle2 className="w-4 h-4 text-teal-400" />
+                 <CheckCircle2 className="w-4 h-4 text-gold-400" />
                  <span className="text-[10px] text-white font-bold">Protocol v4.2 Active</span>
               </div>
            </GlassCard>
@@ -149,10 +149,10 @@ export default function SafeguardingLogs() {
                               </p>
                               <div className="flex items-center gap-4">
                                  <div className="flex items-center gap-1.5 text-[9px] text-gray-600 font-bold uppercase tracking-[0.1em]">
-                                    <Calendar className="w-3 h-3 text-indigo-400" /> {log.timestamp}
+                                    <Calendar className="w-3 h-3 text-yellow-400" /> {log.timestamp}
                                  </div>
                                  <div className="flex items-center gap-1.5 text-[9px] text-gray-600 font-bold uppercase tracking-[0.1em]">
-                                    <User className="w-3 h-3 text-indigo-400" /> {log.counselor}
+                                    <User className="w-3 h-3 text-yellow-400" /> {log.counselor}
                                  </div>
                               </div>
                            </div>

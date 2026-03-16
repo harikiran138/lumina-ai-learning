@@ -162,7 +162,7 @@ export default function AdminUsersPage() {
       <section className="glass-v2 border-white/5 overflow-hidden">
         <div className="grid gap-6 p-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(340px,1fr)]">
           <div>
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-blue-300/80">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-amber-300/80">
               User Governance
             </p>
             <h1 className="text-4xl font-display font-bold tracking-tight text-white">
@@ -184,7 +184,7 @@ export default function AdminUsersPage() {
             </div>
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-500"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-amber-500"
             >
               <UserPlus className="h-4 w-4" />
               Add user
@@ -207,14 +207,14 @@ export default function AdminUsersPage() {
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search by name or email"
-              className="w-full rounded-2xl border border-white/10 bg-black/10 py-3 pl-11 pr-4 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-blue-400/40"
+              className="w-full rounded-2xl border border-white/10 bg-black/10 py-3 pl-11 pr-4 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-amber-400/40"
             />
           </label>
 
           <select
             value={roleFilter}
             onChange={(event) => setRoleFilter(event.target.value)}
-            className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-blue-400/40"
+            className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-amber-400/40"
           >
             <option value="all">All roles</option>
             <option value="admin">Admins</option>
@@ -225,7 +225,7 @@ export default function AdminUsersPage() {
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
-            className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-blue-400/40"
+            className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-amber-400/40"
           >
             <option value="all">All statuses</option>
             <option value="active">Active</option>
@@ -238,7 +238,7 @@ export default function AdminUsersPage() {
       <section className="glass-v2 border-white/5 overflow-hidden">
         {loading ? (
           <div className="flex min-h-[280px] items-center justify-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-blue-400" />
+            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-amber-400" />
           </div>
         ) : filteredUsers.length === 0 ? (
           <EmptyState />
@@ -279,7 +279,7 @@ export default function AdminUsersPage() {
                           onChange={(event) =>
                             updateRole(user.id, event.target.value as AdminUser["role"])
                           }
-                          className="rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-blue-400/40 disabled:opacity-50"
+                          className="rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-amber-400/40 disabled:opacity-50"
                         >
                           <option value="student">Student</option>
                           <option value="teacher">Teacher</option>
@@ -293,7 +293,7 @@ export default function AdminUsersPage() {
                           onChange={(event) =>
                             updateStatus(user.id, event.target.value as AdminUser["status"])
                           }
-                          className="rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-blue-400/40 disabled:opacity-50"
+                          className="rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-amber-400/40 disabled:opacity-50"
                         >
                           <option value="active">Active</option>
                           <option value="inactive">Inactive</option>
@@ -374,7 +374,7 @@ export default function AdminUsersPage() {
                   onChange={(event) =>
                     setFormData((current) => ({ ...current, name: event.target.value }))
                   }
-                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-blue-400/40"
+                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-amber-400/40"
                   placeholder="Ada Lovelace"
                 />
               </FormField>
@@ -387,7 +387,7 @@ export default function AdminUsersPage() {
                   onChange={(event) =>
                     setFormData((current) => ({ ...current, email: event.target.value }))
                   }
-                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-blue-400/40"
+                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-amber-400/40"
                   placeholder="ada@lumina.ai"
                 />
               </FormField>
@@ -400,7 +400,7 @@ export default function AdminUsersPage() {
                   onChange={(event) =>
                     setFormData((current) => ({ ...current, password: event.target.value }))
                   }
-                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-blue-400/40"
+                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors placeholder:text-gray-500 focus:border-amber-400/40"
                   placeholder="Choose a secure temporary password"
                 />
               </FormField>
@@ -414,7 +414,7 @@ export default function AdminUsersPage() {
                       role: event.target.value as AdminUser["role"],
                     }))
                   }
-                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-blue-400/40"
+                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-amber-400/40"
                 >
                   <option value="student">Student</option>
                   <option value="teacher">Teacher</option>
@@ -425,7 +425,7 @@ export default function AdminUsersPage() {
               <button
                 type="submit"
                 disabled={savingUserId === "create"}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Plus className="h-4 w-4" />
                 {savingUserId === "create" ? "Creating user..." : "Create user"}
@@ -499,7 +499,7 @@ function SignalCard({
             "rounded-2xl p-3",
             tone === "warning"
               ? "bg-amber-400/10 text-amber-300"
-              : "bg-emerald-400/10 text-emerald-300",
+              : "bg-yellow-400/10 text-yellow-300",
           )}
         >
           <Icon className="h-5 w-5" />

@@ -64,7 +64,7 @@ export default function ComplianceAuditLogs() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <History className="h-8 w-8 text-blue-500" />
+            <History className="h-8 w-8 text-amber-500" />
             Compliance Audit Traces
           </h1>
           <p className="mt-1 text-gray-400">Granular view of all actions affecting data privacy and system configuration.</p>
@@ -90,7 +90,7 @@ export default function ComplianceAuditLogs() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            < ShieldCheck className="h-4 w-4 text-emerald-500" />
+            < ShieldCheck className="h-4 w-4 text-yellow-500" />
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">WORM Storage Active</span>
           </div>
         </div>
@@ -103,7 +103,7 @@ export default function ComplianceAuditLogs() {
                   <span className="text-[10px] font-bold text-gray-500 uppercase">{log.timestamp}</span>
                   <div className={cn(
                     "h-1.5 w-1.5 rounded-full",
-                    log.severity === 'high' ? "bg-red-500" : log.severity === 'medium' ? "bg-amber-500" : "bg-blue-500"
+                    log.severity === 'high' ? "bg-red-500" : log.severity === 'medium' ? "bg-amber-500" : "bg-amber-500"
                   )} />
                 </div>
                 <div className="h-10 w-px bg-white/5" />

@@ -305,8 +305,8 @@ export default function CourseGeneratorPage() {
     <div className="p-8 max-w-7xl mx-auto space-y-8 min-h-screen text-white">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent flex items-center gap-3">
-            <Sparkles className="w-8 h-8 text-blue-400" />
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-400 to-yellow-400 bg-clip-text text-transparent flex items-center gap-3">
+            <Sparkles className="w-8 h-8 text-amber-400" />
             AI Course Generator
           </h1>
           <p className="text-gray-400 mt-2">
@@ -343,7 +343,7 @@ export default function CourseGeneratorPage() {
           </div>
 
           {/* Simple Instructions */}
-          <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl text-sm text-blue-200">
+          <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm text-amber-200">
             <span className="font-bold">AI Course Generator</span>: Extracts
             content from your PDF and generates a full course structure.
           </div>
@@ -507,11 +507,11 @@ export default function CourseGeneratorPage() {
                                   }}
                                   className={`w-full bg-transparent border-none text-sm focus:outline-none resize-none overflow-hidden ${
                                     block.type === "code"
-                                      ? "font-mono bg-black/40 p-2 rounded text-blue-300"
+                                      ? "font-mono bg-black/40 p-2 rounded text-amber-300"
                                       : block.type === "list"
                                         ? "pl-4 border-l-2 border-gray-600"
                                         : block.type === "tip"
-                                          ? "bg-blue-500/10 p-2 rounded text-blue-200 italic"
+                                          ? "bg-amber-500/10 p-2 rounded text-amber-200 italic"
                                           : "text-gray-300"
                                   }`}
                                   rows={
@@ -639,13 +639,13 @@ export default function CourseGeneratorPage() {
               <p className="text-gray-400 mb-4">{savingStatus}</p>
 
               <div className="max-w-md mx-auto">
-                <div className="flex justify-between text-xs text-blue-300 mb-1">
+                <div className="flex justify-between text-xs text-amber-300 mb-1">
                   <span>Progress</span>
                   <span>{creationProgress}%</span>
                 </div>
                 <div className="h-4 bg-black/40 rounded-full overflow-hidden border border-white/10">
                   <div
-                    className="h-full bg-gradient-to-r from-lumina-primary to-blue-500 transition-all duration-300"
+                    className="h-full bg-gradient-to-r from-lumina-primary to-amber-500 transition-all duration-300"
                     style={{ width: `${creationProgress}% ` }}
                   ></div>
                 </div>

@@ -58,7 +58,7 @@ export default function AIModelHub() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -67,7 +67,7 @@ export default function AIModelHub() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <Cpu className="h-8 w-8 text-blue-500" />
+            <Cpu className="h-8 w-8 text-amber-500" />
             AI Model Hub
           </h1>
           <p className="mt-1 text-gray-400">Manage LLM providers, benchmarks, and inference infrastructure.</p>
@@ -83,11 +83,11 @@ export default function AIModelHub() {
       <div className="grid gap-6 md:grid-cols-3">
         <div className="glass-v2 border-white/5 p-6 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-            <Zap className="h-16 w-16 text-blue-400" />
+            <Zap className="h-16 w-16 text-amber-400" />
           </div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Aggregate Inference</p>
           <p className="mt-2 text-3xl font-display font-bold text-white">0.82s</p>
-          <div className="mt-4 flex items-center gap-2 text-xs font-bold text-emerald-400">
+          <div className="mt-4 flex items-center gap-2 text-xs font-bold text-yellow-400">
             <Activity className="h-3 w-3" />
             Optimal Latency
           </div>
@@ -95,11 +95,11 @@ export default function AIModelHub() {
 
         <div className="glass-v2 border-white/5 p-6 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-            <DollarSign className="h-16 w-16 text-emerald-400" />
+            <DollarSign className="h-16 w-16 text-yellow-400" />
           </div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Monthly Burn</p>
           <p className="mt-2 text-3xl font-display font-bold text-white font-mono">{costs?.total_cost || "$0.00"}</p>
-          <div className="mt-4 flex items-center gap-2 text-xs font-bold text-blue-400">
+          <div className="mt-4 flex items-center gap-2 text-xs font-bold text-amber-400">
             <ArrowUpRight className="h-3 w-3" />
             {costs?.usage_percentage} of budget
           </div>
@@ -107,11 +107,11 @@ export default function AIModelHub() {
 
         <div className="glass-v2 border-white/5 p-6 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-            <Layers className="h-16 w-16 text-purple-400" />
+            <Layers className="h-16 w-16 text-yellow-400" />
           </div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Active Providers</p>
           <p className="mt-2 text-3xl font-display font-bold text-white">3 / 5</p>
-          <div className="mt-4 flex items-center gap-2 text-xs font-bold text-purple-400">
+          <div className="mt-4 flex items-center gap-2 text-xs font-bold text-yellow-400">
             <CheckCircle2 className="h-3 w-3" />
             High Reliability
           </div>
@@ -126,10 +126,10 @@ export default function AIModelHub() {
           </h2>
           <div className="grid gap-4">
             {models.map((model) => (
-              <div key={model.id} className="glass-v2 border-white/5 p-5 hover:bg-white/[0.02] transition-all group border-l-2 border-l-blue-500">
+              <div key={model.id} className="glass-v2 border-white/5 p-5 hover:bg-white/[0.02] transition-all group border-l-2 border-l-amber-500">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-blue-500/10 p-2 text-blue-400">
+                    <div className="rounded-lg bg-amber-500/10 p-2 text-amber-400">
                       <Cpu className="h-4 w-4" />
                     </div>
                     <div>
@@ -138,8 +138,8 @@ export default function AIModelHub() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                    <span className="text-[10px] font-bold text-emerald-400 uppercase">Operational</span>
+                    <div className="h-2 w-2 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                    <span className="text-[10px] font-bold text-yellow-400 uppercase">Operational</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-4">
@@ -170,14 +170,14 @@ export default function AIModelHub() {
             <div className="space-y-4">
               <p className="text-sm text-gray-400">Usage by token volume</p>
               <div className="h-4 w-full bg-white/5 rounded-full flex overflow-hidden">
-                <div className="h-full bg-blue-500" style={{ width: '65%' }} />
-                <div className="h-full bg-purple-500" style={{ width: '25%' }} />
-                <div className="h-full bg-emerald-500" style={{ width: '10%' }} />
+                <div className="h-full bg-amber-500" style={{ width: '65%' }} />
+                <div className="h-full bg-yellow-500" style={{ width: '25%' }} />
+                <div className="h-full bg-yellow-500" style={{ width: '10%' }} />
               </div>
               <div className="flex flex-wrap gap-4 pt-2">
-                <LegendItem label="GPT-4o" color="bg-blue-500" value="65%" />
-                <LegendItem label="Claude 3.5" color="bg-purple-500" value="25%" />
-                <LegendItem label="Llama 3" color="bg-emerald-500" value="10%" />
+                <LegendItem label="GPT-4o" color="bg-amber-500" value="65%" />
+                <LegendItem label="Claude 3.5" color="bg-yellow-500" value="25%" />
+                <LegendItem label="Llama 3" color="bg-yellow-500" value="10%" />
               </div>
             </div>
 
@@ -187,12 +187,12 @@ export default function AIModelHub() {
                 <span className="text-xs font-bold text-gray-400">{costs?.usage_percentage}</span>
               </div>
               <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500" style={{ width: costs?.usage_percentage || '0%' }} />
+                <div className="h-full bg-gradient-to-r from-amber-500 to-yellow-500" style={{ width: costs?.usage_percentage || '0%' }} />
               </div>
             </div>
           </div>
           
-          <button className="w-full glass-v2 border-white/5 p-4 flex items-center justify-center gap-2 text-sm font-bold text-blue-400 hover:bg-white/[0.05] transition-colors">
+          <button className="w-full glass-v2 border-white/5 p-4 flex items-center justify-center gap-2 text-sm font-bold text-amber-400 hover:bg-white/[0.05] transition-colors">
             <BarChart3 className="h-4 w-4" />
             Export Detailed Audit
           </button>

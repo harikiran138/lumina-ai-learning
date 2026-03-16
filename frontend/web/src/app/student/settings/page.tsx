@@ -264,7 +264,7 @@ export default function StudentSettings() {
         </div>
 
         {feedback && (
-          <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+          <div className="mb-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-300">
             {feedback}
           </div>
         )}
@@ -337,7 +337,7 @@ export default function StudentSettings() {
         {activeSection === "notifications" && (
           <div className="space-y-6">
             <ToggleCard
-              icon={<Mail className="w-6 h-6 text-blue-500" />}
+              icon={<Mail className="w-6 h-6 text-amber-500" />}
               title="Email Notifications"
               description="Receive daily summaries and important alerts."
               enabled={settings.notifications.email}
@@ -349,7 +349,7 @@ export default function StudentSettings() {
               }
             />
             <ToggleCard
-              icon={<Smartphone className="w-6 h-6 text-purple-500" />}
+              icon={<Smartphone className="w-6 h-6 text-yellow-500" />}
               title="Push Notifications"
               description="Receive real-time reminders for study plans and assignments."
               enabled={settings.notifications.push}
@@ -402,7 +402,7 @@ export default function StudentSettings() {
               }
             />
             <ToggleCard
-              icon={<Shield className="w-6 h-6 text-emerald-500" />}
+              icon={<Shield className="w-6 h-6 text-yellow-500" />}
               title="Session Activity Alerts"
               description="Warn me about unusual session activity or repeated sign-ins."
               enabled={settings.security.sessionAlerts}
@@ -524,7 +524,7 @@ export default function StudentSettings() {
               }
             />
             <ToggleCard
-              icon={<Brain className="w-6 h-6 text-emerald-500" />}
+              icon={<Brain className="w-6 h-6 text-yellow-500" />}
               title="Allow AI Personalization"
               description="Use your learning patterns to personalize tutor and assessment flows."
               enabled={settings.privacy.allowAIDataPersonalization}

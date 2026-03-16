@@ -44,7 +44,7 @@ export const A2UIRendererV2: React.FC<A2UIRendererV2Props> = ({ content }) => {
   // Fallback to markdown renderer if not valid A2UI JSON
   if (!parsedResponse) {
     return (
-      <div className="prose prose-sm dark:prose-invert max-w-none text-zinc-700 dark:text-zinc-300 leading-relaxed">
+      <div className="prose pamber-sm dark:pamber-invert max-w-none text-zinc-700 dark:text-zinc-300 leading-relaxed">
         <ReactMarkdown>{content}</ReactMarkdown>
       </div>
     );
@@ -94,7 +94,7 @@ export const A2UIRendererV2: React.FC<A2UIRendererV2Props> = ({ content }) => {
             return (
               <div
                 key={idx}
-                className="prose prose-sm dark:prose-invert max-w-none my-4"
+                className="prose pamber-sm dark:pamber-invert max-w-none my-4"
               >
                 <ReactMarkdown>{block.content}</ReactMarkdown>
               </div>

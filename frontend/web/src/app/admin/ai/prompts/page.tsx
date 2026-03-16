@@ -45,7 +45,7 @@ export default function PromptManagement() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -54,13 +54,13 @@ export default function PromptManagement() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between shrink-0">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <Terminal className="h-8 w-8 text-blue-500" />
+            <Terminal className="h-8 w-8 text-amber-500" />
             Prompt Management
           </h1>
           <p className="mt-1 text-gray-400">Manage, version, and test system instructions for Lumina AI.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 transition-colors">
+          <button className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500 transition-colors">
             <Save className="h-4 w-4" />
             Deploy Prompt
           </button>
@@ -76,7 +76,7 @@ export default function PromptManagement() {
               <input 
                 type="text" 
                 placeholder="Search prompts..." 
-                className="w-full rounded-xl border border-white/10 bg-white/5 py-2 pl-10 pr-4 text-sm text-white placeholder:text-gray-500 focus:border-blue-500/50 focus:outline-none"
+                className="w-full rounded-xl border border-white/10 bg-white/5 py-2 pl-10 pr-4 text-sm text-white placeholder:text-gray-500 focus:border-amber-500/50 focus:outline-none"
               />
             </div>
           </div>
@@ -88,14 +88,14 @@ export default function PromptManagement() {
                 className={cn(
                   "w-full text-left p-4 rounded-xl transition-all group",
                   selectedPrompt?.id === p.id 
-                    ? "bg-blue-600/10 border border-blue-500/20" 
+                    ? "bg-amber-600/10 border border-amber-500/20" 
                     : "hover:bg-white/[0.05] border border-transparent"
                 )}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className={cn(
                     "text-sm font-bold",
-                    selectedPrompt?.id === p.id ? "text-blue-400" : "text-white"
+                    selectedPrompt?.id === p.id ? "text-amber-400" : "text-white"
                   )}>{p.name}</span>
                   <span className="text-[10px] p-0.5 rounded bg-white/5 text-gray-500 font-mono">v{p.version}</span>
                 </div>
@@ -110,11 +110,11 @@ export default function PromptManagement() {
           <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Code2 className="h-4 w-4 text-blue-400" />
+                <Code2 className="h-4 w-4 text-amber-400" />
                 <span className="text-sm font-bold text-white">{selectedPrompt?.name}</span>
               </div>
               <div className="h-4 w-px bg-white/10" />
-              <div className="flex items-center gap-2 text-xs text-emerald-400">
+              <div className="flex items-center gap-2 text-xs text-yellow-400">
                 <CheckCircle2 className="h-3.3 w-3.3" />
                 Active on Production
               </div>
@@ -123,7 +123,7 @@ export default function PromptManagement() {
               <button className="p-2 text-gray-400 hover:text-white transition-colors">
                 <History className="h-4 w-4" />
               </button>
-              <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-600/10 text-emerald-400 text-xs font-bold border border-emerald-500/20 hover:bg-emerald-600/20 transition-all">
+              <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-yellow-600/10 text-yellow-400 text-xs font-bold border border-yellow-500/20 hover:bg-yellow-600/20 transition-all">
                 <Play className="h-3 w-3 fill-current" />
                 Test in Sandbox
               </button>
@@ -153,7 +153,7 @@ Your goal is to guide the student through complex reasoning steps without giving
         <AlertCircle className="h-4 w-4 text-amber-500" />
         <p className="text-xs text-gray-500">
           <span className="font-bold text-gray-400 uppercase mr-2 tracking-widest">Version Control:</span> 
-          All changes are tracked in the <code className="text-blue-400">system_prompts</code> table with a signature of the approving administrator.
+          All changes are tracked in the <code className="text-amber-400">system_prompts</code> table with a signature of the approving administrator.
         </p>
       </div>
     </div>

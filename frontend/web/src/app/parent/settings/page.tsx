@@ -48,7 +48,7 @@ export default function ParentSettingsPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all ${
                   activeTab === tab.id 
-                    ? "bg-purple-600 text-white shadow-xl shadow-purple-500/20" 
+                    ? "bg-yellow-600 text-white shadow-xl shadow-yellow-500/20" 
                     : "text-gray-400 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -80,7 +80,7 @@ export default function ParentSettingsPage() {
                     <h3 className="text-xl font-bold mb-8">Personal Information</h3>
                     <div className="flex flex-col md:flex-row gap-10 items-start md:items-center">
                        <div className="relative group">
-                          <div className="h-24 w-24 rounded-[2rem] bg-gradient-to-br from-purple-500 to-blue-500 p-1 flex items-center justify-center">
+                          <div className="h-24 w-24 rounded-[2rem] bg-gradient-to-br from-yellow-500 to-amber-500 p-1 flex items-center justify-center">
                              <div className="h-full w-full rounded-[1.8rem] bg-slate-900 flex items-center justify-center text-4xl font-black">P</div>
                           </div>
                           <button className="absolute -bottom-2 -right-2 bg-white text-slate-900 p-2 rounded-xl shadow-lg hover:scale-110 transition-transform">
@@ -120,7 +120,7 @@ export default function ParentSettingsPage() {
                                   <p className="text-xs text-gray-500">{acc.account}</p>
                                </div>
                             </div>
-                            <Button variant="ghost" className="text-xs font-bold text-purple-400">Manage</Button>
+                            <Button variant="ghost" className="text-xs font-bold text-yellow-400">Manage</Button>
                          </div>
                        ))}
                     </div>
@@ -140,10 +140,10 @@ export default function ParentSettingsPage() {
                      ].map((item, i) => (
                        <div key={i} className="flex items-center justify-between group">
                           <div className="max-w-md">
-                             <h4 className="font-bold text-lg mb-1 group-hover:text-purple-400 transition-colors">{item.title}</h4>
+                             <h4 className="font-bold text-lg mb-1 group-hover:text-yellow-400 transition-colors">{item.title}</h4>
                              <p className="text-sm text-gray-500">{item.desc}</p>
                           </div>
-                          <button className={`w-14 h-8 rounded-full p-1 transition-colors ${item.checked ? 'bg-purple-600' : 'bg-white/10'}`}>
+                          <button className={`w-14 h-8 rounded-full p-1 transition-colors ${item.checked ? 'bg-yellow-600' : 'bg-white/10'}`}>
                              <div className={`h-6 w-6 bg-white rounded-full shadow-lg transition-transform ${item.checked ? 'translate-x-6' : 'translate-x-0'}`}></div>
                           </button>
                        </div>
@@ -154,9 +154,9 @@ export default function ParentSettingsPage() {
 
               {activeTab === "privacy" && (
                 <div className="space-y-6">
-                   <Card className="bg-white/5 border-white/10 p-8 rounded-3xl border-l-4 border-l-purple-500">
+                   <Card className="bg-white/5 border-white/10 p-8 rounded-3xl border-l-4 border-l-yellow-500">
                       <div className="flex gap-6 items-start">
-                         <div className="p-4 bg-purple-500/10 rounded-2xl text-purple-400">
+                         <div className="p-4 bg-yellow-500/10 rounded-2xl text-yellow-400">
                             <Shield className="h-8 w-8" />
                          </div>
                          <div>
@@ -177,7 +177,7 @@ export default function ParentSettingsPage() {
                                <h4 className="font-bold text-lg">Two-Factor Authentication</h4>
                                <p className="text-sm text-gray-500">Add an extra layer of security to your account.</p>
                             </div>
-                            <Button className="bg-purple-600 hover:bg-purple-700">Enable 2FA</Button>
+                            <Button className="bg-yellow-600 hover:bg-yellow-700">Enable 2FA</Button>
                          </div>
                          <div className="h-px bg-white/5 w-full"></div>
                          <div className="flex items-center justify-between">

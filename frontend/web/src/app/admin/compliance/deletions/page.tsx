@@ -62,7 +62,7 @@ export default function DeletionRequests() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -100,7 +100,7 @@ export default function DeletionRequests() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+            <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">SLA Monitoring Active</span>
           </div>
         </div>
@@ -111,14 +111,14 @@ export default function DeletionRequests() {
               <div className="flex items-center gap-6">
                 <div className={cn(
                   "h-12 w-12 rounded-2xl flex items-center justify-center border",
-                  req.status === 'completed' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" :
-                  req.status === 'processing' ? "bg-blue-500/10 border-blue-500/20 text-blue-500" :
+                  req.status === 'completed' ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-500" :
+                  req.status === 'processing' ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
                   "bg-amber-500/10 border-amber-500/20 text-amber-500"
                 )}>
                   <User className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">{req.user_email}</h3>
+                  <h3 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">{req.user_email}</h3>
                   <div className="flex items-center gap-4 mt-1">
                     <div className="flex items-center gap-1.5">
                       <Clock className="h-3 w-3 text-gray-600" />
@@ -145,7 +145,7 @@ export default function DeletionRequests() {
                 <div className="flex items-center gap-2">
                   <button className={cn(
                     "px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all",
-                    req.status === 'completed' ? "bg-emerald-500/10 text-emerald-400 cursor-default" : "bg-blue-600 text-white hover:bg-blue-500"
+                    req.status === 'completed' ? "bg-yellow-500/10 text-yellow-400 cursor-default" : "bg-amber-600 text-white hover:bg-amber-500"
                   )}>
                     {req.status === 'completed' ? 'Verified' : 'Process Request'}
                   </button>

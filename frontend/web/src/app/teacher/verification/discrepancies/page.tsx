@@ -97,7 +97,7 @@ export default function DiscrepancyQueuePage() {
                            "p-2 rounded-xl border",
                            d.severity === 'high' ? "bg-red-500/10 border-red-500/20 text-red-400" :
                            d.severity === 'medium' ? "bg-amber-500/10 border-amber-500/20 text-amber-400" :
-                           "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                           "bg-amber-500/10 border-amber-500/20 text-amber-400"
                          )}>
                             <ShieldAlert className="h-5 w-5" />
                          </div>
@@ -129,14 +129,14 @@ export default function DiscrepancyQueuePage() {
                                <FileText className="h-4 w-4 text-gray-500" />
                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Source Document</span>
                             </div>
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[8px] font-bold uppercase tracking-tight">Canonical</span>
+                            <span className="px-2 py-0.5 rounded-md bg-yellow-500/10 text-yellow-400 text-[8px] font-bold uppercase tracking-tight">Canonical</span>
                          </div>
-                         <div className="p-6 rounded-2xl bg-black/40 border border-emerald-500/20 min-h-[120px] flex items-center justify-center text-center">
+                         <div className="p-6 rounded-2xl bg-black/40 border border-yellow-500/20 min-h-[120px] flex items-center justify-center text-center">
                             <p className="text-sm font-medium text-white italic leading-relaxed">"{d.sourceValue}"</p>
                          </div>
                          <button 
                            onClick={() => resolve(d.id, 'source')}
-                           className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold text-white uppercase tracking-widest hover:bg-emerald-500/20 hover:border-emerald-500/40 transition-all"
+                           className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold text-white uppercase tracking-widest hover:bg-yellow-500/20 hover:border-yellow-500/40 transition-all"
                          >
                             Keep Source
                          </button>
@@ -179,8 +179,8 @@ export default function DiscrepancyQueuePage() {
                animate={{ opacity: 1, scale: 1 }}
                className="glass-v2 border-white/5 rounded-3xl p-16 text-center"
             >
-               <div className="h-20 w-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle2 className="h-10 w-10 text-emerald-400" />
+               <div className="h-20 w-20 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle2 className="h-10 w-10 text-yellow-400" />
                </div>
                <h2 className="text-2xl font-bold text-white uppercase italic mb-2 tracking-tight">Knowledge Base Synced</h2>
                <p className="text-gray-500 text-sm max-w-md mx-auto">There are currently no structural discrepancies between the source materials and the generated curriculum models.</p>

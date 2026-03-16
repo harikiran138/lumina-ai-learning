@@ -65,7 +65,7 @@ export function CoreVisualizer({ isActive = false }: { isActive?: boolean }) {
       {/* The Core Orb */}
       <div className="relative w-24 h-24">
         <motion.div
-          className="absolute inset-0 bg-gradient-to-br from-lumina-primary via-blue-400 to-lumina-primary/80 rounded-full shadow-[0_0_50px_rgba(59,130,246,0.5)]"
+          className="absolute inset-0 bg-gradient-to-br from-lumina-primary via-amber-400 to-lumina-primary/80 rounded-full shadow-[0_0_50px_rgba(59,130,246,0.5)]"
           animate={{
             scale: isActive ? [1, 1.1, 1] : [1, 1.02, 1],
             rotate: [0, 360],

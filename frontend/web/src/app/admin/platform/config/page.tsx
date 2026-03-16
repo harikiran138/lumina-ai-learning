@@ -25,7 +25,7 @@ export default function PlatformConfiguration() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -34,13 +34,13 @@ export default function PlatformConfiguration() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <Settings className="h-8 w-8 text-blue-500" />
+            <Settings className="h-8 w-8 text-amber-500" />
             Platform Control
           </h1>
           <p className="mt-1 text-gray-400">Manage global system settings, feature flags, and infrastructure status.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 transition-colors">
+          <button className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500 transition-colors">
             <Save className="h-4 w-4" />
             Apply Changes
           </button>
@@ -85,13 +85,13 @@ export default function PlatformConfiguration() {
           <div className="glass-v2 border-white/5 p-6 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-white">System Alerts</span>
-              <div className="h-5 w-9 rounded-full bg-blue-600 relative cursor-pointer">
+              <div className="h-5 w-9 rounded-full bg-amber-600 relative cursor-pointer">
                 <div className="h-3 w-3 rounded-full bg-white absolute top-1 right-1" />
               </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-white">Security Webhooks</span>
-              <div className="h-5 w-9 rounded-full bg-blue-600 relative cursor-pointer">
+              <div className="h-5 w-9 rounded-full bg-amber-600 relative cursor-pointer">
                 <div className="h-3 w-3 rounded-full bg-white absolute top-1 right-1" />
               </div>
             </div>
@@ -127,7 +127,7 @@ function ToggleOption({ title, desc, isActive, isWarning }: any) {
       </div>
       <div className={cn(
         "h-6 w-11 rounded-full relative cursor-pointer transition-all border",
-        isActive ? "bg-blue-600 border-blue-500 shadow-[0_0_10px_rgba(37,99,235,0.4)]" : "bg-white/5 border-white/10"
+        isActive ? "bg-amber-600 border-amber-500 shadow-[0_0_10px_rgba(37,99,235,0.4)]" : "bg-white/5 border-white/10"
       )}>
         <div className={cn(
           "h-4 w-4 rounded-full bg-white absolute top-1 transition-all shadow-sm",
@@ -145,7 +145,7 @@ function InputGroup({ label, value }: any) {
       <input 
         type="text" 
         defaultValue={value} 
-        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50"
+        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50"
       />
     </div>
   );
@@ -156,8 +156,8 @@ function StatusIndicator({ label, status, isWarning }: any) {
     <div className="flex items-center justify-between">
       <span className="text-xs text-gray-400">{label}</span>
       <div className="flex items-center gap-2">
-        <div className={cn("h-1.5 w-1.5 rounded-full shadow-[0_0_8px]", isWarning ? "bg-amber-500 shadow-amber-500/50" : "bg-emerald-500 shadow-emerald-500/50")} />
-        <span className={cn("text-[9px] font-bold uppercase", isWarning ? "text-amber-500" : "text-emerald-500")}>{status}</span>
+        <div className={cn("h-1.5 w-1.5 rounded-full shadow-[0_0_8px]", isWarning ? "bg-amber-500 shadow-amber-500/50" : "bg-yellow-500 shadow-yellow-500/50")} />
+        <span className={cn("text-[9px] font-bold uppercase", isWarning ? "text-amber-500" : "text-yellow-500")}>{status}</span>
       </div>
     </div>
   );

@@ -44,7 +44,7 @@ export default function TeacherResources() {
               className="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-gray-800"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-900/30 text-blue-400 rounded-lg">
+                <div className="p-2 bg-amber-900/30 text-amber-400 rounded-lg">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>

@@ -95,7 +95,7 @@ export default function QuestionBankPage() {
             <h1 className="text-4xl font-display font-bold text-white tracking-tight">
               Question Bank
             </h1>
-            <span className="rounded-full bg-blue-500/20 border border-blue-500/30 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-blue-300">
+            <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-300">
               {questions.length * 12} Items
             </span>
           </div>
@@ -165,13 +165,13 @@ export default function QuestionBankPage() {
               <div className="flex flex-wrap gap-2">
                 <span className={cn(
                   "rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                  q.difficulty === "Easy" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
+                  q.difficulty === "Easy" ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" :
                   q.difficulty === "Medium" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
                   "bg-red-500/10 text-red-400 border border-red-500/20"
                 )}>
                   {q.difficulty}
                 </span>
-                <span className="rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                <span className="rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
                   {q.type}
                 </span>
               </div>
@@ -202,13 +202,13 @@ export default function QuestionBankPage() {
                   <p className="text-[10px] font-bold text-gray-600 uppercase">Success</p>
                   <p className={cn(
                     "text-sm font-bold",
-                    q.success_rate > 70 ? "text-emerald-400" : q.success_rate > 40 ? "text-amber-400" : "text-red-400"
+                    q.success_rate > 70 ? "text-yellow-400" : q.success_rate > 40 ? "text-amber-400" : "text-red-400"
                   )}>{q.success_rate}%</p>
                 </div>
               </div>
               <div className={cn(
                 "rounded-full p-2",
-                q.status === "verified" ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"
+                q.status === "verified" ? "bg-yellow-500/10 text-yellow-400" : "bg-amber-500/10 text-amber-400"
               )}>
                 {q.status === "verified" ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
               </div>
@@ -240,7 +240,7 @@ export default function QuestionBankPage() {
             </div>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-blue-400/10 flex items-center justify-center text-blue-400">
+                <div className="h-10 w-10 rounded-2xl bg-amber-400/10 flex items-center justify-center text-amber-400">
                   <BookOpen className="h-5 w-5" />
                 </div>
                 <div>
@@ -266,7 +266,7 @@ export default function QuestionBankPage() {
           </div>
         </section>
 
-        <section className="glass-v2 border-white/10 p-8 rounded-3xl bg-gradient-to-br from-blue-600/10 to-transparent">
+        <section className="glass-v2 border-white/10 p-8 rounded-3xl bg-gradient-to-br from-amber-600/10 to-transparent">
           <h3 className="text-xl font-bold text-white mb-6">AI Variant Engine</h3>
           <p className="text-sm text-gray-400 leading-relaxed mb-8">
             Automatically generate variations of your top questions to prevent cheating and ensure deep understanding.

@@ -77,7 +77,7 @@ export default function TeacherDashboard() {
       <DashboardGrid columns={4}>
         <StatCard
           icon={Users}
-          color="blue"
+          color="gold"
           title="Total Students"
           value={stats.totalStudents}
           subtitle="Active learners"
@@ -92,7 +92,7 @@ export default function TeacherDashboard() {
         />
         <StatCard
           icon={BarChart2}
-          color="green"
+          color="gold"
           title="Avg Mastery"
           value={`${stats.avgMastery}%`}
           subtitle="Class performance"
@@ -100,7 +100,7 @@ export default function TeacherDashboard() {
         />
         <StatCard
           icon={FileText}
-          color="purple"
+          color="gold"
           title="To Grade"
           value={stats.pendingGrading}
           subtitle="Pending assessments"
@@ -165,13 +165,13 @@ export default function TeacherDashboard() {
               />
               <QuickActionButton
                 icon={PlusCircle}
-                color="blue"
+                color="gold"
                 title="Create Assessment"
                 subtitle="New quiz or exam"
               />
               <QuickActionButton
                 icon={Bell}
-                color="purple"
+                color="gold"
                 title="Announcement"
                 subtitle="Notify students"
               />
@@ -280,7 +280,7 @@ function CourseItem({ name, level, students, status, image }: any) {
                 className={cn(
                   "px-3 py-1 text-[10px] font-bold tracking-widest uppercase rounded-lg border transition-all duration-300",
                   status === "Active"
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 group-hover:bg-emerald-500/20"
+                    ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20 group-hover:bg-yellow-500/20"
                     : "bg-surface-950 text-gray-500 border-white/10",
                 )}
               >
@@ -305,10 +305,10 @@ function CourseItem({ name, level, students, status, image }: any) {
 
 function QuickActionButton({ icon: Icon, color, title, subtitle }: any) {
   const colorClasses: any = {
-    blue: "text-blue-400 bg-blue-500/10 border-blue-500/20 shadow-blue-500/5",
+    blue: "text-amber-400 bg-amber-500/10 border-amber-500/20 shadow-amber-500/5",
     gold: "text-lumina-primary bg-lumina-primary/10 border-lumina-primary/20 shadow-gold-glow/5",
     purple:
-      "text-purple-400 bg-purple-500/10 border-purple-500/20 shadow-purple-500/5",
+      "text-yellow-400 bg-yellow-500/10 border-yellow-500/20 shadow-yellow-500/5",
   };
   return (
     <button

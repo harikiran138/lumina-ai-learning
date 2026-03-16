@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { api } from "@/lib/api";
 import { 
   ArrowLeft, 
   Split, 
@@ -120,7 +121,7 @@ export default function ABTestingPage() {
                     <div className="flex items-center gap-3 mb-2">
                        <span className={cn(
                         "rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider",
-                        strat.status === "active" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-white/5 text-gray-500 border border-white/10"
+                        strat.status === "active" ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" : "bg-white/5 text-gray-500 border border-white/10"
                       )}>
                         {strat.status}
                       </span>
@@ -147,12 +148,12 @@ export default function ABTestingPage() {
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-4">
                     <div className="flex justify-between items-end">
-                      <p className="text-sm font-bold text-blue-400">Variant A</p>
+                      <p className="text-sm font-bold text-amber-400">Variant A</p>
                       <p className="text-xs text-gray-500">{strat.cohort_a_size} students</p>
                     </div>
                     <div className="relative h-16 rounded-2xl bg-white/5 border border-white/5 overflow-hidden p-4 flex flex-col justify-center">
                       <div 
-                        className="absolute left-0 top-0 bottom-0 bg-blue-500/20 border-r border-blue-500/30 transition-all duration-1000"
+                        className="absolute left-0 top-0 bottom-0 bg-amber-500/20 border-r border-amber-500/30 transition-all duration-1000"
                         style={{ width: strat.status === "active" ? `${strat.metric_a}%` : '0%' }}
                       />
                       <div className="relative flex justify-between items-center">
@@ -212,7 +213,7 @@ export default function ABTestingPage() {
         <div className="space-y-6">
           <section className="glass-v2 border-white/5 p-8 rounded-3xl">
             <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-emerald-400" />
+              <TrendingUp className="h-5 w-5 text-yellow-400" />
               Impact Summary
             </h3>
             <div className="space-y-6">
@@ -243,19 +244,19 @@ export default function ABTestingPage() {
             </p>
             <div className="mt-8 p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
+                <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
                 <span className="text-xs font-bold text-white">In Progress</span>
               </div>
               <BarChart3 className="h-4 w-4 text-gray-600" />
             </div>
           </section>
 
-          <div className="p-6 rounded-3xl bg-blue-500/10 border border-blue-500/20">
+          <div className="p-6 rounded-3xl bg-amber-500/10 border border-amber-500/20">
             <div className="flex gap-4">
-              <Info className="h-6 w-6 text-blue-400 shrink-0" />
+              <Info className="h-6 w-6 text-amber-400 shrink-0" />
               <div className="space-y-2">
-                <p className="text-sm font-bold text-blue-100">Causal Inference Engine</p>
-                <p className="text-xs text-blue-200/60 leading-relaxed">
+                <p className="text-sm font-bold text-amber-100">Causal Inference Engine</p>
+                <p className="text-xs text-amber-200/60 leading-relaxed">
                   Lumina uses double machine learning to isolate the effect of teaching strategies from student baseline ability. You're seeing real pedagogical impact, not just correlation.
                 </p>
               </div>

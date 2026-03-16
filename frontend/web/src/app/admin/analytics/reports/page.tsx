@@ -63,7 +63,7 @@ export default function ReportBuilder() {
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-400" />
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
 
@@ -72,13 +72,13 @@ export default function ReportBuilder() {
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-            <FileText className="h-8 w-8 text-blue-500" />
+            <FileText className="h-8 w-8 text-amber-500" />
             Report Builder
           </h1>
           <p className="mt-1 text-gray-400">Design, automate, and distribute custom academic and system reports.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/20">
+          <button className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500 transition-colors shadow-lg shadow-amber-500/20">
             <Plus className="h-4 w-4" />
             New Report Template
           </button>
@@ -94,13 +94,13 @@ export default function ReportBuilder() {
           </h2>
           <div className="space-y-3">
             {reports.map((report) => (
-              <div key={report.id} className="glass-v2 border-white/5 p-4 hover:bg-white/[0.02] transition-all group cursor-pointer border-l-2 border-l-blue-500/30 hover:border-l-blue-500">
+              <div key={report.id} className="glass-v2 border-white/5 p-4 hover:bg-white/[0.02] transition-all group cursor-pointer border-l-2 border-l-amber-500/30 hover:border-l-amber-500">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{report.name}</span>
+                  <span className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">{report.name}</span>
                   <Settings2 className="h-3 w-3 text-gray-600 hover:text-white transition-colors" />
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-[9px] p-0.5 rounded bg-blue-500/10 text-blue-400 font-bold uppercase">{report.type}</span>
+                  <span className="text-[9px] p-0.5 rounded bg-amber-500/10 text-amber-400 font-bold uppercase">{report.type}</span>
                   <span className="text-[9px] text-gray-600 font-bold uppercase tracking-tighter">{report.schedule}</span>
                 </div>
               </div>
@@ -116,7 +116,7 @@ export default function ReportBuilder() {
           <div className="glass-v2 border-white/5 p-8 h-[550px] relative overflow-hidden flex flex-col">
             <div className="flex items-start justify-between mb-12">
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                <div className="h-12 w-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-400 border border-amber-500/20">
                   <FileText className="h-6 w-6" />
                 </div>
                 <div>
@@ -155,7 +155,7 @@ export default function ReportBuilder() {
                   Format: PDF/XLSX
                 </div>
               </div>
-              <button className="px-6 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-500 transition-all">
+              <button className="px-6 py-2 rounded-xl bg-amber-600 text-white text-xs font-bold hover:bg-amber-500 transition-all">
                 Generate Preview
               </button>
             </div>

@@ -69,7 +69,7 @@ export default function EngineSection() {
                       </div>
                       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 bg-lumina-primary rounded-full blur-sm" />
                       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-4 bg-lumina-accent rounded-full blur-sm" />
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full blur-sm" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-amber-500 rounded-full blur-sm" />
                       <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-amber-500 rounded-full blur-sm" />
                    </div>
                    <div className="absolute inset-0 neural-mesh opacity-50" />
