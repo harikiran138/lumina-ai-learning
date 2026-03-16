@@ -17,7 +17,8 @@ import {
   ChevronRight, 
   MoreVertical,
   Plus,
-  PlayCircle
+  PlayCircle,
+  X
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -105,7 +106,7 @@ export default function PeerTutorDashboard() {
             {isOnline ? "Go Offline" : "Go Online"}
           </button>
           <Link href="/peer-tutor/training">
-            <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lumina-primary text-black font-bold text-sm hover:scale-105 transition-all shadow-gold-glow">
+            <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lumina-highlight text-black font-bold text-sm hover:scale-105 transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)]">
               <PlayCircle className="w-4 h-4" /> Resume Training
             </button>
           </Link>
@@ -118,8 +119,8 @@ export default function PeerTutorDashboard() {
            <GlassCard className="p-8">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-2xl bg-lumina-primary/10">
-                    <Award className="w-6 h-6 text-lumina-primary" />
+                  <div className="p-3 rounded-2xl bg-lumina-highlight/10">
+                    <Award className="w-6 h-6 text-lumina-highlight" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-white">Certification Progress</h2>

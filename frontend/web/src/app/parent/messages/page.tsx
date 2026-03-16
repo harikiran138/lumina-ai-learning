@@ -51,7 +51,7 @@ export default function ParentMessagesPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="h-12 w-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="h-12 w-12 border-4 border-lumina-highlight border-t-transparent rounded-full animate-spin"></div>
       </div>
     )
   }
@@ -70,7 +70,7 @@ export default function ParentMessagesPage() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input 
                 placeholder="Search conversations..." 
-                className="bg-white/5 border-white/10 pl-11 h-12 rounded-2xl focus:ring-purple-500"
+                className="bg-white/5 border-white/10 pl-11 h-12 rounded-2xl focus:ring-lumina-highlight"
               />
             </div>
           </div>
@@ -82,12 +82,12 @@ export default function ParentMessagesPage() {
                 onClick={() => setSelectedChat(chat.id)}
                 className={`p-4 rounded-[1.5rem] cursor-pointer transition-all flex gap-4 border ${
                   selectedChat === chat.id 
-                    ? "bg-purple-600/10 border-purple-500/30 ring-1 ring-purple-500/20" 
+                    ? "bg-lumina-highlight/10 border-lumina-highlight/30 ring-1 ring-lumina-highlight/20" 
                     : "bg-transparent border-transparent hover:bg-white/5 hover:border-white/10"
                 }`}
               >
                 <div className="relative shrink-0">
-                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center text-xl font-bold border border-white/10">
+                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-lumina-highlight/20 to-gold-500/20 flex items-center justify-center text-xl font-bold border border-white/10">
                     {chat.from[0]}
                   </div>
                   {chat.unread && (
@@ -154,13 +154,13 @@ export default function ParentMessagesPage() {
                     </div>
                  </div>
 
-                 <div className="flex gap-4 flex-row-reverse">
-                    <div className="h-10 w-10 rounded-xl bg-purple-600 flex items-center justify-center font-bold shrink-0 mt-1">P</div>
-                    <div className="bg-purple-600 text-white p-4 rounded-3xl rounded-tr-none max-w-[70%] shadow-lg shadow-purple-500/10">
-                       <p className="text-sm leading-relaxed">Thank you for the update. I'll make sure they complete the final assignment by Friday.</p>
-                       <p className="text-[10px] text-purple-200 mt-2 font-bold uppercase text-right">Just Now</p>
-                    </div>
-                 </div>
+                  <div className="flex gap-4 flex-row-reverse">
+                     <div className="h-10 w-10 rounded-xl bg-lumina-highlight flex items-center justify-center font-black shrink-0 mt-1 text-black">P</div>
+                     <div className="bg-lumina-highlight text-black p-4 rounded-3xl rounded-tr-none max-w-[70%] shadow-lg shadow-lumina-highlight/10">
+                        <p className="text-sm leading-relaxed">Thank you for the update. I'll make sure they complete the final assignment by Friday.</p>
+                        <p className="text-[10px] text-black/60 mt-2 font-bold uppercase text-right">Just Now</p>
+                     </div>
+                  </div>
               </div>
 
               {/* Input Area */}

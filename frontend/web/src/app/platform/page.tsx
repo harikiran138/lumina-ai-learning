@@ -4,7 +4,7 @@ import Link from "next/link";
 import { 
   Bot, 
   ShieldCheck, 
-  Unite, 
+  Link2, 
   Zap, 
   BarChart3, 
   Clock,
@@ -72,7 +72,7 @@ export default function PlatformPage() {
               description="AI outputs are audited by educators to ensure accuracy, pedagogical alignment, and safety."
             />
             <FeatureCard 
-              icon={Unite}
+              icon={Link2}
               title="Role Synergy"
               description="Seamless workflows between students, mentors, parents, and administrative leads."
             />

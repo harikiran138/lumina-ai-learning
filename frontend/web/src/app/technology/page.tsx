@@ -11,7 +11,7 @@ import {
   ArrowRight,
   Sparkles,
   Server,
-  CloudCircuit
+  Workflow
 } from "lucide-react";
 import { DottedSurface } from "@/components/ui/DottedSurface";
 import Footer from "@/components/layout/Footer";
@@ -121,7 +121,7 @@ export default function TechnologyPage() {
                    <div className="absolute inset-4 rounded-full border border-white/5 animate-reverse-spin-slow" />
                    <div className="absolute inset-0 flex items-center justify-center">
                       <div className="h-24 w-24 bg-lumina-highlight rounded-3xl rotate-12 flex items-center justify-center text-black shadow-[0_0_50px_rgba(245,158,11,0.4)]">
-                        <CloudCircuit className="w-12 h-12" />
+                        <Workflow className="w-12 h-12" />
                       </div>
                    </div>
                 </div>

@@ -117,7 +117,7 @@ export default function MentorMatches() {
                </p>
 
                <div className="flex flex-wrap gap-2 mb-6">
-                  {(mentee.skills || ['React', 'TS', 'AI']).map(s => (
+                  {(mentee.skills || ['React', 'TS', 'AI']).map((s: string) => (
                     <span key={s} className="px-2 py-1 rounded-lg bg-white/5 text-[10px] text-gray-400 font-bold border border-white/5">{s}</span>
                   ))}
                </div>

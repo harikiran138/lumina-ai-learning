@@ -68,7 +68,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     return (
       <div className="rounded-xl border border-white/10 bg-black/80 backdrop-blur-md p-4 shadow-2xl">
         <p className="text-xs text-gray-400 font-medium">Monthly Activity</p>
-        <p className="text-lg font-bold text-lumina-primary">{payload[0].value} Sessions</p>
+        <p className="text-lg font-bold text-lumina-highlight">{payload[0].value} Sessions</p>
       </div>
     );
   }
@@ -110,7 +110,7 @@ export default function MentorDashboard() {
         </div>
         <div className="flex items-center gap-3">
           <Link href="/mentor/sessions">
-            <button className="px-6 py-2.5 rounded-xl bg-lumina-primary text-black font-bold text-sm hover:scale-105 transition-transform shadow-gold-glow">
+            <button className="px-6 py-2.5 rounded-xl bg-lumina-highlight text-black font-bold text-sm hover:scale-105 transition-transform shadow-[0_0_20px_rgba(245,158,11,0.3)]">
               Schedule Session
             </button>
           </Link>
@@ -134,7 +134,7 @@ export default function MentorDashboard() {
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-white group-hover:gradient-text transition-all">{metric.value}</span>
+              <span className="text-3xl font-bold text-white group-hover:text-lumina-highlight transition-all">{metric.value}</span>
               <span className={cn(
                 "text-xs font-bold",
                 metric.trend === 'up' ? "text-green-500" : "text-red-500"
@@ -149,18 +149,18 @@ export default function MentorDashboard() {
         <GlassCard className="lg:col-span-2 p-8">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-lumina-primary/10">
-                <Users className="w-6 h-6 text-lumina-primary" />
+              <div className="p-3 rounded-2xl bg-lumina-highlight/10">
+                <Users className="w-6 h-6 text-lumina-highlight" />
               </div>
               <h2 className="text-2xl font-bold text-white">Mentee Matches</h2>
             </div>
-            <Link href="/mentor/matches" className="text-xs font-bold text-lumina-primary hover:underline uppercase tracking-tighter">View All Potential</Link>
+            <Link href="/mentor/matches" className="text-xs font-bold text-lumina-highlight hover:underline uppercase tracking-tighter">View All Potential</Link>
           </div>
           
           <div className="space-y-4">
             {loading ? (
               <div className="h-64 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-lumina-primary"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-lumina-highlight"></div>
               </div>
             ) : matches.length > 0 ? (
               matches.slice(0, 4).map((mentee) => (
@@ -168,7 +168,7 @@ export default function MentorDashboard() {
                   <div className="relative">
                     <img 
                       src={mentee.avatar || `https://ui-avatars.com/api/?name=${mentee.name}&background=random`} 
-                      className="w-14 h-14 rounded-full object-cover border-2 border-white/10 group-hover:border-lumina-primary/30 transition-colors" 
+                      className="w-14 h-14 rounded-full object-cover border-2 border-white/10 group-hover:border-lumina-highlight/30 transition-colors" 
                       alt={mentee.name} 
                     />
                     <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-black border border-white/10">
@@ -185,12 +185,12 @@ export default function MentorDashboard() {
                   </div>
                   <div className="text-right">
                     <div className="flex items-center gap-1.5 justify-end mb-1">
-                      <Target className="w-4 h-4 text-lumina-primary" />
+                      <Target className="w-4 h-4 text-lumina-highlight" />
                       <span className="text-lg font-bold text-white">{mentee.alignmentScore || '94'}%</span>
                     </div>
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Alignment Score</p>
                   </div>
-                  <button className="p-2 rounded-xl bg-white/5 hover:bg-lumina-primary/20 hover:text-lumina-primary transition-all ml-2">
+                  <button className="p-2 rounded-xl bg-white/5 hover:bg-lumina-highlight/20 hover:text-lumina-highlight transition-all ml-2">
                     <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -244,13 +244,13 @@ export default function MentorDashboard() {
             </div>
           </GlassCard>
 
-          <GlassCard className="p-8 bg-gradient-to-br from-lumina-primary/10 to-transparent">
+          <GlassCard className="p-8 bg-gradient-to-br from-lumina-highlight/10 to-transparent">
              <div className="flex items-center gap-3 mb-6">
-               <Award className="w-6 h-6 text-lumina-primary" />
+               <Award className="w-6 h-6 text-lumina-highlight" />
                <h3 className="font-bold text-white">Mentor Pro</h3>
              </div>
              <p className="text-sm text-gray-400 leading-relaxed mb-6">
-               You are in the top <span className="text-white font-bold">5%</span> of mentors this month. Your mentees show a <span className="text-lumina-primary font-bold">42%</span> faster skill acquisition rate.
+               You are in the top <span className="text-white font-bold">5%</span> of mentors this month. Your mentees show a <span className="text-lumina-highlight font-bold">42%</span> faster skill acquisition rate.
              </p>
              <button className="w-full py-2.5 rounded-xl border border-white/10 text-xs font-bold text-white hover:bg-white/5 transition-colors uppercase tracking-widest">
                View Performance Insights
@@ -278,14 +278,14 @@ export default function MentorDashboard() {
                { id: 2, name: 'Marcus J.', title: 'Neural Net Viz', time: '5h ago' }
              ].map((item) => (
                <div key={item.id} className="flex items-center gap-4 p-4 rounded-2xl glass-v2 border-white/5 hover:bg-white/5 transition-all group cursor-pointer">
-                 <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center font-bold text-purple-400 text-xs">
+                 <div className="w-10 h-10 rounded-xl bg-lumina-highlight/20 flex items-center justify-center font-bold text-lumina-highlight text-xs">
                     {item.name[0]}
                  </div>
                  <div className="flex-1 min-w-0">
                     <h5 className="text-sm font-bold text-white truncate">{item.title}</h5>
                     <p className="text-[10px] text-gray-500 font-medium">{item.name} • {item.time}</p>
                  </div>
-                 <button className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-lumina-primary text-black transition-all">
+                  <button className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-lumina-highlight text-black transition-all">
                    <ChevronRight className="w-4 h-4" />
                  </button>
                </div>
@@ -296,8 +296,8 @@ export default function MentorDashboard() {
         <GlassCard className="lg:col-span-2 p-8">
            <div className="flex items-center justify-between mb-8">
              <div className="flex items-center gap-3">
-               <div className="p-3 rounded-2xl bg-lumina-primary/10">
-                 <Zap className="w-6 h-6 text-lumina-primary" />
+                <div className="p-3 rounded-2xl bg-lumina-highlight/10">
+                  <Zap className="w-6 h-6 text-lumina-highlight" />
                </div>
                <h2 className="text-2xl font-bold text-white">Mentorship Impact</h2>
              </div>
@@ -313,8 +313,8 @@ export default function MentorDashboard() {
                 <AreaChart data={sessionData}>
                   <defs>
                     <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#bf9304" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#bf9304" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
@@ -329,7 +329,7 @@ export default function MentorDashboard() {
                   <Area
                     type="monotone"
                     dataKey="sessions"
-                    stroke="#bf9304"
+                    stroke="#F59E0B"
                     strokeWidth={4}
                     fillOpacity={1}
                     fill="url(#colorSessions)"
