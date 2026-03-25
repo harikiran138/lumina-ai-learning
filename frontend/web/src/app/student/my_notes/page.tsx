@@ -20,6 +20,7 @@ import {
   PenTool,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import HandwritingUpload from "@/components/HandwritingUpload";
 
@@ -117,7 +118,7 @@ export default function MyNotesPage() {
 
   const handleSaveNote = async () => {
     if (!formData.title.trim()) {
-      alert("Title is required");
+      toast.error("Title is required");
       return;
     }
     setIsSaving(true);
@@ -148,7 +149,7 @@ export default function MyNotesPage() {
       // alert("Saved successfully!"); // Optional: Feedback is good, but "Real time" should be subtle.
     } catch (error) {
       console.error("Failed to save note", error);
-      alert("Failed to save note. Please try again.");
+      toast.error("Failed to save note. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -173,7 +174,7 @@ export default function MyNotesPage() {
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         // Increased to 5MB
-        alert("File is too large. Max size is 5MB.");
+        toast.error("File is too large. Max size is 5MB.");
         return;
       }
 

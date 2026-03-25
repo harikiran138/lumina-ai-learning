@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Upload, CheckCircle, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Assignment {
   id: string;
@@ -50,14 +51,14 @@ export default function StudentAssignmentsPage() {
       const data = await api.submitAssignment(assignmentId, file);
 
       if (data.status === "success" || data.id) {
-        alert("Assignment submitted successfully!");
+        toast.success("Assignment submitted successfully!");
         fetchAssignments();
       } else {
-        alert("Submission failed: " + (data.message || "Unknown error"));
+        toast.error("Submission failed: " + (data.message || "Unknown error"));
       }
     } catch (err: any) {
       console.error(err);
-      alert("Error uploading file: " + (err.message || "Check your connection"));
+      toast.error("Error uploading file: " + (err.message || "Check your connection"));
     } finally {
       setSubmitting(null);
     }

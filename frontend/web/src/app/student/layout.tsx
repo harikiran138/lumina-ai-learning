@@ -3,6 +3,7 @@
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopNav from "@/components/dashboard/TopNav";
 import { BGPattern } from "@/components/ui/BGPattern";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ export default function StudentLayout({
           )}
         >
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Breadcrumb />
             {children}
           </div>
         </main>

@@ -23,8 +23,9 @@ export function StatCard({
   className,
   color = "default",
 }: StatCardProps) {
-  const colorStyles = {
+  const colorStyles: Record<string, string> = {
     gold: "text-lumina-highlight bg-lumina-highlight/10",
+    amber: "text-amber-400 bg-amber-500/10",
     blue: "text-amber-400 bg-amber-500/10",
     green: "text-yellow-400 bg-yellow-500/10",
     purple: "text-amber-400 bg-amber-500/10",

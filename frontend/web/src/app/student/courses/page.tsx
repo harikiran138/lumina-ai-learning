@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 import {
   BookOpen,
   Search,
@@ -51,10 +52,10 @@ export default function StudentCourses() {
         // Refresh data
         const data = await api.getExploreCourses();
         setExploreData(data);
-        alert("Enrolled successfully!");
+        toast.success("Enrolled successfully!");
       }
     } catch (e) {
-      alert("Failed to enroll");
+      toast.error("Failed to enroll");
     }
   };
 
