@@ -27,3 +27,6 @@ backend/db/
 *.pyc
 __pycache__/
 debug_rag.py
+
+# Firebase build artifacts
+.firebase/
