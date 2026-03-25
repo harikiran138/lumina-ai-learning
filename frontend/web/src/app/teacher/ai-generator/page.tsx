@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { extractTextFromPDF } from "@/lib/pdf-parser";
+import { toast } from "sonner";
 import {
   Upload,
   FileText,
@@ -94,7 +95,7 @@ export default function CourseGeneratorPage() {
 
   const startAnalysis = async () => {
     if (!file) {
-      alert("Please upload a file first.");
+      toast.info("Please upload a file first.");
       return;
     }
 
@@ -251,7 +252,7 @@ export default function CourseGeneratorPage() {
       }
     } catch (e: any) {
       console.error(e);
-      alert("Analysis failed: " + e.message);
+      toast.error("Analysis failed: " + e.message);
       setStep("upload");
       setAnalysisProgress(0);
     }
@@ -296,7 +297,7 @@ export default function CourseGeneratorPage() {
         throw new Error("Failed to save");
       }
     } catch (e) {
-      alert("Failed to save course");
+      toast.error("Failed to save course");
       setStep("review");
     }
   };
@@ -666,7 +667,7 @@ export default function CourseGeneratorPage() {
                     if (createdCourseId) {
                       setSavingStatus("Publishing...");
                       await api.publishCourse(createdCourseId);
-                      alert("Course Published Successfully!");
+                      toast.success("Course Published Successfully!");
                       window.location.href = "/teacher/courses";
                     }
                   }}

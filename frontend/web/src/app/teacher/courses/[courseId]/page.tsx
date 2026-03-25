@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import {
   Users,
@@ -105,7 +106,7 @@ export default function CourseManagementPage() {
         const updatedCourse = await api.getCourseDetails(courseId);
         setCourse(updatedCourse);
       } else {
-        alert(res.error || "Failed to add module");
+        toast.error(res.error || "Failed to add module");
       }
     } catch (error) {
       console.error(error);
@@ -124,7 +125,7 @@ export default function CourseManagementPage() {
         const updatedCourse = await api.getCourseDetails(courseId);
         setCourse(updatedCourse);
       } else {
-        alert(res.error || "Failed to add lesson");
+        toast.error(res.error || "Failed to add lesson");
       }
     } catch (error) {
       console.error(error);

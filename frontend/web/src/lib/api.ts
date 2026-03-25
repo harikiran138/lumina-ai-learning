@@ -1,5 +1,48 @@
 // API client for the Lumina FastAPI backend
 
+// ── Cookie helpers for auth token ────────────────────────────────────────────
+function setAuthCookie(token: string): void {
+  if (typeof document === 'undefined') return
+  document.cookie = `auth_token=${token}; path=/; SameSite=Strict; max-age=86400`
+}
+
+function clearAuthCookie(): void {
+  if (typeof document === 'undefined') return
+  document.cookie = 'auth_token=; path=/; max-age=0'
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Fetch with retry + timeout ────────────────────────────────────────────────
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries = 3,
+  timeoutMs = 10000
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      })
+      clearTimeout(timeoutId)
+      return response
+    } catch (err: unknown) {
+      if (attempt === retries) {
+        clearTimeout(timeoutId)
+        throw err
+      }
+      // Exponential backoff: 1s, 2s, 3s
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
+    }
+  }
+  throw new Error('Max retries exceeded')
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface User {
   id: string;
   name: string;
@@ -24,7 +67,13 @@ export class RealAPI {
 
   private constructor() {
     if (typeof window !== "undefined") {
-      this.token = sessionStorage.getItem("lumina_token");
+      // Token is now stored as a cookie; keep sessionStorage as a fallback
+      // for clients that had a session before this change
+      const cookieToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth_token='))
+        ?.split('=')[1]
+      this.token = cookieToken || sessionStorage.getItem("lumina_token") || null
       const storedUser = sessionStorage.getItem("lumina_user");
       if (storedUser) {
         this.currentUser = JSON.parse(storedUser);
@@ -47,6 +96,28 @@ export class RealAPI {
     );
   }
 
+  private async handleUnauthorized(): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.getApiBase()}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const { token } = await res.json()
+        this.token = token
+        setAuthCookie(token)
+        return true // signal caller to retry the original request
+      }
+    } catch {
+      // refresh failed
+    }
+    this.logout()
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login?reason=session_expired'
+    }
+    return false
+  }
+
   private async fetchAuthorized(
     path: string,
     options: RequestInit = {},
@@ -61,14 +132,18 @@ export class RealAPI {
       headers.set("Content-Type", "application/json");
     }
 
-    const response = await fetch(`${this.getApiBase()}${path}`, {
+    const response = await fetchWithRetry(`${this.getApiBase()}${path}`, {
       ...options,
       headers,
     });
 
     if (response.status === 401) {
-      // Handle unauthorized (maybe logout)
-      console.warn("Unauthorized request to backend");
+      const refreshed = await this.handleUnauthorized()
+      if (refreshed) {
+        // Retry once with refreshed token
+        headers.set("Authorization", `Bearer ${this.token}`);
+        return fetchWithRetry(`${this.getApiBase()}${path}`, { ...options, headers })
+      }
     }
 
     return response;
@@ -107,7 +182,7 @@ export class RealAPI {
     formData.append("username", email);
     formData.append("password", password);
 
-    const res = await fetch(`${this.getApiBase()}/api/auth/token`, {
+    const res = await fetchWithRetry(`${this.getApiBase()}/api/auth/token`, {
       method: "POST",
       body: formData,
     });
@@ -120,9 +195,7 @@ export class RealAPI {
     const tokenData = await res.json();
     this.token = tokenData.access_token;
 
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("lumina_token", this.token!);
-    }
+    setAuthCookie(this.token!)
 
     // Fetch user details
     const userRes = await this.fetchAuthorized("/api/auth/me");
@@ -161,7 +234,7 @@ export class RealAPI {
       throw new Error("Password is required for signup.");
     }
 
-    const res = await fetch(`${this.getApiBase()}/api/auth/register`, {
+    const res = await fetchWithRetry(`${this.getApiBase()}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -814,8 +887,9 @@ export class RealAPI {
     this.token = null;
     if (typeof window !== "undefined") {
       sessionStorage.removeItem("lumina_user");
-      sessionStorage.removeItem("lumina_token");
+      sessionStorage.removeItem("lumina_token"); // legacy cleanup
     }
+    clearAuthCookie()
   }
 
   async updateProgress(

@@ -17,6 +17,7 @@ import {
   Eye,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function AssignmentsPage() {
   return (
@@ -280,15 +281,15 @@ function CreateAssignmentForm({ onSuccess }: { onSuccess: () => void }) {
       const result = await api.createAssignment(payload);
 
       if (result?.status === "success") {
-        alert("Assignment Created Successfully!");
+        toast.success("Assignment Created Successfully!");
         (e.target as HTMLFormElement).reset();
         onSuccess();
       } else {
-        alert(result?.detail || "Failed to create assignment");
+        toast.error(result?.detail || "Failed to create assignment");
       }
     } catch (err) {
       console.error(err);
-      alert("Error creating assignment");
+      toast.error("Error creating assignment");
     } finally {
       setLoading(false);
     }

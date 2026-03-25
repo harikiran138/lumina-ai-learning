@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Upload, FileText, CheckCircle, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface UploadProps {
   type: "assignment" | "note";
@@ -34,11 +35,11 @@ export default function HandwritingUpload({
         setResult(responseData);
         if (onUploadComplete) onUploadComplete(responseData);
       } else {
-        alert("Upload failed: " + (data.message || "Unknown error"));
+        toast.error("Upload failed: " + (data.message || "Unknown error"));
       }
     } catch (error: any) {
       console.error("Error uploading:", error);
-      alert("Error uploading file: " + (error.message || "Check connection"));
+      toast.error("Error uploading file: " + (error.message || "Check connection"));
     } finally {
       setLoading(false);
     }

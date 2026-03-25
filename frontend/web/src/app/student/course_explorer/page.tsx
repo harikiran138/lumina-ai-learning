@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 import {
   Search,
   Filter,
@@ -41,11 +42,11 @@ export default function CourseExplorerPage() {
       if (res.success || res.error === "Already enrolled in this course") {
         router.push("/student/courses");
       } else {
-        alert(res.error || "Failed to enroll");
+        toast.error(res.error || "Failed to enroll");
       }
     } catch (error) {
       console.error("Enrollment error", error);
-      alert("Something went wrong");
+      toast.error("Something went wrong");
     } finally {
       setEnrollingId(null);
     }

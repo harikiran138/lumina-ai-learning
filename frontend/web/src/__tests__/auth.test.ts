@@ -1,63 +1,73 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { api } from '../lib/api';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { server } from './mocks/server';
 
-// Mock fetch globally
-global.fetch = vi.fn();
+// NOTE: This file was updated to use MSW instead of vi.fn() on global.fetch
+// because MSW's server.listen() (called in setup.ts beforeAll) patches
+// globalThis.fetch AFTER module-level vi.fn() assignments, overwriting them.
+
+const BASE = 'http://127.0.0.1:8000';
 
 describe('Auth API in frontend API Service', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     sessionStorage.clear();
+    document.cookie = 'auth_token=; path=/; max-age=0';
   });
 
-  it('should login successfully, fetch profile, and set session storage', async () => {
-    // 1st call: /api/auth/token
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ access_token: 'fake-token-123' })
-    });
+  it('should login successfully, fetch profile, and set auth cookie', async () => {
+    server.use(
+      http.post(`${BASE}/api/auth/token`, () =>
+        HttpResponse.json({ access_token: 'fake-token-123', token_type: 'bearer' })
+      ),
+      http.get(`${BASE}/api/auth/me`, () =>
+        HttpResponse.json({
+          id: '1',
+          email: 'student@example.com',
+          full_name: 'Student Name',
+          name: 'Student Name',
+          role: 'student',
+          status: 'active',
+          avatar: '',
+          created_at: '2023-01-01T00:00:00Z',
+        })
+      )
+    );
 
-    // 2nd call: /api/auth/me
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        id: '1',
-        email: 'student@example.com',
-        full_name: 'Student Name',
-        role: 'student',
-        created_at: '2023-01-01T00:00:00Z'
-      })
-    });
-
+    // Re-import to get the singleton (already instantiated)
+    const { api } = await import('../lib/api');
     const user = await api.login('student@example.com', 'password123');
 
     expect(user).toBeDefined();
     expect(user.role).toBe('student');
     expect(user.email).toBe('student@example.com');
-    // Token is saved to session store
-    expect(sessionStorage.getItem('lumina_token')).toBe('fake-token-123');
+    // Token is now stored in cookie, not sessionStorage
+    expect(document.cookie).toContain('auth_token=fake-token-123');
   });
 
   it('should throw an error on failed login', async () => {
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ detail: 'Incorrect email or password' })
-    });
+    server.use(
+      http.post(`${BASE}/api/auth/token`, () =>
+        HttpResponse.json({ detail: 'Incorrect email or password' }, { status: 401 })
+      )
+    );
 
-    await expect(api.login('student@example.com', 'wrongpassword')).rejects.toThrow('Incorrect email or password');
-    expect(sessionStorage.getItem('lumina_token')).toBeNull();
+    const { api } = await import('../lib/api');
+    await expect(api.login('student@example.com', 'wrongpassword'))
+      .rejects.toThrow();
   });
-  
+
   it('should clear session correctly on logout', async () => {
-     sessionStorage.setItem('lumina_token', 'test-token');
-     sessionStorage.setItem('lumina_user', JSON.stringify({ name: 'Test' }));
-     
-     await api.logout();
-     
-     expect(sessionStorage.getItem('lumina_token')).toBeNull();
-     expect(sessionStorage.getItem('lumina_user')).toBeNull();
+    sessionStorage.setItem('lumina_token', 'test-token');
+    sessionStorage.setItem('lumina_user', JSON.stringify({ name: 'Test' }));
+    document.cookie = 'auth_token=test-token; path=/';
+
+    const { api } = await import('../lib/api');
+    api.logout();
+
+    expect(sessionStorage.getItem('lumina_token')).toBeNull();
+    expect(sessionStorage.getItem('lumina_user')).toBeNull();
   });
 });

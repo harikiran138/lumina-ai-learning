@@ -3,6 +3,7 @@
 import TeacherSidebar from "@/components/dashboard/TeacherSidebar";
 import TopNav from "@/components/dashboard/TopNav";
 import { BGPattern } from "@/components/ui/BGPattern";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 
@@ -59,6 +60,7 @@ export default function TeacherLayout({
 
       <main className="lg:ml-64 pt-16 min-h-screen transition-all duration-300">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Breadcrumb />
           {children}
         </div>
       </main>
