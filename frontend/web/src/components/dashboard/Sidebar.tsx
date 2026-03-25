@@ -162,9 +162,10 @@ export default function Sidebar({
         {/* Mobile Close Button */}
         <button
           onClick={onClose}
-          className="lg:hidden text-gray-400 hover:text-white transition-colors"
+          aria-label="Close menu"
+          className="lg:hidden text-gray-400 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lumina-primary rounded"
         >
-          <X className="w-6 h-6" />
+          <X className="w-6 h-6" aria-hidden="true" />
         </button>
       </div>
 
@@ -177,6 +178,7 @@ export default function Sidebar({
               href={item.href}
               suppressHydrationWarning
               onClick={onClose}
+              aria-label={isCollapsed && !isHovered ? item.name : undefined}
               className={cn(
                 "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group",
                 isCollapsed && !isHovered ? "justify-center px-0" : "px-4",
@@ -186,6 +188,7 @@ export default function Sidebar({
               )}
             >
               <item.icon
+                aria-hidden="true"
                 className={cn(
                   "h-5 w-5 transition-all duration-500",
                   isCollapsed && !isHovered ? "mr-0 scale-110" : "mr-3",
@@ -261,12 +264,14 @@ export default function Sidebar({
         <button
           onClick={handleLogout}
           suppressHydrationWarning
+          aria-label="Sign out"
           className={cn(
-            "flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-300",
+            "flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400",
             isCollapsed && !isHovered ? "justify-center px-0" : "px-4",
           )}
         >
           <LogOut
+            aria-hidden="true"
             className={cn(
               "h-4 w-4 transition-all duration-500",
               isCollapsed && !isHovered ? "mr-0" : "mr-3",

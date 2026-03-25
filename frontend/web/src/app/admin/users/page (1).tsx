@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<any[]>([]);
@@ -47,9 +48,9 @@ export default function AdminUsers() {
       setIsAddModalOpen(false);
       setFormData({ name: "", email: "", password: "", role: "student" });
       fetchUsers(); // Refresh list
-      alert("User created successfully");
+      toast.success("User created successfully");
     } catch (error: any) {
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 

@@ -18,6 +18,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function AssignmentSubmissionsPage() {
   const params = useParams();
@@ -101,11 +102,11 @@ export default function AssignmentSubmissionsPage() {
         setEditingFeedback(data.feedback);
         fetchSubmissions(); // specific refresh
       } else {
-        alert("Grading failed. Please try again.");
+        toast.error("Grading failed. Please try again.");
       }
     } catch (e) {
       console.error(e);
-      alert("Error during AI grading");
+      toast.error("Error during AI grading");
     } finally {
       setGradingId(null);
     }
@@ -129,15 +130,15 @@ export default function AssignmentSubmissionsPage() {
       );
 
       if (res.ok) {
-        alert("Score updated successfully!");
+        toast.success("Score updated successfully!");
         setGradeResult(null);
         fetchSubmissions();
       } else {
-        alert("Failed to update score");
+        toast.error("Failed to update score");
       }
     } catch (e) {
       console.error(e);
-      alert("Error updating score");
+      toast.error("Error updating score");
     } finally {
       setSaving(false);
     }
@@ -162,7 +163,7 @@ export default function AssignmentSubmissionsPage() {
         const data = await res.json();
         setSubmissionReport(data);
       } else {
-        alert("Failed to load submission report");
+        toast.error("Failed to load submission report");
       }
     } catch (e) {
       console.error("Failed to load submission report", e);
@@ -194,11 +195,11 @@ export default function AssignmentSubmissionsPage() {
       } else {
         const txt = await res.text();
         console.error("Course generation failed", txt);
-        alert("AI course generation failed. See console for details.");
+        toast.error("AI course generation failed. See console for details.");
       }
     } catch (e) {
       console.error("Error generating course", e);
-      alert("Error generating course");
+      toast.error("Error generating course");
     } finally {
       setCourseLoading(false);
     }
@@ -239,13 +240,13 @@ export default function AssignmentSubmissionsPage() {
 
       if (result.success && result.courseId) {
         setSavedCourseId(result.courseId);
-        alert("Personalized course saved as draft in Courses.");
+        toast.success("Personalized course saved as draft in Courses.");
       } else {
-        alert("Failed to save course draft.");
+        toast.error("Failed to save course draft.");
       }
     } catch (e) {
       console.error("Error saving course from plan", e);
-      alert("Error saving course draft.");
+      toast.error("Error saving course draft.");
     } finally {
       setCourseSaving(false);
     }
