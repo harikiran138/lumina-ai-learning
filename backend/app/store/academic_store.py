@@ -85,3 +85,23 @@ class AcademicStore:
         except Exception as e:
             log.error("promote_student_failed", error=str(e), student_id=student_id)
             return None
+
+    # --- Department Methods ---
+
+    async def get_departments(self, institution_id: str) -> List[dict]:
+        """Fetch all departments for an institution."""
+        return await self.db.fetch_all("departments", {"institution_id": institution_id})
+
+    async def get_department_by_id(self, dept_id: str) -> Optional[dict]:
+        return await self.db.fetch_one("departments", {"id": dept_id})
+
+    async def get_department_by_hod(self, hod_id: str) -> Optional[dict]:
+        return await self.db.fetch_one("departments", {"hod_id": hod_id})
+
+    async def get_department_teachers(self, dept_id: str) -> List[dict]:
+        """Fetch all teachers belonging to a specific department."""
+        return await self.db.fetch_all("users", {"department_id": dept_id, "role": "teacher"})
+
+    async def get_department_programs(self, dept_id: str) -> List[dict]:
+        """Fetch all programs under a specific department."""
+        return await self.db.fetch_all("programs", {"department_id": dept_id})

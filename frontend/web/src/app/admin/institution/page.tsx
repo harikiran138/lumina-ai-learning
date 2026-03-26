@@ -137,23 +137,16 @@ export default function InstitutionManagementPage() {
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <p className="text-sm font-semibold text-white">Graph snapshot</p>
+            <p className="text-sm font-semibold text-white">Institutional posture</p>
             <div className="mt-5 grid grid-cols-2 gap-4">
-              <SummaryTile label="Institutions" value={institutions.length} />
-              <SummaryTile label="Connected" value={connectedInstitutions} />
+              <SummaryTile label="Identity" value={1} />
+              <SummaryTile label="Connected" value={connectedInstitutions ? 1 : 0} />
               <SummaryTile label="Live links" value={connections.length} />
               <SummaryTile
-                label="Empty shells"
-                value={institutions.length - connectedInstitutions}
+                label="System Mode"
+                value="Single Tenant"
               />
             </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-lumina-primary px-4 py-3 font-semibold text-black transition-colors hover:bg-lumina-secondary shadow-gold-glow"
-            >
-              <Plus className="h-4 w-4" />
-              Add institution
-            </button>
           </div>
         </div>
       </section>
@@ -170,12 +163,21 @@ export default function InstitutionManagementPage() {
         <div className="flex items-start justify-between gap-4 border-b border-white/5 p-6">
           <div>
             <h2 className="text-xl font-display font-bold text-white">
-              Institutions
+              Primary Institution
             </h2>
             <p className="mt-1 text-sm text-gray-400">
-              Stakeholder counts make it obvious which tenants are connected and which still need setup.
+              The only organization tenant permitted on this platform.
             </p>
           </div>
+          {institutions.length === 0 && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-lumina-highlight px-4 py-2 text-sm font-bold text-black transition-all hover:scale-105"
+            >
+              <Plus className="h-4 w-4" />
+              Add Institution
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -185,54 +187,56 @@ export default function InstitutionManagementPage() {
         ) : institutions.length === 0 ? (
           <EmptyInstitutions />
         ) : (
-          <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
-            {institutions.map((institution) => {
+          <div className="grid gap-4 p-6 md:grid-cols-2 lg:grid-cols-1">
+            {institutions.slice(0, 1).map((institution) => {
               const stakeholderCount = connectionCounts.get(institution.id) || 0;
               return (
                 <div
                   key={institution.id}
-                  className="rounded-3xl border border-white/10 bg-white/[0.03] p-5"
+                  className="rounded-3xl border border-white/10 bg-white/[0.03] p-6"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-500">
-                        {institution.institution_type || "Institution"}
+                        Primary {institution.institution_type || "Institution"}
                       </p>
-                      <h3 className="mt-2 text-lg font-semibold text-white">
+                      <h3 className="mt-2 text-2xl font-semibold text-white">
                         {institution.institution_name}
                       </h3>
                     </div>
                     <span
                       className={cn(
-                        "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
+                        "rounded-full border px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.18em]",
                         stakeholderCount > 0
                           ? "border-lumina-primary/20 bg-lumina-primary/10 text-lumina-primary"
                           : "border-lumina-highlight/20 bg-lumina-highlight/10 text-lumina-highlight"
 ,
                       )}
                     >
-                      {stakeholderCount > 0 ? "Connected" : "Needs links"}
+                      {stakeholderCount > 0 ? "Connected" : "Requires Stakeholders"}
                     </span>
                   </div>
 
-                  <div className="mt-4 space-y-2 text-sm text-gray-400">
-                    <p className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-gray-500" />
-                      {[institution.city, institution.state].filter(Boolean).join(", ") || "Location pending"}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-gray-500" />
-                      {stakeholderCount} stakeholder connection(s)
-                    </p>
-                  </div>
+                  <div className="mt-6 grid gap-6 md:grid-cols-2">
+                    <div className="space-y-3 text-sm text-gray-400">
+                      <p className="flex items-center gap-3">
+                        <MapPin className="h-5 w-5 text-gray-500" />
+                        {[institution.city, institution.state].filter(Boolean).join(", ") || "Location pending"}
+                      </p>
+                      <p className="flex items-center gap-3">
+                        <Users className="h-5 w-5 text-gray-500" />
+                        {stakeholderCount} stakeholder connection(s)
+                      </p>
+                    </div>
 
-                  <div className="mt-5 rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
-                      Onboarding
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-white">
-                      {institution.onboarding_status || "PENDING"}
-                    </p>
+                    <div className="rounded-2xl border border-white/10 bg-black/10 px-5 py-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
+                        Operational Status
+                      </p>
+                      <p className="mt-2 text-lg font-medium text-white">
+                        {institution.onboarding_status || "ACTIVE"}
+                      </p>
+                    </div>
                   </div>
                 </div>
               );
@@ -545,7 +549,7 @@ function ConnectionComposer({ onCreated }: { onCreated: () => Promise<void> | vo
   );
 }
 
-function SummaryTile({ label, value }: { label: string; value: number }) {
+function SummaryTile({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
       <p className="text-xs uppercase tracking-[0.22em] text-gray-500">{label}</p>

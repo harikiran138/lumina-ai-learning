@@ -44,6 +44,14 @@ const roles = [
     color: "amber"
   },
   {
+    id: "hod",
+    title: "Head of Department",
+    description: "Departmental oversight, teacher assignments, and academic performance.",
+    icon: ShieldCheck,
+    href: "/hod/dashboard",
+    color: "gold"
+  },
+  {
     id: "mentor",
     title: "Mentor",
     description: "Guided support and advanced feedback for specialized learners.",
