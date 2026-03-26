@@ -432,26 +432,28 @@ class DynamicDashboard {
           const streakIcon = student.streak > 0 ? "🔥" : "❄️";
 
           row.innerHTML = `
-                        <td class="py-3 pr-4 font-semibold">${
+                        <td class="py-3 pr-4 font-semibold align-middle">${
                           student.studentName || "Unknown"
                         } ${
                           isStruggling
                             ? '<span class="text-xs text-red-500 font-bold ml-1">(Struggling)</span>'
                             : ""
                         }</td>
-                        <td class="py-3 px-4">
+                        <td class="py-3 px-4 align-middle">
                             <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                 <div class="${progressColor} h-2 rounded-full" style="width: ${
                                   student.progress
                                 }%"></div>
                             </div>
                         </td>
-                        <td class="py-3 px-4 font-bold ${masteryColor}">${
+                        <td class="py-3 px-4 font-bold ${masteryColor} align-middle">${
                           student.mastery
                         }%</td>
-                        <td class="py-3 pl-4 font-semibold flex items-center gap-1">${
-                          student.streak
-                        } ${streakIcon}</td>
+                        <td class="py-3 pl-4 font-semibold align-middle">
+                          <span class="inline-flex items-center gap-1">${
+                            student.streak
+                          } ${streakIcon}</span>
+                        </td>
                     `;
           studentTableBody.appendChild(row);
         });
@@ -578,6 +580,15 @@ class DynamicDashboard {
   }
 
   async renderStudentDashboard() {
+    // 1. Fetch Curriculum Scope (New Integration)
+    try {
+      const scope = await this.api.getCurriculumScope();
+      this.updateCurriculumBadge(scope);
+    } catch (e) {
+      console.warn("Failed to fetch curriculum scope:", e);
+    }
+
+    // 2. Render Enrolled Courses
     const container = document.getElementById("page-content-wrapper");
 
     // If container exists, render the full dashboard (Admin/Old style)
@@ -694,6 +705,20 @@ class DynamicDashboard {
     }
   }
 
+  updateCurriculumBadge(scope) {
+    const badge = document.getElementById("curriculum-badge");
+    const programEl = document.getElementById("student-program");
+    const semesterEl = document.getElementById("student-semester");
+
+    if (scope && scope.is_enrolled && badge) {
+      badge.classList.remove("hidden");
+      if (programEl) programEl.textContent = scope.program_name;
+      if (semesterEl) {
+        semesterEl.textContent = `Semester ${scope.current_semester}`;
+      }
+    }
+  }
+
   renderStudentCourses() {
     if (
       !this.dashboardData.enrolledCourses ||
@@ -702,6 +727,12 @@ class DynamicDashboard {
       return '<p class="text-gray-500 dark:text-gray-400 text-center py-8 col-span-full">No courses enrolled</p>';
     }
 
+    const LESSON_OUTLINE = [
+      { id: "chapter-1", title: "The Core Principles" },
+      { id: "chapter-2", title: "The Schrödinger Equation" },
+      { id: "chapter-3", title: "Applications in Quantum Computing" },
+    ];
+
     return this.dashboardData.enrolledCourses
       .map((course) => {
         const progress = this.dashboardData.studentProgress.find(
@@ -709,28 +740,45 @@ class DynamicDashboard {
         );
         const mastery = progress ? progress.mastery : 0;
         const progressPercent = progress ? progress.progress : 0;
+        const completedLessons = progress && progress.completedLessons ? progress.completedLessons : [];
         const continueUrl = `lesson_page.html?courseId=${encodeURIComponent(
           course.id,
         )}`;
+
+        // Compute next lesson text
+        let nextLessonText = "";
+        if (completedLessons.length === 0) {
+            nextLessonText = `▶ Start: Chapter 1 — ${LESSON_OUTLINE[0].title}`;
+        } else if (completedLessons.length >= LESSON_OUTLINE.length) {
+            nextLessonText = `✅ Completed — Take Assessment`;
+        } else {
+            // Find first chapter not in completedLessons
+            const nextLesson = LESSON_OUTLINE.find(lesson => !completedLessons.includes(lesson.id));
+            if (nextLesson) {
+                const chapterNum = LESSON_OUTLINE.findIndex(l => l.id === nextLesson.id) + 1;
+                nextLessonText = `▶ Next: Chapter ${chapterNum} — ${nextLesson.title}`;
+            } else {
+                nextLessonText = `✅ Completed — Take Assessment`;
+            }
+        }
 
         return `
                 <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
                     <h4 class="font-semibold text-lg mb-2">${course.name}</h4>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">${course.description}</p>
-                    <div class="space-y-2">
-                        <div class="flex justify-between text-sm">
-                            <span>Progress</span>
-                            <span>${progressPercent}%</span>
-                        </div>
-                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div class="space-y-3">
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
                             <div class="bg-blue-500 h-2 rounded-full" style="width: ${progressPercent}%"></div>
                         </div>
-                        <div class="flex justify-between text-sm">
-                            <span>Mastery</span>
-                            <span class="font-semibold">${mastery}%</span>
+                        <div class="text-sm font-medium text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 p-2 rounded">
+                            ${nextLessonText}
                         </div>
-                        <div class="flex justify-end pt-2">
-                            <a href="${continueUrl}" class="px-3 py-1.5 text-xs font-medium text-white bg-amber-600 rounded-full hover:bg-amber-700 transition">Continue</a>
+                        <div class="flex justify-between items-center pt-2">
+                            <div class="text-sm">
+                                <span class="text-gray-500">Mastery:</span>
+                                <span class="font-semibold">${mastery}%</span>
+                            </div>
+                            <a href="${continueUrl}" class="px-4 py-2 text-xs font-medium text-white bg-amber-600 rounded hover:bg-amber-700 transition shadow-sm">Continue Learning</a>
                         </div>
                     </div>
                 </div>

@@ -2,16 +2,24 @@
 
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { Bell, Search, Menu } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function TopNav({
   onMenuClick,
   user = { name: "Student User", role: "Student", initial: "S" },
+  className,
 }: {
   onMenuClick?: () => void;
   user?: { name: string; role: string; initial: string; avatar?: string };
+  className?: string;
 }) {
   return (
-    <header className="fixed top-4 right-4 left-4 lg:left-28 h-16 backdrop-blur-xl bg-black/20 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] z-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between rounded-2xl transition-all duration-300">
+    <header
+      className={cn(
+        "fixed top-4 right-4 left-4 lg:left-28 h-16 backdrop-blur-xl bg-black/20 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] z-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between rounded-2xl transition-all duration-300",
+        className,
+      )}
+    >
       <div className="flex items-center">
         <button
           onClick={onMenuClick}

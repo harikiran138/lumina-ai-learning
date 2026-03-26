@@ -6,6 +6,7 @@ import { BGPattern } from "@/components/ui/BGPattern";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 export default function TeacherLayout({
   children,
@@ -13,6 +14,7 @@ export default function TeacherLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -35,9 +37,13 @@ export default function TeacherLayout({
       <TeacherSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        onHoverChange={setIsSidebarExpanded}
       />
       <TopNav
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+        className={cn(
+          isSidebarExpanded ? "lg:left-72" : "lg:left-28",
+        )}
         user={
           user
             ? {
@@ -58,7 +64,12 @@ export default function TeacherLayout({
         />
       )}
 
-      <main className="lg:ml-64 pt-16 min-h-screen transition-all duration-300">
+      <main
+        className={cn(
+          "pt-16 min-h-screen transition-all duration-300",
+          isSidebarExpanded ? "lg:ml-72" : "lg:ml-24",
+        )}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Breadcrumb />
           {children}
