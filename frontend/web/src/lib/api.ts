@@ -19,24 +19,29 @@ async function fetchWithRetry(
   retries = 3,
   timeoutMs = 10000
 ): Promise<Response> {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-
   for (let attempt = 1; attempt <= retries; attempt++) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => {
+      // Provide a reason so the AbortError is not "without reason"
+      const reason =
+        typeof DOMException !== 'undefined'
+          ? new DOMException('Request timed out', 'AbortError')
+          : 'Request timed out'
+      controller.abort(reason as any)
+    }, timeoutMs)
+
     try {
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
       })
-      clearTimeout(timeoutId)
       return response
     } catch (err: unknown) {
-      if (attempt === retries) {
-        clearTimeout(timeoutId)
-        throw err
-      }
+      if (attempt === retries) throw err
       // Exponential backoff: 1s, 2s, 3s
       await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
+    } finally {
+      clearTimeout(timeoutId)
     }
   }
   throw new Error('Max retries exceeded')

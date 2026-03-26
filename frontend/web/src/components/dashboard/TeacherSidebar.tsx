@@ -45,9 +45,11 @@ const navItems = [
 export default function TeacherSidebar({
   isOpen,
   onClose,
+  onHoverChange,
 }: {
   isOpen?: boolean;
   onClose?: () => void;
+  onHoverChange?: (hovered: boolean) => void;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -70,10 +72,16 @@ export default function TeacherSidebar({
 
   return (
     <aside
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => {
+        setIsHovered(true);
+        onHoverChange?.(true);
+      }}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        onHoverChange?.(false);
+      }}
       className={cn(
-        "fixed left-4 top-4 bottom-4 glass-v2 border-white/5 shadow-premium z-50 transition-all duration-500 ease-in-out lg:translate-x-0 lg:flex flex-col overflow-hidden",
+        "peer fixed left-4 top-4 bottom-4 glass-v2 border-white/5 shadow-premium z-50 transition-all duration-500 ease-in-out lg:translate-x-0 lg:flex flex-col overflow-hidden",
         !isHovered ? "lg:w-20" : "lg:w-64",
         isOpen
           ? "translate-x-0 bg-black/95 w-64 flex"

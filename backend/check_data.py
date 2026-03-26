@@ -9,7 +9,7 @@ async def check_data():
     client = supabase_db.get_client()
     
     # Get student UUID
-    user_res = client.table("users").select("id").eq("email", "student@lumina.com").execute()
+    user_res = client.table("users").select("id").eq("email", "student1@lumina.com").execute()
     if not user_res.data:
         print("Student not found!")
         return

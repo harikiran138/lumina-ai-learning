@@ -40,17 +40,6 @@ if ! command -v node &> /dev/null; then
 fi
 echo -e "${GREEN}✓ Node.js found${NC}"
 
-# Check MongoDB (optional - will warn but not fail)
-if ! command -v mongosh &> /dev/null && ! command -v mongo &> /dev/null; then
-    echo -e "${YELLOW}⚠️  MongoDB CLI not found. Make sure MongoDB is running on localhost:27017${NC}"
-else
-    # Try to ping MongoDB
-    if mongosh --eval "db.runCommand({ ping: 1 })" --quiet 2>/dev/null || mongo --eval "db.runCommand({ ping: 1 })" --quiet 2>/dev/null; then
-        echo -e "${GREEN}✓ MongoDB is running${NC}"
-    else
-        echo -e "${YELLOW}⚠️  MongoDB is not responding. Backend may fail to start.${NC}"
-    fi
-fi
 
 # Check Redis (optional - will warn but not fail)
 if ! command -v redis-cli &> /dev/null; then

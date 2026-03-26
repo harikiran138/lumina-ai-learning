@@ -14,6 +14,7 @@ from app.core.audit import audit_logger
 from app.services.guardian_service import get_guardian_service
 from app.services.compliance_service import get_compliance_service
 from app.database.models import Institution, Department, Stakeholder
+from app.store.academic_store import AcademicStore
 
 router = APIRouter()
 log = structlog.get_logger(__name__)
@@ -338,3 +339,50 @@ async def get_compliance_audit_logs(admin: dict = Depends(is_admin)):
         return response.data
     except Exception:
         return []
+
+# --- Academic Management ---
+
+@router.get("/students/{student_id}/enrollment")
+async def get_student_enrollment(student_id: str, admin: dict = Depends(is_admin)):
+    """Fetch student's current enrollment and academic placement."""
+    store = AcademicStore()
+    enrollment = await store.get_student_enrollment(student_id)
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    return enrollment
+
+
+@router.post("/students/{student_id}/promote")
+async def promote_student(student_id: str, admin: dict = Depends(is_admin)):
+    """Promote student to the next academic semester."""
+    store = AcademicStore()
+    result = await store.promote_student(student_id)
+    if not result:
+        raise HTTPException(
+            status_code=400, 
+            detail="Promotion failed. Check if student is already in the final semester."
+        )
+    return {"success": True, "updated_enrollment": result}
+
+
+@router.get("/students/{student_id}/credits")
+async def get_student_credits(student_id: str, admin: dict = Depends(is_admin)):
+    """Fetch student credit history across semesters."""
+    store = AcademicStore()
+    return await store.get_student_credits(student_id)
+
+
+@router.post("/students/{student_id}/credits")
+async def update_student_credits(
+    student_id: str, 
+    semester_id: str, 
+    earned: int, 
+    total: int, 
+    admin: dict = Depends(is_admin)
+):
+    """Update student credits for a specific semester."""
+    store = AcademicStore()
+    result = await store.update_credits(student_id, semester_id, earned, total)
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to update credits")
+    return {"success": True, "credits": result}

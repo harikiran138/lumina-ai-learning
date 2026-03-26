@@ -10,6 +10,7 @@ from ai_engine.prompts import A2UI_SYSTEM_PROMPT
 from app.personalization.explanation_planner import ExplanationPlanner
 from app.personalization.schemas import LearnerProfileRecord
 from app.store.tutor_memory_store import TutorMemoryStore
+from app.database.supabase_manager import supabase_db
 
 
 def _normalize_spaces(value: str) -> str:
@@ -618,6 +619,55 @@ Keep arrays short and educational.
             subject_mode=subject_mode,
         )
 
+    async def _get_curriculum_context(self, user_id: str | None) -> dict:
+        """Fetch student's academic context from Supabase."""
+        default_context = {
+            "current_semester": "1 (Default)",
+            "allowed_courses": "General Computer Science, Programming Fundamentals",
+            "allowed_concepts": "Variables, Loops, Basic Logic"
+        }
+        if not user_id:
+            return default_context
+
+        try:
+            # 1. Get student enrollment
+            enrollment = await supabase_db.fetch_one("student_enrollments", {"student_id": user_id})
+            if not enrollment:
+                return default_context
+
+            sem_id = enrollment["current_semester_id"]
+            
+            # 2. Get current semester info
+            semester = await supabase_db.fetch_one("semesters", {"id": sem_id})
+            sem_num = semester["semester_number"] if semester else 1
+
+            # 3. Get all courses in current and past semesters for this program
+            program_id = enrollment["program_id"]
+            # Fetch semesters up to the current one
+            semesters = await supabase_db.fetch_all("semesters", {"program_id": program_id})
+            allowed_sem_ids = [s["id"] for s in semesters if s["semester_number"] <= sem_num]
+
+            # Fetch courses
+            query = supabase_db.client.table("courses").select("id, course_name").in_("semester_id", allowed_sem_ids)
+            courses_res = query.execute()
+            courses = courses_res.data or []
+            course_names = [c["course_name"] for c in courses]
+            course_ids = [c["id"] for c in courses]
+
+            # 4. Fetch concepts for these courses
+            concepts_query = supabase_db.client.table("course_concepts").select("concept_name").in_("course_id", course_ids)
+            concepts_res = concepts_query.execute()
+            concept_names = [c["concept_name"] for c in (concepts_res.data or [])]
+
+            return {
+                "current_semester": str(sem_num),
+                "allowed_courses": ", ".join(course_names) if course_names else "None",
+                "allowed_concepts": ", ".join(concept_names) if concept_names else "None"
+            }
+        except Exception as e:
+            print(f"Curriculum lookup failed: {e}")
+            return default_context
+
     async def generate_response(
         self,
         topic: str,
@@ -747,7 +797,19 @@ Keep arrays short and educational.
                 avoid_context,
             )
         else:
-            system_prompt = A2UI_SYSTEM_PROMPT + "\n\n" + socratic_instruction
+            # Fetch curriculum context
+            curr_context = await self._get_curriculum_context(user_id)
+            
+            # Use the format-friendly master prompt from A2UI_SYSTEM_PROMPT
+            base_prompt = A2UI_SYSTEM_PROMPT.replace(
+                "{current_semester}", curr_context["current_semester"]
+            ).replace(
+                "{allowed_courses}", curr_context["allowed_courses"]
+            ).replace(
+                "{allowed_concepts}", curr_context["allowed_concepts"]
+            )
+            
+            system_prompt = base_prompt + "\n\n" + socratic_instruction
             prompt = f"""
             Topic: {topic}
             Context from materials: {context_text}

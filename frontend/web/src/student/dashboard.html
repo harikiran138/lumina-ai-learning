@@ -364,13 +364,25 @@
 
         <!-- Page Content -->
         <main class="flex-1 overflow-y-auto p-6 md:p-8">
-          <!-- ... existing page content ... -->
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Welcome back, Alex!
-          </h2>
-          <p class="text-gray-600 dark:text-gray-400 mb-8">
-            Here's your personalized learning pathway for today.
-          </p>
+          <div class="max-w-7xl mx-auto">
+            <!-- ... existing page content ... -->
+            <div class="flex items-center justify-between mb-8">
+              <div>
+                <h2 id="welcome-message" class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Welcome back, Alex!
+                </h2>
+                <p class="text-gray-600 dark:text-gray-400">
+                  Here's your personalized learning pathway for today.
+                </p>
+              </div>
+              <div id="curriculum-badge" class="hidden flex flex-col items-end">
+                <span id="student-program" class="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1">B.Tech CSE</span>
+                <div class="flex items-center bg-amber-100 dark:bg-amber-900/30 px-3 py-1.5 rounded-full border border-amber-200 dark:border-amber-800/50">
+                  <span class="w-2 h-2 rounded-full bg-amber-500 mr-2 animate-pulse"></span>
+                  <span id="student-semester" class="text-sm font-semibold text-amber-800 dark:text-amber-200">Semester 1</span>
+                </div>
+              </div>
+            </div>
 
           <!-- Stats Cards -->
           <div
@@ -551,8 +563,8 @@
             </div>
           </div>
 
-          <!-- Main Content Grid -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- ... existing grid content ... -->
             <div class="lg:col-span-2 space-y-8">
               <!-- AI Tutor Analysis Section -->
@@ -785,6 +797,7 @@
                 >
               </div>
             </div>
+            </div>
           </div>
         </main>
       </div>
@@ -816,15 +829,20 @@
         const mainContent = document.getElementById("main-content");
         const overlay = document.getElementById("sidebar-overlay");
 
+        if (!sidebar || !mainContent || !overlay) return;
+
+        const sidebarWidth = sidebar.getBoundingClientRect().width;
+        mainContent.classList.remove("translate-x-64", "lg:translate-x-0");
+
         if (sidebar.classList.contains("-translate-x-full")) {
           // Open sidebar
           sidebar.classList.remove("-translate-x-full");
-          mainContent.classList.add("lg:translate-x-0", "translate-x-64");
+          mainContent.style.transform = `translateX(${sidebarWidth}px)`;
           overlay.classList.remove("hidden");
         } else {
           // Close sidebar
           sidebar.classList.add("-translate-x-full");
-          mainContent.classList.remove("lg:translate-x-0", "translate-x-64");
+          mainContent.style.transform = "";
           overlay.classList.add("hidden");
         }
       }

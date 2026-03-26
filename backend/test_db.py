@@ -8,7 +8,7 @@ if users:
     print(f"Student: {users[0]['email']} (ID: {student_id})")
     
     # Check progress
-    progress = client.table("progress").select("*").eq("userId", student_id).execute().data
+    progress = client.table("progress").select("*").eq("user_id", student_id).execute().data
     print(f"Progress records: {len(progress)}")
     if progress:
         print(progress)

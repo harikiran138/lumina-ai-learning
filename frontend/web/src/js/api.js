@@ -376,6 +376,44 @@ class LuminaAPI {
     return this.db.getCourseAssessments(courseId);
   }
 
+  // Progress tracking helper
+  async markLessonComplete(studentId, courseId, chapterId, totalChapters) {
+    // Get existing progress
+    let progress = await this.db.getStudentProgress(studentId, courseId);
+    
+    // If no progress record exists, create a default one
+    if (!progress) {
+      progress = {
+        mastery: 0,
+        progress: 0,
+        streak: 1,
+        completedLessons: [],
+        assessmentScores: [],
+        struggling: false
+      };
+    }
+    
+    // Merge new chapter into completedLessons if not present
+    const completedLessons = Array.isArray(progress.completedLessons) ? [...progress.completedLessons] : [];
+    if (!completedLessons.includes(chapterId)) {
+      completedLessons.push(chapterId);
+    }
+    
+    // Calculate new progress percentage
+    const progressPercent = totalChapters > 0 ? Math.round((completedLessons.length / totalChapters) * 100) : 100;
+    
+    // Update and save
+    progress.completedLessons = completedLessons;
+    progress.progress = Math.min(100, progressPercent); // Cap at 100
+    
+    // If all chapters done, we can boost mastery
+    if (completedLessons.length >= totalChapters && progress.mastery < 80) {
+      progress.mastery = 80;
+    }
+    
+    return this.db.updateProgress(studentId, courseId, progress);
+  }
+
   // Notes methods
   async createNote(noteData) {
     const currentUser = await this.getCurrentUser();
@@ -388,6 +426,20 @@ class LuminaAPI {
   async getStudentNotes(studentId = null) {
     const userId = studentId || (await this.getCurrentUser()).id;
     return this.db.getStudentNotes(userId);
+  }
+
+  // Curriculum & AI Scope
+  async getCurriculumScope() {
+    try {
+      const response = await fetch(`${this.baseUrl}/curriculum/scope`, {
+        headers: { 'Authorization': `Bearer ${this.token}` }
+      });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch (error) {
+      console.error("Failed to fetch curriculum scope:", error);
+      return null;
+    }
   }
 
   // System health methods
