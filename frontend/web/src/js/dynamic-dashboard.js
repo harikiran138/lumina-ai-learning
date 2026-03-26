@@ -684,6 +684,13 @@ class DynamicDashboard {
       } else if (statCurrentCourse) {
         statCurrentCourse.textContent = "None";
       }
+
+      const enrolledCoursesGrid = document.getElementById(
+        "enrolled-courses-grid",
+      );
+      if (enrolledCoursesGrid) {
+        enrolledCoursesGrid.innerHTML = this.renderStudentCourses();
+      }
     }
   }
 
@@ -702,6 +709,9 @@ class DynamicDashboard {
         );
         const mastery = progress ? progress.mastery : 0;
         const progressPercent = progress ? progress.progress : 0;
+        const continueUrl = `lesson_page.html?courseId=${encodeURIComponent(
+          course.id,
+        )}`;
 
         return `
                 <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
@@ -718,6 +728,9 @@ class DynamicDashboard {
                         <div class="flex justify-between text-sm">
                             <span>Mastery</span>
                             <span class="font-semibold">${mastery}%</span>
+                        </div>
+                        <div class="flex justify-end pt-2">
+                            <a href="${continueUrl}" class="px-3 py-1.5 text-xs font-medium text-white bg-amber-600 rounded-full hover:bg-amber-700 transition">Continue</a>
                         </div>
                     </div>
                 </div>
