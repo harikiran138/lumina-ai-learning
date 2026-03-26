@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from app.core.logging import structlog
 from app.database.supabase_manager import supabase_db
+from app.store.institution_store import InstitutionStore
 log = structlog.get_logger()
 
 
@@ -919,9 +920,20 @@ class AnalyticsStore:
                 "activityFeed": []
             }
 
-        # Single Institution Scope: Pick the first one as primary
-        primary_inst = all_institutions[0]
-        inst_id = primary_inst["id"]
+        # Single Institution Scope: Use the source of truth from InstitutionStore
+        inst_id = await InstitutionStore().get_primary_institution_id()
+        if not inst_id:
+            return {
+                "summary": {},
+                "attentionQueue": [],
+                "systemServices": [],
+                "institutions": [],
+                "connections": [],
+                "recentUsers": [],
+                "activityFeed": []
+            }
+
+        primary_inst = next((i for i in all_institutions if i["id"] == inst_id), all_institutions[0])
 
         # Scope everything to this institution
         stakeholders = [s for s in tables["stakeholders"] if s.get("institution_id") == inst_id]

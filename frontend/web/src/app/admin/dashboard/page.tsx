@@ -310,7 +310,7 @@ export default function AdminDashboard() {
           color="gold"
         />
         <StatCard
-          title="Institutions"
+          title="Primary Institution"
           value={summary.totalInstitutions}
           subtitle={`${summary.totalConnections} stakeholder connections`}
           icon={Building2}
@@ -407,14 +407,14 @@ export default function AdminDashboard() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <Panel
-          title="Institution Graph"
-          subtitle="Which organizations are connected, and which are still empty shells."
+          title="Institutional Core"
+          subtitle="Governing the primary organization tenant and integrated stakeholders."
           action={
             <Link
               href="/admin/institution"
               className="inline-flex items-center gap-2 text-sm font-semibold text-lumina-highlight transition-colors hover:text-white"
             >
-              Open institutions
+              Management
               <ArrowRight className="h-4 w-4" />
             </Link>
           }
@@ -422,12 +422,12 @@ export default function AdminDashboard() {
           {institutions.length === 0 ? (
             <EmptyState
               icon={Building2}
-              title="No institutions onboarded"
-              detail="Create institutions and connect stakeholders to start the multi-tenant graph."
+              title="No primary institution onboarded"
+              detail="Define the primary institution to establish the administrative core."
             />
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {institutions.slice(0, 4).map((institution) => (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+              {institutions.slice(0, 1).map((institution) => (
                 <div
                   key={institution.id}
                   className="rounded-3xl border border-white/10 bg-white/[0.03] p-5"
