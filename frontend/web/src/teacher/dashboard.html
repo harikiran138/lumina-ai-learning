@@ -449,21 +449,21 @@
                   <h3 class="text-lg font-bold">Student Progress</h3>
                   <select
                     id="course-select"
-                    class="bg-gray-100 dark:bg-gray-800 border-none rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
+                    class="h-9 px-3 bg-gray-100 dark:bg-gray-800 border-none rounded-lg text-sm font-semibold focus:ring-2 focus:ring-amber-500"
                   >
                     <!-- Options will be dynamically inserted here -->
                   </select>
                 </div>
                 <div class="overflow-x-auto">
-                  <table class="w-full text-left">
+                  <table class="w-full text-left text-sm">
                     <thead>
                       <tr
                         class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase border-b border-gray-200 dark:border-gray-700"
                       >
-                        <th class="py-3 pr-4">Student</th>
-                        <th class="py-3 px-4">Progress</th>
-                        <th class="py-3 px-4">Mastery</th>
-                        <th class="py-3 pl-4">Streak</th>
+                        <th class="py-3 pr-4 align-middle">Student</th>
+                        <th class="py-3 px-4 align-middle">Progress</th>
+                        <th class="py-3 px-4 align-middle">Mastery</th>
+                        <th class="py-3 pl-4 align-middle">Streak</th>
                       </tr>
                     </thead>
                     <tbody
@@ -583,13 +583,18 @@
         const mainContent = document.getElementById("main-content");
         const overlay = document.getElementById("sidebar-overlay");
 
+        if (!sidebar || !mainContent || !overlay) return;
+
+        const sidebarWidth = sidebar.getBoundingClientRect().width;
+        mainContent.classList.remove("translate-x-64", "lg:translate-x-0");
+
         if (sidebar.classList.contains("-translate-x-full")) {
           sidebar.classList.remove("-translate-x-full");
-          mainContent.classList.add("lg:translate-x-0", "translate-x-64");
+          mainContent.style.transform = `translateX(${sidebarWidth}px)`;
           overlay.classList.remove("hidden");
         } else {
           sidebar.classList.add("-translate-x-full");
-          mainContent.classList.remove("lg:translate-x-0", "translate-x-64");
+          mainContent.style.transform = "";
           overlay.classList.add("hidden");
         }
       }

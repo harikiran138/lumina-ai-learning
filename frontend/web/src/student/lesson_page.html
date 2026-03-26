@@ -453,11 +453,22 @@
         );
       }
 
-      function setChapterProgress(chapterId, isCompleted) {
+      async function setChapterProgress(chapterId, isCompleted, saveToDb = true) {
         localStorage.setItem(
           `${courseData.id}-${chapterId}-completed`,
           isCompleted,
         );
+        
+        if (saveToDb && window.luminaAPI && isCompleted) {
+            try {
+                const currentUser = await window.luminaAPI.getCurrentUser();
+                if (currentUser) {
+                    await window.luminaAPI.markLessonComplete(currentUser.id, courseData.id, chapterId, courseData.chapters.length);
+                }
+            } catch(e) {
+                console.error("Failed to save progress to DB", e);
+            }
+        }
       }
 
       function renderCourse() {
@@ -554,9 +565,9 @@
 
         // Mark as complete
         document.querySelectorAll(".complete-btn").forEach((button) => {
-          button.addEventListener("click", (e) => {
+          button.addEventListener("click", async (e) => {
             const chapterId = e.target.dataset.chapterId;
-            setChapterProgress(chapterId, true);
+            await setChapterProgress(chapterId, true);
             renderCourse();
             // Auto-open the next chapter
             const nextChapter = document.querySelector(
@@ -623,7 +634,45 @@
       }
 
       // --- INITIALIZATION ---
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Parse courseId from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlCourseId = urlParams.get('courseId');
+        if (urlCourseId) {
+            courseData.id = urlCourseId;
+        }
+
+        try {
+            // Wait for DB to be initialized
+            if (window.initLuminaAPI) {
+                await window.initLuminaAPI();
+            }
+            
+            if (window.luminaAPI) {
+                const currentUser = await window.luminaAPI.getCurrentUser();
+                
+                if (urlCourseId && currentUser) {
+                    // Fetch dynamic course title
+                    const course = await window.luminaAPI.getCourseById(urlCourseId);
+                    if (course) {
+                        courseData.title = course.name;
+                        document.getElementById('course-title').textContent = course.name;
+                        document.title = `${course.name} - Lumina`;
+                    }
+                    
+                    // Fetch student progress and sync with local state
+                    let progress = await window.luminaAPI.db.getStudentProgress(currentUser.id, urlCourseId);
+                    if (progress && progress.completedLessons) {
+                        progress.completedLessons.forEach(chapterId => {
+                            setChapterProgress(chapterId, true, false); // Don't save back to DB on init
+                        });
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load dynamic course data:", e);
+        }
+
         renderCourse();
 
         // Auto-open the first unlocked, uncompleted chapter

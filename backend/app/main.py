@@ -58,6 +58,7 @@ from .routers import (  # noqa: E402
     content_creator,
     researcher,
     alumni,
+    curriculum,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
@@ -235,6 +236,7 @@ app.include_router(content_creator.router, prefix="/api/content_creator", tags=[
 app.include_router(researcher.router, prefix="/api/researcher", tags=["Researcher"])
 app.include_router(alumni.router, prefix="/api/alumni", tags=["Alumni"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(curriculum.router, prefix="/api", tags=["Curriculum"])
 app.include_router(pathway.router, prefix="/api/pathway", tags=["Pathway"])
 app.include_router(teacher.router, prefix="/api/teacher", tags=["Teacher Dashboard"])
 app.include_router(knowledge_graph.router, prefix="/api/knowledge-graph", tags=["Knowledge Graph"])
