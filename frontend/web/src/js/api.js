@@ -297,20 +297,65 @@ class LuminaAPI {
     const studentProgress = allProgress.filter((p) =>
       courses.some((c) => c.id === p.courseId),
     );
-    // Get courses the student is enrolled in
+
+    if (Array.isArray(studentProgress) && studentProgress.length > 0) {
+      avgMastery =
+        studentProgress.reduce((sum, p) => sum + p.mastery, 0) /
+        studentProgress.length;
+    }
+
+    return {
+      totalStudents,
+      avgMastery: Math.round(avgMastery),
+      coursesManaged: courses.length,
+      assessmentsToGrade,
+      courses,
+      studentProgress: Array.isArray(studentProgress)
+        ? studentProgress
+        : [studentProgress].filter(Boolean),
+    };
+  }
+
+  async getStudentDashboardData(studentId) {
+    const courses = await this.getAllCourses();
     const enrolledCourses = courses.filter((c) =>
       c.members.includes(studentId),
     );
+    let studentProgress = await this.getStudentProgress(studentId);
+    if (!Array.isArray(studentProgress)) {
+      studentProgress = studentProgress ? [studentProgress] : [];
+    }
 
-    // Calculate overall statistics
+    // Ensure progress exists for each enrolled course
+    for (const course of enrolledCourses) {
+      const hasProgress = studentProgress.some(
+        (p) => p.courseId === course.id,
+      );
+      if (!hasProgress) {
+        await this.updateStudentProgress(studentId, course.id, {
+          mastery: 0,
+          progress: 0,
+          streak: 0,
+        });
+      }
+    }
+
+    if (enrolledCourses.length > 0) {
+      // Refresh progress after ensuring records exist
+      studentProgress = await this.getStudentProgress(studentId);
+      if (!Array.isArray(studentProgress)) {
+        studentProgress = studentProgress ? [studentProgress] : [];
+      }
+    }
+
     let overallMastery = 0;
     let currentStreak = 0;
 
-    if (Array.isArray(studentProgress) && studentProgress.length > 0) {
+    if (studentProgress.length > 0) {
       overallMastery =
         studentProgress.reduce((sum, p) => sum + p.mastery, 0) /
         studentProgress.length;
-      currentStreak = Math.max(...studentProgress.map((p) => p.streak));
+      currentStreak = Math.max(...studentProgress.map((p) => p.streak || 0));
     }
 
     return {
@@ -318,9 +363,7 @@ class LuminaAPI {
       overallMastery: Math.round(overallMastery),
       currentStreak,
       attendance: 98, // Mock data
-      studentProgress: Array.isArray(studentProgress)
-        ? studentProgress
-        : [studentProgress].filter(Boolean),
+      studentProgress,
     };
   }
 
