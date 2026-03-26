@@ -22,8 +22,13 @@ class CourseStore:
         normalized = course.copy()
         
         # v2.0 uses 'name' and 'code' directly
-        title = normalized.get("name") or normalized.get("title") or normalized.get("course_name") or "Untitled Course"
-        code = normalized.get("code")
+        title = (
+            normalized.get("name")
+            or normalized.get("course_name")
+            or normalized.get("title")
+            or "Untitled Course"
+        )
+        code = normalized.get("code") or normalized.get("course_code")
         
         normalized["title"] = title  # For frontend compatibility
         normalized["name"] = title
@@ -46,16 +51,33 @@ class CourseStore:
         
         return normalized
 
-    async def create_course(self, name: str, code: str, description: str, teacher_id: str, subject: str = "general") -> dict:
+    async def create_course(
+        self,
+        name: str,
+        code: str,
+        description: str,
+        teacher_id: str,
+        subject: str = "general",
+        difficulty_level: Optional[str] = None,
+        thumbnail_url: Optional[str] = None,
+        program_id: Optional[str] = None,
+    ) -> dict:
         course_data = {
             "name": name,
-            "code": code,
+            "course_name": name,
+            "course_code": code,
             "description": description,
             "teacher_id": teacher_id,
             "subject": subject,
             "modules": [],
-            "is_published": False
+            "is_published": False,
         }
+        if difficulty_level:
+            course_data["difficulty_level"] = difficulty_level
+        if thumbnail_url:
+            course_data["thumbnail_url"] = thumbnail_url
+        if program_id:
+            course_data["program_id"] = program_id
 
         try:
             result = await self.db.insert("courses", course_data)
@@ -72,13 +94,14 @@ class CourseStore:
         
         course_data = {
             "name": title,
-            "code": code,
+            "course_name": title,
+            "course_code": code,
             "description": blueprint.get("description", ""),
             "teacher_id": teacher_id,
             "subject": blueprint.get("subject", "general"),
             "difficulty_level": blueprint.get("difficulty_level", "beginner"),
             "modules": blueprint.get("modules", []),
-            "is_published": False
+            "is_published": False,
         }
 
         try:
@@ -101,7 +124,7 @@ class CourseStore:
     async def get_course_by_code(self, code: str) -> Optional[dict]:
         try:
             client = self.db.get_client()
-            response = client.table("courses").select("*").or_(f"code.eq.{code},course_code.eq.{code}").execute()
+            response = client.table("courses").select("*").or_(f"course_code.eq.{code}").execute()
             if response.data:
                 return self._normalize_course(response.data[0])
         except Exception as e:
@@ -118,9 +141,19 @@ class CourseStore:
         
         # Handle field mappings
         if "name" in clean_updates:
-            clean_updates["title"] = clean_updates.pop("name")
+            clean_updates["course_name"] = clean_updates["name"]
+        if "title" in clean_updates and "name" not in clean_updates:
+            clean_updates["course_name"] = clean_updates["title"]
         if "course_code" in clean_updates:
-            clean_updates["code"] = clean_updates["course_code"]
+            clean_updates["course_code"] = clean_updates["course_code"]
+        if "code" in clean_updates and "course_code" not in clean_updates:
+            clean_updates["course_code"] = clean_updates["code"]
+        if "thumbnail" in clean_updates and "thumbnail_url" not in clean_updates:
+            clean_updates["thumbnail_url"] = clean_updates["thumbnail"]
+
+        # Remove unsupported legacy keys if present
+        clean_updates.pop("code", None)
+        clean_updates.pop("title", None)
             
         try:
             client = self.db.get_client()

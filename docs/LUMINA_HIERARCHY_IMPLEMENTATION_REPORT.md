@@ -156,3 +156,15 @@ python /Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/scripts
 - `/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/store/course_store.py`
 - `/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/sync_schema_safe.sql`
 - `/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/supabase/migrations/006_institution_hierarchy.sql`
+
+## Execution Results
+- Schema apply: FAILED (Postgres password authentication failed for user `postgres`).
+- Seed admin: OK (admin@lumin.com already exists).
+- Backend health: OK (`http://localhost:8000/health` -> 200).
+- Backend docs: OK (`http://localhost:8000/docs` -> 200).
+- Frontend root: OK (`http://localhost:3000/` -> 200).
+- Frontend role pages: reachable but redirect (308).
+
+### Notes
+- Full DB-backed flow verification is blocked until correct `DATABASE_URL` credentials are available.
+- Role-specific UI pages require authenticated sessions; only HTTP reachability was verified.

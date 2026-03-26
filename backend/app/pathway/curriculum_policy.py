@@ -36,7 +36,11 @@ class CurriculumPolicyEngine:
             program_name = enrollment["program_name"]
 
             allowed_courses = await self.curriculum_store.get_allowed_courses(student_id)
-            allowed_codes = [c['code'] for c in allowed_courses]
+            allowed_codes = [
+                c.get("course_code") or c.get("code") or c.get("course_name")
+                for c in allowed_courses
+            ]
+            allowed_codes = [c for c in allowed_codes if c]
             
             return {
                 "is_enrolled": True,

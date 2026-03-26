@@ -13,6 +13,19 @@ class AcademicStore:
     def __init__(self):
         self.db = supabase_db
 
+    def _normalize_class(self, cls: Optional[dict]) -> Optional[dict]:
+        if not cls:
+            return None
+        normalized = cls.copy()
+        # Map current schema fields to legacy-friendly keys
+        if "class_name" not in normalized and "section_name" in normalized:
+            normalized["class_name"] = normalized.get("section_name")
+        if "batch" not in normalized and "batch_name" in normalized:
+            normalized["batch"] = normalized.get("batch_name")
+        if "section" not in normalized and "section_name" in normalized:
+            normalized["section"] = normalized.get("section_name")
+        return normalized
+
     async def get_student_enrollment(self, student_id: str) -> Optional[dict]:
         return await self.db.fetch_one("student_enrollments", {"student_id": student_id})
 
@@ -21,16 +34,28 @@ class AcademicStore:
 
     async def get_classes(self, program_id: str, semester_id: str) -> List[dict]:
         """Fetch all classes/sections for a specific program and semester."""
-        return await self.db.fetch_all("classes", {
+        classes = await self.db.fetch_all("classes", {
             "program_id": program_id, 
             "semester_id": semester_id
         })
+        return [self._normalize_class(c) for c in classes]
 
     async def get_class_by_id(self, class_id: str) -> Optional[dict]:
-        return await self.db.fetch_one("classes", {"id": class_id})
+        cls = await self.db.fetch_one("classes", {"id": class_id})
+        return self._normalize_class(cls)
 
     async def create_class(self, data: Dict[str, Any]) -> Optional[dict]:
-        return await self.db.insert("classes", data)
+        # Map incoming legacy fields to current schema
+        payload = data.copy()
+        if "section_name" not in payload and "class_name" in payload:
+            payload["section_name"] = payload.get("class_name")
+        if "batch_name" not in payload and "batch" in payload:
+            payload["batch_name"] = payload.get("batch")
+        if "academic_year" not in payload:
+            payload["academic_year"] = payload.get("batch_year") or payload.get("batch") or "unknown"
+        if "batch_name" not in payload:
+            payload["batch_name"] = payload.get("batch_year") or payload.get("batch") or "unknown"
+        return await self.db.insert("classes", payload)
 
     async def get_student_class_enrollment(self, student_id: str) -> Optional[dict]:
         """Fetch the student's enrollment including their class_id."""
