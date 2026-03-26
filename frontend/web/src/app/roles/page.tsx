@@ -36,14 +36,6 @@ const roles = [
     color: "amber"
   },
   {
-    id: "admin",
-    title: "Admin",
-    description: "Enterprise governance, security, and institutional scaling.",
-    icon: ShieldCheck,
-    href: "/admin/dashboard",
-    color: "gold"
-  },
-  {
     id: "parent",
     title: "Parent",
     description: "Privacy-safe progress monitoring and growth trajectory view.",
