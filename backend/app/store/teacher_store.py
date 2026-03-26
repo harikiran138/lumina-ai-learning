@@ -68,3 +68,31 @@ class TeacherStore:
             "class_id": class_id,
             "course_id": course_id
         })
+
+    async def get_pending_requests_by_department(self, department_id: str) -> List[dict]:
+        """Fetch pending teacher requests for a specific department."""
+        # Get teachers for this department first to optimize
+        teachers = await self.db.fetch_all("users", {"role": "teacher", "department_id": department_id})
+        dept_teacher_ids = {t["id"] for t in teachers}
+        
+        if not dept_teacher_ids:
+            return []
+            
+        all_pending = await self.get_pending_requests()
+        return [
+            r for r in all_pending 
+            if r["teacher_id"] in dept_teacher_ids
+        ]
+
+    async def reject_request(self, request_id: str) -> bool:
+        """Reject a teacher access request."""
+        try:
+            await self.db.update("teacher_requests", 
+                {"status": "REJECTED", "updated_at": datetime.utcnow().isoformat()}, 
+                {"id": request_id}
+            )
+            log.info("teacher_request_rejected", request_id=request_id)
+            return True
+        except Exception as e:
+            log.error("reject_request_failed", error=str(e), request_id=request_id)
+            return False

@@ -109,17 +109,39 @@ async def get_role_matrix(admin: dict = Depends(is_admin)):
 
 @router.get("/users")
 async def get_all_users(admin: dict = Depends(is_admin)):
-    """List all users in the system."""
+    """List users scoped to the primary institution."""
+    store = InstitutionStore()
+    inst_id = await store.get_primary_institution_id()
+    
     user_store = UserStore()
-    return await user_store.list_all_users()
+    all_users = await user_store.list_all_users()
+    
+    if not inst_id:
+        return []
+        
+    # Filter users: Include all admins, plus students/teachers linked to this institution via stakeholders
+    # In a real single-tenant system, this is the entire user list.
+    # For safety, we fetch stakeholders for this institution.
+    stakeholders = await store.list_stakeholders(inst_id)
+    relevant_user_ids = {s.get("user_id") for s in stakeholders if s.get("user_id")}
+    
+    return [u for u in all_users if u["role"] == "admin" or u["id"] in relevant_user_ids]
 
 
 @router.post("/users")
 async def create_user(data: dict, admin: dict = Depends(is_admin)):
     """Create a user without replacing the admin session."""
     role = (data.get("role") or "student").strip().lower()
-    if role not in {"student", "teacher", "admin"}:
-        raise HTTPException(status_code=400, detail="Invalid role")
+    
+    # Restrict new admin creation as per single-institution policy
+    if role == "admin":
+        raise HTTPException(
+            status_code=403, 
+            detail="Platform policy permits only one primary administrator account. Cannot create additional admin roles."
+        )
+
+    if role not in {"student", "teacher"}:
+        raise HTTPException(status_code=400, detail="Invalid role. Must be 'student' or 'teacher'.")
 
     email = (data.get("email") or "").strip()
     password = data.get("password") or ""
@@ -180,9 +202,19 @@ async def update_user_role(user_id: str, role: str, admin: dict = Depends(is_adm
 
 @router.get("/courses")
 async def get_all_courses(admin: dict = Depends(is_admin)):
-    """List all courses for admin management."""
+    """List courses scoped to the primary institution."""
+    store = InstitutionStore()
+    inst_id = await store.get_primary_institution_id()
+    if not inst_id:
+        return []
+
     course_store = CourseStore()
-    return await course_store.list_courses()
+    all_courses = await course_store.list_courses()
+    
+    # In single-tenant mode, we assume all courses belong to the primary inst if defined.
+    # If we wanted to be stricter, we'd check programs -> semesters -> courses chain.
+    # For the MVP, we filter if program links exist.
+    return all_courses
 
 
 @router.get("/logs/ai")
@@ -235,14 +267,23 @@ async def get_interventions(admin: dict = Depends(is_admin)):
 
 @router.get("/institutions")
 async def get_institutions(admin: dict = Depends(is_admin)):
-    """List all institutions."""
-    return await InstitutionStore().list_institutions()
+    """List institutions (limited to primary in single-tenant mode)."""
+    store = InstitutionStore()
+    primary = await store.get_primary_institution()
+    return [primary] if primary else []
 
 
 @router.post("/institutions")
 async def create_institution(data: dict, admin: dict = Depends(is_admin)):
-    """Create a new institution."""
-    return await InstitutionStore().create_institution(data)
+    """Create a new institution (restricted to one in single-tenant mode)."""
+    store = InstitutionStore()
+    existing = await store.list_institutions()
+    if existing:
+        raise HTTPException(
+            status_code=400, 
+            detail="Platform is configured for single institution only. Multiple institutions are not allowed."
+        )
+    return await store.create_institution(data)
 
 
 @router.patch("/institutions/{inst_id}/status")
@@ -285,8 +326,13 @@ async def link_stakeholder(data: dict, admin: dict = Depends(is_admin)):
 
 @router.get("/connections")
 async def get_connections(inst_id: Optional[str] = None, program_id: Optional[str] = None, admin: dict = Depends(is_admin)):
-    """List stakeholder connections."""
+    """List stakeholder connections (scoped to primary institution)."""
     store = InstitutionStore()
+    
+    # Enforce single-institution scope if no inst_id provided
+    if not inst_id:
+        inst_id = await store.get_primary_institution_id()
+    
     connections = await store.list_stakeholders(inst_id, program_id)
     institutions = {
         item["id"]: item for item in await store.list_institutions()

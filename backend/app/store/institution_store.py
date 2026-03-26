@@ -88,6 +88,20 @@ class InstitutionStore:
             log.error("list_institutions_failed", error=str(e))
             return []
 
+    async def get_primary_institution(self) -> Optional[dict]:
+        """Fetch the primary (first) institution in the system."""
+        try:
+            institutions = await self.list_institutions()
+            return institutions[0] if institutions else None
+        except Exception as e:
+            log.error("get_primary_institution_failed", error=str(e))
+            return None
+
+    async def get_primary_institution_id(self) -> Optional[str]:
+        """Get the ID of the primary institution."""
+        inst = await self.get_primary_institution()
+        return inst["id"] if inst else None
+
     # --- Department CRUD ---
 
     async def create_department(self, data: dict) -> dict:

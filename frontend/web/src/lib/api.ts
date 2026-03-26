@@ -52,7 +52,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "teacher" | "student" | "parent" | "mentor" | "peer_tutor" | "counselor" | "content_creator" | "researcher" | "alumni";
+  role: "admin" | "teacher" | "hod" | "student" | "parent" | "mentor" | "peer_tutor" | "counselor" | "content_creator" | "researcher" | "alumni";
   status: "active" | "suspended" | "inactive";
   avatar: string;
   createdAt: string;
@@ -290,6 +290,12 @@ export class RealAPI {
 
     if (userRole === "mentor") {
       const res = await this.fetchAuthorized("/api/mentor/matches");
+      if (!res.ok) return {};
+      return await res.json();
+    }
+
+    if (userRole === "hod") {
+      const res = await this.fetchAuthorized("/api/hod/dashboard");
       if (!res.ok) return {};
       return await res.json();
     }
@@ -1292,6 +1298,26 @@ export class RealAPI {
       `/api/personalization/analytics/ab-test?variant_a=${variantA}&variant_b=${variantB}`
     );
     if (!res.ok) return null;
+    return await res.json();
+  }
+
+  // --- HOD Dashboard Methods ---
+  async getHODDashboard(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/hod/dashboard");
+    return res.ok ? await res.json() : null;
+  }
+
+  async approveTeacherRequest(requestId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/hod/requests/${requestId}/approve`, {
+      method: "POST",
+    });
+    return await res.json();
+  }
+
+  async rejectTeacherRequest(requestId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/hod/requests/${requestId}/reject`, {
+      method: "POST",
+    });
     return await res.json();
   }
 }
