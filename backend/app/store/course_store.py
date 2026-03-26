@@ -22,7 +22,7 @@ class CourseStore:
         normalized = course.copy()
         
         # v2.0 uses 'name' and 'code' directly
-        title = normalized.get("name") or "Untitled Course"
+        title = normalized.get("name") or normalized.get("title") or normalized.get("course_name") or "Untitled Course"
         code = normalized.get("code")
         
         normalized["title"] = title  # For frontend compatibility
@@ -162,4 +162,3 @@ class CourseStore:
         except Exception as e:
             log.error("update_modules_failed", error=str(e), course_id=course_id)
             return False
-

@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS public.departments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     institution_id UUID REFERENCES public.institutions(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
+    department_name TEXT NOT NULL,
     description TEXT,
     hod_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
@@ -32,7 +32,7 @@ CREATE POLICY "Admin full access" ON public.departments
 -- 7. Seed Sample Departments for Verified Institute of Technology
 -- Institution ID: 3d9a0e0a-7d72-4251-9b79-09382bc732be
 
-INSERT INTO public.departments (institution_id, name, description)
+INSERT INTO public.departments (institution_id, department_name, description)
 VALUES 
 ('3d9a0e0a-7d72-4251-9b79-09382bc732be', 'Computer Science and Engineering', 'Department of CSE focusing on AI and Software Engineering.'),
 ('3d9a0e0a-7d72-4251-9b79-09382bc732be', 'Electronics and Communication Engineering', 'Department of ECE focusing on VLSI and Robotics.'),
@@ -42,12 +42,12 @@ ON CONFLICT DO NOTHING;
 -- 8. Assign an HOD for CSE (teacher1@lumina.com)
 -- Teacher ID: 4f71dfd4-f02e-4d8c-9444-6fd6a140214f
 
-UPDATE public.users SET role = 'hod', department_id = (SELECT id FROM public.departments WHERE name = 'Computer Science and Engineering' LIMIT 1)
+UPDATE public.users SET role = 'hod', department_id = (SELECT id FROM public.departments WHERE department_name = 'Computer Science and Engineering' LIMIT 1)
 WHERE id = '4f71dfd4-f02e-4d8c-9444-6fd6a140214f';
 
 UPDATE public.departments SET hod_id = '4f71dfd4-f02e-4d8c-9444-6fd6a140214f'
-WHERE name = 'Computer Science and Engineering';
+WHERE department_name = 'Computer Science and Engineering';
 
 -- 9. Assign other teachers to CSE Department
-UPDATE public.users SET department_id = (SELECT id FROM public.departments WHERE name = 'Computer Science and Engineering' LIMIT 1)
+UPDATE public.users SET department_id = (SELECT id FROM public.departments WHERE department_name = 'Computer Science and Engineering' LIMIT 1)
 WHERE email IN ('teacher2@lumina.com', 'teacher3@lumina.com', 'teacher4@lumina.com');

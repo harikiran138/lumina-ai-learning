@@ -16,7 +16,7 @@ async def get_my_profile(current_user: dict = Depends(get_current_user)):
 
 @router.get("/profile/{user_id}")
 async def get_profile_by_user_id(user_id: str, current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") not in {"teacher", "admin"} and current_user["id"] != user_id:
+    if current_user.get("role") not in {"teacher", "admin", "hod"} and current_user["id"] != user_id:
         raise HTTPException(status_code=403, detail="Not allowed to view another student's profile")
 
     service = get_personalization_service()
@@ -31,9 +31,9 @@ async def get_interventions(
 ):
     if current_user.get("role") == "student":
         user_id = current_user["id"]
-    elif user_id is None and current_user.get("role") in {"teacher", "admin"}:
+    elif user_id is None and current_user.get("role") in {"teacher", "admin", "hod"}:
         user_id = None
-    elif current_user.get("role") not in {"teacher", "admin"}:
+    elif current_user.get("role") not in {"teacher", "admin", "hod"}:
         raise HTTPException(status_code=403, detail="Not allowed to view intervention queue")
 
     service = get_personalization_service()
@@ -42,7 +42,7 @@ async def get_interventions(
 
 
 def _check_profile_access(current_user: dict, user_id: str):
-    if current_user.get("role") not in {"teacher", "admin"} and current_user["id"] != user_id:
+    if current_user.get("role") not in {"teacher", "admin", "hod"} and current_user["id"] != user_id:
         raise HTTPException(status_code=403, detail="Not allowed to view another student's profile")
 
 
@@ -63,7 +63,7 @@ async def get_tutor_projection_for_user(user_id: str, current_user: dict = Depen
 
 @router.get("/projection/teacher/{user_id}")
 async def get_teacher_projection_for_user(user_id: str, current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") not in {"teacher", "admin"}:
+    if current_user.get("role") not in {"teacher", "admin", "hod"}:
         raise HTTPException(status_code=403, detail="Teacher access required")
     service = get_personalization_service()
     projection = await service.get_teacher_projection(user_id)
@@ -87,7 +87,7 @@ async def get_pathway_projection_for_user(user_id: str, current_user: dict = Dep
 
 @router.get("/analytics/misconceptions")
 async def get_misconception_clusters(current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") not in {"teacher", "admin"}:
+    if current_user.get("role") not in {"teacher", "admin", "hod"}:
         raise HTTPException(status_code=403, detail="Teacher access required")
     service = get_personalization_service()
     return await service.get_cohort_misconceptions()
@@ -95,7 +95,7 @@ async def get_misconception_clusters(current_user: dict = Depends(get_current_us
 
 @router.get("/analytics/growth-trajectories")
 async def get_growth_trajectories(current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") not in {"teacher", "admin"}:
+    if current_user.get("role") not in {"teacher", "admin", "hod"}:
         raise HTTPException(status_code=403, detail="Teacher access required")
     service = get_personalization_service()
     return await service.get_growth_trajectories()
@@ -107,7 +107,7 @@ async def get_ab_test_performance(
     variant_b: str = Query(..., description="Cohort ID for variant B"),
     current_user: dict = Depends(get_current_user)
 ):
-    if current_user.get("role") not in {"teacher", "admin"}:
+    if current_user.get("role") not in {"teacher", "admin", "hod"}:
         raise HTTPException(status_code=403, detail="Teacher access required")
     service = get_personalization_service()
     return await service.get_ab_test_performance(variant_a, variant_b)
