@@ -66,9 +66,14 @@ CREATE TABLE IF NOT EXISTS public.classes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     program_id UUID NOT NULL REFERENCES public.programs(id) ON DELETE CASCADE,
     semester_id UUID REFERENCES public.semesters(id) ON DELETE SET NULL,
-    class_name TEXT NOT NULL,
+    section_name TEXT NOT NULL,
+    academic_year TEXT,
+    batch_name TEXT,
+    class_name TEXT,
     batch TEXT,
     section TEXT,
+    department_id UUID REFERENCES public.departments(id) ON DELETE SET NULL,
+    batch_year TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -189,6 +194,20 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS department_id UUID REFERENCES 
 ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS semester_id UUID REFERENCES public.semesters(id) ON DELETE SET NULL;
 ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS program_id UUID REFERENCES public.programs(id) ON DELETE SET NULL;
 ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS course_code TEXT;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS course_name TEXT;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS subject TEXT;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS grade_level TEXT;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS modules JSONB DEFAULT '[]';
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS estimated_duration TEXT;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}';
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS credits INT DEFAULT 3;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS knowledge_graph JSONB DEFAULT '{}';
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS department_id UUID REFERENCES public.departments(id) ON DELETE SET NULL;
 ALTER TABLE public.student_enrollments ADD COLUMN IF NOT EXISTS class_id UUID REFERENCES public.classes(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS idx_departments_institution ON public.departments(institution_id);

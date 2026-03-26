@@ -72,9 +72,14 @@ CREATE TABLE IF NOT EXISTS classes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
     semester_id UUID REFERENCES semesters(id) ON DELETE SET NULL,
-    class_name TEXT NOT NULL,
+    section_name TEXT NOT NULL,
+    academic_year TEXT,
+    batch_name TEXT,
+    class_name TEXT,
     batch TEXT,
     section TEXT,
+    department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+    batch_year TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -201,6 +206,20 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS department_id UUID REFERENCES departm
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS semester_id UUID REFERENCES semesters(id) ON DELETE SET NULL;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS program_id UUID REFERENCES programs(id) ON DELETE SET NULL;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_code TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_name TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS subject TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS grade_level TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS modules JSONB DEFAULT '[]';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT FALSE;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS estimated_duration TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS credits INT DEFAULT 3;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS knowledge_graph JSONB DEFAULT '{}';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS department_id UUID REFERENCES departments(id) ON DELETE SET NULL;
 ALTER TABLE student_enrollments ADD COLUMN IF NOT EXISTS class_id UUID REFERENCES classes(id) ON DELETE SET NULL;
 
 -- 10) Indexes

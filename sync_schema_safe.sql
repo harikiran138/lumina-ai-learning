@@ -606,9 +606,14 @@ CREATE TABLE IF NOT EXISTS classes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
     semester_id UUID REFERENCES semesters(id) ON DELETE SET NULL,
-    class_name TEXT NOT NULL,
+    section_name TEXT NOT NULL,
+    academic_year TEXT,
+    batch_name TEXT,
+    class_name TEXT,
     batch TEXT,
     section TEXT,
+    department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+    batch_year TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -729,6 +734,20 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS department_id UUID REFERENCES departm
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS semester_id UUID REFERENCES semesters(id) ON DELETE SET NULL;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS program_id UUID REFERENCES programs(id) ON DELETE SET NULL;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_code TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_name TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS subject TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS grade_level TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS modules JSONB DEFAULT '[]';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT FALSE;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS estimated_duration TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS credits INT DEFAULT 3;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS knowledge_graph JSONB DEFAULT '{}';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS department_id UUID REFERENCES departments(id) ON DELETE SET NULL;
 ALTER TABLE student_enrollments ADD COLUMN IF NOT EXISTS class_id UUID REFERENCES classes(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS idx_departments_institution ON departments(institution_id);
@@ -740,3 +759,30 @@ CREATE INDEX IF NOT EXISTS idx_teacher_requests_department ON teacher_requests(d
 CREATE INDEX IF NOT EXISTS idx_teacher_assignments_class ON teacher_assignments(class_id);
 CREATE INDEX IF NOT EXISTS idx_course_concepts_course ON course_concepts(course_id);
 CREATE INDEX IF NOT EXISTS idx_ai_answer_queue_teacher ON ai_answer_queue(teacher_id);
+
+-- ================================================================
+-- UI/UX Sync Migration: Align DB with current app requirements
+-- ================================================================
+ALTER TABLE courses ALTER COLUMN program_id DROP NOT NULL;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS subject TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS grade_level TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS difficulty_level TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS modules JSONB DEFAULT '[]';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT FALSE;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS estimated_duration TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS credits INT DEFAULT 3;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS knowledge_graph JSONB DEFAULT '{}';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS department_id UUID REFERENCES departments(id) ON DELETE SET NULL;
+
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS class_name TEXT;
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS batch TEXT;
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS section TEXT;
+
+ALTER TABLE teacher_requests ALTER COLUMN status SET DEFAULT 'PENDING_HOD';
+UPDATE teacher_requests SET status = 'PENDING_HOD' WHERE status = 'PENDING';

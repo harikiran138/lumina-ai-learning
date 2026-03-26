@@ -1281,10 +1281,10 @@ class AnalyticsStore:
             enrollment_record = client.table("student_enrollments").select("class_id").eq("student_id", student_id).maybe_single().execute()
             class_info = {"name": None, "batch": None}
             if enrollment_record.data and enrollment_record.data.get("class_id"):
-                c_res = client.table("classes").select("class_name, batch").eq("id", enrollment_record.data["class_id"]).maybe_single().execute()
+                c_res = client.table("classes").select("class_name, batch, section_name, batch_name").eq("id", enrollment_record.data["class_id"]).maybe_single().execute()
                 if c_res.data:
-                    class_info["name"] = c_res.data.get("class_name")
-                    class_info["batch"] = c_res.data.get("batch")
+                    class_info["name"] = c_res.data.get("class_name") or c_res.data.get("section_name")
+                    class_info["batch"] = c_res.data.get("batch") or c_res.data.get("batch_name")
 
             return {
                 "currentStreak": current_streak,
