@@ -19,15 +19,40 @@ class InstitutionStore:
 
     async def create_institution(self, data: dict) -> dict:
         try:
+            # Separate data for institutions and institution_details
+            inst_fields = [
+                "id", "institution_name", "email", "onboarding_status", 
+                "password_hash", "refresh_token_hash", "failed_attempts", "locked_until"
+            ]
+            detail_fields = [
+                "type", "status", "established_year", "affiliation", 
+                "address", "city", "state", "country", "vision", "mission"
+            ]
+
+            inst_data = {k: v for k, v in data.items() if k in inst_fields}
+            detail_data = {k: v for k, v in data.items() if k in detail_fields}
+
             # Ensure default onboarding status
-            if "onboarding_status" not in data:
-                data["onboarding_status"] = "PENDING"
+            if "onboarding_status" not in inst_data:
+                inst_data["onboarding_status"] = "PENDING"
             
-            result = await self.db.upsert("institutions", data)
-            if result:
-                log.info("institution_created", id=result[0].get("id"), status=data["onboarding_status"])
-                return result[0]
-            raise Exception("Failed to create institution")
+            # Upsert into institutions
+            result = await self.db.upsert("institutions", inst_data)
+            if not result:
+                raise Exception("Failed to create institution in institutions table")
+            
+            institution = result[0]
+            inst_id = institution["id"]
+
+            # Upsert into institution_details if we have data
+            if detail_data:
+                detail_data["institution_id"] = inst_id
+                await self.db.upsert("institution_details", detail_data)
+                log.info("institution_details_created", id=inst_id)
+
+            log.info("institution_created", id=inst_id, status=inst_data["onboarding_status"])
+            return institution
+
         except Exception as e:
             log.error("create_institution_failed", error=str(e))
             raise e
