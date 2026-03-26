@@ -33,7 +33,10 @@ export default function StudentLayout({
       />
 
       <div className="relative z-10">
-        <TopNav onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        <TopNav
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          className={cn(isCollapsed ? "lg:left-24" : "lg:left-72")}
+        />
 
         {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
@@ -45,7 +48,7 @@ export default function StudentLayout({
 
         <main
           className={cn(
-            "pt-16 min-h-screen transition-all duration-300",
+            "pt-20 min-h-screen transition-all duration-300",
             isCollapsed ? "lg:ml-24" : "lg:ml-72",
           )}
         >
