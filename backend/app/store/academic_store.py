@@ -105,3 +105,7 @@ class AcademicStore:
     async def get_department_programs(self, dept_id: str) -> List[dict]:
         """Fetch all programs under a specific department."""
         return await self.db.fetch_all("programs", {"department_id": dept_id})
+
+    async def get_department_students(self, dept_id: str) -> List[dict]:
+        """Fetch all students belonging to a specific department."""
+        return await self.db.fetch_all("users", {"department_id": dept_id, "role": "student"})

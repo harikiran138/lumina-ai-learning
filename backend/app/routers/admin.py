@@ -98,10 +98,10 @@ async def get_role_matrix(admin: dict = Depends(is_admin)):
     return {
         "roles": ["student", "teacher", "hod", "admin", "parent"],
         "permissions": {
-            "course_create": ["admin", "teacher"],
+            "course_create": ["admin", "teacher", "hod"],
             "course_delete": ["admin"],
             "user_manage": ["admin"],
-            "analytics_view": ["admin", "teacher"],
+            "analytics_view": ["admin", "teacher", "hod"],
             "billing_manage": ["admin"]
         }
     }
@@ -156,7 +156,10 @@ async def create_user(data: dict, admin: dict = Depends(is_admin)):
 
     user_store = UserStore()
     try:
-        return await user_store.create_user(email, password, full_name, role, phone)
+        user = await user_store.create_user(email, password, full_name, role, phone)
+        if data.get("department_id"):
+            await user_store.update_user_fields(user["id"], {"department_id": data["department_id"]})
+        return user
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -316,6 +319,51 @@ async def create_department(inst_id: str, data: dict, admin: dict = Depends(is_a
     """Create a new department."""
     data["institution_id"] = inst_id
     return await InstitutionStore().create_department(data)
+
+
+@router.patch("/institutions/{inst_id}/departments/{dept_id}/hod")
+async def assign_hod(
+    inst_id: str,
+    dept_id: str,
+    data: dict,
+    admin: dict = Depends(is_admin),
+):
+    """Assign or update HOD for a department."""
+    hod_id = data.get("hod_id")
+    if not hod_id:
+        raise HTTPException(status_code=400, detail="Missing hod_id")
+
+    user_store = UserStore()
+    hod_user = await user_store.get_user_by_id(hod_id)
+    if not hod_user:
+        raise HTTPException(status_code=404, detail="HOD user not found")
+
+    # Ensure role is hod
+    await user_store.update_user_role(hod_id, "hod")
+    await user_store.update_user_fields(hod_id, {"department_id": dept_id})
+
+    # Update department
+    res = await supabase_db.update(
+        "departments",
+        {"hod_id": hod_id, "updated_at": datetime.utcnow().isoformat()},
+        {"id": dept_id, "institution_id": inst_id},
+    )
+    if not res:
+        raise HTTPException(status_code=404, detail="Department not found")
+    return {"status": "success", "department_id": dept_id, "hod_id": hod_id}
+
+
+@router.get("/institutions/{inst_id}/programs")
+async def list_programs(inst_id: str, admin: dict = Depends(is_admin)):
+    """List all programs for an institution."""
+    return await InstitutionStore().list_programs(inst_id)
+
+
+@router.post("/institutions/{inst_id}/programs")
+async def create_program(inst_id: str, data: dict, admin: dict = Depends(is_admin)):
+    """Create a new program under an institution (and optional department)."""
+    data["institution_id"] = inst_id
+    return await InstitutionStore().create_program(data)
 
 
 @router.post("/connections/link")
