@@ -41,9 +41,14 @@ DEFAULT_COURSES = [
 
 
 class CreateCourseBody(BaseModel):
-    name: str
+    name: Optional[str] = None
+    title: Optional[str] = None
     code: str
     description: str = ""
+    level: Optional[str] = None
+    image: Optional[str] = None
+    thumbnail: Optional[str] = None
+    program_id: Optional[str] = None
 
 
 class UpdateCourseBody(BaseModel):
@@ -302,7 +307,12 @@ async def create_course_form(
         raise HTTPException(status_code=403, detail="Only teachers can create courses")
     if await store.get_course_by_code(code):
         raise HTTPException(status_code=400, detail="Course code already exists")
-    course = await store.create_course(name, code, description, current_user["id"])
+    course = await store.create_course(
+        name=name,
+        code=code,
+        description=description,
+        teacher_id=current_user["id"],
+    )
     from app.core.cache import invalidate_cache
     await invalidate_cache("courses:*")
     return {"status": "success", "course": course}
@@ -319,7 +329,19 @@ async def create_course_json(
         raise HTTPException(status_code=403, detail="Only teachers can create courses")
     if await store.get_course_by_code(body.code):
         raise HTTPException(status_code=400, detail="Course code already exists")
-    course = await store.create_course(body.name, body.code, body.description, current_user["id"])
+    course_name = body.name or body.title
+    if not course_name:
+        raise HTTPException(status_code=400, detail="Course name is required")
+
+    course = await store.create_course(
+        name=course_name,
+        code=body.code,
+        description=body.description,
+        teacher_id=current_user["id"],
+        difficulty_level=body.level,
+        thumbnail_url=body.thumbnail or body.image,
+        program_id=body.program_id,
+    )
     from app.core.cache import invalidate_cache
     await invalidate_cache("courses:*")
     return course

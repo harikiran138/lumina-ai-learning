@@ -727,19 +727,28 @@ export class RealAPI {
   }
 
   async sendCommunityMessage(channelId: string, content: string): Promise<any> {
-    const res = await this.fetchAuthorized("/api/community/send", {
-      method: "POST",
-      body: JSON.stringify({ channel_id: channelId, content }),
-    });
-    
-    const data = await res.json();
-    if (!res.ok) {
-      return {
-        success: false,
-        error: data.detail || "Failed to send message",
-      };
+    try {
+      const res = await this.fetchAuthorized("/api/community/send", {
+        method: "POST",
+        body: JSON.stringify({ channel_id: channelId, content }),
+      });
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        data = { detail: text || res.statusText || "Unknown Server Error" };
+      }
+      if (!res.ok) {
+        return {
+          success: false,
+          error: data?.detail || data?.error || "Failed to send message",
+        };
+      }
+      return data;
+    } catch (error: any) {
+      return { success: false, error: error?.message || "Network Error" };
     }
-    return data;
   }
 
   async getTeacherStudents(): Promise<any> {
