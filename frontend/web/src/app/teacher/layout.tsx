@@ -66,7 +66,7 @@ export default function TeacherLayout({
 
       <main
         className={cn(
-          "pt-16 min-h-screen transition-all duration-300",
+          "pt-20 min-h-screen transition-all duration-300",
           isSidebarExpanded ? "lg:ml-72" : "lg:ml-24",
         )}
       >

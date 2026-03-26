@@ -620,30 +620,38 @@ Keep arrays short and educational.
         )
 
     async def _get_curriculum_context(self, user_id: str | None) -> dict:
-        """Fetch student's academic context from Supabase."""
+        """Fetch student's academic context from Supabase, scoped by Class and Assigned Teacher."""
         default_context = {
             "current_semester": "1 (Default)",
             "allowed_courses": "General Computer Science, Programming Fundamentals",
-            "allowed_concepts": "Variables, Loops, Basic Logic"
+            "allowed_concepts": "Variables, Loops, Basic Logic",
+            "class_id": None,
+            "teacher_ids": []
         }
         if not user_id:
             return default_context
 
         try:
-            # 1. Get student enrollment
+            # 1. Get student enrollment including class_id
             enrollment = await supabase_db.fetch_one("student_enrollments", {"student_id": user_id})
             if not enrollment:
                 return default_context
 
+            class_id = enrollment.get("class_id")
             sem_id = enrollment["current_semester_id"]
             
             # 2. Get current semester info
             semester = await supabase_db.fetch_one("semesters", {"id": sem_id})
             sem_num = semester["semester_number"] if semester else 1
 
-            # 3. Get all courses in current and past semesters for this program
+            # 3. Get assigned teachers for this student's class
+            teacher_ids = []
+            if class_id:
+                assignments_res = supabase_db.client.table("teacher_assignments").select("teacher_id").eq("class_id", class_id).execute()
+                teacher_ids = list(set([a["teacher_id"] for a in (assignments_res.data or [])]))
+
+            # 4. Get all courses in current and past semesters for this program
             program_id = enrollment["program_id"]
-            # Fetch semesters up to the current one
             semesters = await supabase_db.fetch_all("semesters", {"program_id": program_id})
             allowed_sem_ids = [s["id"] for s in semesters if s["semester_number"] <= sem_num]
 
@@ -654,7 +662,7 @@ Keep arrays short and educational.
             course_names = [c["course_name"] for c in courses]
             course_ids = [c["id"] for c in courses]
 
-            # 4. Fetch concepts for these courses
+            # 5. Fetch concepts for these courses
             concepts_query = supabase_db.client.table("course_concepts").select("concept_name").in_("course_id", course_ids)
             concepts_res = concepts_query.execute()
             concept_names = [c["concept_name"] for c in (concepts_res.data or [])]
@@ -662,7 +670,9 @@ Keep arrays short and educational.
             return {
                 "current_semester": str(sem_num),
                 "allowed_courses": ", ".join(course_names) if course_names else "None",
-                "allowed_concepts": ", ".join(concept_names) if concept_names else "None"
+                "allowed_concepts": ", ".join(concept_names) if concept_names else "None",
+                "class_id": class_id,
+                "teacher_ids": teacher_ids
             }
         except Exception as e:
             print(f"Curriculum lookup failed: {e}")
@@ -685,15 +695,22 @@ Keep arrays short and educational.
         """
         Generates a Socratic response using Semantic RAG and learner profile context.
         """
-        # 1. Semantic RAG Retrieval
+        # 1. Semantic RAG Retrieval with Scoping
         context_docs: list[str] = []
+        curriculum = await self._get_curriculum_context(user_id)
+        
+        filter_options = {}
+        if curriculum.get("teacher_ids"):
+            # Only retrieve content from teachers assigned to this student's class
+            filter_options["teacher_id"] = curriculum["teacher_ids"]
+
         if hasattr(self.retrieval, "query"):
-            candidate = self.retrieval.query(user_query)
+            candidate = self.retrieval.query(user_query, filter_options=filter_options)
             context_docs = (
                 await candidate if asyncio.iscoroutine(candidate) else candidate or []
             )
         elif hasattr(self.retrieval, "hybrid_search"):
-            context_docs = await self.retrieval.hybrid_search(user_query, top_k=3)
+            context_docs = await self.retrieval.hybrid_search(user_query, top_k=3, filter_options=filter_options)
 
         context_text = "\n".join(context_docs or [])
 

@@ -212,32 +212,34 @@ export default function StudentSettings() {
     <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-8rem)]">
       <div className="w-full lg:w-64 flex-shrink-0">
         <h1 className="text-2xl font-bold text-white mb-6">Settings</h1>
-        <nav className="space-y-1">
+        <nav className="space-y-1 max-h-[calc(100vh-12rem)] overflow-y-auto pr-1">
           {sections.map((section) => (
             <button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all min-w-0 ${
                 activeSection === section.id
                   ? "bg-lumina-primary/10 text-lumina-primary border border-lumina-primary/20"
                   : "text-gray-400 hover:bg-white/5 hover:text-white"
               }`}
             >
-              <div className="flex items-center gap-3">
-                <section.icon className="w-5 h-5" />
-                <span className="font-medium">{section.label}</span>
+              <div className="flex items-center gap-3 min-w-0">
+                <section.icon className="w-5 h-5 shrink-0" />
+                <span className="font-medium truncate">{section.label}</span>
               </div>
-              {activeSection === section.id && <ChevronRight className="w-4 h-4" />}
+              {activeSection === section.id && (
+                <ChevronRight className="w-4 h-4 shrink-0" />
+              )}
             </button>
           ))}
 
           <div className="pt-6 mt-6 border-t border-white/10">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors min-w-0"
             >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Sign Out</span>
+              <LogOut className="w-5 h-5 shrink-0" />
+              <span className="font-medium truncate">Sign Out</span>
             </button>
           </div>
         </nav>

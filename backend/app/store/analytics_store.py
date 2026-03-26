@@ -1313,11 +1313,22 @@ class AnalyticsStore:
             )
             total_hours = round(sum([c.get("hoursSpent", 0) for c in enrolled_courses]), 2)
 
+            # Fetch Class/Section details for this student
+            enrollment_record = client.table("student_enrollments").select("class_id").eq("student_id", student_id).maybe_single().execute()
+            class_info = {"name": None, "batch": None}
+            if enrollment_record.data and enrollment_record.data.get("class_id"):
+                c_res = client.table("classes").select("class_name, batch").eq("id", enrollment_record.data["class_id"]).maybe_single().execute()
+                if c_res.data:
+                    class_info["name"] = c_res.data.get("class_name")
+                    class_info["batch"] = c_res.data.get("batch")
+
             return {
                 "currentStreak": current_streak,
                 "enrolledCourses": enrolled_courses,
                 "overallMastery": avg_mastery,
                 "totalHours": total_hours,
+                "className": class_info["name"],
+                "batch": class_info["batch"],
                 "badges": [],
             }
         except Exception as e:

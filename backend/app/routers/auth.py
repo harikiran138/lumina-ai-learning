@@ -38,9 +38,12 @@ class UserResponse(BaseModel):
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(user: UserCreate, user_store: UserStore = Depends(get_user_store)):
     try:
-        # Check if user exists
-        if await user_store.get_user_by_email(user.email):
-            raise HTTPException(status_code=400, detail="Email already registered")
+        # Restrict 'admin' role creation via public registration
+        if user.role.lower() == "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="Direct registration as admin is prohibited"
+            )
 
         phone_val = user.phone or f"+1555{uuid.uuid4().int % 1000000:06d}"
 
