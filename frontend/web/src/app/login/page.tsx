@@ -180,7 +180,6 @@ export default function LoginPage() {
         <div className="flex flex-wrap justify-center gap-2 mt-4">
           <button type="button" suppressHydrationWarning onClick={() => quickLogin("student")} className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lumina-primary">Student</button>
           <button type="button" suppressHydrationWarning onClick={() => quickLogin("teacher")} className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lumina-primary">Teacher</button>
-          <button type="button" suppressHydrationWarning onClick={() => quickLogin("admin")} className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lumina-primary">Admin</button>
           <button type="button" suppressHydrationWarning onClick={() => quickLogin("parent")} className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lumina-primary">Parent</button>
           <button type="button" suppressHydrationWarning onClick={() => quickLogin("mentor")} className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lumina-primary">Mentor</button>
           <button type="button" suppressHydrationWarning onClick={() => quickLogin("counselor")} className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lumina-primary">Counselor</button>
@@ -412,7 +411,6 @@ export default function LoginPage() {
                     <option value="" disabled className="bg-gray-900 text-gray-400">Select your role</option>
                     <option value="student" className="bg-gray-900 text-white">Student</option>
                     <option value="teacher" className="bg-gray-900 text-white">Teacher</option>
-                    <option value="admin" className="bg-gray-900 text-white">Administrator</option>
                     <option value="parent" className="bg-gray-900 text-white">Parent</option>
                     <option value="mentor" className="bg-gray-900 text-white">Industry Mentor</option>
                     <option value="counselor" className="bg-gray-900 text-white">Counselor</option>
