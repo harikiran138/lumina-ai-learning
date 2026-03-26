@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 
 interface DepartmentInfo {
   id: string;
-  name: string;
+  department_name: string;
   code: string;
 }
 
@@ -192,7 +192,7 @@ export default function HODDashboard() {
                 Departmental Command Center
               </p>
               <h1 className="text-3xl font-display font-bold text-white">
-                {data.department.name} ({data.department.code})
+                {data.department.department_name} ({data.department.code})
               </h1>
             </div>
           </div>

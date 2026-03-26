@@ -113,16 +113,41 @@ class TeacherStore:
         """Fetch pending teacher requests for a specific department."""
         # Prefer direct department filter if available
         requests = await self.db.fetch_all("teacher_requests", {"department_id": department_id, "status": "PENDING_HOD"})
-        if requests:
-            return requests
+        if not requests:
+            # Fallback: derive by teacher department
+            teachers = await self.db.fetch_all("users", {"role": "teacher", "department_id": department_id})
+            dept_teacher_ids = {t["id"] for t in teachers}
+            if not dept_teacher_ids:
+                return []
+            all_pending = await self.db.fetch_all("teacher_requests", {"status": "PENDING_HOD"})
+            requests = [r for r in all_pending if r["teacher_id"] in dept_teacher_ids]
+        
+        # Enrich results for HOD dashboard
+        enriched = []
+        for r in requests:
+            teacher = await self.db.fetch_one("users", {"id": r["teacher_id"]})
+            course = await self.db.fetch_one("courses", {"id": r.get("course_id")})
+            
+            program_name = "N/A"
+            semester_number = 0
+            
+            if course:
+                program = await self.db.fetch_one("programs", {"id": course.get("program_id")})
+                if program:
+                    program_name = program.get("program_name")
+                
+                semester = await self.db.fetch_one("semesters", {"id": course.get("semester_id")})
+                if semester:
+                    semester_number = semester.get("semester_number")
 
-        # Fallback: derive by teacher department
-        teachers = await self.db.fetch_all("users", {"role": "teacher", "department_id": department_id})
-        dept_teacher_ids = {t["id"] for t in teachers}
-        if not dept_teacher_ids:
-            return []
-        all_pending = await self.get_pending_requests(status="PENDING_HOD")
-        return [r for r in all_pending if r["teacher_id"] in dept_teacher_ids]
+            enriched.append({
+                **r,
+                "teacher_name": teacher.get("name") if teacher else "Unknown",
+                "course_name": course.get("course_name") if course else "Unknown",
+                "program_name": program_name,
+                "semester_number": semester_number
+            })
+        return enriched
 
     async def reject_request_by_admin(self, request_id: str) -> bool:
         """Admin rejection of a teacher access request."""
@@ -169,4 +194,3 @@ class TeacherStore:
         if status == "REJECTED":
             return await self.reject_request_by_admin(request_id)
         return False
-            return False

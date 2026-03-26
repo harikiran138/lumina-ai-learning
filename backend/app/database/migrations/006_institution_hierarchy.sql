@@ -201,6 +201,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS department_id UUID REFERENCES departm
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS semester_id UUID REFERENCES semesters(id) ON DELETE SET NULL;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS program_id UUID REFERENCES programs(id) ON DELETE SET NULL;
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE student_enrollments ADD COLUMN IF NOT EXISTS class_id UUID REFERENCES classes(id) ON DELETE SET NULL;
 
 -- 10) Indexes
 CREATE INDEX IF NOT EXISTS idx_departments_institution ON departments(institution_id);
