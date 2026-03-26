@@ -245,6 +245,25 @@ async def create_institution(data: dict, admin: dict = Depends(is_admin)):
     return await InstitutionStore().create_institution(data)
 
 
+@router.patch("/institutions/{inst_id}/status")
+async def update_institution_status(inst_id: str, data: dict, admin: dict = Depends(is_admin)):
+    """Explicitly update the onboarding status of an institution."""
+    status = data.get("status")
+    if not status:
+        raise HTTPException(status_code=400, detail="status field is required")
+    
+    success = await InstitutionStore().update_institution_status(inst_id, status)
+    if not success:
+        raise HTTPException(status_code=404, detail="Institution not found or update failed")
+    
+    audit_logger.log(
+        action="institution_status_updated",
+        user_id=str(admin.get("id")),
+        metadata={"institution_id": inst_id, "new_status": status}
+    )
+    return {"success": True, "new_status": status}
+
+
 @router.get("/institutions/{inst_id}/departments")
 async def get_departments(inst_id: str, admin: dict = Depends(is_admin)):
     """List all departments for an institution."""

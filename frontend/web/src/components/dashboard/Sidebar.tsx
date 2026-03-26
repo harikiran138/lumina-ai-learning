@@ -115,6 +115,9 @@ export default function Sidebar({
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [hasStudentCourses, setHasStudentCourses] = useState<boolean | null>(
+    null,
+  );
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -124,6 +127,19 @@ export default function Sidebar({
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    const fetchStudentCourses = async () => {
+      if (user?.role !== "student") return;
+      try {
+        const courses = await api.getStudentCourses();
+        setHasStudentCourses(Array.isArray(courses) && courses.length > 0);
+      } catch {
+        setHasStudentCourses(false);
+      }
+    };
+    fetchStudentCourses();
+  }, [user?.role]);
+
   const handleLogout = async () => {
     await api.logout();
     router.push("/login");
@@ -131,6 +147,16 @@ export default function Sidebar({
 
   const currentRole = user?.role || "student";
   const navItems = roleNavItems[currentRole] || roleNavItems["student"];
+  const studentCourseDependent = new Set([
+    "Assignments",
+    "AI Tutor",
+    "Assessment",
+    "Progress",
+  ]);
+  const filteredNavItems =
+    currentRole === "student" && hasStudentCourses === false
+      ? navItems.filter((item: any) => !studentCourseDependent.has(item.name))
+      : navItems;
 
   return (
     <aside
@@ -170,7 +196,7 @@ export default function Sidebar({
       </div>
 
       <nav className="p-4 space-y-1.5 flex-1 overflow-y-auto hide-scrollbar">
-        {navItems.map((item: any) => {
+        {filteredNavItems.map((item: any) => {
           const isActive = pathname === item.href;
           return (
             <Link
