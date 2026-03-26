@@ -19,7 +19,7 @@ assignment_store = AssignmentStore()
 teacher_store = TeacherStore()
 
 def check_teacher_role(user: dict):
-    if user.get("role") not in {"teacher", "admin"}:
+    if user.get("role") not in {"teacher", "admin", "hod"}:
         raise HTTPException(status_code=403, detail="Teacher access required")
 
 @router.get("/dashboard/summary")
@@ -262,7 +262,7 @@ async def get_teacher_requests(
     # Only admin can view all requests
     if current_user["role"] != "admin":
          raise HTTPException(status_code=403, detail="Admin access required")
-    return await teacher_store.get_pending_requests()
+    return await teacher_store.get_pending_requests(status="PENDING_ADMIN")
 
 @router.patch("/requests/{request_id}")
 async def update_teacher_request(
@@ -277,7 +277,10 @@ async def update_teacher_request(
     if status not in {"APPROVED", "REJECTED"}:
         raise HTTPException(status_code=400, detail="Invalid status")
         
-    return await teacher_store.update_request_status(request_id, status)
+    success = await teacher_store.update_request_status(request_id, status)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update request")
+    return {"status": status}
 
 @router.post("/assignments/request")
 async def request_teacher_assignment(

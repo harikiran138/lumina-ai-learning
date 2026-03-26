@@ -119,7 +119,7 @@ async def teacher_dashboard(
     analytics: AnalyticsStore = Depends(get_analytics_store),
 ):
     """Teacher dashboard stats with role check"""
-    if current_user.get("role") not in ["teacher", "admin"]:
+    if current_user.get("role") not in ["teacher", "admin", "hod"]:
         raise HTTPException(status_code=403, detail="Teacher access required")
     overview = await analytics.get_teacher_dashboard_overview(current_user["id"])
     stats = await analytics.get_teacher_dashboard_stats(current_user["id"])
@@ -252,7 +252,7 @@ async def teacher_courses(
     store: CourseStore = Depends(get_course_store),
 ):
     """List courses created by the authenticated teacher."""
-    if current_user["role"] not in ("teacher", "admin"):
+    if current_user["role"] not in ("teacher", "admin", "hod"):
         raise HTTPException(status_code=403, detail="Teacher access required")
     return await store.get_courses_by_teacher(current_user["id"])
 
@@ -263,7 +263,7 @@ async def teacher_students(
     analytics: AnalyticsStore = Depends(get_analytics_store),
 ):
     """Get students enrolled in the teacher's courses."""
-    if current_user["role"] not in ("teacher", "admin"):
+    if current_user["role"] not in ("teacher", "admin", "hod"):
         raise HTTPException(status_code=403, detail="Teacher access required")
     snapshot = await analytics.get_teacher_students_snapshot(current_user["id"])
     personalization = get_personalization_service()
@@ -298,7 +298,7 @@ async def create_course_form(
     store: CourseStore = Depends(get_course_store),
 ):
     """Create a course (form-data variant)."""
-    if current_user["role"] not in ("teacher", "admin"):
+    if current_user["role"] not in ("teacher", "admin", "hod"):
         raise HTTPException(status_code=403, detail="Only teachers can create courses")
     if await store.get_course_by_code(code):
         raise HTTPException(status_code=400, detail="Course code already exists")
@@ -315,7 +315,7 @@ async def create_course_json(
     store: CourseStore = Depends(get_course_store),
 ):
     """Create a course (JSON body)."""
-    if current_user["role"] not in ("teacher", "admin"):
+    if current_user["role"] not in ("teacher", "admin", "hod"):
         raise HTTPException(status_code=403, detail="Only teachers can create courses")
     if await store.get_course_by_code(body.code):
         raise HTTPException(status_code=400, detail="Course code already exists")
@@ -351,7 +351,7 @@ async def delete_course(
     store: CourseStore = Depends(get_course_store),
 ):
     """Delete a course."""
-    if current_user["role"] not in ("teacher", "admin"):
+    if current_user["role"] not in ("teacher", "admin", "hod"):
         raise HTTPException(status_code=403, detail="Only teachers or admins can delete courses")
     success = await store.delete_course(course_id)
     if not success:
@@ -380,7 +380,7 @@ async def invite_student(
     current_user: dict = Depends(get_current_user),
 ):
     """Invite a student to a course by email."""
-    if current_user["role"] not in ("teacher", "admin"):
+    if current_user["role"] not in ("teacher", "admin", "hod"):
         raise HTTPException(status_code=403, detail="Only teachers can invite students")
 
     invite_email = email or (body.email if body else None)

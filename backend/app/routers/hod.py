@@ -68,13 +68,16 @@ async def update_teacher_request(
     if not teacher or teacher.get("department_id") != dept["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to act on this request")
     
+    if request.get("status") != "PENDING_HOD":
+        raise HTTPException(status_code=400, detail="Request is not pending HOD approval")
+
     if status == "APPROVED":
-        success = await teacher_store.approve_request(request_id)
+        success = await teacher_store.approve_request_by_hod(request_id)
         if not success:
             raise HTTPException(status_code=500, detail="Failed to approve request")
-        return {"status": "APPROVED"}
+        return {"status": "PENDING_ADMIN"}
     else:
-        success = await teacher_store.reject_request(request_id)
+        success = await teacher_store.reject_request_by_hod(request_id)
         if not success:
             raise HTTPException(status_code=500, detail="Failed to reject request")
         return {"status": "REJECTED"}

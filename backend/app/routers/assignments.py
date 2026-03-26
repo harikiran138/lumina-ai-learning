@@ -35,7 +35,7 @@ async def create_assignment(
     """
     Create a new assignment definition. Requires Teacher role.
     """
-    if current_user["role"] != "teacher":
+    if current_user["role"] not in {"teacher", "admin", "hod"}:
         raise HTTPException(status_code=403, detail="Only teachers can create assignments")
 
     try:
