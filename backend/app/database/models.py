@@ -22,7 +22,7 @@ class User(BaseModel):
     email: EmailStr
     hashed_password: str
     full_name: str
-    role: str = "student"  # student, teacher, admin
+    role: str = "student"  # student, teacher, hod, admin
     profile_image: Optional[str] = None
     created_at: str = Field(default_factory=current_time_iso)
     last_login: Optional[str] = None

@@ -276,7 +276,13 @@ async def update_teacher_request(
     status = payload.get("status")
     if status not in {"APPROVED", "REJECTED"}:
         raise HTTPException(status_code=400, detail="Invalid status")
-        
+
+    request = await teacher_store.db.fetch_one("teacher_requests", {"id": request_id})
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    if request.get("status") != "PENDING_ADMIN":
+        raise HTTPException(status_code=400, detail="Request is not pending admin approval")
+
     success = await teacher_store.update_request_status(request_id, status)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to update request")

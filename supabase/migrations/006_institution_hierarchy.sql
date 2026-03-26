@@ -189,6 +189,7 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS department_id UUID REFERENCES 
 ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS semester_id UUID REFERENCES public.semesters(id) ON DELETE SET NULL;
 ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS program_id UUID REFERENCES public.programs(id) ON DELETE SET NULL;
 ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE public.student_enrollments ADD COLUMN IF NOT EXISTS class_id UUID REFERENCES public.classes(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS idx_departments_institution ON public.departments(institution_id);
 CREATE INDEX IF NOT EXISTS idx_programs_department ON public.programs(department_id);

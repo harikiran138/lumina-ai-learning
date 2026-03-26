@@ -240,7 +240,7 @@ class AnalyticsStore:
             **item,
             "id": str(self._coalesce(item, "id", "_id", default="")),
             "institution_id": str(self._coalesce(item, "institution_id", "institutionId", default="")),
-            "department_name": self._coalesce(item, "department_name", default="Department"),
+            "department_name": self._coalesce(item, "department_name", "name", default="Department"),
         }
 
     def _normalize_program(self, item: dict) -> dict:
@@ -248,7 +248,7 @@ class AnalyticsStore:
             **item,
             "id": str(self._coalesce(item, "id", "_id", default="")),
             "institution_id": str(self._coalesce(item, "institution_id", "institutionId", default="")),
-            "program_name": self._coalesce(item, "program_name", default="Program"),
+            "program_name": self._coalesce(item, "program_name", "name", default="Program"),
         }
 
     def _normalize_stakeholder(self, item: dict) -> dict:

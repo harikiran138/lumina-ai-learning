@@ -12,6 +12,39 @@ def check_hod_role(user: dict):
     if user.get("role") not in {"hod", "admin"}:
         raise HTTPException(status_code=403, detail="HOD access required")
 
+@router.get("/dashboard")
+async def get_hod_dashboard(current_user: dict = Depends(get_current_user)):
+    check_hod_role(current_user)
+    dept_id = current_user.get("department_id")
+    if not dept_id:
+        dept = await academic_store.get_department_by_hod(str(current_user["id"]))
+        if not dept:
+            raise HTTPException(status_code=404, detail="Department not found for this HOD")
+        dept_id = dept["id"]
+    else:
+        dept = await academic_store.get_department_by_id(dept_id)
+        if not dept:
+            raise HTTPException(status_code=404, detail="Department not found")
+
+    # Aggregate dashboard data
+    teachers = await academic_store.get_department_teachers(dept_id)
+    programs = await academic_store.get_department_programs(dept_id)
+    students = await academic_store.get_department_students(dept_id)
+    requests = await teacher_store.get_pending_requests_by_department(dept_id)
+
+    return {
+        "department": dept,
+        "summary": {
+            "totalTeachers": len(teachers),
+            "totalStudents": len(students),
+            "totalPrograms": len(programs),
+            "pendingRequests": len(requests)
+        },
+        "teachers": teachers,
+        "programs": programs,
+        "requests": requests
+    }
+
 @router.get("/department")
 async def get_hod_department(current_user: dict = Depends(get_current_user)):
     check_hod_role(current_user)

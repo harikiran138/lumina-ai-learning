@@ -106,6 +106,8 @@ class InstitutionStore:
 
     async def create_department(self, data: dict) -> dict:
         try:
+            if "name" in data and "department_name" not in data:
+                data["department_name"] = data.pop("name")
             result = await self.db.upsert("departments", data)
             if result:
                 return result[0]
@@ -125,6 +127,8 @@ class InstitutionStore:
 
     async def create_program(self, data: dict) -> dict:
         try:
+            if "name" in data and "program_name" not in data:
+                data["program_name"] = data.pop("name")
             result = await self.db.upsert("programs", data)
             if result:
                 return result[0]
