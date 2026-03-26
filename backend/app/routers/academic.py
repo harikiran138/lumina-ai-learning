@@ -17,7 +17,7 @@ async def get_classes(
     current_user: dict = Depends(get_current_user)
 ):
     # Admins and teachers can list classes
-    if current_user["role"] not in {"admin", "teacher"}:
+    if current_user["role"] not in {"admin", "teacher", "hod"}:
          raise HTTPException(status_code=403, detail="Unauthorized")
     return await academic_store.get_classes(program_id, semester_id)
 

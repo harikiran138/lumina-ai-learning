@@ -13,24 +13,36 @@ class TeacherStore:
     def __init__(self):
         self.db = supabase_db
 
-    async def request_course_access(self, teacher_id: str, course_id: str, class_id: str, message: Optional[str] = None) -> Optional[dict]:
+    async def create_request(self, teacher_id: str, course_id: str, class_id: str, message: Optional[str] = None) -> Optional[dict]:
         """Teacher requests access to a specific course and class/section."""
+        teacher = await self.db.fetch_one("users", {"id": teacher_id})
+        department_id = teacher.get("department_id") if teacher else None
+        status = "PENDING_HOD" if department_id else "PENDING_ADMIN"
+
         data = {
             "teacher_id": teacher_id,
             "course_id": course_id,
             "class_id": class_id,
+            "department_id": department_id,
             "message": message,
-            "status": "PENDING",
-            "created_at": datetime.utcnow().isoformat()
+            "status": status,
+            "hod_status": "PENDING",
+            "admin_status": "PENDING",
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat(),
         }
         return await self.db.insert("teacher_requests", data)
 
-    async def get_pending_requests(self) -> List[dict]:
-        """Fetch all pending teacher access requests for Admin approval."""
-        return await self.db.fetch_all("teacher_requests", {"status": "PENDING"})
+    async def request_course_access(self, teacher_id: str, course_id: str, class_id: str, message: Optional[str] = None) -> Optional[dict]:
+        """Backward-compatible alias for create_request."""
+        return await self.create_request(teacher_id, course_id, class_id, message)
 
-    async def approve_request(self, request_id: str) -> bool:
-        """Approve a request and create a teacher assignment."""
+    async def get_pending_requests(self, status: str = "PENDING_ADMIN") -> List[dict]:
+        """Fetch pending teacher access requests for Admin approval."""
+        return await self.db.fetch_all("teacher_requests", {"status": status})
+
+    async def approve_request_by_admin(self, request_id: str) -> bool:
+        """Admin approval: approve a request and create a teacher assignment."""
         try:
             request = await self.db.fetch_one("teacher_requests", {"id": request_id})
             if not request:
@@ -38,7 +50,12 @@ class TeacherStore:
 
             # 1. Update request status
             await self.db.update("teacher_requests", 
-                {"status": "APPROVED", "updated_at": datetime.utcnow().isoformat()}, 
+                {
+                    "status": "APPROVED",
+                    "admin_status": "APPROVED",
+                    "admin_reviewed_at": datetime.utcnow().isoformat(),
+                    "updated_at": datetime.utcnow().isoformat(),
+                }, 
                 {"id": request_id}
             )
 
@@ -52,10 +69,33 @@ class TeacherStore:
             }
             await self.db.upsert("teacher_assignments", assignment_data, on_conflict="teacher_id, course_id, class_id")
             
-            log.info("teacher_request_approved", request_id=request_id, teacher_id=request["teacher_id"])
+            log.info("teacher_request_approved_admin", request_id=request_id, teacher_id=request["teacher_id"])
             return True
         except Exception as e:
-            log.error("approve_request_failed", error=str(e), request_id=request_id)
+            log.error("approve_request_admin_failed", error=str(e), request_id=request_id)
+            return False
+
+    async def approve_request_by_hod(self, request_id: str) -> bool:
+        """HOD approval: move request to Admin stage."""
+        try:
+            request = await self.db.fetch_one("teacher_requests", {"id": request_id})
+            if not request:
+                return False
+
+            await self.db.update(
+                "teacher_requests",
+                {
+                    "status": "PENDING_ADMIN",
+                    "hod_status": "APPROVED",
+                    "hod_reviewed_at": datetime.utcnow().isoformat(),
+                    "updated_at": datetime.utcnow().isoformat(),
+                },
+                {"id": request_id},
+            )
+            log.info("teacher_request_approved_hod", request_id=request_id, teacher_id=request["teacher_id"])
+            return True
+        except Exception as e:
+            log.error("approve_request_hod_failed", error=str(e), request_id=request_id)
             return False
 
     async def get_teacher_assignments(self, teacher_id: str) -> List[dict]:
@@ -71,28 +111,62 @@ class TeacherStore:
 
     async def get_pending_requests_by_department(self, department_id: str) -> List[dict]:
         """Fetch pending teacher requests for a specific department."""
-        # Get teachers for this department first to optimize
+        # Prefer direct department filter if available
+        requests = await self.db.fetch_all("teacher_requests", {"department_id": department_id, "status": "PENDING_HOD"})
+        if requests:
+            return requests
+
+        # Fallback: derive by teacher department
         teachers = await self.db.fetch_all("users", {"role": "teacher", "department_id": department_id})
         dept_teacher_ids = {t["id"] for t in teachers}
-        
         if not dept_teacher_ids:
             return []
-            
-        all_pending = await self.get_pending_requests()
-        return [
-            r for r in all_pending 
-            if r["teacher_id"] in dept_teacher_ids
-        ]
+        all_pending = await self.get_pending_requests(status="PENDING_HOD")
+        return [r for r in all_pending if r["teacher_id"] in dept_teacher_ids]
 
-    async def reject_request(self, request_id: str) -> bool:
-        """Reject a teacher access request."""
+    async def reject_request_by_admin(self, request_id: str) -> bool:
+        """Admin rejection of a teacher access request."""
         try:
-            await self.db.update("teacher_requests", 
-                {"status": "REJECTED", "updated_at": datetime.utcnow().isoformat()}, 
+            await self.db.update(
+                "teacher_requests",
+                {
+                    "status": "REJECTED",
+                    "admin_status": "REJECTED",
+                    "admin_reviewed_at": datetime.utcnow().isoformat(),
+                    "updated_at": datetime.utcnow().isoformat(),
+                },
                 {"id": request_id}
             )
-            log.info("teacher_request_rejected", request_id=request_id)
+            log.info("teacher_request_rejected_admin", request_id=request_id)
             return True
         except Exception as e:
-            log.error("reject_request_failed", error=str(e), request_id=request_id)
+            log.error("reject_request_admin_failed", error=str(e), request_id=request_id)
+            return False
+
+    async def reject_request_by_hod(self, request_id: str) -> bool:
+        """HOD rejection of a teacher access request."""
+        try:
+            await self.db.update(
+                "teacher_requests",
+                {
+                    "status": "REJECTED",
+                    "hod_status": "REJECTED",
+                    "hod_reviewed_at": datetime.utcnow().isoformat(),
+                    "updated_at": datetime.utcnow().isoformat(),
+                },
+                {"id": request_id},
+            )
+            log.info("teacher_request_rejected_hod", request_id=request_id)
+            return True
+        except Exception as e:
+            log.error("reject_request_hod_failed", error=str(e), request_id=request_id)
+            return False
+
+    async def update_request_status(self, request_id: str, status: str) -> bool:
+        """Admin update: approve or reject a request."""
+        if status == "APPROVED":
+            return await self.approve_request_by_admin(request_id)
+        if status == "REJECTED":
+            return await self.reject_request_by_admin(request_id)
+        return False
             return False
