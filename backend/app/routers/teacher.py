@@ -8,6 +8,7 @@ from .auth import get_current_user
 from app.store.content_store import ContentStore
 from app.store.course_store import CourseStore
 from app.store.assignment_store import AssignmentStore
+from app.store.teacher_store import TeacherStore
 from app.services.ocr_service import ocr_service
 from app.services.grader_service import grader_service
 
@@ -15,6 +16,7 @@ router = APIRouter()
 content_store = ContentStore()
 course_store = CourseStore()
 assignment_store = AssignmentStore()
+teacher_store = TeacherStore()
 
 def check_teacher_role(user: dict):
     if user.get("role") not in {"teacher", "admin"}:
@@ -197,8 +199,6 @@ async def process_physical_submission(
     
     return {"status": "graded", "score": grading_result.get("score"), "extracted_text_preview": str(full_text)[:200]}
 
-    return submission
-
 @router.get("/analytics/misconceptions")
 async def get_misconception_clusters(
     student_ids: List[str] = Query(..., alias="student_id"),
@@ -252,3 +252,50 @@ async def get_student_detail_analytics(
     check_teacher_role(current_user)
     service = get_personalization_service()
     return await service.get_teacher_projection(student_id)
+
+# --- Academic Hierarchy & Teacher Assignment Endpoints ---
+
+@router.get("/requests")
+async def get_teacher_requests(
+    current_user: dict = Depends(get_current_user)
+):
+    # Only admin can view all requests
+    if current_user["role"] != "admin":
+         raise HTTPException(status_code=403, detail="Admin access required")
+    return await teacher_store.get_pending_requests()
+
+@router.patch("/requests/{request_id}")
+async def update_teacher_request(
+    request_id: str,
+    payload: Dict[str, str],
+    current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "admin":
+         raise HTTPException(status_code=403, detail="Admin access required")
+    
+    status = payload.get("status")
+    if status not in {"APPROVED", "REJECTED"}:
+        raise HTTPException(status_code=400, detail="Invalid status")
+        
+    return await teacher_store.update_request_status(request_id, status)
+
+@router.post("/assignments/request")
+async def request_teacher_assignment(
+    payload: Dict[str, str],
+    current_user: dict = Depends(get_current_user)
+):
+    check_teacher_role(current_user)
+    course_id = payload.get("course_id")
+    class_id = payload.get("class_id")
+    
+    if not course_id or not class_id:
+        raise HTTPException(status_code=400, detail="Missing course_id or class_id")
+        
+    return await teacher_store.create_request(str(current_user["id"]), course_id, class_id)
+
+@router.get("/assignments")
+async def get_teacher_assignments(
+    current_user: dict = Depends(get_current_user)
+):
+    check_teacher_role(current_user)
+    return await teacher_store.get_teacher_assignments(str(current_user["id"]))

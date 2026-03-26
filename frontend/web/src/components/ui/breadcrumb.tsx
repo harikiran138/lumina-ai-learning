@@ -6,9 +6,35 @@ import { ChevronRight } from 'lucide-react'
 
 interface BreadcrumbProps {
   customLabels?: Record<string, string> // e.g. { 'ai_tutor': 'AI Tutor' }
+  customHrefs?: Record<string, string> // e.g. { student: '/student/dashboard' }
+  homeHref?: string
+  homeLabel?: string
 }
 
-export function Breadcrumb({ customLabels = {} }: BreadcrumbProps) {
+const defaultLabels: Record<string, string> = {
+  ai_tutor: 'AI Tutor',
+}
+
+const defaultHrefs: Record<string, string> = {
+  student: '/student/dashboard',
+  teacher: '/teacher/dashboard',
+  admin: '/admin/dashboard',
+  parent: '/parent/dashboard',
+  mentor: '/mentor/dashboard',
+  counselor: '/counselor/dashboard',
+  alumni: '/alumni/dashboard',
+  researcher: '/researcher/dashboard',
+  creator: '/creator/dashboard',
+  'peer-tutor': '/peer-tutor/dashboard',
+  peer_tutor: '/peer-tutor/dashboard',
+}
+
+export function Breadcrumb({
+  customLabels = {},
+  customHrefs = {},
+  homeHref = '/',
+  homeLabel = 'Home',
+}: BreadcrumbProps) {
   const pathname = usePathname()
   const segments = pathname.split('/').filter(Boolean)
 
@@ -18,18 +44,21 @@ export function Breadcrumb({ customLabels = {} }: BreadcrumbProps) {
     <nav aria-label="Breadcrumb" className="mb-4">
       <ol className="flex items-center flex-wrap gap-1 text-sm text-muted-foreground">
         <li>
-          <Link href="/" className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lumina-primary rounded">
-            Home
+          <Link href={homeHref} className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lumina-primary rounded">
+            {homeLabel}
           </Link>
         </li>
         {segments.map((segment, index) => {
-          const href = '/' + segments.slice(0, index + 1).join('/')
+          const href =
+            customHrefs[segment] ||
+            defaultHrefs[segment] ||
+            '/' + segments.slice(0, index + 1).join('/')
           const rawLabel = segment.replace(/-|_/g, ' ')
-          const label = customLabels[segment] ?? rawLabel
+          const label = customLabels[segment] ?? defaultLabels[segment] ?? rawLabel
           const isLast = index === segments.length - 1
 
           return (
-            <li key={href} className="flex items-center gap-1">
+            <li key={`${segment}-${index}`} className="flex items-center gap-1">
               <ChevronRight className="w-3 h-3" aria-hidden="true" />
               {isLast ? (
                 <span className="text-foreground capitalize font-medium">

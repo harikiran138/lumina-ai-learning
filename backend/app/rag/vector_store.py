@@ -39,14 +39,32 @@ class VectorStore:
 
         self.client.upsert(collection_name=self.collection_name, points=points)
 
-    def search(self, query: str, top_k: int = 5):
+    def search(self, query: str, top_k: int = 5, filter_options: dict = None):
         from app.rag.embeddings import EmbeddingService
+        from qdrant_client.http.models import Filter, FieldCondition, MatchValue
 
         embeddings_service = EmbeddingService.get_embeddings()
         query_vector = embeddings_service.embed_query(query)
 
+        qdrant_filter = None
+        if filter_options:
+            conditions = []
+            for key, value in filter_options.items():
+                if value is not None:
+                    # Handle multiple values if provided as a list
+                    if isinstance(value, list):
+                        from qdrant_client.http.models import MatchAny
+                        conditions.append(FieldCondition(key=key, match=MatchAny(any=value)))
+                    else:
+                        conditions.append(FieldCondition(key=key, match=MatchValue(value=value)))
+            if conditions:
+                qdrant_filter = Filter(must=conditions)
+
         results = self.client.search(
-            collection_name=self.collection_name, query_vector=query_vector, limit=top_k
+            collection_name=self.collection_name, 
+            query_vector=query_vector, 
+            query_filter=qdrant_filter,
+            limit=top_k
         )
 
         return [hit.payload.get("text", "") for hit in results]

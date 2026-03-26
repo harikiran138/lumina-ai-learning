@@ -115,6 +115,19 @@ export default function AITutorPage() {
   const [focusTopics, setFocusTopics] = useState<string[]>([]);
   const currentTopicRef = useRef<string>("General");
 
+  useEffect(() => {
+    let sessionId = sessionStorage.getItem("lumina_chat_session_id");
+    if (!sessionId) {
+      sessionId = createSessionId();
+      sessionStorage.setItem("lumina_chat_session_id", sessionId);
+    }
+    setCurrentSessionId(sessionId);
+    const resolvedId = sessionId;
+    setSessions((prev) =>
+      prev[resolvedId] ? prev : { ...prev, [resolvedId]: [] },
+    );
+  }, []);
+
   const generateContext = useCallback(
     (user: any, dashboard: any, profile: any, notes: any, allCourses: any[]) => {
       const learnerProfile = profile?.learner_profile || {};
@@ -238,8 +251,18 @@ export default function AITutorPage() {
         }
 
         setCurrentSessionId(sessionId);
-        setSessions(grouped);
-        setMessages(grouped[sessionId] || []);
+        const mergedSessions = { ...grouped };
+        if (!mergedSessions[sessionId]) mergedSessions[sessionId] = [];
+        setSessions((prev) => {
+          const next = { ...mergedSessions, ...prev };
+          if (!next[sessionId]) next[sessionId] = [];
+          return next;
+        });
+        setMessages((prev) =>
+          prev.some((msg) => msg.sessionId === sessionId)
+            ? prev
+            : mergedSessions[sessionId] || [],
+        );
 
         if (user?.id) setCurrentUserId(user.id);
         if (user?.name) {
@@ -262,6 +285,17 @@ export default function AITutorPage() {
         );
       } catch (error) {
         console.error("ai_tutor_load_failed", error);
+        let fallbackId = sessionStorage.getItem("lumina_chat_session_id");
+        if (!fallbackId) {
+          fallbackId = createSessionId();
+          sessionStorage.setItem("lumina_chat_session_id", fallbackId);
+        }
+        const resolvedId = fallbackId;
+        setCurrentSessionId(resolvedId);
+        setSessions((prev) =>
+          prev[resolvedId] ? prev : { ...prev, [resolvedId]: [] },
+        );
+        setMessages([]);
       }
     };
 
@@ -325,11 +359,22 @@ export default function AITutorPage() {
 
   const sendTutorMessage = useCallback(
     async (text: string) => {
-      if (!text.trim() || !currentSessionId) return;
+      if (!text.trim()) return;
 
-      const userMessage = createMessage("me", text.trim(), currentSessionId);
+      let sessionId = currentSessionId;
+      if (!sessionId) {
+        sessionId = createSessionId();
+        sessionStorage.setItem("lumina_chat_session_id", sessionId);
+        setCurrentSessionId(sessionId);
+        setSessions((prev) => ({
+          ...prev,
+          [sessionId]: prev[sessionId] || [],
+        }));
+      }
+
+      const userMessage = createMessage("me", text.trim(), sessionId);
       setMessages((prev) => [...prev, userMessage]);
-      updateSessionState(currentSessionId, userMessage);
+      updateSessionState(sessionId, userMessage);
       setInput("");
       setIsLoading(true);
       await api.saveChatMessage(userMessage);
@@ -342,10 +387,10 @@ export default function AITutorPage() {
       const requestOptions: ProcessMessageOptions = {
         userContext,
         userId: currentUserId,
-        sessionId: currentSessionId,
+        sessionId: sessionId,
         provider: resolveTutorProvider(),
         topic: currentTopicRef.current,
-        history: [...(sessions[currentSessionId] || []), userMessage].slice(-8),
+        history: [...(sessions[sessionId] || []), userMessage].slice(-8),
       };
 
       try {
@@ -354,13 +399,13 @@ export default function AITutorPage() {
         if (resolvedTopic) {
           currentTopicRef.current = resolvedTopic;
         }
-        const aiMessage = createMessage("ai", result.text, currentSessionId, {
+        const aiMessage = createMessage("ai", result.text, sessionId, {
           source: result.source,
           personalization: result.personalization,
         });
 
         setMessages((prev) => [...prev, aiMessage]);
-        updateSessionState(currentSessionId, aiMessage);
+        updateSessionState(sessionId, aiMessage);
         await api.saveChatMessage(aiMessage);
         await api.logAIInteraction(userMessage.text, aiMessage.text);
       } catch (error) {
@@ -368,11 +413,11 @@ export default function AITutorPage() {
         const fallbackMessage = createMessage(
           "ai",
           "I hit a problem while generating the reply. Please try the same question once more or ask for a simpler explanation.",
-          currentSessionId,
+          sessionId,
           { source: "fallback" },
         );
         setMessages((prev) => [...prev, fallbackMessage]);
-        updateSessionState(currentSessionId, fallbackMessage);
+        updateSessionState(sessionId, fallbackMessage);
         await api.saveChatMessage(fallbackMessage);
       } finally {
         setIsLoading(false);

@@ -82,7 +82,7 @@ export default function AdminSidebar() {
               href={item.href}
               suppressHydrationWarning
               className={cn(
-                "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group",
+                "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
                 !isHovered ? "justify-center px-0" : "px-4",
                 isActive
                   ? "bg-lumina-primary/10 text-lumina-primary border border-lumina-primary/20 shadow-gold-glow"
@@ -91,7 +91,7 @@ export default function AdminSidebar() {
             >
               <item.icon
                 className={cn(
-                  "h-5 w-5 transition-all duration-500",
+                  "h-5 w-5 transition-all duration-500 shrink-0",
                   !isHovered ? "mr-0 scale-110" : "mr-3",
                   isActive
                     ? "text-lumina-primary"
@@ -100,7 +100,7 @@ export default function AdminSidebar() {
               />
               <span
                 className={cn(
-                  "transition-all duration-500 whitespace-nowrap overflow-hidden",
+                  "transition-all duration-500 whitespace-nowrap overflow-hidden truncate min-w-0",
                   !isHovered ? "opacity-0 w-0" : "opacity-100 w-auto",
                 )}
               >
@@ -126,7 +126,7 @@ export default function AdminSidebar() {
         {/* User Profile Snippet */}
         {user && (
           <Link
-            href="/admin/settings"
+            href="/admin/platform/profile"
             className={cn(
               "flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-500 cursor-pointer overflow-hidden",
               !isHovered ? "justify-center p-2" : "p-3",

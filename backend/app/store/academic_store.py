@@ -19,6 +19,23 @@ class AcademicStore:
     async def get_student_credits(self, student_id: str) -> List[dict]:
         return await self.db.fetch_all("student_credits", {"student_id": student_id})
 
+    async def get_classes(self, program_id: str, semester_id: str) -> List[dict]:
+        """Fetch all classes/sections for a specific program and semester."""
+        return await self.db.fetch_all("classes", {
+            "program_id": program_id, 
+            "semester_id": semester_id
+        })
+
+    async def get_class_by_id(self, class_id: str) -> Optional[dict]:
+        return await self.db.fetch_one("classes", {"id": class_id})
+
+    async def create_class(self, data: Dict[str, Any]) -> Optional[dict]:
+        return await self.db.insert("classes", data)
+
+    async def get_student_class_enrollment(self, student_id: str) -> Optional[dict]:
+        """Fetch the student's enrollment including their class_id."""
+        return await self.db.fetch_one("student_enrollments", {"student_id": student_id})
+
     async def update_credits(self, student_id: str, semester_id: str, earned: int, total: int):
         data = {
             "student_id": student_id,

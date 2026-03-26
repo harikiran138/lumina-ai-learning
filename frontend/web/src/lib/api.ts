@@ -725,7 +725,15 @@ export class RealAPI {
       method: "POST",
       body: JSON.stringify({ channel_id: channelId, content }),
     });
-    return await res.json();
+    
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        success: false,
+        error: data.detail || "Failed to send message",
+      };
+    }
+    return data;
   }
 
   async getTeacherStudents(): Promise<any> {
@@ -738,6 +746,50 @@ export class RealAPI {
     const res = await this.fetchAuthorized("/api/courses/teacher/list");
     if (!res.ok) return [];
     return await res.json();
+  }
+
+  // --- Academic Hierarchy & Teacher Assignment Methods ---
+  async getClasses(programId?: string, semesterId?: string): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (programId) params.append("program_id", programId);
+    if (semesterId) params.append("semester_id", semesterId);
+    
+    const res = await this.fetchAuthorized(`/api/academic/classes?${params.toString()}`);
+    return res.ok ? await res.json() : [];
+  }
+
+  async createClass(payload: any): Promise<any> {
+    const res = await this.fetchAuthorized("/api/academic/classes", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  }
+
+  async getTeacherRequests(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/teacher/requests");
+    return res.ok ? await res.json() : [];
+  }
+
+  async updateTeacherRequest(requestId: string, status: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/teacher/requests/${requestId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+    return await res.json();
+  }
+
+  async requestTeacherAssignment(courseId: string, classId: string): Promise<any> {
+    const res = await this.fetchAuthorized("/api/teacher/assignments/request", {
+      method: "POST",
+      body: JSON.stringify({ course_id: courseId, class_id: classId }),
+    });
+    return await res.json();
+  }
+
+  async getTeacherAssignments(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/teacher/assignments");
+    return res.ok ? await res.json() : [];
   }
 
   async updateIntervention(interventionId: string, payload: any): Promise<any> {

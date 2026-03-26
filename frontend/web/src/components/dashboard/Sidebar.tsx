@@ -31,10 +31,10 @@ import { api } from "@/lib/api";
 const roleNavItems: Record<string, any[]> = {
   student: [
     { name: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard },
+    { name: "My Courses", href: "/student/courses", icon: BookOpen },
     { name: "Assignments", href: "/student/assignments", icon: FileText },
     { name: "AI Tutor", href: "/student/ai_tutor", icon: Bot },
     { name: "Assessment", href: "/student/assessment", icon: Brain },
-    { name: "My Courses", href: "/student/courses", icon: BookOpen },
     { name: "Progress", href: "/student/progress", icon: BarChart2 },
     { name: "Community", href: "/student/community", icon: MessageSquare },
     { name: "Profile", href: "/student/profile", icon: User },
@@ -158,6 +158,23 @@ export default function Sidebar({
       ? navItems.filter((item: any) => !studentCourseDependent.has(item.name))
       : navItems;
 
+  const profileHrefByRole: Record<string, string> = {
+    student: "/student/profile",
+    teacher: "/teacher/settings",
+    admin: "/admin/platform/profile",
+    parent: "/parent/settings",
+    mentor: "/mentor/settings",
+    peer_tutor: "/peer_tutor/settings",
+    counselor: "/counselor/dashboard",
+    alumni: "/alumni/dashboard",
+    researcher: "/researcher/dashboard",
+    content_creator: "/content_creator/dashboard",
+    "content-creator": "/content-creator/dashboard",
+    creator: "/creator/dashboard",
+  };
+  const profileHref =
+    profileHrefByRole[currentRole] || `/${currentRole}/dashboard`;
+
   return (
     <aside
       onMouseEnter={() => setIsHovered(true)}
@@ -206,7 +223,7 @@ export default function Sidebar({
               onClick={onClose}
               aria-label={isCollapsed && !isHovered ? item.name : undefined}
               className={cn(
-                "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group",
+                "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
                 isCollapsed && !isHovered ? "justify-center px-0" : "px-4",
                 isActive
                   ? "bg-lumina-highlight/10 text-lumina-highlight border border-lumina-highlight/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]"
@@ -216,7 +233,7 @@ export default function Sidebar({
               <item.icon
                 aria-hidden="true"
                 className={cn(
-                  "h-5 w-5 transition-all duration-500",
+                  "h-5 w-5 transition-all duration-500 shrink-0",
                   isCollapsed && !isHovered ? "mr-0 scale-110" : "mr-3",
                   isActive
                     ? "text-lumina-highlight"
@@ -225,7 +242,7 @@ export default function Sidebar({
               />
               <span
                 className={cn(
-                  "transition-all duration-500 whitespace-nowrap overflow-hidden",
+                  "transition-all duration-500 whitespace-nowrap overflow-hidden truncate min-w-0",
                   isCollapsed && !isHovered
                     ? "opacity-0 w-0"
                     : "opacity-100 w-auto",
@@ -253,7 +270,7 @@ export default function Sidebar({
         {/* User Profile Snippet */}
         {user && (
           <Link
-            href={`/${currentRole}/profile`}
+            href={profileHref}
             className={cn(
               "flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-500 cursor-pointer overflow-hidden",
               isCollapsed && !isHovered ? "justify-center p-2" : "p-3",
