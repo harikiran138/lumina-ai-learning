@@ -32,7 +32,7 @@ class RetrievalService:
         except Exception:
             return [query]
 
-    async def hybrid_search(self, query: str, top_k: int = 5) -> List[str]:
+    async def hybrid_search(self, query: str, top_k: int = 5, filter_options: dict = None) -> List[str]:
         """
         Performs multi-query expansion followed by hybrid search (Keyword + Vector)
         using refined Reciprocal Rank Fusion (RRF).
@@ -41,8 +41,9 @@ class RetrievalService:
         expanded_queries = await self.expand_query(query)
         
         # 2. Parallel Vector Search for all variations
+        loop = asyncio.get_running_loop()
         search_tasks = [
-            asyncio.to_thread(self.vector_store.search, q, top_k=top_k * 2) 
+            loop.run_in_executor(None, functools.partial(self.vector_store.search, q, top_k=top_k * 2, filter_options=filter_options)) 
             for q in expanded_queries
         ]
         vector_results_nested = await asyncio.gather(*search_tasks)
@@ -87,10 +88,10 @@ class RetrievalService:
         sorted_docs = sorted(rrf_scores.keys(), key=lambda x: rrf_scores[x], reverse=True)
         return sorted_docs[:top_k]
 
-    async def cached_search(self, query: str, top_k: int = 5) -> List[str]:
+    async def cached_search(self, query: str, top_k: int = 5, filter_options: dict = None) -> List[str]:
         """
         Production-grade retrieval with async support.
         """
         # Note: functools.lru_cache doesn't work well with async methods directly
         # For production, we'd use an async cache like aiocache or Redis
-        return await self.hybrid_search(query, top_k)
+        return await self.hybrid_search(query, top_k, filter_options=filter_options)

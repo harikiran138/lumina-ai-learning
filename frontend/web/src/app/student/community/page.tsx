@@ -86,7 +86,8 @@ export default function StudentCommunity() {
           JSON.stringify(currentCache),
         );
       } else {
-        console.error("Failed to send", res.error);
+        const errorMsg = res.error || res.detail || "Unknown error";
+        console.error("Failed to send", errorMsg);
         // Ideally show toast
         setMessageInput(tempContent); // Revert
       }

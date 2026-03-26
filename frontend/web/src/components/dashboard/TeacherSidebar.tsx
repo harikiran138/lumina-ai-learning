@@ -25,18 +25,18 @@ import { api } from "@/lib/api";
 
 const navItems = [
   { name: "Dashboard", href: "/teacher/dashboard", icon: LayoutDashboard },
-  { name: "Analytics", href: "/teacher/analytics", icon: BarChart3 },
   { name: "My Courses", href: "/teacher/courses", icon: BookOpen },
-  { name: "Calendar", href: "/teacher/calendar", icon: Calendar },
   { name: "Students", href: "/teacher/students", icon: Users },
-  { name: "Gradebook", href: "/teacher/gradebook", icon: GraduationCap },
   { name: "Assignments", href: "/teacher/assignments", icon: ClipboardCheck },
   {
     name: "Create Assignment",
     href: "/teacher/assignments/create",
     icon: PlusCircle,
   },
+  { name: "Gradebook", href: "/teacher/gradebook", icon: GraduationCap },
   { name: "Grading", href: "/teacher/grading", icon: FileText },
+  { name: "Calendar", href: "/teacher/calendar", icon: Calendar },
+  { name: "Analytics", href: "/teacher/analytics", icon: BarChart3 },
   { name: "AI Course Creator", href: "/teacher/ai-generator", icon: Sparkles },
   { name: "Resources", href: "/teacher/resources", icon: FileText },
   { name: "Settings", href: "/teacher/settings", icon: Settings },
@@ -158,7 +158,7 @@ export default function TeacherSidebar({
               suppressHydrationWarning
               onClick={onClose}
               className={cn(
-                "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group",
+                "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
                 !isHovered ? "justify-center px-0" : "px-4",
                 isActive
                   ? "bg-lumina-primary/10 text-lumina-primary border border-lumina-primary/20 shadow-gold-glow"
@@ -167,7 +167,7 @@ export default function TeacherSidebar({
             >
               <item.icon
                 className={cn(
-                  "h-5 w-5 transition-all duration-500",
+                  "h-5 w-5 transition-all duration-500 shrink-0",
                   !isHovered ? "mr-0 scale-110" : "mr-3",
                   isActive
                     ? "text-lumina-primary"
@@ -176,7 +176,7 @@ export default function TeacherSidebar({
               />
               <span
                 className={cn(
-                  "transition-all duration-500 whitespace-nowrap overflow-hidden",
+                  "transition-all duration-500 whitespace-nowrap overflow-hidden truncate min-w-0",
                   !isHovered ? "opacity-0 w-0" : "opacity-100 w-auto",
                 )}
               >
@@ -203,7 +203,7 @@ export default function TeacherSidebar({
         <Link
           href="/teacher/notifications"
           className={cn(
-            "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group",
+            "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
             !isHovered ? "justify-center px-0" : "px-4",
             "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
           )}
@@ -211,7 +211,7 @@ export default function TeacherSidebar({
           <div className="relative">
             <Bell
               className={cn(
-                "h-5 w-5 transition-all duration-500",
+                "h-5 w-5 transition-all duration-500 shrink-0",
                 !isHovered ? "mr-0 scale-110" : "mr-3",
                 "text-gray-500 group-hover:text-gray-300",
               )}

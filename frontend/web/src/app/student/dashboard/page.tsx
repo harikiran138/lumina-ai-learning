@@ -166,6 +166,8 @@ interface StudentDashboardData {
   learningSignals?: LearningSignals;
   coachInsight?: CoachInsight;
   achievementSummary?: AchievementSummary;
+  className?: string;
+  batch?: string;
 }
 
 const EMPTY_ACTIVITY: WeeklyActivityPoint[] = [];
@@ -321,11 +323,22 @@ export default function StudentDashboard() {
             </StatusPill>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-display font-bold tracking-tight text-white mb-6">
+          <h1 className="text-5xl md:text-7xl font-display font-bold tracking-tight text-white mb-2">
             Hey, <span className="text-lumina-highlight">
               {dashboardData?.studentName?.split(' ')[0] || "Scholar"}
             </span>
           </h1>
+          
+          {dashboardData?.className && (
+            <div className="flex items-center gap-2 mb-6 text-white/50 font-medium">
+              <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-xs">
+                {dashboardData.className}
+              </span>
+              {dashboardData.batch && (
+                <span className="text-xs opacity-60">• Batch of {dashboardData.batch}</span>
+              )}
+            </div>
+          )}
           
           <p className="text-gray-400 text-xl max-w-2xl leading-relaxed mb-10">
             You're on a <span className="text-white font-bold">{dashboardData?.currentStreak || 0} day streak</span>. 
