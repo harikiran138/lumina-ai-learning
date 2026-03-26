@@ -290,3 +290,90 @@ class Stakeholder(BaseModel):
     feedback_enabled: bool = False
     created_at: str = Field(default_factory=current_time_iso)
     updated_at: str = Field(default_factory=current_time_iso)
+
+
+class InstitutionDetails(BaseModel):
+    institution_id: str
+    type: Optional[str] = None
+    status: Optional[str] = None
+    established_year: Optional[int] = None
+    affiliation: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    vision: Optional[str] = None
+    mission: Optional[str] = None
+    created_at: str = Field(default_factory=current_time_iso)
+    updated_at: str = Field(default_factory=current_time_iso)
+
+
+class Semester(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    program_id: str
+    semester_number: int
+    title: Optional[str] = None
+    created_at: str = Field(default_factory=current_time_iso)
+
+
+class ClassSection(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    program_id: str
+    semester_id: Optional[str] = None
+    class_name: str
+    batch: Optional[str] = None
+    section: Optional[str] = None
+    created_at: str = Field(default_factory=current_time_iso)
+
+
+class StudentEnrollment(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    student_id: str
+    program_id: str
+    current_semester_id: Optional[str] = None
+    class_id: Optional[str] = None
+    year_of_study: int = 1
+    status: str = "active"
+    enrolled_at: str = Field(default_factory=current_time_iso)
+    updated_at: str = Field(default_factory=current_time_iso)
+
+
+class StudentCredit(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    student_id: str
+    semester_id: str
+    earned_credits: int = 0
+    total_credits: int = 0
+    updated_at: str = Field(default_factory=current_time_iso)
+
+
+class TeacherRequest(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    teacher_id: str
+    course_id: Optional[str] = None
+    class_id: Optional[str] = None
+    department_id: Optional[str] = None
+    message: Optional[str] = None
+    status: str = "PENDING_HOD"
+    hod_status: str = "PENDING"
+    admin_status: str = "PENDING"
+    created_at: str = Field(default_factory=current_time_iso)
+    updated_at: str = Field(default_factory=current_time_iso)
+    hod_reviewed_at: Optional[str] = None
+    admin_reviewed_at: Optional[str] = None
+
+
+class TeacherAssignment(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    teacher_id: str
+    course_id: Optional[str] = None
+    class_id: Optional[str] = None
+    is_primary: bool = True
+    created_at: str = Field(default_factory=current_time_iso)
+
+
+class CourseConcept(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    course_id: str
+    concept_name: str
+    created_at: str = Field(default_factory=current_time_iso)
