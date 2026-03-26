@@ -56,6 +56,9 @@ export default function TeacherSidebar({
   const [user, setUser] = useState<any>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [notificationCount, setNotificationCount] = useState(3);
+  const [hasAssignedCourses, setHasAssignedCourses] = useState<boolean | null>(
+    null,
+  );
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -65,10 +68,39 @@ export default function TeacherSidebar({
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    const fetchTeacherCourses = async () => {
+      try {
+        const courses = await api.getTeacherCourses();
+        setHasAssignedCourses(Array.isArray(courses) && courses.length > 0);
+      } catch {
+        setHasAssignedCourses(false);
+      }
+    };
+    fetchTeacherCourses();
+  }, []);
+
   const handleLogout = async () => {
     await api.logout();
     router.push("/login");
   };
+
+  const courseDependentItems = new Set([
+    "Analytics",
+    "My Courses",
+    "Students",
+    "Gradebook",
+    "Assignments",
+    "Create Assignment",
+    "Grading",
+    "AI Course Creator",
+    "Resources",
+  ]);
+
+  const filteredNavItems =
+    hasAssignedCourses === false
+      ? navItems.filter((item) => !courseDependentItems.has(item.name))
+      : navItems;
 
   return (
     <aside
@@ -117,7 +149,7 @@ export default function TeacherSidebar({
       </div>
 
       <nav className="p-4 space-y-1.5 flex-1 overflow-y-auto hide-scrollbar">
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
           return (
             <Link

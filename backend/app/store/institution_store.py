@@ -19,13 +19,35 @@ class InstitutionStore:
 
     async def create_institution(self, data: dict) -> dict:
         try:
+            # Ensure default onboarding status
+            if "onboarding_status" not in data:
+                data["onboarding_status"] = "PENDING"
+            
             result = await self.db.upsert("institutions", data)
             if result:
+                log.info("institution_created", id=result[0].get("id"), status=data["onboarding_status"])
                 return result[0]
             raise Exception("Failed to create institution")
         except Exception as e:
             log.error("create_institution_failed", error=str(e))
             raise e
+
+    async def update_institution_status(self, inst_id: str, status: str) -> bool:
+        """Explicitly update the onboarding status of an institution."""
+        try:
+            client = self.db.get_client()
+            response = client.table("institutions").update({
+                "onboarding_status": status,
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("id", inst_id).execute()
+            
+            if response.data:
+                log.info("institution_status_updated", id=inst_id, status=status)
+                return True
+            return False
+        except Exception as e:
+            log.error("update_institution_status_failed", error=str(e), id=inst_id)
+            return False
 
     async def get_institution(self, inst_id: str) -> Optional[dict]:
         try:
@@ -101,6 +123,14 @@ class InstitutionStore:
                 return res.data[0] if res.data else existing.data[0]
 
             res = client.table("stakeholders").insert(data).execute()
+            
+            # Logic Update: If an institution is linked for the first time, progress its onboarding status
+            if data.get("institution_id"):
+                inst = await self.get_institution(data["institution_id"])
+                if inst and inst.get("onboarding_status") == "PENDING":
+                    await self.update_institution_status(data["institution_id"], "ACTIVE")
+                    log.info("institution_auto_activated", id=data["institution_id"])
+
             return res.data[0]
         except Exception as e:
             log.error("create_stakeholder_failed", error=str(e))
