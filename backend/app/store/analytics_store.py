@@ -321,13 +321,14 @@ class AnalyticsStore:
             }))
 
         assignments = [self._normalize_assignment(item) for item in await self._read_table("assignments")]
-        # 'submissions' table is actually 'assignment_submissions' in real schema
         submissions = [self._normalize_submission(item) for item in await self._read_table("assignment_submissions")]
-        # Optional tables — gracefully return empty if they don't exist
-        institutions = []
-        departments = []
-        programs = []
-        stakeholders = []
+        
+        # Actually fetch the new entities
+        institutions = await self._read_table("institutions")
+        departments = await self._read_table("departments")
+        programs = await self._read_table("programs")
+        stakeholders = await self._read_table("stakeholders")
+
         return {
             "users": users,
             "courses": courses,
@@ -904,15 +905,38 @@ class AnalyticsStore:
 
     async def get_admin_dashboard_stats(self) -> Dict:
         tables = await self._normalized_tables()
-        users = tables["users"]
+        all_institutions = tables["institutions"]
+        
+        # If no institutions exist, return empty stats
+        if not all_institutions:
+            return {
+                "summary": {},
+                "attentionQueue": [],
+                "systemServices": [],
+                "institutions": [],
+                "connections": [],
+                "recentUsers": [],
+                "activityFeed": []
+            }
+
+        # Single Institution Scope: Pick the first one as primary
+        primary_inst = all_institutions[0]
+        inst_id = primary_inst["id"]
+
+        # Scope everything to this institution
+        stakeholders = [s for s in tables["stakeholders"] if s.get("institution_id") == inst_id]
+        departments = [d for d in tables["departments"] if d.get("institution_id") == inst_id]
+        programs = [p for p in tables["programs"] if p.get("institution_id") == inst_id]
+        
+        # Scope users via stakeholders
+        relevant_user_ids = {s["user_id"] for s in stakeholders if s.get("user_id")}
+        users = [u for u in tables["users"] if u["id"] in relevant_user_ids]
+        
+        # Scope courses and others
         courses = tables["courses"]
         progress_rows = tables["progress"]
         assignments = tables["assignments"]
         submissions = tables["submissions"]
-        institutions = tables["institutions"]
-        departments = tables["departments"]
-        programs = tables["programs"]
-        stakeholders = tables["stakeholders"]
 
         role_distribution = Counter(user.get("role", "student") for user in users)
         status_distribution = Counter(user.get("status", "inactive") for user in users)
@@ -924,9 +948,10 @@ class AnalyticsStore:
 
         progress_by_course: dict[str, List[dict]] = defaultdict(list)
         for item in progress_rows:
-            course = course_token_lookup.get(self._course_key(item.get("course_id")))
-            if course:
-                progress_by_course[course["id"]].append(item)
+            if item.get("student_id") in relevant_user_ids:
+                course = course_token_lookup.get(self._course_key(item.get("course_id")))
+                if course:
+                    progress_by_course[course["id"]].append(item)
 
         assignments_by_course: dict[str, List[dict]] = defaultdict(list)
         for item in assignments:
@@ -936,16 +961,14 @@ class AnalyticsStore:
 
         submissions_by_course: dict[str, List[dict]] = defaultdict(list)
         for item in submissions:
-            course_id = item.get("course_id")
-            if not course_id and item.get("assignment_id"):
-                assignment = next(
-                    (row for row in assignments if row["id"] == item["assignment_id"]),
-                    None,
-                )
-                course_id = assignment.get("course_id") if assignment else None
-            course = course_token_lookup.get(self._course_key(course_id))
-            if course:
-                submissions_by_course[course["id"]].append(item)
+            if item.get("student_id") in relevant_user_ids:
+                course_id = item.get("course_id")
+                if not course_id and item.get("assignment_id"):
+                    assignment = next((row for row in assignments if row["id"] == item["assignment_id"]), None)
+                    course_id = assignment.get("course_id") if assignment else None
+                course = course_token_lookup.get(self._course_key(course_id))
+                if course:
+                    submissions_by_course[course["id"]].append(item)
 
         active_courses = 0
         draft_courses = 0
@@ -957,65 +980,46 @@ class AnalyticsStore:
                 active_courses += 1
             else:
                 draft_courses += 1
-
             if course.get("teacher_id"):
                 teacher_course_counts[course["teacher_id"]] += 1
 
-            student_count = len(
-                {item["user_id"] for item in progress_by_course.get(course["id"], []) if item.get("user_id")}
-            )
-            pending_grading = sum(
-                1 for item in submissions_by_course.get(course["id"], []) if item["needs_grading"]
-            )
-            course_overview.append(
-                {
-                    "id": course["id"],
-                    "title": course["title"],
-                    "status": course["status"],
-                    "studentCount": student_count,
-                    "moduleCount": course["moduleCount"],
-                    "assignmentCount": len(assignments_by_course.get(course["id"], [])),
-                    "pendingGrading": pending_grading,
-                }
-            )
+            student_count = len({item["student_id"] for item in progress_by_course.get(course["id"], []) if item.get("student_id")})
+            pending_grading = sum(1 for item in submissions_by_course.get(course["id"], []) if item["needs_grading"])
+            course_overview.append({
+                "id": course["id"],
+                "title": course["title"],
+                "status": course["status"],
+                "studentCount": student_count,
+                "moduleCount": course["moduleCount"],
+                "assignmentCount": len(assignments_by_course.get(course["id"], [])),
+                "pendingGrading": pending_grading,
+            })
 
-        department_counts = Counter(item.get("institution_id") for item in departments if item.get("institution_id"))
-        program_counts = Counter(item.get("institution_id") for item in programs if item.get("institution_id"))
-        institution_connections = Counter(
-            item.get("institution_id") for item in stakeholders if item.get("institution_id")
-        )
         user_lookup = {user["id"]: user for user in users}
         program_lookup = {item["id"]: item for item in programs}
-        institution_lookup = {item["id"]: item for item in institutions}
+        institution_lookup = {item["id"]: item for item in all_institutions}
 
-        enriched_institutions = []
-        for institution in institutions:
-            connection_count = institution_connections.get(institution["id"], 0)
-            enriched_institutions.append(
-                {
-                    **institution,
-                    "departmentCount": department_counts.get(institution["id"], 0),
-                    "programCount": program_counts.get(institution["id"], 0),
-                    "stakeholderCount": connection_count,
-                    "health": "connected" if connection_count else "new",
-                }
-            )
+        enriched_institutions = [{
+            **primary_inst,
+            "departmentCount": len(departments),
+            "programCount": len(programs),
+            "stakeholderCount": len(stakeholders),
+            "health": "connected" if stakeholders else "new",
+        }]
 
         enriched_connections = []
         for connection in stakeholders:
             user = user_lookup.get(connection.get("user_id") or "")
             institution = institution_lookup.get(connection.get("institution_id") or "")
             program = program_lookup.get(connection.get("program_id") or "")
-            enriched_connections.append(
-                {
-                    **connection,
-                    "userName": user.get("name") if user else connection["name"],
-                    "userEmail": user.get("email") if user else connection.get("email"),
-                    "userRole": user.get("role") if user else None,
-                    "institutionName": institution.get("institution_name") if institution else None,
-                    "programName": program.get("program_name") if program else None,
-                }
-            )
+            enriched_connections.append({
+                **connection,
+                "userName": user.get("name") if user else connection["name"],
+                "userEmail": user.get("email") if user else connection.get("email"),
+                "userRole": user.get("role") if user else None,
+                "institutionName": institution.get("institution_name") if institution else None,
+                "programName": program.get("program_name") if program else None,
+            })
 
         enriched_connections.sort(
             key=lambda item: self._parse_datetime(item.get("created_at")) or datetime.min.replace(tzinfo=timezone.utc),
@@ -1028,137 +1032,102 @@ class AnalyticsStore:
             reverse=True,
         )[:8]
 
-        ungraded_submissions = sum(1 for item in submissions if item["needs_grading"])
+        ungraded_submissions = sum(1 for item in submissions if item["needs_grading"] and item.get("student_id") in relevant_user_ids)
         suspended_users = status_distribution.get("suspended", 0)
-        inactive_staff = sum(
-            1
-            for user in users
-            if user.get("status") != "active" and user.get("role") in {"teacher", "admin"}
-        )
-        orphan_teachers = sum(
-            1 for user in users if user.get("role") == "teacher" and teacher_course_counts.get(user["id"], 0) == 0
-        )
-        institutions_without_connections = sum(
-            1 for institution in enriched_institutions if institution["stakeholderCount"] == 0
-        )
+        inactive_staff = sum(1 for user in users if user.get("status") != "active" and user.get("role") in {"teacher", "admin"})
+        orphan_teachers = sum(1 for user in users if user.get("role") == "teacher" and teacher_course_counts.get(user["id"], 0) == 0)
+        institutions_without_connections = 1 if len(stakeholders) == 0 else 0
 
         attention_queue = []
         if ungraded_submissions:
-            attention_queue.append(
-                {
-                    "id": "grading-queue",
-                    "severity": "medium" if ungraded_submissions < 5 else "high",
-                    "title": "Manual grading queue is growing",
-                    "detail": f"{ungraded_submissions} submissions still need review",
-                    "href": "/admin/system",
-                }
-            )
+            attention_queue.append({
+                "id": "grading-queue",
+                "severity": "medium" if ungraded_submissions < 5 else "high",
+                "title": "Un-graded submissions",
+                "detail": f"{ungraded_submissions} student submissions are waiting for feedback in active courses.",
+                "href": "/admin/content",
+            })
         if suspended_users:
-            attention_queue.append(
-                {
-                    "id": "suspended-users",
-                    "severity": "high",
-                    "title": "Suspended accounts require follow-up",
-                    "detail": f"{suspended_users} account(s) are currently suspended",
-                    "href": "/admin/security",
-                }
-            )
+            attention_queue.append({
+                "id": "suspended-users",
+                "severity": "high",
+                "title": "Suspended accounts require follow-up",
+                "detail": f"{suspended_users} account(s) are currently suspended",
+                "href": "/admin/security",
+            })
         if inactive_staff:
-            attention_queue.append(
-                {
-                    "id": "inactive-staff",
-                    "severity": "medium",
-                    "title": "Dormant staff access detected",
-                    "detail": f"{inactive_staff} teacher/admin account(s) are inactive",
-                    "href": "/admin/security",
-                }
-            )
+            attention_queue.append({
+                "id": "inactive-staff",
+                "severity": "medium",
+                "title": "Dormant staff access detected",
+                "detail": f"{inactive_staff} teacher/admin account(s) are inactive",
+                "href": "/admin/security",
+            })
         if orphan_teachers:
-            attention_queue.append(
-                {
-                    "id": "orphan-teachers",
-                    "severity": "medium",
-                    "title": "Some teachers have no course ownership",
-                    "detail": f"{orphan_teachers} teacher account(s) are not linked to courses",
-                    "href": "/admin/users",
-                }
-            )
+            attention_queue.append({
+                "id": "orphan-teachers",
+                "severity": "medium",
+                "title": "Some teachers have no course ownership",
+                "detail": f"{orphan_teachers} teacher account(s) are not linked to courses",
+                "href": "/admin/users",
+            })
         if institutions_without_connections:
-            attention_queue.append(
-                {
-                    "id": "empty-institutions",
-                    "severity": "medium",
-                    "title": "Institutions are missing stakeholder links",
-                    "detail": f"{institutions_without_connections} institution(s) have no active connections",
-                    "href": "/admin/institution",
-                }
-            )
+            attention_queue.append({
+                "id": "empty-institutions",
+                "severity": "medium",
+                "title": "Institution is missing stakeholder links",
+                "detail": "The primary institution has no active connections (teachers/students).",
+                "href": "/admin/institution",
+            })
 
         system_services = [
             {
                 "name": "Identity & Access",
                 "status": "healthy" if suspended_users == 0 else "watch",
                 "metric": f"{status_distribution.get('active', 0)} active accounts",
-                "detail": "Role and sign-in state across administrators, teachers, and students.",
+                "detail": "Role and sign-in state across admins, teachers, and students.",
             },
             {
                 "name": "Learning Catalog",
                 "status": "healthy" if active_courses else "watch",
-                "metric": f"{active_courses} published / {draft_courses} draft",
+                "metric": f"{active_courses} published courses",
                 "detail": "Course publishing coverage and catalog readiness.",
             },
             {
                 "name": "Assessment Flow",
                 "status": "watch" if ungraded_submissions else "healthy",
-                "metric": f"{ungraded_submissions} awaiting grading",
+                "metric": f"{ungraded_submissions} pending grading",
                 "detail": "Submission throughput and grading backlog.",
             },
             {
-                "name": "Institution Graph",
-                "status": "healthy" if not institutions_without_connections else "watch",
-                "metric": f"{len(enriched_connections)} linked stakeholders",
-                "detail": "Cross-organization onboarding and relationship mapping.",
+                "name": "Infrastructure",
+                "status": "healthy",
+                "metric": "1 primary institution",
+                "detail": "Single-tenant institutional core deployment.",
             },
         ]
 
         activity_feed = []
         for user in recent_users:
-            activity_feed.append(
-                {
-                    "id": f"user-{user['id']}",
-                    "timestamp": user.get("created_at"),
-                    "title": "User onboarded",
-                    "detail": f"{user['name']} joined as {user['role']}",
-                    "tone": "info",
-                    "href": "/admin/users",
-                }
-            )
-
-        for institution in enriched_institutions[:6]:
-            if institution.get("created_at"):
-                activity_feed.append(
-                    {
-                        "id": f"institution-{institution['id']}",
-                        "timestamp": institution.get("created_at"),
-                        "title": "Institution added",
-                        "detail": institution["institution_name"],
-                        "tone": "info",
-                        "href": "/admin/institution",
-                    }
-                )
+            activity_feed.append({
+                "id": f"user-{user['id']}",
+                "timestamp": user.get("created_at"),
+                "title": "User onboarded",
+                "detail": f"{user['name']} joined as {user['role']}",
+                "tone": "info",
+                "href": "/admin/users",
+            })
 
         for connection in enriched_connections[:8]:
             if connection.get("created_at"):
-                activity_feed.append(
-                    {
-                        "id": f"connection-{connection['id']}",
-                        "timestamp": connection.get("created_at"),
-                        "title": "Stakeholder connected",
-                        "detail": f"{connection['userName']} linked to {connection.get('institutionName') or 'institution'}",
-                        "tone": "success",
-                        "href": "/admin/institution",
-                    }
-                )
+                activity_feed.append({
+                    "id": f"connection-{connection['id']}",
+                    "timestamp": connection.get("created_at"),
+                    "title": "Stakeholder connected",
+                    "detail": f"{connection['userName']} linked to {connection.get('institutionName') or 'institution'}",
+                    "tone": "success",
+                    "href": "/admin/institution",
+                })
 
         activity_feed.sort(
             key=lambda item: self._parse_datetime(item.get("timestamp")) or datetime.min.replace(tzinfo=timezone.utc),
@@ -1166,16 +1135,9 @@ class AnalyticsStore:
         )
         activity_feed = activity_feed[:12]
 
-        health_penalty = (
-            min(ungraded_submissions * 2, 20)
-            + min(suspended_users * 6, 18)
-            + min(institutions_without_connections * 5, 15)
-            + min(orphan_teachers * 3, 12)
-        )
-        system_health_score = max(45, 100 - health_penalty) if users or courses or institutions else 100
-        system_status = (
-            "healthy" if system_health_score >= 85 else "watch" if system_health_score >= 65 else "degraded"
-        )
+        health_penalty = min(ungraded_submissions * 2, 20) + min(suspended_users * 6, 18) + min(institutions_without_connections * 5, 15) + min(orphan_teachers * 3, 12)
+        system_health_score = max(45, 100 - health_penalty) if users or courses or enriched_institutions else 100
+        system_status = "healthy" if system_health_score >= 85 else "watch" if system_health_score >= 65 else "degraded"
 
         summary = {
             "totalUsers": len(users),
@@ -1184,8 +1146,8 @@ class AnalyticsStore:
             "totalCourses": len(courses),
             "activeCourses": active_courses,
             "draftCourses": draft_courses,
-            "totalInstitutions": len(enriched_institutions),
-            "totalConnections": len(enriched_connections),
+            "totalInstitutions": 1,
+            "totalConnections": len(stakeholders),
             "systemHealthScore": system_health_score,
             "systemHealthLabel": f"{system_health_score}%",
             "securityAlerts": sum(1 for item in attention_queue if item["severity"] == "high"),
@@ -1193,20 +1155,10 @@ class AnalyticsStore:
         }
 
         return {
-            "totalUsers": summary["totalUsers"],
-            "totalStudents": summary["totalStudents"],
-            "studentCount": summary["totalStudents"],
-            "totalTeachers": summary["totalTeachers"],
-            "teacherCount": summary["totalTeachers"],
-            "totalCourses": summary["totalCourses"],
-            "totalInstitutions": summary["totalInstitutions"],
-            "totalConnections": summary["totalConnections"],
-            "systemHealth": summary["systemHealthLabel"],
-            "systemHealthScore": summary["systemHealthScore"],
-            "securityAlerts": summary["securityAlerts"],
+            **summary,
+            "summary": summary,
             "systemStatus": system_status,
             "activeSessions": len(activity_feed),
-            "summary": summary,
             "roleDistribution": [
                 {"role": role, "count": count}
                 for role, count in sorted(role_distribution.items(), key=lambda item: item[0])
@@ -1216,7 +1168,7 @@ class AnalyticsStore:
                 for status, count in sorted(status_distribution.items(), key=lambda item: item[0])
             ],
             "courseOverview": course_overview[:8],
-            "institutions": enriched_institutions[:8],
+            "institutions": enriched_institutions,
             "connections": enriched_connections[:10],
             "recentUsers": recent_users,
             "activityFeed": activity_feed,
