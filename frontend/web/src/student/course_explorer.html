@@ -436,7 +436,7 @@
 
     <script>
       // --- DATA ---
-      const courses = [
+      const fallbackCourses = [
         {
           id: 1,
           title: "Quantum Mechanics",
@@ -505,6 +505,89 @@
         },
       ];
 
+      let courses = fallbackCourses;
+      let currentUser = null;
+
+      const iconSet = [
+        `<svg class="w-7 h-7 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m-9-5.747h18" /></svg>`,
+        `<svg class="w-7 h-7 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>`,
+        `<svg class="w-7 h-7 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" /></svg>`,
+      ];
+
+      const iconBgSet = ["bg-amber-500/10", "bg-blue-500/10", "bg-green-500/10"];
+
+      const inferCategory = (courseName = "") => {
+        const name = courseName.toLowerCase();
+        if (name.includes("math") || name.includes("algebra")) return "Math";
+        if (name.includes("physics") || name.includes("quantum"))
+          return "Science";
+        if (name.includes("chem")) return "Science";
+        if (name.includes("bio")) return "Biology";
+        if (name.includes("computer") || name.includes("program"))
+          return "Technology";
+        return "General";
+      };
+
+      const waitForAPI = async () => {
+        let attempts = 0;
+        while (
+          (!window.luminaAPI || !window.dashboardLoader) &&
+          attempts < 50
+        ) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          attempts++;
+        }
+        return window.luminaAPI && window.dashboardLoader;
+      };
+
+      const loadCoursesFromDb = async () => {
+        const ready = await waitForAPI();
+        if (!ready) return;
+
+        const api = window.luminaAPI;
+        currentUser =
+          window.dashboardLoader.currentUser || (await api.getCurrentUser());
+
+        if (!currentUser) return;
+
+        const [dbCourses, users, progress] = await Promise.all([
+          api.getAllCourses(),
+          api.getAllUsers(),
+          api.getStudentProgress(currentUser.id),
+        ]);
+
+        const progressList = Array.isArray(progress)
+          ? progress
+          : progress
+            ? [progress]
+            : [];
+        const progressByCourseId = new Map(
+          progressList.map((p) => [p.courseId, p]),
+        );
+        const usersById = new Map(users.map((u) => [u.id, u]));
+
+        courses = dbCourses.map((course, index) => {
+          const progressItem = progressByCourseId.get(course.id);
+          const teacher = usersById.get(course.teacherId);
+          const isEnrolled = course.members.includes(currentUser.id);
+
+          return {
+            id: course.id,
+            title: course.name,
+            instructor: teacher ? teacher.name : "Instructor",
+            category: course.category || inferCategory(course.name),
+            description: course.description || "No description available.",
+            progress: progressItem ? progressItem.progress : isEnrolled ? 1 : 0,
+            icon: iconSet[index % iconSet.length],
+            iconBg: iconBgSet[index % iconBgSet.length],
+            isFromDb: true,
+            isEnrolled,
+          };
+        });
+
+        filterAndRender();
+      };
+
       // --- DOM ELEMENTS ---
       const courseGrid = document.getElementById("course-grid");
       const searchInput = document.getElementById("search-input");
@@ -530,7 +613,10 @@
         noResultsMessage.classList.add("hidden");
 
         coursesToRender.forEach((course) => {
-          const isEnrolled = course.progress > 0;
+          const isEnrolled =
+            typeof course.isEnrolled === "boolean"
+              ? course.isEnrolled
+              : course.progress > 0;
           const buttonClass = isEnrolled
             ? "bg-green-500 hover:bg-green-600"
             : "bg-amber-500 hover:bg-amber-600";
@@ -636,25 +722,79 @@
         const button = e.target.closest(".enroll-btn");
         if (!button) return;
 
-        const courseId = parseInt(button.dataset.courseId);
-        const course = courses.find((c) => c.id === courseId);
+        const courseId = button.dataset.courseId;
+        const course = courses.find(
+          (c) => String(c.id) === String(courseId),
+        );
 
         if (course) {
-          if (course.progress === 0) {
-            // If not enrolled
-            course.progress = 1; // Simulate starting the course
-          } else {
-            // If already enrolled
-            window.open("lesson_page.html", "_self");
-            // window.location.href = 'lesson_page.html'; // Uncomment to navigate
+          const isEnrolled =
+            typeof course.isEnrolled === "boolean"
+              ? course.isEnrolled
+              : course.progress > 0;
+
+          if (course.isFromDb && window.luminaAPI && currentUser) {
+            if (!isEnrolled) {
+              window.luminaUI?.showNotification(
+                "Enrolling in course...",
+                "info",
+                1500,
+              );
+              window.luminaAPI
+                .addUserToCourse(courseId, currentUser.id)
+                .then(() =>
+                  window.luminaAPI.updateStudentProgress(
+                    currentUser.id,
+                    courseId,
+                    {
+                      mastery: 0,
+                      progress: 1,
+                      streak: 0,
+                    },
+                  ),
+                )
+                .then(() => {
+                  window.luminaUI?.showNotification(
+                    "Enrolled successfully",
+                    "success",
+                    1500,
+                  );
+                  window.open(
+                    `lesson_page.html?courseId=${encodeURIComponent(courseId)}`,
+                    "_self",
+                  );
+                })
+                .catch((error) => {
+                  console.error("Enrollment failed:", error);
+                  window.luminaUI?.showNotification(
+                    "Enrollment failed",
+                    "error",
+                  );
+                });
+              return;
+            }
+
+            window.open(
+              `lesson_page.html?courseId=${encodeURIComponent(courseId)}`,
+              "_self",
+            );
+            return;
           }
-          filterAndRender(); // Re-render to update the button and progress bar
+
+          if (!isEnrolled) {
+            course.progress = 1;
+            course.isEnrolled = true;
+          } else {
+            window.open("lesson_page.html", "_self");
+          }
+          filterAndRender();
         }
       };
 
       // --- EVENT LISTENERS ---
       document.addEventListener("DOMContentLoaded", () => {
         renderCourses(courses);
+        loadCoursesFromDb();
       });
 
       filterContainer.addEventListener("click", handleFilterClick);
