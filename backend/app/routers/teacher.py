@@ -283,6 +283,43 @@ async def update_teacher_request(
     if request.get("status") != "PENDING_ADMIN":
         raise HTTPException(status_code=400, detail="Request is not pending admin approval")
 
+    if status == "APPROVED":
+        # Enforce optional class/course teacher limits
+        cls = await teacher_store.db.fetch_one("classes", {"id": request.get("class_id")})
+        course = await teacher_store.db.fetch_one("courses", {"id": request.get("course_id")})
+
+        existing_assignment = await teacher_store.db.fetch_one(
+            "teacher_assignments",
+            {
+                "teacher_id": request.get("teacher_id"),
+                "course_id": request.get("course_id"),
+                "class_id": request.get("class_id"),
+            },
+        )
+
+        if not existing_assignment and cls and cls.get("teacher_limit"):
+            assignments = await teacher_store.db.fetch_all(
+                "teacher_assignments",
+                {"class_id": request.get("class_id")},
+            )
+            teacher_count = len({item.get("teacher_id") for item in assignments if item.get("teacher_id")})
+            if teacher_count >= int(cls["teacher_limit"]):
+                raise HTTPException(
+                    status_code=409,
+                    detail="Class teacher limit reached. Update class limits before approving.",
+                )
+
+        if not existing_assignment and course and course.get("teacher_limit"):
+            course_assignments = await teacher_store.db.fetch_all(
+                "teacher_assignments",
+                {"class_id": request.get("class_id"), "course_id": request.get("course_id")},
+            )
+            if len(course_assignments) >= int(course["teacher_limit"]):
+                raise HTTPException(
+                    status_code=409,
+                    detail="Course teacher limit reached for this class.",
+                )
+
     success = await teacher_store.update_request_status(request_id, status)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to update request")

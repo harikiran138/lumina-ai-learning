@@ -843,3 +843,14 @@ SET
   academic_year = COALESCE(academic_year, batch_year, batch_name)
 WHERE
   section_name IS NULL OR class_name IS NULL OR batch_name IS NULL OR batch IS NULL OR section IS NULL OR academic_year IS NULL;
+
+-- 009 Admin hierarchy limits + codes
+ALTER TABLE public.departments ADD COLUMN IF NOT EXISTS code TEXT;
+ALTER TABLE public.departments ADD COLUMN IF NOT EXISTS teacher_limit INTEGER;
+ALTER TABLE public.departments ADD COLUMN IF NOT EXISTS class_limit INTEGER;
+ALTER TABLE public.departments ADD COLUMN IF NOT EXISTS course_limit INTEGER;
+ALTER TABLE public.departments ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.classes ADD COLUMN IF NOT EXISTS student_limit INTEGER;
+ALTER TABLE public.classes ADD COLUMN IF NOT EXISTS teacher_limit INTEGER;
+ALTER TABLE public.classes ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS teacher_limit INTEGER;
