@@ -164,8 +164,8 @@ export default function OnboardingPage() {
         ]);
         setSubjectsList(subjectsData || []);
         setBatchesList(batchesData || []);
-      } catch {
-        // ignore for now
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to load department resources");
       }
     };
     loadDeptResources();
@@ -184,21 +184,30 @@ export default function OnboardingPage() {
 
   const nextStep = async () => {
     if (currentStep >= totalSteps) return;
-    setCurrentStep(prev => (prev + 1) as number);
+    setCurrentStep(prev => prev + 1);
   };
 
-  // Step Handlers (keeping logic identical, focusing on UI)
+  // Step Handlers
   const handleSaveStep = async (handler: () => Promise<void>) => {
     setSaving(true);
     try {
       await handler();
+    } catch (err: any) {
+      toast.error(err?.message || "Something went wrong — please try again");
     } finally {
       setSaving(false);
     }
   };
 
   const saveCollegeStep1 = () => handleSaveStep(async () => {
-      if (!collegeId) throw new Error("College ID missing");
+      if (!collegeProfile.collegeName.trim() || !collegeProfile.collegeCode.trim()) {
+        toast.error("College name and code are required");
+        return;
+      }
+      if (!collegeId) {
+        toast.error("College ID missing — please refresh and try again");
+        return;
+      }
       await api.updateCollege(collegeId, {
         institution_name: collegeProfile.collegeName,
         code: collegeProfile.collegeCode,
@@ -212,26 +221,47 @@ export default function OnboardingPage() {
   });
 
   const saveCollegeStep2 = () => handleSaveStep(async () => {
-      if (!collegeId) throw new Error("College ID missing");
+      if (!collegeId) {
+        toast.error("College ID missing — please refresh and try again");
+        return;
+      }
+      const validDepts = departments.filter(d => d.name.trim() && d.abbreviation.trim());
+      if (validDepts.length === 0) {
+        toast.error("Add at least one department with a name and abbreviation");
+        return;
+      }
       const created: any[] = [];
-      for (const dept of departments) {
-        if (!dept.name || !dept.abbreviation) continue;
-        const deptRes = await api.createDepartment(collegeId, {
-          name: dept.name,
-          abbreviation: dept.abbreviation,
-          intake_strength: dept.intakeStrength ? Number(dept.intakeStrength) : undefined,
-        });
-        created.push(deptRes);
-        if (dept.hodEmail) {
-          await api.inviteUser(collegeId, {
-            email: dept.hodEmail,
-            role: "hod",
-            deptId: deptRes.id,
+      for (const dept of validDepts) {
+        try {
+          const deptRes = await api.createDepartment(collegeId, {
+            name: dept.name,
+            abbreviation: dept.abbreviation,
+            intake_strength: dept.intakeStrength ? Number(dept.intakeStrength) : undefined,
           });
+          created.push(deptRes);
+          if (dept.hodEmail && deptRes.id) {
+            await api.inviteUser(collegeId, {
+              email: dept.hodEmail,
+              role: "hod",
+              deptId: deptRes.id,
+            });
+          }
+        } catch (err: any) {
+          toast.error(`Failed to create "${dept.name}": ${err?.message || "Unknown error"}`);
         }
       }
       await api.updateOnboardingStep(2, { departments: created });
       await nextStep();
+  });
+
+  const saveGenericStep = () => handleSaveStep(async () => {
+    await api.updateOnboardingStep(currentStep, {});
+    if (currentStep + 1 >= totalSteps) {
+      await api.completeOnboarding();
+      routeByRole(role);
+    } else {
+      setCurrentStep(prev => prev + 1);
+    }
   });
 
   // UI Components
@@ -450,30 +480,51 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
-                    {/* Placeholder for other steps - will be similarly styled */}
+                    {/* Steps 3-5: save progress and route on final step */}
                     {currentStep > 2 && (
                         <div className="text-center py-20">
-                            <h2 className="text-3xl font-black mb-4">Step {currentStep} Ready</h2>
-                            <p className="text-gray-400 mb-8">Continuing the refined flow for {role.replace("_", " ")}</p>
-                            <button className="px-12 py-4 bg-lumina-primary text-black font-bold rounded-2xl" onClick={nextStep}>CONTINUE</button>
+                            <h2 className="text-3xl font-black mb-4">Step {currentStep} of {totalSteps}</h2>
+                            <p className="text-gray-400 mb-8">
+                              {currentStep + 1 >= totalSteps
+                                ? "Your institution is configured. Click below to enter your dashboard."
+                                : `Continuing setup for ${role.replace("_", " ")}`}
+                            </p>
+                            <button
+                              className="px-12 py-4 bg-lumina-primary text-black font-bold rounded-2xl disabled:opacity-50"
+                              onClick={saveGenericStep}
+                              disabled={saving}
+                            >
+                              {saving ? "SAVING..." : currentStep + 1 >= totalSteps ? "ENTER DASHBOARD" : "CONTINUE"}
+                            </button>
                         </div>
                     )}
                 </div>
             )}
 
-            {/* HOD / Faculty / Student fallbacks for brevity in this tool call, keeping original logic but wrapping in improved container */}
+            {/* HOD / Faculty / Student: save progress each step and route on completion */}
             {role !== "college_admin" && (
                 <div className="space-y-6">
                     <h2 className="text-2xl font-bold flex items-center gap-3">
                         <StepIcon className="w-6 h-6 text-lumina-primary" />
-                        Step {currentStep}: Process Initiation
+                        Step {currentStep} of {totalSteps}: {role.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())} Setup
                     </h2>
-                    <p className="text-gray-400">Please complete the setup for your {role.replace("_", " ")} profile to access the dashboard.</p>
+                    <p className="text-gray-400">
+                      {currentStep + 1 >= totalSteps
+                        ? "Your profile is ready. Click below to enter your dashboard."
+                        : `Please complete the setup for your ${role.replace("_", " ")} profile to access the dashboard.`}
+                    </p>
                     <div className="p-8 border border-white/10 bg-white/5 rounded-3xl text-center">
-                        <Settings className="w-12 h-12 text-gray-500 mx-auto mb-4 animate-spin-slow" />
-                        <p className="text-gray-500 font-medium">Standard interface refined for {role.replace("_", " ")}</p>
+                        <GraduationCap className="w-12 h-12 text-lumina-primary/50 mx-auto mb-4" />
+                        <p className="text-gray-400 font-medium">Profile configuration for {role.replace(/_/g, " ")}</p>
+                        <p className="text-gray-600 text-sm mt-2">Step {currentStep} of {totalSteps}</p>
                     </div>
-                    <button className="w-full py-5 bg-white text-black font-black rounded-2xl" onClick={nextStep}>PROCEED TO NEXT</button>
+                    <button
+                      className="w-full py-5 bg-white text-black font-black rounded-2xl disabled:opacity-50"
+                      onClick={saveGenericStep}
+                      disabled={saving}
+                    >
+                      {saving ? "SAVING..." : currentStep + 1 >= totalSteps ? "ENTER DASHBOARD" : "PROCEED TO NEXT"}
+                    </button>
                 </div>
             )}
           </motion.div>

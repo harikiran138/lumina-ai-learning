@@ -193,6 +193,12 @@ export default function AdminDashboard() {
         <AlertTriangle className="mx-auto mb-4 h-8 w-8 text-red-400" />
         <h1 className="text-xl font-semibold text-white">Admin control center unavailable</h1>
         <p className="mt-2 text-sm text-gray-400">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/10"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
@@ -538,11 +544,18 @@ export default function AdminDashboard() {
                   className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <img
-                      src={user.avatar}
-                      alt={user.name}
-                      className="h-10 w-10 rounded-2xl border border-white/10 object-cover"
-                    />
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="h-10 w-10 rounded-2xl border border-white/10 object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold text-white">
+                        {user.name?.charAt(0)?.toUpperCase() || "?"}
+                      </div>
+                    )}
                     <div className="min-w-0">
                       <p className="truncate font-semibold text-white">{user.name}</p>
                       <p className="truncate text-sm text-gray-400">{user.email}</p>

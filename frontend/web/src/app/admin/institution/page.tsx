@@ -139,8 +139,8 @@ export default function InstitutionManagementPage() {
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <p className="text-sm font-semibold text-white">Institutional posture</p>
             <div className="mt-5 grid grid-cols-2 gap-4">
-              <SummaryTile label="Identity" value={1} />
-              <SummaryTile label="Connected" value={connectedInstitutions ? 1 : 0} />
+              <SummaryTile label="Identity" value={institutions.length} />
+              <SummaryTile label="Connected" value={connectedInstitutions} />
               <SummaryTile label="Live links" value={connections.length} />
               <SummaryTile
                 label="System Mode"
@@ -417,6 +417,8 @@ function ConnectionComposer({ onCreated }: { onCreated: () => Promise<void> | vo
         ]);
         setUsers(userRecords || []);
         setInstitutions(institutionRecords || []);
+      } catch (err: any) {
+        console.error("connection_composer_load_failed", err);
       } finally {
         setLoading(false);
       }

@@ -39,8 +39,8 @@ export default function LoginPage() {
       try {
         const user = await api.getCurrentUser();
         if (user) {
-          if ((user as any).must_change_password) {
-            router.push("/auth/reset-password");
+          if (user.mustChangePassword) {
+            router.push("/change-password");
             return;
           }
           const routes: Record<string, string> = {
@@ -68,11 +68,7 @@ export default function LoginPage() {
         window.location.href = "/change-password";
         return;
       }
-      if (user && (user as any).must_change_password) {
-        window.location.href = "/auth/reset-password";
-        return;
-      }
-      if (user && (user as any).onboardingStep !== undefined && (user as any).onboardingStep < 5) {
+      if (user && user.onboardingStep !== undefined && user.onboardingStep < 5) {
         window.location.href = "/onboarding";
         return;
       }

@@ -11,6 +11,7 @@ import {
   Save,
   AlertCircle
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface RoleMatrix {
@@ -27,8 +28,7 @@ export default function RolePermissions() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/admin/roles/matrix");
-        const data = await res.json();
+        const data = await api.getRoleMatrix();
         setMatrix(data);
       } catch (err) {
         console.error("failed_to_load_role_matrix", err);
