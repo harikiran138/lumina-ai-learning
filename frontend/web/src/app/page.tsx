@@ -54,9 +54,9 @@ export default function Home() {
     );
 
     const sections = [
-      "problem", "solution", "how-it-works", "roles", 
-      "ai-engine", "verification", "privacy", "product-screens", 
-      "benefits", "research", "testimonials", "cta"
+      "problem", "solution", "how-it-works", "roles",
+      "ai-engine", "verification", "privacy", "product-screens",
+      "benefits", "research", "testimonials", "cta",
     ];
 
     sections.forEach((id) => {
@@ -69,7 +69,6 @@ export default function Home() {
 
   return (
     <div className="text-white min-h-screen bg-slate-950 selection:bg-lumina-highlight/30 selection:text-white">
-      {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
@@ -79,14 +78,14 @@ export default function Home() {
                 <span className="ml-1 text-lumina-highlight">AI</span>
               </Link>
             </div>
-            
+
             <nav className="hidden xl:flex md:items-center md:space-x-8">
               {[
                 { label: "Platform", href: "/platform" },
                 { label: "Technology", href: "/technology" },
                 { label: "Roles", href: "/roles" },
                 { label: "Privacy", href: "/privacy" },
-                { label: "Research", href: "/research" }
+                { label: "Research", href: "/research" },
               ].map((item) => (
                 <Link
                   key={item.label}
@@ -119,11 +118,11 @@ export default function Home() {
 
       <main className="relative">
         <HeroSection />
-        
+
         <div id="problem">
           {sectionsVisible.problem && <ProblemSection />}
         </div>
-        
+
         <div id="solution">
           {sectionsVisible.solution && <SolutionSection />}
         </div>
@@ -163,7 +162,7 @@ export default function Home() {
         <div id="testimonials">
           {sectionsVisible.testimonials && <TestimonialsSection />}
         </div>
-        
+
         <div id="cta">
           {sectionsVisible.cta && <FinalCTASection />}
         </div>
@@ -171,11 +170,10 @@ export default function Home() {
 
       <Footer />
       <StructuredData />
-      
-      {/* Global Background Elements */}
+
       <DottedSurface />
       <div className="fixed inset-0 pointer-events-none -z-10">
-         <div className="absolute top-0 left-0 w-full h-full neural-mesh opacity-[0.03]" />
+        <div className="absolute top-0 left-0 w-full h-full neural-mesh opacity-[0.03]" />
       </div>
     </div>
   );
