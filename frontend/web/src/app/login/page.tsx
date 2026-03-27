@@ -39,6 +39,10 @@ export default function LoginPage() {
       try {
         const user = await api.getCurrentUser();
         if (user) {
+          if ((user as any).must_change_password) {
+            router.push("/auth/reset-password");
+            return;
+          }
           const routes: Record<string, string> = {
             super_admin: "/admin",
             admin: "/admin/dashboard",
@@ -60,6 +64,14 @@ export default function LoginPage() {
   const performLogin = async (loginEmail: string, loginPassword: string) => {
     try {
       const user = await api.login(loginEmail, loginPassword);
+      if (user?.mustChangePassword) {
+        window.location.href = "/change-password";
+        return;
+      }
+      if (user && (user as any).must_change_password) {
+        window.location.href = "/auth/reset-password";
+        return;
+      }
       if (user && (user as any).onboardingStep !== undefined && (user as any).onboardingStep < 5) {
         window.location.href = "/onboarding";
         return;

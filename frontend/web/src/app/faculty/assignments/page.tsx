@@ -57,7 +57,7 @@ function AssignmentsContent() {
 
   const fetchAssignments = async () => {
     try {
-      const data = await api.getAssignments();
+      const data = await api.getFacultyAssignments();
       setAssignments(data);
     } catch (e) {
       console.error("Failed to fetch assignments", e);
@@ -195,7 +195,7 @@ function AssignmentsList({
                 </td>
                 <td className="p-6">
                   <span className="px-3 py-1 rounded-full text-xs font-medium bg-white/5 text-gray-300 border border-white/10">
-                    {assignment.course_id}
+                    {assignment.course_name || assignment.course_id}
                   </span>
                 </td>
                 <td className="p-6">

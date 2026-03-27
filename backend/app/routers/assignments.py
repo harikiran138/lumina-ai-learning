@@ -35,12 +35,16 @@ async def create_assignment(
     """
     Create a new assignment definition. Requires Teacher role.
     """
-    if current_user["role"] not in {"teacher", "admin", "hod"}:
+    if current_user["role"] not in {"teacher", "faculty", "admin", "hod"}:
         raise HTTPException(status_code=403, detail="Only teachers can create assignments")
 
     try:
         assignment = await store.create_assignment(
-            title, course_id, description, due_date, created_by=current_user["id"]
+            title,
+            course_id,
+            description,
+            due_date,
+            created_by=current_user["id"],
         )
         return {"status": "success", "assignment": assignment}
     except Exception as e:

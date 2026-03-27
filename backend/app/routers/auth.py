@@ -51,6 +51,19 @@ class AcceptInvite(BaseModel):
     password: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    newPassword: str
+
+
+class ChangePasswordRequest(BaseModel):
+    newPassword: str
+
+
 class LoginResponse(BaseModel):
     accessToken: str
     user: dict
@@ -110,6 +123,20 @@ def _decode_invite_token(token: str) -> dict:
         raise
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid invite token")
+
+
+def _decode_reset_token(token: str) -> dict:
+    try:
+        from jose import jwt
+
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        if payload.get("type") != "reset":
+            raise HTTPException(status_code=400, detail="Invalid reset token")
+        return payload
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid reset token")
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -211,6 +238,52 @@ async def accept_invite(
     await user_store.update_user_fields(user_id, updates)
 
     return {"success": True, "message": "Account activated successfully"}
+
+
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie("refresh_token", path="/")
+    return {"success": True}
+
+
+@router.post("/forgot-password")
+async def forgot_password(payload: ForgotPasswordRequest, user_store: UserStore = Depends(get_user_store)):
+    user = await user_store.get_user_by_email(payload.email)
+    if not user:
+        return {"success": True}
+    reset_token = create_access_token(
+        subject=payload.email,
+        expires_delta=timedelta(hours=1),
+        extra_claims={"type": "reset", "userId": user.get("id")},
+    )
+    # Email stub (log in dev)
+    print(f"[EMAIL STUB] Reset link: /reset-password?token={reset_token}")
+    return {"success": True}
+
+
+@router.post("/reset-password")
+async def reset_password(payload: ResetPasswordRequest, user_store: UserStore = Depends(get_user_store)):
+    reset_payload = _decode_reset_token(payload.token)
+    user_id = reset_payload.get("userId")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid token payload")
+    hashed_password = get_password_hash(payload.newPassword)
+    await user_store.update_user_fields(user_id, {"password_hash": hashed_password, "must_change_password": False})
+    return {"success": True}
+
+
+@router.post("/change-password")
+async def change_password(
+    payload: ChangePasswordRequest,
+    current_user: dict = Depends(get_current_user),
+    user_store: UserStore = Depends(get_user_store),
+):
+    hashed_password = get_password_hash(payload.newPassword)
+    await user_store.update_user_fields(
+        current_user.get("id"),
+        {"password_hash": hashed_password, "must_change_password": False},
+    )
+    return {"success": True}
 
 
 @router.post("/login", response_model=LoginResponse)
@@ -326,7 +399,7 @@ async def get_current_user(
 
 
 class ChangePasswordRequest(BaseModel):
-    current_password: str
+    current_password: Optional[str] = None
     new_password: str
 
 
@@ -336,12 +409,21 @@ async def change_password(
     current_user: dict = Depends(get_current_user),
     user_store: UserStore = Depends(get_user_store),
 ):
-    if not verify_password(payload.current_password, current_user["password_hash"]):
-        raise HTTPException(status_code=400, detail="Incorrect current password")
+    # Only skip current_password check if must_change_password is true
+    if not current_user.get("must_change_password"):
+        if not payload.current_password:
+            raise HTTPException(status_code=400, detail="Current password is required")
+        if not verify_password(payload.current_password, current_user["password_hash"]):
+            raise HTTPException(status_code=400, detail="Incorrect current password")
 
     hashed_password = get_password_hash(payload.new_password)
     await user_store.update_user_fields(
-        current_user["id"], {"password_hash": hashed_password, "must_change_password": False}
+        current_user["id"], 
+        {
+            "password_hash": hashed_password, 
+            "must_change_password": False,
+            "onboarding_step": max(current_user.get("onboarding_step", 0), 0) # Ensure they stay in onboarding if they were there
+        }
     )
 
     return {"success": True, "message": "Password updated successfully"}
