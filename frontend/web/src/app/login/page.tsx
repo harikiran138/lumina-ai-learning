@@ -89,9 +89,19 @@ export default function LoginPage() {
         window.location.href = "/onboarding";
         return;
       }
-      
+
+      const roleRoutes: Record<string, string> = {
+        super_admin: "/admin/dashboard",
+        admin: "/admin/dashboard",
+        college_admin: "/college",
+        hod: "/hod",
+        faculty: "/faculty",
+        teacher: "/teacher/dashboard",
+        student: "/student/dashboard",
+      };
+
       if (user && user.role) {
-        window.location.href = `/${user.role}/dashboard`;
+        window.location.href = roleRoutes[user.role] || "/student/dashboard";
       } else {
         window.location.href = "/student/dashboard";
       }
@@ -118,10 +128,20 @@ export default function LoginPage() {
         createdAt: new Date().toISOString(),
       };
       const user = await api.createUser(newUser);
-      if (user?.role === "student" || user?.role === "teacher" || user?.role === "hod") {
+      const roleRoutes: Record<string, string> = {
+        super_admin: "/admin/dashboard",
+        admin: "/admin/dashboard",
+        college_admin: "/college",
+        hod: "/hod",
+        faculty: "/faculty",
+        teacher: "/teacher/dashboard",
+        student: "/student/dashboard",
+      };
+
+      if (user?.role === "student" || user?.role === "teacher" || user?.role === "hod" || user?.role === "faculty" || user?.role === "college_admin") {
         window.location.href = "/onboarding";
       } else if (user && user.role) {
-        window.location.href = `/${user.role}/dashboard`;
+        window.location.href = roleRoutes[user.role] || "/student/dashboard";
       } else {
         window.location.href = "/student/dashboard";
       }

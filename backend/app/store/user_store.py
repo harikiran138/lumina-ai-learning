@@ -159,3 +159,16 @@ class UserStore:
         except Exception as e:
             log.error("update_user_fields_failed", error=str(e), user_id=user_id)
             return False
+
+    def update_user_fields_sync(self, user_id: str, updates: dict) -> bool:
+        restricted = {"id", "password", "password_hash", "email"}
+        clean_updates = {k: v for k, v in updates.items() if k not in restricted}
+        
+        try:
+            import anyio.from_thread
+            client = self.db.get_client()
+            response = client.table("users").update(clean_updates).eq("id", user_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            log.error("update_user_fields_failed_sync", error=str(e), user_id=user_id)
+            return False
