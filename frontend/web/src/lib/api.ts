@@ -423,12 +423,72 @@ export class RealAPI {
 
   // --- Admin Hierarchy Management ---
   async getInstitutions(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/institutions");
+    const res = await this.fetchAuthorized("/api/admin/institutions");
     return res.ok ? await res.json() : [];
   }
 
-  async getDepartments(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/admin/departments");
+  async createInstitution(data: any): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/institutions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async getAllUsers(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/users");
+    return res.ok ? await res.json() : [];
+  }
+
+  async adminCreateUser(data: { name: string; email: string; password: string; role: string }): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/users", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async deleteUser(userId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/admin/users/${userId}`, {
+      method: "DELETE",
+    });
+    return res.ok ? { success: true } : await res.json();
+  }
+
+  async updateUserStatus(userId: string, status: string): Promise<any> {
+    const res = await this.fetchAuthorized(
+      `/api/admin/users/${userId}/status?status=${encodeURIComponent(status)}`,
+      { method: "POST" },
+    );
+    return await res.json();
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<any> {
+    const res = await this.fetchAuthorized(
+      `/api/admin/users/${userId}/role?role=${encodeURIComponent(role)}`,
+      { method: "POST" },
+    );
+    return await res.json();
+  }
+
+  async getConnections(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/connections");
+    return res.ok ? await res.json() : [];
+  }
+
+  async linkStakeholder(data: any): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/connections/link", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async getDepartments(institutionId?: string): Promise<any[]> {
+    const path = institutionId
+      ? `/api/admin/institutions/${institutionId}/departments`
+      : "/api/admin/departments";
+    const res = await this.fetchAuthorized(path);
     return res.ok ? await res.json() : [];
   }
 
@@ -436,6 +496,147 @@ export class RealAPI {
     const res = await this.fetchAuthorized("/api/admin/departments", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async updateDepartment(institutionId: string, deptId: string, data: any): Promise<any> {
+    const res = await this.fetchAuthorized(
+      `/api/admin/institutions/${institutionId}/departments/${deptId}`,
+      { method: "PATCH", body: JSON.stringify(data) },
+    );
+    return await res.json();
+  }
+
+  async assignHod(institutionId: string, deptId: string, hodId: string): Promise<any> {
+    const res = await this.fetchAuthorized(
+      `/api/admin/institutions/${institutionId}/departments/${deptId}/hod`,
+      { method: "PATCH", body: JSON.stringify({ hod_id: hodId }) },
+    );
+    return await res.json();
+  }
+
+  async deleteAdminDepartment(deptId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/admin/departments/${deptId}`, { method: "DELETE" });
+    return res.ok ? { success: true } : await res.json();
+  }
+
+  async getPrograms(institutionId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(`/api/admin/institutions/${institutionId}/programs`);
+    return res.ok ? await res.json() : [];
+  }
+
+  async createProgram(institutionId: string, data: any): Promise<any> {
+    const res = await this.fetchAuthorized(
+      `/api/admin/institutions/${institutionId}/programs`,
+      { method: "POST", body: JSON.stringify(data) },
+    );
+    return await res.json();
+  }
+
+  async getSemesters(programId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(`/api/admin/programs/${programId}/semesters`);
+    return res.ok ? await res.json() : [];
+  }
+
+  async createSemester(programId: string, data: any): Promise<any> {
+    const res = await this.fetchAuthorized(
+      `/api/admin/programs/${programId}/semesters`,
+      { method: "POST", body: JSON.stringify(data) },
+    );
+    return await res.json();
+  }
+
+  async getClasses(programId?: string, semesterId?: string): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/classes");
+    if (!res.ok) return [];
+    const all = await res.json();
+    return all.filter((c: any) => {
+      if (programId && c.program_id !== programId) return false;
+      if (semesterId && c.semester_id !== semesterId) return false;
+      return true;
+    });
+  }
+
+  async getPublicClasses(programId?: string, semesterId?: string): Promise<any[]> {
+    return this.getClasses(programId, semesterId);
+  }
+
+  async createAdminClass(data: any): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/classes", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async updateClass(classId: string, data: any): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/admin/classes/${classId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async deleteAdminClass(classId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/admin/classes/${classId}`, { method: "DELETE" });
+    return res.ok ? { success: true } : await res.json();
+  }
+
+  async getClassSummary(classId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/admin/classes/${classId}/summary`);
+    return res.ok ? await res.json() : {};
+  }
+
+  async getRoleMatrix(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/roles/matrix");
+    return res.ok ? await res.json() : { roles: [], permissions: {} };
+  }
+
+  async getSystemHealth(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/health");
+    return res.ok ? await res.json() : {};
+  }
+
+  async getGuardianSignals(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/guardian");
+    return res.ok ? await res.json() : [];
+  }
+
+  async getVerificationQueue(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/queue-health");
+    return res.ok ? await res.json() : {};
+  }
+
+  async getAdminCourses(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/courses");
+    return res.ok ? await res.json() : [];
+  }
+
+  async getAiPrompts(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/ai/prompts");
+    return res.ok ? await res.json() : [];
+  }
+
+  async getAiModels(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/ai/models");
+    return res.ok ? await res.json() : [];
+  }
+
+  async getAiCosts(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/ai/costs");
+    return res.ok ? await res.json() : {};
+  }
+
+  async getTeacherRequests(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/hod/requests");
+    return res.ok ? await res.json() : [];
+  }
+
+  async updateTeacherRequest(requestId: string, status: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/hod/requests/${requestId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
     });
     return await res.json();
   }
@@ -451,6 +652,94 @@ export class RealAPI {
 
   async getSubmissions(assignmentId: string) {
     const res = await this.fetchAuthorized(`/api/assignments/${assignmentId}/submissions`);
+    return res.ok ? await res.json() : [];
+  }
+
+  // --- Teacher / Faculty APIs ---
+
+  /** GET /api/faculty/subjects — returns teacher's assigned courses */
+  async getTeacherCourses(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/faculty/subjects");
+    if (!res.ok) return [];
+    const data = await res.json();
+    // Transform { assignment, course } pairs into a flat course list
+    return (data || []).map((item: any) => {
+      const course = item.course || {};
+      return {
+        id: course.id || item.assignment?.course_id,
+        title: course.name || course.title || "Untitled Course",
+        status: course.status || "active",
+        students: course.enrolled_count || 0,
+        level: course.level || "Undergraduate",
+        image: course.thumbnail_url || "",
+        lastUpdated: course.updated_at ? new Date(course.updated_at).toLocaleDateString() : "N/A",
+        code: course.code || "",
+      };
+    });
+  }
+
+  /** GET /api/faculty/students/{batchId} — returns students for a batch */
+  async getTeacherStudents(batchId?: string): Promise<any[]> {
+    if (batchId) {
+      const res = await this.fetchAuthorized(`/api/faculty/students/${batchId}`);
+      return res.ok ? await res.json() : [];
+    }
+    // No batchId: get subjects first, collect unique batch_ids from assignments
+    const subjects = await this.fetchAuthorized("/api/faculty/subjects");
+    if (!subjects.ok) return [];
+    const data = await subjects.json();
+    const batchIds = [...new Set((data || []).map((item: any) => item.assignment?.class_id).filter(Boolean))] as string[];
+    if (!batchIds.length) return [];
+    const allStudents = await Promise.all(
+      batchIds.map(async (bid: string) => {
+        const r = await this.fetchAuthorized(`/api/faculty/students/${bid}`);
+        return r.ok ? await r.json() : [];
+      })
+    );
+    // Merge and deduplicate by id
+    const seen = new Set<string>();
+    return allStudents.flat().filter((s: any) => {
+      if (seen.has(s.id)) return false;
+      seen.add(s.id);
+      return true;
+    });
+  }
+
+  /** DELETE /api/courses/{id} — remove a course */
+  async deleteCourse(courseId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/courses/${courseId}`, { method: "DELETE" });
+    return res.ok ? { success: true } : await res.json();
+  }
+
+  /** POST /api/assignments/create — create an assignment (form data) */
+  async createAssignment(payload: { title: string; course_id: string; description: string; due_date: string }): Promise<any> {
+    const form = new FormData();
+    form.append("title", payload.title);
+    form.append("course_id", payload.course_id);
+    form.append("description", payload.description);
+    form.append("due_date", payload.due_date);
+    const res = await this.fetchAuthorized("/api/assignments/create", {
+      method: "POST",
+      body: form,
+    });
+    return res.ok ? await res.json() : null;
+  }
+
+  /** GET /api/courses/teacher/students/{id}/analytics — student detail analytics */
+  async getPersonalizationProfile(studentId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/courses/teacher/students/${studentId}/analytics`);
+    return res.ok ? await res.json() : null;
+  }
+
+  /** GET /api/courses/teacher/alerts — teacher at-risk alerts */
+  async getTeacherAlerts(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/courses/teacher/alerts");
+    return res.ok ? await res.json() : [];
+  }
+
+  /** GET /api/courses/teacher/verification/queue — teacher verification queue */
+  async getTeacherVerificationQueue(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/courses/teacher/verification/queue");
     return res.ok ? await res.json() : [];
   }
 

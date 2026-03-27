@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface Prompt {
@@ -30,10 +31,9 @@ export default function PromptManagement() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/admin/ai/prompts");
-        const data = await res.json();
-        setPrompts(data);
-        if (data.length > 0) setSelectedPrompt(data[0]);
+        const data = await api.getAiPrompts();
+        setPrompts(data || []);
+        if (data?.length > 0) setSelectedPrompt(data[0]);
       } catch (err) {
         console.error("failed_to_load_prompts", err);
       } finally {

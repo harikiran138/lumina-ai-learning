@@ -21,7 +21,7 @@ export default function AdminSettings() {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await api.changePassword(currentPassword, newPassword);
+      const res = await api.changePassword(newPassword);
       if (res.error) throw new Error(res.error);
       setMessage({ type: "success", text: "Password updated successfully" });
       setCurrentPassword("");
