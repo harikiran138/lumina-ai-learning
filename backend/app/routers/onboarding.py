@@ -92,9 +92,21 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
     elif role == "student":
         if requested_step == 1:
             require_fields(["fullName", "registerNumber", "dob"])
+            if current_user.get("student_roll") and step_data.get("registerNumber") != current_user.get("student_roll"):
+                raise HTTPException(status_code=400, detail="Register number does not match enrollment records")
         if requested_step == 2:
             if step_data.get("confirmBatch") is not True:
-                raise HTTPException(status_code=400, detail="Batch confirmation required")
+                # log a correction request, still allow progression
+                await supabase_db.insert(
+                    "correction_requests",
+                    {
+                        "student_id": user_id,
+                        "type": "batch_correction",
+                        "message": "Student raised batch assignment issue",
+                        "status": "pending",
+                        "created_at": datetime.utcnow().isoformat(),
+                    },
+                )
         if requested_step == 4:
             if not step_data.get("photoUrl") and not step_data.get("profilePhotoUrl"):
                 raise HTTPException(status_code=400, detail="Profile photo required")
@@ -147,6 +159,24 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
             )
 
     return {"step": requested_step, "success": True}
+
+
+@router.get("/subjects")
+async def get_onboarding_subjects(current_user: dict = Depends(get_current_user)):
+    if _normalize_role(current_user.get("role")) != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+    dept_id = current_user.get("dept_id") or current_user.get("department_id")
+    batch_id = current_user.get("batch_id")
+    if not dept_id or not batch_id:
+        return []
+    batch = await supabase_db.fetch_one("batches", {"id": batch_id})
+    semester = batch.get("current_semester") if batch else None
+    if not semester:
+        return []
+    return await supabase_db.fetch_all(
+        "courses",
+        {"department_id": dept_id, "semester": semester},
+    )
 
 
 @router.post("/complete")

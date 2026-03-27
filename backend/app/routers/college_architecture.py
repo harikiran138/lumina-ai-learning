@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 import uuid
+import csv
+import io
 
 from .auth import get_current_user
 from app.database.supabase_manager import supabase_db
@@ -318,6 +320,7 @@ async def create_enrollment_code(
         "expires_at": (datetime.utcnow() + timedelta(hours=expires_hours)).isoformat(),
         "created_by": current_user.get("id"),
         "created_at": datetime.utcnow().isoformat(),
+        "used_by": None,
     }
     await supabase_db.insert("enrollment_codes", data)
     return {"code": code, "expiresAt": data["expires_at"], "batchId": batch_id, "section": section}
@@ -325,7 +328,7 @@ async def create_enrollment_code(
 
 @router.post("/enroll")
 async def enroll_with_code(payload: Dict[str, Any]):
-    code = payload.get("code")
+    code = payload.get("enrollmentCode") or payload.get("code")
     roll_number = payload.get("rollNumber") or payload.get("roll_number")
     full_name = payload.get("fullName") or payload.get("full_name")
     email = payload.get("email")
@@ -337,6 +340,8 @@ async def enroll_with_code(payload: Dict[str, Any]):
     record = await supabase_db.fetch_one("enrollment_codes", {"code": code})
     if not record:
         raise HTTPException(status_code=400, detail="Invalid enrollment code")
+    if record.get("used_by"):
+        raise HTTPException(status_code=400, detail="Enrollment code already used")
     expires_at = datetime.fromisoformat(record["expires_at"].replace("Z", "+00:00"))
     if expires_at < datetime.now(expires_at.tzinfo):
         raise HTTPException(status_code=400, detail="Enrollment code expired")
@@ -352,43 +357,86 @@ async def enroll_with_code(payload: Dict[str, Any]):
     user_store = UserStore()
     existing = await user_store.get_user_by_email(email)
     if existing:
-        raise HTTPException(status_code=400, detail="User already exists")
+        user_id = existing.get("id")
+        await supabase_db.update(
+            "users",
+            {
+                "is_active": True,
+                "college_id": dept.get("institution_id"),
+                "dept_id": dept.get("id"),
+                "batch_id": batch.get("id"),
+                "section": record.get("section"),
+                "student_roll": roll_number,
+                "password_hash": get_password_hash(password),
+                "must_change_password": True,
+            },
+            {"id": user_id},
+        )
+    else:
+        user_id = str(uuid.uuid4())
+        await supabase_db.insert(
+            "users",
+            {
+                "id": user_id,
+                "email": email,
+                "name": full_name,
+                "full_name": full_name,
+                "role": "student",
+                "password_hash": get_password_hash(password),
+                "is_active": True,
+                "college_id": dept.get("institution_id"),
+                "dept_id": dept.get("id"),
+                "batch_id": batch.get("id"),
+                "section": record.get("section"),
+                "student_roll": roll_number,
+                "onboarding_step": 0,
+                "phone": phone or "N/A",
+                "created_at": datetime.utcnow().isoformat(),
+                "must_change_password": True,
+            },
+        )
 
-    user_id = str(uuid.uuid4())
-    await supabase_db.insert(
-        "users",
-        {
-            "id": user_id,
-            "email": email,
-            "name": full_name,
-            "full_name": full_name,
-            "role": "student",
-            "password_hash": get_password_hash(password),
-            "is_active": True,
-            "college_id": dept.get("institution_id"),
-            "dept_id": dept.get("id"),
-            "batch_id": batch.get("id"),
-            "section": record.get("section"),
-            "student_roll": roll_number,
-            "onboarding_step": 0,
-            "phone": phone or "N/A",
-            "created_at": datetime.utcnow().isoformat(),
-        },
-    )
+    await supabase_db.update("enrollment_codes", {"used_by": user_id}, {"id": record.get("id")})
 
     return {"success": True, "userId": user_id}
 
 
 @router.post("/colleges/{college_id}/enroll/bulk")
 async def bulk_enroll_students(
-    college_id: str, payload: Dict[str, Any], current_user: dict = Depends(get_current_user)
+    college_id: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
 ):
     _require_roles(current_user, {"super_admin", "college_admin", "hod"})
     _enforce_college_scope(current_user, college_id)
-    batch_id = payload.get("batchId") or payload.get("batch_id")
-    section = payload.get("section")
-    students = payload.get("students") or []
-    default_password = payload.get("defaultPassword")
+    content_type = request.headers.get("content-type", "")
+    batch_id = None
+    section = None
+    students = []
+    default_password = None
+
+    if content_type.startswith("multipart/form-data"):
+        form = await request.form()
+        batch_id = form.get("batchId") or form.get("batch_id")
+        section = form.get("section")
+        file = form.get("file")
+        if file:
+            content = await file.read()
+            decoded = content.decode("utf-8")
+            reader = csv.DictReader(io.StringIO(decoded))
+            for row in reader:
+                students.append({
+                    "roll_number": row.get("roll_number") or row.get("rollNumber"),
+                    "full_name": row.get("full_name") or row.get("fullName"),
+                    "email": row.get("email"),
+                    "phone": row.get("phone"),
+                })
+    else:
+        payload = await request.json()
+        batch_id = payload.get("batchId") or payload.get("batch_id")
+        section = payload.get("section")
+        students = payload.get("students") or []
+        default_password = payload.get("defaultPassword")
 
     if not batch_id or not students:
         raise HTTPException(status_code=400, detail="Missing batch or students")

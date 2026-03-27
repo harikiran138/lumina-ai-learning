@@ -1061,10 +1061,55 @@ async def get_leaderboard(
 async def list_student_subjects(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "student":
         raise HTTPException(status_code=403, detail="Student access required")
-    dept_id = current_user.get("dept_id") or current_user.get("department_id")
-    if not dept_id:
+    student_id = current_user.get("id")
+    client = supabase_db.get_client()
+    subjects = (
+        client.table("student_subjects")
+        .select("subject_id")
+        .eq("student_id", student_id)
+        .execute()
+    )
+    subject_ids = [s["subject_id"] for s in (subjects.data or [])]
+    if not subject_ids:
         return []
-    return await supabase_db.fetch_all("courses", {"department_id": dept_id})
+    courses_res = client.table("courses").select("*").in_("id", subject_ids).execute()
+    courses = courses_res.data or []
+
+    # attach faculty if assignment exists for student's batch/section
+    batch_id = current_user.get("batch_id")
+    section = current_user.get("section")
+    assignments = (
+        client.table("teacher_assignments")
+        .select("course_id, teacher_id")
+        .eq("batch_id", batch_id)
+        .eq("section", section)
+        .execute()
+    )
+    teacher_ids = [a["teacher_id"] for a in (assignments.data or []) if a.get("teacher_id")]
+    teachers = (
+        client.table("users").select("id, full_name, email").in_("id", teacher_ids).execute()
+        if teacher_ids
+        else None
+    )
+    teacher_lookup = {t["id"]: t for t in (teachers.data or [])} if teachers else {}
+    assign_lookup = {a["course_id"]: a for a in (assignments.data or [])}
+
+    results = []
+    for course in courses:
+        assign = assign_lookup.get(course.get("id"))
+        teacher = teacher_lookup.get(assign.get("teacher_id")) if assign else None
+        results.append({
+            "id": course.get("id"),
+            "name": course.get("course_name") or course.get("name") or course.get("title"),
+            "code": course.get("code") or course.get("course_code"),
+            "credits": course.get("credits"),
+            "semester": course.get("semester"),
+            "type": course.get("type") or course.get("category"),
+            "facultyName": teacher.get("full_name") if teacher else None,
+            "facultyEmail": teacher.get("email") if teacher else None,
+            "assignedSection": section,
+        })
+    return results
 
 
 @router.get("/attendance")
@@ -1099,11 +1144,30 @@ async def get_student_attendance_summary(current_user: dict = Depends(get_curren
             "presentClasses": stats["present"],
             "attendancePercent": percent,
         })
-    return results
+    return {"subjects": results, "threshold": 75}
+
+
+@router.get("/attendance/{course_id}/detail")
+async def get_student_attendance_detail(course_id: str, current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+    client = supabase_db.get_client()
+    rows = (
+        client.table("attendance")
+        .select("class_date,is_present")
+        .eq("student_id", current_user.get("id"))
+        .eq("course_id", course_id)
+        .order("class_date")
+        .execute()
+    )
+    classes = rows.data or []
+    total = len(classes)
+    attended = len([c for c in classes if c.get("is_present")])
+    return {"classes": classes, "total": total, "attended": attended}
 
 
 @router.get("/assignments")
-async def list_student_assignments(current_user: dict = Depends(get_current_user)):
+async def list_student_assignments(current_user: dict = Depends(get_current_user), status: Optional[str] = None):
     if current_user.get("role") != "student":
         raise HTTPException(status_code=403, detail="Student access required")
     dept_id = current_user.get("dept_id") or current_user.get("department_id")
@@ -1139,11 +1203,21 @@ async def list_student_assignments(current_user: dict = Depends(get_current_user
             continue
         course = course_lookup.get(assignment.get("course_id"), {})
         submission = submission_map.get(assignment.get("id"))
+        status_value = "pending"
+        if submission:
+            status_value = "graded" if submission.get("marks") or submission.get("score") else "submitted"
+        elif assignment.get("due_date") and assignment.get("due_date") < datetime.utcnow().isoformat():
+            status_value = "overdue"
+
+        if status and status != "all" and status_value != status:
+            continue
+
         results.append({
             **assignment,
             "courseName": course.get("title") or course.get("course_name") or course.get("name"),
             "submitted": bool(submission),
             "submission": submission,
+            "status": status_value,
         })
     return results
 
@@ -1156,6 +1230,22 @@ async def submit_student_assignment(
 ):
     if current_user.get("role") != "student":
         raise HTTPException(status_code=403, detail="Student access required")
+    # Validate assignment
+    assignment = await supabase_db.fetch_one("assignments", {"id": assignment_id})
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    if assignment.get("due_date") and assignment.get("due_date") < datetime.utcnow().isoformat():
+        raise HTTPException(status_code=400, detail="Submission deadline has passed")
+    if current_user.get("batch_id") != assignment.get("batch_id") or current_user.get("section") != assignment.get("section"):
+        raise HTTPException(status_code=403, detail="This assignment is not assigned to your batch")
+
+    existing = await supabase_db.fetch_one(
+        "submissions",
+        {"assignment_uuid": assignment_id, "student_uuid": current_user.get("id")},
+    )
+    if existing:
+        raise HTTPException(status_code=409, detail="Already submitted")
+
     data = {
         "assignment_id": assignment_id,
         "assignment_uuid": assignment_id,
@@ -1207,4 +1297,7 @@ async def list_student_grades(current_user: dict = Depends(get_current_user)):
 async def list_student_materials(course_id: str, current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "student":
         raise HTTPException(status_code=403, detail="Student access required")
+    enrolled = await supabase_db.fetch_one("student_subjects", {"student_id": current_user.get("id"), "subject_id": course_id})
+    if not enrolled:
+        raise HTTPException(status_code=403, detail="Not enrolled in this course")
     return await supabase_db.fetch_all("course_materials", {"course_id": course_id})
