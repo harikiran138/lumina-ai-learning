@@ -1,6 +1,6 @@
 "use client";
 
-import TeacherSidebar from "@/components/dashboard/TeacherSidebar";
+import HODSidebar from "@/components/dashboard/HODSidebar";
 import TopNav from "@/components/dashboard/TopNav";
 import { BGPattern } from "@/components/ui/BGPattern";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-export default function TeacherLayout({
+export default function HODLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -34,7 +34,7 @@ export default function TeacherLayout({
         className="fixed inset-0 z-0 pointer-events-none"
       />
 
-      <TeacherSidebar
+      <HODSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onHoverChange={setIsSidebarExpanded}
@@ -48,15 +48,14 @@ export default function TeacherLayout({
           user
             ? {
                 name: user.name,
-                role: "Teacher",
-                initial: user.name?.charAt(0) || "T",
+                role: "HOD",
+                initial: user.name?.charAt(0) || "H",
                 avatar: user.avatar,
               }
-            : { name: "Teacher", role: "Teacher", initial: "T" }
+            : { name: "HOD", role: "HOD", initial: "H" }
         }
       />
 
-      {/* Mobile Sidebar Overlay - simplified for now */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"

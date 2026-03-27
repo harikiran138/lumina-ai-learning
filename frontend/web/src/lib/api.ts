@@ -53,11 +53,17 @@ export interface User {
   name: string;
   email: string;
   role: "super_admin" | "college_admin" | "admin" | "hod" | "faculty" | "teacher" | "student" | "parent" | "mentor" | "peer_tutor" | "counselor" | "content_creator" | "researcher" | "alumni";
-  status: "active" | "suspended" | "inactive";
+  status: "active" | "suspended" | "inactive" | string;
   avatar: string;
   createdAt: string;
+  onboardingCompleted?: boolean;
+  onboardingStep?: number;
+  collegeId?: string | null;
+  deptId?: string | null;
+  batchId?: string | null;
+  mustChangePassword?: boolean;
   preferences?: any;
-  password?: string; // Optional for internal use
+  password?: string;
   bio?: string;
   skills?: string[];
   location?: string;
@@ -103,14 +109,14 @@ export class RealAPI {
 
   private async handleUnauthorized(): Promise<boolean> {
     try {
-      const res = await fetch(`${this.getApiBase()}/auth/refresh`, {
+      const res = await fetch(`${this.getApiBase()}/api/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
       })
       if (res.ok) {
-        const { token } = await res.json()
-        this.token = token
-        setAuthCookie(token)
+        const { accessToken } = await res.json()
+        this.token = accessToken
+        setAuthCookie(accessToken)
         return true // signal caller to retry the original request
       }
     } catch {
@@ -200,26 +206,31 @@ export class RealAPI {
     }
 
     const tokenData = await res.json();
-    this.token = tokenData.access_token;
+    this.token = tokenData.accessToken;
 
     setAuthCookie(this.token!)
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("lumina_token", this.token!);
+    }
 
-    // Fetch user details
-    const userRes = await this.fetchAuthorized("/api/auth/me");
-    if (!userRes.ok) throw new Error("Failed to fetch user profile");
-
-    const userData = await userRes.json();
-    const displayName = userData.name || userData.full_name || email.split("@")[0];
+    const userData = tokenData.user;
+    const displayName = userData.fullName || userData.name || email.split("@")[0];
     this.currentUser = {
       id: userData.id,
       email: userData.email,
       name: displayName,
       role: userData.role,
+      onboardingStep: userData.onboardingStep,
+      onboardingCompleted: userData.onboardingCompleted,
+      mustChangePassword: userData.mustChangePassword,
+      collegeId: userData.collegeId,
+      deptId: userData.deptId,
+      batchId: userData.batchId,
       avatar:
-        userData.avatar ||
+        userData.profilePhotoUrl ||
         `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`,
-      status: "active",
-      createdAt: userData.created_at,
+      status: userData.status || "active",
+      createdAt: userData.created_at || new Date().toISOString(),
       preferences: userData.preferences || {},
     };
 
@@ -271,8 +282,14 @@ export class RealAPI {
       return await res.json();
     }
 
-    if (userRole === "teacher") {
+    if (userRole === "teacher" || userRole === "faculty") {
       const res = await this.fetchAuthorized("/api/courses/teacher/dashboard");
+      if (!res.ok) return {};
+      return await res.json();
+    }
+
+    if (userRole === "college" || userRole === "college_admin") {
+      const res = await this.fetchAuthorized("/api/college/dashboard");
       if (!res.ok) return {};
       return await res.json();
     }
@@ -1203,27 +1220,41 @@ export class RealAPI {
     return await res.json();
   }
 
+  // --- Academic Data (Public/Onboarding) ---
+
+  async getPublicInstitutions(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/academic/institutions");
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async getPublicDepartments(instId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(`/api/academic/departments?institution_id=${instId}`);
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async getPublicPrograms(instId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(`/api/academic/programs?institution_id=${instId}`);
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async getPublicSemesters(programId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(`/api/academic/programs/${programId}/semesters`);
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async getPublicClasses(programId: string, semesterId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(
+      `/api/academic/classes?program_id=${programId}&semester_id=${semesterId}`
+    );
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
   // --- Institution & Connection Management ---
-
-  async getInstitutions(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/admin/institutions");
-    if (!res.ok) return [];
-    return await res.json();
-  }
-
-  async createInstitution(data: any): Promise<any> {
-    const res = await this.fetchAuthorized("/api/admin/institutions", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-    return await res.json();
-  }
-
-  async getDepartments(instId: string): Promise<any[]> {
-    const res = await this.fetchAuthorized(`/api/admin/institutions/${instId}/departments`);
-    if (!res.ok) return [];
-    return await res.json();
-  }
 
   async createDepartment(instId: string, data: any): Promise<any> {
     const res = await this.fetchAuthorized(`/api/admin/institutions/${instId}/departments`, {
@@ -1448,6 +1479,94 @@ export class RealAPI {
   async completeOnboarding(): Promise<any> {
     const res = await this.fetchAuthorized("/api/onboarding/complete", {
       method: "POST",
+    });
+    return await res.json();
+  }
+
+  // --- College Architecture Helpers (Onboarding) ---
+  async architectureUpdateCollege(collegeId: string, data: Record<string, any>): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/colleges/${collegeId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async architectureCreateDepartment(collegeId: string, data: Record<string, any>): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/colleges/${collegeId}/departments`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async architectureListDepartments(collegeId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(`/api/colleges/${collegeId}/departments`);
+    return res.ok ? await res.json() : [];
+  }
+
+  async architectureUpdateDepartment(deptId: string, data: Record<string, any>): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/departments/${deptId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async architectureCreateBatch(deptId: string, data: Record<string, any>): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/departments/${deptId}/batches`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async architectureListBatches(deptId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(`/api/departments/${deptId}/batches`);
+    return res.ok ? await res.json() : [];
+  }
+
+  async architectureCreateSubject(deptId: string, data: Record<string, any>): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/departments/${deptId}/subjects`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async architectureListSubjects(deptId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(`/api/departments/${deptId}/subjects`);
+    return res.ok ? await res.json() : [];
+  }
+
+  async architectureAssignSubject(subjectId: string, data: Record<string, any>): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/subjects/${subjectId}/assign`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async architectureInviteUser(collegeId: string, data: Record<string, any>): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/colleges/${collegeId}/invite`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async createEnrollmentCode(batchId: string, data: Record<string, any>): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/batches/${batchId}/enrollment-code`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async bulkEnrollStudents(collegeId: string, data: Record<string, any>): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/colleges/${collegeId}/enroll/bulk`, {
+      method: "POST",
+      body: JSON.stringify(data),
     });
     return await res.json();
   }

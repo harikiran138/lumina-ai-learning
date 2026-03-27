@@ -941,3 +941,14 @@ SET college_id = d.institution_id
 FROM public.departments d
 WHERE c.college_id IS NULL
   AND c.department_id = d.id;
+
+ALTER TABLE public.users
+ADD COLUMN IF NOT EXISTS must_change_password boolean DEFAULT false;
+
+ALTER TABLE public.enrollment_codes
+ADD COLUMN IF NOT EXISTS section text,
+ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES public.users(id);
+
+CREATE INDEX IF NOT EXISTS idx_users_must_change_password ON public.users(must_change_password);
+CREATE INDEX IF NOT EXISTS idx_enrollment_codes_batch_id ON public.enrollment_codes(batch_id);
+CREATE INDEX IF NOT EXISTS idx_enrollment_codes_code ON public.enrollment_codes(code);
