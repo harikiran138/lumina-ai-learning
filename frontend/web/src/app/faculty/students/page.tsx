@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { 
-  Search, 
-  Filter, 
-  Download, 
-  MoreVertical, 
-  User, 
-  Mail, 
-  TrendingUp, 
+import { useState, useEffect } from "react";
+import {
+  Search,
+  Filter,
+  Download,
+  MoreVertical,
+  User,
+  Mail,
+  TrendingUp,
   TrendingDown,
   ChevronRight,
   AlertTriangle,
@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 interface Student {
   id: string;
@@ -33,21 +34,41 @@ interface Student {
 
 export default function StudentMasterListPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const students: Student[] = [
-    { id: "s1", name: "Alice Chen", email: "alice@student.lumina", mastery: 88, engagement: 95, risk: "low", lastActive: "2 mins ago", streak: 12 },
-    { id: "s2", name: "David Kim", email: "david@student.lumina", mastery: 42, engagement: 65, risk: "critical", lastActive: "5 hours ago", streak: 0 },
-    { id: "s3", name: "Charlie Day", email: "charlie@student.lumina", mastery: 65, engagement: 82, risk: "medium", lastActive: "1 day ago", streak: 4 },
-    { id: "s4", name: "Eva Rodriguez", email: "eva@student.lumina", mastery: 94, engagement: 98, risk: "low", lastActive: "Just now", streak: 25 },
-    { id: "s5", name: "Frank Miller", email: "frank@student.lumina", mastery: 58, engagement: 74, risk: "high", lastActive: "3 days ago", streak: 1 },
-  ];
+  useEffect(() => {
+    api.getTeacherStudents().then((data) => {
+      const mapped: Student[] = (data || []).map((s: any) => ({
+        id: s.id,
+        name: s.full_name || s.name || "Student",
+        email: s.email || "",
+        mastery: s.mastery_score || s.average_mastery || 0,
+        engagement: s.engagement_score || s.engagement || 0,
+        risk: s.risk_level || "low",
+        lastActive: s.last_active || s.updated_at || "N/A",
+        streak: s.streak || 0,
+      }));
+      setStudents(mapped);
+    }).catch((err) => {
+      console.error("failed_to_load_students", err);
+    }).finally(() => {
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return (
+    <div className="flex min-h-[400px] items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
+    </div>
+  );
 
   return (
     <div className="min-h-screen space-y-8 p-8">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-4xl font-display font-bold text-white tracking-tight">Student Master List</h1>
-          <p className="mt-2 text-gray-400">Total Enrollment: 124 students across 4 courses.</p>
+          <p className="mt-2 text-gray-400">Total Enrollment: {students.length} students.</p>
         </div>
         <div className="flex items-center gap-3">
            <button className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all">
@@ -110,7 +131,7 @@ export default function StudentMasterListPage() {
                 className="group hover:bg-white/[0.02] transition-all cursor-pointer"
               >
                 <td className="px-8 py-6">
-                  <Link href={`/teacher/students/${student.id}`} className="flex items-center gap-4">
+                  <Link href={`/faculty/students/${student.id}`} className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-sm font-bold text-white uppercase italic">
                       {student.name.split(' ').map(n => n[0]).join('')}
                     </div>
@@ -178,7 +199,7 @@ export default function StudentMasterListPage() {
       </div>
 
       <div className="flex items-center justify-between p-4">
-         <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Showing 1-5 of 124 students</p>
+         <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Showing {students.length} students</p>
          <div className="flex items-center gap-2">
             <button className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold text-white hover:bg-white/10">PREV</button>
             <button className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold text-white hover:bg-white/10">NEXT</button>

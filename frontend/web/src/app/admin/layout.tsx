@@ -5,7 +5,7 @@ import TopNav from "@/components/dashboard/TopNav";
 import { BGPattern } from "@/components/ui/BGPattern";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { useState, useEffect } from "react";
-import { api } from "@/lib/api";
+import { api, type User } from "@/lib/api";
 
 export default function AdminLayout({
   children,
@@ -13,12 +13,16 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
-      const userData = await api.getCurrentUser();
-      setUser(userData);
+      try {
+        const userData = await api.getCurrentUser();
+        setUser(userData);
+      } catch {
+        // user stays null; fallback shown in TopNav
+      }
     };
     fetchUser();
   }, []);

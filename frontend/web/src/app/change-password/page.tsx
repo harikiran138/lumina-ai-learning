@@ -26,7 +26,11 @@ export default function ChangePasswordPage() {
       const tempToken =
         typeof window !== "undefined" ? sessionStorage.getItem("temp_token") : null;
       if (tempToken) {
-        const res = await fetch("/api/auth/change-password", {
+        const apiBase =
+          process.env.NEXT_PUBLIC_API_URL ||
+          process.env.NEXT_PUBLIC_API_BASE ||
+          "http://127.0.0.1:8000";
+        const res = await fetch(`${apiBase}/api/auth/change-password`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -35,15 +39,29 @@ export default function ChangePasswordPage() {
           body: JSON.stringify({ newPassword: password, confirmPassword: confirm }),
         });
         if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data?.detail || "Unable to update password");
+          let detail = "Unable to update password";
+          try { detail = (await res.json())?.detail || detail; } catch { /* ignore */ }
+          throw new Error(detail);
         }
         sessionStorage.removeItem("temp_token");
+        toast.success("Password updated — completing your profile setup");
+        router.push("/onboarding");
       } else {
         await api.changePassword(password);
+        toast.success("Password updated");
+        // Route back to the user's own dashboard based on their role
+        const user = await api.getCurrentUser();
+        const roleRoutes: Record<string, string> = {
+          super_admin: "/admin/dashboard",
+          admin: "/admin/dashboard",
+          college_admin: "/college",
+          hod: "/hod",
+          faculty: "/faculty",
+          teacher: "/teacher/dashboard",
+          student: "/student/dashboard",
+        };
+        router.push(user?.role ? (roleRoutes[user.role] || "/student/dashboard") : "/login");
       }
-      toast.success("Password updated");
-      router.push("/onboarding");
     } catch (err: any) {
       toast.error(err?.message || "Unable to update password");
     } finally {

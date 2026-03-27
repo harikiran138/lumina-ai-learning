@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  Users, 
-  Search, 
-  Filter, 
-  Plus, 
-  MoreVertical,
+import {
+  Users,
+  Search,
+  Plus,
   Mail,
   Shield,
   Clock,
@@ -14,6 +12,7 @@ import {
   XCircle,
   MoreHorizontal
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface Teacher {
@@ -33,9 +32,8 @@ export default function TeachersScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/admin/users");
-        const data = await res.json();
-        setTeachers(data.filter((u: any) => u.role === "teacher" || u.role === "admin"));
+        const data = await api.getAllUsers();
+        setTeachers((data || []).filter((u: any) => u.role === "teacher" || u.role === "faculty" || u.role === "hod"));
       } catch (err) {
         console.error("failed_to_load_teachers", err);
       } finally {
@@ -81,7 +79,6 @@ export default function TeachersScreen() {
               />
             </div>
             <button className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-white transition-colors">
-              <Filter className="h-4 w-4" />
               Advanced Filters
             </button>
           </div>
@@ -104,8 +101,12 @@ export default function TeachersScreen() {
                 <tr key={t.id} className="hover:bg-white/[0.02] transition-colors group">
                   <td className="p-4 pl-6">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl overflow-hidden bg-white/5 border border-white/10">
-                        <img src={t.avatar_url} alt="" className="h-full w-full object-cover" />
+                      <div className="h-10 w-10 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center text-xs font-bold text-gray-400">
+                        {t.avatar_url ? (
+                          <img src={t.avatar_url} alt="" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                        ) : (
+                          (t.name || "?").charAt(0).toUpperCase()
+                        )}
                       </div>
                       <div>
                         <p className="text-sm font-bold text-white">{t.name}</p>
