@@ -144,25 +144,7 @@ export class RealAPI {
     return response;
   }
 
-  private getChatStorageKey(): string {
-    return `lumina_chat_history_${this.currentUser?.id || "guest"}`;
-  }
-
-  private readChatHistory(): any[] {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = localStorage.getItem(this.getChatStorageKey());
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch { return []; }
-  }
-
-  private writeChatHistory(messages: any[]): void {
-    if (typeof window === "undefined") return;
-    localStorage.setItem(this.getChatStorageKey(), JSON.stringify(messages.slice(-400)));
-  }
-
+  // --- Auth APIs ---
   async login(email: string, password?: string): Promise<User> {
     if (!password) throw new Error("Password is required for login.");
     const res = await fetchWithRetry(`${this.getApiBase()}/api/auth/login`, {
@@ -280,24 +262,53 @@ export class RealAPI {
     return await res.json();
   }
 
+  // --- Onboarding & Status ---
+  async getOnboardingStatus(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/status");
+    return res.ok ? await res.json() : { step: 0, role: "student" };
+  }
+
+  async getOnboardingSubjects(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/onboarding/subjects");
+    return res.ok ? await res.json() : [];
+  }
+
+  async updateOnboardingStep(step: number, data: any): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/step", {
+      method: "PATCH",
+      body: JSON.stringify({ step, data }),
+    });
+    return await res.json();
+  }
+
+  async completeOnboarding(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/complete", { method: "POST" });
+    return await res.json();
+  }
+
+  // --- Dashboard ---
+  async getDashboardData(userRole: string): Promise<any> {
+    const roleMap: Record<string, string> = {
+      student: "/api/student/dashboard",
+      teacher: "/api/courses/teacher/dashboard",
+      faculty: "/api/courses/teacher/dashboard",
+      college_admin: "/api/college/dashboard",
+      hod: "/api/hod/dashboard"
+    };
+    const path = roleMap[userRole] || `/api/${userRole}/dashboard`;
+    const res = await this.fetchAuthorized(path);
+    return res.ok ? await res.json() : {};
+  }
+
   // --- Student Academic APIs ---
   async getStudentCourses(): Promise<any[]> {
     const res = await this.fetchAuthorized("/api/student/subjects");
     return res.ok ? await res.json() : [];
   }
 
-  async getExploreCourses(): Promise<{ enrolled: any[]; recommended: any[] }> {
-    const enrolled = await this.getStudentCourses();
-    return { enrolled, recommended: [] };
-  }
-
-  async enrollInCourse(courseId: string): Promise<any> {
-    return { success: true, courseId };
-  }
-
-  async getStudentAttendance(): Promise<any[]> {
+  async getStudentAttendance(): Promise<any> {
     const res = await this.fetchAuthorized("/api/student/attendance");
-    return res.ok ? await res.json() : [];
+    return res.ok ? await res.json() : { subjects: [], threshold: 75 };
   }
 
   async getStudentAssignments(): Promise<any[]> {
@@ -318,9 +329,9 @@ export class RealAPI {
     return res.ok ? await res.json() : [];
   }
 
-  async getStudentMaterials(courseId: string): Promise<any[]> {
-    const res = await this.fetchAuthorized(`/api/student/materials/${courseId}`);
-    return res.ok ? await res.json() : [];
+  async getStudentProgress(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/student/dashboard");
+    return res.ok ? await res.json() : null;
   }
 
   // --- Faculty Academic APIs ---
@@ -332,41 +343,42 @@ export class RealAPI {
     return await this.getSubmissions(assignmentId);
   }
 
-  // --- Onboarding & Dashboard ---
-  async updateOnboardingStep(step: number, data: any): Promise<any> {
-    const res = await this.fetchAuthorized("/api/onboarding/step", {
-      method: "PATCH",
-      body: JSON.stringify({ step, data }),
+  async markAttendanceBulk(records: any[]) {
+    const res = await this.fetchAuthorized("/api/attendance", {
+      method: "POST",
+      body: JSON.stringify({ records })
     });
     return await res.json();
   }
 
-  async completeOnboarding(): Promise<any> {
-    const res = await this.fetchAuthorized("/api/onboarding/complete", { method: "POST" });
+  async gradeSubmission(assignmentId: string, submissionId: string, data: { score: number; feedback?: string }) {
+    const res = await this.fetchAuthorized(`/api/assignments/${assignmentId}/submissions/${submissionId}/score`, {
+      method: "PUT",
+      body: JSON.stringify(data)
+    });
     return await res.json();
   }
 
-  async getOnboardingStatus(): Promise<any> {
-    const res = await this.fetchAuthorized("/api/onboarding/status");
-    return res.ok ? await res.json() : { step: 0, role: "student" };
-  }
-
-  async getOnboardingSubjects(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/onboarding/subjects");
+  async listStudents(collegeId: string, params?: { deptId?: string; batchId?: string; section?: string }) {
+    const query = new URLSearchParams();
+    query.append("role", "student");
+    if (params?.deptId) query.append("dept_id", params.deptId);
+    if (params?.batchId) query.append("batch_id", params.batchId);
+    if (params?.section) query.append("section", params.section);
+    
+    const res = await this.fetchAuthorized(`/api/colleges/${collegeId}/users?${query.toString()}`);
     return res.ok ? await res.json() : [];
   }
 
-  async getDashboardData(userRole: string): Promise<any> {
-    const roleMap: Record<string, string> = {
-      student: "/api/student/dashboard",
-      teacher: "/api/courses/teacher/dashboard",
-      faculty: "/api/courses/teacher/dashboard",
-      college_admin: "/api/college/dashboard",
-      hod: "/api/hod/dashboard"
-    };
-    const path = roleMap[userRole] || `/api/${userRole}/dashboard`;
-    const res = await this.fetchAuthorized(path);
-    return res.ok ? await res.json() : {};
+  async listCourses(deptId?: string) {
+    const url = deptId ? `/api/departments/${deptId}/subjects` : "/api/courses/list";
+    const res = await this.fetchAuthorized(url);
+    return res.ok ? await res.json() : [];
+  }
+
+  async getBatches(deptId: string) {
+    const res = await this.fetchAuthorized(`/api/departments/${deptId}/batches`);
+    return res.ok ? await res.json() : [];
   }
 
   // --- College Architecture Helpers ---
@@ -409,17 +421,6 @@ export class RealAPI {
     return await res.json();
   }
 
-  async listFacultyByDept(deptId: string) {
-    const res = await this.fetchAuthorized(`/api/departments/${deptId}/faculty`);
-    return res.ok ? await res.json() : [];
-  }
-
-
-  async getStudentProgress(): Promise<any> {
-    const res = await this.fetchAuthorized("/api/student/dashboard");
-    return res.ok ? await res.json() : null;
-  }
-
   // --- Admin Hierarchy Management ---
   async getInstitutions(): Promise<any[]> {
     const res = await this.fetchAuthorized("/api/institutions");
@@ -439,52 +440,7 @@ export class RealAPI {
     return await res.json();
   }
 
-  async deleteAdminDepartment(deptId: string): Promise<any> {
-    const res = await this.fetchAuthorized(`/api/admin/departments/${deptId}`, {
-      method: "DELETE",
-    });
-    return await res.json();
-  }
-
-  async getAdminClasses(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/admin/classes");
-    return res.ok ? await res.json() : [];
-  }
-
-  async createAdminClass(data: any): Promise<any> {
-    const res = await this.fetchAuthorized("/api/admin/classes", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-    return await res.json();
-  }
-
-  async deleteAdminClass(classId: string): Promise<any> {
-    const res = await this.fetchAuthorized(`/api/admin/classes/${classId}`, {
-      method: "DELETE",
-    });
-    return await res.json();
-  }
-
-  // --- Attendance ---
-  async getAttendance(courseId: string, params?: { batchId?: string; section?: string; date?: string }) {
-    const query = new URLSearchParams();
-    if (params?.batchId) query.append("batch_id", params.batchId);
-    if (params?.section) query.append("section", params.section);
-    if (params?.date) query.append("date", params.date);
-    const res = await this.fetchAuthorized(`/api/attendance/${courseId}?${query.toString()}`);
-    return res.ok ? await res.json() : [];
-  }
-
-  async markAttendanceBulk(records: any[]) {
-    const res = await this.fetchAuthorized("/api/attendance", {
-      method: "POST",
-      body: JSON.stringify({ records })
-    });
-    return await res.json();
-  }
-
-  // --- Assignments & Submissions ---
+  // --- Assignments & Submissions Internal ---
   async getAssignments(courseId?: string, studentId?: string) {
     const query = new URLSearchParams();
     if (courseId) query.append("course_id", courseId);
@@ -493,59 +449,8 @@ export class RealAPI {
     return res.ok ? await res.json() : [];
   }
 
-  async createAssignment(data: {
-    title: string;
-    course_id: string;
-    description: string;
-    due_date: string;
-  }) {
-    // Backend uses Form data
-    const formData = new FormData();
-    formData.append("title", data.title);
-    formData.append("course_id", data.course_id);
-    formData.append("description", data.description);
-    formData.append("due_date", data.due_date);
-
-    const res = await this.fetchAuthorized("/api/assignments/create", {
-      method: "POST",
-      body: formData
-    });
-    return await res.json();
-  }
-
   async getSubmissions(assignmentId: string) {
     const res = await this.fetchAuthorized(`/api/assignments/${assignmentId}/submissions`);
-    return res.ok ? await res.json() : [];
-  }
-
-  async gradeSubmission(assignmentId: string, submissionId: string, data: { score: number; feedback?: string }) {
-    const res = await this.fetchAuthorized(`/api/assignments/${assignmentId}/submissions/${submissionId}/score`, {
-      method: "PUT",
-      body: JSON.stringify(data)
-    });
-    return await res.json();
-  }
-
-  // --- College Architecture (Extended) ---
-  async listStudents(collegeId: string, params?: { deptId?: string; batchId?: string; section?: string }) {
-    const query = new URLSearchParams();
-    query.append("role", "student");
-    if (params?.deptId) query.append("dept_id", params.deptId);
-    if (params?.batchId) query.append("batch_id", params.batchId);
-    if (params?.section) query.append("section", params.section);
-    
-    const res = await this.fetchAuthorized(`/api/colleges/${collegeId}/users?${query.toString()}`);
-    return res.ok ? await res.json() : [];
-  }
-
-  async listCourses(deptId?: string) {
-    const url = deptId ? `/api/departments/${deptId}/subjects` : "/api/courses/list";
-    const res = await this.fetchAuthorized(url);
-    return res.ok ? await res.json() : [];
-  }
-
-  async getBatches(deptId: string) {
-    const res = await this.fetchAuthorized(`/api/departments/${deptId}/batches`);
     return res.ok ? await res.json() : [];
   }
 
