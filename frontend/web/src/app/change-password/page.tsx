@@ -23,7 +23,25 @@ export default function ChangePasswordPage() {
     }
     setSaving(true);
     try {
-      await api.changePassword(password);
+      const tempToken =
+        typeof window !== "undefined" ? sessionStorage.getItem("temp_token") : null;
+      if (tempToken) {
+        const res = await fetch("/api/auth/change-password", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${tempToken}`,
+          },
+          body: JSON.stringify({ newPassword: password, confirmPassword: confirm }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data?.detail || "Unable to update password");
+        }
+        sessionStorage.removeItem("temp_token");
+      } else {
+        await api.changePassword(password);
+      }
       toast.success("Password updated");
       router.push("/onboarding");
     } catch (err: any) {

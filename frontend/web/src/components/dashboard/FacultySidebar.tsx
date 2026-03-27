@@ -17,6 +17,7 @@ import {
   Calendar,
   GraduationCap,
   ClipboardCheck,
+  CheckCircle,
   Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ const navItems = [
   { name: "My Courses", href: "/faculty/courses", icon: BookOpen },
   { name: "Students", href: "/faculty/students", icon: Users },
   { name: "Assignments", href: "/faculty/assignments", icon: ClipboardCheck },
+  { name: "Attendance", href: "/faculty/attendance", icon: CheckCircle },
   {
     name: "Create Assignment",
     href: "/faculty/assignments/create",
@@ -70,7 +72,7 @@ export default function FacultySidebar({
   useEffect(() => {
     const fetchFacultyCourses = async () => {
       try {
-        const courses = await api.getTeacherCourses(); // Backend still uses teacher/courses for consistency in types but route can be scoped
+        const courses = await api.listCourses(); 
         setHasAssignedCourses(Array.isArray(courses) && courses.length > 0);
       } catch {
         setHasAssignedCourses(false);
