@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Brain, ArrowLeft, Info, Search, Filter, Layers, Zap } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { getConfiguredApiBase } from "@/lib/api";
 
 type Node = {
   id: string;
@@ -31,12 +32,20 @@ export default function KnowledgeGraphPage() {
   const [primaryCourseId, setPrimaryCourseId] = useState<string | null>(null);
 
   useEffect(() => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const apiBase = getConfiguredApiBase();
     const token = typeof window !== "undefined" ? sessionStorage.getItem("lumina_token") || "" : "";
     const headers = { Authorization: `Bearer ${token}` };
 
     const fetchGraph = async () => {
       setIsLoading(true);
+      if (!apiBase) {
+        setNodes([]);
+        setEdges([]);
+        setCourseTitle("API not configured");
+        setCoverage(0);
+        setIsLoading(false);
+        return;
+      }
       try {
         // 1. Get enrolled courses from dashboard
         const dashRes = await fetch(`${apiBase}/api/student/dashboard`, { headers });

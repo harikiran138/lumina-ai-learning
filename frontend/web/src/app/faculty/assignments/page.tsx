@@ -16,7 +16,7 @@ import {
   Download,
   Eye,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, getConfiguredApiBase } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function AssignmentsPage() {
@@ -241,10 +241,7 @@ function AssignmentsList({
 function CreateAssignmentForm({ onSuccess }: { onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
-  const apiBase =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.NEXT_PUBLIC_API_BASE ||
-    "http://127.0.0.1:8000";
+  const apiBase = getConfiguredApiBase();
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -262,6 +259,12 @@ function CreateAssignmentForm({ onSuccess }: { onSuccess: () => void }) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+
+    if (!apiBase) {
+      toast.error("Assignment API is not configured for this deployment.");
+      setLoading(false);
+      return;
+    }
 
     const formData = new FormData(e.currentTarget);
     formData.append("created_by", "Teacher");

@@ -1,10 +1,14 @@
 import { MongoClient } from "mongodb";
 import { attachDatabasePool } from "@vercel/functions";
 
-const uri = process.env.MONGODB_URI || process.env.lumina_MONGODB_URI || "";
+const rawUri = process.env.MONGODB_URI || process.env.lumina_MONGODB_URI || "";
+const isPlaceholderMongoUri =
+  rawUri.includes("mongodb+srv://user:pass@cluster.mongodb.net/test") ||
+  rawUri.includes("mongodb://localhost:27017/lumina_db");
+const uri = isPlaceholderMongoUri ? "" : rawUri;
 const options = {};
 const mongoDisabledMessage =
-  "MongoDB URI not found. Database features will be disabled.";
+  "MongoDB URI not configured. Database features will be disabled.";
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient | null>;

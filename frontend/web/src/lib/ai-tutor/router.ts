@@ -1,4 +1,5 @@
 import { getCachedResponse, cacheResponse } from "./cache";
+import { getConfiguredApiBase } from "@/lib/api";
 
 export interface ChatResponse {
   text: string;
@@ -87,14 +88,14 @@ export const processMessage = async (
   const maxAttempts = 2;
 
   // Determine API Base URL
-  const API_BASE =
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1")
-      ? "http://127.0.0.1:8000"
-      : process.env.NEXT_PUBLIC_API_URL ||
-        process.env.NEXT_PUBLIC_API_BASE ||
-        "http://127.0.0.1:8000";
+  const API_BASE = getConfiguredApiBase();
+  if (!API_BASE) {
+    return {
+      text: "The AI tutor API is not configured for this deployment yet.",
+      source: "fallback",
+      latency: Math.round(performance.now() - startTime),
+    };
+  }
 
   while (attempts < maxAttempts) {
     try {

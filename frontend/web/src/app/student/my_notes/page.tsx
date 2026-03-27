@@ -20,6 +20,7 @@ import {
   PenTool,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { getConfiguredApiBase } from "@/lib/api";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import HandwritingUpload from "@/components/HandwritingUpload";
@@ -223,11 +224,12 @@ export default function MyNotesPage() {
       // But typically this path is for the static mount.
       // We'll trust the component handled the upload URL, and here we just store the reference
       // provided by the backend response.
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      const apiBase = getConfiguredApiBase();
       const fullUrl = data.image_path.startsWith("http")
         ? data.image_path
-        : `${API_URL}${data.image_path}`;
+        : apiBase
+          ? `${apiBase}${data.image_path}`
+          : data.image_path;
 
       const newAttachment = {
         name: "Handwritten Note",
