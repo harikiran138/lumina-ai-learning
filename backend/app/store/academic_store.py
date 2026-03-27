@@ -38,7 +38,7 @@ class AcademicStore:
             "program_id": program_id, 
             "semester_id": semester_id
         })
-        return [self._normalize_class(c) for c in classes]
+        return [c for c in (self._normalize_class(c) for c in classes) if c is not None]
 
     async def get_class_by_id(self, class_id: str) -> Optional[dict]:
         cls = await self.db.fetch_one("classes", {"id": class_id})
@@ -143,4 +143,31 @@ class AcademicStore:
 
     async def delete_department(self, dept_id: str) -> bool:
         res = await self.db.delete("departments", {"id": dept_id})
+        return res is not None
+
+    # --- Institution & Program Methods ---
+
+    async def get_institutions(self) -> List[dict]:
+        """Fetch all institutions."""
+        return await self.db.fetch_all("institutions", {})
+
+    async def get_institution_by_id(self, inst_id: str) -> Optional[dict]:
+        return await self.db.fetch_one("institutions", {"id": inst_id})
+
+    async def get_programs(self, institution_id: str) -> List[dict]:
+        """Fetch all programs for an institution."""
+        return await self.db.fetch_all("programs", {"institution_id": institution_id})
+
+    async def get_semesters(self, program_id: str) -> List[dict]:
+        """Fetch all semesters for a program."""
+        return await self.db.fetch_all("semesters", {"program_id": program_id})
+
+    async def list_all_classes(self, limit: int = 1000) -> List[dict]:
+        """Fetch all classes across all programs (for admin view)."""
+        classes = await self.db.fetch_all("classes", limit=limit)
+        return [c for c in (self._normalize_class(c) for c in classes) if c is not None]
+
+    async def delete_class(self, class_id: str) -> bool:
+        """Remove a class/section."""
+        res = await self.db.delete("classes", {"id": class_id})
         return res is not None

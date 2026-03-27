@@ -10,54 +10,23 @@ def check_admin_role(user: dict):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
 
-@router.get("/classes")
-async def get_classes(
-    program_id: Optional[str] = Query(None),
-    semester_id: Optional[str] = Query(None),
+# --- Institutions ---
+@router.get("/institutions")
+async def get_institutions(
     current_user: dict = Depends(get_current_user)
 ):
-    # Admins and teachers can list classes
-    if current_user["role"] not in {"admin", "teacher", "hod"}:
-         raise HTTPException(status_code=403, detail="Unauthorized")
-    return await academic_store.get_classes(program_id, semester_id)
+    """List all institutions (used during onboarding)."""
+    return await academic_store.get_institutions()
 
-@router.post("/classes")
-async def create_class(
-    payload: Dict[str, Any],
+@router.get("/institutions/{inst_id}")
+async def get_institution(
+    inst_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    check_admin_role(current_user)
-    return await academic_store.create_class(payload)
-
-@router.patch("/classes/{class_id}")
-async def update_class(
-    class_id: str,
-    payload: Dict[str, Any],
-    current_user: dict = Depends(get_current_user)
-):
-    check_admin_role(current_user)
-    return await academic_store.update_class(class_id, payload)
-
-@router.delete("/classes/{class_id}")
-async def delete_class(
-    class_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    check_admin_role(current_user)
-    success = await academic_store.delete_class(class_id)
-    if not success:
-        raise HTTPException(status_code=400, detail="Failed to delete class")
-    return {"success": True}
-
-@router.get("/classes/{class_id}")
-async def get_class(
-    class_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    cls = await academic_store.get_class_by_id(class_id)
-    if not cls:
-        raise HTTPException(status_code=404, detail="Class not found")
-    return cls
+    inst = await academic_store.get_institution_by_id(inst_id)
+    if not inst:
+        raise HTTPException(status_code=404, detail="Institution not found")
+    return inst
 
 # --- Departments ---
 @router.get("/departments")
@@ -65,8 +34,7 @@ async def get_departments(
     institution_id: str = Query(..., description="UUID of the institution"),
     current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] not in {"admin", "teacher", "hod"}:
-         raise HTTPException(status_code=403, detail="Unauthorized")
+    # All roles can list departments within an institution during onboarding/setup
     return await academic_store.get_departments(institution_id)
 
 @router.post("/departments")
@@ -76,6 +44,40 @@ async def create_department(
 ):
     check_admin_role(current_user)
     return await academic_store.create_department(payload)
+
+# --- Programs & Semesters ---
+@router.get("/programs")
+async def get_programs(
+    institution_id: str = Query(..., description="UUID of the institution"),
+    current_user: dict = Depends(get_current_user)
+):
+    return await academic_store.get_programs(institution_id)
+
+@router.get("/programs/{program_id}/semesters")
+async def get_semesters(
+    program_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    return await academic_store.get_semesters(program_id)
+
+# --- Classes ---
+@router.get("/classes")
+async def get_classes(
+    program_id: Optional[str] = Query(None),
+    semester_id: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    # Admins, teachers, and hod can list classes. 
+    # Students can also see classes for their semester during onboarding.
+    return await academic_store.get_classes(program_id, semester_id)
+
+@router.post("/classes")
+async def create_class(
+    payload: Dict[str, Any],
+    current_user: dict = Depends(get_current_user)
+):
+    check_admin_role(current_user)
+    return await academic_store.create_class(payload)
 
 @router.patch("/departments/{dept_id}")
 async def update_department(

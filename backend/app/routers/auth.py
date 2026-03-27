@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from datetime import timedelta, datetime
-from app.core.security import create_access_token, verify_password
+from app.core.security import create_access_token, verify_password, get_password_hash
 from app.core.config import settings
 from app.store.user_store import UserStore
 from app.dependencies import get_user_store
+from app.database.supabase_manager import supabase_db
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
@@ -45,6 +46,11 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class AcceptInvite(BaseModel):
+    token: str
+    password: str
+
+
 class LoginResponse(BaseModel):
     accessToken: str
     user: dict
@@ -64,6 +70,46 @@ def _build_claims(user: dict) -> dict:
         "batchId": user.get("batch_id"),
         "email": user.get("email"),
     }
+
+
+def _check_college_login_policy(user: dict):
+    college_id = user.get("college_id")
+    if not college_id:
+        return
+    try:
+        client = supabase_db.get_client()
+        college_resp = client.table("institutions").select("*").eq("id", college_id).limit(1).execute()
+        college = college_resp.data[0] if college_resp.data else None
+    except Exception:
+        college = None
+    if not college:
+        return
+    if college.get("is_active") is False:
+        raise HTTPException(status_code=403, detail="College is inactive")
+    policy = college.get("login_policy") or "email_only"
+    if policy == "sso":
+        raise HTTPException(status_code=403, detail="College requires SSO login")
+    if policy == "oauth_allowed" and not user.get("password_hash"):
+        raise HTTPException(status_code=403, detail="Use OAuth to login")
+
+
+def _require_active_user(user: dict):
+    if user.get("is_active") is False:
+        raise HTTPException(status_code=403, detail="Account is inactive")
+
+
+def _decode_invite_token(token: str) -> dict:
+    try:
+        from jose import jwt
+
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        if payload.get("type") != "invite":
+            raise HTTPException(status_code=400, detail="Invalid invite token")
+        return payload
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid invite token")
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -117,6 +163,8 @@ def login_for_access_token(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    _require_active_user(user)
+    _check_college_login_policy(user)
     if not verify_password(form_data.password, user["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -133,20 +181,73 @@ def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
+@router.post("/accept-invite")
+async def accept_invite(
+    payload: AcceptInvite, user_store: UserStore = Depends(get_user_store)
+):
+    invite_payload = _decode_invite_token(payload.token)
+
+    user_id = invite_payload.get("userId")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid token payload")
+
+    user = await user_store.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    hashed_password = get_password_hash(payload.password)
+    updates = {
+        "password_hash": hashed_password,
+        "is_active": True,
+        "onboarding_step": 0,
+    }
+    if invite_payload.get("collegeId"):
+        updates["college_id"] = invite_payload.get("collegeId")
+    if invite_payload.get("deptId"):
+        updates["dept_id"] = invite_payload.get("deptId")
+    if invite_payload.get("role"):
+        updates["role"] = invite_payload.get("role")
+
+    await user_store.update_user_fields(user_id, updates)
+
+    return {"success": True, "message": "Account activated successfully"}
+
+
 @router.post("/login", response_model=LoginResponse)
 def login_json(
     payload: LoginRequest,
+    response: Response,
     user_store: UserStore = Depends(get_user_store),
 ):
     user = user_store.get_user_by_email_sync(payload.email)
     if not user or not verify_password(payload.password, user["password_hash"]):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
+    _require_active_user(user)
+    _check_college_login_policy(user)
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         subject=user["email"],
         expires_delta=access_token_expires,
         extra_claims=_build_claims(user),
+    )
+
+    refresh_token_expires = timedelta(days=7)
+    refresh_token = create_access_token(
+        subject=user["email"],
+        expires_delta=refresh_token_expires,
+        extra_claims={"type": "refresh"},
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=False,
+        samesite="strict",
+        max_age=int(refresh_token_expires.total_seconds()),
+        path="/",
     )
 
     user_store.update_user_fields_sync(user["id"], {"last_login_at": datetime.utcnow().isoformat()})
@@ -163,6 +264,7 @@ def login_json(
             "batchId": user.get("batch_id"),
             "onboardingStep": user.get("onboarding_step", 0),
             "profilePhotoUrl": user.get("profile_photo_url") or user.get("avatar"),
+            "mustChangePassword": user.get("must_change_password", False),
         },
     }
 
@@ -172,14 +274,16 @@ async def refresh_token(
     request: Request,
     user_store: UserStore = Depends(get_user_store),
 ):
-    # Lightweight refresh using existing auth_token cookie if present
-    raw_token = request.cookies.get("auth_token")
+    # Refresh using refresh_token cookie
+    raw_token = request.cookies.get("refresh_token")
     if not raw_token:
         raise HTTPException(status_code=401, detail="No refresh token found")
 
     try:
         from jose import jwt
         payload = jwt.decode(raw_token, settings.SECRET_KEY, algorithms=["HS256"])
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=401, detail="Invalid refresh token")
         email = payload.get("sub")
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
@@ -194,7 +298,7 @@ async def refresh_token(
         expires_delta=access_token_expires,
         extra_claims=_build_claims(user),
     )
-    return {"token": access_token}
+    return {"accessToken": access_token}
 
 
 async def get_current_user(
@@ -219,6 +323,28 @@ async def get_current_user(
     # Set user in request state for observability middleware (e.g. Sentry)
     request.state.user = user
     return user
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.post("/change-password")
+async def change_password(
+    payload: ChangePasswordRequest,
+    current_user: dict = Depends(get_current_user),
+    user_store: UserStore = Depends(get_user_store),
+):
+    if not verify_password(payload.current_password, current_user["password_hash"]):
+        raise HTTPException(status_code=400, detail="Incorrect current password")
+
+    hashed_password = get_password_hash(payload.new_password)
+    await user_store.update_user_fields(
+        current_user["id"], {"password_hash": hashed_password, "must_change_password": False}
+    )
+
+    return {"success": True, "message": "Password updated successfully"}
 
 
 @router.get("/me", response_model=UserResponse)

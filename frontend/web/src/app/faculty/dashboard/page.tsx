@@ -358,21 +358,21 @@ export default function TeacherDashboard() {
 
             <div className="mt-8 grid gap-4 md:grid-cols-3">
               <QuickAction
-                href="/teacher/create-course"
+                href="/faculty/create-course"
                 icon={PlusCircle}
                 title="Create course"
                 description="Launch a new learning track with modules and publishing controls."
                 tone="gold"
               />
               <QuickAction
-                href="/teacher/assignments/create"
+                href="/faculty/assignments/create"
                 icon={ClipboardCheck}
                 title="Create assignment"
                 description="Set deadlines, collect submissions, and push work into grading."
                 tone="amber"
               />
               <QuickAction
-                href="/teacher/ai-generator"
+                href="/faculty/ai-generator"
                 icon={Sparkles}
                 title="Generate with AI"
                 description="Draft content faster with the course generator and tutor tooling."
@@ -446,7 +446,7 @@ export default function TeacherDashboard() {
           subtitle="Every course now surfaces enrollment, mastery, grading load, and the next deadline."
           action={
             <Link
-              href="/teacher/courses"
+              href="/faculty/courses"
               className="inline-flex items-center gap-2 text-sm font-semibold text-lumina-highlight transition-colors hover:text-white"
             >
               View all courses
@@ -741,7 +741,7 @@ export default function TeacherDashboard() {
         subtitle="Deadlines, submission volume, and grading load are linked here."
         action={
           <Link
-            href="/teacher/assignments"
+            href="/faculty/assignments"
             className="inline-flex items-center gap-2 text-sm font-semibold text-amber-300 transition-colors hover:text-white"
           >
             Open assignments

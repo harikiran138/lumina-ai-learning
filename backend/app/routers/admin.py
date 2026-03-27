@@ -1,8 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
+import csv
+import io
+import uuid
+from pydantic import EmailStr
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from .auth import get_current_user
+from app.routers.auth import get_current_user
 from app.store.user_store import UserStore
 from app.store.course_store import CourseStore
 from app.store.analytics_store import AnalyticsStore
@@ -15,6 +19,22 @@ from app.services.guardian_service import get_guardian_service
 from app.services.compliance_service import get_compliance_service
 from app.database.models import Institution, Department, Stakeholder
 from app.store.academic_store import AcademicStore
+from pydantic import BaseModel
+
+class CreateDeptRequest(BaseModel):
+    institution_id: str
+    department_name: str
+    code: Optional[str] = None
+    hod_id: Optional[str] = None
+
+class CreateClassRequest(BaseModel):
+    department_id: str
+    program_id: str
+    semester_id: str
+    class_name: str
+    batch_name: str
+    student_limit: int = 60
+    teacher_limit: int = 5
 
 router = APIRouter()
 log = structlog.get_logger(__name__)
@@ -620,4 +640,146 @@ async def update_student_credits(
     result = await store.update_credits(student_id, semester_id, earned, total)
     if not result:
         raise HTTPException(status_code=500, detail="Failed to update credits")
-    return {"success": True, "credits": result}
+@router.post("/bulk-enrollment")
+async def bulk_enrollment(
+    file: UploadFile = File(...), admin: dict = Depends(is_admin)
+):
+    """
+    Process CSV for bulk user enrollment and invite generation.
+    Expected CSV: email, full_name, role, dept_code, batch_label, section
+    """
+    if not file.filename.endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only CSV files allowed")
+
+    content = await file.read()
+    decoded = content.decode("utf-8")
+    reader = csv.DictReader(io.StringIO(decoded))
+
+    user_store = UserStore()
+    total_processed = 0
+    users_created = 0
+    enrollment_errors = []
+
+    for row in reader:
+        total_processed += 1
+        try:
+            email = row.get("email")
+            name = row.get("full_name") or row.get("name")
+            role = row.get("role", "student")
+            dept_code = row.get("dept_code")
+            batch_label = row.get("batch_label")
+            section = row.get("section")
+
+            # 1. Check if user exists
+            user = await user_store.get_user_by_email(email)
+            if not user:
+                # 2. Basic User Creation (Inactive)
+                user_id = str(uuid.uuid4())
+                await supabase_db.insert(
+                    "users",
+                    {
+                        "id": user_id,
+                        "email": email,
+                        "full_name": name,
+                        "role": role,
+                        "onboarding_step": 0,
+                        "is_active": False,
+                    },
+                )
+                users_created += 1
+                user = {"id": user_id, "email": email}
+            else:
+                user_id = user["id"]
+
+            # 3. Handle Department / Batch mapping if provided
+            if dept_code:
+                dept = await supabase_db.fetch_one("departments", {"code": dept_code})
+                if dept:
+                    update_data = {"dept_id": dept["id"]}
+                    if batch_label:
+                        batch = await supabase_db.fetch_one(
+                            "batches", {"dept_id": dept["id"], "label": batch_label}
+                        )
+                        if batch:
+                            update_data["batch_id"] = batch["id"]
+                    if section:
+                        update_data["section"] = section
+                    
+                    await user_store.update_user_fields(user_id, update_data)
+
+            # 4. Generate Invite Token
+            invite_token = str(uuid.uuid4())
+            expires_at = (datetime.utcnow() + timedelta(days=7)).isoformat()
+            await supabase_db.insert(
+                "invite_tokens",
+                {"user_id": user_id, "token": invite_token, "expires_at": expires_at},
+            )
+
+        except Exception as e:
+            enrollment_errors.append({"row": row, "error": str(e)})
+
+    return {
+        "success": True, 
+        "results": {
+            "total": total_processed,
+            "created": users_created,
+            "errors": enrollment_errors
+        }
+    }
+
+
+# --- Hierarchy Management ---
+
+@router.get("/departments", response_model=List[dict])
+async def list_all_departments(admin: dict = Depends(is_admin)):
+    """Fetch all departments across institutions."""
+    # For now, we assume a single primary institution if no ID is passed, 
+    # but a full admin should see all.
+    inst_store = InstitutionStore()
+    inst = await inst_store.get_primary_institution()
+    if not inst:
+        return []
+    academic_store = AcademicStore()
+    return await academic_store.get_departments(inst["id"])
+
+
+@router.post("/departments")
+async def create_new_department(payload: CreateDeptRequest, admin: dict = Depends(is_admin)):
+    academic_store = AcademicStore()
+    dept = await academic_store.create_department(payload.dict())
+    if not dept:
+        raise HTTPException(status_code=500, detail="Failed to create department")
+    return {"success": True, "department": dept}
+
+
+@router.delete("/departments/{dept_id}")
+async def delete_department(dept_id: str, admin: dict = Depends(is_admin)):
+    academic_store = AcademicStore()
+    success = await academic_store.delete_department(dept_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Department not found or delete failed")
+    return {"success": True}
+
+
+@router.get("/classes", response_model=List[dict])
+async def list_all_classes(admin: dict = Depends(is_admin)):
+    academic_store = AcademicStore()
+    return await academic_store.list_all_classes()
+
+
+@router.post("/classes")
+async def create_new_class(payload: CreateClassRequest, admin: dict = Depends(is_admin)):
+    academic_store = AcademicStore()
+    new_cls = await academic_store.create_class(payload.dict())
+    if not new_cls:
+        raise HTTPException(status_code=500, detail="Failed to create class")
+    return {"success": True, "class": new_cls}
+
+
+@router.delete("/classes/{class_id}")
+async def delete_class(class_id: str, admin: dict = Depends(is_admin)):
+    academic_store = AcademicStore()
+    success = await academic_store.delete_class(class_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Class not found or delete failed")
+    return {"success": True}
