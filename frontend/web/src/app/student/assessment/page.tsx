@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { api } from "@/lib/api";
+import { api, getConfiguredApiBase } from "@/lib/api";
 import {
   Loader2,
   CheckCircle2,
@@ -102,15 +102,19 @@ export default function AssessmentPage() {
   };
 
   // API Base URL
-  const apiRoot =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.NEXT_PUBLIC_API_BASE ||
-    "http://localhost:8000";
-  const API_BASE = `${apiRoot}/api/assessment`;
+  const apiRoot = getConfiguredApiBase();
+  const API_BASE = apiRoot ? `${apiRoot}/api/assessment` : null;
 
   const startAssessment = async () => {
     console.log("Starting assessment, connecting to:", API_BASE);
     setStatus("loading");
+    if (!API_BASE) {
+      setCompletionReason(
+        "Assessment API is not configured for this deployment. Set NEXT_PUBLIC_API_URL in Vercel.",
+      );
+      setStatus("completed");
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/start`, {
         method: "POST",
@@ -143,6 +147,9 @@ export default function AssessmentPage() {
 
   const fetchReport = async (sid: string) => {
     try {
+      if (!API_BASE) {
+        throw new Error("Assessment API is not configured");
+      }
       const res = await fetch(`${API_BASE}/report/${sid}`);
       if (!res.ok) {
         const txt = await res.text();
@@ -166,6 +173,9 @@ export default function AssessmentPage() {
   const loadNextQuestion = async (sid: string) => {
     setStatus("loading");
     try {
+      if (!API_BASE) {
+        throw new Error("Assessment API is not configured");
+      }
       const res = await fetch(`${API_BASE}/next-question/${sid}`);
 
       if (!res.ok) {

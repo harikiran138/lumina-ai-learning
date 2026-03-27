@@ -1,25 +1,21 @@
 "use server";
 
-import { generateText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Initialize Groq helper - lazily or safely
-const createGroqClient = () => {
-  const apiKey = process.env.GROQ_API_KEY;
+const createGeminiModel = () => {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
   if (!apiKey) {
-    console.error("GROQ_API_KEY is missing");
+    console.error("GEMINI_API_KEY is missing");
     return null;
   }
-  return createOpenAI({
-    apiKey: apiKey,
-    baseURL: "https://api.groq.com/openai/v1",
-  });
+  const client = new GoogleGenerativeAI(apiKey);
+  return client.getGenerativeModel({ model: "gemini-1.5-flash" });
 };
 
 export async function chatWithAI(messages: any[]) {
   try {
-    const groqProvider = createGroqClient();
-    if (!groqProvider) {
+    const model = createGeminiModel();
+    if (!model) {
       return {
         id: "error",
         role: "assistant",
@@ -28,17 +24,21 @@ export async function chatWithAI(messages: any[]) {
       };
     }
 
-    // Convert messages to AI SDK format if needed, but generateText usually takes them directly if they match
-    // Assuming messages are [{ role, content }]
-    const response = await generateText({
-      model: groqProvider("llama-3.1-8b-instant"),
-      messages: messages,
-    });
+    const prompt = messages
+      .map((message) => {
+        const content =
+          typeof message?.content === "string"
+            ? message.content
+            : JSON.stringify(message?.content ?? "");
+        return `${message?.role || "user"}: ${content}`;
+      })
+      .join("\n");
+    const response = await model.generateContent(prompt);
 
     return {
       id: Date.now().toString(),
       role: "assistant",
-      content: response.text,
+      content: response.response.text(),
     };
   } catch (e: any) {
     console.error("Chat AI Error:", e);
