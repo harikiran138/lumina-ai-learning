@@ -49,10 +49,10 @@ class AssignmentStore:
 
     async def submit_assignment(self, assignment_id: str, student_id: str, file_path: str, content: str = "") -> dict:
         submission_data = {
-            "assignment_id": assignment_id,
-            "user_id": student_id,
-            "file_url": file_path,
-            "content": content or "Submitted via Lumina AI",
+            "assignment_id": str(assignment_id),
+            "student_id": str(student_id),
+            "file_path": file_path,
+            "ocr_text": content or "Submitted via Lumina AI",
             "status": "submitted",
             "submitted_at": datetime.utcnow().isoformat()
         }
@@ -60,7 +60,9 @@ class AssignmentStore:
             # First find course_id if possible
             assignment = await self.get_assignment(assignment_id)
             if assignment:
-                submission_data["course_id"] = assignment.get("course_id")
+                # 'course_id' might not exist in submissions schema, let's omit if not there, or keep if it exists. 
+                # (SQL schema check showed no course_id in submissions)
+                pass
 
             result = await self.db.insert("submissions", submission_data)
             if result:
@@ -76,11 +78,10 @@ class AssignmentStore:
         updates = {
             "score": grade,
             "feedback": feedback,
-            "graded_at": datetime.utcnow().isoformat(),
             "status": "graded"
         }
         if extracted_text:
-            updates["extracted_text"] = extracted_text
+            updates["ocr_text"] = extracted_text
 
         try:
             client = self.db.get_client()
@@ -99,7 +100,7 @@ class AssignmentStore:
 
     async def get_student_submission(self, assignment_id: str, student_id: str) -> Optional[dict]:
         try:
-            filters = {"assignment_id": assignment_id, "user_id": student_id}
+            filters = {"assignment_id": str(assignment_id), "student_id": str(student_id)}
             return await self.db.fetch_one("submissions", filters)
         except Exception as e:
             log.error("get_student_submission_failed", error=str(e))

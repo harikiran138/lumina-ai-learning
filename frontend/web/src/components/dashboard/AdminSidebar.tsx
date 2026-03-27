@@ -11,6 +11,8 @@ import {
   Database,
   Shield,
   Landmark,
+  Building2,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -18,6 +20,8 @@ import { api } from "@/lib/api";
 const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Institutions", href: "/admin/institution", icon: Landmark },
+  { name: "Departments", href: "/admin/departments", icon: Building2 },
+  { name: "Classes", href: "/admin/classes", icon: BookOpen },
   { name: "Users", href: "/admin/users", icon: Users },
   { name: "System", href: "/admin/system", icon: Database },
   { name: "Security", href: "/admin/security", icon: Shield },
