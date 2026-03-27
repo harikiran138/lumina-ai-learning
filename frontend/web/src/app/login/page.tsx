@@ -51,6 +51,45 @@ export default function LoginPage() {
   const performLogin = async (loginEmail: string, loginPassword: string) => {
     try {
       const user = await api.login(loginEmail, loginPassword);
+      
+      // Perform an onboarding check via Supabase
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      
+      let needsOnboarding = false;
+      if (user && (user.role === "student" || user.role === "teacher" || user.role === "hod")) {
+        const { data: userMeta } = await supabase
+          .from("user_data")
+          .select("progress")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        const progress = (userMeta?.progress as Record<string, any>) || {};
+        if (progress?.onboarding_status === "COMPLETED") {
+          needsOnboarding = false;
+        } else if (user.role === "student") {
+          const { data } = await supabase
+            .from("student_enrollments")
+            .select("id")
+            .eq("student_id", user.id)
+            .limit(1);
+          if (!data || data.length === 0) needsOnboarding = true;
+        } else {
+          const { data } = await supabase
+            .from("users")
+            .select("department_id")
+            .eq("id", user.id)
+            .single();
+          if (!data?.department_id) needsOnboarding = true;
+        }
+      }
+
+      if (needsOnboarding) {
+        window.location.href = "/onboarding";
+        return;
+      }
+      
       if (user && user.role) {
         window.location.href = `/${user.role}/dashboard`;
       } else {
@@ -79,7 +118,9 @@ export default function LoginPage() {
         createdAt: new Date().toISOString(),
       };
       const user = await api.createUser(newUser);
-      if (user && user.role) {
+      if (user?.role === "student" || user?.role === "teacher" || user?.role === "hod") {
+        window.location.href = "/onboarding";
+      } else if (user && user.role) {
         window.location.href = `/${user.role}/dashboard`;
       } else {
         window.location.href = "/student/dashboard";
