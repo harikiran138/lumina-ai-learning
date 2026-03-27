@@ -88,29 +88,24 @@ const nextConfig = {
       };
     }
 
+    // Bundle analyzer (run with ANALYZE=true npm run build)
+    if (process.env.ANALYZE === "true" && !isServer) {
+      const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
+      config.plugins.push(
+        new BundleAnalyzerPlugin({
+          analyzerMode: "static",
+          reportFilename: "./analyze.html",
+          openAnalyzer: true,
+        }),
+      );
+    }
+
     return config;
   },
 
   eslint: {
     ignoreDuringBuilds: true,
   },
-
-  // Enable bundle analyzer in development
-  ...(process.env.ANALYZE === "true" && {
-    webpack: (config, { isServer }) => {
-      if (!isServer) {
-        const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
-        config.plugins.push(
-          new BundleAnalyzerPlugin({
-            analyzerMode: "static",
-            reportFilename: "./analyze.html",
-            openAnalyzer: true,
-          }),
-        );
-      }
-      return config;
-    },
-  }),
 };
 
 export default nextConfig;

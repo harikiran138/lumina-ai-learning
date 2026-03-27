@@ -55,7 +55,7 @@ export function middleware(request: NextRequest) {
 
   const rawRole = payload.role || 'student'
   const role = normalizeRole(rawRole)
-  const onboardingCompleted = payload.onboarding_completed || false
+  const onboardingCompleted = payload.onboardingCompleted === true
 
   // 1. Force onboarding if not completed
   if (!onboardingCompleted && !pathname.startsWith('/onboarding') && !isPublic) {

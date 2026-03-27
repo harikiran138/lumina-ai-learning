@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from app.core.security import create_access_token, verify_password, get_password_hash
 from app.core.config import settings
 from app.store.user_store import UserStore
@@ -82,6 +82,7 @@ def _build_claims(user: dict) -> dict:
         "deptId": user.get("dept_id") or user.get("department_id"),
         "batchId": user.get("batch_id"),
         "email": user.get("email"),
+        "onboardingCompleted": (user.get("onboarding_step") or 0) >= 5,
     }
 
 
@@ -314,13 +315,13 @@ def login_json(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,
+        secure=settings.SECURE_COOKIES,
         samesite="strict",
         max_age=int(refresh_token_expires.total_seconds()),
         path="/",
     )
 
-    user_store.update_user_fields_sync(user["id"], {"last_login_at": datetime.utcnow().isoformat()})
+    user_store.update_user_fields_sync(user["id"], {"last_login_at": datetime.now(timezone.utc).isoformat()})
 
     return {
         "accessToken": access_token,

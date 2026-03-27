@@ -71,7 +71,7 @@ def _parse_datetime(value: Any) -> Optional[datetime]:
 
 
 def _build_weekly_activity(events: List[Any]) -> List[Dict[str, Any]]:
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     buckets: Dict[str, Dict[str, Any]] = {}
 
     for offset in range(6, -1, -1):
@@ -190,7 +190,7 @@ async def _build_due_assignments(
         for course in courses
         if course.get("id")
     }
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     for course in courses:
         course_id = course.get("id")
@@ -1206,7 +1206,7 @@ async def list_student_assignments(current_user: dict = Depends(get_current_user
         status_value = "pending"
         if submission:
             status_value = "graded" if submission.get("marks") or submission.get("score") else "submitted"
-        elif assignment.get("due_date") and assignment.get("due_date") < datetime.utcnow().isoformat():
+        elif assignment.get("due_date") and assignment.get("due_date") < datetime.now(timezone.utc).isoformat():
             status_value = "overdue"
 
         if status and status != "all" and status_value != status:
@@ -1234,7 +1234,7 @@ async def submit_student_assignment(
     assignment = await supabase_db.fetch_one("assignments", {"id": assignment_id})
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
-    if assignment.get("due_date") and assignment.get("due_date") < datetime.utcnow().isoformat():
+    if assignment.get("due_date") and assignment.get("due_date") < datetime.now(timezone.utc).isoformat():
         raise HTTPException(status_code=400, detail="Submission deadline has passed")
     if current_user.get("batch_id") != assignment.get("batch_id") or current_user.get("section") != assignment.get("section"):
         raise HTTPException(status_code=403, detail="This assignment is not assigned to your batch")
@@ -1254,7 +1254,7 @@ async def submit_student_assignment(
         "content_url": payload.get("content_url"),
         "text_content": payload.get("text_content"),
         "status": "submitted",
-        "submitted_at": datetime.utcnow().isoformat(),
+        "submitted_at": datetime.now(timezone.utc).isoformat(),
     }
     return await supabase_db.insert("submissions", data)
 
