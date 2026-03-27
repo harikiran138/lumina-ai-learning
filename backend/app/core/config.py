@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8000
+    SECURE_COOKIES: bool = False  # Set True in production (HTTPS required)
 
     # AI Configuration - Use GEMINI_API_KEY for both tutor and assessment
     ASSESSMENT_API_KEY: Optional[str] = None

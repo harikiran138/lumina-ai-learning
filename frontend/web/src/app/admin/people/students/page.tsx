@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  Users, 
-  Search, 
-  Filter, 
-  Plus, 
+import {
+  Users,
+  Search,
+  Plus,
   MoreHorizontal,
-  Mail,
   GraduationCap,
   Activity,
   Award,
   BookOpen
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface Student {
@@ -32,9 +31,8 @@ export default function StudentsScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/admin/users");
-        const data = await res.json();
-        setStudents(data.filter((u: any) => u.role === "student"));
+        const data = await api.getAllUsers();
+        setStudents((data || []).filter((u: any) => u.role === "student"));
       } catch (err) {
         console.error("failed_to_load_students", err);
       } finally {
@@ -105,8 +103,12 @@ export default function StudentsScreen() {
                 <tr key={s.id} className="hover:bg-white/[0.02] transition-colors group">
                   <td className="p-4 pl-6">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl overflow-hidden bg-white/5 border border-white/10">
-                        <img src={s.avatar_url} alt="" className="h-full w-full object-cover" />
+                      <div className="h-10 w-10 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center text-xs font-bold text-gray-400">
+                        {s.avatar_url ? (
+                          <img src={s.avatar_url} alt="" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                        ) : (
+                          (s.name || "?").charAt(0).toUpperCase()
+                        )}
                       </div>
                       <div>
                         <p className="text-sm font-bold text-white">{s.name}</p>
@@ -147,6 +149,7 @@ function StatCard({ label, value, sub, icon: Icon, color }: any) {
     emerald: "text-yellow-400 bg-yellow-500/5 border-yellow-500/10",
     purple: "text-yellow-400 bg-yellow-500/5 border-yellow-500/10",
     amber: "text-amber-400 bg-amber-500/5 border-amber-500/10",
+    gold: "text-amber-400 bg-amber-500/5 border-amber-500/10",
   };
   return (
     <div className={cn("glass-v2 border p-5", colors[color])}>

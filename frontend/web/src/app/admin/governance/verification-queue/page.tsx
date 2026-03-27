@@ -40,8 +40,7 @@ export default function VerificationQueue() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/admin/queue-health");
-        const data = await res.json();
+        const data = await api.getVerificationQueue();
         setStats(data);
       } catch (err) {
         console.error("failed_to_load_queue", err);
