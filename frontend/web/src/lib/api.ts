@@ -1,5 +1,38 @@
 // API client for the Lumina FastAPI backend
 
+const LOCAL_API_BASE = "http://127.0.0.1:8000";
+const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
+
+export function getConfiguredApiBase(): string | null {
+  const explicitBase =
+    process.env.NEXT_PUBLIC_API_URL?.trim() ||
+    process.env.NEXT_PUBLIC_API_BASE?.trim();
+
+  if (explicitBase) {
+    return explicitBase.replace(/\/+$/, "");
+  }
+
+  if (
+    typeof window !== "undefined" &&
+    LOCAL_HOSTNAMES.has(window.location.hostname)
+  ) {
+    return LOCAL_API_BASE;
+  }
+
+  return null;
+}
+
+export function requireApiBase(): string {
+  const apiBase = getConfiguredApiBase();
+  if (apiBase) {
+    return apiBase;
+  }
+
+  throw new Error(
+    "API is not configured for this deployment. Set NEXT_PUBLIC_API_URL in Vercel.",
+  );
+}
+
 // ── Cookie helpers for auth token ────────────────────────────────────────────
 function setAuthCookie(token: string): void {
   if (typeof document === 'undefined') return
@@ -92,11 +125,7 @@ export class RealAPI {
   }
 
   private getApiBase(): string {
-    return (
-      process.env.NEXT_PUBLIC_API_URL ||
-      process.env.NEXT_PUBLIC_API_BASE ||
-      "http://127.0.0.1:8000"
-    );
+    return requireApiBase();
   }
 
   private async handleUnauthorized(): Promise<boolean> {

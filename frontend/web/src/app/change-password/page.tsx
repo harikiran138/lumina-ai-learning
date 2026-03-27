@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, getConfiguredApiBase } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function ChangePasswordPage() {
@@ -26,10 +26,10 @@ export default function ChangePasswordPage() {
       const tempToken =
         typeof window !== "undefined" ? sessionStorage.getItem("temp_token") : null;
       if (tempToken) {
-        const apiBase =
-          process.env.NEXT_PUBLIC_API_URL ||
-          process.env.NEXT_PUBLIC_API_BASE ||
-          "http://127.0.0.1:8000";
+        const apiBase = getConfiguredApiBase();
+        if (!apiBase) {
+          throw new Error("Password service is not configured for this deployment.");
+        }
         const res = await fetch(`${apiBase}/api/auth/change-password`, {
           method: "POST",
           headers: {

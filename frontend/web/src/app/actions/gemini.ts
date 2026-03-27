@@ -1,19 +1,15 @@
 "use server";
 
-import { generateText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Initialize Groq helper - lazily or safely
-const createGroqClient = () => {
-  const apiKey = process.env.GROQ_API_KEY;
+const createGeminiModel = () => {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
   if (!apiKey) {
-    console.error("GROQ_API_KEY is missing");
+    console.error("GEMINI_API_KEY is missing");
     return null;
   }
-  return createOpenAI({
-    apiKey: apiKey,
-    baseURL: "https://api.groq.com/openai/v1",
-  });
+  const client = new GoogleGenerativeAI(apiKey);
+  return client.getGenerativeModel({ model: "gemini-1.5-flash" });
 };
 
 import { ObjectId } from "mongodb";
@@ -91,8 +87,8 @@ export async function generateCourseChunk(
   totalChunks: number,
 ) {
   // Check configuration lazily
-  const groqProvider = createGroqClient();
-  if (!groqProvider) {
+  const model = createGeminiModel();
+  if (!model) {
     throw new Error("API Key is required");
   }
 
@@ -135,11 +131,8 @@ export async function generateCourseChunk(
             ${chunkText}
             `;
 
-    const { text } = await generateText({
-      model: groqProvider("llama-3.1-8b-instant"),
-      prompt: chunkPrompt,
-      temperature: 0.1,
-    });
+    const result = await model.generateContent(chunkPrompt);
+    const text = result.response.text();
 
     // Parse JSON safely
     let jsonStr = text;
@@ -164,8 +157,8 @@ export async function analyzeTableOfContents(
   tocText: string,
 ): Promise<{ success: boolean; structure?: any; error?: string }> {
   // Check configuration lazily
-  const groqProvider = createGroqClient();
-  if (!groqProvider) return { success: false, error: "API Key missing" };
+  const model = createGeminiModel();
+  if (!model) return { success: false, error: "API Key missing" };
 
   try {
     const prompt = `
@@ -195,11 +188,8 @@ export async function analyzeTableOfContents(
         OUTPUT JSON ONLY.
         `;
 
-    const { text } = await generateText({
-      model: groqProvider("llama-3.1-8b-instant"),
-      prompt: prompt,
-      temperature: 0.0,
-    });
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
 
     // Parse JSON safely
     let jsonStr = text;
