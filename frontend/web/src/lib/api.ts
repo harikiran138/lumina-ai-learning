@@ -176,6 +176,23 @@ export class RealAPI {
       throw new Error(error.detail || "Authentication failed");
     }
     const tokenData = await res.json();
+    if (tokenData.forcePasswordChange) {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("temp_token", tokenData.tempToken);
+      }
+      const forcedUser: User = {
+        id: tokenData.user?.id || "",
+        email,
+        name: email.split("@")[0],
+        role: "student",
+        status: "active",
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(email.split("@")[0])}&background=random`,
+        createdAt: new Date().toISOString(),
+        mustChangePassword: true,
+      };
+      this.currentUser = forcedUser;
+      return forcedUser;
+    }
     this.token = tokenData.accessToken;
     setAuthCookie(this.token!)
     const userData = tokenData.user;
