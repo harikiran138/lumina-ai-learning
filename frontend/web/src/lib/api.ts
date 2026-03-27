@@ -1102,7 +1102,7 @@ export class RealAPI {
     name: string;
     email: string;
     password: string;
-    role: "student" | "teacher" | "admin";
+    role: "student" | "teacher" | "faculty" | "hod" | "college_admin" | "admin" | "super_admin";
     phone?: string;
   }): Promise<any> {
     const res = await this.fetchAuthorized("/api/admin/users", {

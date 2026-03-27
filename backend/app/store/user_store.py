@@ -32,12 +32,14 @@ class UserStore:
         safe_user.pop("password_hash", None)
         
         # Consistent naming for frontend (name, avatar, status)
-        name = safe_user.get("name") or "Unnamed User"
+        name = safe_user.get("name") or safe_user.get("full_name") or "Unnamed User"
         avatar = safe_user.get("avatar_url") or safe_user.get("avatar")
         if not avatar:
             avatar = f"https://ui-avatars.com/api/?name={name.replace(' ', '+')}&background=111827&color=F9FAFB"
-        
+
         safe_user["name"] = name
+        if not safe_user.get("full_name"):
+            safe_user["full_name"] = name
         safe_user["avatar_url"] = avatar
         safe_user["avatar"] = avatar  # Backward compatibility
         safe_user["status"] = safe_user.get("status", "active")
@@ -91,6 +93,18 @@ class UserStore:
                 return response.data[0]
         except Exception as e:
             log.error("get_user_by_email_failed", error=str(e), email=email)
+        return None
+
+    def get_user_by_email_sync(self, email: str) -> Optional[dict]:
+        try:
+            import anyio.from_thread
+            # If we are inside a threadpool, we just execute it.
+            client = self.db.get_client()
+            response = client.table("users").select("*").eq("email", email).execute()
+            if response.data:
+                return response.data[0]
+        except Exception as e:
+            log.error("get_user_by_email_failed_sync", error=str(e), email=email)
         return None
 
     async def get_user_by_id(self, user_id: str) -> Optional[dict]:
