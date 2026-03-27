@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { CheckCircle2, GraduationCap, Loader2, Plus, Users } from "lucide-react";
+import { CheckCircle2, GraduationCap, Loader2, Plus, Users, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -176,6 +176,13 @@ export default function AdminClassesPage() {
     }
   };
 
+  const handleDraftChange = (classId: string, patch: ClassDraft) => {
+    setDrafts((current) => ({
+      ...current,
+      [classId]: { ...current[classId], ...patch },
+    }));
+  };
+
   const handleCreateClass = async () => {
     if (!selectedProgram || !selectedSemester) return;
     setSaving(true);
@@ -184,20 +191,22 @@ export default function AdminClassesPage() {
       const payload = {
         program_id: selectedProgram,
         semester_id: selectedSemester,
-        department_id: selectedDepartment || null,
-        section_name: newClass.section_name || newClass.class_name,
-        class_name: newClass.class_name,
-        batch_name: newClass.batch_name,
-        academic_year: newClass.academic_year,
-        student_limit: newClass.student_limit === "" ? null : newClass.student_limit,
-        teacher_limit: newClass.teacher_limit === "" ? null : newClass.teacher_limit,
+        department_id: selectedDepartment || "",
+        class_name: newClass.class_name || "",
+        batch_name: newClass.batch_name || "",
+        student_limit: newClass.student_limit === "" ? undefined : Number(newClass.student_limit),
+        teacher_limit: newClass.teacher_limit === "" ? undefined : Number(newClass.teacher_limit),
       };
-      const response = await api.createClass(payload);
+      // Use consolidated admin API
+      const response = await api.createAdminClass(payload);
       if (response?.detail) throw new Error(response.detail);
+      
       setNewClass({ class_name: "", section_name: "", batch_name: "", academic_year: "", student_limit: "", teacher_limit: "" });
-      const classRecords = await api.getClasses(selectedProgram, selectedSemester);
+      
+      // Refresh list
+      const classRecords = await api.getPublicClasses(selectedProgram, selectedSemester);
       setClasses(classRecords || []);
-      setMessage("Class created");
+      setMessage("Class created successfully");
     } catch (err: any) {
       setMessage(err?.message || "Class creation failed");
     } finally {
@@ -205,14 +214,26 @@ export default function AdminClassesPage() {
     }
   };
 
-  const handleDraftChange = (classId: string, patch: ClassDraft) => {
-    setDrafts((current) => ({
-      ...current,
-      [classId]: { ...current[classId], ...patch },
-    }));
+  const handleDeleteClass = async (classId: string) => {
+    if (!window.confirm("Are you sure? This will delete the class and all its associations.")) return;
+    setSaving(true);
+    setMessage(null);
+    try {
+      const response = await api.deleteAdminClass(classId);
+      if (response?.detail) throw new Error(response.detail);
+      
+      setMessage("Class deleted");
+      const classRecords = await api.getPublicClasses(selectedProgram, selectedSemester);
+      setClasses(classRecords || []);
+    } catch (err: any) {
+      setMessage(err?.message || "Delete failed");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleUpdateClass = async (classId: string) => {
+    // ... existing logic ...
     setSaving(true);
     setMessage(null);
     try {
@@ -220,10 +241,10 @@ export default function AdminClassesPage() {
       const response = await api.updateClass(classId, payload);
       if (response?.detail) throw new Error(response.detail);
       setMessage("Class updated");
-      const classRecords = await api.getClasses(selectedProgram, selectedSemester);
+      const classRecords = await api.getPublicClasses(selectedProgram, selectedSemester);
       setClasses(classRecords || []);
     } catch (err: any) {
-      setMessage(err?.message || "Class update failed");
+      setMessage(err?.message || "Update failed");
     } finally {
       setSaving(false);
     }
@@ -582,7 +603,15 @@ export default function AdminClassesPage() {
                     </div>
                   )}
 
-                  <div className="mt-6 flex justify-end">
+                  <div className="mt-6 flex justify-between gap-4">
+                    <button
+                      onClick={() => handleDeleteClass(cls.id)}
+                      disabled={saving}
+                      className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-400/10"
+                    >
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      Delete class
+                    </button>
                     <button
                       onClick={() => handleUpdateClass(cls.id)}
                       disabled={saving}
@@ -594,7 +623,7 @@ export default function AdminClassesPage() {
                       )}
                     >
                       {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                      Save class
+                      Save changes
                     </button>
                   </div>
                 </div>

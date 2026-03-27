@@ -140,6 +140,7 @@ export default function AdminDepartmentsPage() {
     setMessage(null);
     try {
       const payload = {
+        institution_id: selectedInstitution,
         department_name: newDepartment.department_name,
         description: newDepartment.description,
         code: newDepartment.code,
@@ -147,13 +148,31 @@ export default function AdminDepartmentsPage() {
         class_limit: newDepartment.class_limit === "" ? null : newDepartment.class_limit,
         course_limit: newDepartment.course_limit === "" ? null : newDepartment.course_limit,
       };
-      const response = await api.createDepartment(selectedInstitution, payload);
+      // Use the new consolidated admin API
+      const response = await api.createAdminDepartment(payload);
       if (response?.detail) throw new Error(response.detail);
       setNewDepartment({ department_name: "", description: "", code: "", teacher_limit: "", class_limit: "", course_limit: "" });
       setShowAdd(false);
       await load(selectedInstitution);
+      setMessage("Department created successfully");
     } catch (err: any) {
       setMessage(err?.message || "Create failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (deptId: string) => {
+    if (!window.confirm("Are you sure you want to delete this department? This action cannot be undone.")) return;
+    setSaving(true);
+    setMessage(null);
+    try {
+      const response = await api.deleteAdminDepartment(deptId);
+      if (response?.detail) throw new Error(response.detail);
+      setMessage("Department deleted");
+      await load(selectedInstitution);
+    } catch (err: any) {
+      setMessage(err?.message || "Delete failed");
     } finally {
       setSaving(false);
     }

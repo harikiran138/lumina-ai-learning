@@ -21,4 +21,9 @@ from app.routers import (
     researcher,
     alumni,
     curriculum,
+    onboarding,
+    college_architecture,
+    attendance,
+    materials,
+    faculty,
 )

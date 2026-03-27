@@ -17,14 +17,25 @@ class AssignmentStore:
         self.db = supabase_db
 
     async def create_assignment(
-        self, title: str, course_id: str, description: str, due_date: str, created_by: str
+        self,
+        title: str,
+        course_id: str,
+        description: str,
+        due_date: str,
+        created_by: str,
+        batch_id: Optional[str] = None,
+        section: Optional[str] = None,
+        max_marks: Optional[int] = None,
     ) -> dict:
         assignment_data = {
             "title": title,
             "course_id": course_id,
             "description": description,
             "due_date": due_date,
-            "created_by": created_by
+            "teacher_id": created_by,
+            "batch_id": batch_id,
+            "section": section,
+            "max_marks": max_marks,
             # "assignment_type": "essay"  # Optional, rely on DB default
         }
         try:
@@ -50,7 +61,9 @@ class AssignmentStore:
     async def submit_assignment(self, assignment_id: str, student_id: str, file_path: str, content: str = "") -> dict:
         submission_data = {
             "assignment_id": str(assignment_id),
+            "assignment_uuid": str(assignment_id),
             "student_id": str(student_id),
+            "student_uuid": str(student_id),
             "file_path": file_path,
             "ocr_text": content or "Submitted via Lumina AI",
             "status": "submitted",
@@ -77,8 +90,10 @@ class AssignmentStore:
     ) -> bool:
         updates = {
             "score": grade,
+            "marks": grade,
             "feedback": feedback,
-            "status": "graded"
+            "status": "graded",
+            "graded_at": datetime.utcnow().isoformat(),
         }
         if extracted_text:
             updates["ocr_text"] = extracted_text

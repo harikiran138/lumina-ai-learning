@@ -19,7 +19,7 @@ assignment_store = AssignmentStore()
 teacher_store = TeacherStore()
 
 def check_teacher_role(user: dict):
-    if user.get("role") not in {"teacher", "admin", "hod"}:
+    if user.get("role") not in {"teacher", "faculty", "admin", "hod"}:
         raise HTTPException(status_code=403, detail="Teacher access required")
 
 @router.get("/dashboard/summary")

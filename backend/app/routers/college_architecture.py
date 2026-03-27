@@ -226,12 +226,25 @@ async def assign_subject(subject_id: str, payload: Dict[str, Any], current_user:
 
 
 @router.get("/colleges/{college_id}/users")
-async def list_users(college_id: str, role: Optional[str] = None, current_user: dict = Depends(get_current_user)):
-    _require_roles(current_user, {"super_admin", "college_admin", "hod"})
+async def list_users(
+    college_id: str,
+    role: Optional[str] = None,
+    dept_id: Optional[str] = None,
+    batch_id: Optional[str] = None,
+    section: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+):
+    _require_roles(current_user, {"super_admin", "college_admin", "hod", "faculty"})
     _enforce_college_scope(current_user, college_id)
     filters = {"college_id": college_id}
     if role:
         filters["role"] = role
+    if dept_id:
+        filters["dept_id"] = dept_id
+    if batch_id:
+        filters["batch_id"] = batch_id
+    if section:
+        filters["section"] = section
     return await supabase_db.fetch_all("users", filters)
 
 

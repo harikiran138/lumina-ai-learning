@@ -37,6 +37,69 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
     user_id = current_user.get("id")
     requested_step = int(payload.get("step", 0))
     step_data = payload.get("data") or {}
+    role = _normalize_role(current_user.get("role"))
+
+    def require_fields(fields: list[str]):
+        missing = [f for f in fields if not step_data.get(f)]
+        if missing:
+            raise HTTPException(status_code=400, detail=f"Missing required fields: {', '.join(missing)}")
+
+    if role == "college_admin":
+        if requested_step == 1:
+            require_fields(["collegeName", "collegeCode"])
+        if requested_step == 2:
+            depts = step_data.get("departments") or []
+            if not depts:
+                raise HTTPException(status_code=400, detail="At least one department required")
+            for dept in depts:
+                if not dept.get("name") or not dept.get("abbreviation"):
+                    raise HTTPException(status_code=400, detail="Department name and abbreviation required")
+        if requested_step == 3:
+            require_fields(["academicYear"])
+        if requested_step == 5:
+            if step_data.get("activateCollege") is not True:
+                raise HTTPException(status_code=400, detail="College activation required")
+    elif role == "hod":
+        if requested_step == 1:
+            require_fields(["name", "abbreviation"])
+        if requested_step == 2:
+            subjects = step_data.get("subjects") or []
+            if not subjects:
+                raise HTTPException(status_code=400, detail="At least one subject required")
+            for subject in subjects:
+                if not subject.get("name") or not subject.get("code") or not subject.get("credits") or not subject.get("semester"):
+                    raise HTTPException(status_code=400, detail="Subject name, code, credits, semester required")
+        if requested_step == 3:
+            batches = step_data.get("batches") or []
+            if not batches:
+                raise HTTPException(status_code=400, detail="At least one batch required")
+            for batch in batches:
+                if not batch.get("year") or not batch.get("label") or not batch.get("sections"):
+                    raise HTTPException(status_code=400, detail="Batch year, label, sections required")
+    elif role == "faculty":
+        if requested_step == 1:
+            require_fields(["fullName", "employeeId"])
+        if requested_step == 2:
+            confirmed = step_data.get("confirmedAssignmentIds")
+            if isinstance(confirmed, list) and confirmed:
+                pass
+            elif step_data.get("confirmedAssignments") is True:
+                pass
+            else:
+                raise HTTPException(status_code=400, detail="Assignment confirmation required")
+        if requested_step == 4:
+            require_fields(["gradingScale"])
+    elif role == "student":
+        if requested_step == 1:
+            require_fields(["fullName", "registerNumber", "dob"])
+        if requested_step == 2:
+            if step_data.get("confirmBatch") is not True:
+                raise HTTPException(status_code=400, detail="Batch confirmation required")
+        if requested_step == 4:
+            if not step_data.get("photoUrl") and not step_data.get("profilePhotoUrl"):
+                raise HTTPException(status_code=400, detail="Profile photo required")
+    elif role == "super_admin":
+        requested_step = 5
 
     # Update user fields if provided in step data
     updates = {}

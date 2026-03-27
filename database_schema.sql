@@ -1341,6 +1341,7 @@ CREATE TABLE public.users (
     profile_photo_url text,
     onboarding_step integer DEFAULT 0,
     last_login_at timestamp with time zone,
+    must_change_password boolean DEFAULT false,
     PRIMARY KEY (id)
 );
 
@@ -1359,6 +1360,8 @@ CREATE TABLE public.enrollment_codes (
     code text NOT NULL,
     expires_at timestamp with time zone NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
+    section text,
+    created_by uuid REFERENCES public.users(id),
     PRIMARY KEY (id)
 );
 

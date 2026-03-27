@@ -27,7 +27,7 @@ export default function StudentAssignmentsPage() {
   const fetchAssignments = async () => {
     try {
       setError(null);
-      const data = await api.getAssignments();
+      const data = await api.getStudentAssignments();
       setAssignments(data);
     } catch (err: any) {
       console.error(err);
@@ -48,9 +48,12 @@ export default function StudentAssignmentsPage() {
       setSubmitting(assignmentId);
       setError(null);
 
-      const data = await api.submitAssignment(assignmentId, file);
+      const data = await api.submitStudentAssignment(assignmentId, {
+        content_url: `upload://${file.name}`,
+        text_content: "",
+      });
 
-      if (data.status === "success" || data.id) {
+      if (data?.id || data?.success) {
         toast.success("Assignment submitted successfully!");
         fetchAssignments();
       } else {
@@ -86,6 +89,10 @@ export default function StudentAssignmentsPage() {
           )}
 
           {assignments.map((asm: any) => (
+            (() => {
+              const submission = asm.submission || asm.user_submission;
+              const gradeValue = submission?.marks ?? submission?.score;
+              return (
             <div
               key={asm.id}
               className="backdrop-blur-xl bg-white/5 border border-white/10 p-6 rounded-2xl flex flex-col md:flex-row justify-between gap-6 hover:border-amber-500/30 transition-colors"
@@ -93,10 +100,10 @@ export default function StudentAssignmentsPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="bg-amber-900/40 text-amber-400 text-xs px-2 py-1 rounded uppercase tracking-wide font-semibold">
-                    {asm.course_id}
+                    {asm.courseName || asm.course_id}
                   </span>
                   <span className="text-gray-400 text-sm flex items-center gap-1">
-                    Due: {new Date(asm.due_date).toLocaleDateString()}
+                    Due: {asm.due_date ? new Date(asm.due_date).toLocaleDateString() : "TBD"}
                   </span>
                 </div>
                 <h2 className="text-xl font-bold text-white mb-2">
@@ -106,32 +113,32 @@ export default function StudentAssignmentsPage() {
                   {asm.description}
                 </p>
 
-                {asm.user_submission && (
+                {submission && (
                   <div className="space-y-2 mt-2">
                     <div className="flex items-center gap-2 text-green-400 text-sm">
                       <CheckCircle className="w-4 h-4" />
                       <span>
                         Submitted on{" "}
                         {new Date(
-                          asm.user_submission.submitted_at,
+                          submission.submitted_at || submission.created_at || submission.updated_at,
                         ).toLocaleString()}
                       </span>
                     </div>
 
-                    {asm.user_submission.grade !== null && (
+                    {gradeValue !== null && gradeValue !== undefined && (
                       <div className="bg-white/5 p-4 rounded-xl border border-white/10 mt-2">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm text-gray-400">Grade</span>
                           <span className="text-2xl font-bold text-green-400">
-                            {asm.user_submission.grade}/100
+                            {gradeValue}/100
                           </span>
                         </div>
-                        {asm.user_submission.feedback && (
+                        {submission.feedback && (
                           <div className="text-sm text-gray-300">
                             <span className="text-gray-500 block mb-1">
                               Feedback:
                             </span>
-                            {asm.user_submission.feedback}
+                            {submission.feedback}
                           </div>
                         )}
                       </div>
@@ -141,7 +148,7 @@ export default function StudentAssignmentsPage() {
               </div>
 
               <div className="flex flex-col gap-3 justify-center min-w-[200px]">
-                {asm.user_submission ? (
+                {submission ? (
                   <button
                     disabled
                     className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium text-sm bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700"
@@ -182,6 +189,8 @@ export default function StudentAssignmentsPage() {
                 )}
               </div>
             </div>
+              );
+            })()
           ))}
         </div>
       )}
