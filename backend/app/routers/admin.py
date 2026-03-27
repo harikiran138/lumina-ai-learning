@@ -321,6 +321,38 @@ async def create_department(inst_id: str, data: dict, admin: dict = Depends(is_a
     return await InstitutionStore().create_department(data)
 
 
+@router.patch("/institutions/{inst_id}/departments/{dept_id}")
+async def update_department(
+    inst_id: str,
+    dept_id: str,
+    data: dict,
+    admin: dict = Depends(is_admin),
+):
+    """Update department metadata and limits."""
+    allowed = {
+        "department_name",
+        "description",
+        "code",
+        "teacher_limit",
+        "class_limit",
+        "course_limit",
+        "metadata",
+    }
+    payload = {k: v for k, v in data.items() if k in allowed}
+    if not payload:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+
+    payload["updated_at"] = datetime.utcnow().isoformat()
+    result = await supabase_db.update(
+        "departments",
+        payload,
+        {"id": dept_id, "institution_id": inst_id},
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="Department not found")
+    return result[0]
+
+
 @router.patch("/institutions/{inst_id}/departments/{dept_id}/hod")
 async def assign_hod(
     inst_id: str,
@@ -364,6 +396,96 @@ async def create_program(inst_id: str, data: dict, admin: dict = Depends(is_admi
     """Create a new program under an institution (and optional department)."""
     data["institution_id"] = inst_id
     return await InstitutionStore().create_program(data)
+
+
+@router.get("/programs/{program_id}/semesters")
+async def list_semesters(program_id: str, admin: dict = Depends(is_admin)):
+    """List semesters for a program."""
+    return await supabase_db.fetch_all("semesters", {"program_id": program_id})
+
+
+@router.post("/programs/{program_id}/semesters")
+async def create_semester(program_id: str, data: dict, admin: dict = Depends(is_admin)):
+    """Create a semester under a program."""
+    semester_number = data.get("semester_number")
+    if semester_number is None:
+        raise HTTPException(status_code=400, detail="Missing semester_number")
+    payload = {
+        "program_id": program_id,
+        "semester_number": semester_number,
+        "title": data.get("title"),
+    }
+    return await supabase_db.insert("semesters", payload)
+
+
+@router.patch("/classes/{class_id}")
+async def update_class(class_id: str, data: dict, admin: dict = Depends(is_admin)):
+    """Update class metadata and limits."""
+    allowed = {
+        "section_name",
+        "class_name",
+        "batch_name",
+        "batch",
+        "section",
+        "academic_year",
+        "semester_id",
+        "program_id",
+        "student_limit",
+        "teacher_limit",
+        "metadata",
+    }
+    payload = {k: v for k, v in data.items() if k in allowed}
+    if not payload:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+
+    payload["updated_at"] = datetime.utcnow().isoformat()
+    result = await supabase_db.update("classes", payload, {"id": class_id})
+    if not result:
+        raise HTTPException(status_code=404, detail="Class not found")
+    return result[0]
+
+
+@router.get("/classes/{class_id}/summary")
+async def class_summary(class_id: str, admin: dict = Depends(is_admin)):
+    """Summarize class capacity usage and assignments."""
+    client = supabase_db.get_client()
+    students = (
+        client.table("student_enrollments")
+        .select("id")
+        .eq("class_id", class_id)
+        .execute()
+        .data
+        or []
+    )
+    assignments = (
+        client.table("teacher_assignments")
+        .select("*")
+        .eq("class_id", class_id)
+        .execute()
+        .data
+        or []
+    )
+    teacher_ids = list({item.get("teacher_id") for item in assignments if item.get("teacher_id")})
+    course_ids = list({item.get("course_id") for item in assignments if item.get("course_id")})
+
+    courses = {}
+    if course_ids:
+        course_rows = (
+            client.table("courses")
+            .select("id, title, course_name, name, course_code, code")
+            .in_("id", course_ids)
+            .execute()
+            .data
+            or []
+        )
+        courses = {row["id"]: row for row in course_rows}
+
+    return {
+        "students_count": len(students),
+        "teachers_count": len(teacher_ids),
+        "assignments": assignments,
+        "courses": list(courses.values()),
+    }
 
 
 @router.post("/connections/link")
