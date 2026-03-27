@@ -20,7 +20,7 @@ interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: "student" | "teacher" | "admin";
+  role: "student" | "teacher" | "faculty" | "hod" | "college_admin" | "admin" | "super_admin";
   status: "active" | "inactive" | "suspended";
   avatar: string;
   createdAt?: string | null;
@@ -30,7 +30,7 @@ const DEFAULT_FORM = {
   name: "",
   email: "",
   password: "",
-  role: "student" as "student" | "teacher" | "admin",
+  role: "student" as AdminUser["role"],
 };
 
 function formatDate(value?: string | null) {
@@ -85,7 +85,11 @@ export default function AdminUsersPage() {
   });
 
   const roleCounts = {
+    super_admin: users.filter((item) => item.role === "super_admin").length,
+    college_admin: users.filter((item) => item.role === "college_admin").length,
     admin: users.filter((item) => item.role === "admin").length,
+    hod: users.filter((item) => item.role === "hod").length,
+    faculty: users.filter((item) => item.role === "faculty").length,
     teacher: users.filter((item) => item.role === "teacher").length,
     student: users.filter((item) => item.role === "student").length,
   };
@@ -176,9 +180,11 @@ export default function AdminUsersPage() {
 
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <p className="text-sm font-semibold text-white">Current access footprint</p>
-            <div className="mt-5 grid grid-cols-2 gap-4">
-              <SummaryTile label="Admins" value={roleCounts.admin} />
-              <SummaryTile label="Teachers" value={roleCounts.teacher} />
+            <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-3">
+              <SummaryTile label="Super Admin" value={roleCounts.super_admin} />
+              <SummaryTile label="College Admin" value={roleCounts.college_admin} />
+              <SummaryTile label="HOD" value={roleCounts.hod} />
+              <SummaryTile label="Faculty" value={roleCounts.faculty + roleCounts.teacher} />
               <SummaryTile label="Students" value={roleCounts.student} />
               <SummaryTile label="Active" value={statusCounts.active} />
             </div>
@@ -217,8 +223,12 @@ export default function AdminUsersPage() {
             className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-amber-400/40"
           >
             <option value="all">All roles</option>
-            <option value="admin">Admins</option>
-            <option value="teacher">Teachers</option>
+            <option value="super_admin">Super Admin</option>
+            <option value="college_admin">College Admin</option>
+            <option value="admin">Admin (legacy)</option>
+            <option value="hod">HOD</option>
+            <option value="faculty">Faculty</option>
+            <option value="teacher">Teacher (legacy)</option>
             <option value="student">Students</option>
           </select>
 
@@ -282,8 +292,12 @@ export default function AdminUsersPage() {
                           className="rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-amber-400/40 disabled:opacity-50"
                         >
                           <option value="student">Student</option>
-                          <option value="teacher">Teacher</option>
-                          <option value="admin">Admin</option>
+                          <option value="faculty">Faculty</option>
+                          <option value="hod">HOD</option>
+                          <option value="college_admin">College Admin</option>
+                          <option value="super_admin">Super Admin</option>
+                          <option value="teacher">Teacher (legacy)</option>
+                          <option value="admin">Admin (legacy)</option>
                         </select>
                       </td>
                       <td className="px-6 py-5">
@@ -417,8 +431,12 @@ export default function AdminUsersPage() {
                   className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-amber-400/40"
                 >
                   <option value="student">Student</option>
-                  <option value="teacher">Teacher</option>
-                  <option value="admin">Admin</option>
+                  <option value="faculty">Faculty</option>
+                  <option value="hod">HOD</option>
+                  <option value="college_admin">College Admin</option>
+                  <option value="super_admin">Super Admin</option>
+                  <option value="teacher">Teacher (legacy)</option>
+                  <option value="admin">Admin (legacy)</option>
                 </select>
               </FormField>
 

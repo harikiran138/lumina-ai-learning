@@ -340,6 +340,11 @@ CREATE TABLE public.institutions (
     institution_name text NOT NULL,
     email text NOT NULL UNIQUE,
     onboarding_status text DEFAULT 'PENDING'::text,
+    code text,
+    logo_url text,
+    academic_year text,
+    login_policy text DEFAULT 'email_only'::text,
+    is_active boolean DEFAULT true,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     password_hash text,
@@ -963,6 +968,9 @@ CREATE TABLE public.courses (
     metadata jsonb DEFAULT '{}'::jsonb,
     credits integer DEFAULT 3,
     teacher_limit integer,
+    semester integer,
+    type text,
+    college_id uuid,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     semester_id uuid,
@@ -1323,6 +1331,34 @@ CREATE TABLE public.users (
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     department_id uuid,
+    college_id uuid,
+    dept_id uuid,
+    batch_id uuid,
+    section text,
+    student_roll text,
+    employee_id text,
+    full_name text,
+    profile_photo_url text,
+    onboarding_step integer DEFAULT 0,
+    last_login_at timestamp with time zone,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE public.invite_tokens (
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    user_id uuid,
+    token text NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE public.enrollment_codes (
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    batch_id uuid,
+    code text NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
     PRIMARY KEY (id)
 );
 
@@ -1452,6 +1488,7 @@ CREATE TABLE public.classes (
     created_at timestamp with time zone DEFAULT now(),
     department_id uuid,
     batch_year text,
+    batch_id uuid,
     PRIMARY KEY (id)
 );
 
@@ -1479,6 +1516,10 @@ CREATE TABLE public.teacher_assignments (
     teacher_id uuid,
     course_id uuid,
     class_id uuid,
+    batch_id uuid,
+    section text,
+    academic_year text,
+    is_co_teacher boolean DEFAULT false,
     is_primary boolean DEFAULT true,
     created_at timestamp with time zone DEFAULT now(),
     PRIMARY KEY (id)
@@ -1491,6 +1532,9 @@ CREATE TABLE public.departments (
     description text,
     hod_id uuid,
     code text,
+    abbreviation text,
+    intake_strength integer,
+    established_year integer,
     teacher_limit integer,
     class_limit integer,
     course_limit integer,
@@ -1498,6 +1542,21 @@ CREATE TABLE public.departments (
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     PRIMARY KEY (id)
+);
+
+CREATE TABLE public.batches (
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    college_id uuid,
+    dept_id uuid,
+    year integer NOT NULL,
+    label text NOT NULL,
+    sections text[] DEFAULT '{}'::text[],
+    current_semester integer DEFAULT 1,
+    is_lateral boolean DEFAULT false,
+    created_at timestamp with time zone DEFAULT now(),
+    PRIMARY KEY (id),
+    FOREIGN KEY (college_id) REFERENCES public.institutions(id),
+    FOREIGN KEY (dept_id) REFERENCES public.departments(id)
 );
 
 CREATE TABLE public.content_uploads (
