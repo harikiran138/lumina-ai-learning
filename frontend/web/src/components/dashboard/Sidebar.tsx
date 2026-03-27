@@ -35,6 +35,7 @@ const roleNavItems: Record<string, any[]> = {
     { name: "Attendance", href: "/student/attendance", icon: Calendar },
     { name: "My Courses", href: "/student/courses", icon: BookOpen },
     { name: "Assignments", href: "/student/assignments", icon: FileText },
+    { name: "Results", href: "/student/grades", icon: BarChart2 },
     { name: "AI Tutor", href: "/student/ai_tutor", icon: Bot },
     { name: "Assessment", href: "/student/assessment", icon: Brain },
     { name: "Progress", href: "/student/progress", icon: BarChart2 },
