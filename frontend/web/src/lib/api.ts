@@ -52,7 +52,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "teacher" | "hod" | "student" | "parent" | "mentor" | "peer_tutor" | "counselor" | "content_creator" | "researcher" | "alumni";
+  role: "super_admin" | "college_admin" | "admin" | "hod" | "faculty" | "teacher" | "student" | "parent" | "mentor" | "peer_tutor" | "counselor" | "content_creator" | "researcher" | "alumni";
   status: "active" | "suspended" | "inactive";
   avatar: string;
   createdAt: string;
@@ -183,13 +183,15 @@ export class RealAPI {
       throw new Error("Password is required for login.");
     }
 
-    const formData = new URLSearchParams();
-    formData.append("username", email);
-    formData.append("password", password);
+    const payload = {
+      email: email,
+      password: password
+    };
 
-    const res = await fetchWithRetry(`${this.getApiBase()}/api/auth/token`, {
+    const res = await fetchWithRetry(`${this.getApiBase()}/api/auth/login`, {
       method: "POST",
-      body: formData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
@@ -1424,6 +1426,27 @@ export class RealAPI {
 
   async rejectTeacherRequest(requestId: string): Promise<any> {
     const res = await this.fetchAuthorized(`/api/hod/requests/${requestId}/reject`, {
+      method: "POST",
+    });
+    return await res.json();
+  }
+
+  // --- Onboarding ---
+  async getOnboardingStatus(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/status");
+    return await res.json();
+  }
+
+  async updateOnboardingStep(step: number, data: Record<string, any>): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/step", {
+      method: "PATCH",
+      body: JSON.stringify({ step, data }),
+    });
+    return await res.json();
+  }
+
+  async completeOnboarding(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/complete", {
       method: "POST",
     });
     return await res.json();
