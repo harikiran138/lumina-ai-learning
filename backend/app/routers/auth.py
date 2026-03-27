@@ -63,8 +63,10 @@ class ResetPasswordRequest(BaseModel):
 
 
 class LoginResponse(BaseModel):
-    accessToken: str
-    user: dict
+    accessToken: Optional[str] = None
+    user: Optional[dict] = None
+    forcePasswordChange: Optional[bool] = None
+    tempToken: Optional[str] = None
 
 def _normalize_role(role: str) -> str:
     if role == "admin":

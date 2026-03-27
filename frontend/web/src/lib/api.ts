@@ -1,5 +1,4 @@
 // API client for the Lumina FastAPI backend
-import localforage from "localforage";
 
 // ── Cookie helpers for auth token ────────────────────────────────────────────
 function setAuthCookie(token: string): void {
@@ -347,6 +346,16 @@ export class RealAPI {
     return await res.json();
   }
 
+  async getOnboardingStatus(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/status");
+    return res.ok ? await res.json() : { step: 0, role: "student" };
+  }
+
+  async getOnboardingSubjects(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/onboarding/subjects");
+    return res.ok ? await res.json() : [];
+  }
+
   async getDashboardData(userRole: string): Promise<any> {
     const roleMap: Record<string, string> = {
       student: "/api/student/dashboard",
@@ -404,6 +413,7 @@ export class RealAPI {
     const res = await this.fetchAuthorized(`/api/departments/${deptId}/faculty`);
     return res.ok ? await res.json() : [];
   }
+
 
   async getStudentProgress(): Promise<any> {
     const res = await this.fetchAuthorized("/api/student/dashboard");
@@ -545,6 +555,8 @@ export class RealAPI {
   async createBatch(deptId: string, data: any) { return this.architectureCreateBatch(deptId, data); }
   async createSubject(deptId: string, data: any) { return this.architectureCreateSubject(deptId, data); }
   async inviteUser(collegeId: string, data: any) { return this.architectureInviteUser(collegeId, data); }
+  async updateCollege(collegeId: string, data: any) { return this.architectureUpdateCollege(collegeId, data); }
+  async createDepartment(collegeId: string, data: any) { return this.architectureCreateDepartment(collegeId, data); }
 }
 
 export const api = RealAPI.getInstance();
