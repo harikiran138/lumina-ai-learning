@@ -222,7 +222,7 @@ function AssignmentsList({
                 </td>
                 <td className="p-6 text-right">
                   <Link
-                    href={`/teacher/assignments/${assignment.id}/submissions`}
+                    href={`/faculty/assignments/${assignment.id}/submissions`}
                     className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-all"
                   >
                     <Eye size={16} />
@@ -249,13 +249,9 @@ function CreateAssignmentForm({ onSuccess }: { onSuccess: () => void }) {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await fetch(
-          `${apiBase}/api/courses/list`,
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setCourses(data);
-        }
+        const u = await api.getCurrentUser();
+        const data = await api.listCourses(u?.deptId || undefined);
+        setCourses(data);
       } catch (e) {
         console.error("Failed to fetch courses", e);
       }
@@ -280,12 +276,12 @@ function CreateAssignmentForm({ onSuccess }: { onSuccess: () => void }) {
 
       const result = await api.createAssignment(payload);
 
-      if (result?.status === "success") {
+      if (result) {
         toast.success("Assignment Created Successfully!");
         (e.target as HTMLFormElement).reset();
         onSuccess();
       } else {
-        toast.error(result?.detail || "Failed to create assignment");
+        toast.error("Failed to create assignment");
       }
     } catch (err) {
       console.error(err);

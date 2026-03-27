@@ -60,8 +60,6 @@ class ResetPasswordRequest(BaseModel):
     newPassword: str
 
 
-class ChangePasswordRequest(BaseModel):
-    newPassword: str
 
 
 class LoginResponse(BaseModel):
@@ -272,18 +270,7 @@ async def reset_password(payload: ResetPasswordRequest, user_store: UserStore = 
     return {"success": True}
 
 
-@router.post("/change-password")
-async def change_password(
-    payload: ChangePasswordRequest,
-    current_user: dict = Depends(get_current_user),
-    user_store: UserStore = Depends(get_user_store),
-):
-    hashed_password = get_password_hash(payload.newPassword)
-    await user_store.update_user_fields(
-        current_user.get("id"),
-        {"password_hash": hashed_password, "must_change_password": False},
-    )
-    return {"success": True}
+## Removed duplicate change-password handler (see unified handler below)
 
 
 @router.post("/login", response_model=LoginResponse)
@@ -298,6 +285,14 @@ def login_json(
 
     _require_active_user(user)
     _check_college_login_policy(user)
+
+    if _normalize_role(user.get("role")) == "student" and user.get("must_change_password"):
+        temp_token = create_access_token(
+            subject=user["email"],
+            expires_delta=timedelta(minutes=30),
+            extra_claims={"type": "temp_password", "userId": user.get("id")},
+        )
+        return {"forcePasswordChange": True, "tempToken": temp_token}
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -400,30 +395,57 @@ async def get_current_user(
 
 class ChangePasswordRequest(BaseModel):
     current_password: Optional[str] = None
-    new_password: str
+    new_password: Optional[str] = None
+    newPassword: Optional[str] = None
+    confirmPassword: Optional[str] = None
 
 
 @router.post("/change-password")
 async def change_password(
     payload: ChangePasswordRequest,
-    current_user: dict = Depends(get_current_user),
+    request: Request,
     user_store: UserStore = Depends(get_user_store),
 ):
-    # Only skip current_password check if must_change_password is true
+    new_password = payload.newPassword or payload.new_password
+    if payload.confirmPassword and new_password != payload.confirmPassword:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+    if not new_password or len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+
+    # Try temp token flow first
+    auth_header = request.headers.get("authorization") or ""
+    token = auth_header.split(" ")[1] if " " in auth_header else None
+    user_id = None
+    if token:
+        try:
+            from jose import jwt
+
+            decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            if decoded.get("type") == "temp_password":
+                user_id = decoded.get("userId")
+        except Exception:
+            user_id = None
+
+    if user_id:
+        hashed_password = get_password_hash(new_password)
+        await user_store.update_user_fields(
+            user_id,
+            {"password_hash": hashed_password, "must_change_password": False},
+        )
+        return {"success": True, "message": "Password updated successfully"}
+
+    # Fallback to normal authenticated change
+    current_user = await get_current_user(request, token=token, user_store=user_store)
     if not current_user.get("must_change_password"):
         if not payload.current_password:
             raise HTTPException(status_code=400, detail="Current password is required")
         if not verify_password(payload.current_password, current_user["password_hash"]):
             raise HTTPException(status_code=400, detail="Incorrect current password")
 
-    hashed_password = get_password_hash(payload.new_password)
+    hashed_password = get_password_hash(new_password)
     await user_store.update_user_fields(
-        current_user["id"], 
-        {
-            "password_hash": hashed_password, 
-            "must_change_password": False,
-            "onboarding_step": max(current_user.get("onboarding_step", 0), 0) # Ensure they stay in onboarding if they were there
-        }
+        current_user["id"],
+        {"password_hash": hashed_password, "must_change_password": False},
     )
 
     return {"success": True, "message": "Password updated successfully"}
