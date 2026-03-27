@@ -794,6 +794,35 @@ export class RealAPI {
     return await res.json();
   }
 
+  // --- Department Management (Admin) ---
+  async adminGetDepartments(institutionId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(`/api/academic/departments?institution_id=${institutionId}`);
+    return res.ok ? await res.json() : [];
+  }
+
+  async adminCreateDepartment(payload: any): Promise<any> {
+    const res = await this.fetchAuthorized("/api/academic/departments", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  }
+
+  async adminUpdateDepartment(deptId: string, payload: any): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/academic/departments/${deptId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  }
+
+  async adminDeleteDepartment(deptId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/academic/departments/${deptId}`, {
+      method: "DELETE",
+    });
+    return await res.json();
+  }
+
   async requestTeacherAssignment(courseId: string, classId: string): Promise<any> {
     const res = await this.fetchAuthorized("/api/teacher/assignments/request", {
       method: "POST",
@@ -1199,6 +1228,76 @@ export class RealAPI {
       method: "POST",
       body: JSON.stringify(data),
     });
+    return await res.json();
+  }
+
+  async updateDepartment(instId: string, deptId: string, data: any): Promise<any> {
+    const res = await this.fetchAuthorized(
+      `/api/admin/institutions/${instId}/departments/${deptId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      },
+    );
+    return await res.json();
+  }
+
+  async assignHod(instId: string, deptId: string, hodId: string): Promise<any> {
+    const res = await this.fetchAuthorized(
+      `/api/admin/institutions/${instId}/departments/${deptId}/hod`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ hod_id: hodId }),
+      },
+    );
+    return await res.json();
+  }
+
+  async getPrograms(instId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(`/api/admin/institutions/${instId}/programs`);
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async createProgram(instId: string, data: any): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/admin/institutions/${instId}/programs`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async getSemesters(programId: string): Promise<any[]> {
+    const res = await this.fetchAuthorized(`/api/admin/programs/${programId}/semesters`);
+    if (!res.ok) return [];
+    return await res.json();
+  }
+
+  async createSemester(programId: string, data: any): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/admin/programs/${programId}/semesters`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async updateClass(classId: string, data: any): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/academic/classes/${classId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  }
+
+  async deleteClass(classId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/academic/classes/${classId}`, {
+      method: "DELETE",
+    });
+    return await res.json();
+  }
+
+  async getClassSummary(classId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/admin/classes/${classId}/summary`);
     return await res.json();
   }
 
