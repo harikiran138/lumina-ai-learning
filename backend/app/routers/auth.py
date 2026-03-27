@@ -104,11 +104,11 @@ async def register(user: UserCreate, user_store: UserStore = Depends(get_user_st
 
 
 @router.post("/token", response_model=Token)
-async def login_for_access_token(
+def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     user_store: UserStore = Depends(get_user_store),
 ):
-    user = await user_store.get_user_by_email(
+    user = user_store.get_user_by_email_sync(
         form_data.username
     )  # username field is email in our case
     if not user:
@@ -134,11 +134,11 @@ async def login_for_access_token(
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login_json(
+def login_json(
     payload: LoginRequest,
     user_store: UserStore = Depends(get_user_store),
 ):
-    user = await user_store.get_user_by_email(payload.email)
+    user = user_store.get_user_by_email_sync(payload.email)
     if not user or not verify_password(payload.password, user["password_hash"]):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
@@ -149,7 +149,7 @@ async def login_json(
         extra_claims=_build_claims(user),
     )
 
-    await user_store.update_user_fields(user["id"], {"last_login_at": datetime.utcnow().isoformat()})
+    user_store.update_user_fields_sync(user["id"], {"last_login_at": datetime.utcnow().isoformat()})
 
     return {
         "accessToken": access_token,
