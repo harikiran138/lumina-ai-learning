@@ -205,7 +205,7 @@ export default function CollegeDashboard() {
           subtitle="Recent updates across your institution."
           action={
             <Link
-              to="/college/activity"
+              href="/college/activity"
               className="inline-flex items-center gap-2 text-sm font-semibold text-lumina-highlight hover:text-white transition-colors"
             >
               View all
@@ -254,7 +254,7 @@ function QuickAction({
 }) {
   return (
     <Link
-      to={href}
+      href={href}
       className="group flex items-start gap-4 p-4 rounded-2xl border border-lumina-highlight/10 bg-gradient-to-br from-lumina-highlight/5 to-transparent hover:border-lumina-highlight/30 transition-all"
     >
       <div className="p-3 rounded-xl bg-black/40 text-lumina-highlight group-hover:scale-110 transition-transform">
@@ -281,7 +281,7 @@ function LinkCard({
 }) {
   return (
     <Link
-      to={href}
+      href={href}
       className="group flex items-center justify-between p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:border-lumina-highlight/20 hover:bg-white/[0.04] transition-all"
     >
       <div className="flex items-center gap-4">
@@ -324,4 +324,3 @@ function Panel({
     </section>
   );
 }
-

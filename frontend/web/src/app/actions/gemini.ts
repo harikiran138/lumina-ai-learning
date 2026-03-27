@@ -32,6 +32,9 @@ export async function saveTextbook(
 ) {
   try {
     const client = await clientPromise;
+    if (!client) {
+      return { success: false, error: "MongoDB is not configured" };
+    }
     const db = client.db("lumina_db");
 
     const result = await db.collection("textbooks").insertOne({
@@ -59,6 +62,9 @@ export async function saveTextbook(
 export async function getTextbookContent(textbookId: string) {
   try {
     const client = await clientPromise;
+    if (!client) {
+      return { success: false, error: "MongoDB is not configured" };
+    }
     const db = client.db("lumina_db");
     const textbook = await db.collection("textbooks").findOne({
       _id: new ObjectId(textbookId),
