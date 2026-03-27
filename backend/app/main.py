@@ -71,6 +71,9 @@ from .routers import (  # noqa: E402
     hod,
     onboarding,
     college_architecture,
+    attendance,
+    materials,
+    faculty,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
@@ -256,6 +259,9 @@ app.include_router(hod.router, prefix="/api/hod", tags=["HOD Dashboard"])
 app.include_router(knowledge_graph.router, prefix="/api/knowledge-graph", tags=["Knowledge Graph"])
 app.include_router(onboarding.router, prefix="/api/onboarding", tags=["Onboarding"])
 app.include_router(college_architecture.router, prefix="/api", tags=["College Architecture"])
+app.include_router(attendance.router, prefix="/api", tags=["Attendance"])
+app.include_router(materials.router, prefix="/api", tags=["Materials"])
+app.include_router(faculty.router, prefix="/api", tags=["Faculty"])
 
 
 # --- Performance & Security Polish ---

@@ -17,6 +17,7 @@ from app.store.assignment_store import AssignmentStore
 from app.store.analytics_store import AnalyticsStore
 from app.dependencies import get_user_data_store, get_student_store, get_assignment_store, get_analytics_store
 from .auth import get_current_user
+from app.database.supabase_manager import supabase_db
 
 router = APIRouter()
 
@@ -1054,3 +1055,156 @@ async def get_leaderboard(
         }]
 
     return {"timeframe": timeframe, "entries": entries}
+
+
+@router.get("/subjects")
+async def list_student_subjects(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+    dept_id = current_user.get("dept_id") or current_user.get("department_id")
+    if not dept_id:
+        return []
+    return await supabase_db.fetch_all("courses", {"department_id": dept_id})
+
+
+@router.get("/attendance")
+async def get_student_attendance_summary(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+    client = supabase_db.get_client()
+    rows = client.table("attendance").select("*").eq("student_id", current_user.get("id")).execute()
+    attendance = rows.data or []
+    course_ids = list({row.get("course_id") for row in attendance if row.get("course_id")})
+    courses = client.table("courses").select("id,title,course_name,name").in_("id", course_ids).execute() if course_ids else None
+    course_lookup = {c["id"]: c for c in (courses.data if courses else [])}
+    summary = {}
+    for row in attendance:
+        cid = row.get("course_id")
+        if not cid:
+            continue
+        item = summary.setdefault(cid, {"total": 0, "present": 0})
+        item["total"] += 1
+        if row.get("is_present"):
+            item["present"] += 1
+
+    results = []
+    for cid, stats in summary.items():
+        course = course_lookup.get(cid, {})
+        name = course.get("title") or course.get("course_name") or course.get("name") or "Course"
+        percent = round((stats["present"] / stats["total"]) * 100, 2) if stats["total"] else 0
+        results.append({
+            "courseId": cid,
+            "courseName": name,
+            "totalClasses": stats["total"],
+            "presentClasses": stats["present"],
+            "attendancePercent": percent,
+        })
+    return results
+
+
+@router.get("/assignments")
+async def list_student_assignments(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+    dept_id = current_user.get("dept_id") or current_user.get("department_id")
+    batch_id = current_user.get("batch_id")
+    section = current_user.get("section")
+
+    client = supabase_db.get_client()
+    courses_res = client.table("courses").select("id,title,course_name,name").eq("department_id", dept_id).execute() if dept_id else None
+    course_ids = [c["id"] for c in (courses_res.data or [])] if courses_res else []
+    if not course_ids:
+        return []
+
+    assignments_res = client.table("assignments").select("*").in_("course_id", course_ids).execute()
+    assignments = assignments_res.data or []
+
+    submissions_res = client.table("submissions").select("*").eq("student_uuid", current_user.get("id")).execute()
+    submissions = submissions_res.data or []
+    if not submissions:
+        legacy_res = client.table("submissions").select("*").eq("student_id", current_user.get("id")).execute()
+        submissions = legacy_res.data or []
+    submission_map = {}
+    for s in submissions:
+        key = s.get("assignment_uuid") or s.get("assignment_id")
+        if key:
+            submission_map[key] = s
+
+    course_lookup = {c["id"]: c for c in (courses_res.data or [])}
+    results = []
+    for assignment in assignments:
+        if assignment.get("batch_id") and batch_id and assignment.get("batch_id") != batch_id:
+            continue
+        if assignment.get("section") and section and assignment.get("section") != section:
+            continue
+        course = course_lookup.get(assignment.get("course_id"), {})
+        submission = submission_map.get(assignment.get("id"))
+        results.append({
+            **assignment,
+            "courseName": course.get("title") or course.get("course_name") or course.get("name"),
+            "submitted": bool(submission),
+            "submission": submission,
+        })
+    return results
+
+
+@router.post("/assignments/{assignment_id}/submit")
+async def submit_student_assignment(
+    assignment_id: str,
+    payload: dict,
+    current_user: dict = Depends(get_current_user),
+):
+    if current_user.get("role") != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+    data = {
+        "assignment_id": assignment_id,
+        "assignment_uuid": assignment_id,
+        "student_id": current_user.get("id"),
+        "student_uuid": current_user.get("id"),
+        "content_url": payload.get("content_url"),
+        "text_content": payload.get("text_content"),
+        "status": "submitted",
+        "submitted_at": datetime.utcnow().isoformat(),
+    }
+    return await supabase_db.insert("submissions", data)
+
+
+@router.get("/grades")
+async def list_student_grades(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+    client = supabase_db.get_client()
+    submissions_res = client.table("submissions").select("*").eq("student_uuid", current_user.get("id")).execute()
+    submissions = submissions_res.data or []
+    if not submissions:
+        legacy_res = client.table("submissions").select("*").eq("student_id", current_user.get("id")).execute()
+        submissions = legacy_res.data or []
+    assignment_ids = list({s.get("assignment_uuid") for s in submissions if s.get("assignment_uuid")})
+    assignments_res = client.table("assignments").select("*").in_("id", assignment_ids).execute() if assignment_ids else None
+    assignments = assignments_res.data if assignments_res else []
+    course_ids = list({a.get("course_id") for a in assignments if a.get("course_id")})
+    courses_res = client.table("courses").select("id,title,course_name,name").in_("id", course_ids).execute() if course_ids else None
+    course_lookup = {c["id"]: c for c in (courses_res.data or [])}
+    assignment_lookup = {a["id"]: a for a in assignments}
+
+    results = []
+    for submission in submissions:
+        assignment = assignment_lookup.get(submission.get("assignment_uuid"))
+        course = course_lookup.get(assignment.get("course_id")) if assignment else {}
+        results.append({
+            "submissionId": submission.get("id"),
+            "assignmentId": submission.get("assignment_uuid") or submission.get("assignment_id"),
+            "assignmentTitle": assignment.get("title") if assignment else None,
+            "courseName": course.get("title") or course.get("course_name") or course.get("name"),
+            "marks": submission.get("marks") or submission.get("score"),
+            "feedback": submission.get("feedback"),
+            "gradedAt": submission.get("graded_at"),
+        })
+    return results
+
+
+@router.get("/materials/{course_id}")
+async def list_student_materials(course_id: str, current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+    return await supabase_db.fetch_all("course_materials", {"course_id": course_id})
