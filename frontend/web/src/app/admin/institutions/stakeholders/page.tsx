@@ -13,6 +13,7 @@ import {
   Shield,
   ExternalLink
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface Connection {
@@ -33,9 +34,8 @@ export default function StakeholderMatrix() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/admin/connections");
-        const data = await res.json();
-        setConnections(data);
+        const data = await api.getConnections();
+        setConnections(data || []);
       } catch (err) {
         console.error("failed_to_load_connections", err);
       } finally {
