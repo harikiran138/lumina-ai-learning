@@ -13,6 +13,14 @@ load_dotenv()
 
 import os  # noqa: E402
 import time  # noqa: E402
+import socket # noqa: E402
+
+# FORCE IPv4 to prevent IPv6 blackhole hanging (Mac/Supabase bug)
+old_getaddrinfo = socket.getaddrinfo
+def new_getaddrinfo(*args, **kwargs):
+    responses = old_getaddrinfo(*args, **kwargs)
+    return [res for res in responses if res[0] == socket.AF_INET]
+socket.getaddrinfo = new_getaddrinfo
 import asyncio  # noqa: E402
 import functools  # noqa: E402
 import contextvars  # noqa: E402
@@ -61,6 +69,8 @@ from .routers import (  # noqa: E402
     curriculum,
     academic,
     hod,
+    onboarding,
+    college_architecture,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
@@ -244,6 +254,8 @@ app.include_router(teacher.router, prefix="/api/teacher", tags=["Teacher Dashboa
 app.include_router(academic.router, prefix="/api/academic", tags=["Academic Hierarchy"])
 app.include_router(hod.router, prefix="/api/hod", tags=["HOD Dashboard"])
 app.include_router(knowledge_graph.router, prefix="/api/knowledge-graph", tags=["Knowledge Graph"])
+app.include_router(onboarding.router, prefix="/api/onboarding", tags=["Onboarding"])
+app.include_router(college_architecture.router, prefix="/api", tags=["College Architecture"])
 
 
 # --- Performance & Security Polish ---

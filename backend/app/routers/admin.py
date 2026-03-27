@@ -21,7 +21,7 @@ log = structlog.get_logger(__name__)
 
 
 def is_admin(current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "admin":
+    if current_user.get("role") not in {"admin", "super_admin", "college_admin"}:
         raise HTTPException(status_code=403, detail="Admin access required")
     
     # Requirement: Mandatory 2FA for all admin routes
