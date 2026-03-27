@@ -101,8 +101,8 @@ BEGIN
                 INSERT INTO user_roles (user_id, role_id, institution_id) VALUES (v_teacher_id, v_role_teacher, v_inst_id);
 
                 v_course_id := gen_random_uuid();
-                INSERT INTO courses (id, program_id, semester_id, department_id, teacher_id, course_code, course_name, name, credits, category)
-                VALUES (v_course_id, v_prog_id, v_sem_id, d_id, v_teacher_id, d_name || 'M' || sem_idx || t_idx, 'Mass Subject ' || t_idx, 'Mass Subject Name ' || t_idx, 3, 'Core');
+                INSERT INTO courses (id, program_id, semester_id, department_id, teacher_id, code, course_code, title, course_name, name, credits, category)
+                VALUES (v_course_id, v_prog_id, v_sem_id, d_id, v_teacher_id, d_name || 'M' || sem_idx || t_idx, d_name || 'M' || sem_idx || t_idx, 'Mass Subject ' || t_idx, 'Mass Subject ' || t_idx, 'Mass Subject Name ' || t_idx, 3, 'Core');
             END LOOP;
         END LOOP;
 
