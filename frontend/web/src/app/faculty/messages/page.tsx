@@ -31,7 +31,7 @@ interface Chat {
   online: boolean;
 }
 
-export default function parentMessagingPage() {
+export default function FacultyMessagingPage() {
   const [selectedId, setSelectedId] = useState("c1");
   const [message, setMessage] = useState("");
 

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// Simple JWT decoder for Edge Runtime
 function decodeToken(token: string) {
   try {
     const base64Url = token.split('.')[1]
@@ -13,7 +12,7 @@ function decodeToken(token: string) {
         .join('')
     )
     return JSON.parse(jsonPayload)
-  } catch (e) {
+  } catch {
     return null
   }
 }
@@ -45,7 +44,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Token exists - check role and onboarding
   const payload = decodeToken(token)
   if (!payload) {
     const url = request.nextUrl.clone()
@@ -57,21 +55,18 @@ export function middleware(request: NextRequest) {
   const role = normalizeRole(rawRole)
   const onboardingCompleted = payload.onboardingCompleted === true
 
-  // 1. Force onboarding if not completed
   if (!onboardingCompleted && !pathname.startsWith('/onboarding') && !isPublic) {
     const url = request.nextUrl.clone()
     url.pathname = '/onboarding'
     return NextResponse.redirect(url)
   }
 
-  // 2. Prevent accessing onboarding again if completed
   if (onboardingCompleted && pathname.startsWith('/onboarding')) {
     const url = request.nextUrl.clone()
     url.pathname = `/${role === 'super_admin' ? 'admin' : role}/dashboard`
     return NextResponse.redirect(url)
   }
 
-  // 3. Role-based path protection
   const rolePaths = {
     super_admin: '/admin',
     college_admin: '/college',
@@ -80,11 +75,9 @@ export function middleware(request: NextRequest) {
     student: '/student',
   }
 
-  // Check if trying to access a restricted path
-  for (const [r, path] of Object.entries(rolePaths)) {
+  for (const [expectedRole, path] of Object.entries(rolePaths)) {
     if (pathname.startsWith(path)) {
-      if (role !== 'super_admin' && role !== r) {
-        // Redirect to their own dashboard
+      if (role !== 'super_admin' && role !== expectedRole) {
         const url = request.nextUrl.clone()
         url.pathname = `/${role === 'super_admin' ? 'admin' : role}/dashboard`
         return NextResponse.redirect(url)
@@ -97,12 +90,12 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/student/:path*', 
-    '/teacher/:path*', 
-    '/admin/:path*', 
-    '/hod/:path*', 
-    '/college/:path*', 
-    '/faculty/:path*', 
-    '/onboarding'
+    '/student/:path*',
+    '/teacher/:path*',
+    '/admin/:path*',
+    '/hod/:path*',
+    '/college/:path*',
+    '/faculty/:path*',
+    '/onboarding',
   ],
 }
