@@ -159,7 +159,7 @@ export default function OnboardingPage() {
       if (!deptId) return;
       try {
         const [subjectsData, batchesData] = await Promise.all([
-          api.listSubjects(deptId),
+          role === "student" ? api.getOnboardingSubjects() : api.listSubjects(deptId),
           api.listBatches(deptId),
         ]);
         setSubjectsList(subjectsData || []);
@@ -169,7 +169,7 @@ export default function OnboardingPage() {
       }
     };
     loadDeptResources();
-  }, [deptId]);
+  }, [deptId, role]);
 
   const routeByRole = (r: Role) => {
     const routes: Record<Role, string> = {

@@ -125,6 +125,8 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
     if "registerNumber" in step_data: updates["student_roll"] = step_data["registerNumber"]
     if "phone" in step_data: updates["phone"] = step_data["phone"]
     if "profilePhotoUrl" in step_data: updates["profile_photo_url"] = step_data["profilePhotoUrl"]
+    if "emergencyContact" in step_data: updates["emergency_contact"] = step_data["emergencyContact"]
+    if "parentEmail" in step_data: updates["parent_email"] = step_data["parentEmail"]
     
     updates["onboarding_step"] = requested_step
 
