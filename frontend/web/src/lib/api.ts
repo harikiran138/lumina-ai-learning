@@ -80,6 +80,16 @@ async function fetchWithRetry(
   throw new Error('Max retries exceeded')
 }
 
+// Safely parse JSON from a Response — returns null if the body is HTML or unparseable.
+async function parseJsonSafe(res: Response): Promise<any> {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 export interface User {
   id: string;
   name: string;
@@ -198,10 +208,10 @@ export class RealAPI {
       body: JSON.stringify({ email, password }),
     });
     if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || "Authentication failed");
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || `Authentication failed (${res.status})`);
     }
-    const tokenData = await res.json();
+    const tokenData = await parseJsonSafe(res);
     if (tokenData.forcePasswordChange) {
       if (typeof window !== "undefined") {
         sessionStorage.setItem("temp_token", tokenData.tempToken);
@@ -259,7 +269,7 @@ export class RealAPI {
         role: userData.role || "student",
       }),
     });
-    if (!res.ok) throw new Error((await res.json()).detail || "Registration failed");
+    if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.detail || "Registration failed"); }
     return this.login(userData.email!, userData.password);
   }
 
@@ -287,7 +297,8 @@ export class RealAPI {
       method: "POST",
       body: JSON.stringify({ newPassword }),
     });
-    return await res.json();
+    if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.detail || "Failed to change password"); }
+    return await parseJsonSafe(res);
   }
 
   async forgotPassword(email: string): Promise<any> {
@@ -296,7 +307,8 @@ export class RealAPI {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
-    return await res.json();
+    if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.detail || "Failed to send reset email"); }
+    return await parseJsonSafe(res);
   }
 
   async resetPassword(token: string, newPassword: string): Promise<any> {
@@ -305,7 +317,8 @@ export class RealAPI {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, newPassword }),
     });
-    return await res.json();
+    if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.detail || "Failed to reset password"); }
+    return await parseJsonSafe(res);
   }
 
   // --- Onboarding & Status ---
@@ -324,12 +337,14 @@ export class RealAPI {
       method: "PATCH",
       body: JSON.stringify({ step, data }),
     });
-    return await res.json();
+    if (!res.ok) return { success: false };
+    return await parseJsonSafe(res) ?? {};
   }
 
   async completeOnboarding(): Promise<any> {
     const res = await this.fetchAuthorized("/api/onboarding/complete", { method: "POST" });
-    return await res.json();
+    if (!res.ok) return { success: false };
+    return await parseJsonSafe(res) ?? {};
   }
 
   // --- Dashboard ---
@@ -367,7 +382,8 @@ export class RealAPI {
       method: "POST",
       body: JSON.stringify(payload),
     });
-    return await res.json();
+    if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.detail || "Failed to submit assignment"); }
+    return await parseJsonSafe(res);
   }
 
   async getStudentGrades(): Promise<any[]> {
@@ -394,7 +410,8 @@ export class RealAPI {
       method: "POST",
       body: JSON.stringify({ records })
     });
-    return await res.json();
+    if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.detail || "Failed to mark attendance"); }
+    return await parseJsonSafe(res);
   }
 
   async gradeSubmission(assignmentId: string, submissionId: string, data: { score: number; feedback?: string }) {
@@ -402,7 +419,8 @@ export class RealAPI {
       method: "PUT",
       body: JSON.stringify(data)
     });
-    return await res.json();
+    if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.detail || "Failed to grade submission"); }
+    return await parseJsonSafe(res);
   }
 
   async listStudents(collegeId: string, params?: { deptId?: string; batchId?: string; section?: string }) {
@@ -430,11 +448,11 @@ export class RealAPI {
   // --- College Architecture Helpers ---
   async architectureUpdateCollege(collegeId: string, data: any) {
     const res = await this.fetchAuthorized(`/api/colleges/${collegeId}`, { method: "PATCH", body: JSON.stringify(data)});
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
   async architectureCreateDepartment(collegeId: string, data: any) {
     const res = await this.fetchAuthorized(`/api/colleges/${collegeId}/departments`, { method: "POST", body: JSON.stringify(data)});
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
   async architectureListDepartments(collegeId: string) {
     const res = await this.fetchAuthorized(`/api/colleges/${collegeId}/departments`);
@@ -442,7 +460,7 @@ export class RealAPI {
   }
   async architectureCreateBatch(deptId: string, data: any) {
     const res = await this.fetchAuthorized(`/api/departments/${deptId}/batches`, { method: "POST", body: JSON.stringify(data)});
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
   async architectureListBatches(deptId: string) {
     const res = await this.fetchAuthorized(`/api/departments/${deptId}/batches`);
@@ -450,7 +468,7 @@ export class RealAPI {
   }
   async architectureCreateSubject(deptId: string, data: any) {
     const res = await this.fetchAuthorized(`/api/departments/${deptId}/subjects`, { method: "POST", body: JSON.stringify(data)});
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
   async architectureListSubjects(deptId: string) {
     const res = await this.fetchAuthorized(`/api/departments/${deptId}/subjects`);
@@ -458,13 +476,13 @@ export class RealAPI {
   }
   async architectureInviteUser(collegeId: string, data: any) {
     const res = await this.fetchAuthorized(`/api/colleges/${collegeId}/invite`, { method: "POST", body: JSON.stringify(data)});
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   // Enrollment
   async redeemEnrollmentCode(code: string) {
     const res = await this.fetchAuthorized("/api/enroll/redeem", { method: "POST", body: JSON.stringify({ code })});
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   // --- Admin Hierarchy Management ---
@@ -478,7 +496,7 @@ export class RealAPI {
       method: "POST",
       body: JSON.stringify(data),
     });
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   async getAllUsers(): Promise<any[]> {
@@ -491,14 +509,14 @@ export class RealAPI {
       method: "POST",
       body: JSON.stringify(data),
     });
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   async deleteUser(userId: string): Promise<any> {
     const res = await this.fetchAuthorized(`/api/admin/users/${userId}`, {
       method: "DELETE",
     });
-    return res.ok ? { success: true } : await res.json();
+    return res.ok ? { success: true } : (await parseJsonSafe(res) ?? { success: false });
   }
 
   async updateUserStatus(userId: string, status: string): Promise<any> {
@@ -506,7 +524,7 @@ export class RealAPI {
       `/api/admin/users/${userId}/status?status=${encodeURIComponent(status)}`,
       { method: "POST" },
     );
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   async updateUserRole(userId: string, role: string): Promise<any> {
@@ -514,7 +532,7 @@ export class RealAPI {
       `/api/admin/users/${userId}/role?role=${encodeURIComponent(role)}`,
       { method: "POST" },
     );
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   async getConnections(): Promise<any[]> {
@@ -527,7 +545,7 @@ export class RealAPI {
       method: "POST",
       body: JSON.stringify(data),
     });
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   async getDepartments(institutionId?: string): Promise<any[]> {
@@ -543,7 +561,7 @@ export class RealAPI {
       method: "POST",
       body: JSON.stringify(data),
     });
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   async updateDepartment(institutionId: string, deptId: string, data: any): Promise<any> {
@@ -551,7 +569,7 @@ export class RealAPI {
       `/api/admin/institutions/${institutionId}/departments/${deptId}`,
       { method: "PATCH", body: JSON.stringify(data) },
     );
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   async assignHod(institutionId: string, deptId: string, hodId: string): Promise<any> {
@@ -559,12 +577,12 @@ export class RealAPI {
       `/api/admin/institutions/${institutionId}/departments/${deptId}/hod`,
       { method: "PATCH", body: JSON.stringify({ hod_id: hodId }) },
     );
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   async deleteAdminDepartment(deptId: string): Promise<any> {
     const res = await this.fetchAuthorized(`/api/admin/departments/${deptId}`, { method: "DELETE" });
-    return res.ok ? { success: true } : await res.json();
+    return res.ok ? { success: true } : (await parseJsonSafe(res) ?? { success: false });
   }
 
   async getPrograms(institutionId: string): Promise<any[]> {
@@ -577,7 +595,7 @@ export class RealAPI {
       `/api/admin/institutions/${institutionId}/programs`,
       { method: "POST", body: JSON.stringify(data) },
     );
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   async getSemesters(programId: string): Promise<any[]> {
@@ -590,7 +608,7 @@ export class RealAPI {
       `/api/admin/programs/${programId}/semesters`,
       { method: "POST", body: JSON.stringify(data) },
     );
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   async getClasses(programId?: string, semesterId?: string): Promise<any[]> {
@@ -613,7 +631,7 @@ export class RealAPI {
       method: "POST",
       body: JSON.stringify(data),
     });
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   async updateClass(classId: string, data: any): Promise<any> {
@@ -621,12 +639,12 @@ export class RealAPI {
       method: "PATCH",
       body: JSON.stringify(data),
     });
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   async deleteAdminClass(classId: string): Promise<any> {
     const res = await this.fetchAuthorized(`/api/admin/classes/${classId}`, { method: "DELETE" });
-    return res.ok ? { success: true } : await res.json();
+    return res.ok ? { success: true } : (await parseJsonSafe(res) ?? { success: false });
   }
 
   async getClassSummary(classId: string): Promise<any> {
@@ -684,7 +702,7 @@ export class RealAPI {
       method: "PATCH",
       body: JSON.stringify({ status }),
     });
-    return await res.json();
+    return await parseJsonSafe(res) ?? {};
   }
 
   // --- Assignments & Submissions Internal ---
@@ -754,7 +772,7 @@ export class RealAPI {
   /** DELETE /api/courses/{id} — remove a course */
   async deleteCourse(courseId: string): Promise<any> {
     const res = await this.fetchAuthorized(`/api/courses/${courseId}`, { method: "DELETE" });
-    return res.ok ? { success: true } : await res.json();
+    return res.ok ? { success: true } : (await parseJsonSafe(res) ?? { success: false });
   }
 
   /** POST /api/assignments/create — create an assignment (form data) */
