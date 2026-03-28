@@ -90,7 +90,7 @@ export default function ComplianceAuditLogs() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            < ShieldCheck className="h-4 w-4 text-yellow-500" />
+            <ShieldCheck className="h-4 w-4 text-yellow-500" />
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">WORM Storage Active</span>
           </div>
         </div>

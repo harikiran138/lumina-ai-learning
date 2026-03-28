@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@config "../../tailwind.config.mjs";
-@source "../**/*.{js,ts,jsx,tsx,mdx,html}";
 
 @theme {
   --color-background: hsl(var(--background));
@@ -50,6 +48,8 @@
     50% { opacity: 0.5; }
   }
 }
+
+@source "../**/*.{js,ts,jsx,tsx,mdx,html}";
 
 :root {
   --background: 222 47% 11%;

@@ -34,6 +34,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { ClientOnlyChart } from '@/components/charts/ClientOnlyChart';
 import Link from 'next/link';
 
 const GlassCard: React.FC<{ className?: string; children: React.ReactNode }> = ({ className, children }) => (
@@ -120,18 +121,20 @@ export default function ResearcherDashboard() {
               </div>
 
               <div className="h-64">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={kAnonymityData}>
-                       <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                       <XAxis dataKey="name" stroke="#ffffff30" fontSize={10} axisLine={false} tickLine={false} />
-                       <YAxis stroke="#ffffff30" fontSize={10} axisLine={false} tickLine={false} />
-                       <Tooltip 
-                         cursor={{fill: '#ffffff05'}}
-                         contentStyle={{backgroundColor: '#000', border: '1px solid #ffffff10', borderRadius: '12px'}}
-                       />
-                       <Bar dataKey="k" fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={40} />
-                    </BarChart>
-                 </ResponsiveContainer>
+                 <ClientOnlyChart>
+                    <ResponsiveContainer width="100%" height="100%">
+                       <BarChart data={kAnonymityData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                          <XAxis dataKey="name" stroke="#ffffff30" fontSize={10} axisLine={false} tickLine={false} />
+                          <YAxis stroke="#ffffff30" fontSize={10} axisLine={false} tickLine={false} />
+                          <Tooltip 
+                            cursor={{fill: '#ffffff05'}}
+                            contentStyle={{backgroundColor: '#000', border: '1px solid #ffffff10', borderRadius: '12px'}}
+                          />
+                          <Bar dataKey="k" fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={40} />
+                       </BarChart>
+                    </ResponsiveContainer>
+                 </ClientOnlyChart>
               </div>
               <div className="mt-8 flex items-center gap-3 p-4 rounded-2xl bg-lumina-highlight/5 border border-lumina-highlight/10">
                  <Info className="w-4 h-4 text-lumina-highlight shrink-0" />

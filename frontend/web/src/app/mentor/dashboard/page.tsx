@@ -30,6 +30,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { ClientOnlyChart } from '@/components/charts/ClientOnlyChart';
 import Link from 'next/link';
 
 // Mock data to supplement API if needed
@@ -309,33 +310,35 @@ export default function MentorDashboard() {
            </div>
 
            <div className="h-64 mt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={sessionData}>
-                  <defs>
-                    <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                  <XAxis 
-                    dataKey="month" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#4b5563', fontSize: 12, fontWeight: 600 }}
-                  />
-                  <YAxis hide />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="sessions"
-                    stroke="#F59E0B"
-                    strokeWidth={4}
-                    fillOpacity={1}
-                    fill="url(#colorSessions)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <ClientOnlyChart>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={sessionData}>
+                    <defs>
+                      <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                    <XAxis 
+                      dataKey="month" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#4b5563', fontSize: 12, fontWeight: 600 }}
+                    />
+                    <YAxis hide />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area
+                      type="monotone"
+                      dataKey="sessions"
+                      stroke="#F59E0B"
+                      strokeWidth={4}
+                      fillOpacity={1}
+                      fill="url(#colorSessions)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </ClientOnlyChart>
             </div>
         </GlassCard>
       </div>
