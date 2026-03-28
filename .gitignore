@@ -30,3 +30,5 @@ debug_rag.py
 
 # Firebase build artifacts
 .firebase/
+LUMINA_CREDENTIALS.csv
+LUMINA_ALL_CREDENTIALS.csv
