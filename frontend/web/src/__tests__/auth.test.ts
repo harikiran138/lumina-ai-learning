@@ -5,10 +5,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from './mocks/server';
 
-// NOTE: This file was updated to use MSW instead of vi.fn() on global.fetch
-// because MSW's server.listen() (called in setup.ts beforeAll) patches
-// globalThis.fetch AFTER module-level vi.fn() assignments, overwriting them.
-
 const BASE = 'http://127.0.0.1:8000';
 
 describe('Auth API in frontend API Service', () => {
@@ -19,19 +15,19 @@ describe('Auth API in frontend API Service', () => {
 
   it('should login successfully, fetch profile, and set auth cookie', async () => {
     server.use(
-      http.post(`${BASE}/api/auth/token`, () =>
-        HttpResponse.json({ access_token: 'fake-token-123', token_type: 'bearer' })
-      ),
-      http.get(`${BASE}/api/auth/me`, () =>
+      http.post(`${BASE}/api/auth/login`, () =>
         HttpResponse.json({
-          id: '1',
-          email: 'student@example.com',
-          full_name: 'Student Name',
-          name: 'Student Name',
-          role: 'student',
-          status: 'active',
-          avatar: '',
-          created_at: '2023-01-01T00:00:00Z',
+          accessToken: 'fake-token-123',
+          user: {
+            id: '1',
+            email: 'student@example.com',
+            fullName: 'Student Name',
+            name: 'Student Name',
+            role: 'student',
+            status: 'active',
+            profilePhotoUrl: '',
+            created_at: '2023-01-01T00:00:00Z',
+          },
         })
       )
     );
@@ -49,7 +45,7 @@ describe('Auth API in frontend API Service', () => {
 
   it('should throw an error on failed login', async () => {
     server.use(
-      http.post(`${BASE}/api/auth/token`, () =>
+      http.post(`${BASE}/api/auth/login`, () =>
         HttpResponse.json({ detail: 'Incorrect email or password' }, { status: 401 })
       )
     );
@@ -65,7 +61,7 @@ describe('Auth API in frontend API Service', () => {
     document.cookie = 'auth_token=test-token; path=/';
 
     const { api } = await import('../lib/api');
-    api.logout();
+    await api.logout();
 
     expect(sessionStorage.getItem('lumina_token')).toBeNull();
     expect(sessionStorage.getItem('lumina_user')).toBeNull();
