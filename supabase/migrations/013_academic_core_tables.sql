@@ -14,14 +14,17 @@ CREATE TABLE IF NOT EXISTS public.assignments (
   created_at timestamptz DEFAULT now()
 );
 
--- Extend submissions for FK-based integrity (keep legacy columns)
-ALTER TABLE public.submissions
-ADD COLUMN IF NOT EXISTS assignment_uuid uuid REFERENCES public.assignments(id),
-ADD COLUMN IF NOT EXISTS student_uuid uuid REFERENCES public.users(id),
-ADD COLUMN IF NOT EXISTS content_url text,
-ADD COLUMN IF NOT EXISTS text_content text,
-ADD COLUMN IF NOT EXISTS marks integer,
-ADD COLUMN IF NOT EXISTS graded_at timestamptz;
+-- Submissions table (unified, FK-based)
+CREATE TABLE IF NOT EXISTS public.submissions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  assignment_uuid uuid REFERENCES public.assignments(id),
+  student_uuid uuid REFERENCES public.users(id),
+  content_url text,
+  text_content text,
+  marks integer,
+  graded_at timestamptz,
+  created_at timestamptz DEFAULT now()
+);
 
 CREATE INDEX IF NOT EXISTS idx_assignments_course_id ON public.assignments(course_id);
 CREATE INDEX IF NOT EXISTS idx_assignments_teacher_id ON public.assignments(teacher_id);

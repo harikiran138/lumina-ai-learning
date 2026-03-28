@@ -41,8 +41,8 @@ class OCRService:
         
         print(f"Loading local OCR fallback: {model_name} on {device}...")
         try:
-            self.processor = TrOCRProcessor.from_pretrained(model_name)
-            self.model = VisionEncoderDecoderModel.from_pretrained(model_name).to(device)
+            self.processor = TrOCRProcessor.from_pretrained(model_name)  # nosec B615
+            self.model = VisionEncoderDecoderModel.from_pretrained(model_name).to(device)  # nosec B615
             if device == "cpu":
                 self.model = torch.quantization.quantize_dynamic(
                     self.model, {torch.nn.Linear}, dtype=torch.qint8

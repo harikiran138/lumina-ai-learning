@@ -13,12 +13,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://lumina:lumina_password@localhost:5432/lumina_db"
     
     # Supabase
-    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://ncofwpuabtxddvdjljgj.supabase.co")
-    SUPABASE_ANON_KEY: Optional[str] = os.getenv("SUPABASE_ANON_KEY")
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://odyjksznsdeyweylovzl.supabase.co")
+    SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "sb_publishable_6zHeJDU5hRv8c5dfW87W3A_3ZG5JlMQ")
     SUPABASE_SERVICE_ROLE_KEY: Optional[str] = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
     # Server
-    HOST: str = "0.0.0.0"
+    HOST: str = "0.0.0.0"  # nosec B104
     PORT: int = 8000
     SECURE_COOKIES: bool = False  # Set True in production (HTTPS required)
 
