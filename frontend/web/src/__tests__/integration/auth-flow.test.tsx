@@ -64,13 +64,13 @@ describe('Auth flow integration', () => {
 
   it('calls the API and sets auth_token cookie on successful login', async () => {
     server.use(
-      http.post(`${BASE}/api/auth/token`, () =>
-        HttpResponse.json({ access_token: 'cookie-test-token', token_type: 'bearer' })
-      ),
-      http.get(`${BASE}/api/auth/me`, () =>
+      http.post(`${BASE}/api/auth/login`, () =>
         HttpResponse.json({
-          id: 'u1', name: 'Alice', email: 'alice@lumina.test',
-          role: 'student', status: 'active', avatar: '', created_at: '',
+          accessToken: 'cookie-test-token',
+          user: {
+            id: 'u1', name: 'Alice', email: 'alice@lumina.test',
+            role: 'student', status: 'active', profilePhotoUrl: '', created_at: '',
+          },
         })
       )
     )
@@ -89,7 +89,7 @@ describe('Auth flow integration', () => {
 
   it('displays a toast error when login returns 401', async () => {
     server.use(
-      http.post(`${BASE}/api/auth/token`, () =>
+      http.post(`${BASE}/api/auth/login`, () =>
         HttpResponse.json({ detail: 'Invalid credentials' }, { status: 401 })
       )
     )
