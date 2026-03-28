@@ -5,7 +5,7 @@ async def test_mastery():
     login_url = "http://localhost:8000/api/auth/token"
     login_data = {"username": "student@lumina.com", "password": "student123"}
     
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient() as client:  # nosec B113
         # Login using form data
         response = await client.post(login_url, data=login_data)
         if response.status_code != 200:

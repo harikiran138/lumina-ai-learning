@@ -14,7 +14,7 @@ logger = structlog.get_logger()
 def cache_key(*args, **kwargs) -> str:
     """Generate a cache key from function arguments"""
     key_data = json.dumps({"args": args, "kwargs": kwargs}, sort_keys=True, default=str)
-    return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()  # nosec B324
+    return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()  # nosec B303 B324
 
 
 def cached(
