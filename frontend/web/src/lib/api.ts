@@ -1,7 +1,7 @@
 // API client for the Lumina FastAPI backend
 
 const LOCAL_API_BASE = "http://127.0.0.1:8000";
-const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
+const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "0.0.0.0", "localhost:3000"]);
 
 export function getConfiguredApiBase(): string | null {
   const explicitBase =
@@ -9,16 +9,19 @@ export function getConfiguredApiBase(): string | null {
     process.env.NEXT_PUBLIC_API_BASE?.trim();
 
   if (explicitBase) {
+    console.log("[API] Using explicit base:", explicitBase);
     return explicitBase.replace(/\/+$/, "");
   }
 
   if (
     typeof window !== "undefined" &&
-    LOCAL_HOSTNAMES.has(window.location.hostname)
+    (LOCAL_HOSTNAMES.has(window.location.hostname) || window.location.hostname.includes("localhost"))
   ) {
+    console.log("[API] Using local fallback:", LOCAL_API_BASE, "for hostname:", window.location.hostname);
     return LOCAL_API_BASE;
   }
 
+  console.warn("[API] No API base configured! Hostname is:", typeof window !== "undefined" ? window.location.hostname : "node");
   return null;
 }
 
