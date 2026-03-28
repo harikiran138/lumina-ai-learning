@@ -32,13 +32,13 @@ describe('auth cookie helpers', () => {
 
   it('sets auth_token cookie after login succeeds', async () => {
     server.use(
-      http.post(`${BASE}/api/auth/token`, () =>
-        HttpResponse.json({ access_token: 'test-token-abc', token_type: 'bearer' })
-      ),
-      http.get(`${BASE}/api/auth/me`, () =>
+      http.post(`${BASE}/api/auth/login`, () =>
         HttpResponse.json({
-          id: 'u1', name: 'Test', email: 'test@lumina.test',
-          role: 'student', status: 'active', avatar: '', created_at: '',
+          accessToken: 'test-token-abc',
+          user: {
+            id: 'u1', name: 'Test', email: 'test@lumina.test',
+            role: 'student', status: 'active', profilePhotoUrl: '', created_at: '',
+          },
         })
       )
     )
@@ -50,7 +50,7 @@ describe('auth cookie helpers', () => {
   it('clears auth_token cookie after logout', async () => {
     document.cookie = 'auth_token=some-token; path=/'
     const { api } = await import('@/lib/api')
-    api.logout()
+    await api.logout()
     expect(document.cookie).not.toContain('auth_token=some-token')
   })
 })
