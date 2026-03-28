@@ -361,6 +361,31 @@ export class RealAPI {
     return res.ok ? await res.json() : {};
   }
 
+  async getAdminQueueHealth(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/queue-health");
+    return res.ok ? (await parseJsonSafe(res) ?? {}) : {};
+  }
+
+  async getAdminGuardianSignals(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/guardian");
+    return res.ok ? (await parseJsonSafe(res) ?? []) : [];
+  }
+
+  async getAdminStudentsProgress(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/students-progress");
+    return res.ok ? (await parseJsonSafe(res) ?? []) : [];
+  }
+
+  async getAdminSystemHealth(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/health");
+    return res.ok ? (await parseJsonSafe(res) ?? {}) : {};
+  }
+
+  async getAdminInterventions(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/interventions");
+    return res.ok ? (await parseJsonSafe(res) ?? []) : [];
+  }
+
   // --- Student Academic APIs ---
   async getStudentCourses(): Promise<any[]> {
     const res = await this.fetchAuthorized("/api/student/subjects");
