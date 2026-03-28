@@ -1,7 +1,7 @@
 # Lumina Database Architecture Report
 
 ## Overview
-Lumina is a self-hosted AI-powered Learning Management System. The core architecture relies on a specialized multi-agent AI swarm, adaptive assessment engines, and automated teaching workflows. The entire state of the system—from user accounts to AI-generated learning pathways—must be persisted securely and reliably in Supabase PostgreSQL, replacing legacy local JSON and MongoDB stores.
+Lumina is a self-hosted AI-powered Learning Management System. The core architecture relies on a specialized multi-agent AI swarm, adaptive assessment engines, and automated teaching workflows. The entire state of the system—from user accounts to AI-generated learning pathways—must be persisted securely and reliably in Supabase PostgreSQL, replacing legacy local JSON and other deprecated persistence layers.
 
 ## Core Entities & Tables Required
 
@@ -51,4 +51,4 @@ Based on the `PROJECT_CANVAS.md` and `FEATURES_AND_PHASES.md`, the completely un
 ## Missing Schemas Identified
 - The database in the new Supabase project (`odyjksznsdeyweylovzl`) currently lacks several of these core tables (e.g., `enrollments`, `learning_events`, `assignment_submissions`), indicating the schema migration was not fully completed.
 - The `guardian_notifications` table is mentioned in the architecture but not formally defined in the schema.
-- Legacy local JSON stores and MongoDB references still exist in the project and need to be fully deprecated in favor of this Supabase schema.
+- Legacy local JSON stores still exist in the project as a deliberate offline/test fallback; primary persistence should remain the Supabase schema.

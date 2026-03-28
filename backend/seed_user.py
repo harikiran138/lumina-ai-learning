@@ -1,27 +1,9 @@
-import os
-import uuid
-from datetime import datetime
-from pymongo import MongoClient
-from passlib.context import CryptContext
+import asyncio
 
-# Security
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.store.user_store import UserStore
 
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
-
-
-def seed_users():
-    mongo_url = os.getenv("MONGODB_URI", "mongodb://localhost:27017/lumina_db")
-    # Base URL without DB name for client
-    base_url = mongo_url.split("/")[0] + "//" + mongo_url.split("/")[2]
-    db_name = mongo_url.split("/")[-1] if "/" in mongo_url.split("//")[-1] else "lumina_db"
-
-    print(f"Connecting to {base_url} (DB: {db_name})")
-    client = MongoClient(base_url)
-    db = client[db_name]
-
+async def seed_users():
+    user_store = UserStore()
     demo_users = [
         {
             "email": "student@lumina.com",
@@ -54,35 +36,20 @@ def seed_users():
 
     for user_data in demo_users:
         email = user_data["email"]
-        password = user_data["password"]
-        role = user_data["role"]
-
-        existing = db.users.find_one({"email": email})
+        existing = await user_store.get_user_by_email(email)
         if existing:
-            print(f"User {email} already exists. Updating password and role...")
-            db.users.update_one(
-                {"email": email},
-                {"$set": {"hashed_password": get_password_hash(password), "role": role}},
-            )
+            print(f"User {email} already exists.")
         else:
             print(f"Creating user {email}...")
-            user = {
-                "id": str(uuid.uuid4()),
-                "email": email,
-                "hashed_password": get_password_hash(password),
-                "name": user_data["name"],
-                "role": role,
-                "status": "active",
-                "avatar": f"https://ui-avatars.com/api/?name={user_data['name'].replace(' ', '+')}&background=random",
-                "createdAt": datetime.now().isoformat(),
-                "bio": user_data["bio"],
-                "skills": user_data["skills"],
-                "location": user_data["location"],
-            }
-            db.users.insert_one(user)
+            await user_store.create_user(
+                email=email,
+                password=user_data["password"],
+                full_name=user_data["name"],
+                role=user_data["role"],
+            )
 
     print("Seed complete.")
 
 
 if __name__ == "__main__":
-    seed_users()
+    asyncio.run(seed_users())

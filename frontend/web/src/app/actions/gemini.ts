@@ -1,6 +1,7 @@
 "use server";
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getTextbookRecord, saveTextbookRecord } from "@/lib/textbook-store";
 
 const createGeminiModel = () => {
   const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
@@ -12,14 +13,8 @@ const createGeminiModel = () => {
   return client.getGenerativeModel({ model: "gemini-1.5-flash" });
 };
 
-import { ObjectId } from "mongodb";
-import clientPromise from "@/lib/mongodb";
-
-// Helper for delay
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 /**
- * Stage 1: Save extracted textbook text to MongoDB (No AI)
+ * Stage 1: Save extracted textbook text to the local textbook store (No AI)
  */
 export async function saveTextbook(
   title: string,
@@ -27,21 +22,8 @@ export async function saveTextbook(
   userId?: string,
 ) {
   try {
-    const client = await clientPromise;
-    if (!client) {
-      return { success: false, error: "MongoDB is not configured" };
-    }
-    const db = client.db("lumina_db");
-
-    const result = await db.collection("textbooks").insertOne({
-      title,
-      content,
-      userId: userId || "anonymous",
-      createdAt: new Date(),
-      status: "raw",
-    });
-
-    return { success: true, id: result.insertedId.toString() };
+    const record = await saveTextbookRecord({ title, content, userId });
+    return { success: true, id: record.id };
   } catch (error: any) {
     console.error("Save Textbook Error:", error);
     return { success: false, error: error.message };
@@ -50,21 +32,14 @@ export async function saveTextbook(
 
 /**
  * Stage 2: Generate course from stored textbook (AI)
- * Fetches text from DB -> Chunks -> AI -> Course
+ * Fetches text from the local textbook store -> Chunks -> AI -> Course
  */
 /**
- * Fetch the raw content of a textbook from MongoDB
+ * Fetch the raw content of a textbook from the local textbook store
  */
 export async function getTextbookContent(textbookId: string) {
   try {
-    const client = await clientPromise;
-    if (!client) {
-      return { success: false, error: "MongoDB is not configured" };
-    }
-    const db = client.db("lumina_db");
-    const textbook = await db.collection("textbooks").findOne({
-      _id: new ObjectId(textbookId),
-    });
+    const textbook = await getTextbookRecord(textbookId);
 
     if (!textbook || !textbook.content) {
       return { success: false, error: "Textbook not found" };

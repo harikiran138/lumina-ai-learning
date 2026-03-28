@@ -158,7 +158,6 @@ services:
 
 volumes:
   postgres_data:
-  mongo_data:
   redis_data:
   chroma_data:
   prometheus_data:
