@@ -1,9 +1,7 @@
-from .handwriting_agent import HandwritingAgent
 from .tutor import TutorAgent, infer_subject_mode
 from .assessment import AssessmentAgent
 from .intervention import InterventionAgent
 from .guardian import GuardianAgent
-from .pathway import PathwayAgent
 from ai_engine.llm import get_llm_provider, is_provider_error
 
 class Orchestrator:
@@ -14,13 +12,38 @@ class Orchestrator:
     VALID_INTENTS = {"TUTORING", "ASSESSMENT", "PATHWAY", "HANDWRITING", "GENERAL"}
 
     def __init__(self, provider: str = "auto"):
-        self.handwriting_agent = HandwritingAgent()
-        self.tutor_agent = TutorAgent(provider=provider)
-        self.assessment_agent = AssessmentAgent(provider=provider)
+        self.provider = provider
+        self.handwriting_agent = None
+        self.tutor_agent = None
+        self.assessment_agent = None
         self.intervention_agent = InterventionAgent()
         self.guardian_agent = GuardianAgent()
-        self.pathway_agent = PathwayAgent()
+        self.pathway_agent = None
         self.llm = get_llm_provider(provider)
+
+    def _get_tutor_agent(self):
+        if self.tutor_agent is None:
+            self.tutor_agent = TutorAgent(provider=self.provider)
+        return self.tutor_agent
+
+    def _get_assessment_agent(self):
+        if self.assessment_agent is None:
+            self.assessment_agent = AssessmentAgent(provider=self.provider)
+        return self.assessment_agent
+
+    def _get_handwriting_agent(self):
+        if self.handwriting_agent is None:
+            from .handwriting_agent import HandwritingAgent
+
+            self.handwriting_agent = HandwritingAgent()
+        return self.handwriting_agent
+
+    def _get_pathway_agent(self):
+        if self.pathway_agent is None:
+            from .pathway import PathwayAgent
+
+            self.pathway_agent = PathwayAgent()
+        return self.pathway_agent
 
     def _heuristic_intent(self, user_input: str) -> str:
         lower = user_input.lower()
@@ -75,26 +98,26 @@ class Orchestrator:
         if intent == "HANDWRITING" or context.get("type") == "handwriting_analysis":
             file_path = context.get("file_path")
             answer_key = context.get("answer_key")
-            return self.handwriting_agent.analyze(file_path, answer_key)
+            return self._get_handwriting_agent().analyze(file_path, answer_key)
         
         elif intent == "ASSESSMENT":
             topic = context.get("topic", "General")
             difficulty = context.get("difficulty", 0.5)
-            return await self.assessment_agent.generate_question(
+            return await self._get_assessment_agent().generate_question(
                 topic,
                 difficulty,
                 context=context.get("profile_context", ""),
             )
         
         elif intent == "PATHWAY":
-            return await self.pathway_agent.process_input(user_input, context)
+            return await self._get_pathway_agent().process_input(user_input, context)
 
         # Default to Tutor Agent for most interactions
         filters = context.get("filters") or {}
         subject_mode = infer_subject_mode(user_input, context.get("topic", ""), filters)
         topic = context.get("topic", "General")
         history = context.get("history", [])
-        return await self.tutor_agent.generate_response(
+        return await self._get_tutor_agent().generate_response(
             topic,
             user_input,
             history,

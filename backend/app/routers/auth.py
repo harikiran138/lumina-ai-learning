@@ -171,6 +171,8 @@ async def register(user: UserCreate, user_store: UserStore = Depends(get_user_st
         )
 
         return new_user
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:

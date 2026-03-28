@@ -1223,6 +1223,31 @@ class AnalyticsStore:
             enrollment_response = client.table("enrollments").select("*").eq("student_id", student_id).execute()
             enrollments = enrollment_response.data or []
 
+            if not enrollments:
+                progress_response = (
+                    client.table("student_progress")
+                    .select("*")
+                    .eq("student_id", student_id)
+                    .execute()
+                )
+                progress_rows = progress_response.data or []
+                enrollments = [
+                    {
+                        "student_id": row.get("student_id"),
+                        "course_id": row.get("course_id"),
+                        "status": "active",
+                        "progress": {
+                            "percentage": row.get("progress", 0),
+                            "mastery": row.get("mastery", 0),
+                            "streak": row.get("streak", 0),
+                            "lastAccessed": row.get("last_accessed"),
+                            "hoursSpent": row.get("hours_spent", 0),
+                        },
+                    }
+                    for row in progress_rows
+                    if row.get("course_id")
+                ]
+
             log.info("dashboard_enrollment_check", student_id=student_id, count=len(enrollments))
 
             if not enrollments:
