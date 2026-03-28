@@ -47,6 +47,12 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
   }
+
+  @keyframes progress {
+    0% { transform: translateX(-100%); }
+    50% { transform: translateX(0); }
+    100% { transform: translateX(100%); }
+  }
 }
 
 @source "../**/*.{js,ts,jsx,tsx,mdx,html}";

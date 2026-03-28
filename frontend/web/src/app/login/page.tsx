@@ -181,10 +181,17 @@ export default function LoginPage() {
         </Link>
       </div>
 
-      <div className="max-w-md w-full space-y-8 relative z-10 backdrop-blur-2xl bg-white/5 p-8 rounded-3xl border border-white/10 shadow-2xl">
+      <div className="max-w-md w-full space-y-8 relative z-10 backdrop-blur-2xl bg-white/5 p-8 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
+        {/* Yellow Progress Bar */}
+        {(isSigningIn || isSigningUp) && (
+          <div className="absolute top-0 left-0 w-full h-1 bg-black/20">
+            <div className="h-full bg-lumina-primary shadow-[0_0_10px_#f59e0b] animate-[progress_2s_ease-in-out_infinite]" style={{ width: '100%' }}></div>
+          </div>
+        )}
+        
         <div>
           <Link href="/" className="flex justify-center text-3xl font-bold">
-            <span className="gradient-text">Lumina</span> ✨
+            <span className="gradient-text drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]">Lumina</span> ✨
           </Link>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
             {activeTab === "signin" ? "Welcome Back" : "Create Account"}
