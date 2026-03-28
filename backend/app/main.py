@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 import importlib.metadata
 
-# Python 3.8 compatibility shim for dependencies expecting packages_distributions
+# Legacy runtime compatibility shim for dependencies expecting packages_distributions
 if not hasattr(importlib.metadata, "packages_distributions"):
     try:
         import importlib_metadata
@@ -79,7 +79,7 @@ from .routers import (  # noqa: E402
 from app.assessment.api.router import router as assessment_router  # noqa: E402
 from app.api.routers.automation import router as automation_router  # noqa: E402
 
-# Polyfill for python 3.8
+# Polyfill for older Python runtimes that do not expose asyncio.to_thread
 if not hasattr(asyncio, "to_thread"):
 
     async def to_thread(func, /, *args, **kwargs):
@@ -341,7 +341,7 @@ async def health_check():
         health_report["status"] = "degraded"
         health_report["services"]["supabase"] = {"status": "error", "error": str(e)}
 
-    # MongoDB removed from health check
+    # Only active backend services are reported here.
 
     # 2. Check Redis
     try:
@@ -376,7 +376,8 @@ async def sentry_context_middleware(request: Request, call_next):
     # Check if user data exists in request state (set by auth middleware if present)
     user = getattr(request.state, "user", None)
     if user:
-        with sentry_sdk.configure_scope() as scope:
-            scope.set_user({"id": str(user.get("id")), "email": user.get("email")})
+        sentry_sdk.set_user({"id": str(user.get("id")), "email": user.get("email")})
+    else:
+        sentry_sdk.set_user(None)
 
     return response

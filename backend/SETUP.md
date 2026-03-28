@@ -5,7 +5,7 @@ This guide explains how to set up the Supabase database for the Lumina AI Learni
 ## Prerequisites
 
 1.  A Supabase project (create one at supabase.com)
-2.  Python 3.8+
+2.  Python 3.11+ recommended
 3.  Redis (for caching, optional but highly recommended)
 
 ## 1. Environment Variables (`.env`)
@@ -80,7 +80,7 @@ For local development or tests without Supabase, set `LUMINA_FORCE_LOCAL_STORE=t
 
 1. Install dependencies:
    ```bash
-   python -m venv .venv
+   python3.11 -m venv .venv
    source .venv/bin/activate
    pip install -r requirements.txt
    ```
