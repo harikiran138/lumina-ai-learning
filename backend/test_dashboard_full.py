@@ -5,7 +5,7 @@ login_payload = {'username': 'student@lumina.com', 'password': 'student123'}
 
 try:
     # 1. Login
-    res = requests.post(f'{base_url}/api/auth/token', data=login_payload)
+    res = requests.post(f'{base_url}/api/auth/token', data=login_payload, timeout=30)
     token = res.json()['access_token']
     headers = {'Authorization': f'Bearer {token}'}
     print("Logged in.")
@@ -18,13 +18,14 @@ try:
     log_res = requests.post(
         f'{base_url}/api/student/log-activity',
         headers=headers,
-        json={'course_id': course_id, 'duration_minutes': 10}
+        json={'course_id': course_id, 'duration_minutes': 10},
+        timeout=30,
     )
     print(f"Log Activity Status: {log_res.status_code}")
     print(f"Log Activity Response: {log_res.text}")
 
     # 4. Fetch Dashboard
-    dash_res = requests.get(f'{base_url}/api/student/dashboard', headers=headers)
+    dash_res = requests.get(f'{base_url}/api/student/dashboard', headers=headers, timeout=30)
     print(f"Dashboard Response: {dash_res.text}")
     
     dashboard = dash_res.json()
