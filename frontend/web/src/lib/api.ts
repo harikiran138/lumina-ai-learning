@@ -332,18 +332,66 @@ export class RealAPI {
     return res.ok ? await res.json() : [];
   }
 
+  async getStudentOnboardingOptions(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/student/onboarding/options");
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to load student onboarding options");
+    }
+    return await parseJsonSafe(res) ?? {};
+  }
+
+  async completeStudentOnboarding(payload: any): Promise<any> {
+    const res = await this.fetchAuthorized("/api/student/onboarding/complete", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to complete student onboarding setup");
+    }
+    return await parseJsonSafe(res) ?? {};
+  }
+
+  async getFacultyOnboardingOptions(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/faculty/onboarding/options");
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to load faculty onboarding options");
+    }
+    return await parseJsonSafe(res) ?? {};
+  }
+
+  async completeFacultyOnboarding(payload: any): Promise<any> {
+    const res = await this.fetchAuthorized("/api/faculty/onboarding/complete", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to complete faculty onboarding setup");
+    }
+    return await parseJsonSafe(res) ?? {};
+  }
+
   async updateOnboardingStep(step: number, data: any): Promise<any> {
     const res = await this.fetchAuthorized("/api/onboarding/step", {
       method: "PATCH",
       body: JSON.stringify({ step, data }),
     });
-    if (!res.ok) return { success: false };
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to save onboarding step");
+    }
     return await parseJsonSafe(res) ?? {};
   }
 
   async completeOnboarding(): Promise<any> {
     const res = await this.fetchAuthorized("/api/onboarding/complete", { method: "POST" });
-    if (!res.ok) return { success: false };
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to complete onboarding");
+    }
     return await parseJsonSafe(res) ?? {};
   }
 
@@ -475,6 +523,10 @@ export class RealAPI {
     const res = await this.fetchAuthorized(`/api/colleges/${collegeId}`, { method: "PATCH", body: JSON.stringify(data)});
     return await parseJsonSafe(res) ?? {};
   }
+  async architectureCreateCollege(data: any) {
+    const res = await this.fetchAuthorized("/api/colleges", { method: "POST", body: JSON.stringify(data)});
+    return await parseJsonSafe(res) ?? {};
+  }
   async architectureCreateDepartment(collegeId: string, data: any) {
     const res = await this.fetchAuthorized(`/api/colleges/${collegeId}/departments`, { method: "POST", body: JSON.stringify(data)});
     return await parseJsonSafe(res) ?? {};
@@ -504,9 +556,74 @@ export class RealAPI {
     return await parseJsonSafe(res) ?? {};
   }
 
+  async architectureUpdateDepartment(deptId: string, data: any) {
+    const res = await this.fetchAuthorized(`/api/departments/${deptId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+    return await parseJsonSafe(res) ?? {};
+  }
+
+  async assignSubject(subjectId: string, data: any) {
+    const res = await this.fetchAuthorized(`/api/subjects/${subjectId}/assign`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return await parseJsonSafe(res) ?? {};
+  }
+
+  async listCollegeUsers(
+    collegeId: string,
+    params?: { role?: string; deptId?: string; batchId?: string; section?: string },
+  ) {
+    const query = new URLSearchParams();
+    if (params?.role) query.append("role", params.role);
+    if (params?.deptId) query.append("dept_id", params.deptId);
+    if (params?.batchId) query.append("batch_id", params.batchId);
+    if (params?.section) query.append("section", params.section);
+
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    const res = await this.fetchAuthorized(`/api/colleges/${collegeId}/users${suffix}`);
+    return res.ok ? await res.json() : [];
+  }
+
+  async getFacultySubjectAssignments(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/faculty/subjects");
+    return res.ok ? await res.json() : [];
+  }
+
+  async refreshSession(): Promise<any> {
+    const res = await fetch(`${this.getApiBase()}/api/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to refresh session");
+    }
+
+    const tokenData = await parseJsonSafe(res);
+    if (tokenData?.accessToken) {
+      this.token = tokenData.accessToken;
+      setAuthCookie(tokenData.accessToken);
+      if (this.currentUser) {
+        this.currentUser = {
+          ...this.currentUser,
+          onboardingCompleted: true,
+          onboardingStep: 5,
+        };
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("lumina_user", JSON.stringify(this.currentUser));
+        }
+      }
+    }
+    return tokenData ?? {};
+  }
+
   // Enrollment
   async redeemEnrollmentCode(code: string) {
-    const res = await this.fetchAuthorized("/api/enroll/redeem", { method: "POST", body: JSON.stringify({ code })});
+    const res = await this.fetchAuthorized("/api/enroll", { method: "POST", body: JSON.stringify({ code })});
     return await parseJsonSafe(res) ?? {};
   }
 
@@ -943,7 +1060,11 @@ export class RealAPI {
       JSON.stringify(user).toLowerCase().includes(normalized),
     );
   }
-  async listFacultyByDept(_deptId?: string, ..._args: any[]): Promise<any> { return []; }
+  async listFacultyByDept(deptId?: string, ..._args: any[]): Promise<any> {
+    if (!this.currentUser?.collegeId) return [];
+    const users = await this.listCollegeUsers(this.currentUser.collegeId, { deptId });
+    return users.filter((user: any) => ["faculty", "teacher", "hod"].includes(user.role));
+  }
   async inviteStudent(..._args: any[]): Promise<any> { return { success: false }; }
   async approveTeacherRequest(requestId: string, ..._args: any[]): Promise<any> {
     return this.updateTeacherRequest(requestId, "approved");
@@ -971,6 +1092,7 @@ export class RealAPI {
   async createBatch(deptId: string, data: any) { return this.architectureCreateBatch(deptId, data); }
   async createSubject(deptId: string, data: any) { return this.architectureCreateSubject(deptId, data); }
   async inviteUser(collegeId: string, data: any) { return this.architectureInviteUser(collegeId, data); }
+  async createCollege(data: any) { return this.architectureCreateCollege(data); }
   async updateCollege(collegeId: string, data: any) { return this.architectureUpdateCollege(collegeId, data); }
   async createDepartment(collegeId: string, data: any) { return this.architectureCreateDepartment(collegeId, data); }
 }

@@ -797,3 +797,40 @@ async def delete_class(class_id: str, admin: dict = Depends(is_admin)):
     if not success:
         raise HTTPException(status_code=404, detail="Class not found or delete failed")
     return {"success": True}
+
+
+# --- AI Configuration Endpoints ---
+
+@router.get("/ai/prompts")
+async def get_ai_prompts(admin: dict = Depends(is_admin)):
+    """List configured AI system prompts."""
+    try:
+        response = supabase_db.client.table("ai_prompts").select("*").order("created_at", desc=True).execute()
+        return response.data or []
+    except Exception:
+        return []
+
+
+@router.get("/ai/models")
+async def get_ai_models(admin: dict = Depends(is_admin)):
+    """List available AI model configurations."""
+    try:
+        response = supabase_db.client.table("ai_model_configs").select("*").order("created_at", desc=True).execute()
+        return response.data or []
+    except Exception:
+        return [
+            {"id": "gemini-1.5-flash", "name": "Gemini 1.5 Flash", "provider": "Google", "status": "active", "cost_per_1k_tokens": 0.002},
+            {"id": "gemini-1.5-pro", "name": "Gemini 1.5 Pro", "provider": "Google", "status": "active", "cost_per_1k_tokens": 0.007},
+        ]
+
+
+@router.get("/ai/costs")
+async def get_ai_costs(admin: dict = Depends(is_admin)):
+    """Fetch AI usage cost summary."""
+    try:
+        response = supabase_db.client.table("ai_usage_costs").select("*").order("period_start", desc=True).limit(12).execute()
+        rows = response.data or []
+        total = sum(float(r.get("total_cost", 0)) for r in rows)
+        return {"total_cost": total, "currency": "USD", "periods": rows}
+    except Exception:
+        return {"total_cost": 0.0, "currency": "USD", "periods": []}

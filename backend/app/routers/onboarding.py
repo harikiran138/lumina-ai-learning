@@ -21,6 +21,8 @@ def _normalize_role(role: str) -> str:
 async def get_onboarding_status(current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("id")
     step = current_user.get("onboarding_step", 0) or 0
+    existing = await supabase_db.fetch_one("user_data", {"user_id": user_id})
+    progress = (existing or {}).get("progress") or {}
 
     return {
         "step": step,
@@ -29,6 +31,7 @@ async def get_onboarding_status(current_user: dict = Depends(get_current_user)):
         "collegeId": current_user.get("college_id") or current_user.get("institution_id"),
         "deptId": current_user.get("dept_id") or current_user.get("department_id"),
         "batchId": current_user.get("batch_id"),
+        "progress": progress,
     }
 
 
@@ -44,7 +47,7 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
         if missing:
             raise HTTPException(status_code=400, detail=f"Missing required fields: {', '.join(missing)}")
 
-    if role == "college_admin":
+    if role in {"college_admin", "super_admin"}:
         if requested_step == 1:
             require_fields(["collegeName", "collegeCode"])
         if requested_step == 2:
@@ -102,7 +105,7 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
                     {
                         "student_id": user_id,
                         "type": "batch_correction",
-                        "message": "Student raised batch assignment issue",
+                        "message": step_data.get("correctionMessage") or "Student raised batch assignment issue",
                         "status": "pending",
                         "created_at": datetime.utcnow().isoformat(),
                     },
@@ -110,8 +113,6 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
         if requested_step == 4:
             if not step_data.get("photoUrl") and not step_data.get("profilePhotoUrl"):
                 raise HTTPException(status_code=400, detail="Profile photo required")
-    elif role == "super_admin":
-        requested_step = 5
 
     # Update user fields if provided in step data
     updates = {}
@@ -125,12 +126,12 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
     if "registerNumber" in step_data: updates["student_roll"] = step_data["registerNumber"]
     if "phone" in step_data: updates["phone"] = step_data["phone"]
     if "profilePhotoUrl" in step_data: updates["profile_photo_url"] = step_data["profilePhotoUrl"]
-    if "emergencyContact" in step_data: updates["emergency_contact"] = step_data["emergencyContact"]
-    if "parentEmail" in step_data: updates["parent_email"] = step_data["parentEmail"]
     
     updates["onboarding_step"] = requested_step
 
-    await UserStore().update_user_fields(user_id, updates)
+    updated = await UserStore().update_user_fields(user_id, updates)
+    if not updated:
+        raise HTTPException(status_code=500, detail="Failed to persist onboarding user fields")
 
     # Persist step data inside user_data.progress
     existing = await supabase_db.fetch_one("user_data", {"user_id": user_id})
@@ -184,7 +185,24 @@ async def get_onboarding_subjects(current_user: dict = Depends(get_current_user)
 @router.post("/complete")
 async def complete_onboarding(current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("id")
-    await UserStore().update_user_fields(user_id, {"onboarding_step": 5})
+    updated = await UserStore().update_user_fields(user_id, {"onboarding_step": 5})
+    if not updated:
+        raise HTTPException(status_code=500, detail="Failed to finalize onboarding")
+    role = _normalize_role(current_user.get("role"))
+
+    if role in {"college_admin", "super_admin"}:
+        college_id = current_user.get("college_id") or current_user.get("institution_id")
+        if college_id:
+            await supabase_db.update(
+                "institutions",
+                {
+                    "onboarding_status": "ACTIVE",
+                    "is_active": True,
+                    "updated_at": datetime.utcnow().isoformat(),
+                },
+                {"id": college_id},
+            )
+
     existing = await supabase_db.fetch_one("user_data", {"user_id": user_id})
     progress = (existing or {}).get("progress") or {}
     progress["onboarding_status"] = "COMPLETED"

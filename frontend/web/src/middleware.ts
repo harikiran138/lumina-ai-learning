@@ -23,6 +23,18 @@ function normalizeRole(role: string): string {
   return role
 }
 
+function getRoleHome(role: string): string {
+  const normalized = normalizeRole(role)
+  const rolePaths: Record<string, string> = {
+    super_admin: '/admin',
+    college_admin: '/college',
+    hod: '/hod/dashboard',
+    faculty: '/faculty/dashboard',
+    student: '/student/dashboard',
+  }
+  return rolePaths[normalized] || '/'
+}
+
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value
   const { pathname } = request.nextUrl
@@ -63,7 +75,7 @@ export function middleware(request: NextRequest) {
 
   if (onboardingCompleted && pathname.startsWith('/onboarding')) {
     const url = request.nextUrl.clone()
-    url.pathname = `/${role === 'super_admin' ? 'admin' : role}/dashboard`
+    url.pathname = getRoleHome(role)
     return NextResponse.redirect(url)
   }
 
@@ -79,7 +91,7 @@ export function middleware(request: NextRequest) {
     if (pathname.startsWith(path)) {
       if (role !== 'super_admin' && role !== expectedRole) {
         const url = request.nextUrl.clone()
-        url.pathname = `/${role === 'super_admin' ? 'admin' : role}/dashboard`
+        url.pathname = getRoleHome(role)
         return NextResponse.redirect(url)
       }
     }
