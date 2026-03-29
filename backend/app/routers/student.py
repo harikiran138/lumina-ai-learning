@@ -1,8 +1,10 @@
 import asyncio
+import json
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
+from app.store.redis_client import redis_client
 from app.personalization.schemas import (
     LearningEventType,
     QuizResultPayload,
@@ -603,6 +605,14 @@ async def get_student_dashboard(
     """
     Get the full student dashboard data (courses, progress, stats).
     """
+    cache_key = f"dashboard:student:{current_user['id']}"
+    try:
+        cached = await redis_client.get(cache_key)
+        if cached:
+            return json.loads(cached)
+    except Exception:
+        pass
+
     personalization = get_personalization_service()
 
     dashboard_data = await analytics.get_student_full_dashboard(current_user["id"])
@@ -705,6 +715,11 @@ async def get_student_dashboard(
             ),
         }
     )
+
+    try:
+        await redis_client.setex(cache_key, 300, json.dumps(dashboard_data, default=str))
+    except Exception:
+        pass
 
     return dashboard_data
 
