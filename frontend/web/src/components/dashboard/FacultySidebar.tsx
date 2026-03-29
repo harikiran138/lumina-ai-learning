@@ -151,7 +151,7 @@ export default function FacultySidebar({
       <div className="sidebar-bottom border-t border-white/10 space-y-3 shrink-0">
         {/* Notifications */}
         <Link
-          href="/faculty/notifications"
+          href="/faculty/alerts"
           aria-label="Notifications"
           className="sidebar-bottom-item sidebar-nav-item flex items-center w-full py-3 text-sm font-semibold rounded-xl text-gray-400 hover:bg-white/[0.03] hover:text-gray-200 relative group"
         >

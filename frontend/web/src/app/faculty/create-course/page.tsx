@@ -42,7 +42,7 @@ export default function CreateCoursePage() {
     try {
       const res = await api.createCourse(formData);
       if (res.success) {
-        router.push("/teacher/courses");
+        router.push("/faculty/courses");
       } else {
         setError(res.error || "Failed to create course.");
       }

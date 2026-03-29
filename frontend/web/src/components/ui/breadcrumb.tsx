@@ -17,16 +17,18 @@ const defaultLabels: Record<string, string> = {
 
 const defaultHrefs: Record<string, string> = {
   student: '/student/dashboard',
-  teacher: '/teacher/dashboard',
+  teacher: '/faculty/dashboard',
+  faculty: '/faculty/dashboard',
   admin: '/admin/dashboard',
   parent: '/parent/dashboard',
   mentor: '/mentor/dashboard',
   counselor: '/counselor/dashboard',
   alumni: '/alumni/dashboard',
   researcher: '/researcher/dashboard',
-  creator: '/creator/dashboard',
-  'peer-tutor': '/peer-tutor/dashboard',
-  peer_tutor: '/peer-tutor/dashboard',
+  creator: '/content_creator/dashboard',
+  content_creator: '/content_creator/dashboard',
+  'peer-tutor': '/peer_tutor/dashboard',
+  peer_tutor: '/peer_tutor/dashboard',
 }
 
 export function Breadcrumb({

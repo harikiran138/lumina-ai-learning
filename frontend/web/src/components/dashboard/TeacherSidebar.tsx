@@ -24,22 +24,22 @@ import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 
 const navItems = [
-  { name: "Dashboard", href: "/teacher/dashboard", icon: LayoutDashboard },
-  { name: "My Courses", href: "/teacher/courses", icon: BookOpen },
-  { name: "Students", href: "/teacher/students", icon: Users },
-  { name: "Assignments", href: "/teacher/assignments", icon: ClipboardCheck },
+  { name: "Dashboard", href: "/faculty/dashboard", icon: LayoutDashboard },
+  { name: "My Courses", href: "/faculty/courses", icon: BookOpen },
+  { name: "Students", href: "/faculty/students", icon: Users },
+  { name: "Assignments", href: "/faculty/assignments", icon: ClipboardCheck },
   {
     name: "Create Assignment",
-    href: "/teacher/assignments/create",
+    href: "/faculty/assignments/create",
     icon: PlusCircle,
   },
-  { name: "Gradebook", href: "/teacher/gradebook", icon: GraduationCap },
-  { name: "Grading", href: "/teacher/grading", icon: FileText },
-  { name: "Calendar", href: "/teacher/calendar", icon: Calendar },
-  { name: "Analytics", href: "/teacher/analytics", icon: BarChart3 },
-  { name: "AI Course Creator", href: "/teacher/ai-generator", icon: Sparkles },
-  { name: "Resources", href: "/teacher/resources", icon: FileText },
-  { name: "Settings", href: "/teacher/settings", icon: Settings },
+  { name: "Gradebook", href: "/faculty/gradebook", icon: GraduationCap },
+  { name: "Grading", href: "/faculty/grading", icon: FileText },
+  { name: "Calendar", href: "/faculty/calendar", icon: Calendar },
+  { name: "Analytics", href: "/faculty/analytics", icon: BarChart3 },
+  { name: "AI Course Creator", href: "/faculty/ai-generator", icon: Sparkles },
+  { name: "Resources", href: "/faculty/resources", icon: FileText },
+  { name: "Settings", href: "/faculty/settings", icon: Settings },
 ];
 
 export default function TeacherSidebar({
@@ -192,7 +192,7 @@ export default function TeacherSidebar({
       >
         {/* Notifications */}
         <Link
-          href="/teacher/notifications"
+          href="/faculty/alerts"
           className={cn(
             "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
             !isHovered ? "justify-center px-0" : "px-4",
@@ -226,7 +226,7 @@ export default function TeacherSidebar({
         {/* User Profile Snippet */}
         {user && (
           <Link
-            href="/teacher/settings"
+            href="/faculty/settings"
             className={cn(
               "flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-500 cursor-pointer overflow-hidden",
               !isHovered ? "justify-center p-2" : "p-3",

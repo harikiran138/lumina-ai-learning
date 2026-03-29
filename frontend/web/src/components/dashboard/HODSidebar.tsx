@@ -8,13 +8,9 @@ import {
   Building2,
   Users,
   BookOpen,
-  ClipboardCheck,
-  BarChart3,
-  Settings,
   LogOut,
   X,
   Bell,
-  ShieldCheck,
   GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,14 +19,10 @@ import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
   { name: "Dashboard",          href: "/hod/dashboard",   icon: LayoutDashboard },
-  { name: "My Department",      href: "/hod/department",  icon: Building2 },
+  { name: "Department Overview",href: "/hod/dashboard",   icon: Building2 },
   { name: "Faculty Management", href: "/hod/faculty",     icon: Users },
   { name: "Program Management", href: "/hod/programs",    icon: GraduationCap },
-  { name: "Approval Queue",     href: "/hod/approvals",   icon: ClipboardCheck },
   { name: "Curriculum Map",     href: "/hod/curriculum",  icon: BookOpen },
-  { name: "Analytics",          href: "/hod/analytics",   icon: BarChart3 },
-  { name: "Compliance",         href: "/hod/compliance",  icon: ShieldCheck },
-  { name: "Settings",           href: "/hod/settings",    icon: Settings },
 ];
 
 export default function HODSidebar({
@@ -126,7 +118,7 @@ export default function HODSidebar({
       {/* ── Bottom ── */}
       <div className="sidebar-bottom border-t border-white/10 space-y-3 shrink-0">
         <Link
-          href="/hod/notifications"
+          href="/hod/dashboard"
           aria-label="Notifications"
           className="sidebar-bottom-item sidebar-nav-item flex items-center w-full py-3 text-sm font-semibold rounded-xl text-gray-400 hover:bg-white/[0.03] hover:text-gray-200 relative group"
         >
@@ -144,7 +136,7 @@ export default function HODSidebar({
 
         {user && (
           <Link
-            href="/hod/settings"
+            href="/hod/dashboard"
             className="sidebar-user-card flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer overflow-hidden"
           >
             <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
