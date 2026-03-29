@@ -75,6 +75,8 @@ from .routers import (  # noqa: E402
     materials,
     faculty,
     ai_queue,
+    unit_pipeline,
+    handwritten,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
@@ -235,6 +237,7 @@ Instrumentator().instrument(app).expose(app)
 app.include_router(ai.router, prefix="/api", tags=["AI"])
 app.include_router(generation.router)
 app.include_router(handwriting.router, prefix="/api/handwriting", tags=["Handwriting"])
+app.include_router(handwritten.router, prefix="/api/handwritten", tags=["Handwritten Assignments"])
 app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignments"])
 
 
@@ -274,6 +277,7 @@ app.include_router(attendance.router, prefix="/api", tags=["Attendance"])
 app.include_router(materials.router, prefix="/api", tags=["Materials"])
 app.include_router(faculty.router, prefix="/api", tags=["Faculty"])
 app.include_router(ai_queue.router, prefix="/api", tags=["AI Queue"])
+app.include_router(unit_pipeline.router, prefix="/api/teacher", tags=["Unit Pipeline"])
 
 
 # --- Performance & Security Polish ---

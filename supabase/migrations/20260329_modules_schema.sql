@@ -9,11 +9,11 @@
 -- ─── 01. Course Q&A ──────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS course_questions (
   id          SERIAL       PRIMARY KEY,
-  course_id   INT          REFERENCES courses(id)  ON DELETE CASCADE,
+  course_id   UUID         REFERENCES courses(id)  ON DELETE CASCADE,
   student_id  UUID         REFERENCES users(id)    ON DELETE CASCADE,
   college_id  UUID,
   question_text TEXT       NOT NULL,
-  context_lecture_id INT,
+  context_lecture_id UUID,
   created_at  TIMESTAMPTZ  DEFAULT NOW(),
   is_resolved BOOLEAN      DEFAULT FALSE
 );
@@ -29,17 +29,22 @@ ALTER TABLE ai_answer_queue ADD COLUMN IF NOT EXISTS ai_confidence    NUMERIC(4,
 ALTER TABLE ai_answer_queue ADD COLUMN IF NOT EXISTS ai_sources       JSONB;
 ALTER TABLE ai_answer_queue ADD COLUMN IF NOT EXISTS final_answer     TEXT;
 ALTER TABLE ai_answer_queue ADD COLUMN IF NOT EXISTS faculty_note     TEXT;
+ALTER TABLE ai_answer_queue ADD COLUMN IF NOT EXISTS college_id       UUID;
 ALTER TABLE ai_answer_queue ADD COLUMN IF NOT EXISTS reviewed_by      UUID  REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE ai_answer_queue ADD COLUMN IF NOT EXISTS reviewed_at      TIMESTAMPTZ;
 
--- Ensure status has correct values
+-- Add ai_draft as alias column (keep student_question for backward compat)
+ALTER TABLE ai_answer_queue ADD COLUMN IF NOT EXISTS ai_draft TEXT;
+
+-- Ensure status has correct values (existing data may have old values — skip constraint if data conflicts)
 DO $$
 BEGIN
-  -- Add constraint only if it doesn't already exist
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.table_constraints
     WHERE table_name = 'ai_answer_queue' AND constraint_name = 'chk_aaq_status'
   ) THEN
+    -- Reset any old status values first
+    UPDATE ai_answer_queue SET status = 'pending' WHERE status NOT IN ('pending','approved','edited_approved','rejected');
     ALTER TABLE ai_answer_queue
       ADD CONSTRAINT chk_aaq_status
         CHECK (status IN ('pending','approved','edited_approved','rejected'));
@@ -53,8 +58,8 @@ CREATE INDEX IF NOT EXISTS idx_aaq_college  ON ai_answer_queue(college_id);
 -- ─── 03. Flashcards ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS flashcards (
   id          SERIAL       PRIMARY KEY,
-  course_id   INT          REFERENCES courses(id) ON DELETE CASCADE,
-  lecture_id  INT,
+  course_id   UUID         REFERENCES courses(id) ON DELETE CASCADE,
+  lecture_id  UUID,
   college_id  UUID,
   created_by  UUID         REFERENCES users(id) ON DELETE SET NULL,
   front       TEXT         NOT NULL,
@@ -93,7 +98,7 @@ CREATE INDEX IF NOT EXISTS idx_sfp_state  ON student_flashcard_progress(student_
 -- ─── 05. Attendance Sessions (QR-based) ──────────────────────────────────────
 CREATE TABLE IF NOT EXISTS attendance_sessions (
   id              SERIAL      PRIMARY KEY,
-  course_id       INT         REFERENCES courses(id) ON DELETE CASCADE,
+  course_id       UUID        REFERENCES courses(id) ON DELETE CASCADE,
   faculty_id      UUID        REFERENCES users(id)   ON DELETE SET NULL,
   college_id      UUID,
   lecture_date    DATE        NOT NULL,
@@ -113,7 +118,7 @@ CREATE TABLE IF NOT EXISTS attendance_records (
   id                  SERIAL      PRIMARY KEY,
   session_id          INT         REFERENCES attendance_sessions(id) ON DELETE CASCADE,
   student_id          UUID        REFERENCES users(id) ON DELETE CASCADE,
-  course_id           INT,
+  course_id           UUID,
   college_id          UUID,
   marked_at           TIMESTAMPTZ DEFAULT NOW(),
   method              VARCHAR(20) DEFAULT 'manual'
@@ -224,8 +229,8 @@ CREATE INDEX IF NOT EXISTS idx_va_faculty ON video_analyses(faculty_id);
 CREATE TABLE IF NOT EXISTS lecture_progress (
   id               SERIAL      PRIMARY KEY,
   student_id       UUID        REFERENCES users(id) ON DELETE CASCADE,
-  lecture_id       INT         NOT NULL,
-  course_id        INT,
+  lecture_id       UUID        NOT NULL,
+  course_id        UUID,
   watched_seconds  INT         DEFAULT 0,
   completed        BOOLEAN     DEFAULT FALSE,
   last_watched_at  TIMESTAMPTZ,

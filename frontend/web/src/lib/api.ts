@@ -1,8 +1,14 @@
 // API client for the Lumina FastAPI backend
 
-const LOCAL_API_BASE = "http://127.0.0.1:8000";
-const LOCAL_AUTH_BASE = "http://127.0.0.1:4000";
-const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "0.0.0.0", "localhost:3000"]);
+const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "0.0.0.0"]);
+
+function getLocalServiceBase(port: number): string | null {
+  if (typeof window === "undefined") return null;
+  const hostname = window.location.hostname;
+  if (!LOCAL_HOSTNAMES.has(hostname) && !hostname.includes("localhost")) return null;
+  const protocol = window.location.protocol === "https:" ? "https" : "http";
+  return `${protocol}://${hostname}:${port}`;
+}
 
 export function getConfiguredApiBase(): string | null {
   const explicitBase =
@@ -10,25 +16,13 @@ export function getConfiguredApiBase(): string | null {
     process.env.NEXT_PUBLIC_API_BASE?.trim();
 
   if (explicitBase) return explicitBase.replace(/\/+$/, "");
-  if (
-    typeof window !== "undefined" &&
-    (LOCAL_HOSTNAMES.has(window.location.hostname) || window.location.hostname.includes("localhost"))
-  ) {
-    return LOCAL_API_BASE;
-  }
-  return null;
+  return getLocalServiceBase(8000);
 }
 
 export function getConfiguredAuthBase(): string | null {
   const explicitBase = process.env.NEXT_PUBLIC_AUTH_URL?.trim();
   if (explicitBase) return explicitBase.replace(/\/+$/, "");
-  if (
-    typeof window !== "undefined" &&
-    (LOCAL_HOSTNAMES.has(window.location.hostname) || window.location.hostname.includes("localhost"))
-  ) {
-    return LOCAL_AUTH_BASE;
-  }
-  return null;
+  return getLocalServiceBase(4000);
 }
 
 export function requireApiBase(): string {
@@ -117,8 +111,12 @@ export class RealAPI {
   private constructor() {
     if (typeof window !== "undefined") {
       const storedUser = sessionStorage.getItem("lumina_user");
+      const storedToken = sessionStorage.getItem("lumina_token");
       if (storedUser) {
         this.currentUser = JSON.parse(storedUser);
+      }
+      if (storedToken) {
+        this.token = storedToken;
       }
     }
   }
@@ -134,6 +132,17 @@ export class RealAPI {
     return requireApiBase();
   }
 
+  private persistToken(token: string | null) {
+    this.token = token;
+    if (typeof window !== "undefined") {
+      if (token) {
+        sessionStorage.setItem("lumina_token", token);
+      } else {
+        sessionStorage.removeItem("lumina_token");
+      }
+    }
+  }
+
   private async handleUnauthorized(): Promise<boolean> {
     try {
       const res = await fetch(`${requireAuthBase()}/api/auth/refresh`, {
@@ -141,6 +150,10 @@ export class RealAPI {
         credentials: 'include',
       })
       if (res.ok) {
+        const tokenData = await parseJsonSafe(res);
+        if (tokenData?.accessToken) {
+          this.persistToken(tokenData.accessToken);
+        }
         return true
       }
     } catch { }
@@ -170,7 +183,11 @@ export class RealAPI {
     if (response.status === 401) {
       const refreshed = await this.handleUnauthorized()
       if (refreshed) {
-        headers.set("Authorization", `Bearer ${this.token}`);
+        if (this.token) {
+          headers.set("Authorization", `Bearer ${this.token}`);
+        } else {
+          headers.delete("Authorization");
+        }
         return fetchWithRetry(`${this.getApiBase()}${path}`, { ...options, headers })
       }
     }
@@ -191,12 +208,19 @@ export class RealAPI {
   }
 
   // --- Auth APIs ---
-  async login(params: { 
-    identifier: string; 
-    password?: string; 
-    role_hint?: string; 
-    college_id?: string;
-  }): Promise<User> {
+  async login(
+    paramsOrIdentifier: {
+      identifier: string;
+      password?: string;
+      role_hint?: string;
+      college_id?: string;
+    } | string,
+    maybePassword?: string,
+  ): Promise<User> {
+    const params =
+      typeof paramsOrIdentifier === "string"
+        ? { identifier: paramsOrIdentifier, password: maybePassword }
+        : paramsOrIdentifier;
     const { identifier, password, role_hint, college_id } = params;
     if (!password) throw new Error("Password is required for login.");
 
@@ -213,6 +237,9 @@ export class RealAPI {
     }
 
     const tokenData = await parseJsonSafe(res);
+    if (tokenData?.accessToken) {
+      this.persistToken(tokenData.accessToken);
+    }
     
     // Express backend sets the cookies automatically.
     const userData = tokenData.user;
@@ -257,7 +284,7 @@ export class RealAPI {
         role: userData.role || "student",
       }),
     });
-    if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.detail || "Registration failed"); }
+    if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.error || e?.detail || "Registration failed"); }
     return this.login({ identifier: userData.email!, password: userData.password });
   }
 
@@ -271,10 +298,9 @@ export class RealAPI {
       // ignore logout network errors
     }
     this.currentUser = null;
-    this.token = null;
+    this.persistToken(null);
     if (typeof window !== "undefined") {
       sessionStorage.removeItem("lumina_user");
-      sessionStorage.removeItem("lumina_token");
     }
   }
 
@@ -592,6 +618,7 @@ export class RealAPI {
 
     const tokenData = await parseJsonSafe(res);
     if (tokenData?.accessToken) {
+      this.persistToken(tokenData.accessToken);
       if (this.currentUser) {
         this.currentUser = {
           ...this.currentUser,

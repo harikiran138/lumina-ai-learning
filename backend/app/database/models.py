@@ -234,7 +234,106 @@ class TutorSession(BaseModel):
     last_activity: str = Field(default_factory=current_time_iso)
     updated_at: str = Field(default_factory=current_time_iso)
 
-# --- 8. INSTITUTION & STAKEHOLDER MANAGEMENT ---
+
+# --- 8. HANDWRITTEN ASSIGNMENT SYSTEM ---
+
+
+class SubmissionStatus(str):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    AI_EVALUATED = "ai_evaluated"
+    TEACHER_REVIEWED = "teacher_reviewed"
+    PUBLISHED = "published"
+    ERROR = "error"
+
+
+class QuestionStatus(str):
+    PENDING = "pending"
+    AI_GRADED = "ai_graded"
+    ACCEPTED = "accepted"
+    OVERRIDDEN = "overridden"
+
+
+class Criterion(BaseModel):
+    label: str
+    marks: int
+    description: str = ""
+
+
+class Rubric(BaseModel):
+    criteria: List[Criterion] = []
+    keywords: List[str] = []
+    sample_answer: str = ""
+
+
+class HandwrittenQuestion(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    assignment_id: str
+    number: int
+    text: str
+    max_marks: int
+    rubric: Rubric = Rubric()
+
+
+class HandwrittenAssignment(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    teacher_id: str
+    title: str
+    description: str = ""
+    total_marks: int = 0
+    created_at: str = Field(default_factory=current_time_iso)
+
+
+class HandwrittenSubmissionQuestion(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    submission_id: str
+    question_id: str
+    status: str = QuestionStatus.PENDING
+
+    # OCR Data
+    ocr_raw_text: Optional[str] = None
+    ocr_confidence: float = 0.0
+    ocr_is_flagged: bool = False
+    segment_image_path: Optional[str] = None
+
+    # AI Grading
+    ai_score: float = 0.0
+    ai_reasoning: Optional[str] = None
+    ai_feedback: Optional[str] = None
+    ai_confidence: float = 0.0
+
+    # Teacher Override
+    teacher_score: Optional[float] = None
+    teacher_feedback: Optional[str] = None
+    teacher_override_reason: Optional[str] = None
+    overridden_at: Optional[str] = None
+
+    # Final
+    final_score: Optional[float] = None
+
+
+class HandwrittenSubmission(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    assignment_id: str
+    student_id: str
+    status: str = SubmissionStatus.PENDING
+
+    # Files
+    original_file_path: str
+    file_type: str  # pdf or image
+
+    # Scores
+    ai_total_score: float = 0.0
+    teacher_total_score: float = 0.0
+    final_score: Optional[float] = None
+
+    # Process Info
+    processing_log: List[str] = []
+    created_at: str = Field(default_factory=current_time_iso)
+    finalized_at: Optional[str] = None
+
+
+# --- 9. INSTITUTION & STAKEHOLDER MANAGEMENT ---
 
 
 class Institution(BaseModel):

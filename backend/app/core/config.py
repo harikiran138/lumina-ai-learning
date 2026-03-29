@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     ASSESSMENT_API_KEY: Optional[str] = None
     SENTRY_DSN: Optional[str] = None
 
+    # Handwritten Assignment System
+    HF_TOKEN: Optional[str] = os.getenv("HF_TOKEN")
+    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+    MAX_FILE_SIZE_MB: int = 10
+    UPLOAD_DIR: str = "uploads/handwritten"
+
     model_config = SettingsConfigDict(env_file=(".env", "../.env", "../../.env"), extra="ignore")
 
     def __init__(self, **kwargs):

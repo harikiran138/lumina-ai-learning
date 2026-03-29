@@ -1,10 +1,17 @@
 import os
+from datetime import datetime
 from celery import Celery
 from app.services.ocr_service import ocr_service
 from app.services.grader_service import grader_service
 from app.services.personalization_service import get_personalization_service
 from app.store.assignment_store import AssignmentStore
+from app.store.unit_store import UnitStore
 from app.services.storage import storage_service
+from app.services.unit_pipeline import (
+    unit_enrichment_service,
+    unit_pdf_parser,
+    unit_presentation_service,
+)
 from app.personalization.schemas import LearningEventType, RubricDefinition, RubricScore, SubmissionScorecard
 import tempfile
 
@@ -16,6 +23,7 @@ CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/0
 celery_app = Celery("lumina_worker", broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
 
 store = AssignmentStore()
+unit_store = UnitStore()
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -190,3 +198,188 @@ def task_grade_submission(
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
+
+
+@celery_app.task(bind=True)
+def task_process_unit_pdf(self, unit_id: str, job_id: str = None):
+    from app.core.async_utils import run_async
+
+    unit = run_async(unit_store.get_unit(unit_id))
+    if not unit:
+        return {"status": "error", "error": "Unit not found", "unit_id": unit_id}
+
+    if job_id:
+        run_async(
+            unit_store.update_processing_job(
+                job_id,
+                {"status": "running", "attempts": 1, "started_at": datetime.utcnow().isoformat()},
+            )
+        )
+
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
+        temp_path = temp_file.name
+
+    try:
+        storage_service.download_file(unit["source_file_url"], temp_path)
+        parsed = unit_pdf_parser.parse(temp_path, unit.get("original_filename") or "unit.pdf")
+        structure = run_async(unit_store.replace_unit_structure(unit_id, parsed))
+        run_async(
+            unit_store.update_unit(
+                unit_id,
+                {
+                    "title": parsed.get("title") or unit.get("title"),
+                    "status": "generating",
+                    "parse_error": None,
+                },
+            )
+        )
+
+        if not structure.get("topics"):
+            run_async(unit_store.finalize_unit_status(unit_id))
+
+        for topic in structure.get("topics", []):
+            topic_job = run_async(
+                unit_store.create_processing_job(
+                    unit_id=unit_id,
+                    topic_id=topic["id"],
+                    job_type="topic_enrichment",
+                    status="queued",
+                )
+            )
+            task_generate_unit_topic_assets.delay(unit_id, topic["id"], topic_job["id"] if topic_job else None)
+
+        if job_id:
+            run_async(
+                unit_store.update_processing_job(
+                    job_id,
+                    {"status": "completed", "finished_at": datetime.utcnow().isoformat()},
+                )
+            )
+        return {"status": "success", "unit_id": unit_id, "topic_count": len(structure.get("topics", []))}
+    except Exception as exc:
+        run_async(unit_store.update_unit(unit_id, {"status": "failed", "parse_error": str(exc)}))
+        if job_id:
+            run_async(
+                unit_store.update_processing_job(
+                    job_id,
+                    {
+                        "status": "failed",
+                        "error_message": str(exc),
+                        "finished_at": datetime.utcnow().isoformat(),
+                    },
+                )
+            )
+        return {"status": "error", "unit_id": unit_id, "error": str(exc)}
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+@celery_app.task(bind=True)
+def task_generate_unit_topic_assets(self, unit_id: str, topic_id: str, job_id: str = None):
+    from app.core.async_utils import run_async
+
+    topic = run_async(unit_store.get_topic(topic_id))
+    if not topic:
+        return {"status": "error", "error": "Topic not found", "topic_id": topic_id}
+
+    run_async(unit_store.update_topic(topic_id, {"generation_status": "generating", "generation_error": None}))
+    if job_id:
+        run_async(
+            unit_store.update_processing_job(
+                job_id,
+                {"status": "running", "attempts": 1, "started_at": datetime.utcnow().isoformat()},
+            )
+        )
+
+    try:
+        result = unit_enrichment_service.enrich_topic(unit_id, topic)
+        run_async(
+            unit_store.update_topic(
+                topic_id,
+                {
+                    "summary_bullets": result["summary_bullets"],
+                    "quiz_questions": result["quiz_questions"],
+                    "detected_signals": result["detected_signals"],
+                    "generation_status": "ready",
+                    "generation_error": None,
+                },
+            )
+        )
+        run_async(unit_store.replace_generated_assets(unit_id, topic_id, result["assets"]))
+        if job_id:
+            run_async(
+                unit_store.update_processing_job(
+                    job_id,
+                    {"status": "completed", "finished_at": datetime.utcnow().isoformat()},
+                )
+            )
+    except Exception as exc:
+        run_async(
+            unit_store.update_topic(
+                topic_id,
+                {"generation_status": "failed", "generation_error": str(exc)},
+            )
+        )
+        if job_id:
+            run_async(
+                unit_store.update_processing_job(
+                    job_id,
+                    {
+                        "status": "failed",
+                        "error_message": str(exc),
+                        "finished_at": datetime.utcnow().isoformat(),
+                    },
+                )
+            )
+    finally:
+        unit = run_async(unit_store.finalize_unit_status(unit_id))
+        if unit and unit.get("status") == "ready" and not unit.get("ppt_file_url"):
+            ppt_job = run_async(
+                unit_store.create_processing_job(unit_id=unit_id, job_type="ppt_generation", status="queued")
+            )
+            task_generate_unit_presentation.delay(unit_id, ppt_job["id"] if ppt_job else None)
+
+    refreshed = run_async(unit_store.get_topic(topic_id))
+    return {"status": refreshed.get("generation_status") if refreshed else "unknown", "topic_id": topic_id}
+
+
+@celery_app.task(bind=True)
+def task_generate_unit_presentation(self, unit_id: str, job_id: str = None):
+    from app.core.async_utils import run_async
+
+    if job_id:
+        run_async(
+            unit_store.update_processing_job(
+                job_id,
+                {"status": "running", "attempts": 1, "started_at": datetime.utcnow().isoformat()},
+            )
+        )
+
+    try:
+        detail = run_async(unit_store.build_unit_detail(unit_id))
+        if not detail:
+            raise ValueError("Unit not found")
+        ppt_file_url = unit_presentation_service.build_and_store_presentation(detail)
+        run_async(unit_store.update_unit(unit_id, {"ppt_file_url": ppt_file_url}))
+        if job_id:
+            run_async(
+                unit_store.update_processing_job(
+                    job_id,
+                    {"status": "completed", "finished_at": datetime.utcnow().isoformat()},
+                )
+            )
+        return {"status": "success", "unit_id": unit_id, "ppt_file_url": ppt_file_url}
+    except Exception as exc:
+        if job_id:
+            run_async(
+                unit_store.update_processing_job(
+                    job_id,
+                    {
+                        "status": "failed",
+                        "error_message": str(exc),
+                        "finished_at": datetime.utcnow().isoformat(),
+                    },
+                )
+            )
+        return {"status": "error", "unit_id": unit_id, "error": str(exc)}

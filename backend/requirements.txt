@@ -10,6 +10,7 @@ passlib==1.7.4
 email-validator==2.1.0.post1
 chromadb
 pypdf
+pdfplumber>=0.11.4
 sentence-transformers
 torch
 transformers

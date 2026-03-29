@@ -42,8 +42,33 @@ class StorageService:
         else:
             # Local Fallback
             file_path = os.path.join(self.upload_dir, file_name)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file_obj.file, buffer)
+            return file_path
+
+    def upload_bytes(self, data: bytes, file_name: str, content_type: str = "application/octet-stream") -> str:
+        """
+        Upload raw bytes to S3 or Local Storage.
+        Returns the generic path/key.
+        """
+        if self.use_s3:
+            try:
+                self.s3_client.put_object(
+                    Bucket=self.bucket_name,
+                    Key=file_name,
+                    Body=data,
+                    ContentType=content_type,
+                )
+                return f"s3://{self.bucket_name}/{file_name}"
+            except Exception as e:
+                print(f"❌ S3 Byte Upload Failed: {e}")
+                raise e
+        else:
+            file_path = os.path.join(self.upload_dir, file_name)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, "wb") as buffer:
+                buffer.write(data)
             return file_path
 
     def download_file(self, file_key: str, destination_path: str):
