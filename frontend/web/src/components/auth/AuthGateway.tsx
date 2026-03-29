@@ -40,6 +40,13 @@ const roleRoutes: Record<string, string> = {
   hod: "/hod/dashboard",
   faculty: "/faculty/dashboard",
   student: "/student/dashboard",
+  parent: "/parent/dashboard",
+  mentor: "/mentor/dashboard",
+  peer_tutor: "/peer_tutor/dashboard",
+  counselor: "/counselor/dashboard",
+  content_creator: "/content_creator/studio",
+  researcher: "/researcher/portal",
+  alumni: "/alumni/dashboard",
 };
 
 const loginRoleHints: Array<{

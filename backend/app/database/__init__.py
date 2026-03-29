@@ -1,1 +1,3 @@
-# app.database package
+"""
+App Database Package.
+"""

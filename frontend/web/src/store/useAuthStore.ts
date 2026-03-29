@@ -9,9 +9,13 @@ export interface User {
   name?: string;
   role: Role;
   collegeId?: string | null;
+  deptId?: string | null;
+  batchId?: string | null;
   avatar?: string;
+  status?: string;
   isActive?: boolean;
   onboardingStep?: number;
+  mustChangePassword?: boolean;
 }
 
 interface AuthState {
