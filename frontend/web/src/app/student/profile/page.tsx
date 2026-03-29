@@ -128,8 +128,7 @@ export default function StudentProfile() {
               </p>
 
               <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                {profile?.bio ||
-                  "Passionate learner exploring the world of AI."}
+                {profile?.bio || "No bio added yet."}
               </p>
 
               <div className="space-y-3 text-left">
@@ -139,14 +138,13 @@ export default function StudentProfile() {
                 </div>
                 <div className="flex items-center text-sm text-gray-400">
                   <MapPin className="w-4 h-4 mr-3 text-gray-500" />
-                  {profile?.location || "San Francisco, CA"}
+                  {profile?.location || "Location not added"}
                 </div>
                 <div className="flex items-center text-sm text-gray-400">
                   <Calendar className="w-4 h-4 mr-3 text-gray-500" />
-                  Joined{" "}
-                  {new Date(
-                    profile?.joinedDate || Date.now(),
-                  ).toLocaleDateString()}
+                  {profile?.joinedDate
+                    ? `Joined ${new Date(profile.joinedDate).toLocaleDateString()}`
+                    : "Join date unavailable"}
                 </div>
               </div>
             </div>

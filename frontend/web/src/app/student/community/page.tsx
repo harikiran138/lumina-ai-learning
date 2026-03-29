@@ -97,21 +97,7 @@ export default function StudentCommunity() {
     }
   };
 
-  // Mock DMs for now until we have a proper schema
-  const directMessages = [
-    {
-      id: "teacher-1",
-      name: "Dr. Sarah Wilson",
-      status: "online",
-      avatar: "https://ui-avatars.com/api/?name=Sarah+Wilson&background=random",
-    },
-    {
-      id: "student-2",
-      name: "Alex Johnson",
-      status: "offline",
-      avatar: "https://ui-avatars.com/api/?name=Alex+Johnson&background=random",
-    },
-  ];
+  const directMessages: any[] = [];
 
   return (
     <div className="h-[calc(100vh-2rem)] flex flex-col lg:flex-row gap-6 overflow-hidden">
@@ -164,31 +150,8 @@ export default function StudentCommunity() {
           <h3 className="text-xs font-semibold text-gray-400 uppercase mb-4 flex items-center gap-2">
             <Users className="w-4 h-4" /> Direct Messages
           </h3>
-          <div className="space-y-1">
-            {directMessages.map((dm) => (
-              <button
-                key={dm.id}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/5 transition-colors"
-              >
-                <div className="relative">
-                  <img
-                    src={dm.avatar}
-                    alt={dm.name}
-                    className="w-8 h-8 rounded-full"
-                  />
-                  <span
-                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${
-                      dm.status === "online"
-                        ? "bg-green-500"
-                        : dm.status === "busy"
-                          ? "bg-red-500"
-                          : "bg-gray-500"
-                    }`}
-                  ></span>
-                </div>
-                <span>{dm.name}</span>
-              </button>
-            ))}
+          <div className="rounded-lg border border-dashed border-white/10 px-3 py-4 text-sm text-gray-500">
+            Direct messages are not enabled for students yet.
           </div>
         </div>
       </div>
@@ -205,21 +168,11 @@ export default function StudentCommunity() {
                   activeChannel}
               </h2>
               <p className="text-xs text-gray-400">
-                128 members • Topic: General Discussion
+                {messages.length} message{messages.length === 1 ? "" : "s"} loaded
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex -space-x-2 mr-4">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="w-8 h-8 rounded-full bg-gray-700 border-2 border-gray-900 flex items-center justify-center text-xs text-white"
-                >
-                  <Users className="w-4 h-4" />
-                </div>
-              ))}
-            </div>
             <button className="p-2 hover:bg-white/5 rounded-lg text-gray-400 border border-transparent hover:border-white/10">
               <Search className="w-5 h-5" />
             </button>

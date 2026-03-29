@@ -15,12 +15,15 @@ import os  # noqa: E402
 import time  # noqa: E402
 import socket # noqa: E402
 
+
 # FORCE IPv4 to prevent IPv6 blackhole hanging (Mac/Supabase bug)
 old_getaddrinfo = socket.getaddrinfo
 def new_getaddrinfo(*args, **kwargs):
     responses = old_getaddrinfo(*args, **kwargs)
     return [res for res in responses if res[0] == socket.AF_INET]
 socket.getaddrinfo = new_getaddrinfo
+
+
 import asyncio  # noqa: E402
 import functools  # noqa: E402
 import contextvars  # noqa: E402
@@ -28,8 +31,9 @@ from contextlib import asynccontextmanager  # noqa: E402
 
 import structlog  # noqa: E402
 import sentry_sdk  # noqa: E402
-from fastapi import FastAPI, Request  # noqa: E402
+from fastapi import FastAPI, Request, HTTPException  # noqa: E402
 from fastapi.responses import JSONResponse  # noqa: E402
+from starlette.exceptions import HTTPException as StarletteHTTPException # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.middleware.trustedhost import TrustedHostMiddleware  # noqa: E402
 from fastapi.middleware.gzip import GZipMiddleware  # noqa: E402
@@ -44,7 +48,7 @@ from app.core.config import settings  # noqa: E402
 from app.core.logging import configure_logging  # noqa: E402
 from app.core.limiter import limiter  # noqa: E402
 
-from .routers import (  # noqa: E402
+from app.routers import (  # noqa: E402
     ai,
     handwriting_simple as handwriting,
     assignments,
@@ -77,6 +81,7 @@ from .routers import (  # noqa: E402
     ai_queue,
     unit_pipeline,
     handwritten,
+    ai_tutor,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
@@ -103,6 +108,9 @@ if settings.SENTRY_DSN:
         traces_sample_rate=1.0,
         profiles_sample_rate=1.0,  # Enable profiling
     )
+
+logger = structlog.get_logger(__name__)
+log = logger # Alias for compatibility
 
 
 @asynccontextmanager
@@ -158,6 +166,41 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# --- GLOBAL CORS EXCEPTION HANDLERS ---
+# These ensure that even if an exception occurs before or during middleware execution, 
+# the client (the browser) still receives the necessary CORS headers to understand the error.
+
+def add_cors_headers(response: JSONResponse, request: Request) -> JSONResponse:
+    origin = request.headers.get("origin")
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
+
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    response = JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
+    return add_cors_headers(response, request)
+
+@app.exception_handler(Exception)
+async def universal_exception_handler(request: Request, exc: Exception):
+    logger.error("unhandled_exception", error=str(exc), path=request.url.path, exc_info=True)
+    response = JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal Server Error", 
+            "type": str(type(exc).__name__),
+            "message": "An unexpected error occurred. Please try again later.",
+            "path": request.url.path,
+        },
+    )
+    return add_cors_headers(response, request)
+
 
 # Serverless environments (Vercel) have a read-only filesystem except /tmp.
 _IS_SERVERLESS = bool(os.getenv("VERCEL"))
@@ -174,40 +217,19 @@ if not _IS_SERVERLESS:
     )
 
 
-# Prevent Host Header Attacks
-allowed_hosts = ["localhost", "127.0.0.1", "testserver", "*.vercel.app"]
-domain_name = os.getenv("DOMAIN_NAME")
-if domain_name:
-    allowed_hosts.append(domain_name)
 
-# In serverless mode skip TrustedHostMiddleware — Vercel handles host validation
-if not _IS_SERVERLESS:
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
-
-# CORS — allow local dev + any Vercel deployment + explicit FRONTEND_URL
-frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
-_cors_origins = [
-    frontend_url,
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_cors_origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# 5. Add GZip Compression
-
-
+# GZip Compression
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# 6. Add Cache Control Headers for Static Files
+@app.middleware("http")
+async def add_diagnostic_header(request: Request, call_next):
+    origin = request.headers.get("origin")
+    response = await call_next(request)
+    if origin:
+        logger.info("cors_origin_diagnostic", origin=origin, path=request.url.path, method=request.method)
+    return response
+
+# 7. Add Cache Control Headers for Static Files
 
 
 class CacheControlMiddleware(BaseHTTPMiddleware):
@@ -278,10 +300,10 @@ app.include_router(materials.router, prefix="/api", tags=["Materials"])
 app.include_router(faculty.router, prefix="/api", tags=["Faculty"])
 app.include_router(ai_queue.router, prefix="/api", tags=["AI Queue"])
 app.include_router(unit_pipeline.router, prefix="/api/teacher", tags=["Unit Pipeline"])
+app.include_router(ai_tutor.router, prefix="/api/ai-tutor", tags=["AI Tutor"])
 
 
 # --- Performance & Security Polish ---
-logger = structlog.get_logger()
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
@@ -315,18 +337,6 @@ class TimingMiddleware(BaseHTTPMiddleware):
 app.add_middleware(TimingMiddleware)
 
 
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    # Use structlog for critical errors
-    logger.error("unhandled_exception", path=request.url.path, error=str(exc), exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error": "Internal Server Error",
-            "message": "An unexpected error occurred. Please try again later.",
-            "path": request.url.path,
-        },
-    )
 
 
 @app.get("/")
@@ -397,3 +407,34 @@ async def sentry_context_middleware(request: Request, call_next):
         sentry_sdk.set_user(None)
 
     return response
+
+
+# --- Middlewares (Outermost Last) ---
+
+# SECURITY: TrustedHostMiddleware
+allowed_hosts = [
+    "localhost", "127.0.0.1", "::1", "0.0.0.1", "testserver", "*.vercel.app",
+    "localhost:8000", "127.0.0.1:8000", "[::1]:8000"
+]
+if os.getenv("ENVIRONMENT") == "production":
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
+
+# CORS: Outermost to ensure all responses (including errors) have headers
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+_cors_origins = [
+    frontend_url,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
+)

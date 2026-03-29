@@ -9,6 +9,9 @@ from httpx import ASGITransport, AsyncClient
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.main import app
+from app.database.supabase_manager import supabase_db
+from app.routers.auth import get_current_user
+from app.store.analytics_store import AnalyticsStore
 from app.store.assignment_store import AssignmentStore
 from app.store.course_store import CourseStore
 from app.store.user_store import UserStore
@@ -21,6 +24,22 @@ async def ac():
         base_url="http://localhost",
     ) as client:
         yield client
+
+
+@pytest.fixture
+def local_db():
+    return supabase_db.get_client(force_new=True)
+
+
+def _override_user(user: dict):
+    async def _get_user():
+        return user
+
+    app.dependency_overrides[get_current_user] = _get_user
+
+
+def _clear_overrides():
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 def _user_seed(role: str):
@@ -137,3 +156,106 @@ async def test_student_dashboard_returns_personalized_sections(ac):
             await course_store.delete_course(course["id"])
         await user_store.delete_user(student["id"])
         await user_store.delete_user(teacher["id"])
+
+
+@pytest.mark.asyncio
+async def test_student_subjects_include_enrollment_progress(ac, local_db):
+    local_db.table("courses").insert(
+        {
+            "id": "course-subject-1",
+            "course_name": "Data Structures",
+            "course_code": "CS201",
+            "description": "Core data structures course",
+        }
+    ).execute()
+    local_db.table("enrollments").insert(
+        {
+            "student_id": "student-subject-1",
+            "course_id": "course-subject-1",
+            "status": "active",
+            "progress": {
+                "percentage": 42,
+                "mastery": 67,
+                "streak": 3,
+                "hoursSpent": 4.5,
+                "lastAccessed": "2026-03-28T10:00:00+00:00",
+            },
+        }
+    ).execute()
+
+    _override_user({"id": "student-subject-1", "role": "student", "batch_id": None, "section": None})
+    try:
+        response = await ac.get("/api/student/subjects")
+    finally:
+        _clear_overrides()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) == 1
+    assert payload[0]["id"] == "course-subject-1"
+    assert payload[0]["progress"] == 42
+    assert payload[0]["mastery"] == 67
+    assert payload[0]["streak"] == 3
+
+
+@pytest.mark.asyncio
+async def test_student_grades_support_assignment_id_fallback(ac, local_db):
+    local_db.table("courses").insert(
+        {
+            "id": "course-grade-1",
+            "course_name": "Operating Systems",
+        }
+    ).execute()
+    local_db.table("assignments").insert(
+        {
+            "id": "assignment-grade-1",
+            "course_id": "course-grade-1",
+            "title": "Process Scheduling Quiz",
+        }
+    ).execute()
+    local_db.table("submissions").insert(
+        {
+            "id": "submission-grade-1",
+            "student_id": "student-grade-1",
+            "assignment_id": "assignment-grade-1",
+            "score": 88,
+            "feedback": "Well reasoned answer.",
+        }
+    ).execute()
+
+    _override_user({"id": "student-grade-1", "role": "student"})
+    try:
+        response = await ac.get("/api/student/grades")
+    finally:
+        _clear_overrides()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) == 1
+    assert payload[0]["assignmentId"] == "assignment-grade-1"
+    assert payload[0]["assignmentTitle"] == "Process Scheduling Quiz"
+    assert payload[0]["courseName"] == "Operating Systems"
+    assert payload[0]["marks"] == 88
+
+
+@pytest.mark.asyncio
+async def test_student_dashboard_falls_back_to_student_subjects(local_db):
+    local_db.table("courses").insert(
+        {
+            "id": "course-dashboard-1",
+            "course_name": "Compiler Design",
+            "description": "Parsing and code generation",
+        }
+    ).execute()
+    local_db.table("student_subjects").insert(
+        {
+            "student_id": "student-dashboard-1",
+            "subject_id": "course-dashboard-1",
+        }
+    ).execute()
+
+    payload = await AnalyticsStore().get_student_full_dashboard("student-dashboard-1")
+
+    assert payload["currentStreak"] == 0
+    assert len(payload["enrolledCourses"]) == 1
+    assert payload["enrolledCourses"][0]["id"] == "course-dashboard-1"

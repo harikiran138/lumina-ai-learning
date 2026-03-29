@@ -9,6 +9,7 @@ from .auth import get_current_user
 from app.database.supabase_manager import supabase_db
 from app.store.institution_store import InstitutionStore
 from app.store.user_store import UserStore
+from app.store.student_store import StudentStore
 from app.core.security import get_password_hash, create_access_token
 
 router = APIRouter()
@@ -398,6 +399,16 @@ async def enroll_with_code(payload: Dict[str, Any]):
 
     await supabase_db.update("enrollment_codes", {"used_by": user_id}, {"id": record.get("id")})
 
+    # Auto-enroll in courses for this department
+    try:
+        courses = await supabase_db.fetch_all("courses", {"department_id": dept.get("id")})
+        student_store = StudentStore()
+        for course in courses:
+            await student_store.enroll_in_course(user_id, course.get("id"))
+    except Exception as e:
+        # Log error but don't fail enrollment
+        print(f"Auto-enrollment error: {e}")
+
     return {"success": True, "userId": user_id}
 
 
@@ -468,10 +479,11 @@ async def bulk_enroll_students(
         batch_year = str(batch.get("year") or "")
         password = default_password or f"{roll}@{batch_year}" if batch_year else str(uuid.uuid4())
 
+        user_id = str(uuid.uuid4())
         await supabase_db.insert(
             "users",
             {
-                "id": str(uuid.uuid4()),
+                "id": user_id,
                 "email": email,
                 "name": full_name,
                 "full_name": full_name,
@@ -489,6 +501,14 @@ async def bulk_enroll_students(
                 "must_change_password": True,
             },
         )
+        # Auto-enroll in courses for this department
+        try:
+            courses = await supabase_db.fetch_all("courses", {"department_id": dept.get("id")})
+            student_store = StudentStore()
+            for course in courses:
+                await student_store.enroll_in_course(user_id, course.get("id"))
+        except Exception as e:
+            print(f"Auto-enrollment error: {e}")
         results["created"] += 1
 
     return {"success": True, **results}

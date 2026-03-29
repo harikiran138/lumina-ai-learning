@@ -7,6 +7,9 @@ function getLocalServiceBase(port: number): string | null {
   const hostname = window.location.hostname;
   if (!LOCAL_HOSTNAMES.has(hostname) && !hostname.includes("localhost")) return null;
   const protocol = window.location.protocol === "https:" ? "https" : "http";
+  
+  // Return the current hostname as preference, but 127.0.0.1 is the most reliable fallback
+  if (hostname === "localhost") return `${protocol}://127.0.0.1:${port}`;
   return `${protocol}://${hostname}:${port}`;
 }
 
@@ -62,8 +65,24 @@ async function fetchWithRetry(
         signal: controller.signal,
       })
       return response
-    } catch (err: unknown) {
-      if (attempt === retries) throw err
+    } catch (err: any) {
+      // If we failed to fetch from localhost, and it's a TypeError (Network Error), 
+      // try failing over to 127.0.0.1 if the URL contains localhost.
+      if (err instanceof TypeError && url.includes("localhost") && !url.includes("127.0.0.1")) {
+        const fallbackUrl = url.replace("localhost", "127.0.0.1");
+        console.warn(`Localhost fetch failed, trying fallback to 127.0.0.1: ${fallbackUrl}`);
+        return fetchWithRetry(fallbackUrl, options, attempt); // retry immediate with fallback
+      }
+
+      if (attempt === retries) {
+        if (err instanceof TypeError && err.message === "Failed to fetch") {
+          console.error(`[Lumina API] Network Error: Failed to fetch from ${url}. Is the backend running on port 8000?`, err);
+        } else {
+          console.error(`Final fetch failure for ${url}:`, err);
+        }
+        throw err;
+      }
+      console.warn(`Fetch failed for ${url}, retrying... (Attempt ${attempt}/${retries})`, err);
       await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
     } finally {
       clearTimeout(timeoutId)
@@ -175,11 +194,20 @@ export class RealAPI {
     if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
-    const response = await fetchWithRetry(`${this.getApiBase()}${path}`, {
-      ...options,
-      headers,
-      credentials: "include",
-    });
+    const fullUrl = `${this.getApiBase()}${path}`;
+    let response: Response;
+
+    try {
+      response = await fetchWithRetry(fullUrl, {
+        ...options,
+        headers,
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error(`fetchAuthorized caught network/CORS error for ${path} (Full URL: ${fullUrl}):`, err);
+      throw err;
+    }
+
     if (response.status === 401) {
       const refreshed = await this.handleUnauthorized()
       if (refreshed) {
@@ -453,8 +481,36 @@ export class RealAPI {
 
   // --- Student Academic APIs ---
   async getStudentCourses(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/student/subjects");
-    return res.ok ? await res.json() : [];
+    const [subjects, dashboard] = await Promise.all([
+      this.fetchJsonOrDefault("/api/student/subjects", []),
+      this.getDashboardData("student").catch(() => null),
+    ]);
+
+    const dashboardCourses = (dashboard?.enrolledCourses || []) as any[];
+    const courseMap = new Map<string, any>();
+
+    for (const course of dashboardCourses) {
+      if (course?.id) {
+        courseMap.set(String(course.id), course);
+      }
+    }
+
+    for (const course of subjects || []) {
+      if (!course?.id) continue;
+      const existing = courseMap.get(String(course.id)) || {};
+      courseMap.set(String(course.id), {
+        ...existing,
+        ...course,
+        name: course.name || existing.name || existing.title,
+        title: course.title || existing.title || course.name,
+        description: course.description || existing.description || "",
+        progress: course.progress ?? existing.progress ?? 0,
+        mastery: course.mastery ?? existing.mastery ?? 0,
+        streak: course.streak ?? existing.streak ?? 0,
+      });
+    }
+
+    return Array.from(courseMap.values());
   }
 
   async getStudentAttendance(): Promise<any> {
@@ -976,7 +1032,22 @@ export class RealAPI {
   // --- Legacy Compatibility ---
   async init(..._args: any[]): Promise<RealAPI> { return this; }
   async getAllCourses(..._args: any[]): Promise<any> { return this.listCourses(); }
-  async getExploreCourses(..._args: any[]): Promise<any> { return this.listCourses(); }
+  async getExploreCourses(..._args: any[]): Promise<any> {
+    const [enrolled, catalog] = await Promise.all([
+      this.getStudentCourses(),
+      this.listCourses(this.currentUser?.deptId || undefined),
+    ]);
+    const enrolledIds = new Set((enrolled || []).map((course: any) => String(course.id)));
+    const recommended = (catalog || [])
+      .filter((course: any) => course?.id && !enrolledIds.has(String(course.id)))
+      .map((course: any) => ({
+        ...course,
+        name: course.name || course.course_name || course.title,
+        title: course.title || course.name || course.course_name,
+        description: course.description || "",
+      }));
+    return { enrolled, recommended };
+  }
   async searchCourses(query?: string, ..._args: any[]): Promise<any> {
     const courses = await this.listCourses();
     if (!query) return courses;
@@ -1006,8 +1077,9 @@ export class RealAPI {
     });
   }
   async enrollInCourse(courseId: string, ..._args: any[]): Promise<any> {
-    return this.fetchJsonOrDefault(`/api/student/courses/${courseId}/enroll`, { success: false }, {
+    return this.fetchJsonOrDefault(`/api/student/enroll`, { success: false }, {
       method: "POST",
+      body: JSON.stringify({ course_id: courseId }),
     });
   }
   async addModule(..._args: any[]): Promise<any> { return { success: false }; }
@@ -1021,9 +1093,16 @@ export class RealAPI {
   async getStudentProfile(..._args: any[]): Promise<any> {
     return this.fetchJsonOrDefault("/api/student/profile", this.currentUser);
   }
-  async getStudentBadges(..._args: any[]): Promise<any> { return []; }
-  async getStudentCertificates(..._args: any[]): Promise<any> { return []; }
-  async getStudentMastery(..._args: any[]): Promise<any> { return {}; }
+  async getStudentBadges(..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault("/api/student/badges", []);
+  }
+  async getStudentCertificates(..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault("/api/student/certificates", []);
+  }
+  async getStudentMastery(..._args: any[]): Promise<any> {
+    const payload = await this.fetchJsonOrDefault("/api/student/profile/mastery", {});
+    return payload?.masteryMap || payload || {};
+  }
   async getParentDashboard(..._args: any[]): Promise<any> { return this.getDashboardData("parent"); }
   async setParentGoal(..._args: any[]): Promise<any> { return { success: false }; }
   async getHODDashboard(..._args: any[]): Promise<any> { return this.getDashboardData("hod"); }
@@ -1055,16 +1134,36 @@ export class RealAPI {
   async getCreatorVerificationQueue(..._args: any[]): Promise<any> { return []; }
   async getContentCreatorBlueprints(..._args: any[]): Promise<any> { return []; }
   async getAnonymizedSnapshots(..._args: any[]): Promise<any> { return []; }
-  async getCommunityData(..._args: any[]): Promise<any> { return { channels: [], messages: [] }; }
+  async getCommunityData(channelId = "general", ..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault(`/api/community/data?channel_id=${encodeURIComponent(channelId)}`, {
+      channels: [],
+      messages: [],
+    });
+  }
   async getAllChatRooms(..._args: any[]): Promise<any> { return []; }
   async getChatMessages(..._args: any[]): Promise<any> { return []; }
   async getChatHistory(..._args: any[]): Promise<any> { return []; }
   async sendChatMessage(..._args: any[]): Promise<any> { return { success: false }; }
   async saveChatMessage(..._args: any[]): Promise<any> { return { success: false }; }
-  async sendCommunityMessage(..._args: any[]): Promise<any> { return { success: false }; }
+  async sendCommunityMessage(channelId: string, content: string, ..._args: any[]): Promise<any> {
+    const res = await this.fetchAuthorized("/api/community/send", {
+      method: "POST",
+      body: JSON.stringify({ channel_id: channelId, content }),
+    });
+    if (!res.ok) {
+      const e = await parseJsonSafe(res);
+      throw new Error(e?.detail || "Failed to send community message");
+    }
+    return await parseJsonSafe(res) ?? { success: false };
+  }
   async chatWithAI(..._args: any[]): Promise<any> { return { response: "" }; }
   async logAIInteraction(..._args: any[]): Promise<any> { return { success: true }; }
-  async logActivity(..._args: any[]): Promise<any> { return { success: true }; }
+  async logActivity(data: { course_id: string; duration_minutes: number }, ..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault("/api/student/log-activity", { success: false }, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
   async exportData(..._args: any[]): Promise<any> { return { success: false }; }
   async importData(..._args: any[]): Promise<any> { return { success: false }; }
   async getAllChatUsers(..._args: any[]): Promise<any> { return []; }
@@ -1089,17 +1188,37 @@ export class RealAPI {
     return this.updateTeacherRequest(requestId, "rejected");
   }
   async requestTeacherAssignment(..._args: any[]): Promise<any> { return { success: false }; }
-  async createNote(..._args: any[]): Promise<any> { return { success: false }; }
-  async updateNote(..._args: any[]): Promise<any> { return { success: false }; }
-  async deleteNote(..._args: any[]): Promise<any> { return { success: false }; }
-  async getNotes(..._args: any[]): Promise<any> { return []; }
+  async createNote(data: any = {}, ..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault("/api/student/notes", { success: false }, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+  async updateNote(noteId: string, data: any = {}, ..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault(`/api/student/notes/${noteId}`, { success: false }, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+  async deleteNote(noteId: string, ..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault(`/api/student/notes/${noteId}`, { success: false }, {
+      method: "DELETE",
+    });
+  }
+  async getNotes(..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault("/api/student/notes", []);
+  }
   async updateProfile(data: any = {}, ..._args: any[]): Promise<any> {
+    const response = await this.fetchJsonOrDefault("/api/student/profile/update", null, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
     const nextUser = this.currentUser ? { ...this.currentUser, ...data } : data;
     this.currentUser = nextUser;
     if (typeof window !== "undefined") {
       sessionStorage.setItem("lumina_user", JSON.stringify(nextUser));
     }
-    return nextUser;
+    return response ?? nextUser;
   }
 
   // --- Aliases & Legacy ---

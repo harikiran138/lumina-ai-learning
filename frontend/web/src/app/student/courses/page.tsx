@@ -211,9 +211,22 @@ function CourseCard({ course, isEnrolled, compact, onEnroll }: any) {
           {course.name}
         </h3>
         {!compact && (
-          <p className="text-sm text-gray-400 mb-4 line-clamp-3 flex-1">
-            {course.description}
-          </p>
+          <>
+            <p className="text-sm text-gray-400 mb-4 line-clamp-3 flex-1">
+              {course.description || "Course details will appear here once your instructor publishes them."}
+            </p>
+            <div className="space-y-2 mb-4 text-xs text-gray-500">
+              {course.facultyName ? (
+                <p>Instructor: <span className="text-gray-300">{course.facultyName}</span></p>
+              ) : null}
+              {isEnrolled ? (
+                <p>
+                  Progress: <span className="text-gray-300">{Math.round(course.progress || 0)}%</span>
+                  {" "}• Mastery: <span className="text-gray-300">{Math.round(course.mastery || 0)}%</span>
+                </p>
+              ) : null}
+            </div>
+          </>
         )}
 
         <div className="mt-auto pt-4 flex justify-between items-center">
