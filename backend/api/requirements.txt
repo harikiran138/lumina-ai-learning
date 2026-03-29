@@ -1,0 +1,47 @@
+# Vercel serverless requirements — stripped of heavy ML packages (torch, transformers, etc.)
+# Full requirements (for Railway/Docker) are at backend/requirements.txt
+
+# Core framework
+fastapi==0.115.6
+uvicorn
+starlette
+
+# Data validation
+pydantic==2.5.3
+pydantic-settings
+
+# Auth / security
+python-jose==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+# Utilities
+email-validator==2.1.0.post1
+httpx>=0.27.0
+aiofiles
+python-multipart==0.0.6
+python-dotenv
+
+# Database
+supabase==2.13.0
+
+# Cache
+redis==5.0.1
+
+# AI (lightweight — API calls only, no local models)
+google-generativeai
+
+# Logging / observability
+structlog==24.1.0
+sentry-sdk[fastapi]==1.40.6
+
+# Rate limiting
+slowapi==0.1.9
+
+# Metrics (optional, gracefully skipped if unavailable)
+prometheus-fastapi-instrumentator==6.1.0
+
+# File handling (lightweight)
+Pillow
+aiofiles
+pypdf

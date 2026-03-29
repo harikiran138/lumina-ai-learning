@@ -156,34 +156,44 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-os.makedirs("data/uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="data/uploads"), name="uploads")
+# Serverless environments (Vercel) have a read-only filesystem except /tmp.
+_IS_SERVERLESS = bool(os.getenv("VERCEL"))
+_upload_dir = "/tmp/uploads" if _IS_SERVERLESS else "data/uploads"
+_ppt_dir = "/tmp/presentations" if _IS_SERVERLESS else "static/presentations"
 
-os.makedirs("static/presentations", exist_ok=True)
-app.mount(
-    "/api/tutor/download-ppt", StaticFiles(directory="static/presentations"), name="presentations"
-)
+os.makedirs(_upload_dir, exist_ok=True)
+os.makedirs(_ppt_dir, exist_ok=True)
+
+if not _IS_SERVERLESS:
+    app.mount("/uploads", StaticFiles(directory=_upload_dir), name="uploads")
+    app.mount(
+        "/api/tutor/download-ppt", StaticFiles(directory=_ppt_dir), name="presentations"
+    )
 
 
 # Prevent Host Header Attacks
-allowed_hosts = ["localhost", "127.0.0.1", "testserver"]
+allowed_hosts = ["localhost", "127.0.0.1", "testserver", "*.vercel.app"]
 domain_name = os.getenv("DOMAIN_NAME")
 if domain_name:
     allowed_hosts.append(domain_name)
 
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
+# In serverless mode skip TrustedHostMiddleware — Vercel handles host validation
+if not _IS_SERVERLESS:
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
-# CORS Polish
+# CORS — allow local dev + any Vercel deployment + explicit FRONTEND_URL
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+_cors_origins = [
+    frontend_url,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        frontend_url,
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
-    ],
+    allow_origins=_cors_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
