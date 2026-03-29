@@ -1117,16 +1117,38 @@ async def list_student_subjects(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Student access required")
     student_id = current_user.get("id")
     client = supabase_db.get_client()
-    subjects = (
+    enrollment_rows = (
+        client.table("enrollments")
+        .select("*")
+        .eq("student_id", student_id)
+        .execute()
+        .data
+        or []
+    )
+    enrollment_by_course = {
+        str(row.get("course_id")): row
+        for row in enrollment_rows
+        if row.get("course_id")
+    }
+
+    subject_rows = (
         client.table("student_subjects")
         .select("subject_id")
         .eq("student_id", student_id)
         .execute()
+        .data
+        or []
     )
-    subject_ids = [s["subject_id"] for s in (subjects.data or [])]
+    subject_ids = {
+        str(s["subject_id"])
+        for s in subject_rows
+        if s.get("subject_id")
+    } | set(enrollment_by_course.keys())
+
     if not subject_ids:
         return []
-    courses_res = client.table("courses").select("*").in_("id", subject_ids).execute()
+
+    courses_res = client.table("courses").select("*").in_("id", list(subject_ids)).execute()
     courses = courses_res.data or []
 
     # attach faculty if assignment exists for student's batch/section
@@ -1152,17 +1174,27 @@ async def list_student_subjects(current_user: dict = Depends(get_current_user)):
     for course in courses:
         assign = assign_lookup.get(course.get("id"))
         teacher = teacher_lookup.get(assign.get("teacher_id")) if assign else None
+        progress_data = (enrollment_by_course.get(str(course.get("id"))) or {}).get("progress") or {}
         results.append({
             "id": course.get("id"),
             "name": course.get("course_name") or course.get("name") or course.get("title"),
             "code": course.get("code") or course.get("course_code"),
+            "description": course.get("description"),
+            "thumbnail": course.get("thumbnail_url") or course.get("thumbnail"),
             "credits": course.get("credits"),
             "semester": course.get("semester"),
             "type": course.get("type") or course.get("category"),
             "facultyName": teacher.get("full_name") if teacher else None,
             "facultyEmail": teacher.get("email") if teacher else None,
             "assignedSection": section,
+            "progress": float(progress_data.get("percentage", 0) or 0),
+            "mastery": float(progress_data.get("mastery", 0) or 0),
+            "streak": int(progress_data.get("streak", 0) or 0),
+            "hoursSpent": float(progress_data.get("hoursSpent", 0) or 0),
+            "lastAccessed": progress_data.get("lastAccessed"),
+            "status": (enrollment_by_course.get(str(course.get("id"))) or {}).get("status", "active"),
         })
+    results.sort(key=lambda item: ((item.get("progress") or 0) <= 0, str(item.get("name") or "").lower()))
     return results
 
 
@@ -1175,6 +1207,13 @@ async def get_student_onboarding_options(current_user: dict = Depends(get_curren
     dept_id = current_user.get("dept_id") or current_user.get("department_id")
     batch_id = current_user.get("batch_id")
     client = supabase_db.get_client()
+    if client is None:
+        return {
+            "classes": [],
+            "subjects": [],
+            "selectedSubjectIds": [],
+            "currentEnrollment": None
+        }
 
     batch = await supabase_db.fetch_one("batches", {"id": batch_id}) if batch_id else None
 
@@ -1695,7 +1734,11 @@ async def list_student_grades(current_user: dict = Depends(get_current_user)):
     if not submissions:
         legacy_res = client.table("submissions").select("*").eq("student_id", current_user.get("id")).execute()
         submissions = legacy_res.data or []
-    assignment_ids = list({s.get("assignment_uuid") for s in submissions if s.get("assignment_uuid")})
+    assignment_ids = list({
+        s.get("assignment_uuid") or s.get("assignment_id")
+        for s in submissions
+        if s.get("assignment_uuid") or s.get("assignment_id")
+    })
     assignments_res = client.table("assignments").select("*").in_("id", assignment_ids).execute() if assignment_ids else None
     assignments = assignments_res.data if assignments_res else []
     course_ids = list({a.get("course_id") for a in assignments if a.get("course_id")})
@@ -1705,11 +1748,12 @@ async def list_student_grades(current_user: dict = Depends(get_current_user)):
 
     results = []
     for submission in submissions:
-        assignment = assignment_lookup.get(submission.get("assignment_uuid"))
+        assignment_id = submission.get("assignment_uuid") or submission.get("assignment_id")
+        assignment = assignment_lookup.get(assignment_id)
         course = course_lookup.get(assignment.get("course_id")) if assignment else {}
         results.append({
             "submissionId": submission.get("id"),
-            "assignmentId": submission.get("assignment_uuid") or submission.get("assignment_id"),
+            "assignmentId": assignment_id,
             "assignmentTitle": assignment.get("title") if assignment else None,
             "courseName": course.get("title") or course.get("course_name") or course.get("name"),
             "marks": submission.get("marks") or submission.get("score"),

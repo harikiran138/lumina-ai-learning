@@ -1,4 +1,4 @@
-from app.routers import (
+from . import (
     ai,
     handwriting_simple as handwriting,
     assignments,
@@ -26,4 +26,5 @@ from app.routers import (
     attendance,
     materials,
     faculty,
+    ai_tutor,
 )

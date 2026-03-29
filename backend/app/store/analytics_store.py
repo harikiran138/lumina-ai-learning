@@ -1353,8 +1353,9 @@ class AnalyticsStore:
                         "student_id": row.get("student_id"),
                         "course_id": row.get("course_id"),
                         "status": "active",
+                        "completed_lessons": row.get("completed_lessons", []),
                         "progress": {
-                            "percentage": row.get("progress", 0),
+                            "percentage": 0, # Calculated later
                             "mastery": row.get("mastery", 0),
                             "streak": row.get("streak", 0),
                             "lastAccessed": row.get("last_accessed"),
@@ -1363,6 +1364,34 @@ class AnalyticsStore:
                     }
                     for row in progress_rows
                     if row.get("course_id")
+                ]
+
+            if not enrollments:
+                subject_response = (
+                    client.table("student_subjects")
+                    .select("subject_id")
+                    .eq("student_id", student_id)
+                    .execute()
+                )
+                subject_ids = [
+                    str(row.get("subject_id"))
+                    for row in (subject_response.data or [])
+                    if row.get("subject_id")
+                ]
+                enrollments = [
+                    {
+                        "student_id": student_id,
+                        "course_id": subject_id,
+                        "status": "active",
+                        "progress": {
+                            "percentage": 0,
+                            "mastery": 0,
+                            "streak": 0,
+                            "lastAccessed": None,
+                            "hoursSpent": 0,
+                        },
+                    }
+                    for subject_id in subject_ids
                 ]
 
             log.info("dashboard_enrollment_check", student_id=student_id, count=len(enrollments))
@@ -1395,6 +1424,17 @@ class AnalyticsStore:
                 course = courses_map[cid]
                 course_name = course.get("title") or course.get("course_name") or course.get("name") or "Untitled Course"
                 progress_data = enrollment.get("progress") or {}
+                
+                # Calculate progress percentage dynamically
+                percentage = float(progress_data.get("percentage", 0) or 0)
+                if percentage == 0:
+                    completed = enrollment.get("completed_lessons") or []
+                    modules = course.get("modules") or []
+                    total_lessons = 0
+                    for m in modules:
+                        total_lessons += len(m.get("lessons", []))
+                    if total_lessons > 0:
+                        percentage = (len(completed) / total_lessons) * 100
 
                 enrolled_courses.append({
                     "id": cid,
@@ -1403,7 +1443,7 @@ class AnalyticsStore:
                     "code": course.get("code") or course.get("course_code"),
                     "description": course.get("description"),
                     "thumbnail": course.get("thumbnail_url"),
-                    "progress": float(progress_data.get("percentage", 0) or 0),
+                    "progress": round(percentage, 2),
                     "mastery": float(progress_data.get("mastery", 0) or 0),
                     "streak": int(progress_data.get("streak", 0) or 0),
                     "lastAccessed": progress_data.get("lastAccessed"),

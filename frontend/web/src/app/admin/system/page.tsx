@@ -166,7 +166,7 @@ export default function SystemAdminPage() {
   const [queue, setQueue] = useState<QueueData | null>(null);
   const [config, setConfig] = useState<ConfigData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshedAt, setRefreshedAt] = useState<Date>(new Date());
+  const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -233,7 +233,7 @@ export default function SystemAdminPage() {
               Refresh
             </button>
             <p className="text-[10px] text-gray-600">
-              Last refreshed {refreshedAt.toLocaleTimeString()}
+              Last refreshed {refreshedAt ? refreshedAt.toLocaleTimeString() : "--:--:--"}
             </p>
           </div>
         </div>

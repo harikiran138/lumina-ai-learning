@@ -154,7 +154,7 @@ export default function EnrollmentPage() {
                   <Button 
                     variant="outline" 
                     className="w-full border-green-200 hover:bg-green-100 text-green-800"
-                    onClick={() => window.location.href = '/dashboard'}
+                    onClick={() => window.location.href = '/student/dashboard'}
                   >
                     Go to Dashboard
                   </Button>
