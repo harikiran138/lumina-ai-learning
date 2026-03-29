@@ -112,56 +112,70 @@ async def get_guardian_signals(admin: dict = Depends(is_admin)):
     return await get_guardian_service().get_active_signals()
 
 
+# In-memory store for the role matrix (persisted to DB on a future migration)
+_role_matrix: dict = {
+    "roles": ["student", "teacher", "hod", "admin", "parent"],
+    "permissions": {
+        "course_create": ["admin", "teacher", "hod"],
+        "course_delete": ["admin"],
+        "user_manage": ["admin"],
+        "analytics_view": ["admin", "teacher", "hod"],
+        "billing_manage": ["admin"]
+    }
+}
+
+
 @router.get("/roles/matrix")
 async def get_role_matrix(admin: dict = Depends(is_admin)):
     """Fetch the functional role-per-permission matrix."""
-    return {
-        "roles": ["student", "teacher", "hod", "admin", "parent"],
-        "permissions": {
-            "course_create": ["admin", "teacher", "hod"],
-            "course_delete": ["admin"],
-            "user_manage": ["admin"],
-            "analytics_view": ["admin", "teacher", "hod"],
-            "billing_manage": ["admin"]
-        }
-    }
+    return _role_matrix
+
+
+@router.post("/roles/matrix")
+async def update_role_matrix(data: dict, admin: dict = Depends(is_admin)):
+    """Update the role-permission matrix. Validates structure then persists in memory."""
+    roles = data.get("roles")
+    permissions = data.get("permissions")
+
+    if not isinstance(roles, list) or not isinstance(permissions, dict):
+        raise HTTPException(status_code=400, detail="Expected {roles: [...], permissions: {...}}")
+
+    # Validate each permission maps to a subset of the provided roles
+    role_set = set(roles)
+    for perm, assigned_roles in permissions.items():
+        if not isinstance(assigned_roles, list):
+            raise HTTPException(status_code=400, detail=f"Permission '{perm}' must map to a list of roles")
+        unknown = set(assigned_roles) - role_set
+        if unknown:
+            raise HTTPException(status_code=400, detail=f"Unknown roles in '{perm}': {unknown}")
+
+    _role_matrix["roles"] = roles
+    _role_matrix["permissions"] = permissions
+
+    audit_logger.log(
+        action="role_matrix_updated",
+        user_id=str(admin.get("id")),
+        metadata={"roles": roles, "permissions": list(permissions.keys())}
+    )
+    return {"success": True, "matrix": _role_matrix}
 
 
 @router.get("/users")
 async def get_all_users(admin: dict = Depends(is_admin)):
-    """List users scoped to the primary institution."""
-    store = InstitutionStore()
-    inst_id = await store.get_primary_institution_id()
-    
+    """List all users in the system."""
     user_store = UserStore()
-    all_users = await user_store.list_all_users()
-    
-    if not inst_id:
-        return []
-        
-    # Filter users: Include all admins, plus students/teachers linked to this institution via stakeholders
-    # In a real single-tenant system, this is the entire user list.
-    # For safety, we fetch stakeholders for this institution.
-    stakeholders = await store.list_stakeholders(inst_id)
-    relevant_user_ids = {s.get("user_id") for s in stakeholders if s.get("user_id")}
-    
-    return [u for u in all_users if u["role"] == "admin" or u["id"] in relevant_user_ids]
+    return await user_store.list_all_users()
 
+
+VALID_ROLES = {"student", "teacher", "faculty", "hod", "college_admin", "super_admin", "admin"}
 
 @router.post("/users")
 async def create_user(data: dict, admin: dict = Depends(is_admin)):
     """Create a user without replacing the admin session."""
     role = (data.get("role") or "student").strip().lower()
-    
-    # Restrict new admin creation as per single-institution policy
-    if role == "admin":
-        raise HTTPException(
-            status_code=403, 
-            detail="Platform policy permits only one primary administrator account. Cannot create additional admin roles."
-        )
 
-    if role not in {"student", "teacher", "hod"}:
-        raise HTTPException(status_code=400, detail="Invalid role. Must be 'student', 'teacher', or 'hod'.")
+    if role not in VALID_ROLES:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(sorted(VALID_ROLES))}")
 
     email = (data.get("email") or "").strip()
     password = data.get("password") or ""
@@ -214,8 +228,8 @@ async def update_user_status(user_id: str, status: str, admin: dict = Depends(is
 @router.post("/users/{user_id}/role")
 async def update_user_role(user_id: str, role: str, admin: dict = Depends(is_admin)):
     """Change a user's role."""
-    if role not in ("student", "teacher", "hod", "admin"):
-        raise HTTPException(status_code=400, detail="Invalid role. Must be student, teacher, hod, or admin")
+    if role not in VALID_ROLES:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(sorted(VALID_ROLES))}")
     user_store = UserStore()
     success = await user_store.update_user_role(user_id, role)
     if not success:

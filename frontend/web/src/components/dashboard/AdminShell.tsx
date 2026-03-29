@@ -37,7 +37,7 @@ export default function AdminShell({
         className="fixed inset-0 z-0 pointer-events-none"
       />
 
-      <AdminSidebar />
+      <AdminSidebar user={user ?? undefined} />
       <TopNav
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         user={

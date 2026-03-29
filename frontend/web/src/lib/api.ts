@@ -682,6 +682,14 @@ export class RealAPI {
     return res.ok ? await res.json() : { roles: [], permissions: {} };
   }
 
+  async updateRoleMatrix(matrix: { roles: string[]; permissions: Record<string, string[]> }): Promise<any> {
+    const res = await this.fetchAuthorized("/api/admin/roles/matrix", {
+      method: "POST",
+      body: JSON.stringify(matrix),
+    });
+    return await parseJsonSafe(res) ?? {};
+  }
+
   async getSystemHealth(): Promise<any> {
     const res = await this.fetchAuthorized("/api/admin/health");
     return res.ok ? await res.json() : {};

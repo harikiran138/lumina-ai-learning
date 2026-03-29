@@ -68,9 +68,17 @@ export default function StudentsScreen() {
 
       <div className="grid gap-6 md:grid-cols-4">
         <StatCard label="Total Students" value={students.length.toString()} sub="Across all institutions" icon={Users} color="gold" />
-        <StatCard label="Active Now" value="1,240" sub="Concurrent users" icon={Activity} color="gold" />
-        <StatCard label="Avg. Engagement" value="84%" sub="+2% this month" icon={Award} color="gold" />
-        <StatCard label="Enrolled Courses" value="450" sub="Total offerings" icon={BookOpen} color="amber" />
+        <StatCard label="Active" value={students.filter(s => s.status === "active").length.toString()} sub="Currently active accounts" icon={Activity} color="gold" />
+        <StatCard
+          label="Avg. Engagement"
+          value={students.some(s => s.engagement_score != null)
+            ? `${Math.round(students.reduce((sum, s) => sum + (s.engagement_score ?? 0), 0) / students.filter(s => s.engagement_score != null).length)}%`
+            : "—"}
+          sub="Based on activity score"
+          icon={Award}
+          color="gold"
+        />
+        <StatCard label="Suspended" value={students.filter(s => s.status === "suspended").length.toString()} sub="Accounts suspended" icon={BookOpen} color="amber" />
       </div>
 
       <div className="glass-v2 border-white/5 overflow-hidden">

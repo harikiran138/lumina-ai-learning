@@ -28,19 +28,16 @@ const navItems = [
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ user: userProp }: { user?: any }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(userProp ?? null);
   const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const userData = await api.getCurrentUser();
-      setUser(userData);
-    };
-    fetchUser();
-  }, []);
+    if (userProp !== undefined) return; // parent already supplied user
+    api.getCurrentUser().then(setUser).catch(() => {});
+  }, [userProp]);
 
   const handleLogout = async () => {
     await api.logout();

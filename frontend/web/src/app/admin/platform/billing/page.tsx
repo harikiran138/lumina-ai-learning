@@ -133,6 +133,7 @@ function UsageBar({ label, value, color, cost }: any) {
     blue: "bg-amber-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]",
     purple: "bg-yellow-500 shadow-[0_0_10px_rgba(147,51,234,0.3)]",
     emerald: "bg-yellow-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]",
+    gold: "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.3)]",
   };
   return (
     <div className="space-y-2">
@@ -155,6 +156,7 @@ function PlanItem({ label, count, color }: any) {
     blue: "bg-amber-500/20 text-amber-400",
     purple: "bg-yellow-500/20 text-yellow-400",
     emerald: "bg-yellow-500/20 text-yellow-400",
+    gold: "bg-amber-400/20 text-amber-300",
   };
   return (
     <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5">

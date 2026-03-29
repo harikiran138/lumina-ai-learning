@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  CheckCircle2, 
-  Clock, 
-  AlertTriangle, 
+import {
+  Activity,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
   ShieldCheck,
   Search,
   Filter,
@@ -161,6 +162,7 @@ function StatItem({ label, value, icon: Icon, color }: any) {
     emerald: "from-yellow-500/20 to-yellow-500/5 text-yellow-300 border-yellow-400/20",
     blue: "from-amber-500/20 to-amber-500/5 text-amber-300 border-amber-400/20",
     purple: "from-yellow-500/20 to-yellow-500/5 text-yellow-300 border-yellow-400/20",
+    gold: "from-amber-400/20 to-amber-400/5 text-amber-200 border-amber-400/20",
   };
   return (
     <div className={cn("glass-v2 bg-gradient-to-br p-6 border", colors[color])}>
@@ -189,21 +191,3 @@ function Tab({ label, active, onClick, count }: any) {
   );
 }
 
-function Activity(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-    </svg>
-  );
-}

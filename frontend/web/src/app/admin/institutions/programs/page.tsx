@@ -70,9 +70,9 @@ export default function ProgramControl() {
       </header>
 
       <div className="grid gap-6 md:grid-cols-3">
-        <StatCard label="Total Programs" value="24" sub="12 Professional Tracks" icon={Layers} />
-        <StatCard label="Enrolled Students" value="18.5k" sub="+8% from last intake" icon={Calendar} />
-        <StatCard label="System Throughput" value="94%" sub="Completion Rate" icon={CheckCircle2} />
+        <StatCard label="Total Programs" value={programs.length.toString()} sub="Active learning tracks" icon={Layers} />
+        <StatCard label="Enrolled Students" value="—" sub="Requires analytics endpoint" icon={Calendar} />
+        <StatCard label="System Throughput" value="—" sub="Requires analytics endpoint" icon={CheckCircle2} />
       </div>
 
       <div className="glass-v2 border-white/5 overflow-hidden">
