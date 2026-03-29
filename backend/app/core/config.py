@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Lumina Learning Platform"
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = "change_this_to_a_secure_random_string"
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "supersecretjwtkeythatshouldbechanged123!")
+    JWT_REFRESH_SECRET: str = os.getenv("JWT_REFRESH_SECRET", "anotherverysecretrefreshkey123!")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
 
     # Database

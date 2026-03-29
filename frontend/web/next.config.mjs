@@ -11,6 +11,15 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/auth/:path*',
+        destination: 'http://127.0.0.1:4000/api/auth/:path*',
+      },
+      // Note: other /api requests hit FastAPI which is typically configured via cross-origin in lib/api.ts
+    ];
+  },
 };
 
 export default nextConfig;

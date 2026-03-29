@@ -1,6 +1,7 @@
 // API client for the Lumina FastAPI backend
 
 const LOCAL_API_BASE = "http://127.0.0.1:8000";
+const LOCAL_AUTH_BASE = "http://127.0.0.1:4000";
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "0.0.0.0", "localhost:3000"]);
 
 export function getConfiguredApiBase(): string | null {
@@ -8,44 +9,41 @@ export function getConfiguredApiBase(): string | null {
     process.env.NEXT_PUBLIC_API_URL?.trim() ||
     process.env.NEXT_PUBLIC_API_BASE?.trim();
 
-  if (explicitBase) {
-    console.log("[API] Using explicit base:", explicitBase);
-    return explicitBase.replace(/\/+$/, "");
-  }
-
+  if (explicitBase) return explicitBase.replace(/\/+$/, "");
   if (
     typeof window !== "undefined" &&
     (LOCAL_HOSTNAMES.has(window.location.hostname) || window.location.hostname.includes("localhost"))
   ) {
-    console.log("[API] Using local fallback:", LOCAL_API_BASE, "for hostname:", window.location.hostname);
     return LOCAL_API_BASE;
   }
+  return null;
+}
 
-  console.warn("[API] No API base configured! Hostname is:", typeof window !== "undefined" ? window.location.hostname : "node");
+export function getConfiguredAuthBase(): string | null {
+  const explicitBase = process.env.NEXT_PUBLIC_AUTH_URL?.trim();
+  if (explicitBase) return explicitBase.replace(/\/+$/, "");
+  if (
+    typeof window !== "undefined" &&
+    (LOCAL_HOSTNAMES.has(window.location.hostname) || window.location.hostname.includes("localhost"))
+  ) {
+    return LOCAL_AUTH_BASE;
+  }
   return null;
 }
 
 export function requireApiBase(): string {
   const apiBase = getConfiguredApiBase();
-  if (apiBase) {
-    return apiBase;
-  }
-
-  throw new Error(
-    "API is not configured for this deployment. Set NEXT_PUBLIC_API_URL in Vercel.",
-  );
+  if (apiBase) return apiBase;
+  throw new Error("API is not configured for this deployment. Set NEXT_PUBLIC_API_URL in Vercel.");
 }
 
-// ── Cookie helpers for auth token ────────────────────────────────────────────
-function setAuthCookie(token: string): void {
-  if (typeof document === 'undefined') return
-  document.cookie = `auth_token=${token}; path=/; SameSite=Strict; max-age=86400`
+export function requireAuthBase(): string {
+  const authBase = getConfiguredAuthBase();
+  if (authBase) return authBase;
+  throw new Error("Auth API is not configured. Set NEXT_PUBLIC_AUTH_URL");
 }
 
-function clearAuthCookie(): void {
-  if (typeof document === 'undefined') return
-  document.cookie = 'auth_token=; path=/; max-age=0'
-}
+// Cookies are now HttpOnly and managed by the Express backend.
 
 // ── Fetch with retry + timeout ────────────────────────────────────────────────
 async function fetchWithRetry(
@@ -118,11 +116,6 @@ export class RealAPI {
 
   private constructor() {
     if (typeof window !== "undefined") {
-      const cookieToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('auth_token='))
-        ?.split('=')[1]
-      this.token = cookieToken || sessionStorage.getItem("lumina_token") || null
       const storedUser = sessionStorage.getItem("lumina_user");
       if (storedUser) {
         this.currentUser = JSON.parse(storedUser);
@@ -143,14 +136,11 @@ export class RealAPI {
 
   private async handleUnauthorized(): Promise<boolean> {
     try {
-      const res = await fetch(`${this.getApiBase()}/api/auth/refresh`, {
+      const res = await fetch(`${requireAuthBase()}/api/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
       })
       if (res.ok) {
-        const { accessToken } = await res.json()
-        this.token = accessToken
-        setAuthCookie(accessToken)
         return true
       }
     } catch { }
@@ -175,6 +165,7 @@ export class RealAPI {
     const response = await fetchWithRetry(`${this.getApiBase()}${path}`, {
       ...options,
       headers,
+      credentials: "include",
     });
     if (response.status === 401) {
       const refreshed = await this.handleUnauthorized()
@@ -202,14 +193,15 @@ export class RealAPI {
   // --- Auth APIs ---
   async login(identifier: string, password?: string): Promise<User> {
     if (!password) throw new Error("Password is required for login.");
-    const res = await fetchWithRetry(`${this.getApiBase()}/api/auth/login`, {
+    const res = await fetchWithRetry(`${requireAuthBase()}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ identifier, password }),
+      credentials: "include",
     });
     if (!res.ok) {
       const error = await parseJsonSafe(res);
-      throw new Error(error?.detail || `Authentication failed (${res.status})`);
+      throw new Error(error?.error || error?.detail || `Authentication failed (${res.status})`);
     }
     const tokenData = await parseJsonSafe(res);
     if (tokenData.forcePasswordChange) {
@@ -230,8 +222,7 @@ export class RealAPI {
       this.currentUser = forcedUser;
       return forcedUser;
     }
-    this.token = tokenData.accessToken;
-    setAuthCookie(this.token!)
+    // Express backend sets the cookies automatically.
     const userData = tokenData.user;
     const displayName = userData.fullName || userData.name || identifier;
     this.currentUser = {
@@ -260,9 +251,10 @@ export class RealAPI {
 
   async createUser(userData: Partial<User> & { password?: string }): Promise<any> {
     if (!userData.password) throw new Error("Password is required for signup.");
-    const res = await fetchWithRetry(`${this.getApiBase()}/api/auth/register`, {
+    const res = await fetchWithRetry(`${requireAuthBase()}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         email: userData.email,
         password: userData.password,
@@ -276,7 +268,7 @@ export class RealAPI {
 
   async logout(): Promise<void> {
     try {
-      await fetch(`${this.getApiBase()}/api/auth/logout`, {
+      await fetch(`${requireAuthBase()}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
@@ -289,7 +281,6 @@ export class RealAPI {
       sessionStorage.removeItem("lumina_user");
       sessionStorage.removeItem("lumina_token");
     }
-    clearAuthCookie()
   }
 
   async changePassword(tokenOrPassword: string | null, maybeNewPassword?: string): Promise<any> {
@@ -303,7 +294,7 @@ export class RealAPI {
   }
 
   async forgotPassword(email: string): Promise<any> {
-    const res = await fetch(`${this.getApiBase()}/api/auth/forgot-password`, {
+    const res = await fetch(`${requireAuthBase()}/api/auth/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
@@ -313,7 +304,7 @@ export class RealAPI {
   }
 
   async resetPassword(token: string, newPassword: string): Promise<any> {
-    const res = await fetch(`${this.getApiBase()}/api/auth/reset-password`, {
+    const res = await fetch(`${requireAuthBase()}/api/auth/reset-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, newPassword }),
@@ -594,7 +585,7 @@ export class RealAPI {
   }
 
   async refreshSession(): Promise<any> {
-    const res = await fetch(`${this.getApiBase()}/api/auth/refresh`, {
+    const res = await fetch(`${requireAuthBase()}/api/auth/refresh`, {
       method: "POST",
       credentials: "include",
     });
@@ -606,8 +597,6 @@ export class RealAPI {
 
     const tokenData = await parseJsonSafe(res);
     if (tokenData?.accessToken) {
-      this.token = tokenData.accessToken;
-      setAuthCookie(tokenData.accessToken);
       if (this.currentUser) {
         this.currentUser = {
           ...this.currentUser,

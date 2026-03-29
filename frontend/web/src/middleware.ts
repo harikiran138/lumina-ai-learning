@@ -36,7 +36,10 @@ function getRoleHome(role: string): string {
 }
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('auth_token')?.value
+  const accessToken = request.cookies.get('access_token')?.value
+  const refreshToken = request.cookies.get('refresh_token')?.value
+  const token = accessToken || refreshToken // use whichever is available to decode payload
+  
   const { pathname } = request.nextUrl
 
   const isPublic =
