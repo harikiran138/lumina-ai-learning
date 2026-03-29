@@ -21,14 +21,14 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 
-  --color-lumina-primary: #facc15;
-  --color-lumina-secondary: #fbbf24;
-  --color-lumina-highlight: #facc15;
+  --color-lumina-primary: #FFD700;
+  --color-lumina-secondary: #FDB931;
+  --color-lumina-highlight: #FFD700;
   --color-lumina-accent: #f59e0b;
   --color-lumina-accent-dark: #d97706;
-  --color-lumina-dark: #020617;
-  --color-lumina-light: #fefce8;
-  --color-lumina-gray: #94a3b8;
+  --color-lumina-dark: #000000;
+  --color-lumina-light: #FFFFFF;
+  --color-lumina-gray: #1F2937;
 
   --color-surface-800: #1c1917;
   --color-surface-900: #0c0a09;
