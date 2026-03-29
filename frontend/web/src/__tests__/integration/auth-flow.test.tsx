@@ -23,46 +23,28 @@ vi.mock('next-themes', () => ({
 }))
 
 import LoginPage from '@/app/login/page'
-import { toast } from 'sonner'
 
 const BASE = 'http://127.0.0.1:8000'
-
-/**
- * The login page renders both sign-in and sign-up tabs simultaneously.
- * Use the autocomplete attribute to scope to the sign-in form's fields,
- * and target the submit button by type to avoid the tab-button ambiguity.
- */
-function getSignInEmail() {
-  return document.querySelector<HTMLInputElement>('input[autocomplete="email"]')
-    || document.querySelector<HTMLInputElement>('input[type="email"]')!
-}
-function getSignInPassword() {
-  return document.querySelector<HTMLInputElement>('input[autocomplete="current-password"]')!
-}
-function getSubmitButton() {
-  return document.querySelector<HTMLButtonElement>('button[type="submit"]')!
-}
 
 describe('Auth flow integration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     document.cookie = 'auth_token=; path=/; max-age=0'
+    sessionStorage.clear()
   })
 
-  it('shows inline validation error when email is invalid', async () => {
+  it('shows inline validation error when required login fields are missing', async () => {
     const user = userEvent.setup()
     render(<LoginPage />)
 
-    await user.type(getSignInEmail(), 'not-an-email')
-    await user.type(getSignInPassword(), 'Password1')
-    await user.click(getSubmitButton())
+    await user.click(screen.getByRole('button', { name: /^login$/i }))
 
     await waitFor(() => {
-      expect(screen.getByText(/valid email/i)).toBeInTheDocument()
+      expect(screen.getByText(/^Enter your email, roll number, or employee ID\.$/)).toBeInTheDocument()
     })
   })
 
-  it('calls the API and sets auth_token cookie on successful login', async () => {
+  it('calls the API and persists the access token on successful login', async () => {
     server.use(
       http.post(`${BASE}/api/auth/login`, () =>
         HttpResponse.json({
@@ -78,16 +60,17 @@ describe('Auth flow integration', () => {
     const user = userEvent.setup()
     render(<LoginPage />)
 
-    await user.type(getSignInEmail(), 'alice@lumina.test')
-    await user.type(getSignInPassword(), 'Password1')
-    await user.click(getSubmitButton())
+    await user.type(screen.getByPlaceholderText(/name@college\.edu or 22NU/i), 'alice@lumina.test')
+    await user.type(screen.getByPlaceholderText(/enter your password/i), 'Password1')
+    await user.click(screen.getByRole('button', { name: /^login$/i }))
 
     await waitFor(() => {
-      expect(document.cookie).toContain('auth_token=cookie-test-token')
+      expect(sessionStorage.getItem('lumina_token')).toBe('cookie-test-token')
+      expect(sessionStorage.getItem('lumina_user')).toContain('alice@lumina.test')
     }, { timeout: 5000 })
   })
 
-  it('displays a toast error when login returns 401', async () => {
+  it('displays an inline error when login returns 401', async () => {
     server.use(
       http.post(`${BASE}/api/auth/login`, () =>
         HttpResponse.json({ detail: 'Invalid credentials' }, { status: 401 })
@@ -97,12 +80,12 @@ describe('Auth flow integration', () => {
     const user = userEvent.setup()
     render(<LoginPage />)
 
-    await user.type(getSignInEmail(), 'wrong@lumina.test')
-    await user.type(getSignInPassword(), 'Password1')
-    await user.click(getSubmitButton())
+    await user.type(screen.getByPlaceholderText(/name@college\.edu or 22NU/i), 'wrong@lumina.test')
+    await user.type(screen.getByPlaceholderText(/enter your password/i), 'Password1')
+    await user.click(screen.getByRole('button', { name: /^login$/i }))
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalled()
+      expect(screen.getByText(/incorrect password for wrong@lumina\.test/i)).toBeInTheDocument()
     }, { timeout: 5000 })
   })
 })

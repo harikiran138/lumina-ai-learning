@@ -28,11 +28,11 @@ const roles = [
     color: "gold"
   },
   {
-    id: "teacher",
-    title: "Teacher",
+    id: "faculty",
+    title: "Faculty",
     description: "Verification queue and live operational classroom insights.",
     icon: User,
-    href: "/teacher/dashboard",
+    href: "/faculty/dashboard",
     color: "amber"
   },
   {
@@ -64,7 +64,7 @@ const roles = [
     title: "Content Creator",
     description: "Building blueprints and pedagogical rules for the AI engine.",
     icon: BookOpen,
-    href: "/content-creator/dashboard",
+    href: "/content_creator/dashboard",
     color: "amber"
   },
   {
@@ -88,7 +88,7 @@ const roles = [
     title: "Peer Tutor",
     description: "Collaborative learning and verified peer-to-peer support.",
     icon: Clock,
-    href: "/peer-tutor/dashboard",
+    href: "/peer_tutor/dashboard",
     color: "gold"
   },
   {

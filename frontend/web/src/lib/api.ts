@@ -64,6 +64,12 @@ async function fetchWithRetry(
         ...options,
         signal: controller.signal,
       })
+
+      // Retry on 5xx Server Errors
+      if (!response.ok && response.status >= 500) {
+        throw new Error(`Server Error: ${response.status}`);
+      }
+
       return response
     } catch (err: any) {
       // If we failed to fetch from localhost, and it's a TypeError (Network Error), 

@@ -99,7 +99,7 @@
 - [x] PDF upload and local ML OCR grading (standalone)
 - [x] Upgrade AI course generation from outline JSON to structured publishable objects in the DB
 - [x] Separate course blueprint from learner pathway projection
-- [ ] Integrate Handwriting Analysis module into the main backend assignment grading pipeline
+- [x] Integrate Handwriting Analysis module into the main backend assignment grading pipeline
 - [ ] Build content-designer review and versioning workflow
 
 ---

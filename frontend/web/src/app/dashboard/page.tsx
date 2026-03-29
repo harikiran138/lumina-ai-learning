@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { getRoleHome } from "@/lib/role-routing";
 
 export default function DashboardRedirect() {
   const router = useRouter();
@@ -17,8 +18,7 @@ export default function DashboardRedirect() {
         );
 
         if (user) {
-          const targetPath = `/${user.role}/dashboard`;
-          router.push(targetPath);
+          router.push(getRoleHome(user.role));
         } else {
           router.push("/login");
         }

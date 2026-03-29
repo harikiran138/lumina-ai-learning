@@ -20,6 +20,7 @@ import {
   User,
 } from "lucide-react";
 import { api, type User as AuthUser } from "@/lib/api";
+import { getRoleHome, ROLE_HOME_ROUTES } from "@/lib/role-routing";
 import { useAuthStore } from "@/store/useAuthStore";
 
 type LoginRole = "student" | "faculty" | "admin";
@@ -32,21 +33,6 @@ type SignupForm = {
   password: string;
   confirmPassword: string;
   role: SignupRole;
-};
-
-const roleRoutes: Record<string, string> = {
-  super_admin: "/admin/dashboard",
-  college_admin: "/college",
-  hod: "/hod/dashboard",
-  faculty: "/faculty/dashboard",
-  student: "/student/dashboard",
-  parent: "/parent/dashboard",
-  mentor: "/mentor/dashboard",
-  peer_tutor: "/peer_tutor/dashboard",
-  counselor: "/counselor/dashboard",
-  content_creator: "/content_creator/studio",
-  researcher: "/researcher/portal",
-  alumni: "/alumni/dashboard",
 };
 
 const loginRoleHints: Array<{
@@ -90,7 +76,7 @@ function redirectAfterAuth(router: ReturnType<typeof useRouter>, user: AuthUser)
     ? "/change-password"
     : user.onboardingStep !== undefined && user.onboardingStep < 5
       ? "/onboarding"
-      : roleRoutes[user.role] || "/dashboard";
+      : getRoleHome(user.role);
 
   startTransition(() => {
     router.replace(destination);
@@ -148,7 +134,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
     router.prefetch("/register");
     router.prefetch("/onboarding");
     router.prefetch("/change-password");
-    Object.values(roleRoutes).forEach((route) => router.prefetch(route));
+    Array.from(new Set(Object.values(ROLE_HOME_ROUTES))).forEach((route) => router.prefetch(route));
   }, [router]);
 
   async function handleLogin(e: React.FormEvent) {

@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import {
+  getCanonicalPath,
+  getExpectedRoleForPath,
+  getRoleHome,
+  normalizeRole,
+} from '@/lib/role-routing'
 
 function decodeToken(token: string) {
   try {
@@ -15,31 +21,6 @@ function decodeToken(token: string) {
   } catch {
     return null
   }
-}
-
-function normalizeRole(role: string): string {
-  if (role === 'admin') return 'super_admin'
-  if (role === 'teacher') return 'faculty'
-  return role
-}
-
-function getRoleHome(role: string): string {
-  const normalized = normalizeRole(role)
-  const rolePaths: Record<string, string> = {
-    super_admin: '/admin',
-    college_admin: '/college',
-    hod: '/hod/dashboard',
-    faculty: '/faculty/dashboard',
-    student: '/student/dashboard',
-    parent: '/parent/dashboard',
-    mentor: '/mentor/dashboard',
-    peer_tutor: '/peer_tutor/dashboard',
-    counselor: '/counselor/dashboard',
-    content_creator: '/content_creator/studio',
-    researcher: '/researcher/portal',
-    alumni: '/alumni/dashboard',
-  }
-  return rolePaths[normalized] || '/'
 }
 
 export function middleware(request: NextRequest) {
@@ -82,6 +63,13 @@ export function middleware(request: NextRequest) {
   }
   const role = normalizeRole(rawRole)
   const onboardingCompleted = payload.onboardingCompleted === true
+  const canonicalPath = getCanonicalPath(pathname)
+
+  if (canonicalPath && canonicalPath !== pathname) {
+    const url = request.nextUrl.clone()
+    url.pathname = canonicalPath
+    return NextResponse.redirect(url)
+  }
 
   if (!onboardingCompleted && !pathname.startsWith('/onboarding') && !isPublic) {
     const url = request.nextUrl.clone()
@@ -95,29 +83,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  const rolePaths: Record<string, string> = {
-    super_admin: '/admin',
-    college_admin: '/college',
-    hod: '/hod',
-    faculty: '/faculty',
-    student: '/student',
-    parent: '/parent',
-    mentor: '/mentor',
-    peer_tutor: '/peer_tutor',
-    counselor: '/counselor',
-    content_creator: '/content_creator',
-    researcher: '/researcher',
-    alumni: '/alumni',
-  }
-
-  for (const [expectedRole, path] of Object.entries(rolePaths)) {
-    if (pathname.startsWith(path)) {
-      if (role !== 'super_admin' && role !== expectedRole) {
-        const url = request.nextUrl.clone()
-        url.pathname = getRoleHome(role)
-        return NextResponse.redirect(url)
-      }
-    }
+  const expectedRole = getExpectedRoleForPath(pathname)
+  if (expectedRole && role !== 'super_admin' && role !== expectedRole) {
+    const url = request.nextUrl.clone()
+    url.pathname = getRoleHome(role)
+    return NextResponse.redirect(url)
   }
 
   return NextResponse.next()
@@ -133,9 +103,12 @@ export const config = {
     '/faculty/:path*',
     '/parent/:path*',
     '/mentor/:path*',
+    '/peer-tutor/:path*',
     '/peer_tutor/:path*',
     '/counselor/:path*',
+    '/content-creator/:path*',
     '/content_creator/:path*',
+    '/creator/:path*',
     '/researcher/:path*',
     '/alumni/:path*',
     '/onboarding',

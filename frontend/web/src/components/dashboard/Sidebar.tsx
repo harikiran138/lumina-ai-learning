@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { getRoleHome } from "@/lib/role-routing";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const roleNavItems: Record<string, any[]> = {
@@ -58,42 +59,33 @@ const roleNavItems: Record<string, any[]> = {
     { name: "Settings",  href: "/mentor/settings",  icon: Settings },
   ],
   peer_tutor: [
-    { name: "Dashboard", href: "/peer-tutor/dashboard", icon: LayoutDashboard },
-    { name: "Sessions",  href: "/peer-tutor/sessions",  icon: Clock },
-    { name: "Training",  href: "/peer-tutor/training",  icon: Brain },
-    { name: "Settings",  href: "/peer-tutor/settings",  icon: Settings },
+    { name: "Dashboard", href: "/peer_tutor/dashboard", icon: LayoutDashboard },
+    { name: "Sessions",  href: "/peer_tutor/sessions",  icon: Clock },
+    { name: "Training",  href: "/peer_tutor/training",  icon: Brain },
+    { name: "Settings",  href: "/peer_tutor/settings",  icon: Settings },
   ],
   counselor: [
     { name: "Dashboard",   href: "/counselor/dashboard", icon: LayoutDashboard },
-    { name: "Students",    href: "/counselor/students",  icon: Users },
-    { name: "Crisis Cases",href: "/counselor/crisis",    icon: Bell },
     { name: "Notes",       href: "/counselor/notes",     icon: FileText },
-    { name: "Settings",    href: "/counselor/settings",  icon: Settings },
+    { name: "Safeguarding",href: "/counselor/safeguarding", icon: Bell },
   ],
   content_creator: [
-    { name: "Dashboard",     href: "/creator/dashboard",  icon: LayoutDashboard },
-    { name: "Blueprints",    href: "/creator/blueprints", icon: FileText },
-    { name: "Question Bank", href: "/creator/questions",  icon: Brain },
-    { name: "Settings",      href: "/creator/settings",   icon: Settings },
+    { name: "Dashboard", href: "/content_creator/dashboard", icon: LayoutDashboard },
   ],
   researcher: [
     { name: "Dashboard", href: "/researcher/dashboard", icon: LayoutDashboard },
     { name: "Datasets",  href: "/researcher/datasets",  icon: BarChart2 },
-    { name: "Queries",   href: "/researcher/queries",   icon: Search },
-    { name: "Settings",  href: "/researcher/settings",  icon: Settings },
   ],
   alumni: [
     { name: "Dashboard",  href: "/alumni/dashboard",   icon: LayoutDashboard },
-    { name: "Mentorship", href: "/alumni/mentorship",  icon: Users },
     { name: "Portfolio",  href: "/alumni/portfolio",   icon: Award },
-    { name: "Settings",   href: "/alumni/settings",    icon: Settings },
   ],
   teacher: [
-    { name: "Dashboard",    href: "/teacher/dashboard",    icon: LayoutDashboard },
-    { name: "Courses",      href: "/teacher/courses",      icon: BookOpen },
-    { name: "Students",     href: "/teacher/students",     icon: Users },
-    { name: "Verification", href: "/teacher/verification", icon: CheckCircle },
-    { name: "Settings",     href: "/teacher/settings",     icon: Settings },
+    { name: "Dashboard",    href: "/faculty/dashboard",    icon: LayoutDashboard },
+    { name: "Courses",      href: "/faculty/courses",      icon: BookOpen },
+    { name: "Students",     href: "/faculty/students",     icon: Users },
+    { name: "Verification", href: "/faculty/verification", icon: CheckCircle },
+    { name: "Settings",     href: "/faculty/settings",     icon: Settings },
   ],
   admin: [
     { name: "Dashboard",   href: "/admin/dashboard",    icon: LayoutDashboard },
@@ -106,16 +98,16 @@ const roleNavItems: Record<string, any[]> = {
 
 const profileHrefByRole: Record<string, string> = {
   student:         "/student/profile",
-  teacher:         "/teacher/settings",
+  teacher:         "/faculty/settings",
   admin:           "/admin/platform/profile",
   parent:          "/parent/settings",
   mentor:          "/mentor/settings",
   peer_tutor:      "/peer_tutor/settings",
-  counselor:       "/counselor/dashboard",
-  alumni:          "/alumni/dashboard",
+  counselor:       "/counselor/notes",
+  alumni:          "/alumni/portfolio",
   researcher:      "/researcher/dashboard",
-  content_creator: "/content-creator/dashboard",
-  creator:         "/creator/dashboard",
+  content_creator: "/content_creator/dashboard",
+  creator:         "/content_creator/dashboard",
 };
 
 export default function Sidebar({
@@ -150,7 +142,7 @@ export default function Sidebar({
 
   const currentRole = (user?.role as string) || "student";
   const navItems    = roleNavItems[currentRole] ?? roleNavItems.student;
-  const profileHref = profileHrefByRole[currentRole] ?? `/${currentRole}/dashboard`;
+  const profileHref = profileHrefByRole[currentRole] ?? getRoleHome(currentRole);
 
   return (
     <aside

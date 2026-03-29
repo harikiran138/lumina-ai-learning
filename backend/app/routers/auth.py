@@ -419,7 +419,7 @@ def login_json(
     if not raw_identifier:
         raise HTTPException(status_code=400, detail="Identifier or email is required")
 
-    ip_address = (request.client.host if request.client else "unknown")
+    ip_address = (request.client.host if request.client else "0.0.0.0")
     user_agent = request.headers.get("user-agent", "")
 
     # ── Brute-force lock check ────────────────────────────────────────────────

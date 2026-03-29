@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, getConfiguredApiBase } from "@/lib/api";
+import { getRoleHome } from "@/lib/role-routing";
 import { toast } from "sonner";
 
 export default function ChangePasswordPage() {
@@ -49,18 +50,8 @@ export default function ChangePasswordPage() {
       } else {
         await api.changePassword(password);
         toast.success("Password updated");
-        // Route back to the user's own dashboard based on their role
         const user = await api.getCurrentUser();
-        const roleRoutes: Record<string, string> = {
-          super_admin: "/admin/dashboard",
-          admin: "/admin/dashboard",
-          college_admin: "/college",
-          hod: "/hod",
-          faculty: "/faculty",
-          teacher: "/teacher/dashboard",
-          student: "/student/dashboard",
-        };
-        router.push(user?.role ? (roleRoutes[user.role] || "/student/dashboard") : "/login");
+        router.push(user?.role ? getRoleHome(user.role) : "/login");
       }
     } catch (err: any) {
       toast.error(err?.message || "Unable to update password");

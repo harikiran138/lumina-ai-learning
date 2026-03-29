@@ -1,18 +1,11 @@
+import asyncio
 from app.database.supabase_manager import supabase_db
-client = supabase_db.get_client()
 
-# Check user ID for student
-users = client.table("users").select("id, email").eq("role", "student").execute().data
-if users:
-    student_id = users[0]["id"]
-    print(f"Student: {users[0]['email']} (ID: {student_id})")
-    
-    # Check progress
-    progress = client.table("progress").select("*").eq("user_id", student_id).execute().data
-    print(f"Progress records: {len(progress)}")
-    if progress:
-        print(progress)
-    else:
-        print("No progress records found.")
-else:
-    print("No student found.")
+async def test():
+    await supabase_db.connect()
+    # Simple query
+    client = supabase_db.get_client()
+    res = client.table("users").select("id").limit(1).execute()
+    print("DB connection successful:", res)
+
+asyncio.run(test())

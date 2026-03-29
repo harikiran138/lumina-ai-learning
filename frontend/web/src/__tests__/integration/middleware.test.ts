@@ -1,76 +1,40 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-// We test middleware logic in isolation without importing Next.js server internals.
-// The middleware reads auth_token cookie and redirects unauthenticated users.
+import {
+  getCanonicalPath,
+  getExpectedRoleForPath,
+  getRoleHome,
+  normalizeRole,
+} from '@/lib/role-routing'
 
-// Minimal mock of NextRequest / NextResponse shapes
-function makeRequest(pathname: string, cookieToken?: string) {
-  const url = new URL(`http://localhost${pathname}`)
-  const headers = new Headers()
-  if (cookieToken) {
-    headers.set('cookie', `auth_token=${cookieToken}`)
-  }
-  return {
-    nextUrl: url,
-    cookies: {
-      get: (name: string) =>
-        cookieToken && name === 'auth_token'
-          ? { value: cookieToken }
-          : undefined,
-    },
-    url: url.toString(),
-  }
-}
-
-// Import the middleware logic in isolation by re-implementing the guard inline
-// (avoids importing next/server in a non-Next environment)
-function runGuard(pathname: string, cookieToken?: string) {
-  const req = makeRequest(pathname, cookieToken)
-  const token = req.cookies.get('auth_token')?.value
-  const isProtected =
-    pathname.startsWith('/student') ||
-    pathname.startsWith('/teacher') ||
-    pathname.startsWith('/admin')
-  if (!token && isProtected) {
-    const redirect = new URL('/login', 'http://localhost')
-    redirect.searchParams.set('reason', 'unauthorized')
-    return { type: 'redirect', destination: redirect.pathname + redirect.search }
-  }
-  return { type: 'next' }
-}
-
-describe('Middleware route guard logic', () => {
-  it('redirects unauthenticated access to /student', () => {
-    const result = runGuard('/student/dashboard')
-    expect(result.type).toBe('redirect')
-    expect(result.destination).toContain('/login')
-    expect(result.destination).toContain('reason=unauthorized')
+describe('Role routing helpers', () => {
+  it('normalizes legacy roles to their active app roles', () => {
+    expect(normalizeRole('teacher')).toBe('faculty')
+    expect(normalizeRole('admin')).toBe('super_admin')
+    expect(normalizeRole('student')).toBe('student')
   })
 
-  it('redirects unauthenticated access to /teacher', () => {
-    const result = runGuard('/teacher/courses')
-    expect(result.type).toBe('redirect')
-    expect(result.destination).toContain('/login')
+  it('maps each role to the correct role home', () => {
+    expect(getRoleHome('teacher')).toBe('/faculty/dashboard')
+    expect(getRoleHome('faculty')).toBe('/faculty/dashboard')
+    expect(getRoleHome('content_creator')).toBe('/content_creator/dashboard')
+    expect(getRoleHome('researcher')).toBe('/researcher/dashboard')
+    expect(getRoleHome('college_admin')).toBe('/college')
   })
 
-  it('redirects unauthenticated access to /admin', () => {
-    const result = runGuard('/admin/users')
-    expect(result.type).toBe('redirect')
-    expect(result.destination).toContain('/login')
+  it('detects role ownership for canonical and alias paths', () => {
+    expect(getExpectedRoleForPath('/faculty/dashboard')).toBe('faculty')
+    expect(getExpectedRoleForPath('/teacher/courses')).toBe('faculty')
+    expect(getExpectedRoleForPath('/peer-tutor/dashboard')).toBe('peer_tutor')
+    expect(getExpectedRoleForPath('/content_creator/studio')).toBe('content_creator')
+    expect(getExpectedRoleForPath('/researcher/dashboard')).toBe('researcher')
   })
 
-  it('allows authenticated access to /student', () => {
-    const result = runGuard('/student/dashboard', 'valid-jwt-token')
-    expect(result.type).toBe('next')
-  })
-
-  it('allows unauthenticated access to /login', () => {
-    const result = runGuard('/login')
-    expect(result.type).toBe('next')
-  })
-
-  it('allows unauthenticated access to /register', () => {
-    const result = runGuard('/register')
-    expect(result.type).toBe('next')
+  it('canonicalizes stale role paths to working routes', () => {
+    expect(getCanonicalPath('/teacher/dashboard')).toBe('/faculty/dashboard')
+    expect(getCanonicalPath('/peer-tutor/training')).toBe('/peer_tutor/training')
+    expect(getCanonicalPath('/creator/dashboard')).toBe('/content_creator/dashboard')
+    expect(getCanonicalPath('/content_creator/studio')).toBe('/content_creator/dashboard')
+    expect(getCanonicalPath('/researcher/portal')).toBe('/researcher/dashboard')
   })
 })
