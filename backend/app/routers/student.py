@@ -93,6 +93,23 @@ def _clamp_unit_interval(value: Any, default: float = 0.5) -> float:
     return max(0.0, min(1.0, numeric))
 
 
+def _pick_preferred_class(class_rows: List[Dict[str, Any]], user_section: Optional[str]) -> Optional[Dict[str, Any]]:
+    if not class_rows:
+        return None
+
+    normalized_section = str(user_section or "").strip().lower()
+    if normalized_section:
+        for row in class_rows:
+            row_section = str(row.get("section") or row.get("section_name") or "").strip().lower()
+            if row_section == normalized_section:
+                return row
+
+    if len(class_rows) == 1:
+        return class_rows[0]
+
+    return None
+
+
 def _build_weekly_activity(events: List[Any]) -> List[Dict[str, Any]]:
     today = datetime.now(timezone.utc).date()
     buckets: Dict[str, Dict[str, Any]] = {}
@@ -1230,6 +1247,18 @@ async def get_student_onboarding_options(current_user: dict = Depends(get_curren
         if row.get("course_id")
     }
 
+    preferred_class = _pick_preferred_class(class_rows, current_user.get("section"))
+    issues = {
+        "missingDepartmentLink": not bool(dept_id),
+        "missingBatchLink": not bool(batch_id),
+        "missingSubjects": len(subjects) == 0,
+        "missingClasses": len(class_rows) == 0,
+        "missingProgramLink": not bool(
+            (enrollment or {}).get("program_id")
+            or (preferred_class or {}).get("program_id")
+        ),
+    }
+
     return {
         "batch": batch,
         "classes": class_rows,
@@ -1239,6 +1268,8 @@ async def get_student_onboarding_options(current_user: dict = Depends(get_curren
         "learnerProfile": learner_profile,
         "skillLevels": skill_levels,
         "section": current_user.get("section"),
+        "preferredClassId": (preferred_class or {}).get("id"),
+        "issues": issues,
     }
 
 
@@ -1269,12 +1300,62 @@ async def complete_student_onboarding(
 
     selected_class = await supabase_db.fetch_one("classes", {"id": payload.class_id}) if payload.class_id else None
     enrollment_record = await supabase_db.fetch_one("student_enrollments", {"student_id": student_id})
+    if not selected_class and batch_id:
+        class_candidates = await supabase_db.fetch_all("classes", {"batch_id": batch_id})
+        selected_class = _pick_preferred_class(class_candidates, current_user.get("section"))
 
     if selected_class and dept_id and selected_class.get("department_id") not in {None, dept_id}:
         raise HTTPException(status_code=403, detail="Selected class is outside your department scope")
+    if selected_class and batch_id and selected_class.get("batch_id") not in {None, batch_id}:
+        raise HTTPException(status_code=403, detail="Selected class does not belong to your batch")
 
-    program_id = (selected_class or {}).get("program_id") or (enrollment_record or {}).get("program_id")
-    current_semester_id = (selected_class or {}).get("semester_id") or (enrollment_record or {}).get("current_semester_id")
+    course_lookup: Dict[str, Dict[str, Any]] = {}
+    for subject_id in payload.subject_ids:
+        course = await supabase_db.fetch_one("courses", {"id": subject_id})
+        if course:
+            course_lookup[str(subject_id)] = course
+
+    program_id = (
+        (selected_class or {}).get("program_id")
+        or (enrollment_record or {}).get("program_id")
+        or next(
+            (
+                course.get("program_id")
+                for course in course_lookup.values()
+                if course.get("program_id")
+            ),
+            None,
+        )
+    )
+    current_semester_id = (
+        (selected_class or {}).get("semester_id")
+        or (enrollment_record or {}).get("current_semester_id")
+        or next(
+            (
+                course.get("semester_id")
+                for course in course_lookup.values()
+                if course.get("semester_id")
+            ),
+            None,
+        )
+    )
+
+    if not program_id and dept_id:
+        program_rows = await supabase_db.fetch_all("programs", {"department_id": dept_id})
+        active_programs = [row for row in program_rows if (row.get("status") or "active") == "active"]
+        fallback_programs = active_programs or program_rows
+        if len(fallback_programs) == 1:
+            program_id = fallback_programs[0].get("id")
+        elif fallback_programs:
+            batch_label = str(batch.get("label") or "").lower()
+            program_id = next(
+                (
+                    row.get("id")
+                    for row in fallback_programs
+                    if batch_label and batch_label in str(row.get("program_name") or "").lower()
+                ),
+                fallback_programs[0].get("id"),
+            )
 
     if not current_semester_id and program_id and batch.get("current_semester"):
         semester_match = await supabase_db.fetch_one(
@@ -1283,27 +1364,26 @@ async def complete_student_onboarding(
         )
         current_semester_id = semester_match.get("id") if semester_match else None
 
-    if not program_id:
-        raise HTTPException(status_code=400, detail="Unable to determine the engineering program for this student")
-
     year_of_study = max(1, ((int(batch.get("current_semester") or 1) + 1) // 2))
     now = datetime.utcnow().isoformat()
 
-    enrollment_upsert = await supabase_db.upsert(
-        "student_enrollments",
-        {
-            "student_id": student_id,
-            "program_id": program_id,
-            "current_semester_id": current_semester_id,
-            "class_id": payload.class_id or (enrollment_record or {}).get("class_id"),
-            "year_of_study": year_of_study,
-            "status": "active",
-            "updated_at": now,
-        },
-        on_conflict="student_id, program_id",
-    )
-    if not enrollment_upsert:
-        raise HTTPException(status_code=500, detail="Failed to update student enrollment")
+    enrollment_upsert = None
+    if program_id:
+        enrollment_upsert = await supabase_db.upsert(
+            "student_enrollments",
+            {
+                "student_id": student_id,
+                "program_id": program_id,
+                "current_semester_id": current_semester_id,
+                "class_id": (selected_class or {}).get("id") or payload.class_id or (enrollment_record or {}).get("class_id"),
+                "year_of_study": year_of_study,
+                "status": "active",
+                "updated_at": now,
+            },
+            on_conflict="student_id, program_id",
+        )
+        if not enrollment_upsert:
+            raise HTTPException(status_code=500, detail="Failed to update student enrollment")
 
     user_updates: Dict[str, Any] = {"onboarding_step": 5}
     if (selected_class or {}).get("section"):
@@ -1315,13 +1395,10 @@ async def complete_student_onboarding(
         raise HTTPException(status_code=500, detail="Failed to update student onboarding state")
 
     await supabase_db.delete("student_subjects", {"student_id": student_id})
-    course_lookup: Dict[str, Dict[str, Any]] = {}
     for subject_id in payload.subject_ids:
-        course = await supabase_db.fetch_one("courses", {"id": subject_id})
+        course = course_lookup.get(str(subject_id))
         if not course:
             continue
-        course_lookup[str(subject_id)] = course
-
         await supabase_db.insert(
             "student_subjects",
             {"student_id": student_id, "subject_id": subject_id},
@@ -1409,6 +1486,8 @@ async def complete_student_onboarding(
                 "batch_label": batch.get("label"),
                 "batch_confirmation_note": payload.batch_confirmation_note,
                 "section": user_updates.get("section") or current_user.get("section"),
+                "program_id": program_id,
+                "program_link_resolved": bool(program_id),
             },
             "updated_at": now,
         },
@@ -1430,6 +1509,9 @@ async def complete_student_onboarding(
         "consents": payload.consents,
         "batchConfirmed": payload.batch_confirmed,
         "batchConfirmationNote": payload.batch_confirmation_note,
+        "preferredClassId": (selected_class or {}).get("id"),
+        "programId": program_id,
+        "programLinked": bool(program_id),
     }
     progress["onboarding_status"] = "COMPLETED"
     progress["onboarding_step"] = 5
@@ -1449,9 +1531,10 @@ async def complete_student_onboarding(
     return {
         "success": True,
         "studentId": student_id,
-        "classId": payload.class_id,
+        "classId": (selected_class or {}).get("id") or payload.class_id,
         "subjectCount": len(course_lookup),
         "batchLabel": batch.get("label"),
+        "programLinked": bool(program_id),
     }
 
 

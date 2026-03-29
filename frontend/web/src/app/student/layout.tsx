@@ -41,7 +41,10 @@ export default function StudentLayout({
       <div className="relative z-10">
         <TopNav
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          className={cn(isCollapsed ? "lg:left-24" : "lg:left-72")}
+          className={cn(
+            "transition-[left] duration-[180ms] ease-out",
+            isCollapsed ? "lg:left-24" : "lg:left-72",
+          )}
         />
 
         {/* Mobile Sidebar Overlay */}
@@ -54,11 +57,13 @@ export default function StudentLayout({
 
         <main
           className={cn(
-            "pt-20 min-h-screen transition-all duration-300",
+            "pt-20 min-h-screen",
+            /* only transition margin-left, not every CSS property */
+            "transition-[margin-left] duration-[180ms] ease-out",
             isCollapsed ? "lg:ml-24" : "lg:ml-72",
           )}
         >
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
             <Breadcrumb homeHref="/student/dashboard" />
             {children}
           </div>

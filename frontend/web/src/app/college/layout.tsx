@@ -50,7 +50,7 @@ export default function CollegeLayout({ children }: { children: React.ReactNode 
         />
       )}
 
-      <main className="lg:ml-24 pt-20 min-h-screen transition-all duration-300">
+      <main className="lg:ml-28 pt-20 min-h-screen">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Breadcrumb />
           {children}
