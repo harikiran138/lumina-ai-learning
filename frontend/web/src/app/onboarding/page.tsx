@@ -58,11 +58,11 @@ const STEP_ICONS: Record<number, any> = {
 };
 
 const baseInputClass =
-  "w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl outline-none focus:border-lumina-primary focus:ring-2 focus:ring-lumina-primary/20 transition-all text-white placeholder:text-gray-600";
+  "w-full px-4 py-3 bg-black/40 border border-white/5 rounded-xl outline-none focus:border-lumina-primary focus:ring-2 focus:ring-lumina-primary/10 transition-all text-white placeholder:text-gray-600 shadow-inner";
 const primaryButtonClass =
-  "w-full py-5 bg-lumina-primary text-black font-black rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.01] transition-all shadow-[0_10px_40px_rgba(59,130,246,0.3)] disabled:opacity-50";
+  "w-full py-5 bg-lumina-primary text-black font-black rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.01] transition-all shadow-[0_10px_40px_rgba(250,204,21,0.25)] disabled:opacity-50 uppercase tracking-wider";
 const secondaryButtonClass =
-  "w-full py-5 bg-white text-black font-black rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.01] transition-all disabled:opacity-50";
+  "w-full py-5 bg-white/5 border border-white/10 text-white font-black rounded-2xl flex items-center justify-center gap-3 hover:bg-white/10 transition-all disabled:opacity-50 uppercase tracking-wider";
 
 const parseSections = (value: string) =>
   value
@@ -2220,7 +2220,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-black text-white relative flex flex-col items-center justify-start py-20 px-6 overflow-hidden">
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(59,130,246,0.1),transparent_50%),radial-gradient(circle_at_80%_80%,rgba(147,51,234,0.1),transparent_50%)]" />
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(250,204,21,0.08),transparent_50%),radial-gradient(circle_at_80%_80%,rgba(245,158,11,0.08),transparent_50%)]" />
 
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -2228,7 +2228,7 @@ export default function OnboardingPage() {
         className="w-full max-w-4xl flex items-center justify-between mb-12"
       >
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-lumina-primary/10 rounded-2xl flex items-center justify-center border border-lumina-primary/20">
+          <div className="w-12 h-12 bg-lumina-primary/10 rounded-2xl flex items-center justify-center border border-lumina-primary/30 shadow-[0_0_20px_rgba(250,204,21,0.2)]">
             <StepIcon className="w-6 h-6 text-lumina-primary" />
           </div>
           <div>
@@ -2263,7 +2263,7 @@ export default function OnboardingPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="backdrop-blur-3xl bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-[0_0_100px_rgba(0,0,0,0.5)]"
+            className="glass-v2-gold rounded-[2.5rem] p-8 md:p-12 shadow-[0_0_100px_rgba(0,0,0,0.5)]"
           >
             {renderContent()}
           </motion.div>
