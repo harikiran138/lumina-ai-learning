@@ -200,12 +200,12 @@ export class RealAPI {
   }
 
   // --- Auth APIs ---
-  async login(email: string, password?: string): Promise<User> {
+  async login(identifier: string, password?: string): Promise<User> {
     if (!password) throw new Error("Password is required for login.");
     const res = await fetchWithRetry(`${this.getApiBase()}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ identifier, password }),
     });
     if (!res.ok) {
       const error = await parseJsonSafe(res);
@@ -216,13 +216,14 @@ export class RealAPI {
       if (typeof window !== "undefined") {
         sessionStorage.setItem("temp_token", tokenData.tempToken);
       }
+      const displayId = identifier.includes("@") ? identifier.split("@")[0] : identifier;
       const forcedUser: User = {
         id: tokenData.user?.id || "",
-        email,
-        name: email.split("@")[0],
+        email: tokenData.user?.email || identifier,
+        name: tokenData.user?.fullName || displayId,
         role: "student",
         status: "active",
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(email.split("@")[0])}&background=random`,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayId)}&background=random`,
         createdAt: new Date().toISOString(),
         mustChangePassword: true,
       };
@@ -232,7 +233,7 @@ export class RealAPI {
     this.token = tokenData.accessToken;
     setAuthCookie(this.token!)
     const userData = tokenData.user;
-    const displayName = userData.fullName || userData.name || email.split("@")[0];
+    const displayName = userData.fullName || userData.name || identifier;
     this.currentUser = {
       id: userData.id,
       email: userData.email,

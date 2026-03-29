@@ -74,6 +74,7 @@ from .routers import (  # noqa: E402
     attendance,
     materials,
     faculty,
+    ai_queue,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
@@ -272,6 +273,7 @@ app.include_router(college_architecture.router, prefix="/api", tags=["College Ar
 app.include_router(attendance.router, prefix="/api", tags=["Attendance"])
 app.include_router(materials.router, prefix="/api", tags=["Materials"])
 app.include_router(faculty.router, prefix="/api", tags=["Faculty"])
+app.include_router(ai_queue.router, prefix="/api", tags=["AI Queue"])
 
 
 # --- Performance & Security Polish ---
