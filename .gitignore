@@ -1,5 +1,6 @@
 node_modules/
 .venv/
+.venv38/
 venv/
 .DS_Store
 dist/

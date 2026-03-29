@@ -81,11 +81,10 @@ export default function Home() {
 
             <nav className="hidden xl:flex md:items-center md:space-x-8">
               {[
-                { label: "Platform", href: "/platform" },
-                { label: "Technology", href: "/technology" },
-                { label: "Roles", href: "/roles" },
-                { label: "Privacy", href: "/privacy" },
-                { label: "Research", href: "/research" },
+                { label: "How It Works", href: "#how-it-works" },
+                { label: "Roles", href: "#roles" },
+                { label: "Verification", href: "#verification" },
+                { label: "Privacy", href: "#privacy" },
               ].map((item) => (
                 <Link
                   key={item.label}

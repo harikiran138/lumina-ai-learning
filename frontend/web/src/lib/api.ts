@@ -1107,6 +1107,62 @@ export class RealAPI {
   async createCollege(data: any) { return this.architectureCreateCollege(data); }
   async updateCollege(collegeId: string, data: any) { return this.architectureUpdateCollege(collegeId, data); }
   async createDepartment(collegeId: string, data: any) { return this.architectureCreateDepartment(collegeId, data); }
+
+  // --- Unit PDF Pipeline (Teacher Content Engine) ---
+  async uploadUnitPDF(file: File, title?: string): Promise<{ unit: any; job: any }> {
+    const form = new FormData();
+    form.append("file", file);
+    if (title) form.append("title", title);
+    const res = await this.fetchAuthorized("/api/teacher/units/upload", { method: "POST", body: form });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || "Upload failed"); }
+    return res.json();
+  }
+
+  async getUnit(unitId: string): Promise<any> {
+    return this.fetchJsonOrDefault(`/api/teacher/units/${unitId}`, null);
+  }
+
+  async listUnits(): Promise<any[]> {
+    return this.fetchJsonOrDefault("/api/teacher/units", []);
+  }
+
+  async generateUnitPresentation(unitId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/teacher/units/${unitId}/generate-ppt`, { method: "POST" });
+    return res.json().catch(() => ({}));
+  }
+
+  // --- Handwritten Assignment System ---
+  async createHandwrittenAssignment(data: { title: string; description: string; total_marks: number }): Promise<any> {
+    const form = new FormData();
+    form.append("title", data.title);
+    form.append("description", data.description);
+    form.append("total_marks", String(data.total_marks));
+    const res = await this.fetchAuthorized("/api/handwritten/assignments", { method: "POST", body: form });
+    if (!res.ok) throw new Error("Failed to create assignment");
+    return res.json();
+  }
+
+  async submitHandwrittenAssignment(assignmentId: string, file: File): Promise<any> {
+    const form = new FormData();
+    form.append("assignment_id", assignmentId);
+    form.append("file", file);
+    const res = await this.fetchAuthorized("/api/handwritten/submissions", { method: "POST", body: form });
+    if (!res.ok) throw new Error("Failed to submit");
+    return res.json();
+  }
+
+  async getHandwrittenSubmission(submissionId: string): Promise<any> {
+    return this.fetchJsonOrDefault(`/api/handwritten/submissions/${submissionId}`, null);
+  }
+
+  async teacherGradeHandwritten(submissionId: string, questionId: string, score: number, feedback: string): Promise<any> {
+    const res = await this.fetchAuthorized(
+      `/api/handwritten/submissions/${submissionId}/questions/${questionId}/grade`,
+      { method: "PUT", body: JSON.stringify({ teacher_score: score, teacher_feedback: feedback }) }
+    );
+    if (!res.ok) throw new Error("Grade save failed");
+    return res.json();
+  }
 }
 
 export const api = RealAPI.getInstance();
