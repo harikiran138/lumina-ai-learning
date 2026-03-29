@@ -132,7 +132,7 @@ export default function Sidebar({
   const router    = useRouter();
 
   // Auth store as primary cache — avoids repeat API calls on every page navigation
-  const { user: storeUser, setUser: setStoreUser } = useAuthStore();
+  const { user: storeUser, setUser: setStoreUser, clearAuth } = useAuthStore();
   const [user, setUser] = useState<any>(storeUser ?? null);
 
   useEffect(() => {
@@ -144,8 +144,9 @@ export default function Sidebar({
 
   const handleLogout = useCallback(async () => {
     await api.logout();
+    clearAuth();
     router.push("/login");
-  }, [router]);
+  }, [clearAuth, router]);
 
   const currentRole = (user?.role as string) || "student";
   const navItems    = roleNavItems[currentRole] ?? roleNavItems.student;

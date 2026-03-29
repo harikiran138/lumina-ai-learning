@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.store.user_store import UserStore
 from app.dependencies import get_user_store
 from app.database.supabase_manager import supabase_db
+from app.core.audit import audit_logger
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
@@ -302,7 +303,6 @@ async def register(user: UserCreate, user_store: UserStore = Depends(get_user_st
             email=user.email, password=user.password,
             full_name=user.full_name, role=user.role, phone=phone_val,
         )
-        from app.core.audit import audit_logger
         audit_logger.log(
             action="user_registered",
             user_id=str(new_user["id"]),
@@ -342,6 +342,7 @@ def login_for_access_token(
         subject=user["email"],
         expires_delta=access_token_expires,
         extra_claims=_build_claims(user),
+        secret_key=settings.JWT_SECRET,
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -371,6 +372,7 @@ async def accept_invite(
 
 @router.post("/logout")
 def logout(response: Response):
+    response.delete_cookie("access_token", path="/")
     response.delete_cookie("refresh_token", path="/")
     return {"success": True}
 
@@ -477,13 +479,25 @@ def login_json(
         subject=user["email"],
         expires_delta=access_token_expires,
         extra_claims=_build_claims(user),
+        secret_key=settings.JWT_SECRET,
     )
 
     refresh_token_expires = timedelta(days=7)
     refresh_token = create_access_token(
         subject=user["email"],
         expires_delta=refresh_token_expires,
-        extra_claims={"type": "refresh"},
+        extra_claims={"type": "refresh", **_build_claims(user)},
+        secret_key=settings.JWT_REFRESH_SECRET,
+    )
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=settings.SECURE_COOKIES,
+        samesite="strict",
+        max_age=int(access_token_expires.total_seconds()),
+        path="/",
     )
 
     response.set_cookie(
@@ -527,6 +541,7 @@ def login_json(
 @router.post("/refresh")
 async def refresh_token(
     request: Request,
+    response: Response,
     user_store: UserStore = Depends(get_user_store),
 ):
     raw_token = request.cookies.get("refresh_token")
@@ -534,7 +549,7 @@ async def refresh_token(
         raise HTTPException(status_code=401, detail="No refresh token found")
     try:
         from jose import jwt
-        payload = jwt.decode(raw_token, settings.SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(raw_token, settings.JWT_REFRESH_SECRET, algorithms=["HS256"])
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=401, detail="Invalid refresh token")
         email = payload.get("sub")
@@ -550,6 +565,16 @@ async def refresh_token(
         subject=user["email"],
         expires_delta=access_token_expires,
         extra_claims=_build_claims(user),
+        secret_key=settings.JWT_SECRET,
+    )
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=settings.SECURE_COOKIES,
+        samesite="strict",
+        max_age=int(access_token_expires.total_seconds()),
+        path="/",
     )
     return {"accessToken": access_token}
 
@@ -559,17 +584,24 @@ async def get_current_user(
     token: str = Depends(oauth2_scheme),
     user_store: UserStore = Depends(get_user_store),
 ):
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing authorization token")
     try:
         from jose import jwt
-        # Use JWT_SECRET to match Express Auth service
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
         user_id: Optional[str] = payload.get("userId")
         email: Optional[str] = payload.get("sub") or payload.get("email")
-        
-        if not user_id and not email:
-            raise HTTPException(status_code=401, detail="Could not validate credentials")
     except Exception:
-        raise HTTPException(status_code=401, detail="Could not validate credentials")
+        try:
+            from jose import jwt
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get("userId")
+            email = payload.get("sub") or payload.get("email")
+        except Exception:
+            raise HTTPException(status_code=401, detail="Invalid or expired access token")
+
+    if not user_id and not email:
+        raise HTTPException(status_code=401, detail="Token payload is missing user identity")
 
     user = None
     if user_id:
@@ -634,6 +666,13 @@ async def change_password(
         current_user["id"],
         {"password_hash": hashed_password, "must_change_password": False},
     )
+    
+    audit_logger.log(
+        action="password_changed",
+        user_id=str(current_user["id"]),
+        metadata={"email": current_user.get("email")}
+    )
+    
     return {"success": True, "message": "Password updated successfully"}
 
 

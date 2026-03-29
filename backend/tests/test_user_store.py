@@ -46,8 +46,21 @@ async def test_update_user_role(store):
     success = await store.update_user_role(user["id"], "teacher")
     assert success
     fetched = await store.get_user_by_id(user["id"])
-    assert fetched["role"] == "teacher"
+    assert fetched["role"] == "faculty"
     await store.delete_user(user["id"])
+
+
+def test_sanitize_user_normalizes_role_and_created_at(store):
+    sanitized = store._sanitize_user({
+        "id": "user-1",
+        "email": "legacy@example.com",
+        "role": "admin",
+        "name": "Legacy Admin",
+        "created_at": "2026-03-20T10:00:00+00:00",
+    })
+
+    assert sanitized["role"] == "super_admin"
+    assert sanitized["createdAt"] == "2026-03-20T10:00:00+00:00"
 
 @pytest.mark.asyncio
 async def test_update_user_fields(store):

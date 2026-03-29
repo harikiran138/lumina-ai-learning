@@ -13,7 +13,6 @@ import {
   CheckCircle2,
   Clock,
   GraduationCap,
-  Network,
   RefreshCw,
   Shield,
   Sparkles,
@@ -31,8 +30,10 @@ import { cn } from "@/lib/utils";
 
 interface AdminSummary {
   totalUsers: number;
+  activeUsers: number;
   totalStudents: number;
   totalTeachers: number;
+  totalFaculty: number;
   totalCourses: number;
   activeCourses: number;
   draftCourses: number;
@@ -96,8 +97,10 @@ interface SystemHealth {
 
 const EMPTY_SUMMARY: AdminSummary = {
   totalUsers: 0,
+  activeUsers: 0,
   totalStudents: 0,
   totalTeachers: 0,
+  totalFaculty: 0,
   totalCourses: 0,
   activeCourses: 0,
   draftCourses: 0,
@@ -642,32 +645,26 @@ export default function AdminDashboard() {
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <KpiCard
-          label="Active Students"
+          label="Students"
           value={summary.totalStudents}
-          sub={`${summary.totalUsers} total accounts`}
+          sub={`${summary.activeUsers} active accounts`}
           icon={GraduationCap}
           color="gold"
         />
         <KpiCard
-          label="Active Teachers"
-          value={summary.totalTeachers}
-          sub="Faculty & HODs"
+          label="Faculty & HODs"
+          value={summary.totalFaculty || summary.totalTeachers}
+          sub="Instructional staff"
           icon={Users}
           color="gold"
         />
         <KpiCard
-          label="AI Queue"
-          value={queueHealth.total_pending ?? 0}
-          sub="Pending verification"
+          label="Active Users"
+          value={summary.activeUsers}
+          sub={`${summary.totalUsers} total accounts`}
           icon={Bot}
-          color={
-            (queueHealth.total_pending ?? 0) > 20
-              ? "red"
-              : (queueHealth.total_pending ?? 0) > 5
-                ? "gold"
-                : "green"
-          }
-          trend={(queueHealth.total_pending ?? 0) > 10 ? "up" : "down"}
+          color={summary.activeUsers < summary.totalUsers ? "gold" : "green"}
+          trend={summary.activeUsers < summary.totalUsers ? "down" : "up"}
         />
         <KpiCard
           label="At-Risk Students"

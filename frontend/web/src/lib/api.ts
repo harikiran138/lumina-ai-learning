@@ -22,7 +22,7 @@ export function getConfiguredApiBase(): string | null {
 export function getConfiguredAuthBase(): string | null {
   const explicitBase = process.env.NEXT_PUBLIC_AUTH_URL?.trim();
   if (explicitBase) return explicitBase.replace(/\/+$/, "");
-  return getLocalServiceBase(4000);
+  return getLocalServiceBase(8000); // Default to backend port
 }
 
 export function requireApiBase(): string {
@@ -337,7 +337,11 @@ export class RealAPI {
   // --- Onboarding & Status ---
   async getOnboardingStatus(): Promise<any> {
     const res = await this.fetchAuthorized("/api/onboarding/status");
-    return res.ok ? await res.json() : { step: 0, role: "student" };
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to load onboarding status");
+    }
+    return await res.json();
   }
 
   async getOnboardingSubjects(): Promise<any[]> {

@@ -407,7 +407,13 @@ export default function OnboardingPage() {
         }
         setCurrentStep(nextStep);
       } catch (err: any) {
-        toast.error(err?.message || "Failed to load onboarding");
+        const message = err?.message || "Failed to load onboarding";
+        if (/token|credential|session|401|authorization|expired/i.test(message)) {
+          router.push("/login?reason=session_expired");
+          return;
+        }
+        setPageError(message);
+        toast.error(message);
       } finally {
         setLoading(false);
       }
@@ -1071,25 +1077,35 @@ export default function OnboardingPage() {
 
   const saveStudentStep2 = () =>
     handleSaveStep(async () => {
-      if (confirmBatch && !resolvedStudentBatch && !batchId) {
-        throw new Error("Batch not found for your account. Use the enrollment code flow or ask your admin to link your batch.");
+      // If batch is genuinely missing, auto-flag a correction request instead of blocking.
+      // Students should never be hard-blocked here — they can continue and admin resolves it.
+      const effectiveConfirmBatch = !!(resolvedStudentBatch || batchId);
+      const effectiveCorrectionMessage = !effectiveConfirmBatch
+        ? correctionMessage.trim() || "Batch not yet assigned — awaiting admin resolution"
+        : correctionMessage.trim();
+
+      if (!effectiveConfirmBatch && !effectiveCorrectionMessage) {
+        // Still proceed — the backend will file a correction request automatically
       }
+
       goToNextStep();
       await api.updateOnboardingStep(2, {
-        batchId,
-        confirmBatch,
-        correctionMessage: correctionMessage.trim(),
+        batchId: batchId || null,
+        confirmBatch: effectiveConfirmBatch,
+        correctionMessage: effectiveCorrectionMessage,
       });
     });
 
   const saveStudentStep3 = () =>
     handleSaveStep(async () => {
+      // If subjects haven't been mapped by HOD yet, allow progression with a toast warning.
+      // Student can revisit subject selection from their profile once subjects are available.
       if (!subjectsList.length) {
-        throw new Error("Subjects are not available for your batch yet. Ask your HOD/admin to map semester subjects before continuing.");
+        toast.warning("No subjects available yet — your HOD will assign them soon. You can still finish setup and they will be linked automatically.");
       }
       goToNextStep();
       await api.updateOnboardingStep(3, {
-        selectedElectives,
+        selectedElectives: selectedElectives.length ? selectedElectives : [],
       });
     });
 
@@ -1099,17 +1115,15 @@ export default function OnboardingPage() {
         validateOptionalPhone(studentProfile.emergencyContact, "Emergency contact number"),
         validateOptionalEmail(studentProfile.parentEmail, "Parent email"),
       );
-      if (!studentProfile.photoUrl.trim()) {
-        throw new Error("Profile photo URL is required");
-      }
+      // Photo URL is optional — students can update their profile photo later from Settings.
 
       goToNextStep();
       await api.updateOnboardingStep(4, {
         phone: studentProfile.phone,
         emergencyContact: studentProfile.emergencyContact,
         parentEmail: studentProfile.parentEmail,
-        photoUrl: studentProfile.photoUrl,
-        profilePhotoUrl: studentProfile.photoUrl,
+        photoUrl: studentProfile.photoUrl || null,
+        profilePhotoUrl: studentProfile.photoUrl || null,
       });
     });
 
@@ -1119,23 +1133,20 @@ export default function OnboardingPage() {
         ? selectedElectives
         : activeStudentSubjects.map((subject) => subject.id).filter(Boolean)) as string[];
 
-      if (!confirmBatch) {
-        throw new Error("Confirm your batch details before finishing student setup");
-      }
-      if (!resolvedStudentBatch && !batchId) {
-        throw new Error("Batch not found. Use the enrollment code flow or ask your admin to link your batch before finishing setup.");
-      }
-      if (!subjectIds.length) {
-        throw new Error("Select at least one engineering subject before finishing setup");
-      }
-      if (!studentClassId && studentClasses.length) {
-        throw new Error("Select your class or section before finishing setup");
+      // Only consents are mandatory — everything else can be completed/corrected post-onboarding
+      if (!consents.teacherVerifiedAi || !consents.academicIntegrity || !consents.dataPolicy) {
+        throw new Error("Please accept all three consent checkboxes to continue");
       }
       if (!learningStyles.length) {
-        throw new Error("Choose at least one learning preference");
+        throw new Error("Choose at least one learning preference before finishing setup");
       }
-      if (!consents.teacherVerifiedAi || !consents.academicIntegrity || !consents.dataPolicy) {
-        throw new Error("All mandatory consent checkboxes must be accepted");
+
+      // Batch/subject missing: warn but don't block — admin can resolve these later
+      if (!resolvedStudentBatch && !batchId) {
+        toast.warning("Batch not yet assigned — your admin will link it soon. Proceeding with setup.");
+      }
+      if (!subjectIds.length) {
+        toast.warning("No subjects mapped yet — your HOD will assign them soon.");
       }
 
       await api.completeStudentOnboarding({
@@ -1149,7 +1160,7 @@ export default function OnboardingPage() {
         device_type: deviceType,
         internet_type: internetType,
         consents,
-        batch_confirmed: confirmBatch,
+        batch_confirmed: !!(resolvedStudentBatch || batchId),
         batch_confirmation_note: correctionMessage.trim() || null,
       });
       await api.refreshSession();

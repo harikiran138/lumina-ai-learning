@@ -57,8 +57,9 @@ export default function FacultySidebar({
 }) {
   const pathname = usePathname();
   const router   = useRouter();
+  void _onHoverChange;
 
-  const { user: storeUser, setUser: setStoreUser } = useAuthStore();
+  const { user: storeUser, setUser: setStoreUser, clearAuth } = useAuthStore();
   const [user, setUser] = useState<any>(storeUser ?? null);
   const [hasAssignedCourses, setHasAssignedCourses] = useState<boolean | null>(null);
   const notificationCount = 3;
@@ -78,8 +79,9 @@ export default function FacultySidebar({
 
   const handleLogout = useCallback(async () => {
     await api.logout();
+    clearAuth();
     router.push("/login");
-  }, [router]);
+  }, [clearAuth, router]);
 
   const filteredNavItems =
     hasAssignedCourses === false

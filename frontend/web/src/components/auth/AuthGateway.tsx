@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { startTransition, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -42,23 +42,57 @@ const roleRoutes: Record<string, string> = {
   student: "/student/dashboard",
 };
 
-function redirectAfterAuth(user: AuthUser) {
-  if (user.mustChangePassword) {
-    window.location.href = "/change-password";
-    return;
-  }
+const loginRoleHints: Array<{
+  id: LoginRole;
+  label: string;
+  icon: typeof GraduationCap;
+  helper: string;
+}> = [
+  { id: "student", label: "Student", icon: GraduationCap, helper: "Roll number or student email" },
+  { id: "faculty", label: "Faculty", icon: School, helper: "Faculty ID or institutional email" },
+  { id: "admin", label: "Admin", icon: ShieldCheck, helper: "Administrative email access" },
+];
 
-  if (user.onboardingStep !== undefined && user.onboardingStep < 5) {
-    window.location.href = "/onboarding";
-    return;
-  }
+const signupRoleOptions: Array<{ id: SignupRole; label: string; icon: typeof GraduationCap }> = [
+  { id: "student", label: "Student", icon: GraduationCap },
+  { id: "faculty", label: "Faculty", icon: School },
+];
 
-  window.location.href = roleRoutes[user.role] || "/dashboard";
+const featurePillars = [
+  "Teacher-verified AI learning support",
+  "Role-aware dashboards and onboarding",
+  "Secure session handling with guided setup",
+];
+
+function fieldClass(hasError: boolean) {
+  return [
+    "w-full rounded-2xl border bg-stone-900/50 text-white outline-none transition-all font-medium",
+    "py-4 pl-14 pr-14 placeholder:text-slate-600",
+    hasError
+      ? "border-red-500/40 focus:border-red-400 focus:ring-2 focus:ring-red-500/20"
+      : "border-white/8 focus:border-lumina-highlight focus:ring-2 focus:ring-lumina-highlight/20",
+  ].join(" ");
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function redirectAfterAuth(router: ReturnType<typeof useRouter>, user: AuthUser) {
+  const destination = user.mustChangePassword
+    ? "/change-password"
+    : user.onboardingStep !== undefined && user.onboardingStep < 5
+      ? "/onboarding"
+      : roleRoutes[user.role] || "/dashboard";
+
+  startTransition(() => {
+    router.replace(destination);
+  });
 }
 
 export default function AuthGateway({ mode }: { mode: AuthMode }) {
   const router = useRouter();
-  const [activeRole, setActiveRole] = useState<LoginRole>("student");
+  const [activeRole, setActiveRole] = useState<LoginRole | null>(null);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [signupForm, setSignupForm] = useState<SignupForm>({
@@ -70,35 +104,81 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showRoleHints, setShowRoleHints] = useState(false);
 
   const setUser = useAuthStore((state) => state.setUser);
   const user = useAuthStore((state) => state.user);
 
+  const isSignup = mode === "signup";
+  const selectedHint = activeRole ? loginRoleHints.find((item) => item.id === activeRole) : null;
+
+  const loginValidationError = useMemo(() => {
+    if (!identifier.trim()) return "Enter your email, roll number, or employee ID.";
+    if (!password) return "Enter your password.";
+    return null;
+  }, [identifier, password]);
+
+  const signupValidationError = useMemo(() => {
+    if (!signupForm.name.trim()) return "Enter your full name.";
+    if (!isValidEmail(signupForm.email)) return "Enter a valid email address.";
+    if (signupForm.password.length < 8) return "Password must be at least 8 characters.";
+    if (signupForm.password !== signupForm.confirmPassword) return "Passwords do not match.";
+    return null;
+  }, [signupForm]);
+
   useEffect(() => {
     if (user) {
-      window.location.href = roleRoutes[user.role] || "/dashboard";
+      redirectAfterAuth(router, user as AuthUser);
     }
-  }, [user]);
+  }, [router, user]);
+
+  useEffect(() => {
+    router.prefetch("/login");
+    router.prefetch("/register");
+    router.prefetch("/onboarding");
+    router.prefetch("/change-password");
+    Object.values(roleRoutes).forEach((route) => router.prefetch(route));
+  }, [router]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+
+    if (loginValidationError) {
+      setError(loginValidationError);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
+    setStatusMessage("Signing you in...");
 
     try {
       const loggedInUser = await api.login({
         identifier: identifier.trim(),
         password,
-        role_hint: activeRole === "admin" ? undefined : activeRole,
+        role_hint: activeRole ?? undefined,
       });
 
+      setStatusMessage("Redirecting to your workspace...");
       setUser(loggedInUser);
-      redirectAfterAuth(loggedInUser);
+      redirectAfterAuth(router, loggedInUser);
     } catch (err: any) {
-      setError(err?.message || "Invalid credentials. Please try again.");
+      console.error("Login error:", err);
+      // More descriptive error messages based on context
+      let message = err.message || "Invalid credentials. Please try again.";
+      
+      if (message.includes("401") || message.toLowerCase().includes("invalid") || message.toLowerCase().includes("credentials")) {
+        message = `Incorrect password for ${identifier}. Please try again.`;
+      } else if (message.includes("404") || message.toLowerCase().includes("not found")) {
+        message = `Account not found for ${identifier}. Check your email or sign up.`;
+      }
+      
+      setError(message);
+      setStatusMessage(null);
     } finally {
       setIsLoading(false);
     }
@@ -106,20 +186,15 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+
+    if (signupValidationError) {
+      setError(signupValidationError);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
-
-    if (signupForm.password !== signupForm.confirmPassword) {
-      setError("Passwords do not match.");
-      setIsLoading(false);
-      return;
-    }
-
-    if (signupForm.password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      setIsLoading(false);
-      return;
-    }
+    setStatusMessage("Creating your account...");
 
     try {
       const createdUser = await api.createUser({
@@ -129,16 +204,16 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
         role: signupForm.role,
       });
 
+      setStatusMessage("Launching onboarding...");
       setUser(createdUser);
-      redirectAfterAuth(createdUser);
+      redirectAfterAuth(router, createdUser);
     } catch (err: any) {
       setError(err?.message || "Unable to create your account right now.");
+      setStatusMessage(null);
     } finally {
       setIsLoading(false);
     }
   }
-
-  const isSignup = mode === "signup";
 
   function handleBack() {
     if (window.history.length > 1) {
@@ -149,91 +224,96 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
   }
 
   return (
-    <div className="min-h-screen bg-black text-slate-100 flex overflow-hidden">
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-stone-950">
+    <div className="min-h-screen bg-[#060606] text-slate-100 flex overflow-hidden">
+      <div className="hidden lg:flex lg:w-[44%] relative overflow-hidden border-r border-white/6 bg-[#0b0b0b]">
         <Image
           src="/images/hero-yellow.png"
-          alt="Lumina Hero"
+          alt="Lumina login preview"
           fill
-          className="object-cover opacity-60 mix-blend-luminosity grayscale transition-all duration-1000"
           priority
+          sizes="(min-width: 1024px) 44vw, 0px"
+          quality={70}
+          className="object-cover opacity-28 scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-tr from-black via-black/45 to-transparent" />
+        <div className="absolute inset-0 bg-[linear-gradient(165deg,rgba(6,6,6,1)_0%,rgba(6,6,6,0.85)_40%,rgba(250,204,21,0.08)_100%)]" />
 
-        <div className="relative z-10 p-16 flex flex-col justify-between h-full w-full">
+        <div className="relative z-10 flex h-full w-full flex-col justify-between p-14">
           <div>
-            <div className="flex items-center gap-3 mb-8">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-lumina-highlight/30 bg-lumina-highlight/10 text-xl font-black text-lumina-highlight">
+            <div className="mb-10 flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-lumina-highlight/30 bg-lumina-highlight/10 text-xl font-black text-lumina-highlight shadow-[0_0_20px_rgba(250,204,21,0.2)]">
                 L
               </div>
-              <span className="text-2xl font-black tracking-tighter text-white font-display uppercase">Lumina</span>
+              <span className="font-display text-2xl font-black uppercase tracking-tight text-white drop-shadow-sm">Lumina</span>
             </div>
 
-            <h1 className="text-5xl lg:text-6xl font-black leading-[1.1] mb-6 font-display">
-              <span className="gradient-text-gold">{isSignup ? "Start Your " : "Elevate Learning "}</span>
-              <br />
-              <span className="text-white">{isSignup ? "Intelligent Journey" : "With Intelligence"}</span>
-            </h1>
-            <p className="text-slate-400 text-lg max-w-sm leading-relaxed font-sans">
-              {isSignup
-                ? "Create your Lumina account and step into a guided onboarding flow built for modern students and faculty."
-                : "Experience the next generation of digital education. Lumina fuses advanced AI with human pedagogical integrity to empower every learner."}
-            </p>
+            <div className="space-y-6 max-w-xl">
+              <div className="inline-flex items-center rounded-full border border-lumina-highlight/20 bg-lumina-highlight/8 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-lumina-highlight">
+                Production Auth Flow
+              </div>
+              <h1 className="font-display text-5xl font-black leading-tight tracking-tight text-white">
+                {isSignup ? "Create your Lumina account." : "Log in without the friction."}
+              </h1>
+              <p className="max-w-md text-base leading-7 text-slate-400">
+                {isSignup
+                  ? "Start with a clean account setup, then move directly into role-based onboarding and your assigned workspace."
+                  : "Use your email, roll number, or employee ID. Lumina will route you to the right dashboard and restore your session cleanly."}
+              </p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 max-w-md font-display">
-            <div className="flex flex-col gap-2">
-              <div className="text-lumina-highlight text-4xl font-black">98%</div>
-              <div className="text-slate-500 text-xs font-bold uppercase tracking-widest">Student Engagement</div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="text-amber-500 text-4xl font-black">42%</div>
-              <div className="text-slate-500 text-xs font-bold uppercase tracking-widest">Mastery Velocity</div>
-            </div>
+          <div className="space-y-4 max-w-md">
+            {featurePillars.map((item) => (
+              <div key={item} className="flex items-start gap-3 rounded-2xl border border-white/6 bg-white/[0.03] px-4 py-4">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-lumina-highlight" />
+                <p className="text-sm leading-6 text-slate-300">{item}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-16 relative bg-black">
-        <div className="absolute top-1/4 -right-1/4 w-[600px] h-[600px] bg-lumina-highlight/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-1/4 -left-1/4 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="relative flex w-full items-center justify-center bg-[#060606] px-6 py-12 sm:px-8 lg:w-[56%] lg:px-14">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top,rgba(245,158,11,0.14),transparent_55%)]" />
+        <div className="pointer-events-none absolute -right-24 top-24 h-72 w-72 rounded-full bg-lumina-highlight/8 blur-[100px]" />
 
-        <div className="w-full max-w-md relative z-10">
+        <div className="relative z-10 w-full max-w-lg">
           {!isSignup ? (
             <button
               type="button"
               onClick={handleBack}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300 transition-colors hover:border-lumina-highlight/40 hover:text-white"
+              className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-slate-300 transition-colors hover:border-lumina-highlight/35 hover:text-white"
             >
               <ArrowLeft size={16} />
               Back
             </button>
           ) : null}
 
-          <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-lumina-highlight/30 bg-lumina-highlight/10 text-lg font-black text-lumina-highlight">
-              L
-            </div>
-            <span className="text-xl font-black tracking-tighter text-white font-display uppercase">Lumina</span>
-          </div>
-
-          <div className="mb-8 flex items-center justify-between gap-3">
-            <div className="text-left">
-              <h2 className="text-4xl font-black text-white mb-3 font-display tracking-tight">
-                {isSignup ? "Create Account" : "Access Portal"}
+          <div className="mb-8 flex items-center justify-between gap-4">
+            <div>
+              <div className="mb-3 flex items-center gap-3 lg:hidden">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-lumina-highlight/30 bg-lumina-highlight/10 text-lg font-black text-lumina-highlight">
+                  L
+                </div>
+                <span className="font-display text-xl font-black uppercase tracking-tight text-white">Lumina</span>
+              </div>
+              <h2 className="font-display text-4xl font-black tracking-tight text-white">
+                {isSignup ? "Create account" : "Login to Lumina"}
               </h2>
-              <p className="text-slate-500 font-sans">
-                {isSignup ? "Set up your account to enter Lumina." : "Sign in to sync your learning graph."}
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                {isSignup
+                  ? "Choose your role once, set a password, and continue to guided onboarding."
+                  : "Your account type can be detected automatically. Add a role hint only if you want to narrow the sign-in path."}
               </p>
             </div>
-            <div className="rounded-2xl border border-white/5 bg-stone-900/60 p-1 flex items-center gap-1">
+
+            <div className="flex items-center gap-1 rounded-2xl border border-white/8 bg-stone-900/70 p-1">
               <Link
                 href="/login"
                 className={`rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
                   !isSignup ? "bg-lumina-highlight text-black" : "text-slate-400 hover:text-white"
                 }`}
               >
-                Sign In
+                Login
               </Link>
               <Link
                 href="/register"
@@ -247,156 +327,211 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
           </div>
 
           {!isSignup ? (
-            <>
-              <div className="flex p-1.5 bg-stone-900/50 backdrop-blur-3xl rounded-2xl mb-8 border border-white/5">
-                {[
-                  { id: "student", label: "Student", icon: GraduationCap },
-                  { id: "faculty", label: "Faculty", icon: School },
-                  { id: "admin", label: "Admin", icon: ShieldCheck },
-                ].map((role) => (
-                  <button
-                    key={role.id}
-                    type="button"
-                    onClick={() => setActiveRole(role.id as LoginRole)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-300 font-sans ${
-                      activeRole === role.id
-                        ? "bg-lumina-highlight text-black shadow-[0_8px_24px_rgba(250,204,21,0.25)]"
-                        : "text-slate-500 hover:text-slate-200 hover:bg-white/5"
-                    }`}
-                  >
-                    <role.icon size={16} />
-                    {role.label}
-                  </button>
-                ))}
+            <form onSubmit={handleLogin} className="space-y-6 rounded-[2rem] border border-white/8 bg-white/[0.03] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.35)] sm:p-8">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-white">Account</p>
+                  <span className="text-xs uppercase tracking-[0.24em] text-slate-500">Primary action</span>
+                </div>
+                <p className="text-sm leading-6 text-slate-400">
+                  Enter your email, roll number, or employee ID. Lumina will handle the routing after authentication.
+                </p>
               </div>
 
-              <form onSubmit={handleLogin} className="space-y-6">
-                <div className="space-y-4 font-sans">
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none group-focus-within:text-lumina-highlight text-slate-600 transition-colors">
-                      {activeRole === "student" ? <User size={20} /> : activeRole === "faculty" ? <Building2 size={20} /> : <Mail size={20} />}
+              <div className="space-y-4">
+                <label className="block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                    Email, Roll Number, or Employee ID
+                  </span>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-500">
+                      {activeRole === "faculty" ? <Building2 size={18} /> : activeRole === "student" ? <User size={18} /> : <Mail size={18} />}
                     </div>
                     <input
                       type="text"
-                      placeholder={
-                        activeRole === "student"
-                          ? "Roll Number / Student ID / Email"
-                          : activeRole === "faculty"
-                            ? "Faculty ID or Portal Email"
-                            : "Administrator Email"
-                      }
+                      autoComplete="username"
+                      placeholder={selectedHint?.helper || "name@college.edu or 22NU..."}
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
-                      className="w-full bg-stone-900/40 border border-white/5 text-white rounded-2xl py-4.5 pl-14 pr-4 focus:ring-2 focus:ring-lumina-highlight/40 focus:border-lumina-highlight outline-none transition-all placeholder:text-slate-700 font-medium"
-                      required
+                      className={fieldClass(Boolean(error && !identifier.trim()))}
+                      aria-invalid={Boolean(error && !identifier.trim())}
                     />
                   </div>
+                </label>
 
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none group-focus-within:text-lumina-highlight text-slate-600 transition-colors">
-                      <Lock size={20} />
+                <label className="block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                    Password
+                  </span>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-500">
+                      <Lock size={18} />
                     </div>
                     <input
                       type={showPassword ? "text" : "password"}
-                      placeholder="Security Key"
+                      autoComplete="current-password"
+                      placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-stone-900/40 border border-white/5 text-white rounded-2xl py-4.5 pl-14 pr-14 focus:ring-2 focus:ring-lumina-highlight/40 focus:border-lumina-highlight outline-none transition-all placeholder:text-slate-700 font-medium"
-                      required
+                      className={fieldClass(Boolean(error && !password))}
+                      aria-invalid={Boolean(error && !password)}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((value) => !value)}
-                      className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-600 hover:text-lumina-highlight transition-colors"
+                      className="absolute inset-y-0 right-0 pr-5 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 transition-colors hover:text-lumina-highlight"
                     >
-                      <span className="text-[10px] font-black uppercase tracking-widest">{showPassword ? "Hide" : "Show"}</span>
+                      {showPassword ? "Hide" : "Show"}
                     </button>
                   </div>
-                </div>
+                </label>
+              </div>
 
-                {error && (
-                  <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-start gap-3">
-                    <AlertCircle className="text-red-500 mt-0.5" size={18} />
-                    <p className="text-sm text-red-200/80 leading-tight font-medium">{error}</p>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between py-1 font-sans">
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className="relative w-6 h-6 flex items-center justify-center">
-                      <input type="checkbox" className="peer absolute opacity-0 w-full h-full cursor-pointer" />
-                      <div className="w-5 h-5 rounded-lg border border-white/10 bg-stone-900 peer-checked:bg-lumina-highlight peer-checked:border-lumina-highlight transition-all flex items-center justify-center shadow-inner">
-                        <CheckCircle2 size={14} className="text-black scale-0 peer-checked:scale-100 transition-transform" />
-                      </div>
-                    </div>
-                    <span className="text-sm text-slate-500 group-hover:text-slate-400 font-medium tracking-tight">Keep Session Active</span>
-                  </label>
-                  <button type="button" className="text-sm font-bold text-lumina-highlight hover:text-amber-400 transition-colors tracking-tight">
-                    Reset Access
+               <div className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">Routing Mode</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowRoleHints(!showRoleHints)}
+                    className="text-xs font-bold text-lumina-highlight transition-colors hover:text-amber-400"
+                  >
+                    {showRoleHints ? "Auto-detect only" : "Specific role hint?"}
                   </button>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full glass-button-highlight disabled:opacity-50 disabled:cursor-not-allowed text-black font-black py-4.5 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.98] text-lg uppercase tracking-widest shadow-[0_20px_40px_rgba(250,204,21,0.2)]"
+                {showRoleHints ? (
+                  <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <p className="text-xs leading-5 text-slate-400">
+                      Selecting a role narrows the sign-in path and speeds up workspace routing.
+                    </p>
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                      {loginRoleHints.map((role) => (
+                        <button
+                          key={role.id}
+                          type="button"
+                          onClick={() => setActiveRole((current) => (current === role.id ? null : role.id))}
+                          className={`flex flex-col items-center justify-center rounded-2xl border px-3 py-4 text-center transition-all ${
+                            activeRole === role.id
+                              ? "border-lumina-highlight/40 bg-lumina-highlight/10 text-white shadow-[0_0_20px_rgba(250,204,21,0.1)]"
+                              : "border-white/6 bg-black/40 text-slate-500 hover:border-white/12 hover:text-slate-300"
+                          }`}
+                        >
+                          <role.icon className={`mb-2 h-5 w-5 ${activeRole === role.id ? "text-lumina-highlight" : ""}`} />
+                          <span className="text-[13px] font-bold">{role.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : activeRole ? (
+                  <div className="flex items-center gap-2 rounded-xl bg-lumina-highlight/10 px-3 py-2 text-xs font-bold text-lumina-highlight border border-lumina-highlight/20">
+                    <CheckCircle2 size={14} />
+                    <span>Role hint set: {activeRole}</span>
+                    <button 
+                      type="button" 
+                      onClick={() => setActiveRole(null)}
+                      className="ml-auto hover:text-white"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+
+              {error ? (
+                <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
+                    <p className="text-sm leading-6 text-red-100">{error}</p>
+                  </div>
+                </div>
+              ) : null}
+
+              {statusMessage ? (
+                <div className="rounded-2xl border border-lumina-highlight/20 bg-lumina-highlight/8 px-4 py-3 text-sm text-lumina-highlight">
+                  {statusMessage}
+                </div>
+              ) : null}
+
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <p className="text-slate-500">Secure session cookies are enabled automatically.</p>
+                <Link
+                  href="/auth/reset-password"
+                  className="font-semibold text-lumina-highlight transition-colors hover:text-amber-400"
                 >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="animate-spin" size={20} />
-                      <span>Synchronizing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Initialize Lumina</span>
-                      <ArrowRight size={22} />
-                    </>
-                  )}
-                </button>
-              </form>
-            </>
+                  Reset password
+                </Link>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-lumina-highlight px-5 py-4 text-base font-black text-black transition-all hover:translate-y-[-1px] hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Logging in...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Login</span>
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </button>
+            </form>
           ) : (
-            <form onSubmit={handleSignup} className="space-y-6">
-              <div className="grid gap-4 font-sans">
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none group-focus-within:text-lumina-highlight text-slate-600 transition-colors">
-                    <User size={20} />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    value={signupForm.name}
-                    onChange={(e) => setSignupForm((prev) => ({ ...prev, name: e.target.value }))}
-                    className="w-full bg-stone-900/40 border border-white/5 text-white rounded-2xl py-4.5 pl-14 pr-4 focus:ring-2 focus:ring-lumina-highlight/40 focus:border-lumina-highlight outline-none transition-all placeholder:text-slate-700 font-medium"
-                    required
-                  />
-                </div>
+            <form onSubmit={handleSignup} className="space-y-6 rounded-[2rem] border border-white/8 bg-white/[0.03] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.35)] sm:p-8">
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-white">Account setup</p>
+                <p className="text-sm leading-6 text-slate-400">
+                  Create your credentials first. Role-based onboarding continues immediately after account creation.
+                </p>
+              </div>
 
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none group-focus-within:text-lumina-highlight text-slate-600 transition-colors">
-                    <Mail size={20} />
+              <div className="space-y-4">
+                <label className="block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Full name</span>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-500">
+                      <User size={18} />
+                    </div>
+                    <input
+                      type="text"
+                      autoComplete="name"
+                      placeholder="Your full name"
+                      value={signupForm.name}
+                      onChange={(e) => setSignupForm((prev) => ({ ...prev, name: e.target.value }))}
+                      className={fieldClass(Boolean(error && !signupForm.name.trim()))}
+                    />
                   </div>
-                  <input
-                    type="email"
-                    placeholder="Email Address"
-                    value={signupForm.email}
-                    onChange={(e) => setSignupForm((prev) => ({ ...prev, email: e.target.value }))}
-                    className="w-full bg-stone-900/40 border border-white/5 text-white rounded-2xl py-4.5 pl-14 pr-4 focus:ring-2 focus:ring-lumina-highlight/40 focus:border-lumina-highlight outline-none transition-all placeholder:text-slate-700 font-medium"
-                    required
-                  />
-                </div>
+                </label>
 
-                <div className="grid grid-cols-2 gap-3 rounded-2xl border border-white/5 bg-stone-900/50 p-1.5">
-                  {([
-                    { id: "student", label: "Student", icon: GraduationCap },
-                    { id: "faculty", label: "Faculty", icon: School },
-                  ] as const).map((role) => (
+                <label className="block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Email</span>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-500">
+                      <Mail size={18} />
+                    </div>
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      placeholder="name@college.edu"
+                      value={signupForm.email}
+                      onChange={(e) => setSignupForm((prev) => ({ ...prev, email: e.target.value }))}
+                      className={fieldClass(Boolean(error && !isValidEmail(signupForm.email)))}
+                    />
+                  </div>
+                </label>
+
+                <div className="grid grid-cols-2 gap-3 rounded-2xl border border-white/8 bg-black/20 p-1.5">
+                  {signupRoleOptions.map((role) => (
                     <button
                       key={role.id}
                       type="button"
                       onClick={() => setSignupForm((prev) => ({ ...prev, role: role.id }))}
                       className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-colors ${
-                        signupForm.role === role.id ? "bg-lumina-highlight text-black" : "text-slate-400 hover:text-white hover:bg-white/5"
+                        signupForm.role === role.id ? "bg-lumina-highlight text-black" : "text-slate-400 hover:bg-white/5 hover:text-white"
                       }`}
                     >
                       <role.icon size={16} />
@@ -405,82 +540,108 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                   ))}
                 </div>
 
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none group-focus-within:text-lumina-highlight text-slate-600 transition-colors">
-                    <Lock size={20} />
+                <label className="block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Password</span>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-500">
+                      <Lock size={18} />
+                    </div>
+                    <input
+                      type={showSignupPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      placeholder="At least 8 characters"
+                      value={signupForm.password}
+                      onChange={(e) => setSignupForm((prev) => ({ ...prev, password: e.target.value }))}
+                      className={fieldClass(Boolean(error && signupForm.password.length < 8))}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignupPassword((value) => !value)}
+                      className="absolute inset-y-0 right-0 pr-5 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 transition-colors hover:text-lumina-highlight"
+                    >
+                      {showSignupPassword ? "Hide" : "Show"}
+                    </button>
                   </div>
-                  <input
-                    type={showSignupPassword ? "text" : "password"}
-                    placeholder="Create Password"
-                    value={signupForm.password}
-                    onChange={(e) => setSignupForm((prev) => ({ ...prev, password: e.target.value }))}
-                    className="w-full bg-stone-900/40 border border-white/5 text-white rounded-2xl py-4.5 pl-14 pr-14 focus:ring-2 focus:ring-lumina-highlight/40 focus:border-lumina-highlight outline-none transition-all placeholder:text-slate-700 font-medium"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowSignupPassword((value) => !value)}
-                    className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-600 hover:text-lumina-highlight transition-colors"
-                  >
-                    <span className="text-[10px] font-black uppercase tracking-widest">{showSignupPassword ? "Hide" : "Show"}</span>
-                  </button>
-                </div>
+                </label>
 
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none group-focus-within:text-lumina-highlight text-slate-600 transition-colors">
-                    <Lock size={20} />
+                <label className="block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Confirm password</span>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-500">
+                      <Lock size={18} />
+                    </div>
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      placeholder="Re-enter password"
+                      value={signupForm.confirmPassword}
+                      onChange={(e) => setSignupForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                      className={fieldClass(Boolean(error && signupForm.password !== signupForm.confirmPassword))}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((value) => !value)}
+                      className="absolute inset-y-0 right-0 pr-5 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 transition-colors hover:text-lumina-highlight"
+                    >
+                      {showConfirmPassword ? "Hide" : "Show"}
+                    </button>
                   </div>
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm Password"
-                    value={signupForm.confirmPassword}
-                    onChange={(e) => setSignupForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                    className="w-full bg-stone-900/40 border border-white/5 text-white rounded-2xl py-4.5 pl-14 pr-14 focus:ring-2 focus:ring-lumina-highlight/40 focus:border-lumina-highlight outline-none transition-all placeholder:text-slate-700 font-medium"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((value) => !value)}
-                    className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-600 hover:text-lumina-highlight transition-colors"
-                  >
-                    <span className="text-[10px] font-black uppercase tracking-widest">{showConfirmPassword ? "Hide" : "Show"}</span>
-                  </button>
-                </div>
+                </label>
               </div>
 
-              {error && (
-                <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-start gap-3">
-                  <AlertCircle className="text-red-500 mt-0.5" size={18} />
-                  <p className="text-sm text-red-200/80 leading-tight font-medium">{error}</p>
+              {error ? (
+                <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
+                    <p className="text-sm leading-6 text-red-100">{error}</p>
+                  </div>
                 </div>
-              )}
+              ) : null}
+
+              {statusMessage ? (
+                <div className="rounded-2xl border border-lumina-highlight/20 bg-lumina-highlight/8 px-4 py-3 text-sm text-lumina-highlight">
+                  {statusMessage}
+                </div>
+              ) : null}
+
+              <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-4">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">What happens next</p>
+                <ul className="mt-3 space-y-2">
+                  <li className="text-sm text-slate-300">You create credentials and keep a secure session.</li>
+                  <li className="text-sm text-slate-300">Lumina routes you into onboarding for your role.</li>
+                  <li className="text-sm text-slate-300">Your dashboard opens after onboarding is complete.</li>
+                </ul>
+              </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full glass-button-highlight disabled:opacity-50 disabled:cursor-not-allowed text-black font-black py-4.5 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.98] text-lg uppercase tracking-widest shadow-[0_20px_40px_rgba(250,204,21,0.2)]"
+                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-lumina-highlight px-5 py-4 text-base font-black text-black transition-all hover:translate-y-[-1px] hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="animate-spin" size={20} />
-                    <span>Provisioning...</span>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Creating account...</span>
                   </>
                 ) : (
                   <>
                     <span>Create Account</span>
-                    <ArrowRight size={22} />
+                    <ArrowRight size={18} />
                   </>
                 )}
               </button>
             </form>
           )}
 
-          <div className="mt-12 pt-8 border-t border-white/5 text-center font-sans">
-            <p className="text-slate-500 text-sm font-medium">
+          <div className="mt-10 border-t border-white/6 pt-8 text-center">
+            <p className="text-sm font-medium text-slate-500">
               {isSignup ? "Already have credentials?" : "Need an account first?"}{" "}
-              <Link href={isSignup ? "/login" : "/register"} className="text-white font-bold hover:text-lumina-highlight transition-colors inline-flex items-center gap-1 group">
-                {isSignup ? "Return to Sign In" : "Create Your Account"}
-                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              <Link
+                href={isSignup ? "/login" : "/register"}
+                className="group inline-flex items-center gap-1 font-semibold text-white transition-colors hover:text-lumina-highlight"
+              >
+                {isSignup ? "Return to login" : "Create your account"}
+                <ChevronRight size={14} className="transition-transform group-hover:translate-x-1" />
               </Link>
             </p>
           </div>
