@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard,
   BookOpen,
@@ -15,7 +15,6 @@ import {
   FileText,
   X,
   Brain,
-  ChevronLeft,
   Users,
   Calendar,
   CheckCircle,
@@ -27,196 +26,166 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const roleNavItems: Record<string, any[]> = {
   student: [
-    { name: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard },
-    { name: "Enrollment", href: "/student/enrollment", icon: CheckCircle },
-    { name: "Attendance", href: "/student/attendance", icon: Calendar },
-    { name: "My Courses", href: "/student/courses", icon: BookOpen },
-    { name: "Assignments", href: "/student/assignments", icon: FileText },
-    { name: "Results", href: "/student/grades", icon: BarChart2 },
-    { name: "AI Tutor", href: "/student/ai_tutor", icon: Bot },
-    { name: "Assessment", href: "/student/assessment", icon: Brain },
-    { name: "Progress", href: "/student/progress", icon: BarChart2 },
-    { name: "Community", href: "/student/community", icon: MessageSquare },
-    { name: "Profile", href: "/student/profile", icon: User },
-    { name: "Settings", href: "/student/settings", icon: Settings },
+    { name: "Dashboard",  href: "/student/dashboard",  icon: LayoutDashboard },
+    { name: "Enrollment", href: "/student/enrollment",  icon: CheckCircle },
+    { name: "Attendance", href: "/student/attendance",  icon: Calendar },
+    { name: "My Courses", href: "/student/courses",     icon: BookOpen },
+    { name: "Assignments",href: "/student/assignments", icon: FileText },
+    { name: "Results",    href: "/student/grades",      icon: BarChart2 },
+    { name: "AI Tutor",   href: "/student/ai_tutor",    icon: Bot },
+    { name: "Assessment", href: "/student/assessment",  icon: Brain },
+    { name: "Progress",   href: "/student/progress",    icon: BarChart2 },
+    { name: "Community",  href: "/student/community",   icon: MessageSquare },
+    { name: "Profile",    href: "/student/profile",     icon: User },
+    { name: "Settings",   href: "/student/settings",    icon: Settings },
   ],
   parent: [
     { name: "Dashboard", href: "/parent/dashboard", icon: LayoutDashboard },
-    { name: "Progress", href: "/parent/progress", icon: BarChart2 },
-    { name: "Goals", href: "/parent/goals", icon: Target },
-    { name: "Messages", href: "/parent/messages", icon: MessageSquare },
-    { name: "Settings", href: "/parent/settings", icon: Settings },
+    { name: "Progress",  href: "/parent/progress",  icon: BarChart2 },
+    { name: "Goals",     href: "/parent/goals",     icon: Target },
+    { name: "Messages",  href: "/parent/messages",  icon: MessageSquare },
+    { name: "Settings",  href: "/parent/settings",  icon: Settings },
   ],
   mentor: [
     { name: "Dashboard", href: "/mentor/dashboard", icon: LayoutDashboard },
-    { name: "Matches", href: "/mentor/matches", icon: Users },
-    { name: "Sessions", href: "/mentor/sessions", icon: Calendar },
-    { name: "Reviews", href: "/mentor/reviews", icon: CheckCircle },
-    { name: "Settings", href: "/mentor/settings", icon: Settings },
+    { name: "Matches",   href: "/mentor/matches",   icon: Users },
+    { name: "Sessions",  href: "/mentor/sessions",  icon: Calendar },
+    { name: "Reviews",   href: "/mentor/reviews",   icon: CheckCircle },
+    { name: "Settings",  href: "/mentor/settings",  icon: Settings },
   ],
   peer_tutor: [
     { name: "Dashboard", href: "/peer-tutor/dashboard", icon: LayoutDashboard },
-    { name: "Sessions", href: "/peer-tutor/sessions", icon: Clock },
-    { name: "Training", href: "/peer-tutor/training", icon: Brain },
-    { name: "Settings", href: "/peer-tutor/settings", icon: Settings },
+    { name: "Sessions",  href: "/peer-tutor/sessions",  icon: Clock },
+    { name: "Training",  href: "/peer-tutor/training",  icon: Brain },
+    { name: "Settings",  href: "/peer-tutor/settings",  icon: Settings },
   ],
   counselor: [
-    { name: "Dashboard", href: "/counselor/dashboard", icon: LayoutDashboard },
-    { name: "Students", href: "/counselor/students", icon: Users },
-    { name: "Crisis Cases", href: "/counselor/crisis", icon: Bell },
-    { name: "Notes", href: "/counselor/notes", icon: FileText },
-    { name: "Settings", href: "/counselor/settings", icon: Settings },
+    { name: "Dashboard",   href: "/counselor/dashboard", icon: LayoutDashboard },
+    { name: "Students",    href: "/counselor/students",  icon: Users },
+    { name: "Crisis Cases",href: "/counselor/crisis",    icon: Bell },
+    { name: "Notes",       href: "/counselor/notes",     icon: FileText },
+    { name: "Settings",    href: "/counselor/settings",  icon: Settings },
   ],
   content_creator: [
-    { name: "Dashboard", href: "/creator/dashboard", icon: LayoutDashboard },
-    { name: "Blueprints", href: "/creator/blueprints", icon: FileText },
-    { name: "Question Bank", href: "/creator/questions", icon: Brain },
-    { name: "Settings", href: "/creator/settings", icon: Settings },
+    { name: "Dashboard",     href: "/creator/dashboard",  icon: LayoutDashboard },
+    { name: "Blueprints",    href: "/creator/blueprints", icon: FileText },
+    { name: "Question Bank", href: "/creator/questions",  icon: Brain },
+    { name: "Settings",      href: "/creator/settings",   icon: Settings },
   ],
   researcher: [
     { name: "Dashboard", href: "/researcher/dashboard", icon: LayoutDashboard },
-    { name: "Datasets", href: "/researcher/datasets", icon: BarChart2 },
-    { name: "Queries", href: "/researcher/queries", icon: Search },
-    { name: "Settings", href: "/researcher/settings", icon: Settings },
+    { name: "Datasets",  href: "/researcher/datasets",  icon: BarChart2 },
+    { name: "Queries",   href: "/researcher/queries",   icon: Search },
+    { name: "Settings",  href: "/researcher/settings",  icon: Settings },
   ],
   alumni: [
-    { name: "Dashboard", href: "/alumni/dashboard", icon: LayoutDashboard },
-    { name: "Mentorship", href: "/alumni/mentorship", icon: Users },
-    { name: "Portfolio", href: "/alumni/portfolio", icon: Award },
-    { name: "Settings", href: "/alumni/settings", icon: Settings },
+    { name: "Dashboard",  href: "/alumni/dashboard",   icon: LayoutDashboard },
+    { name: "Mentorship", href: "/alumni/mentorship",  icon: Users },
+    { name: "Portfolio",  href: "/alumni/portfolio",   icon: Award },
+    { name: "Settings",   href: "/alumni/settings",    icon: Settings },
   ],
   teacher: [
-    { name: "Dashboard", href: "/teacher/dashboard", icon: LayoutDashboard },
-    { name: "Courses", href: "/teacher/courses", icon: BookOpen },
-    { name: "Students", href: "/teacher/students", icon: Users },
+    { name: "Dashboard",    href: "/teacher/dashboard",    icon: LayoutDashboard },
+    { name: "Courses",      href: "/teacher/courses",      icon: BookOpen },
+    { name: "Students",     href: "/teacher/students",     icon: Users },
     { name: "Verification", href: "/teacher/verification", icon: CheckCircle },
-    { name: "Settings", href: "/teacher/settings", icon: Settings },
+    { name: "Settings",     href: "/teacher/settings",     icon: Settings },
   ],
   admin: [
-    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Users", href: "/admin/users", icon: Users },
-    { name: "Institutions", href: "/admin/institutions", icon: BookOpen },
-    { name: "Analytics", href: "/admin/analytics", icon: BarChart2 },
-    { name: "Settings", href: "/admin/settings", icon: Settings },
+    { name: "Dashboard",   href: "/admin/dashboard",    icon: LayoutDashboard },
+    { name: "Users",       href: "/admin/users",        icon: Users },
+    { name: "Institutions",href: "/admin/institutions", icon: BookOpen },
+    { name: "Analytics",   href: "/admin/analytics",   icon: BarChart2 },
+    { name: "Settings",    href: "/admin/settings",    icon: Settings },
   ],
+};
+
+const profileHrefByRole: Record<string, string> = {
+  student:         "/student/profile",
+  teacher:         "/teacher/settings",
+  admin:           "/admin/platform/profile",
+  parent:          "/parent/settings",
+  mentor:          "/mentor/settings",
+  peer_tutor:      "/peer_tutor/settings",
+  counselor:       "/counselor/dashboard",
+  alumni:          "/alumni/dashboard",
+  researcher:      "/researcher/dashboard",
+  content_creator: "/content-creator/dashboard",
+  creator:         "/creator/dashboard",
 };
 
 export default function Sidebar({
   isOpen,
   onClose,
-  isCollapsed,
+  isCollapsed = true,
 }: {
   isOpen?: boolean;
   onClose?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
 }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [isHovered, setIsHovered] = useState(false);
-  const [hasStudentCourses, setHasStudentCourses] = useState<boolean | null>(
-    null,
-  );
+  const pathname  = usePathname();
+  const router    = useRouter();
+
+  // Auth store as primary cache — avoids repeat API calls on every page navigation
+  const { user: storeUser, setUser: setStoreUser } = useAuthStore();
+  const [user, setUser] = useState<any>(storeUser ?? null);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const userData = await api.getCurrentUser();
-      setUser(userData);
-    };
-    fetchUser();
-  }, []);
+    if (storeUser) { setUser(storeUser); return; }
+    api.getCurrentUser().then((data) => {
+      if (data) { setUser(data); setStoreUser(data as any); }
+    });
+  }, [storeUser, setStoreUser]);
 
-  useEffect(() => {
-    const fetchStudentCourses = async () => {
-      if (user?.role !== "student") return;
-      try {
-        const courses = await api.getStudentCourses();
-        setHasStudentCourses(Array.isArray(courses) && courses.length > 0);
-      } catch {
-        setHasStudentCourses(false);
-      }
-    };
-    fetchStudentCourses();
-  }, [user?.role]);
-
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await api.logout();
     router.push("/login");
-  };
+  }, [router]);
 
-  const currentRole = user?.role || "student";
-  const navItems = roleNavItems[currentRole] || roleNavItems["student"];
-  const studentCourseDependent = new Set([
-    "Assignments",
-    "AI Tutor",
-    "Assessment",
-    "Progress",
-  ]);
-  const filteredNavItems =
-    currentRole === "student" && hasStudentCourses === false
-      ? navItems.filter((item: any) => !studentCourseDependent.has(item.name))
-      : navItems;
-
-  const profileHrefByRole: Record<string, string> = {
-    student: "/student/profile",
-    teacher: "/teacher/settings",
-    admin: "/admin/platform/profile",
-    parent: "/parent/settings",
-    mentor: "/mentor/settings",
-    peer_tutor: "/peer_tutor/settings",
-    counselor: "/counselor/dashboard",
-    alumni: "/alumni/dashboard",
-    researcher: "/researcher/dashboard",
-    content_creator: "/content_creator/dashboard",
-    "content-creator": "/content-creator/dashboard",
-    creator: "/creator/dashboard",
-  };
-  const profileHref =
-    profileHrefByRole[currentRole] || `/${currentRole}/dashboard`;
+  const currentRole = (user?.role as string) || "student";
+  const navItems    = roleNavItems[currentRole] ?? roleNavItems.student;
+  const profileHref = profileHrefByRole[currentRole] ?? `/${currentRole}/dashboard`;
 
   return (
     <aside
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      data-collapsed={isCollapsed ? "true" : "false"}
       className={cn(
-        "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 transition-all duration-500 ease-in-out lg:translate-x-0 lg:flex flex-col overflow-hidden",
-        isCollapsed && !isHovered ? "w-20" : "w-64",
+        /* lumina-sidebar drives all the CSS-only hover expand logic */
+        "lumina-sidebar",
+        "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 flex flex-col",
+        /* Mobile: slide in/out */
         isOpen
-          ? "translate-x-0 bg-black/95 w-64"
+          ? "translate-x-0 bg-black/95"
           : "-translate-x-[120%] lg:translate-x-0 hidden lg:flex",
       )}
     >
-      <div
-        className={cn(
-          "flex items-center justify-between border-b border-white/5 shrink-0 transition-all duration-500",
-          isCollapsed && !isHovered ? "h-16 px-4 justify-center" : "h-20 px-6",
-        )}
-      >
+      {/* ── Logo header ── */}
+      <div className="sidebar-header flex items-center border-b border-white/5 shrink-0">
         <Link
           href="/"
-          className="text-2xl font-display font-black flex items-center gap-2"
+          className="font-display font-black text-2xl flex items-center gap-1 select-none"
         >
-          <span className="text-white">
-            {isCollapsed && !isHovered ? "L" : "Lumina"}
-          </span>
+          <span className="sidebar-logo-icon text-white">L</span>
+          <span className="sidebar-logo-full text-white">Lumina</span>
           <span className="text-lumina-highlight">AI</span>
         </Link>
-        {/* Mobile Close Button */}
         <button
           onClick={onClose}
           aria-label="Close menu"
-          className="lg:hidden text-gray-400 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lumina-primary rounded"
+          className="lg:hidden ml-auto text-gray-400 hover:text-white transition-colors"
         >
-          <X className="w-6 h-6" aria-hidden="true" />
+          <X className="w-6 h-6" />
         </button>
       </div>
 
-      <nav className="p-4 space-y-1.5 flex-1 overflow-y-auto hide-scrollbar">
-        {filteredNavItems.map((item: any) => {
+      {/* ── Nav items ── */}
+      <nav className="p-4 space-y-1 flex-1 overflow-y-auto hide-scrollbar">
+        {navItems.map((item: any) => {
           const isActive = pathname === item.href;
           return (
             <Link
@@ -224,10 +193,9 @@ export default function Sidebar({
               href={item.href}
               suppressHydrationWarning
               onClick={onClose}
-              aria-label={isCollapsed && !isHovered ? item.name : undefined}
+              aria-label={item.name}
               className={cn(
-                "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
-                isCollapsed && !isHovered ? "justify-center px-0" : "px-4",
+                "sidebar-nav-item py-3 text-sm font-semibold rounded-xl relative group w-full",
                 isActive
                   ? "bg-lumina-highlight/15 text-lumina-highlight border border-lumina-highlight/30 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                   : "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
@@ -236,73 +204,41 @@ export default function Sidebar({
               <item.icon
                 aria-hidden="true"
                 className={cn(
-                  "h-5 w-5 transition-all duration-500 shrink-0",
-                  isCollapsed && !isHovered ? "mr-0 scale-110" : "mr-3",
+                  "sidebar-icon h-5 w-5",
                   isActive
                     ? "text-lumina-highlight"
                     : "text-gray-500 group-hover:text-gray-300",
                 )}
               />
-              <span
-                className={cn(
-                  "transition-all duration-500 whitespace-nowrap overflow-hidden truncate min-w-0",
-                  isCollapsed && !isHovered
-                    ? "opacity-0 w-0"
-                    : "opacity-100 w-auto",
-                )}
-              >
-                {item.name}
-              </span>
+              <span className="sidebar-text truncate">{item.name}</span>
 
-              {isCollapsed && !isHovered && (
-                <div className="absolute left-full ml-4 px-3 py-1.5 bg-surface-950 border border-white/10 rounded-lg text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 translate-x-1 group-hover:translate-x-0 z-[60] shadow-premium">
-                  {item.name}
-                </div>
-              )}
+              {/* Tooltip — CSS shows this only when collapsed + item is hovered */}
+              <span className="sidebar-tooltip">{item.name}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div
-        className={cn(
-          "p-4 border-t border-white/10 space-y-4 transition-all duration-500 shrink-0",
-          isCollapsed && !isHovered && "px-3",
-        )}
-      >
-        {/* User Profile Snippet */}
+      {/* ── Bottom: user + logout ── */}
+      <div className="sidebar-bottom border-t border-white/10 space-y-3 shrink-0">
         {user && (
           <Link
             href={profileHref}
-            className={cn(
-              "flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-500 cursor-pointer overflow-hidden",
-              isCollapsed && !isHovered ? "justify-center p-2" : "p-3",
-            )}
+            className="sidebar-user-card flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer overflow-hidden"
           >
             <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
               <img
                 src={
                   user.avatar ||
-                  `https://ui-avatars.com/api/?name=${user.name}&background=random`
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name ?? "U")}&background=random`
                 }
-                alt="User"
+                alt="User avatar"
                 className="w-full h-full object-cover"
               />
             </div>
-            <div
-              className={cn(
-                "min-w-0 transition-all duration-500",
-                isCollapsed && !isHovered
-                  ? "opacity-0 w-0"
-                  : "opacity-100 w-auto",
-              )}
-            >
-              <p className="text-xs font-bold text-white truncate">
-                {user.name}
-              </p>
-              <p className="text-[10px] text-gray-400 truncate tracking-tight">
-                {user.email}
-              </p>
+            <div className="sidebar-text min-w-0">
+              <p className="text-xs font-bold text-white truncate">{user.name}</p>
+              <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
             </div>
           </Link>
         )}
@@ -311,28 +247,10 @@ export default function Sidebar({
           onClick={handleLogout}
           suppressHydrationWarning
           aria-label="Sign out"
-          className={cn(
-            "flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400",
-            isCollapsed && !isHovered ? "justify-center px-0" : "px-4",
-          )}
+          className="sidebar-bottom-item flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-colors"
         >
-          <LogOut
-            aria-hidden="true"
-            className={cn(
-              "h-4 w-4 transition-all duration-500",
-              isCollapsed && !isHovered ? "mr-0" : "mr-3",
-            )}
-          />
-          <span
-            className={cn(
-              "transition-all duration-500",
-              isCollapsed && !isHovered
-                ? "opacity-0 w-0"
-                : "opacity-100 w-auto",
-            )}
-          >
-            Sign Out
-          </span>
+          <LogOut aria-hidden="true" className="sidebar-icon h-4 w-4" />
+          <span className="sidebar-text">Sign Out</span>
         </button>
       </div>
     </aside>

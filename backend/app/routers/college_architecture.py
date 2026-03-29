@@ -101,7 +101,7 @@ async def update_college(college_id: str, payload: Dict[str, Any], current_user:
     result = await supabase_db.update("institutions", data, {"id": college_id})
     if not result:
         raise HTTPException(status_code=404, detail="College not found")
-    return result[0]
+    return result
 
 
 @router.delete("/colleges/{college_id}")
@@ -153,12 +153,12 @@ async def update_department(dept_id: str, payload: Dict[str, Any], current_user:
     result = await supabase_db.update("departments", data, {"id": dept_id})
     if not result:
         raise HTTPException(status_code=404, detail="Department not found")
-    return result[0]
+    return result
 
 
 @router.get("/departments/{dept_id}/batches")
 async def list_batches(dept_id: str, current_user: dict = Depends(get_current_user)):
-    _require_roles(current_user, {"super_admin", "college_admin", "hod", "faculty"})
+    _require_roles(current_user, {"super_admin", "college_admin", "hod", "faculty", "student"})
     return await supabase_db.fetch_all("batches", {"dept_id": dept_id})
 
 
