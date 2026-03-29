@@ -191,39 +191,33 @@ export class RealAPI {
   }
 
   // --- Auth APIs ---
-  async login(identifier: string, password?: string): Promise<User> {
+  async login(params: { 
+    identifier: string; 
+    password?: string; 
+    role_hint?: string; 
+    college_id?: string;
+  }): Promise<User> {
+    const { identifier, password, role_hint, college_id } = params;
     if (!password) throw new Error("Password is required for login.");
+
     const res = await fetchWithRetry(`${requireAuthBase()}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identifier, password }),
+      body: JSON.stringify({ identifier, password, role_hint, college_id }),
       credentials: "include",
     });
+
     if (!res.ok) {
       const error = await parseJsonSafe(res);
       throw new Error(error?.error || error?.detail || `Authentication failed (${res.status})`);
     }
+
     const tokenData = await parseJsonSafe(res);
-    if (tokenData.forcePasswordChange) {
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("temp_token", tokenData.tempToken);
-      }
-      const displayId = identifier.includes("@") ? identifier.split("@")[0] : identifier;
-      const forcedUser: User = {
-        id: tokenData.user?.id || "",
-        email: tokenData.user?.email || identifier,
-        name: tokenData.user?.fullName || displayId,
-        role: "student",
-        status: "active",
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayId)}&background=random`,
-        createdAt: new Date().toISOString(),
-        mustChangePassword: true,
-      };
-      this.currentUser = forcedUser;
-      return forcedUser;
-    }
+    
     // Express backend sets the cookies automatically.
     const userData = tokenData.user;
+    if (!userData) throw new Error("Login failed: User data not found in response.");
+
     const displayName = userData.fullName || userData.name || identifier;
     this.currentUser = {
       id: userData.id,
@@ -231,7 +225,7 @@ export class RealAPI {
       name: displayName,
       role: userData.role,
       onboardingStep: userData.onboardingStep,
-      onboardingCompleted: userData.onboardingCompleted,
+      onboardingCompleted: userData.onboardingStep >= 5,
       mustChangePassword: userData.mustChangePassword,
       collegeId: userData.collegeId,
       deptId: userData.deptId,
@@ -241,6 +235,7 @@ export class RealAPI {
       createdAt: userData.created_at || new Date().toISOString(),
       preferences: userData.preferences || {},
     };
+
     if (typeof window !== "undefined") {
       sessionStorage.setItem("lumina_user", JSON.stringify(this.currentUser));
     }
@@ -263,7 +258,7 @@ export class RealAPI {
       }),
     });
     if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.detail || "Registration failed"); }
-    return this.login(userData.email!, userData.password);
+    return this.login({ identifier: userData.email!, password: userData.password });
   }
 
   async logout(): Promise<void> {

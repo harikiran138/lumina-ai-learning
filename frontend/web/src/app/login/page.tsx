@@ -1,641 +1,275 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Eye, EyeOff, ChevronDown, ChevronUp } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { 
+  ShieldCheck, 
+  ArrowRight, 
+  User, 
+  GraduationCap, 
+  School,
+  Lock,
+  Mail,
+  Building2,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ChevronRight
+} from "lucide-react";
 import { api } from "@/lib/api";
-import { toast } from "sonner";
+import { useAuthStore } from "@/store/useAuthStore";
+import Image from "next/image";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-type ActiveRole = "student" | "faculty" | "admin";
+type Role = "student" | "faculty" | "admin";
 
-// ── Constants ──────────────────────────────────────────────────────────────────
-const DEPARTMENTS = [
-  "Computer Science & Engineering",
-  "Electronics & Communication Engineering",
-  "Electrical & Electronics Engineering",
-  "Mechanical Engineering",
-  "Civil Engineering",
-  "Information Technology",
-  "Chemical Engineering",
-];
-
-const DEMO_ACCOUNTS = {
-  student: [
-    { initials: "PS", name: "Priya Sharma",    roleLabel: "Student · CSE", identifier: "22NU1A0519",           password: "student@123" },
-    { initials: "RK", name: "Rahul Kumar",     roleLabel: "Student · ECE", identifier: "23NU1A0234",           password: "student@123" },
-  ],
-  faculty: [
-    { initials: "AR", name: "Dr. Anand Rao",   roleLabel: "Faculty · CSE", identifier: "FAC001",              password: "faculty@123" },
-    { initials: "MD", name: "Prof. Meena Devi",roleLabel: "Faculty · EEE", identifier: "FAC042",              password: "faculty@123" },
-  ],
-  admin: [
-    { initials: "VR", name: "Vijay Reddy",     roleLabel: "College Admin",       identifier: "admin@demo.nsrit.edu.in",  password: "admin@123" },
-    { initials: "KS", name: "Dr. K. Srinivas", roleLabel: "Head of Department",  identifier: "hod001@demo.nsrit.edu.in", password: "admin@123" },
-  ],
-};
-
-const FEATURES = [
-  {
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
-      </svg>
-    ),
-    title: "AI-Powered Learning",
-    desc: "8 adaptive styles per learner profile",
-  },
-  {
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-      </svg>
-    ),
-    title: "Smart Assessments",
-    desc: "Auto-graded with AI rubric feedback",
-  },
-  {
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-      </svg>
-    ),
-    title: "Real-time Analytics",
-    desc: "Live performance dashboards per batch",
-  },
-  {
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-      </svg>
-    ),
-    title: "Privacy First",
-    desc: "On-premise & FERPA compliant hosting",
-  },
-];
-
-const STATS = [
-  { value: "11", label: "User Roles" },
-  { value: "52", label: "DB Tables" },
-  { value: "8",  label: "AI Styles"  },
-  { value: "196",label: "Tests"      },
-];
-
-// ── Circuit Board SVG ──────────────────────────────────────────────────────────
-function CircuitBoardSVG() {
-  const nodes = [
-    { cx: 80,  cy: 100, delay: "0s"   },
-    { cx: 160, cy: 100, delay: "0.7s" },
-    { cx: 320, cy: 100, delay: "0.3s" },
-    { cx: 80,  cy: 200, delay: "1.5s" },
-    { cx: 240, cy: 200, delay: "1.2s" },
-    { cx: 400, cy: 200, delay: "0.9s" },
-    { cx: 160, cy: 300, delay: "0.4s" },
-    { cx: 320, cy: 300, delay: "1.8s" },
-    { cx: 80,  cy: 400, delay: "0.6s" },
-    { cx: 240, cy: 400, delay: "1.1s" },
-    { cx: 400, cy: 400, delay: "0.2s" },
-    { cx: 160, cy: 500, delay: "1.4s" },
-    { cx: 320, cy: 500, delay: "0.8s" },
-    { cx: 80,  cy: 600, delay: "1.7s" },
-    { cx: 240, cy: 600, delay: "0.5s" },
-    { cx: 400, cy: 600, delay: "1.0s" },
-  ];
-
-  return (
-    <svg
-      className="absolute inset-0 w-full h-full"
-      viewBox="0 0 480 700"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-      preserveAspectRatio="xMidYMid slice"
-    >
-      {/* Grid traces */}
-      {[100, 200, 300, 400, 500, 600].map((y) => (
-        <line key={`h${y}`} x1="0" y1={y} x2="480" y2={y}
-          stroke="#f59e0b" strokeWidth="0.5" strokeOpacity="0.12" />
-      ))}
-      {[80, 160, 240, 320, 400].map((x) => (
-        <line key={`v${x}`} x1={x} y1="0" x2={x} y2="700"
-          stroke="#f59e0b" strokeWidth="0.5" strokeOpacity="0.12" />
-      ))}
-
-      {/* Highlight traces */}
-      <line x1="0"   y1="200" x2="480" y2="200" stroke="#f59e0b" strokeWidth="1" strokeOpacity="0.22" />
-      <line x1="0"   y1="400" x2="480" y2="400" stroke="#f59e0b" strokeWidth="1" strokeOpacity="0.22" />
-      <line x1="160" y1="0"   x2="160" y2="700" stroke="#f59e0b" strokeWidth="1" strokeOpacity="0.22" />
-      <line x1="320" y1="0"   x2="320" y2="700" stroke="#f59e0b" strokeWidth="1" strokeOpacity="0.22" />
-
-      {/* Right-angle circuit trace paths */}
-      <path d="M0,150 H120 V100 H200 V150 H360 V200 H480"
-        stroke="#f59e0b" strokeWidth="0.8" strokeOpacity="0.18" fill="none" />
-      <path d="M0,350 H80 V300 H200 V350 H280 V300 H400 V350 H480"
-        stroke="#f59e0b" strokeWidth="0.8" strokeOpacity="0.18" fill="none" />
-      <path d="M120,0 V80 H200 V140 H120 V250 H80 V350 H120 V450 H200 V550 H120 V700"
-        stroke="#f59e0b" strokeWidth="0.8" strokeOpacity="0.18" fill="none" />
-      <path d="M280,0 V60 H360 V140 H280 V240 H400 V340 H280 V440 H360 V540 H280 V700"
-        stroke="#f59e0b" strokeWidth="0.8" strokeOpacity="0.14" fill="none" />
-
-      {/* Pulsing nodes */}
-      {nodes.map((n, i) => (
-        <g key={i}>
-          <circle cx={n.cx} cy={n.cy} r="6" fill="none" stroke="#f59e0b" strokeWidth="1" strokeOpacity="0.18">
-            <animate attributeName="r"             values="6;14;6"       dur="3s" begin={n.delay} repeatCount="indefinite" />
-            <animate attributeName="stroke-opacity" values="0.18;0;0.18" dur="3s" begin={n.delay} repeatCount="indefinite" />
-          </circle>
-          <circle cx={n.cx} cy={n.cy} r="3" fill="#f59e0b">
-            <animate attributeName="opacity" values="0.3;0.9;0.3" dur="3s" begin={n.delay} repeatCount="indefinite" />
-          </circle>
-        </g>
-      ))}
-    </svg>
-  );
-}
-
-// ── Left Panel ─────────────────────────────────────────────────────────────────
-function LeftPanel() {
-  return (
-    <div className="hidden lg:flex lg:w-[44%] xl:w-[42%] relative flex-col bg-[#0d0d14] border-r border-white/[0.06] overflow-hidden flex-shrink-0">
-      <CircuitBoardSVG />
-
-      <div className="relative z-10 flex flex-col h-full p-8 xl:p-10">
-        {/* Logo + badge */}
-        <div className="flex items-center gap-3">
-          <span className="text-2xl font-black bg-gradient-to-r from-lumina-primary to-lumina-secondary bg-clip-text text-transparent tracking-tight">
-            Lumina
-          </span>
-          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest bg-lumina-primary/15 text-lumina-primary border border-lumina-primary/30 rounded-full">
-            NSRIT
-          </span>
-        </div>
-
-        {/* Hero */}
-        <div className="flex-1 flex flex-col justify-center mt-6">
-          <h1 className="text-3xl xl:text-[2.1rem] font-black text-white leading-[1.15] mb-3">
-            Adaptive AI
-            <br />
-            <span className="bg-gradient-to-r from-lumina-primary to-lumina-secondary bg-clip-text text-transparent">
-              Engineering
-            </span>
-            <br />
-            Education.
-          </h1>
-          <p className="text-sm text-gray-400 leading-relaxed mb-7">
-            Purpose-built for engineering colleges.
-            <br />
-            Role-aware, rubric-driven, real-time.
-          </p>
-
-          {/* Feature cards 2×2 */}
-          <div className="grid grid-cols-2 gap-2.5">
-            {FEATURES.map((f, i) => (
-              <div
-                key={i}
-                className="bg-white/[0.04] border border-white/[0.07] rounded-xl p-3.5 hover:border-lumina-primary/20 transition-colors"
-              >
-                <div className="text-lumina-primary mb-2">{f.icon}</div>
-                <div className="text-xs font-semibold text-white mb-0.5">{f.title}</div>
-                <div className="text-[11px] text-gray-500 leading-snug">{f.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Stats row */}
-        <div className="border-t border-white/[0.06] pt-5 mt-5">
-          <div className="flex items-center justify-between">
-            {STATS.map((s, i) => (
-              <div key={i} className="text-center">
-                <div className="text-lg font-black text-lumina-primary tabular-nums">{s.value}</div>
-                <div className="text-[10px] text-gray-500 mt-0.5 whitespace-nowrap">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Main Login Page ────────────────────────────────────────────────────────────
 export default function LoginPage() {
-  const [activeRole, setActiveRole] = useState<ActiveRole>("student");
-  const [showPassword, setShowPassword]   = useState(false);
-  const [showDemo, setShowDemo]           = useState(false);
-  const [isLoading, setIsLoading]         = useState(false);
-  const [submitted, setSubmitted]         = useState(false);
-
-  // Student state
-  const [rollNumber, setRollNumber] = useState("");
-
-  // Faculty state
-  const [facIdType, setFacIdType]         = useState<"employee_id" | "email">("employee_id");
-  const [facIdentifier, setFacIdentifier] = useState("");
-  const [facDept, setFacDept]             = useState("");
-
-  // Admin state
-  const [adminRoleValue, setAdminRoleValue] = useState("college_admin");
-  const [adminEmail, setAdminEmail]         = useState("");
-
-  // Shared
+  const [activeRole, setActiveRole] = useState<Role>("student");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  
+  const setUser = useAuthStore(state => state.setUser);
+  const user = useAuthStore(state => state.user);
 
-  // Redirect if already logged in
+  // Auto-redirect if already logged in
   useEffect(() => {
-    api.getCurrentUser().then((user) => {
-      if (!user) return;
-      if (user.mustChangePassword) { window.location.href = "/change-password"; return; }
+    if (user) {
       const routes: Record<string, string> = {
-        super_admin: "/admin/dashboard", college_admin: "/college",
-        hod: "/hod", faculty: "/faculty", student: "/student/dashboard",
+        super_admin: "/admin/dashboard",
+        college_admin: "/college",
+        hod: "/hod",
+        faculty: "/faculty",
+        student: "/student/dashboard",
       };
-      window.location.href = routes[user.role] || "/student/dashboard";
-    }).catch(() => {});
-  }, []);
-
-  // ── Tab switch ───────────────────────────────────────────────────────────────
-  const switchRole = (role: ActiveRole) => {
-    setActiveRole(role);
-    setSubmitted(false);
-    setShowPassword(false);
-    setRollNumber("");
-    setFacIdentifier("");
-    setFacDept("");
-    setAdminEmail("");
-    setPassword("");
-  };
-
-  // ── Validation ───────────────────────────────────────────────────────────────
-  const formErrors = (() => {
-    const e: Record<string, string> = {};
-    if (activeRole === "student") {
-      if (!/^\d{2}NU\dA\d{4}$/.test(rollNumber.trim()))
-        e.identifier = "Format: YYNUxAyyyy (e.g. 22NU1A0519)";
-    } else if (activeRole === "faculty") {
-      if (facIdType === "employee_id") {
-        if (!/^FAC\d{3}$/.test(facIdentifier.trim()))
-          e.identifier = "Format: FAC001 – FAC999";
-      } else {
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(facIdentifier.trim()))
-          e.identifier = "Enter a valid email address";
-      }
-    } else {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail.trim()))
-        e.identifier = "Enter a valid institutional email";
+      const redirectPath = routes[user.role] || "/dashboard";
+      window.location.href = redirectPath;
     }
-    if (!password || password.length < 8)
-      e.password = "Password must be at least 8 characters";
-    return e;
-  })();
+  }, [user]);
 
-  const ve = submitted ? formErrors : {};
-
-  const getIdentifier = () =>
-    activeRole === "student" ? rollNumber.trim()
-    : activeRole === "faculty" ? facIdentifier.trim()
-    : adminEmail.trim();
-
-  // ── Submit ───────────────────────────────────────────────────────────────────
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    if (Object.keys(formErrors).length > 0) return;
-
     setIsLoading(true);
+    setError(null);
+
     try {
-      const user = await api.login(getIdentifier(), password);
-      if (user?.mustChangePassword) { window.location.href = "/change-password"; return; }
-      if (user?.onboardingStep !== undefined && user.onboardingStep < 5) {
-        window.location.href = "/onboarding"; return;
+      const loggedInUser = await api.login({
+        identifier: identifier.trim(),
+        password,
+        role_hint: activeRole === "admin" ? "college_admin" : activeRole
+      });
+
+      if (loggedInUser) {
+        setUser(loggedInUser);
+        
+        // Handle forcing password change
+        if (loggedInUser.mustChangePassword) {
+          window.location.href = "/change-password";
+          return;
+        }
+
+        // Handle onboarding
+        if (loggedInUser.onboardingStep !== undefined && loggedInUser.onboardingStep < 5) {
+          window.location.href = "/onboarding";
+          return;
+        }
+
+        // Role-based routing
+        const routes: Record<string, string> = {
+          super_admin: "/admin/dashboard",
+          college_admin: "/college",
+          hod: "/hod",
+          faculty: "/faculty",
+          student: "/student/dashboard",
+        };
+        
+        window.location.href = routes[loggedInUser.role] || "/dashboard";
       }
-      const routes: Record<string, string> = {
-        super_admin: "/admin/dashboard", college_admin: "/college",
-        hod: "/hod", faculty: "/faculty", student: "/student/dashboard",
-      };
-      window.location.href = routes[user?.role ?? ""] || "/student/dashboard";
     } catch (err: any) {
-      toast.error(err.message || "Invalid credentials. Please try again.");
+      setError(err.message || "Invalid credentials. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ── Demo fill ────────────────────────────────────────────────────────────────
-  const fillDemo = (acc: { identifier: string; password: string }) => {
-    if (activeRole === "student") {
-      setRollNumber(acc.identifier);
-    } else if (activeRole === "faculty") {
-      const isEmpId = /^FAC\d{3}$/.test(acc.identifier);
-      setFacIdType(isEmpId ? "employee_id" : "email");
-      setFacIdentifier(acc.identifier);
-    } else {
-      setAdminEmail(acc.identifier);
-    }
-    setPassword(acc.password);
-    setSubmitted(false);
-  };
-
-  const roleLabel = activeRole === "student" ? "Student"
-    : activeRole === "faculty" ? "Faculty" : "Admin";
-
-  // ── JSX ──────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex bg-[#0a0a0f] text-white">
-      <LeftPanel />
-
-      {/* Right panel */}
-      <div className="flex-1 flex flex-col items-center justify-center px-5 py-10 overflow-y-auto">
-        {/* Mobile logo */}
-        <div className="lg:hidden flex items-center gap-2 mb-8">
-          <span className="text-2xl font-black bg-gradient-to-r from-lumina-primary to-lumina-secondary bg-clip-text text-transparent">
-            Lumina
-          </span>
-          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest bg-lumina-primary/15 text-lumina-primary border border-lumina-primary/30 rounded-full">
-            NSRIT
-          </span>
-        </div>
-
-        <div className="w-full max-w-[420px]">
-          {/* Heading */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-white">Welcome back</h2>
-            <p className="text-sm text-gray-400 mt-1">Sign in to your Lumina account</p>
+    <div className="min-h-screen bg-black text-slate-100 flex overflow-hidden">
+      {/* Left Panel: Hero Section */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-stone-950">
+        <Image 
+          src="/images/hero-yellow.png"
+          alt="Lumina Hero"
+          fill
+          className="object-cover opacity-60 mix-blend-luminosity grayscale group-hover:grayscale-0 transition-all duration-1000"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-tr from-black via-black/40 to-transparent" />
+        
+        <div className="relative z-10 p-16 flex flex-col justify-between h-full w-full">
+          <div>
+            <div className="flex items-center gap-3 mb-8 group cursor-pointer">
+              <div className="relative w-12 h-12 transition-transform duration-500 group-hover:rotate-[360deg] group-hover:scale-110">
+                <Image src="/images/logo-yellow.png" alt="Lumina Logo" fill className="object-contain" />
+              </div>
+              <span className="text-2xl font-black tracking-tighter text-white font-display uppercase">Lumina</span>
+            </div>
+            
+            <h1 className="text-5xl lg:text-6xl font-black leading-[1.1] mb-6 font-display">
+              <span className="gradient-text-gold">Elevate Learning </span><br />
+              <span className="text-white">With Intelligence</span>
+            </h1>
+            <p className="text-slate-400 text-lg max-w-sm leading-relaxed font-sans">
+              Experience the next generation of digital education. Lumina fuses advanced AI with 
+              human pedagogical integrity to empower every student.
+            </p>
           </div>
 
-          {/* Role tabs */}
-          <div className="flex bg-white/[0.05] border border-white/[0.08] rounded-xl p-1 mb-5">
-            {(["student", "faculty", "admin"] as ActiveRole[]).map((role) => (
+          <div className="grid grid-cols-2 gap-8 max-w-md font-display">
+            <div className="flex flex-col gap-2">
+              <div className="text-lumina-highlight text-4xl font-black">98%</div>
+              <div className="text-slate-500 text-xs font-bold uppercase tracking-widest">Student Engagement</div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="text-amber-500 text-4xl font-black">42%</div>
+              <div className="text-slate-500 text-xs font-bold uppercase tracking-widest">Mastery Velocity</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel: Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-16 relative bg-black">
+        {/* Ambient background glow */}
+        <div className="absolute top-1/4 -right-1/4 w-[600px] h-[600px] bg-lumina-highlight/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-1/4 -left-1/4 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="w-full max-w-md relative z-10">
+          <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
+             <div className="relative w-10 h-10">
+                <Image src="/images/logo-yellow.png" alt="Lumina Logo" fill className="object-contain" />
+              </div>
+            <span className="text-xl font-black tracking-tighter text-white font-display uppercase">Lumina</span>
+          </div>
+
+          <div className="mb-10 text-center lg:text-left">
+            <h2 className="text-4xl font-black text-white mb-3 font-display tracking-tight">Access Portal</h2>
+            <p className="text-slate-500 font-sans">Sign in to sync your neural learning graph.</p>
+          </div>
+
+          {/* Role Switcher */}
+          <div className="flex p-1.5 bg-stone-900/50 backdrop-blur-3xl rounded-2xl mb-8 border border-white/5">
+            {[
+              { id: "student", label: "Student", icon: GraduationCap },
+              { id: "faculty", label: "Faculty", icon: School },
+              { id: "admin", label: "Admin", icon: ShieldCheck },
+            ].map((role) => (
               <button
-                key={role}
-                type="button"
-                onClick={() => switchRole(role)}
-                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-                  activeRole === role
-                    ? "bg-lumina-primary text-black shadow-sm"
-                    : "text-gray-400 hover:text-white"
+                key={role.id}
+                onClick={() => setActiveRole(role.id as Role)}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-300 font-sans ${
+                  activeRole === role.id
+                    ? "bg-lumina-highlight text-black shadow-[0_8px_24px_rgba(250,204,21,0.25)]"
+                    : "text-slate-500 hover:text-slate-200 hover:bg-white/5"
                 }`}
               >
-                {role.charAt(0).toUpperCase() + role.slice(1)}
+                <role.icon size={16} />
+                {role.label}
               </button>
             ))}
           </div>
 
-          {/* ─── Form ─── */}
-          <form onSubmit={handleSubmit} noValidate className="space-y-4">
-
-            {/* STUDENT: Roll Number */}
-            {activeRole === "student" && (
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                  Roll Number
-                </label>
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-4 font-sans">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none group-focus-within:text-lumina-highlight text-slate-600 transition-colors">
+                  {activeRole === "student" ? <User size={20} /> : 
+                   activeRole === "faculty" ? <Building2 size={20} /> : 
+                   <Mail size={20} />}
+                </div>
                 <input
                   type="text"
-                  value={rollNumber}
-                  onChange={(e) => setRollNumber(e.target.value)}
-                  placeholder="22NU1A0519"
-                  autoComplete="username"
-                  spellCheck={false}
-                  className={`w-full px-3.5 py-2.5 bg-white/[0.05] border rounded-xl text-white font-mono placeholder-gray-600
-                    focus:outline-none focus:ring-2 focus:ring-lumina-primary/40 focus:border-lumina-primary/50
-                    transition-all text-sm tracking-wider ${ve.identifier ? "border-red-500/60" : "border-white/[0.10]"}`}
+                  placeholder={
+                    activeRole === "student" ? "Roll Number / Student ID" : 
+                    activeRole === "faculty" ? "Faculty ID or Portal Email" : 
+                    "Administrator Identifier"
+                  }
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  className="w-full bg-stone-900/40 border border-white/5 text-white rounded-2xl py-4.5 pl-14 pr-4 focus:ring-2 focus:ring-lumina-highlight/40 focus:border-lumina-highlight outline-none transition-all placeholder:text-slate-700 font-medium"
+                  required
                 />
-                <p className="text-[11px] text-gray-500 mt-1.5 leading-snug">
-                  <span className="font-mono text-gray-400">YYNUxAyyyy</span>
-                  {" "}— batch&nbsp;·&nbsp;branch code&nbsp;·&nbsp;roll
-                </p>
-                {ve.identifier && (
-                  <p className="text-xs text-red-400 mt-1" role="alert">{ve.identifier}</p>
-                )}
               </div>
-            )}
 
-            {/* FACULTY: ID type toggle + identifier + dept */}
-            {activeRole === "faculty" && (
-              <>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                    Identifier
-                  </label>
-                  {/* Toggle buttons */}
-                  <div className="flex gap-2 mb-2">
-                    {(["employee_id", "email"] as const).map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => { setFacIdType(t); setFacIdentifier(""); setSubmitted(false); }}
-                        className={`px-3 py-1 text-xs rounded-lg border transition-all ${
-                          facIdType === t
-                            ? "border-lumina-primary/60 bg-lumina-primary/10 text-lumina-primary"
-                            : "border-white/[0.10] text-gray-500 hover:text-gray-300 hover:border-white/20"
-                        }`}
-                      >
-                        {t === "employee_id" ? "Employee ID" : "Email Address"}
-                      </button>
-                    ))}
-                  </div>
-                  <input
-                    type={facIdType === "email" ? "email" : "text"}
-                    value={facIdentifier}
-                    onChange={(e) => setFacIdentifier(e.target.value)}
-                    placeholder={facIdType === "employee_id" ? "FAC001" : "faculty@nsrit.edu.in"}
-                    autoComplete={facIdType === "email" ? "email" : "username"}
-                    spellCheck={false}
-                    className={`w-full px-3.5 py-2.5 bg-white/[0.05] border rounded-xl text-white
-                      placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-lumina-primary/40
-                      focus:border-lumina-primary/50 transition-all text-sm
-                      ${facIdType === "employee_id" ? "font-mono tracking-wider" : ""}
-                      ${ve.identifier ? "border-red-500/60" : "border-white/[0.10]"}`}
-                  />
-                  {ve.identifier && (
-                    <p className="text-xs text-red-400 mt-1" role="alert">{ve.identifier}</p>
-                  )}
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none group-focus-within:text-lumina-highlight text-slate-600 transition-colors">
+                  <Lock size={20} />
                 </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                    Department <span className="text-gray-600">(optional)</span>
-                  </label>
-                  <select
-                    value={facDept}
-                    onChange={(e) => setFacDept(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-white/[0.05] border border-white/[0.10] rounded-xl
-                      text-white focus:outline-none focus:ring-2 focus:ring-lumina-primary/40
-                      focus:border-lumina-primary/50 transition-all text-sm appearance-none cursor-pointer"
-                  >
-                    <option value="" className="bg-gray-900 text-gray-400">Select department</option>
-                    {DEPARTMENTS.map((d) => (
-                      <option key={d} value={d} className="bg-gray-900 text-white">{d}</option>
-                    ))}
-                  </select>
-                </div>
-              </>
-            )}
-
-            {/* ADMIN: role dropdown + email */}
-            {activeRole === "admin" && (
-              <>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                    Admin Role
-                  </label>
-                  <select
-                    value={adminRoleValue}
-                    onChange={(e) => setAdminRoleValue(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-white/[0.05] border border-white/[0.10] rounded-xl
-                      text-white focus:outline-none focus:ring-2 focus:ring-lumina-primary/40
-                      focus:border-lumina-primary/50 transition-all text-sm appearance-none cursor-pointer"
-                  >
-                    <option value="college_admin" className="bg-gray-900">College Admin</option>
-                    <option value="hod"           className="bg-gray-900">Head of Department</option>
-                    <option value="super_admin"   className="bg-gray-900">Super Admin</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
-                    placeholder="admin@nsrit.edu.in"
-                    autoComplete="email"
-                    className={`w-full px-3.5 py-2.5 bg-white/[0.05] border rounded-xl text-white
-                      placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-lumina-primary/40
-                      focus:border-lumina-primary/50 transition-all text-sm
-                      ${ve.identifier ? "border-red-500/60" : "border-white/[0.10]"}`}
-                  />
-                  {ve.identifier && (
-                    <p className="text-xs text-red-400 mt-1" role="alert">{ve.identifier}</p>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Password (all roles) */}
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                Password
-              </label>
-              <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
+                  placeholder="Security Key"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  className={`w-full px-3.5 py-2.5 pr-10 bg-white/[0.05] border rounded-xl text-white
-                    placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-lumina-primary/40
-                    focus:border-lumina-primary/50 transition-all text-sm
-                    ${ve.password ? "border-red-500/60" : "border-white/[0.10]"}`}
+                  className="w-full bg-stone-900/40 border border-white/5 text-white rounded-2xl py-4.5 pl-14 pr-14 focus:ring-2 focus:ring-lumina-highlight/40 focus:border-lumina-highlight outline-none transition-all placeholder:text-slate-700 font-medium"
+                  required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors focus:outline-none"
+                  className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-600 hover:text-lumina-highlight transition-colors"
                 >
-                  {showPassword
-                    ? <EyeOff className="w-4 h-4" aria-hidden="true" />
-                    : <Eye    className="w-4 h-4" aria-hidden="true" />}
+                  {showPassword ? <span className="text-[10px] font-black uppercase tracking-widest">Hide</span> : <span className="text-[10px] font-black uppercase tracking-widest">Show</span>}
                 </button>
               </div>
-              {ve.password && (
-                <p className="text-xs text-red-400 mt-1" role="alert">{ve.password}</p>
-              )}
             </div>
 
-            {/* Submit */}
+            {error && (
+              <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                <AlertCircle className="text-red-500 mt-0.5" size={18} />
+                <p className="text-sm text-red-200/80 leading-tight font-medium">{error}</p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between py-1 font-sans">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative w-6 h-6 flex items-center justify-center">
+                  <input type="checkbox" className="peer absolute opacity-0 w-full h-full cursor-pointer" />
+                  <div className="w-5 h-5 rounded-lg border border-white/10 bg-stone-900 peer-checked:bg-lumina-highlight peer-checked:border-lumina-highlight transition-all flex items-center justify-center shadow-inner">
+                    <CheckCircle2 size={14} className="text-black scale-0 peer-checked:scale-100 transition-transform" />
+                  </div>
+                </div>
+                <span className="text-sm text-slate-500 group-hover:text-slate-400 font-medium tracking-tight">Keep Session Active</span>
+              </label>
+              <button type="button" className="text-sm font-bold text-lumina-highlight hover:text-amber-400 transition-colors tracking-tight">
+                Reset Access
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-1 py-2.5 px-4 bg-lumina-primary hover:bg-lumina-secondary
-                disabled:opacity-60 disabled:cursor-not-allowed text-black font-bold text-sm
-                rounded-xl transition-all flex items-center justify-center gap-2
-                shadow-lg shadow-lumina-primary/20"
+              className="w-full glass-button-highlight disabled:opacity-50 disabled:cursor-not-allowed text-black font-black py-4.5 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.98] text-lg uppercase tracking-widest shadow-[0_20px_40px_rgba(250,204,21,0.2)]"
             >
               {isLoading ? (
                 <>
-                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path  className="opacity-75" fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Signing in…
+                  <Loader2 className="animate-spin" size={20} />
+                  <span>Synchronizing...</span>
                 </>
               ) : (
-                `Sign in as ${roleLabel}`
+                <>
+                  <span>Initialize Lumina</span>
+                  <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
+                </>
               )}
             </button>
           </form>
 
-          {/* ─── Demo login drawer ─── */}
-          <div className="mt-5 border border-white/[0.08] rounded-xl overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setShowDemo(!showDemo)}
-              className="w-full flex items-center justify-between px-4 py-3 text-xs text-gray-400
-                hover:text-gray-300 hover:bg-white/[0.03] transition-colors"
-            >
-              <span>Show demo login credentials</span>
-              {showDemo
-                ? <ChevronUp   className="w-3.5 h-3.5" aria-hidden="true" />
-                : <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />}
-            </button>
-
-            {showDemo && (
-              <div className="border-t border-white/[0.07] p-3 grid grid-cols-2 gap-2">
-                {DEMO_ACCOUNTS[activeRole].map((acc, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => fillDemo(acc)}
-                    className="flex items-center gap-2 p-2.5 rounded-lg bg-white/[0.03]
-                      hover:bg-white/[0.07] border border-white/[0.06] hover:border-lumina-primary/20
-                      transition-all text-left group"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-lumina-primary/15 text-lumina-primary
-                      text-[10px] font-bold flex items-center justify-center flex-shrink-0">
-                      {acc.initials}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-medium text-white truncate">{acc.name}</div>
-                      <div className="text-[10px] text-gray-500 truncate">{acc.roleLabel}</div>
-                      <div className="text-[10px] font-mono text-lumina-primary/80 truncate">{acc.identifier}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ─── Footer ─── */}
-          <div className="mt-5 text-center space-y-2">
-            <p className="text-xs text-gray-500">
-              New faculty/student?{" "}
-              <a href="#" className="text-lumina-primary hover:text-lumina-secondary transition-colors">
-                Request access via invite
-              </a>
-            </p>
-            <div className="flex items-center justify-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true" />
-              <span className="text-[11px] text-emerald-400 font-medium tracking-wide">SYSTEMS ONLINE</span>
-            </div>
-          </div>
-
-          {/* ─── Research note ─── */}
-          <div className="mt-5 p-3.5 bg-white/[0.025] border border-white/[0.06] rounded-xl">
-            <p className="text-[11px] text-gray-500 leading-relaxed">
-              <span className="text-gray-400 font-semibold">Why roll numbers & employee IDs?</span>{" "}
-              Unlike Canvas (SSO) or Moodle (username/email), Lumina authenticates students by roll number
-              and faculty by employee ID — matching the canonical identifiers used in Indian engineering
-              colleges like NSRIT, where these supersede email as the primary institutional reference.
+          <div className="mt-12 pt-8 border-t border-white/5 text-center font-sans">
+            <p className="text-slate-500 text-sm font-medium">
+              Awaiting credentials? <br className="sm:hidden" />
+              <button className="text-white font-bold hover:text-lumina-highlight transition-colors ml-1 inline-flex items-center gap-1 group">
+                Contact Institution Administration
+                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              </button>
             </p>
           </div>
         </div>

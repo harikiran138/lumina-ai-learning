@@ -10,8 +10,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev_only';
 export interface AuthRequest extends Request {
   user?: {
     userId: string;
+    sessionId: string;
     role: string;
     collegeId?: string;
+    email?: string;
   };
 }
 
@@ -24,17 +26,34 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
       return;
     }
 
-    // Verify token
+    // 1. Verify JWT signature and basic structure
     const decoded = jwt.verify(accessToken, JWT_SECRET) as {
       userId: string;
+      sessionId: string;
       role: string;
       collegeId?: string;
+      email?: string;
     };
 
-    // Make sure token isn't part of a revoked session (optional check, refresh token revocation covers it largely)
-    // but just for strict enforcement if needed.
+    // 2. Validate session in Redis: session:{userId}:{sessionId}
+    const sessionKey = `session:${decoded.userId}:${decoded.sessionId}`;
+    const sessionData = await redisClient.get(sessionKey);
 
-    req.user = decoded;
+    if (!sessionData) {
+      res.status(401).json({ error: 'Unauthorized: Session expired or revoked' });
+      return;
+    }
+
+    // 3. Attach session data to request object
+    const session = JSON.parse(sessionData);
+    req.user = {
+      userId: decoded.userId,
+      sessionId: decoded.sessionId,
+      role: session.role || decoded.role,
+      collegeId: session.collegeId || decoded.collegeId,
+      email: session.email || decoded.email
+    };
+
     next();
   } catch (error) {
     res.status(401).json({ error: 'Unauthorized: Invalid or expired access token' });
@@ -63,11 +82,7 @@ export const requireCollegeScope = () => {
       res.status(401).json({ error: 'Unauthorized: User not authenticated' });
       return;
     }
-
-    // Example scoping checks - this sets a custom header or db variable 
-    // Usually would inject this into Supabase postgrest query context later
     res.locals.collegeId = req.user.collegeId;
-
     next();
   };
 };

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
 import redisClient from '../lib/redis';
 import { requireAuth, AuthRequest } from '../middleware/auth';
@@ -8,6 +9,8 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev_only';
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'fallback_refresh_dev_only';
+
+const SESSION_EXPIRY = 7 * 24 * 60 * 60; // 7 days in seconds
 
 // Configure cookie options based on environment
 const cookieOptions = {
@@ -26,10 +29,10 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    // Determine the user via the custom Postgres RPC
+    // 🔍 Resolve user via RPC
     const { data: userRef, error: rpcError } = await supabase.rpc('resolve_login_identifier', {
       p_identifier: identifier,
-      p_college_id: college_id || null, // Optional scoping
+      p_college_id: college_id || null,
     });
 
     if (rpcError || !userRef || userRef.length === 0) {
@@ -37,18 +40,22 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const { out_user_id: userId, out_role: dbRole } = userRef[0];
+    const { out_user_id: userId, out_role: rawRole } = userRef[0];
+    
+    // Normalize role
+    let dbRole = rawRole;
+    if (rawRole === 'teacher') dbRole = 'faculty';
+    if (rawRole === 'admin') dbRole = 'super_admin';
 
-    // Verify role if provided
     if (role_hint && role_hint !== dbRole) {
       res.status(401).json({ error: 'Role mismatch' });
       return;
     }
 
-    // Get the password hash
+    // 🔐 Get full user data
     const { data: userRecord, error: userError } = await supabase
       .from('users')
-      .select('id, password_hash, college_id, email, is_active')
+      .select('id, password_hash, college_id, email, name, is_active, onboarding_step')
       .eq('id', userId)
       .single();
 
@@ -57,30 +64,53 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Verify bcrypt password
+    // 🔑 Password check
     const isMatch = await bcrypt.compare(password, userRecord.password_hash);
     if (!isMatch) {
-      // Record failed attempt could go here
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
 
-    // Issue tokens
+    // 🧠 Create Session in Redis
+    const sessionId = uuidv4();
+    const onboardingCompleted = (userRecord.onboarding_step || 0) >= 5;
+    
+    const sessionData = {
+      role: dbRole,
+      collegeId: userRecord.college_id,
+      email: userRecord.email,
+      name: userRecord.name,
+      onboardingCompleted
+    };
+
+    await redisClient.set(
+      `session:${userId}:${sessionId}`,
+      JSON.stringify(sessionData),
+      { EX: SESSION_EXPIRY }
+    );
+
+    // 🔐 Issue JWT (Access Token contains sessionId)
     const accessToken = jwt.sign(
-      { userId, role: dbRole, collegeId: userRecord.college_id },
+      { 
+        userId, 
+        sessionId,
+        role: dbRole, 
+        collegeId: userRecord.college_id,
+        onboardingCompleted,
+        email: userRecord.email
+      },
       JWT_SECRET,
       { expiresIn: '15m' }
     );
 
     const refreshToken = jwt.sign(
-      { userId },
+      { userId, sessionId },
       REFRESH_SECRET,
       { expiresIn: '7d' }
     );
 
-    // Save refresh token in Redis (e.g., set user ID as key, token as value, or vice-versa)
-    // Here we use token as key and userId as value to easily check validity
-    await redisClient.setEx(`refresh_token:${refreshToken}`, 7 * 24 * 60 * 60, userId);
+    // Save refresh token link in Redis (optional, but good for rotation tracking)
+    await redisClient.set(`refresh_token:${refreshToken}`, userId, { EX: SESSION_EXPIRY });
 
     res.cookie('access_token', accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
     res.cookie('refresh_token', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
@@ -90,8 +120,10 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       user: {
         id: userId,
         email: userRecord.email,
+        name: userRecord.name,
         role: dbRole,
-        collegeId: userRecord.college_id
+        collegeId: userRecord.college_id,
+        onboardingStep: userRecord.onboarding_step
       }
     });
 
@@ -111,8 +143,7 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    // Validate against payload
-    const decoded = jwt.verify(refresh_token, REFRESH_SECRET) as { userId: string };
+    const decoded = jwt.verify(refresh_token, REFRESH_SECRET) as { userId: string, sessionId: string };
     
     // Validate against Redis cache
     const storedUserId = await redisClient.get(`refresh_token:${refresh_token}`);
@@ -121,33 +152,47 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
        return;
     }
 
-    const { data: userRecord, error } = await supabase
-      .from('users')
-      .select('id, role, college_id')
-      .eq('id', decoded.userId)
-      .single();
-      
-    if (error || !userRecord) {
-       res.status(401).json({ error: 'User lookup failed' });
-       return;
+    // Check if original session still exists
+    const sessionKey = `session:${decoded.userId}:${decoded.sessionId}`;
+    const sessionData = await redisClient.get(sessionKey);
+    if (!sessionData) {
+      res.status(401).json({ error: 'Session expired or revoked' });
+      return;
     }
 
-    // Issue new access token
+    const session = JSON.parse(sessionData);
+    
+    // Rotate Session ID for security
+    const newSessionId = uuidv4();
+    await redisClient.del(sessionKey);
+    await redisClient.set(
+      `session:${decoded.userId}:${newSessionId}`,
+      JSON.stringify(session),
+      { EX: SESSION_EXPIRY }
+    );
+
+    // Issue new tokens
     const newAccessToken = jwt.sign(
-      { userId: userRecord.id, role: userRecord.role, collegeId: userRecord.college_id },
+      { 
+        userId: decoded.userId, 
+        sessionId: newSessionId,
+        role: session.role, 
+        collegeId: session.collegeId,
+        onboardingCompleted: session.onboardingCompleted,
+        email: session.email
+      },
       JWT_SECRET,
       { expiresIn: '15m' }
     );
     
-    // Rotate refresh token (optional, but highly recommended)
     const newRefreshToken = jwt.sign(
-      { userId: userRecord.id },
+      { userId: decoded.userId, sessionId: newSessionId },
       REFRESH_SECRET,
       { expiresIn: '7d' }
     );
 
     await redisClient.del(`refresh_token:${refresh_token}`);
-    await redisClient.setEx(`refresh_token:${newRefreshToken}`, 7 * 24 * 60 * 60, userRecord.id);
+    await redisClient.set(`refresh_token:${newRefreshToken}`, decoded.userId, { EX: SESSION_EXPIRY });
 
     res.cookie('access_token', newAccessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
     res.cookie('refresh_token', newRefreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
@@ -161,6 +206,12 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
 // 3. POST /api/auth/logout
 router.post('/logout', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   const { refresh_token } = req.cookies;
+  
+  if (req.user) {
+    // Revoke specific session in Redis
+    await redisClient.del(`session:${req.user.userId}:${req.user.sessionId}`);
+  }
+  
   if (refresh_token) {
      await redisClient.del(`refresh_token:${refresh_token}`);
   }
@@ -174,21 +225,18 @@ router.post('/logout', requireAuth, async (req: AuthRequest, res: Response): Pro
 // 4. GET /api/auth/me
 router.get('/me', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, email, name, role, college_id, avatar, is_active')
-      .eq('id', req.user!.userId)
-      .single();
-
-    if (error || !user) {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
-
-    res.json({ user });
+    // Return data directly from the verified Redis session for speed,
+    // or fetch fresh from DB if needed. Here we return session data + ID.
+    res.json({
+      user: {
+        id: req.user!.userId,
+        role: req.user!.role,
+        collegeId: req.user!.collegeId,
+        email: req.user!.email
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
 export default router;

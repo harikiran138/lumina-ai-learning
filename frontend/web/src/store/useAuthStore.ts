@@ -1,15 +1,16 @@
 import { create } from 'zustand';
 
-export type Role = 'student' | 'faculty' | 'hod' | 'college_admin' | 'super_admin';
+export type Role = "super_admin" | "college_admin" | "admin" | "hod" | "faculty" | "teacher" | "student" | "parent" | "mentor" | "peer_tutor" | "counselor" | "content_creator" | "researcher" | "alumni";
 
 export interface User {
   id: string;
   email: string;
   name?: string;
   role: Role;
-  collegeId?: string;
+  collegeId?: string | null;
   avatar?: string;
   isActive?: boolean;
+  onboardingStep?: number;
 }
 
 interface AuthState {

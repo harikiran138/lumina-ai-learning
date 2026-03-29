@@ -561,14 +561,22 @@ async def get_current_user(
 ):
     try:
         from jose import jwt
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-        email: str = payload.get("sub")
-        if email is None:
+        # Use JWT_SECRET to match Express Auth service
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+        user_id: Optional[str] = payload.get("userId")
+        email: Optional[str] = payload.get("sub") or payload.get("email")
+        
+        if not user_id and not email:
             raise HTTPException(status_code=401, detail="Could not validate credentials")
     except Exception:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
 
-    user = await user_store.get_user_by_email(email)
+    user = None
+    if user_id:
+        user = await user_store.get_user_by_id(user_id)
+    if not user and email:
+        user = await user_store.get_user_by_email(email)
+        
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
 
