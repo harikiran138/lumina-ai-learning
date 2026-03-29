@@ -3,6 +3,9 @@ import os
 import sys
 import time
 from typing import Optional, Any, Dict, List
+from datetime import datetime
+from copy import deepcopy
+import uuid
 from supabase import create_client, Client, ClientOptions
 from app.core.config import settings
 from app.core.logging import structlog
@@ -23,6 +26,194 @@ def _patched_httpx_init(self, *args, **kwargs):
 httpx.Client.__init__ = _patched_httpx_init          # type: ignore[method-assign]
 
 
+class _LocalQueryResult:
+    def __init__(self, data):
+        self.data = data
+
+
+class _LocalTableQuery:
+    def __init__(self, backend: "_LocalSupabaseClient", table_name: str):
+        self.backend = backend
+        self.table_name = table_name
+        self._operation = "select"
+        self._payload = None
+        self._filters = []
+        self._or_filters = []
+        self._limit = None
+        self._order = None
+        self._columns = "*"
+        self._single = False
+
+    def select(self, columns: str = "*", **_kwargs):
+        self._operation = "select"
+        self._columns = columns or "*"
+        return self
+
+    def insert(self, payload):
+        self._operation = "insert"
+        self._payload = payload
+        return self
+
+    def upsert(self, payload, on_conflict: str = "id"):
+        self._operation = "upsert"
+        self._payload = (payload, on_conflict)
+        return self
+
+    def update(self, payload):
+        self._operation = "update"
+        self._payload = payload
+        return self
+
+    def delete(self):
+        self._operation = "delete"
+        self._payload = None
+        return self
+
+    def eq(self, key: str, value: Any):
+        self._filters.append(lambda row, k=key, v=value: row.get(k) == v)
+        return self
+
+    def neq(self, key: str, value: Any):
+        self._filters.append(lambda row, k=key, v=value: row.get(k) != v)
+        return self
+
+    def in_(self, key: str, values: List[Any]):
+        value_set = set(values or [])
+        self._filters.append(lambda row, k=key, vals=value_set: row.get(k) in vals)
+        return self
+
+    def or_(self, expression: str):
+        clauses = [part.strip() for part in (expression or "").split(",") if part.strip()]
+        parsed = []
+        for clause in clauses:
+            parts = clause.split(".", 2)
+            if len(parts) != 3:
+                continue
+            field, operator, raw_value = parts
+            if operator == "eq":
+                parsed.append(lambda row, f=field, v=raw_value: str(row.get(f)) == v)
+        if parsed:
+            self._or_filters.append(parsed)
+        return self
+
+    def order(self, key: str, desc: bool = False):
+        self._order = (key, desc)
+        return self
+
+    def limit(self, value: int):
+        self._limit = value
+        return self
+
+    def single(self):
+        self._single = True
+        return self
+
+    def maybe_single(self):
+        self._single = True
+        return self
+
+    def _project_row(self, row: Dict[str, Any]) -> Dict[str, Any]:
+        if self._columns in (None, "*"):
+            return deepcopy(row)
+        if "(" in self._columns or ")" in self._columns:
+            return deepcopy(row)
+        fields = [field.strip() for field in self._columns.split(",") if field.strip()]
+        return {field: deepcopy(row.get(field)) for field in fields}
+
+    def _matches(self, row: Dict[str, Any]) -> bool:
+        if any(not predicate(row) for predicate in self._filters):
+            return False
+        if self._or_filters:
+            for group in self._or_filters:
+                if not any(predicate(row) for predicate in group):
+                    return False
+        return True
+
+    def _selected_rows(self) -> List[Dict[str, Any]]:
+        rows = self.backend._tables.setdefault(self.table_name, [])
+        matched = [row for row in rows if self._matches(row)]
+        if self._order:
+            key, desc = self._order
+            matched.sort(key=lambda row: row.get(key) or "", reverse=desc)
+        if self._limit is not None:
+            matched = matched[: self._limit]
+        return matched
+
+    def execute(self):
+        table_rows = self.backend._tables.setdefault(self.table_name, [])
+
+        if self._operation == "insert":
+            payloads = self._payload if isinstance(self._payload, list) else [self._payload]
+            inserted = []
+            for payload in payloads:
+                row = deepcopy(payload or {})
+                row.setdefault("id", str(uuid.uuid4()))
+                row.setdefault("created_at", datetime.utcnow().isoformat())
+                row.setdefault("updated_at", row["created_at"])
+                table_rows.append(row)
+                inserted.append(deepcopy(row))
+            return _LocalQueryResult(inserted)
+
+        if self._operation == "upsert":
+            payload, on_conflict = self._payload
+            payloads = payload if isinstance(payload, list) else [payload]
+            conflict_fields = [field.strip() for field in (on_conflict or "id").split(",") if field.strip()]
+            upserted = []
+            for payload_item in payloads:
+                item = deepcopy(payload_item or {})
+                existing = None
+                if conflict_fields:
+                    for row in table_rows:
+                        if all(str(row.get(field)) == str(item.get(field)) for field in conflict_fields):
+                            existing = row
+                            break
+                if existing is None and item.get("id"):
+                    existing = next((row for row in table_rows if row.get("id") == item["id"]), None)
+                if existing is None:
+                    item.setdefault("id", str(uuid.uuid4()))
+                    item.setdefault("created_at", datetime.utcnow().isoformat())
+                    item.setdefault("updated_at", item["created_at"])
+                    table_rows.append(item)
+                    upserted.append(deepcopy(item))
+                else:
+                    existing.update(item)
+                    existing["updated_at"] = datetime.utcnow().isoformat()
+                    upserted.append(deepcopy(existing))
+            return _LocalQueryResult(upserted)
+
+        if self._operation == "update":
+            updated = []
+            for row in self._selected_rows():
+                row.update(deepcopy(self._payload or {}))
+                row["updated_at"] = datetime.utcnow().isoformat()
+                updated.append(deepcopy(row))
+            return _LocalQueryResult(updated)
+
+        if self._operation == "delete":
+            remaining = []
+            deleted = []
+            for row in table_rows:
+                if self._matches(row):
+                    deleted.append(deepcopy(row))
+                else:
+                    remaining.append(row)
+            self.backend._tables[self.table_name] = remaining
+            return _LocalQueryResult(deleted)
+
+        projected = [self._project_row(row) for row in self._selected_rows()]
+        if self._single:
+            return _LocalQueryResult(projected[0] if projected else None)
+        return _LocalQueryResult(projected)
+
+
+class _LocalSupabaseClient:
+    def __init__(self):
+        self._tables: Dict[str, List[Dict[str, Any]]] = {}
+
+    def table(self, table_name: str) -> _LocalTableQuery:
+        return _LocalTableQuery(self, table_name)
+
+
 class SupabaseManager:
     """
     Production-ready Supabase client manager.
@@ -30,14 +221,25 @@ class SupabaseManager:
     """
 
     _client: Optional[Client] = None
+    _local_client: Optional[_LocalSupabaseClient] = None
     _init_attempted = False
     _last_error = None
+
+    @classmethod
+    def _use_local_backend(cls) -> bool:
+        return os.getenv("LUMINA_FORCE_LOCAL_DB") == "1" or "pytest" in sys.modules
 
     @classmethod
     def get_client(cls, force_new: bool = False) -> Client:
         """
         Returns a singleton instance of the Supabase client.
         """
+        if cls._use_local_backend():
+            if cls._local_client is None or force_new:
+                cls._local_client = _LocalSupabaseClient()
+                log.info("supabase_local_client_initialized")
+            return cls._local_client  # type: ignore[return-value]
+
         if cls._client is not None and not force_new:
             return cls._client
 

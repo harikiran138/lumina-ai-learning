@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { 
-  ArrowLeft, 
-  Settings, 
-  User, 
-  Bell, 
-  Shield, 
-  Zap, 
-  Cpu, 
-  Globe, 
-  Palette, 
-  Save, 
+import { useState, useEffect } from "react";
+import {
+  ArrowLeft,
+  Settings,
+  User,
+  Bell,
+  Shield,
+  Zap,
+  Cpu,
+  Globe,
+  Palette,
+  Save,
   ChevronRight,
   Sparkles,
   Database,
@@ -21,9 +21,30 @@ import {
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 export default function TeacherSettingsPage() {
   const [activeSection, setActiveSection] = useState("AI Configuration");
+  const [userName, setUserName] = useState("Teacher");
+  const [userEmail, setUserEmail] = useState("");
+  const [userInitials, setUserInitials] = useState("T");
+
+  useEffect(() => {
+    api.getCurrentUser().then((user) => {
+      if (user) {
+        setUserName(user.name || "Teacher");
+        setUserEmail(user.email || "");
+        setUserInitials(
+          (user.name || "T")
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase()
+        );
+      }
+    });
+  }, []);
 
   const sections = [
     { name: "Profile", icon: User },
@@ -150,7 +171,7 @@ export default function TeacherSettingsPage() {
             >
               <div className="flex items-center gap-8">
                  <div className="h-24 w-24 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 border border-white/10 flex items-center justify-center text-3xl font-bold text-white uppercase italic">
-                    TH
+                    {userInitials}
                  </div>
                  <button className="px-6 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-white hover:bg-white/10 transition-all">
                    Change Avatar
@@ -160,11 +181,11 @@ export default function TeacherSettingsPage() {
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-gray-600 uppercase tracking-widest ml-1">Full Name</label>
-                  <input type="text" defaultValue="Teacher Harikiran" className="w-full rounded-2xl bg-white/5 border border-white/10 p-4 text-sm text-white focus:outline-none" />
+                  <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} className="w-full rounded-2xl bg-white/5 border border-white/10 p-4 text-sm text-white focus:outline-none" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-gray-600 uppercase tracking-widest ml-1">Email Address</label>
-                  <input type="email" defaultValue="harikiran@lumina.edu" className="w-full rounded-2xl bg-white/5 border border-white/10 p-4 text-sm text-white focus:outline-none" />
+                  <input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} className="w-full rounded-2xl bg-white/5 border border-white/10 p-4 text-sm text-white focus:outline-none" />
                 </div>
               </div>
             </motion.div>

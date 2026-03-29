@@ -3,7 +3,7 @@
 ## Quick Start
 
 ### Prerequisites
-- Python 3.8+ installed
+- Python 3.11+ installed
 - Node.js 18+ installed
 - Supabase project (recommended) or local JSON fallback store
 - Redis running on `localhost:6379` (optional, for caching)
@@ -65,7 +65,7 @@ REDIS_URL=redis://localhost:6379/0
 #### Backend
 ```bash
 cd backend
-python3 -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```

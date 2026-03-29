@@ -12,6 +12,7 @@ import {
   Terminal,
   Activity
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface GuardianSignal {
@@ -32,8 +33,7 @@ export default function GuardianConsole() {
   const loadSignals = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/guardian");
-      const data = await res.json();
+      const data = await api.getGuardianSignals();
       setSignals(data);
     } catch (err) {
       console.error("failed_to_load_guardian_signals", err);

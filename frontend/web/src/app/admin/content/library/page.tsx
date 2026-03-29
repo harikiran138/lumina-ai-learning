@@ -14,6 +14,7 @@ import {
   Star,
   Layers
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface Course {
@@ -31,9 +32,8 @@ export default function CourseLibrary() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/admin/courses");
-        const data = await res.json();
-        setCourses(data);
+        const data = await api.getAdminCourses();
+        setCourses(data || []);
       } catch (err) {
         console.error("failed_to_load_courses", err);
       } finally {

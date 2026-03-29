@@ -10,7 +10,7 @@ def normalize_stability(days: float) -> float:
     return math.tanh(days / 30.0)
 
 def normalize_recency(hours: float, decay_lambda: float = 0.05) -> float:
-    """Exponential Decay: e^{-\lambda x} (Recency factor)"""
+    r"""Exponential Decay: e^{-\lambda x} (Recency factor)"""
     if hours is None:
         return 0.0
     return math.exp(-decay_lambda * hours)

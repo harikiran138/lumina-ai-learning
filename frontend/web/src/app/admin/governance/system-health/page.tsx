@@ -13,6 +13,7 @@ import {
   Clock,
   RefreshCw
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface SystemHealth {
@@ -35,8 +36,7 @@ export default function SystemHealthPage() {
   const loadHealth = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/health");
-      const data = await res.json();
+      const data = await api.getSystemHealth();
       setHealth(data);
     } catch (err) {
       console.error("failed_to_load_system_health", err);

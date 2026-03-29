@@ -60,81 +60,45 @@ export default function GradebookPage() {
   const loadGradebookData = async () => {
     setIsLoading(true);
     try {
-      // Fetch teacher courses and students
-      const [coursesData, studentsData] = await Promise.all([
+      const [coursesData, studentsData, assignmentsData] = await Promise.all([
         api.getTeacherCourses(),
         api.getTeacherStudents(),
+        api.getFacultyAssignments(),
       ]);
 
       setCourses(coursesData?.map((c: any) => ({ id: c.id, name: c.title })) || []);
 
-      // Mock assignments data
-      const mockAssignments: AssignmentColumn[] = [
-        {
-          id: "a1",
-          title: "Assignment 1: Introduction",
-          dueDate: "2024-03-10",
-          maxScore: 100,
-          submissionCount: 45,
-          averageScore: 78,
-        },
-        {
-          id: "a2",
-          title: "Assignment 2: Core Concepts",
-          dueDate: "2024-03-17",
-          maxScore: 100,
-          submissionCount: 42,
-          averageScore: 72,
-        },
-        {
-          id: "a3",
-          title: "Midterm Project",
-          dueDate: "2024-03-24",
-          maxScore: 150,
-          submissionCount: 38,
-          averageScore: 115,
-        },
-        {
-          id: "a4",
-          title: "Assignment 3: Advanced Topics",
-          dueDate: "2024-04-01",
-          maxScore: 100,
-          submissionCount: 35,
-          averageScore: 68,
-        },
-      ];
-      setAssignments(mockAssignments);
+      const assignmentColumns: AssignmentColumn[] = (assignmentsData || []).map((a: any) => ({
+        id: a.id,
+        title: a.title,
+        dueDate: a.due_date,
+        maxScore: a.max_score || 100,
+        submissionCount: a.submission_count || 0,
+        averageScore: a.average_score || 0,
+      }));
+      setAssignments(assignmentColumns);
 
-      // Transform students into gradebook entries
-      const gradebookEntries: GradebookEntry[] =
-        studentsData?.map((student: any) => ({
-          studentId: student.id,
-          studentName: student.name,
-          avatar:
-            student.avatar ||
-            `https://ui-avatars.com/api/?name=${student.name}&background=random`,
-          courseId: student.courses?.[0]?.id || "",
-          courseName: student.courses?.[0] || "General",
-          assignments: mockAssignments.map((a) => ({
-            id: a.id,
-            title: a.title,
-            score: Math.random() > 0.3 ? Math.floor(Math.random() * 40) + 60 : null,
-            maxScore: a.maxScore,
-            status:
-              Math.random() > 0.3
-                ? Math.random() > 0.5
-                  ? "graded"
-                  : "submitted"
-                : "missing",
-            submittedAt:
-              Math.random() > 0.3
-                ? new Date(Date.now() - Math.random() * 86400000 * 7).toISOString()
-                : null,
-          })),
-          overallGrade: Math.floor(Math.random() * 30) + 70,
-          progress: student.progress || student.averageProgress || 0,
-          lastActive: student.lastActive || new Date().toISOString(),
-        })) || [];
+      const gradebookEntries: GradebookEntry[] = (studentsData || []).map((student: any) => ({
+        studentId: student.id,
+        studentName: student.full_name || student.name || "Student",
+        avatar:
+          student.profile_photo_url ||
+          student.avatar ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(student.full_name || student.name || "S")}&background=random`,
+        courseId: student.courses?.[0]?.id || "",
+        courseName: student.courses?.[0]?.name || "General",
+        assignments: assignmentColumns.map((a) => ({
+          id: a.id,
+          title: a.title,
+          score: null,
+          maxScore: a.maxScore,
+          status: "missing" as const,
+          submittedAt: null,
+        })),
+        overallGrade: student.average_grade || 0,
+        progress: student.progress || student.average_progress || 0,
+        lastActive: student.last_active || student.updated_at || new Date().toISOString(),
+      }));
 
       setEntries(gradebookEntries);
     } catch (error) {

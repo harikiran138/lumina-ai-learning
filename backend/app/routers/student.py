@@ -53,6 +53,19 @@ class ActivityLogRequest(BaseModel):
     duration_minutes: int
 
 
+class StudentOnboardingCompleteRequest(BaseModel):
+    class_id: Optional[str] = None
+    subject_ids: List[str] = []
+    learning_styles: List[str] = []
+    skill_levels: Dict[str, float] = {}
+    goal: str
+    device_type: str
+    internet_type: str
+    consents: Dict[str, bool]
+    batch_confirmed: bool = False
+    batch_confirmation_note: Optional[str] = None
+
+
 def _parse_datetime(value: Any) -> Optional[datetime]:
     if value is None:
         return None
@@ -70,8 +83,16 @@ def _parse_datetime(value: Any) -> Optional[datetime]:
     return parsed
 
 
+def _clamp_unit_interval(value: Any, default: float = 0.5) -> float:
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return default
+    return max(0.0, min(1.0, numeric))
+
+
 def _build_weekly_activity(events: List[Any]) -> List[Dict[str, Any]]:
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     buckets: Dict[str, Dict[str, Any]] = {}
 
     for offset in range(6, -1, -1):
@@ -94,7 +115,8 @@ def _build_weekly_activity(events: List[Any]) -> List[Dict[str, Any]]:
 
         bucket["interactions"] += 1
         if getattr(event, "event_type", None) == LearningEventType.ACTIVITY_LOGGED:
-            bucket["minutes"] += float(event.payload.get("duration_minutes", 0) or 0)
+            payload = getattr(event, "payload", None) or {}
+            bucket["minutes"] += float(payload.get("duration_minutes", 0) or 0)
 
     return [
         {
@@ -190,7 +212,7 @@ async def _build_due_assignments(
         for course in courses
         if course.get("id")
     }
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     for course in courses:
         course_id = course.get("id")
@@ -1112,6 +1134,312 @@ async def list_student_subjects(current_user: dict = Depends(get_current_user)):
     return results
 
 
+@router.get("/onboarding/options")
+async def get_student_onboarding_options(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+
+    student_id = current_user.get("id")
+    dept_id = current_user.get("dept_id") or current_user.get("department_id")
+    batch_id = current_user.get("batch_id")
+    client = supabase_db.get_client()
+
+    batch = await supabase_db.fetch_one("batches", {"id": batch_id}) if batch_id else None
+
+    class_rows: List[Dict[str, Any]] = []
+    try:
+        class_query = client.table("classes").select("*")
+        if dept_id:
+            class_query = class_query.eq("department_id", dept_id)
+        if batch_id:
+            class_query = class_query.eq("batch_id", batch_id)
+        class_rows = class_query.execute().data or []
+    except Exception:
+        if dept_id:
+            class_rows = client.table("classes").select("*").eq("department_id", dept_id).execute().data or []
+
+    if current_user.get("section"):
+        user_section = str(current_user.get("section"))
+        class_rows.sort(
+            key=lambda row: (
+                0 if str(row.get("section") or row.get("section_name") or "") == user_section else 1,
+                str(row.get("class_name") or row.get("section_name") or ""),
+            )
+        )
+
+    semester = batch.get("current_semester") if batch else None
+    subjects: List[Dict[str, Any]] = []
+    if dept_id and semester:
+        subjects = await supabase_db.fetch_all("courses", {"department_id": dept_id, "semester": semester})
+
+    selected_subjects = (
+        client.table("student_subjects")
+        .select("subject_id")
+        .eq("student_id", student_id)
+        .execute()
+        .data
+        or []
+    )
+    selected_subject_ids = [row["subject_id"] for row in selected_subjects if row.get("subject_id")]
+
+    enrollment = (
+        client.table("student_enrollments")
+        .select("*")
+        .eq("student_id", student_id)
+        .maybe_single()
+        .execute()
+        .data
+    )
+
+    learner_profile = (
+        client.table("learner_profiles")
+        .select("*")
+        .eq("user_id", student_id)
+        .maybe_single()
+        .execute()
+        .data
+    )
+
+    mastery_rows = (
+        client.table("skill_mastery")
+        .select("course_id, mastery_score, skill_name")
+        .eq("user_id", student_id)
+        .eq("skill_name", "initial_self_assessment")
+        .execute()
+        .data
+        or []
+    )
+    skill_levels = {
+        str(row["course_id"]): float(row.get("mastery_score") or 0)
+        for row in mastery_rows
+        if row.get("course_id")
+    }
+
+    return {
+        "batch": batch,
+        "classes": class_rows,
+        "subjects": subjects,
+        "selectedSubjectIds": selected_subject_ids,
+        "enrollment": enrollment,
+        "learnerProfile": learner_profile,
+        "skillLevels": skill_levels,
+        "section": current_user.get("section"),
+    }
+
+
+@router.post("/onboarding/complete")
+async def complete_student_onboarding(
+    payload: StudentOnboardingCompleteRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    if current_user.get("role") != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+
+    student_id = current_user.get("id")
+    dept_id = current_user.get("dept_id") or current_user.get("department_id")
+    batch_id = current_user.get("batch_id")
+
+    if not payload.batch_confirmed:
+        raise HTTPException(status_code=400, detail="Batch details must be confirmed before finishing onboarding")
+    if not payload.subject_ids:
+        raise HTTPException(status_code=400, detail="Select at least one engineering subject")
+
+    required_consents = ("teacherVerifiedAi", "academicIntegrity", "dataPolicy")
+    if not all(payload.consents.get(key) is True for key in required_consents):
+        raise HTTPException(status_code=400, detail="All mandatory consents must be accepted")
+
+    batch = await supabase_db.fetch_one("batches", {"id": batch_id}) if batch_id else None
+    if not batch:
+        raise HTTPException(status_code=400, detail="Batch details are missing from your account")
+
+    selected_class = await supabase_db.fetch_one("classes", {"id": payload.class_id}) if payload.class_id else None
+    enrollment_record = await supabase_db.fetch_one("student_enrollments", {"student_id": student_id})
+
+    if selected_class and dept_id and selected_class.get("department_id") not in {None, dept_id}:
+        raise HTTPException(status_code=403, detail="Selected class is outside your department scope")
+
+    program_id = (selected_class or {}).get("program_id") or (enrollment_record or {}).get("program_id")
+    current_semester_id = (selected_class or {}).get("semester_id") or (enrollment_record or {}).get("current_semester_id")
+
+    if not current_semester_id and program_id and batch.get("current_semester"):
+        semester_match = await supabase_db.fetch_one(
+            "semesters",
+            {"program_id": program_id, "semester_number": batch.get("current_semester")},
+        )
+        current_semester_id = semester_match.get("id") if semester_match else None
+
+    if not program_id:
+        raise HTTPException(status_code=400, detail="Unable to determine the engineering program for this student")
+
+    year_of_study = max(1, ((int(batch.get("current_semester") or 1) + 1) // 2))
+    now = datetime.utcnow().isoformat()
+
+    enrollment_upsert = await supabase_db.upsert(
+        "student_enrollments",
+        {
+            "student_id": student_id,
+            "program_id": program_id,
+            "current_semester_id": current_semester_id,
+            "class_id": payload.class_id or (enrollment_record or {}).get("class_id"),
+            "year_of_study": year_of_study,
+            "status": "active",
+            "updated_at": now,
+        },
+        on_conflict="student_id, program_id",
+    )
+    if not enrollment_upsert:
+        raise HTTPException(status_code=500, detail="Failed to update student enrollment")
+
+    user_updates: Dict[str, Any] = {"onboarding_step": 5}
+    if (selected_class or {}).get("section"):
+        user_updates["section"] = selected_class.get("section")
+    elif (selected_class or {}).get("section_name"):
+        user_updates["section"] = selected_class.get("section_name")
+    updated_user = await supabase_db.update("users", user_updates, {"id": student_id})
+    if updated_user is None:
+        raise HTTPException(status_code=500, detail="Failed to update student onboarding state")
+
+    await supabase_db.delete("student_subjects", {"student_id": student_id})
+    course_lookup: Dict[str, Dict[str, Any]] = {}
+    for subject_id in payload.subject_ids:
+        course = await supabase_db.fetch_one("courses", {"id": subject_id})
+        if not course:
+            continue
+        course_lookup[str(subject_id)] = course
+
+        await supabase_db.insert(
+            "student_subjects",
+            {"student_id": student_id, "subject_id": subject_id},
+        )
+
+        score = _clamp_unit_interval(payload.skill_levels.get(subject_id), default=0.5)
+        await supabase_db.delete(
+            "skill_mastery",
+            {"user_id": student_id, "course_id": subject_id, "skill_name": "initial_self_assessment"},
+        )
+        await supabase_db.insert(
+            "skill_mastery",
+            {
+                "user_id": student_id,
+                "course_id": subject_id,
+                "skill_name": "initial_self_assessment",
+                "mastery_score": score,
+                "confidence": 0.6,
+                "bkt_p_l0": score,
+                "assessment_count": 1,
+                "last_assessed": now,
+                "updated_at": now,
+            },
+        )
+
+        await supabase_db.upsert(
+            "enrollments",
+            {
+                "student_id": student_id,
+                "course_id": subject_id,
+                "status": "active",
+                "enrolled_at": now,
+                "progress": {
+                    "percentage": 0,
+                    "mastery": round(score * 100, 2),
+                    "streak": 0,
+                    "hoursSpent": 0,
+                    "lastAccessed": None,
+                },
+            },
+            on_conflict="student_id, course_id",
+        )
+
+    strengths = [
+        course_lookup[sid].get("course_name") or course_lookup[sid].get("name") or sid
+        for sid in payload.subject_ids
+        if sid in course_lookup and _clamp_unit_interval(payload.skill_levels.get(sid), 0.5) >= 0.7
+    ]
+    weaknesses = [
+        course_lookup[sid].get("course_name") or course_lookup[sid].get("name") or sid
+        for sid in payload.subject_ids
+        if sid in course_lookup and _clamp_unit_interval(payload.skill_levels.get(sid), 0.5) < 0.4
+    ]
+    mastery_state = {
+        sid: {
+            "score": _clamp_unit_interval(payload.skill_levels.get(sid), 0.5),
+            "confidence": 0.6,
+            "attempts": 1,
+        }
+        for sid in payload.subject_ids
+    }
+
+    learner_profile = await supabase_db.upsert(
+        "learner_profiles",
+        {
+            "user_id": student_id,
+            "role": "student",
+            "grade_level": f"Semester {batch.get('current_semester')}" if batch.get("current_semester") else None,
+            "goals": [payload.goal],
+            "preferences": {
+                "learning_styles": payload.learning_styles,
+                "device_type": payload.device_type,
+                "internet_type": payload.internet_type,
+                "class_id": payload.class_id,
+                "subject_ids": payload.subject_ids,
+                "batch_confirmed": payload.batch_confirmed,
+            },
+            "mastery_state": mastery_state,
+            "learning_style": ", ".join(payload.learning_styles),
+            "strengths": strengths,
+            "weaknesses": weaknesses,
+            "metadata": {
+                "engineering_onboarding_completed_at": now,
+                "batch_id": batch_id,
+                "batch_label": batch.get("label"),
+                "batch_confirmation_note": payload.batch_confirmation_note,
+                "section": user_updates.get("section") or current_user.get("section"),
+            },
+            "updated_at": now,
+        },
+        on_conflict="user_id",
+    )
+    if not learner_profile:
+        raise HTTPException(status_code=500, detail="Failed to initialize learner profile")
+
+    existing_user_data = await supabase_db.fetch_one("user_data", {"user_id": student_id})
+    progress = (existing_user_data or {}).get("progress") or {}
+    progress["step_5"] = {
+        "classId": payload.class_id,
+        "subjectIds": payload.subject_ids,
+        "learningStyles": payload.learning_styles,
+        "skillLevels": payload.skill_levels,
+        "goal": payload.goal,
+        "deviceType": payload.device_type,
+        "internetType": payload.internet_type,
+        "consents": payload.consents,
+        "batchConfirmed": payload.batch_confirmed,
+        "batchConfirmationNote": payload.batch_confirmation_note,
+    }
+    progress["onboarding_status"] = "COMPLETED"
+    progress["onboarding_step"] = 5
+
+    if existing_user_data:
+        await supabase_db.update(
+            "user_data",
+            {"progress": progress, "updated_at": now},
+            {"user_id": student_id},
+        )
+    else:
+        await supabase_db.insert(
+            "user_data",
+            {"user_id": student_id, "progress": progress, "updated_at": now},
+        )
+
+    return {
+        "success": True,
+        "studentId": student_id,
+        "classId": payload.class_id,
+        "subjectCount": len(course_lookup),
+        "batchLabel": batch.get("label"),
+    }
+
+
 @router.get("/attendance")
 async def get_student_attendance_summary(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "student":
@@ -1206,7 +1534,7 @@ async def list_student_assignments(current_user: dict = Depends(get_current_user
         status_value = "pending"
         if submission:
             status_value = "graded" if submission.get("marks") or submission.get("score") else "submitted"
-        elif assignment.get("due_date") and assignment.get("due_date") < datetime.utcnow().isoformat():
+        elif assignment.get("due_date") and assignment.get("due_date") < datetime.now(timezone.utc).isoformat():
             status_value = "overdue"
 
         if status and status != "all" and status_value != status:
@@ -1234,7 +1562,7 @@ async def submit_student_assignment(
     assignment = await supabase_db.fetch_one("assignments", {"id": assignment_id})
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
-    if assignment.get("due_date") and assignment.get("due_date") < datetime.utcnow().isoformat():
+    if assignment.get("due_date") and assignment.get("due_date") < datetime.now(timezone.utc).isoformat():
         raise HTTPException(status_code=400, detail="Submission deadline has passed")
     if current_user.get("batch_id") != assignment.get("batch_id") or current_user.get("section") != assignment.get("section"):
         raise HTTPException(status_code=403, detail="This assignment is not assigned to your batch")
@@ -1254,7 +1582,7 @@ async def submit_student_assignment(
         "content_url": payload.get("content_url"),
         "text_content": payload.get("text_content"),
         "status": "submitted",
-        "submitted_at": datetime.utcnow().isoformat(),
+        "submitted_at": datetime.now(timezone.utc).isoformat(),
     }
     return await supabase_db.insert("submissions", data)
 

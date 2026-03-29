@@ -32,7 +32,7 @@ class UserDataStore:
             }
             
             result = await self.db.upsert("user_data", doc)
-            return result[0] if result else doc
+            return result or doc
         except Exception as e:
             log.warning("user_data_get_create_error", error=str(e), user_id=user_id)
             return {"user_id": user_id, "progress": {}, "notes": [], "quiz_history": []}

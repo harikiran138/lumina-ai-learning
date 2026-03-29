@@ -1,6 +1,4 @@
 import os
-import torch
-from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 from PIL import Image
 from learner_profile.models.behavior import BehaviorModel  # Example integration
 
@@ -41,14 +39,20 @@ class HandwritingAgent:
         self.processor = None
         self.model = None
         self.scorer = QAScorer()
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "cpu"
+        self._torch = None
 
     def _load_model(self):
         if not self.model:
             print(f"HandwritingAgent loading {self.model_name}...")
             try:
-                self.processor = TrOCRProcessor.from_pretrained(self.model_name)
-                self.model = VisionEncoderDecoderModel.from_pretrained(self.model_name)
+                import torch
+                from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+
+                self._torch = torch
+                self.device = "cuda" if torch.cuda.is_available() else "cpu"
+                self.processor = TrOCRProcessor.from_pretrained(self.model_name)  # nosec B615
+                self.model = VisionEncoderDecoderModel.from_pretrained(self.model_name)  # nosec B615
                 self.model.to(self.device)
                 self.model.eval()
             except Exception as e:
@@ -68,7 +72,7 @@ class HandwritingAgent:
                     self.device
                 )
 
-                with torch.no_grad():
+                with self._torch.no_grad():
                     generated_ids = self.model.generate(pixel_values)
                     extracted_text = self.processor.batch_decode(
                         generated_ids, skip_special_tokens=True

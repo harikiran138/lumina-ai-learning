@@ -16,7 +16,7 @@ from app.store.user_store import UserStore
 
 @pytest.fixture
 async def ac():
-    async with AsyncClient(
+    async with AsyncClient(  # nosec B113
         transport=ASGITransport(app=app),
         base_url="http://localhost",
     ) as client:

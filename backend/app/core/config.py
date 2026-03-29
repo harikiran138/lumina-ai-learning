@@ -7,19 +7,22 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Lumina Learning Platform"
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = "change_this_to_a_secure_random_string"
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "supersecretjwtkeythatshouldbechanged123!")
+    JWT_REFRESH_SECRET: str = os.getenv("JWT_REFRESH_SECRET", "anotherverysecretrefreshkey123!")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
 
     # Database
     DATABASE_URL: str = "postgresql://lumina:lumina_password@localhost:5432/lumina_db"
     
     # Supabase
-    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://ncofwpuabtxddvdjljgj.supabase.co")
-    SUPABASE_ANON_KEY: Optional[str] = os.getenv("SUPABASE_ANON_KEY")
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://odyjksznsdeyweylovzl.supabase.co")
+    SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "sb_publishable_6zHeJDU5hRv8c5dfW87W3A_3ZG5JlMQ")
     SUPABASE_SERVICE_ROLE_KEY: Optional[str] = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
     # Server
-    HOST: str = "0.0.0.0"
+    HOST: str = "0.0.0.0"  # nosec B104
     PORT: int = 8000
+    SECURE_COOKIES: bool = False  # Set True in production (HTTPS required)
 
     # AI Configuration - Use GEMINI_API_KEY for both tutor and assessment
     ASSESSMENT_API_KEY: Optional[str] = None

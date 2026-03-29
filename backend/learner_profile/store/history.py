@@ -1,21 +1,27 @@
+import json
 from datetime import datetime
-from app.database.manager import db
+from pathlib import Path
 
 
 class HistoryStore:
     """
-    MongoDB Historical Writer for Behavior Logs.
+    Local behavior log writer for learner profile events.
     """
 
-    @property
-    def collection(self):
-        return db.get_collection("behavior_logs")
+    def __init__(self):
+        self.path = Path(__file__).resolve().parents[2] / "data" / "behavior_logs.json"
 
     async def log_event(self, event: dict):
-        if self.collection is None:
-            return
-
         if "timestamp" not in event:
             event["timestamp"] = datetime.utcnow().isoformat()
 
-        await self.collection.insert_one(event)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        if self.path.exists():
+            try:
+                existing = json.loads(self.path.read_text())
+            except json.JSONDecodeError:
+                existing = []
+        else:
+            existing = []
+        existing.append(event)
+        self.path.write_text(json.dumps(existing, indent=2))

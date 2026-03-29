@@ -43,9 +43,9 @@ class PersonalizationStore:
     async def upsert_profile(self, profile: LearnerProfileRecord) -> LearnerProfileRecord:
         record = profile.model_dump(mode="json")
         try:
-            result = await self.db.upsert("learner_profiles", record)
+            result = await self.db.upsert("learner_profiles", record, on_conflict="user_id")
             if result:
-                return LearnerProfileRecord(**result[0])
+                return LearnerProfileRecord(**result)
             return profile
         except Exception as exc:
             log.warning("learner_profile_upsert_failed", user_id=profile.user_id, error=str(exc))
@@ -62,9 +62,9 @@ class PersonalizationStore:
     async def append_event(self, event: LearningEventRecord) -> LearningEventRecord:
         record = event.model_dump(mode="json")
         try:
-            result = await self.db.upsert("learning_events", record)
+            result = await self.db.upsert("learning_events", record, on_conflict="id")
             if result:
-                return LearningEventRecord(**result[0])
+                return LearningEventRecord(**result)
             return event
         except Exception as exc:
             log.warning("learning_event_insert_failed", user_id=event.user_id, error=str(exc))
@@ -91,9 +91,9 @@ class PersonalizationStore:
     ) -> InterventionRecommendation:
         record = recommendation.model_dump(mode="json")
         try:
-            result = await self.db.upsert("intervention_recommendations", record)
+            result = await self.db.upsert("intervention_recommendations", record, on_conflict="id")
             if result:
-                return InterventionRecommendation(**result[0])
+                return InterventionRecommendation(**result)
             return recommendation
         except Exception as exc:
             log.warning("intervention_upsert_failed", user_id=recommendation.user_id, error=str(exc))
@@ -126,9 +126,9 @@ class PersonalizationStore:
     async def upsert_rubric(self, rubric: RubricDefinition) -> RubricDefinition:
         record = rubric.model_dump(mode="json")
         try:
-            result = await self.db.upsert("assignment_rubrics", record)
+            result = await self.db.upsert("assignment_rubrics", record, on_conflict="assignment_id")
             if result:
-                return RubricDefinition(**result[0])
+                return RubricDefinition(**result)
             return rubric
         except Exception as exc:
             log.warning("rubric_upsert_failed", assignment_id=rubric.assignment_id, error=str(exc))
@@ -153,9 +153,9 @@ class PersonalizationStore:
     async def upsert_scorecard(self, scorecard: SubmissionScorecard) -> SubmissionScorecard:
         record = scorecard.model_dump(mode="json")
         try:
-            result = await self.db.upsert("submission_scorecards", record)
+            result = await self.db.upsert("submission_scorecards", record, on_conflict="submission_id")
             if result:
-                return SubmissionScorecard(**result[0])
+                return SubmissionScorecard(**result)
             return scorecard
         except Exception as exc:
             log.warning("scorecard_upsert_failed", submission_id=scorecard.submission_id, error=str(exc))

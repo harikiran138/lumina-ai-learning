@@ -12,6 +12,7 @@ import {
   DollarSign,
   ArrowUpRight
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface AIModel {
@@ -41,12 +42,12 @@ export default function AIModelHub() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [mRes, cRes] = await Promise.all([
-          fetch("/api/admin/ai/models"),
-          fetch("/api/admin/ai/costs")
+        const [models, costs] = await Promise.all([
+          api.getAiModels(),
+          api.getAiCosts(),
         ]);
-        setModels(await mRes.json());
-        setCosts(await cRes.json());
+        setModels(models || []);
+        setCosts(costs || {});
       } catch (err) {
         console.error("failed_to_load_ai_data", err);
       } finally {

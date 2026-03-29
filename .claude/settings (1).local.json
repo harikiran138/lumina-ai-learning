@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(rm:*)",
+      "Bash(python3:*)",
+      "Bash(npx tsc:*)",
+      "Bash(./node_modules/.bin/tsc:*)",
+      "Bash(yarn install:*)",
+      "Bash(npm install:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(.venv/bin/pip install:*)",
+      "Bash(npm test:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(python:*)",
+      "Bash(git:*)",
+      "Bash(npm run:*)",
+      "Bash(npm run:*)",
+      "mcp__claude_ai_Vercel__list_deployments",
+      "mcp__claude_ai_Vercel__get_deployment_build_logs",
+      "Bash(wc -c /Users/chepuriharikiran/.claude/projects/-Users-chepuriharikiran-Desktop-github-lumina-ai-learning/aea46d47-eca1-4140-87a4-17d12c5923bd/tool-results/mcp-claude_ai_Vercel-get_deployment_build_logs-1774654470744.txt)",
+      "Bash(head -c 500 /Users/chepuriharikiran/.claude/projects/-Users-chepuriharikiran-Desktop-github-lumina-ai-learning/aea46d47-eca1-4140-87a4-17d12c5923bd/tool-results/mcp-claude_ai_Vercel-get_deployment_build_logs-1774654470744.txt)",
+      "mcp__claude_ai_Vercel__web_fetch_vercel_url",
+      "mcp__claude_ai_Vercel__get_project",
+      "Bash(wc:*)",
+      "mcp__claude_ai_Vercel__get_runtime_logs",
+      "Bash(vercel project:*)",
+      "Bash(vercel curl:*)",
+      "Read(//Users/chepuriharikiran/.local/share/com.vercel.cli/**)",
+      "Read(//Users/chepuriharikiran/Library/**)",
+      "Read(//Users/chepuriharikiran/.vercel/**)",
+      "Bash(echo searching... find /Users/chepuriharikiran -name auth.json -path *vercel*)",
+      "Bash(vercel --token)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ],
+  "enableAllProjectMcpServers": true
+}

@@ -35,6 +35,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { ClientOnlyChart } from '@/components/charts/ClientOnlyChart';
 import Link from 'next/link';
 
 const GlassCard: React.FC<{ className?: string; children: React.ReactNode }> = ({ className, children }) => (
@@ -231,31 +232,33 @@ export default function CounselorDashboard() {
            <GlassCard className="p-8">
               <h2 className="text-xl font-bold text-white mb-8 lowercase tracking-tighter">Sentiment Flux</h2>
               <div className="h-48">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={sentimentTrend}>
-                       <defs>
-                          <linearGradient id="colorSentiment" x1="0" y1="0" x2="0" y2="1">
-                             <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3} />
-                             <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
-                          </linearGradient>
-                       </defs>
-                       <XAxis dataKey="day" hide />
-                       <YAxis hide />
-                       <Tooltip 
-                          content={({ active, payload }) => {
-                             if (active && payload && payload.length) {
-                                return (
-                                   <div className="p-2 rounded-lg bg-black/80 border border-white/10 text-[10px] font-bold text-white">
-                                      {payload[0].value}% Positivity
-                                   </div>
-                                );
-                             }
-                             return null;
-                          }}
-                       />
-                       <Area type="monotone" dataKey="sentiment" stroke="#F59E0B" fillOpacity={1} fill="url(#colorSentiment)" strokeWidth={3} />
-                    </AreaChart>
-                 </ResponsiveContainer>
+                 <ClientOnlyChart>
+                    <ResponsiveContainer width="100%" height="100%">
+                       <AreaChart data={sentimentTrend}>
+                          <defs>
+                             <linearGradient id="colorSentiment" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
+                             </linearGradient>
+                          </defs>
+                          <XAxis dataKey="day" hide />
+                          <YAxis hide />
+                          <Tooltip 
+                             content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                   return (
+                                      <div className="p-2 rounded-lg bg-black/80 border border-white/10 text-[10px] font-bold text-white">
+                                         {payload[0].value}% Positivity
+                                      </div>
+                                   );
+                                }
+                                return null;
+                             }}
+                          />
+                          <Area type="monotone" dataKey="sentiment" stroke="#F59E0B" fillOpacity={1} fill="url(#colorSentiment)" strokeWidth={3} />
+                       </AreaChart>
+                    </ResponsiveContainer>
+                 </ClientOnlyChart>
               </div>
               <div className="mt-6 flex items-center justify-between">
                  <div className="flex items-center gap-2">
@@ -269,22 +272,24 @@ export default function CounselorDashboard() {
            <GlassCard className="p-8">
               <h2 className="text-xl font-bold text-white mb-8 lowercase tracking-tighter">Cohort Wellness</h2>
               <div className="h-56 flex items-center justify-center">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                       <Pie
-                          data={riskDistributionData}
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="value"
-                       >
-                          {riskDistributionData.map((entry, index) => (
-                             <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                          ))}
-                       </Pie>
-                       <Tooltip />
-                    </PieChart>
-                 </ResponsiveContainer>
+                 <ClientOnlyChart>
+                    <ResponsiveContainer width="100%" height="100%">
+                       <PieChart>
+                          <Pie
+                             data={riskDistributionData}
+                             innerRadius={60}
+                             outerRadius={80}
+                             paddingAngle={5}
+                             dataKey="value"
+                          >
+                             {riskDistributionData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                             ))}
+                          </Pie>
+                          <Tooltip />
+                       </PieChart>
+                    </ResponsiveContainer>
+                 </ClientOnlyChart>
               </div>
               <div className="space-y-3 mt-4">
                  {riskDistributionData.map((risk) => (

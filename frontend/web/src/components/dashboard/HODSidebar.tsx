@@ -70,7 +70,7 @@ export default function HODSidebar({
         onHoverChange?.(false);
       }}
       className={cn(
-        "peer fixed left-4 top-4 bottom-4 glass-v2 border-white/5 shadow-premium z-50 transition-all duration-500 ease-in-out lg:translate-x-0 lg:flex flex-col overflow-hidden",
+        "peer fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 transition-all duration-500 ease-in-out lg:translate-x-0 lg:flex flex-col overflow-hidden",
         !isHovered ? "lg:w-20" : "lg:w-64",
         isOpen
           ? "translate-x-0 bg-black/95 w-64 flex"
@@ -83,18 +83,9 @@ export default function HODSidebar({
           !isHovered ? "h-16 px-4 justify-center" : "h-20 px-6",
         )}
       >
-        <Link href="/" className="text-2xl font-display font-bold flex items-center gap-2">
-          <span className="gradient-text">{!isHovered ? "L" : "Lumina"}</span>
-          <span
-            className={cn(
-              "transition-all duration-500",
-              !isHovered
-                ? "opacity-0 w-0 overflow-hidden"
-                : "opacity-100 w-auto",
-            )}
-          >
-            🛡️
-          </span>
+        <Link href="/" className="text-2xl font-display font-black flex items-center gap-2">
+          <span className="text-white">{!isHovered ? "L" : "Lumina"}</span>
+          <span className="text-lumina-highlight">AI</span>
         </Link>
         <button
           onClick={onClose}
@@ -117,7 +108,7 @@ export default function HODSidebar({
                 "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
                 !isHovered ? "justify-center px-0" : "px-4",
                 isActive
-                  ? "bg-lumina-primary/10 text-lumina-primary border border-lumina-primary/20 shadow-gold-glow"
+                  ? "bg-lumina-highlight/15 text-lumina-highlight border border-lumina-highlight/30 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                   : "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
               )}
             >
@@ -126,7 +117,7 @@ export default function HODSidebar({
                   "h-5 w-5 transition-all duration-500 shrink-0",
                   !isHovered ? "mr-0 scale-110" : "mr-3",
                   isActive
-                    ? "text-lumina-primary"
+                    ? "text-lumina-highlight"
                     : "text-gray-500 group-hover:text-gray-300",
                 )}
               />

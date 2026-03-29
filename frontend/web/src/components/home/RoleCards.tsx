@@ -67,7 +67,7 @@ const roles = [
 
 export default function RoleCards() {
   return (
-    <section id="roles" className="py-24 relative overflow-hidden bg-slate-950">
+    <section id="roles" className="py-24 relative overflow-hidden bg-black">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-4xl mx-auto mb-24">
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-6 font-display leading-tight">
@@ -80,23 +80,27 @@ export default function RoleCards() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
           {roles.map((role, index) => (
-            <div key={index} className="glass-v2-primary p-7 flex flex-col items-center text-center group hover:-translate-y-2 transition-all duration-500">
-              <div className="w-16 h-16 rounded-2xl bg-lumina-primary/10 flex items-center justify-center mb-6 group-hover:bg-lumina-primary/20 transition-all duration-300 transform group-hover:rotate-6 shadow-primary-glow">
-                <role.icon className="h-8 w-8 text-lumina-primary" />
+            <div key={index} className="glass-v2-gold p-7 flex flex-col items-center text-center group hover:-translate-y-2 transition-all duration-500 cursor-default">
+              <div className="w-16 h-16 rounded-2xl bg-lumina-highlight/10 flex items-center justify-center mb-6 group-hover:bg-lumina-highlight/20 transition-all duration-300 transform group-hover:rotate-6 shadow-[0_0_30px_rgba(250,204,21,0.1)] group-hover:shadow-[0_0_40px_rgba(250,204,21,0.2)]">
+                <role.icon className="h-8 w-8 text-lumina-highlight" />
               </div>
               <h3 className="text-lg font-bold text-white mb-2 font-display">{role.title}</h3>
-              <p className="text-xs text-lumina-accent mb-4 font-bold uppercase tracking-wider">{role.purpose}</p>
+              <p className="text-[10px] text-amber-500 mb-4 font-black uppercase tracking-[0.15em]">{role.purpose}</p>
               <div className="mt-auto pt-5 border-t border-white/5 w-full">
                 <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold mb-2">Access Boundary</p>
-                <p className="text-xs text-slate-400 font-sans leading-tight">{role.dataAccess}</p>
+                <p className="text-xs text-slate-400 font-sans leading-tight min-h-[2.5rem] flex items-center justify-center">{role.dataAccess}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
+      {/* Ambient Glows */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-lumina-highlight/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
+
       {/* Background Neural Grid */}
-      <div className="absolute inset-0 opacity-[0.03] neural-mesh pointer-events-none" />
+      <div className="absolute inset-0 opacity-[0.02] neural-mesh pointer-events-none" />
     </section>
   );
 }

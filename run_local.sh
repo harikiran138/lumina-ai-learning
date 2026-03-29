@@ -12,6 +12,15 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+PYTHON_BIN="${PYTHON_BIN:-}"
+if [ -z "$PYTHON_BIN" ]; then
+    if command -v python3.11 >/dev/null 2>&1; then
+        PYTHON_BIN="python3.11"
+    elif command -v python3 >/dev/null 2>&1; then
+        PYTHON_BIN="python3"
+    fi
+fi
+
 # Check if .env exists
 if [ ! -f .env ]; then
     echo -e "${RED}❌ .env file not found!${NC}"
@@ -27,11 +36,16 @@ export $(grep -v '^#' .env | xargs)
 echo -e "\n${YELLOW}📋 Checking dependencies...${NC}"
 
 # Check Python
-if ! command -v python3 &> /dev/null; then
+if [ -z "$PYTHON_BIN" ]; then
     echo -e "${RED}❌ Python 3 is not installed${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓ Python 3 found${NC}"
+echo -e "${GREEN}✓ Python found: $($PYTHON_BIN --version 2>&1)${NC}"
+
+PYTHON_VERSION="$($PYTHON_BIN -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+if ! $PYTHON_BIN -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'; then
+    echo -e "${YELLOW}⚠️  Python ${PYTHON_VERSION} detected. Python 3.10+ is recommended, and Python 3.11+ matches the project setup guides.${NC}"
+fi
 
 # Check Node.js
 if ! command -v node &> /dev/null; then
@@ -63,7 +77,7 @@ echo -e "${GREEN}✓ Directories created${NC}"
 if [ ! -d "backend/.venv" ] && [ ! -d ".venv" ]; then
     echo -e "\n${YELLOW}📦 Installing backend dependencies...${NC}"
     cd backend
-    python3 -m venv .venv
+    $PYTHON_BIN -m venv .venv
     source .venv/bin/activate
     pip install --upgrade pip
     pip install -r requirements.txt

@@ -1,493 +1,278 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import React, { useState, useEffect } from "react";
+import { 
+  ShieldCheck, 
+  ArrowRight, 
+  User, 
+  GraduationCap, 
+  School,
+  Lock,
+  Mail,
+  Building2,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ChevronRight
+} from "lucide-react";
 import { api } from "@/lib/api";
-import { loginSchema, registerSchema, type LoginFormData, type RegisterFormData } from "@/lib/schemas/auth";
-import { Mail, Lock, User, ArrowLeft, Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
+import { useAuthStore } from "@/store/useAuthStore";
+import Image from "next/image";
+
+type Role = "student" | "faculty" | "admin";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
+  const [activeRole, setActiveRole] = useState<Role>("student");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  
+  const setUser = useAuthStore(state => state.setUser);
+  const user = useAuthStore(state => state.user);
 
-  const {
-    register: registerSignIn,
-    handleSubmit: handleSignInSubmit,
-    formState: { errors: signInErrors, isSubmitting: isSigningIn },
-    setValue: setSignInValue,
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-  });
-
-  const {
-    register: registerSignUp,
-    handleSubmit: handleSignUpSubmit,
-    formState: { errors: signUpErrors, isSubmitting: isSigningUp },
-  } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: { role: "student" },
-  });
-
+  // Auto-redirect if already logged in
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const user = await api.getCurrentUser();
-        if (user) {
-          if ((user as any).must_change_password) {
-            router.push("/auth/reset-password");
-            return;
-          }
-          const routes: Record<string, string> = {
-            super_admin: "/admin",
-            admin: "/admin/dashboard",
-            college_admin: "/college",
-            hod: "/hod",
-            faculty: "/faculty",
-            teacher: "/teacher/dashboard",
-            student: "/student/dashboard",
-          };
-          window.location.href = routes[user.role] || "/student/dashboard";
+    if (user) {
+      const routes: Record<string, string> = {
+        super_admin: "/admin/dashboard",
+        college_admin: "/college",
+        hod: "/hod",
+        faculty: "/faculty",
+        student: "/student/dashboard",
+      };
+      const redirectPath = routes[user.role] || "/dashboard";
+      window.location.href = redirectPath;
+    }
+  }, [user]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const loggedInUser = await api.login({
+        identifier: identifier.trim(),
+        password,
+        role_hint: activeRole === "admin" ? "college_admin" : activeRole
+      });
+
+      if (loggedInUser) {
+        setUser(loggedInUser);
+        
+        // Handle forcing password change
+        if (loggedInUser.mustChangePassword) {
+          window.location.href = "/change-password";
+          return;
         }
-      } catch (e) {
-        console.error("Session check failed:", e);
-      }
-    };
-    checkSession();
-  }, []);
 
-  const performLogin = async (loginEmail: string, loginPassword: string) => {
-    try {
-      const user = await api.login(loginEmail, loginPassword);
-      if (user?.mustChangePassword) {
-        window.location.href = "/change-password";
-        return;
-      }
-      if (user && (user as any).must_change_password) {
-        window.location.href = "/auth/reset-password";
-        return;
-      }
-      if (user && (user as any).onboardingStep !== undefined && (user as any).onboardingStep < 5) {
-        window.location.href = "/onboarding";
-        return;
-      }
+        // Handle onboarding
+        if (loggedInUser.onboardingStep !== undefined && loggedInUser.onboardingStep < 5) {
+          window.location.href = "/onboarding";
+          return;
+        }
 
-      const roleRoutes: Record<string, string> = {
-        super_admin: "/admin/dashboard",
-        admin: "/admin/dashboard",
-        college_admin: "/college",
-        hod: "/hod",
-        faculty: "/faculty",
-        teacher: "/teacher/dashboard",
-        student: "/student/dashboard",
-      };
-
-      if (user && user.role) {
-        window.location.href = roleRoutes[user.role] || "/student/dashboard";
-      } else {
-        window.location.href = "/student/dashboard";
+        // Role-based routing
+        const routes: Record<string, string> = {
+          super_admin: "/admin/dashboard",
+          college_admin: "/college",
+          hod: "/hod",
+          faculty: "/faculty",
+          student: "/student/dashboard",
+        };
+        
+        window.location.href = routes[loggedInUser.role] || "/dashboard";
       }
-    } catch (error: any) {
-      const message = error.message || "Login failed";
-      toast.error(message);
+    } catch (err: any) {
+      setError(err.message || "Invalid credentials. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  const onSignIn = async (data: LoginFormData) => {
-    await performLogin(data.email, data.password);
-  };
-
-  const onSignUp = async (data: RegisterFormData) => {
-    try {
-      const newUser = {
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        role: data.role ?? "student",
-        status: "active" as const,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`,
-        preferences: { theme: "dark", notifications: true },
-        createdAt: new Date().toISOString(),
-      };
-      const user = await api.createUser(newUser);
-      const roleRoutes: Record<string, string> = {
-        super_admin: "/admin/dashboard",
-        admin: "/admin/dashboard",
-        college_admin: "/college",
-        hod: "/hod",
-        faculty: "/faculty",
-        teacher: "/teacher/dashboard",
-        student: "/student/dashboard",
-      };
-
-      if (user?.role === "student" || user?.role === "teacher" || user?.role === "hod" || user?.role === "faculty" || user?.role === "college_admin") {
-        window.location.href = "/onboarding";
-      } else if (user && user.role) {
-        window.location.href = roleRoutes[user.role] || "/student/dashboard";
-      } else {
-        window.location.href = "/student/dashboard";
-      }
-    } catch (error: any) {
-      toast.error(error.message || "Signup failed");
-    }
-  };
-
-  const quickLogin = async (role: string) => {
-    const defaultUsers: Record<string, { email: string; password: string }> = {
-      admin: { email: "admin@lumina.ai", password: "DemoPassword123!" },
-      teacher: { email: "teacher@lumina.ai", password: "DemoPassword123!" },
-      student: { email: "student@lumina.ai", password: "DemoPassword123!" },
-      parent: { email: "parent@lumina.ai", password: "DemoPassword123!" },
-      mentor: { email: "mentor@lumina.ai", password: "DemoPassword123!" },
-      counselor: { email: "counselor@lumina.ai", password: "DemoPassword123!" },
-      researcher: { email: "researcher@lumina.ai", password: "DemoPassword123!" },
-      content_creator: { email: "creator@lumina.ai", password: "DemoPassword123!" },
-    };
-    const userData = defaultUsers[role];
-    if (userData) {
-      await performLogin(userData.email, userData.password);
-    }
-  };
-
-  const isLoading = isSigningIn || isSigningUp;
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-black text-white transition-colors duration-300 relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-lumina-primary/10 rounded-full blur-[100px] animate-pulse-slow"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-lumina-secondary/10 rounded-full blur-[100px] animate-pulse-slow"></div>
-      </div>
-
-      <div className="absolute top-4 right-4 z-20">
-        <button
-          id="theme-toggle"
-          suppressHydrationWarning
-          className="p-2 rounded-lg glass text-lumina-primary hover:bg-lumina-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lumina-primary"
-          aria-label="Toggle theme"
-        >
-          <span className="text-xl" aria-hidden="true">🌓</span>
-        </button>
-      </div>
-
-      <div className="absolute top-4 left-4 z-20">
-        <Link
-          href="/"
-          className="p-2 rounded-lg flex items-center text-gray-400 hover:text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" aria-hidden="true" />
-          <span className="font-medium">Back</span>
-        </Link>
-      </div>
-
-      <div className="max-w-md w-full space-y-8 relative z-10 backdrop-blur-2xl bg-white/5 p-8 rounded-3xl border border-white/10 shadow-2xl">
-        <div>
-          <Link href="/" className="flex justify-center text-3xl font-bold">
-            <span className="gradient-text">Lumina</span> ✨
-          </Link>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-            {activeTab === "signin" ? "Welcome Back" : "Create Account"}
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-400">
-            {activeTab === "signin"
-              ? "Enter your details to access your dashboard"
-              : "Join our learning community today"}
-          </p>
-        </div>
-
-        <div className="flex justify-center rounded-xl bg-black/40 p-1 border border-white/10">
-          <button
-            suppressHydrationWarning
-            onClick={() => setActiveTab("signin")}
-            className={`w-full py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lumina-primary ${activeTab === "signin"
-                ? "bg-lumina-primary text-black shadow-lg shadow-lumina-primary/20"
-                : "text-gray-400 hover:text-white hover:bg-white/5"
-              }`}
-          >
-            Sign In
-          </button>
-          <button
-            suppressHydrationWarning
-            onClick={() => setActiveTab("signup")}
-            className={`w-full py-2.5 px-4 rounded-lg text-sm font-bold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lumina-primary ${activeTab === "signup"
-                ? "bg-lumina-primary text-black shadow-lg shadow-lumina-primary/20"
-                : "text-gray-400 hover:text-white hover:bg-white/5"
-              }`}
-          >
-            Sign Up
-          </button>
-        </div>
-
-        {/* Demo Login Buttons — only visible when NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS=true */}
-        {process.env.NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS === 'true' && (
-        <div className="flex flex-wrap justify-center gap-2 mt-4">
-          <button type="button" suppressHydrationWarning onClick={() => quickLogin("student")} className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lumina-primary">Student</button>
-          <button type="button" suppressHydrationWarning onClick={() => quickLogin("teacher")} className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lumina-primary">Teacher</button>
-          <button type="button" suppressHydrationWarning onClick={() => quickLogin("parent")} className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lumina-primary">Parent</button>
-          <button type="button" suppressHydrationWarning onClick={() => quickLogin("mentor")} className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lumina-primary">Mentor</button>
-          <button type="button" suppressHydrationWarning onClick={() => quickLogin("counselor")} className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lumina-primary">Counselor</button>
-          <button type="button" suppressHydrationWarning onClick={() => quickLogin("researcher")} className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lumina-primary">Researcher</button>
-          <button type="button" suppressHydrationWarning onClick={() => quickLogin("content_creator")} className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 py-1 px-2 rounded border border-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lumina-primary">Creator</button>
-        </div>
-        )}
-
-        {activeTab === "signin" ? (
-          <form
-            id="signin-form"
-            className="mt-8 space-y-6"
-            onSubmit={handleSignInSubmit(onSignIn)}
-            noValidate
-          >
-            <div className="space-y-5">
-              <div>
-                <label htmlFor="signin-email" className="sr-only">Email address</label>
-                <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-lumina-primary transition-colors w-5 h-5" aria-hidden="true" />
-                  <input
-                    id="signin-email"
-                    type="email"
-                    autoComplete="email"
-                    suppressHydrationWarning
-                    {...registerSignIn("email")}
-                    aria-describedby={signInErrors.email ? "signin-email-error" : undefined}
-                    aria-invalid={!!signInErrors.email}
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus-visible:ring-2 focus-visible:ring-lumina-primary/50 focus-visible:border-lumina-primary outline-none transition-all placeholder:text-sm"
-                    placeholder="Email address"
-                  />
-                </div>
-                {signInErrors.email && (
-                  <p id="signin-email-error" className="text-sm text-red-400 mt-1" role="alert">
-                    {signInErrors.email.message}
-                  </p>
-                )}
+    <div className="min-h-screen bg-black text-slate-100 flex overflow-hidden">
+      {/* Left Panel: Hero Section */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-stone-950">
+        <Image 
+          src="/images/hero-yellow.png"
+          alt="Lumina Hero"
+          fill
+          className="object-cover opacity-60 mix-blend-luminosity grayscale group-hover:grayscale-0 transition-all duration-1000"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-tr from-black via-black/40 to-transparent" />
+        
+        <div className="relative z-10 p-16 flex flex-col justify-between h-full w-full">
+          <div>
+            <div className="flex items-center gap-3 mb-8 group cursor-pointer">
+              <div className="relative w-12 h-12 transition-transform duration-500 group-hover:rotate-[360deg] group-hover:scale-110">
+                <Image src="/images/logo-yellow.png" alt="Lumina Logo" fill className="object-contain" />
               </div>
-
-              <div>
-                <label htmlFor="signin-password" className="sr-only">Password</label>
-                <div className="relative group">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-lumina-primary transition-colors w-5 h-5" aria-hidden="true" />
-                  <input
-                    id="signin-password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    suppressHydrationWarning
-                    {...registerSignIn("password")}
-                    aria-describedby={signInErrors.password ? "signin-password-error" : undefined}
-                    aria-invalid={!!signInErrors.password}
-                    className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus-visible:ring-2 focus-visible:ring-lumina-primary/50 focus-visible:border-lumina-primary outline-none transition-all placeholder:text-sm"
-                    placeholder="Password"
-                  />
-                  <button
-                    type="button"
-                    suppressHydrationWarning
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-lumina-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lumina-primary rounded"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" aria-hidden="true" /> : <Eye className="w-5 h-5" aria-hidden="true" />}
-                  </button>
-                </div>
-                {signInErrors.password && (
-                  <p id="signin-password-error" className="text-sm text-red-400 mt-1" role="alert">
-                    {signInErrors.password.message}
-                  </p>
-                )}
-              </div>
+              <span className="text-2xl font-black tracking-tighter text-white font-display uppercase">Lumina</span>
             </div>
+            
+            <h1 className="text-5xl lg:text-6xl font-black leading-[1.1] mb-6 font-display">
+              <span className="gradient-text-gold">Elevate Learning </span><br />
+              <span className="text-white">With Intelligence</span>
+            </h1>
+            <p className="text-slate-400 text-lg max-w-sm leading-relaxed font-sans">
+              Experience the next generation of digital education. Lumina fuses advanced AI with 
+              human pedagogical integrity to empower every student.
+            </p>
+          </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
+          <div className="grid grid-cols-2 gap-8 max-w-md font-display">
+            <div className="flex flex-col gap-2">
+              <div className="text-lumina-highlight text-4xl font-black">98%</div>
+              <div className="text-slate-500 text-xs font-bold uppercase tracking-widest">Student Engagement</div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="text-amber-500 text-4xl font-black">42%</div>
+              <div className="text-slate-500 text-xs font-bold uppercase tracking-widest">Mastery Velocity</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel: Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-16 relative bg-black">
+        {/* Ambient background glow */}
+        <div className="absolute top-1/4 -right-1/4 w-[600px] h-[600px] bg-lumina-highlight/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-1/4 -left-1/4 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="w-full max-w-md relative z-10">
+          <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
+             <div className="relative w-10 h-10">
+                <Image src="/images/logo-yellow.png" alt="Lumina Logo" fill className="object-contain" />
+              </div>
+            <span className="text-xl font-black tracking-tighter text-white font-display uppercase">Lumina</span>
+          </div>
+
+          <div className="mb-10 text-center lg:text-left">
+            <h2 className="text-4xl font-black text-white mb-3 font-display tracking-tight">Access Portal</h2>
+            <p className="text-slate-500 font-sans">Sign in to sync your neural learning graph.</p>
+          </div>
+
+          {/* Role Switcher */}
+          <div className="flex p-1.5 bg-stone-900/50 backdrop-blur-3xl rounded-2xl mb-8 border border-white/5">
+            {[
+              { id: "student", label: "Student", icon: GraduationCap },
+              { id: "faculty", label: "Faculty", icon: School },
+              { id: "admin", label: "Admin", icon: ShieldCheck },
+            ].map((role) => (
+              <button
+                key={role.id}
+                onClick={() => setActiveRole(role.id as Role)}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-300 font-sans ${
+                  activeRole === role.id
+                    ? "bg-lumina-highlight text-black shadow-[0_8px_24px_rgba(250,204,21,0.25)]"
+                    : "text-slate-500 hover:text-slate-200 hover:bg-white/5"
+                }`}
+              >
+                <role.icon size={16} />
+                {role.label}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-4 font-sans">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none group-focus-within:text-lumina-highlight text-slate-600 transition-colors">
+                  {activeRole === "student" ? <User size={20} /> : 
+                   activeRole === "faculty" ? <Building2 size={20} /> : 
+                   <Mail size={20} />}
+                </div>
                 <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  suppressHydrationWarning
-                  className="h-4 w-4 rounded border-gray-700 bg-white/5 text-lumina-primary focus:ring-lumina-primary/50"
+                  type="text"
+                  placeholder={
+                    activeRole === "student" ? "Roll Number / Student ID" : 
+                    activeRole === "faculty" ? "Faculty ID or Portal Email" : 
+                    "Administrator Identifier"
+                  }
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  className="w-full bg-stone-900/40 border border-white/5 text-white rounded-2xl py-4.5 pl-14 pr-4 focus:ring-2 focus:ring-lumina-highlight/40 focus:border-lumina-highlight outline-none transition-all placeholder:text-slate-700 font-medium"
+                  required
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-xs text-gray-400">
-                  Remember me
-                </label>
               </div>
-              <div className="text-sm">
-                <a href="#" className="font-medium text-lumina-primary hover:text-yellow-400 text-xs">
-                  Forgot password?
-                </a>
+
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none group-focus-within:text-lumina-highlight text-slate-600 transition-colors">
+                  <Lock size={20} />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Security Key"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-stone-900/40 border border-white/5 text-white rounded-2xl py-4.5 pl-14 pr-14 focus:ring-2 focus:ring-lumina-highlight/40 focus:border-lumina-highlight outline-none transition-all placeholder:text-slate-700 font-medium"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-5 flex items-center text-slate-600 hover:text-lumina-highlight transition-colors"
+                >
+                  {showPassword ? <span className="text-[10px] font-black uppercase tracking-widest">Hide</span> : <span className="text-[10px] font-black uppercase tracking-widest">Show</span>}
+                </button>
               </div>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                suppressHydrationWarning
-                className="glass-button w-full flex justify-center py-3 px-4 text-sm font-bold shadow-lg shadow-lumina-primary/20 transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lumina-primary disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isSigningIn ? (
-                  <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  "Sign In"
-                )}
+            {error && (
+              <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                <AlertCircle className="text-red-500 mt-0.5" size={18} />
+                <p className="text-sm text-red-200/80 leading-tight font-medium">{error}</p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between py-1 font-sans">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative w-6 h-6 flex items-center justify-center">
+                  <input type="checkbox" className="peer absolute opacity-0 w-full h-full cursor-pointer" />
+                  <div className="w-5 h-5 rounded-lg border border-white/10 bg-stone-900 peer-checked:bg-lumina-highlight peer-checked:border-lumina-highlight transition-all flex items-center justify-center shadow-inner">
+                    <CheckCircle2 size={14} className="text-black scale-0 peer-checked:scale-100 transition-transform" />
+                  </div>
+                </div>
+                <span className="text-sm text-slate-500 group-hover:text-slate-400 font-medium tracking-tight">Keep Session Active</span>
+              </label>
+              <button type="button" className="text-sm font-bold text-lumina-highlight hover:text-amber-400 transition-colors tracking-tight">
+                Reset Access
               </button>
             </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full glass-button-highlight disabled:opacity-50 disabled:cursor-not-allowed text-black font-black py-4.5 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.98] text-lg uppercase tracking-widest shadow-[0_20px_40px_rgba(250,204,21,0.2)]"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="animate-spin" size={20} />
+                  <span>Synchronizing...</span>
+                </>
+              ) : (
+                <>
+                  <span>Initialize Lumina</span>
+                  <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
           </form>
-        ) : (
-          <form
-            id="signup-form"
-            className="mt-8 space-y-6"
-            onSubmit={handleSignUpSubmit(onSignUp)}
-            noValidate
-          >
-            <div className="space-y-5">
-              <div>
-                <label htmlFor="signup-name" className="sr-only">Full Name</label>
-                <div className="relative group">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-lumina-primary transition-colors w-5 h-5" aria-hidden="true" />
-                  <input
-                    id="signup-name"
-                    type="text"
-                    autoComplete="name"
-                    suppressHydrationWarning
-                    {...registerSignUp("name")}
-                    aria-describedby={signUpErrors.name ? "signup-name-error" : undefined}
-                    aria-invalid={!!signUpErrors.name}
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus-visible:ring-2 focus-visible:ring-lumina-primary/50 focus-visible:border-lumina-primary outline-none transition-all placeholder:text-sm"
-                    placeholder="Full Name"
-                  />
-                </div>
-                {signUpErrors.name && (
-                  <p id="signup-name-error" className="text-sm text-red-400 mt-1" role="alert">
-                    {signUpErrors.name.message}
-                  </p>
-                )}
-              </div>
 
-              <div>
-                <label htmlFor="signup-email" className="sr-only">Email address</label>
-                <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-lumina-primary transition-colors w-5 h-5" aria-hidden="true" />
-                  <input
-                    id="signup-email"
-                    type="email"
-                    autoComplete="email"
-                    suppressHydrationWarning
-                    {...registerSignUp("email")}
-                    aria-describedby={signUpErrors.email ? "signup-email-error" : undefined}
-                    aria-invalid={!!signUpErrors.email}
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus-visible:ring-2 focus-visible:ring-lumina-primary/50 focus-visible:border-lumina-primary outline-none transition-all placeholder:text-sm"
-                    placeholder="Email address"
-                  />
-                </div>
-                {signUpErrors.email && (
-                  <p id="signup-email-error" className="text-sm text-red-400 mt-1" role="alert">
-                    {signUpErrors.email.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="signup-password" className="sr-only">Password</label>
-                <div className="relative group">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-lumina-primary transition-colors w-5 h-5" aria-hidden="true" />
-                  <input
-                    id="signup-password"
-                    type={showSignupPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    suppressHydrationWarning
-                    {...registerSignUp("password")}
-                    aria-describedby={signUpErrors.password ? "signup-password-error" : undefined}
-                    aria-invalid={!!signUpErrors.password}
-                    className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus-visible:ring-2 focus-visible:ring-lumina-primary/50 focus-visible:border-lumina-primary outline-none transition-all placeholder:text-sm"
-                    placeholder="Password"
-                  />
-                  <button
-                    type="button"
-                    suppressHydrationWarning
-                    onClick={() => setShowSignupPassword(!showSignupPassword)}
-                    aria-label={showSignupPassword ? "Hide password" : "Show password"}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-lumina-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lumina-primary rounded"
-                  >
-                    {showSignupPassword ? <EyeOff className="w-5 h-5" aria-hidden="true" /> : <Eye className="w-5 h-5" aria-hidden="true" />}
-                  </button>
-                </div>
-                {signUpErrors.password && (
-                  <p id="signup-password-error" className="text-sm text-red-400 mt-1" role="alert">
-                    {signUpErrors.password.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="signup-confirm-password" className="sr-only">Confirm Password</label>
-                <div className="relative group">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-lumina-primary transition-colors w-5 h-5" aria-hidden="true" />
-                  <input
-                    id="signup-confirm-password"
-                    type="password"
-                    autoComplete="new-password"
-                    suppressHydrationWarning
-                    {...registerSignUp("confirmPassword")}
-                    aria-describedby={signUpErrors.confirmPassword ? "signup-confirm-error" : undefined}
-                    aria-invalid={!!signUpErrors.confirmPassword}
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus-visible:ring-2 focus-visible:ring-lumina-primary/50 focus-visible:border-lumina-primary outline-none transition-all placeholder:text-sm"
-                    placeholder="Confirm Password"
-                  />
-                </div>
-                {signUpErrors.confirmPassword && (
-                  <p id="signup-confirm-error" className="text-sm text-red-400 mt-1" role="alert">
-                    {signUpErrors.confirmPassword.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="role" className="sr-only">Select your role</label>
-                <div className="relative group">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-lumina-primary transition-colors w-5 h-5" aria-hidden="true" />
-                  <select
-                    id="role"
-                    {...registerSignUp("role")}
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus-visible:ring-2 focus-visible:ring-lumina-primary/50 focus-visible:border-lumina-primary outline-none transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled className="bg-gray-900 text-gray-400">Select your role</option>
-                    <option value="student" className="bg-gray-900 text-white">Student</option>
-                    <option value="teacher" className="bg-gray-900 text-white">Teacher</option>
-                    <option value="parent" className="bg-gray-900 text-white">Parent</option>
-                    <option value="mentor" className="bg-gray-900 text-white">Industry Mentor</option>
-                    <option value="counselor" className="bg-gray-900 text-white">Counselor</option>
-                    <option value="researcher" className="bg-gray-900 text-white">Researcher</option>
-                    <option value="content_creator" className="bg-gray-900 text-white">Content Creator</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                suppressHydrationWarning
-                className="glass-button w-full flex justify-center py-3 px-4 text-sm font-bold shadow-lg shadow-lumina-primary/20 transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lumina-primary disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isSigningUp ? (
-                  <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  "Create Account"
-                )}
+          <div className="mt-12 pt-8 border-t border-white/5 text-center font-sans">
+            <p className="text-slate-500 text-sm font-medium">
+              Awaiting credentials? <br className="sm:hidden" />
+              <button className="text-white font-bold hover:text-lumina-highlight transition-colors ml-1 inline-flex items-center gap-1 group">
+                Contact Institution Administration
+                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </button>
-            </div>
-          </form>
-        )}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

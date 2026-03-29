@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface Program {
@@ -31,37 +32,10 @@ export default function ProgramControl() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/admin/connections"); // Using connections or a dedicated endpoint
-        const data = await res.json();
-        
-        // Mocking some program details for the UI
-        const mockPrograms: Program[] = [
-          {
-            id: "prog-1",
-            program_name: "Computer Science - Bachelor V2.1",
-            institution_id: "inst-1",
-            duration: "4 years",
-            status: "active",
-            students_count: 1250
-          },
-          {
-            id: "prog-2",
-            program_name: "AI & Machine Learning - Advanced Track",
-            institution_id: "inst-1",
-            duration: "1 year",
-            status: "active",
-            students_count: 450
-          },
-          {
-            id: "prog-3",
-            program_name: "Digital Arts & Design - Foundation",
-            institution_id: "inst-2",
-            duration: "2 years",
-            status: "draft",
-            students_count: 0
-          }
-        ];
-        setPrograms(mockPrograms);
+        const institutions = await api.getInstitutions();
+        const instId = institutions?.[0]?.id;
+        const programData = instId ? await api.getPrograms(instId) : [];
+        setPrograms(programData || []);
       } catch (err) {
         console.error("failed_to_load_programs", err);
       } finally {
@@ -96,9 +70,9 @@ export default function ProgramControl() {
       </header>
 
       <div className="grid gap-6 md:grid-cols-3">
-        <StatCard label="Total Programs" value="24" sub="12 Professional Tracks" icon={Layers} />
-        <StatCard label="Enrolled Students" value="18.5k" sub="+8% from last intake" icon={Calendar} />
-        <StatCard label="System Throughput" value="94%" sub="Completion Rate" icon={CheckCircle2} />
+        <StatCard label="Total Programs" value={programs.length.toString()} sub="Active learning tracks" icon={Layers} />
+        <StatCard label="Enrolled Students" value="—" sub="Requires analytics endpoint" icon={Calendar} />
+        <StatCard label="System Throughput" value="—" sub="Requires analytics endpoint" icon={CheckCircle2} />
       </div>
 
       <div className="glass-v2 border-white/5 overflow-hidden">

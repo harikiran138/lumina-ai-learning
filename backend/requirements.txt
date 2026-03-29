@@ -35,7 +35,3 @@ ragas==0.1.1
 rank-bm25==0.2.2
 qdrant-client
 supabase==2.13.0
-postgrest==0.16.6
-gotrue==2.11.0
-storage3==0.8.2
-realtime==2.0.2
