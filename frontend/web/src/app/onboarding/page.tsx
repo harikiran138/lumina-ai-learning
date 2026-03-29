@@ -3,6 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import {
+  validateOptionalEmail,
+  validateOptionalPhone,
+  validateRequiredName,
+} from "@/lib/onboarding-validation";
+import { useOnboardingStore } from "@/store/useOnboardingStore";
 import { toast } from "sonner";
 import {
   ArrowRight,
@@ -47,6 +53,14 @@ type AssignmentDraft = {
   batchId: string;
   section: string;
   facultyId: string;
+};
+
+const ROLE_ROUTES: Record<Role, string> = {
+  super_admin: "/admin",
+  college_admin: "/college",
+  hod: "/hod/dashboard",
+  faculty: "/faculty/dashboard",
+  student: "/student/dashboard",
 };
 
 const STEP_ICONS: Record<number, any> = {
@@ -144,9 +158,12 @@ const FACULTY_GOAL_OPTIONS = [
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const saveSnapshot = useOnboardingStore((state) => state.saveSnapshot);
+  const clearSnapshot = useOnboardingStore((state) => state.clearSnapshot);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
   const [role, setRole] = useState<Role>("student");
   const [currentStep, setCurrentStep] = useState(1);
   const [collegeId, setCollegeId] = useState<string | null>(null);
@@ -211,6 +228,7 @@ export default function OnboardingPage() {
   const [correctionMessage, setCorrectionMessage] = useState("");
   const [studentClasses, setStudentClasses] = useState<any[]>([]);
   const [studentBatchInfo, setStudentBatchInfo] = useState<any | null>(null);
+  const [studentIssues, setStudentIssues] = useState<Record<string, boolean>>({});
   const [studentClassId, setStudentClassId] = useState("");
   const [learningStyles, setLearningStyles] = useState<string[]>([]);
   const [skillLevels, setSkillLevels] = useState<Record<string, number>>({});
@@ -237,6 +255,7 @@ export default function OnboardingPage() {
     () => batchesList.find((item) => item.id === batchId) || null,
     [batchesList, batchId],
   );
+  const resolvedStudentBatch = useMemo(() => studentBatchInfo || currentBatch || null, [studentBatchInfo, currentBatch]);
   const activeStudentSubjects = useMemo(() => {
     const selectedIds = selectedElectives.length ? new Set(selectedElectives) : null;
     return (subjectsList || []).filter((subject) => !selectedIds || selectedIds.has(subject.id));
@@ -264,6 +283,7 @@ export default function OnboardingPage() {
 
         const status = await api.getOnboardingStatus();
         const normalizedRole = status.role as Role;
+        const snapshot = useOnboardingStore.getState().snapshots[normalizedRole] || {};
         const progress = status.progress || {};
         const step1 = progress.step_1 || {};
         const step2 = progress.step_2 || {};
@@ -279,28 +299,29 @@ export default function OnboardingPage() {
         if (normalizedRole === "student") {
           setStudentProfile((prev) => ({
             ...prev,
-            fullName: step1.fullName || user.name || "",
-            registerNumber: step1.registerNumber || "",
-            dob: step1.dob || "",
-            phone: step4.phone || step1.phone || "",
-            emergencyContact: step4.emergencyContact || "",
-            parentEmail: step4.parentEmail || "",
-            photoUrl: step4.profilePhotoUrl || step4.photoUrl || "",
+            fullName: step1.fullName || snapshot.studentProfile?.fullName || user.name || "",
+            registerNumber: step1.registerNumber || snapshot.studentProfile?.registerNumber || "",
+            dob: step1.dob || snapshot.studentProfile?.dob || "",
+            phone: step4.phone || step1.phone || snapshot.studentProfile?.phone || "",
+            emergencyContact: step4.emergencyContact || snapshot.studentProfile?.emergencyContact || "",
+            parentEmail: step4.parentEmail || snapshot.studentProfile?.parentEmail || "",
+            photoUrl: step4.profilePhotoUrl || step4.photoUrl || snapshot.studentProfile?.photoUrl || "",
           }));
-          setSelectedElectives(step3.selectedElectives || []);
-          setConfirmBatch(step2.confirmBatch !== false);
-          setCorrectionMessage(step2.correctionMessage || "");
-          setStudentClassId(step5.classId || "");
-          setLearningStyles(step5.learningStyles || []);
-          setSkillLevels(step5.skillLevels || {});
-          setStudentGoal(step5.goal || "improve_weak_subjects");
-          setDeviceType(step5.deviceType || "both");
-          setInternetType(step5.internetType || "stable");
+          setSelectedElectives(step3.selectedElectives || snapshot.selectedElectives || []);
+          setConfirmBatch(step2.confirmBatch ?? snapshot.confirmBatch ?? true);
+          setCorrectionMessage(step2.correctionMessage || snapshot.correctionMessage || "");
+          setStudentClassId(step5.classId || snapshot.studentClassId || "");
+          setLearningStyles(step5.learningStyles || snapshot.learningStyles || []);
+          setSkillLevels(step5.skillLevels || snapshot.skillLevels || {});
+          setStudentGoal(step5.goal || snapshot.studentGoal || "improve_weak_subjects");
+          setDeviceType(step5.deviceType || snapshot.deviceType || "both");
+          setInternetType(step5.internetType || snapshot.internetType || "stable");
           setConsents(
             step5.consents || {
               teacherVerifiedAi: false,
               academicIntegrity: false,
               dataPolicy: false,
+              ...(snapshot.consents || {}),
             },
           );
         }
@@ -308,28 +329,29 @@ export default function OnboardingPage() {
         if (normalizedRole === "faculty") {
           setFacultyProfile((prev) => ({
             ...prev,
-            fullName: step1.fullName || user.name || "",
-            employeeId: step1.employeeId || "",
-            specialization: step3.specialization || "",
-            phone: step1.phone || step3.phone || "",
+            fullName: step1.fullName || snapshot.facultyProfile?.fullName || user.name || "",
+            employeeId: step1.employeeId || snapshot.facultyProfile?.employeeId || "",
+            specialization: step3.specialization || snapshot.facultyProfile?.specialization || "",
+            phone: step1.phone || step3.phone || snapshot.facultyProfile?.phone || "",
           }));
           setAssessmentPrefs((prev) => ({
             ...prev,
-            gradingScale: step4.gradingScale || prev.gradingScale,
-            minAttendancePercent: step4.minAttendancePercent || prev.minAttendancePercent,
-            latePolicy: step4.latePolicy || prev.latePolicy,
+            gradingScale: step4.gradingScale || snapshot.assessmentPrefs?.gradingScale || prev.gradingScale,
+            minAttendancePercent: step4.minAttendancePercent || snapshot.assessmentPrefs?.minAttendancePercent || prev.minAttendancePercent,
+            latePolicy: step4.latePolicy || snapshot.assessmentPrefs?.latePolicy || prev.latePolicy,
           }));
-          setConfirmedAssignmentIds(step5.confirmedAssignmentIds || step2.confirmedAssignmentIds || []);
-          setFacultyTeachingStyles(step5.teachingStyles || []);
-          setFacultySubjectConfidence(step5.subjectConfidence || {});
-          setFacultyGoal(step5.goal || "strengthen_fundamentals");
-          setFacultyDeviceType(step5.deviceType || "laptop");
-          setFacultyInternetType(step5.internetType || "stable");
+          setConfirmedAssignmentIds(step5.confirmedAssignmentIds || step2.confirmedAssignmentIds || snapshot.confirmedAssignmentIds || []);
+          setFacultyTeachingStyles(step5.teachingStyles || snapshot.facultyTeachingStyles || []);
+          setFacultySubjectConfidence(step5.subjectConfidence || snapshot.facultySubjectConfidence || {});
+          setFacultyGoal(step5.goal || snapshot.facultyGoal || "strengthen_fundamentals");
+          setFacultyDeviceType(step5.deviceType || snapshot.facultyDeviceType || "laptop");
+          setFacultyInternetType(step5.internetType || snapshot.facultyInternetType || "stable");
           setFacultyConsents(
             step5.consents || {
               teacherVerifiedAi: false,
               academicIntegrity: false,
               dataPolicy: false,
+              ...(snapshot.facultyConsents || {}),
             },
           );
         }
@@ -337,47 +359,50 @@ export default function OnboardingPage() {
         if (normalizedRole === "hod") {
           setDeptProfile((prev) => ({
             ...prev,
-            name: step1.name || prev.name,
-            abbreviation: step1.abbreviation || prev.abbreviation,
-            description: step1.description || "",
-            intakeStrength: step1.intakeStrength || "",
+            name: step1.name || snapshot.deptProfile?.name || prev.name,
+            abbreviation: step1.abbreviation || snapshot.deptProfile?.abbreviation || prev.abbreviation,
+            description: step1.description || snapshot.deptProfile?.description || "",
+            intakeStrength: step1.intakeStrength || snapshot.deptProfile?.intakeStrength || "",
           }));
-          setSubjects(step2.subjects?.length ? step2.subjects : [makeEmptySubject()]);
+          setSubjects(step2.subjects?.length ? step2.subjects : snapshot.subjects?.length ? snapshot.subjects : [makeEmptySubject()]);
           setBatches(step3.batches?.length ? step3.batches.map((batch: any) => ({
             year: String(batch.year || ""),
             label: batch.label || "",
             sections: stringifySections(batch.sections),
             currentSemester: String(batch.current_semester || batch.currentSemester || "1"),
-          })) : [makeEmptyBatch()]);
-          setAssignments(step4.assignments?.length ? step4.assignments : [makeEmptyAssignment()]);
+          })) : snapshot.batches?.length ? snapshot.batches : [makeEmptyBatch()]);
+          setAssignments(step4.assignments?.length ? step4.assignments : snapshot.assignments?.length ? snapshot.assignments : [makeEmptyAssignment()]);
         }
 
         if (normalizedRole === "college_admin" || normalizedRole === "super_admin") {
           setCollegeProfile((prev) => ({
             ...prev,
-            collegeName: step1.collegeName || prev.collegeName,
-            collegeCode: step1.collegeCode || prev.collegeCode,
-            city: step3.city || prev.city,
-            state: step3.state || prev.state,
-            logoUrl: step3.logoUrl || prev.logoUrl,
-            academicYear: step3.academicYear || prev.academicYear,
+            collegeName: step1.collegeName || snapshot.collegeProfile?.collegeName || prev.collegeName,
+            collegeCode: step1.collegeCode || snapshot.collegeProfile?.collegeCode || prev.collegeCode,
+            city: step3.city || snapshot.collegeProfile?.city || prev.city,
+            state: step3.state || snapshot.collegeProfile?.state || prev.state,
+            logoUrl: step3.logoUrl || snapshot.collegeProfile?.logoUrl || prev.logoUrl,
+            academicYear: step3.academicYear || snapshot.collegeProfile?.academicYear || prev.academicYear,
           }));
           setDepartments(step2.departments?.length ? step2.departments.map((dept: any) => ({
             name: dept.name || dept.department_name || "",
             abbreviation: dept.abbreviation || "",
             hodEmail: dept.hodEmail || "",
             intakeStrength: dept.intakeStrength ? String(dept.intakeStrength) : "",
-          })) : [makeEmptyDepartment()]);
+          })) : snapshot.departments?.length ? snapshot.departments : [makeEmptyDepartment()]);
           if (step4.loginPolicy) {
             setLoginPolicy(step4.loginPolicy);
+          } else if (snapshot.loginPolicy) {
+            setLoginPolicy(snapshot.loginPolicy);
           }
-          setActivateCollege(step4.activateCollege ?? true);
+          setActivateCollege(step4.activateCollege ?? snapshot.activateCollege ?? true);
         }
 
-        const nextStep = Math.max(1, Number(status.step || 1));
+        const nextStep = Math.max(1, Number(status.step || snapshot.currentStep || 1));
         if (nextStep >= 5) {
           await api.refreshSession().catch(() => undefined);
-          routeByRole(normalizedRole);
+          clearSnapshot(normalizedRole);
+          router.push(ROLE_ROUTES[normalizedRole] || "/");
           return;
         }
         setCurrentStep(nextStep);
@@ -389,7 +414,7 @@ export default function OnboardingPage() {
     };
 
     init();
-  }, [router]);
+  }, [router, clearSnapshot]);
 
   useEffect(() => {
     const loadDepartmentResources = async () => {
@@ -481,7 +506,8 @@ export default function OnboardingPage() {
 
         setStudentBatchInfo(options?.batch || null);
         setStudentClasses(options?.classes || []);
-        setStudentClassId((prev) => prev || options?.enrollment?.class_id || "");
+        setStudentIssues(options?.issues || {});
+        setStudentClassId((prev) => prev || options?.enrollment?.class_id || options?.preferredClassId || "");
         setSelectedElectives((prev) => (prev.length ? prev : options?.selectedSubjectIds || []));
         setLearningStyles((prev) => (prev.length ? prev : preferences.learning_styles || []));
         setSkillLevels((prev) => ({ ...(options?.skillLevels || {}), ...prev }));
@@ -538,23 +564,96 @@ export default function OnboardingPage() {
     });
   }, [role, activeFacultyAssignments]);
 
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    saveSnapshot(role, {
+      currentStep,
+      collegeId,
+      deptId,
+      batchId,
+      collegeProfile,
+      departments,
+      loginPolicy,
+      activateCollege,
+      deptProfile,
+      subjects,
+      batches,
+      assignments,
+      facultyProfile,
+      assessmentPrefs,
+      facultyTeachingStyles,
+      facultySubjectConfidence,
+      facultyGoal,
+      facultyDeviceType,
+      facultyInternetType,
+      facultyConsents,
+      studentProfile,
+      selectedElectives,
+      confirmBatch,
+      correctionMessage,
+      studentClassId,
+      learningStyles,
+      skillLevels,
+      studentGoal,
+      deviceType,
+      internetType,
+      consents,
+      confirmedAssignmentIds,
+    });
+  }, [
+    loading,
+    saveSnapshot,
+    role,
+    currentStep,
+    collegeId,
+    deptId,
+    batchId,
+    collegeProfile,
+    departments,
+    loginPolicy,
+    activateCollege,
+    deptProfile,
+    subjects,
+    batches,
+    assignments,
+    facultyProfile,
+    assessmentPrefs,
+    facultyTeachingStyles,
+    facultySubjectConfidence,
+    facultyGoal,
+    facultyDeviceType,
+    facultyInternetType,
+    facultyConsents,
+    studentProfile,
+    selectedElectives,
+    confirmBatch,
+    correctionMessage,
+    studentClassId,
+    learningStyles,
+    skillLevels,
+    studentGoal,
+    deviceType,
+    internetType,
+    consents,
+    confirmedAssignmentIds,
+  ]);
+
   const routeByRole = (targetRole: Role) => {
-    const routes: Record<Role, string> = {
-      super_admin: "/admin",
-      college_admin: "/college",
-      hod: "/hod/dashboard",
-      faculty: "/faculty/dashboard",
-      student: "/student/dashboard",
-    };
-    router.push(routes[targetRole] || "/");
+    router.push(ROLE_ROUTES[targetRole] || "/");
   };
 
   const handleSaveStep = async (handler: () => Promise<void>) => {
     setSaving(true);
+    setPageError(null);
     try {
       await handler();
     } catch (err: any) {
-      toast.error(err?.message || "Something went wrong. Please try again.");
+      const message = err?.message || "Something went wrong. Please try again.";
+      setPageError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -568,7 +667,15 @@ export default function OnboardingPage() {
     await api.updateOnboardingStep(5, finalPayload);
     await api.completeOnboarding();
     await api.refreshSession();
+    clearSnapshot(role);
     routeByRole(role);
+  };
+
+  const raiseIfInvalid = (...errors: Array<string | null>) => {
+    const firstError = errors.find(Boolean);
+    if (firstError) {
+      throw new Error(firstError);
+    }
   };
 
   const updateDepartmentDraft = (index: number, key: keyof DepartmentDraft, value: string) => {
@@ -589,9 +696,10 @@ export default function OnboardingPage() {
 
   const saveCollegeStep1 = () =>
     handleSaveStep(async () => {
-      if (!collegeProfile.collegeName.trim() || !collegeProfile.collegeCode.trim()) {
-        throw new Error("College name and code are required");
-      }
+      raiseIfInvalid(
+        validateRequiredName(collegeProfile.collegeName, "College name"),
+        collegeProfile.collegeCode.trim() ? null : "College code is required",
+      );
 
       let activeCollegeId = collegeId;
       if (!activeCollegeId) {
@@ -639,6 +747,9 @@ export default function OnboardingPage() {
       );
       if (!validDepartments.length) {
         throw new Error("Add at least one department with a name and abbreviation");
+      }
+      for (const dept of validDepartments) {
+        raiseIfInvalid(validateOptionalEmail(dept.hodEmail || "", "HOD email"));
       }
 
       const createdDepartments: any[] = [];
@@ -736,9 +847,10 @@ export default function OnboardingPage() {
       if (!deptId) {
         throw new Error("Department ID is missing. Refresh and try again.");
       }
-      if (!deptProfile.name.trim() || !deptProfile.abbreviation.trim()) {
-        throw new Error("Department name and abbreviation are required");
-      }
+      raiseIfInvalid(
+        validateRequiredName(deptProfile.name, "Department name"),
+        deptProfile.abbreviation.trim() ? null : "Department abbreviation is required",
+      );
 
       const updatedDepartment = await api.architectureUpdateDepartment(deptId, {
         department_name: deptProfile.name,
@@ -859,16 +971,18 @@ export default function OnboardingPage() {
 
   const saveFacultyStep1 = () =>
     handleSaveStep(async () => {
-      if (!facultyProfile.fullName.trim() || !facultyProfile.employeeId.trim()) {
-        throw new Error("Full name and employee ID are required");
-      }
+      raiseIfInvalid(
+        validateRequiredName(facultyProfile.fullName, "Full name"),
+        validateOptionalPhone(facultyProfile.phone, "Faculty phone number"),
+        facultyProfile.employeeId.trim() ? null : "Employee ID is required",
+      );
 
+      goToNextStep();
       await api.updateOnboardingStep(1, {
         fullName: facultyProfile.fullName,
         employeeId: facultyProfile.employeeId,
         phone: facultyProfile.phone,
       });
-      goToNextStep();
     });
 
   const saveFacultyStep2 = () =>
@@ -876,20 +990,20 @@ export default function OnboardingPage() {
       if (facultyAssignments.length && !confirmedAssignmentIds.length) {
         throw new Error("Confirm at least one linked engineering assignment");
       }
+      goToNextStep();
       await api.updateOnboardingStep(2, {
         confirmedAssignments: true,
         confirmedAssignmentIds,
       });
-      goToNextStep();
     });
 
   const saveFacultyStep3 = () =>
     handleSaveStep(async () => {
+      goToNextStep();
       await api.updateOnboardingStep(3, {
         specialization: facultyProfile.specialization,
         phone: facultyProfile.phone,
       });
-      goToNextStep();
     });
 
   const saveFacultyStep4 = () =>
@@ -898,8 +1012,8 @@ export default function OnboardingPage() {
         throw new Error("Grading scale is required");
       }
 
-      await api.updateOnboardingStep(4, assessmentPrefs);
       goToNextStep();
+      await api.updateOnboardingStep(4, assessmentPrefs);
     });
 
   const saveFacultyStep5 = () =>
@@ -932,48 +1046,64 @@ export default function OnboardingPage() {
         consents: facultyConsents,
       });
       await api.refreshSession();
+      clearSnapshot(role);
       routeByRole(role);
     });
 
   const saveStudentStep1 = () =>
     handleSaveStep(async () => {
-      if (!studentProfile.fullName.trim() || !studentProfile.registerNumber.trim() || !studentProfile.dob) {
-        throw new Error("Full name, register number, and date of birth are required");
+      raiseIfInvalid(
+        validateRequiredName(studentProfile.fullName, "Full name"),
+        validateOptionalPhone(studentProfile.phone, "Student phone number"),
+      );
+      if (!studentProfile.registerNumber.trim() || !studentProfile.dob) {
+        throw new Error("Register number and date of birth are required");
       }
 
+      goToNextStep();
       await api.updateOnboardingStep(1, {
         fullName: studentProfile.fullName,
         registerNumber: studentProfile.registerNumber,
         dob: studentProfile.dob,
         phone: studentProfile.phone,
       });
-      goToNextStep();
     });
 
   const saveStudentStep2 = () =>
     handleSaveStep(async () => {
+      if (confirmBatch && !resolvedStudentBatch && !batchId) {
+        throw new Error("Batch not found for your account. Use the enrollment code flow or ask your admin to link your batch.");
+      }
+      goToNextStep();
       await api.updateOnboardingStep(2, {
         batchId,
         confirmBatch,
         correctionMessage: correctionMessage.trim(),
       });
-      goToNextStep();
     });
 
   const saveStudentStep3 = () =>
     handleSaveStep(async () => {
+      if (!subjectsList.length) {
+        throw new Error("Subjects are not available for your batch yet. Ask your HOD/admin to map semester subjects before continuing.");
+      }
+      goToNextStep();
       await api.updateOnboardingStep(3, {
         selectedElectives,
       });
-      goToNextStep();
     });
 
   const saveStudentStep4 = () =>
     handleSaveStep(async () => {
+      raiseIfInvalid(
+        validateOptionalPhone(studentProfile.emergencyContact, "Emergency contact number"),
+        validateOptionalEmail(studentProfile.parentEmail, "Parent email"),
+      );
       if (!studentProfile.photoUrl.trim()) {
         throw new Error("Profile photo URL is required");
       }
 
+      goToNextStep();
       await api.updateOnboardingStep(4, {
         phone: studentProfile.phone,
         emergencyContact: studentProfile.emergencyContact,
@@ -981,7 +1111,6 @@ export default function OnboardingPage() {
         photoUrl: studentProfile.photoUrl,
         profilePhotoUrl: studentProfile.photoUrl,
       });
-      goToNextStep();
     });
 
   const saveStudentStep5 = () =>
@@ -993,8 +1122,14 @@ export default function OnboardingPage() {
       if (!confirmBatch) {
         throw new Error("Confirm your batch details before finishing student setup");
       }
+      if (!resolvedStudentBatch && !batchId) {
+        throw new Error("Batch not found. Use the enrollment code flow or ask your admin to link your batch before finishing setup.");
+      }
       if (!subjectIds.length) {
         throw new Error("Select at least one engineering subject before finishing setup");
+      }
+      if (!studentClassId && studentClasses.length) {
+        throw new Error("Select your class or section before finishing setup");
       }
       if (!learningStyles.length) {
         throw new Error("Choose at least one learning preference");
@@ -1018,6 +1153,7 @@ export default function OnboardingPage() {
         batch_confirmation_note: correctionMessage.trim() || null,
       });
       await api.refreshSession();
+      clearSnapshot(role);
       routeByRole(role);
     });
 
@@ -1895,10 +2031,15 @@ export default function OnboardingPage() {
             <p className="text-gray-400">
               Confirm the batch currently linked to your account. If it is wrong, continue and we will log a correction request.
             </p>
+            {(studentIssues.missingBatchLink || !resolvedStudentBatch) && (
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+                Batch mapping is missing on your account. Finish linking your enrollment code or ask your admin/HOD to attach your batch before onboarding can complete.
+              </div>
+            )}
             <div className="text-sm text-gray-300 space-y-1">
               <p>Department: {deptId || "Not linked"}</p>
-              <p>Batch: {currentBatch?.label || batchId || "Not linked"}</p>
-              <p>Section: {Array.isArray(currentBatch?.sections) ? currentBatch.sections.join(", ") : "Not available"}</p>
+              <p>Batch: {resolvedStudentBatch?.label || batchId || "Not linked"}</p>
+              <p>Section: {Array.isArray(resolvedStudentBatch?.sections) ? resolvedStudentBatch.sections.join(", ") : "Not available"}</p>
             </div>
             <label className="flex items-start gap-3 cursor-pointer">
               <input
@@ -1933,9 +2074,14 @@ export default function OnboardingPage() {
             <h2 className="text-2xl font-bold mb-2">Electives and Subjects</h2>
             <p className="text-gray-400 text-sm">Choose the subjects relevant to your current semester.</p>
           </div>
+          {studentIssues.missingSubjects && (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+              No subjects are mapped to your current batch and semester yet. This must be fixed in the backend data before student onboarding can complete.
+            </div>
+          )}
           {!subjectsList.length ? (
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-gray-400">
-              No semester subjects are available yet. You can continue and update this later.
+              No semester subjects are available yet. Ask your HOD or admin to map subjects for this batch before you continue.
             </div>
           ) : (
             <div className="space-y-3">
@@ -2024,14 +2170,14 @@ export default function OnboardingPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                 <p className="text-xs uppercase tracking-widest text-gray-500">Batch</p>
-                <p className="mt-2 font-semibold">{studentBatchInfo?.label || currentBatch?.label || "Not linked"}</p>
+                <p className="mt-2 font-semibold">{resolvedStudentBatch?.label || "Not linked"}</p>
                 <p className="text-sm text-gray-400 mt-1">
-                  Semester {studentBatchInfo?.current_semester || currentBatch?.current_semester || "N/A"} | Section {currentBatch?.sections?.join(", ") || studentBatchInfo?.sections?.join(", ") || "N/A"}
+                  Semester {resolvedStudentBatch?.current_semester || "N/A"} | Section {Array.isArray(resolvedStudentBatch?.sections) ? resolvedStudentBatch.sections.join(", ") : "N/A"}
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                 <p className="text-xs uppercase tracking-widest text-gray-500">Current Section</p>
-                <p className="mt-2 font-semibold">{studentBatchInfo?.section || currentBatch?.section || "Mapped from account"}</p>
+                <p className="mt-2 font-semibold">{studentBatchInfo?.section || resolvedStudentBatch?.section || "Mapped from account"}</p>
                 <p className="text-sm text-gray-400 mt-1">Confirm this matches your engineering batch allocation.</p>
               </div>
               <select
@@ -2176,7 +2322,10 @@ export default function OnboardingPage() {
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm text-gray-300 space-y-2">
-              <p><span className="text-gray-500">Batch:</span> {studentBatchInfo?.label || currentBatch?.label || "Not linked"}</p>
+              <p><span className="text-gray-500">Batch:</span> {resolvedStudentBatch?.label || "Not linked"}</p>
+              {studentIssues.missingProgramLink && (
+                <p><span className="text-gray-500">Program mapping:</span> Missing. We will still save your setup, but admin data should be completed for class/program reporting.</p>
+              )}
               <p><span className="text-gray-500">Class:</span> {studentClasses.find((item) => item.id === studentClassId)?.class_name || studentClasses.find((item) => item.id === studentClassId)?.section_name || "Not selected"}</p>
               <p><span className="text-gray-500">Subjects:</span> {activeStudentSubjects.map((subject) => subject.course_code || subject.code || subject.course_name || subject.name).join(", ") || "None"}</p>
               <p><span className="text-gray-500">Goal:</span> {STUDENT_GOAL_OPTIONS.find((option) => option.value === studentGoal)?.label || studentGoal}</p>
@@ -2257,6 +2406,11 @@ export default function OnboardingPage() {
       </motion.div>
 
       <div className="w-full max-w-4xl">
+        {pageError && (
+          <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-100">
+            {pageError}
+          </div>
+        )}
         <AnimatePresence mode="wait">
           <motion.div
             key={`${role}-${currentStep}`}
