@@ -45,8 +45,9 @@ export default function HODSidebar({
 }) {
   const pathname = usePathname();
   const router   = useRouter();
+  void _onHoverChange;
 
-  const { user: storeUser, setUser: setStoreUser } = useAuthStore();
+  const { user: storeUser, setUser: setStoreUser, clearAuth } = useAuthStore();
   const [user, setUser] = useState<any>(storeUser ?? null);
   const notificationCount = 5;
 
@@ -59,8 +60,9 @@ export default function HODSidebar({
 
   const handleLogout = useCallback(async () => {
     await api.logout();
+    clearAuth();
     router.push("/login");
-  }, [router]);
+  }, [clearAuth, router]);
 
   return (
     <aside

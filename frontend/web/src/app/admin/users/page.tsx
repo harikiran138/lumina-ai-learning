@@ -20,11 +20,19 @@ interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: "student" | "teacher" | "faculty" | "hod" | "college_admin" | "admin" | "super_admin";
+  role: "student" | "faculty" | "hod" | "college_admin" | "super_admin";
   status: "active" | "inactive" | "suspended";
   avatar: string;
   createdAt?: string | null;
 }
+
+const ROLE_OPTIONS: Array<{ value: AdminUser["role"]; label: string }> = [
+  { value: "student", label: "Student" },
+  { value: "faculty", label: "Faculty" },
+  { value: "hod", label: "HOD" },
+  { value: "college_admin", label: "College Admin" },
+  { value: "super_admin", label: "Super Admin" },
+];
 
 const DEFAULT_FORM = {
   name: "",
@@ -32,6 +40,28 @@ const DEFAULT_FORM = {
   password: "",
   role: "student" as AdminUser["role"],
 };
+
+function normalizeRole(role?: string | null): AdminUser["role"] {
+  const normalized = String(role || "student").toLowerCase();
+  if (normalized === "teacher") return "faculty";
+  if (normalized === "admin") return "super_admin";
+  if (normalized === "faculty" || normalized === "hod" || normalized === "college_admin" || normalized === "super_admin") {
+    return normalized;
+  }
+  return "student";
+}
+
+function normalizeUser(user: any): AdminUser {
+  return {
+    id: String(user?.id || ""),
+    name: user?.name || user?.full_name || "Unnamed User",
+    email: user?.email || "",
+    role: normalizeRole(user?.role),
+    status: user?.status || (user?.is_active === false ? "inactive" : "active"),
+    avatar: user?.avatar || user?.avatar_url || "",
+    createdAt: user?.createdAt || user?.created_at || user?.updated_at || null,
+  };
+}
 
 function formatDate(value?: string | null) {
   if (!value) return "Unknown";
@@ -44,6 +74,16 @@ function formatDate(value?: string | null) {
   });
 }
 
+function formatRoleLabel(role: AdminUser["role"]) {
+  return ROLE_OPTIONS.find((option) => option.value === role)?.label || "Student";
+}
+
+function getDeleteBlockReason(user: AdminUser) {
+  if (user.role === "super_admin") return "Super admin accounts cannot be deleted here.";
+  if (user.role === "college_admin") return "Only a super admin can delete a college admin.";
+  return null;
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +94,7 @@ export default function AdminUsersPage() {
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [pendingDeleteUser, setPendingDeleteUser] = useState<AdminUser | null>(null);
   const [formData, setFormData] = useState(DEFAULT_FORM);
 
   const loadUsers = async () => {
@@ -61,7 +102,7 @@ export default function AdminUsersPage() {
     setError(null);
     try {
       const payload = await api.getAllUsers();
-      setUsers(payload || []);
+      setUsers((payload || []).map(normalizeUser));
     } catch (err: any) {
       console.error("admin_users_load_failed", err);
       setError(err?.message || "Unable to load users");
@@ -87,10 +128,8 @@ export default function AdminUsersPage() {
   const roleCounts = {
     super_admin: users.filter((item) => item.role === "super_admin").length,
     college_admin: users.filter((item) => item.role === "college_admin").length,
-    admin: users.filter((item) => item.role === "admin").length,
     hod: users.filter((item) => item.role === "hod").length,
     faculty: users.filter((item) => item.role === "faculty").length,
-    teacher: users.filter((item) => item.role === "teacher").length,
     student: users.filter((item) => item.role === "student").length,
   };
 
@@ -135,12 +174,18 @@ export default function AdminUsersPage() {
     }
   };
 
-  const deleteUser = async (userId: string) => {
-    if (!window.confirm("Delete this user and their local progress records?")) return;
-    setDeletingUserId(userId);
+  const deleteUser = async (user: AdminUser) => {
+    const blockedReason = getDeleteBlockReason(user);
+    if (blockedReason) {
+      setError(blockedReason);
+      setPendingDeleteUser(null);
+      return;
+    }
+    setDeletingUserId(user.id);
     try {
-      await api.deleteUser(userId);
-      setUsers((current) => current.filter((user) => user.id !== userId));
+      await api.deleteUser(user.id);
+      setUsers((current) => current.filter((item) => item.id !== user.id));
+      setPendingDeleteUser(null);
     } catch (err: any) {
       setError(err?.message || "Unable to delete user");
     } finally {
@@ -190,7 +235,7 @@ export default function AdminUsersPage() {
               <SummaryTile label="Super Admin" value={roleCounts.super_admin} />
               <SummaryTile label="College Admin" value={roleCounts.college_admin} />
               <SummaryTile label="HOD" value={roleCounts.hod} />
-              <SummaryTile label="Faculty" value={roleCounts.faculty + roleCounts.teacher} />
+              <SummaryTile label="Faculty" value={roleCounts.faculty} />
               <SummaryTile label="Students" value={roleCounts.student} />
               <SummaryTile label="Active" value={statusCounts.active} />
             </div>
@@ -229,13 +274,11 @@ export default function AdminUsersPage() {
             className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-amber-400/40"
           >
             <option value="all">All roles</option>
-            <option value="super_admin">Super Admin</option>
-            <option value="college_admin">College Admin</option>
-            <option value="admin">Admin (legacy)</option>
-            <option value="hod">HOD</option>
-            <option value="faculty">Faculty</option>
-            <option value="teacher">Teacher (legacy)</option>
-            <option value="student">Students</option>
+            {ROLE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
 
           <select
@@ -304,14 +347,13 @@ export default function AdminUsersPage() {
                           }
                           className="rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-amber-400/40 disabled:opacity-50"
                         >
-                          <option value="student">Student</option>
-                          <option value="faculty">Faculty</option>
-                          <option value="hod">HOD</option>
-                          <option value="college_admin">College Admin</option>
-                          <option value="super_admin">Super Admin</option>
-                          <option value="teacher">Teacher (legacy)</option>
-                          <option value="admin">Admin (legacy)</option>
+                          {ROLE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
                         </select>
+                        <p className="mt-2 text-xs text-gray-500">{formatRoleLabel(user.role)}</p>
                       </td>
                       <td className="px-6 py-5">
                         <select
@@ -331,19 +373,27 @@ export default function AdminUsersPage() {
                         {formatDate(user.createdAt)}
                       </td>
                       <td className="px-6 py-5 text-right">
+                        {(() => {
+                          const blockedReason = getDeleteBlockReason(user);
+                          return (
                         <button
-                          onClick={() => deleteUser(user.id)}
-                          disabled={busy}
+                          onClick={() => setPendingDeleteUser(user)}
+                          disabled={busy || Boolean(blockedReason)}
+                          title={blockedReason || "Delete user"}
                           className={cn(
                             "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors",
                             busy
                               ? "cursor-not-allowed border-white/10 bg-white/5 text-gray-500"
-                              : "border-red-400/20 bg-red-500/10 text-red-200 hover:bg-red-500/20",
+                              : blockedReason
+                                ? "cursor-not-allowed border-white/10 bg-white/5 text-gray-500"
+                                : "border-red-400/20 bg-red-500/10 text-red-200 hover:bg-red-500/20",
                           )}
                         >
                           <Trash2 className="h-4 w-4" />
                           Remove
                         </button>
+                          );
+                        })()}
                       </td>
                     </tr>
                   );
@@ -443,13 +493,11 @@ export default function AdminUsersPage() {
                   }
                   className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-white outline-none transition-colors focus:border-amber-400/40"
                 >
-                  <option value="student">Student</option>
-                  <option value="faculty">Faculty</option>
-                  <option value="hod">HOD</option>
-                  <option value="college_admin">College Admin</option>
-                  <option value="super_admin">Super Admin</option>
-                  <option value="teacher">Teacher (legacy)</option>
-                  <option value="admin">Admin (legacy)</option>
+                  {ROLE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </FormField>
 
@@ -462,6 +510,53 @@ export default function AdminUsersPage() {
                 {savingUserId === "create" ? "Creating user..." : "Create user"}
               </button>
             </form>
+          </div>
+        </div>
+      ) : null}
+
+      {pendingDeleteUser ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-950 p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-display font-bold text-white">Confirm removal</h2>
+                <p className="mt-1 text-sm text-gray-400">
+                  This will remove the account and its local progress references from the admin surface.
+                </p>
+              </div>
+              <button
+                onClick={() => setPendingDeleteUser(null)}
+                className="rounded-xl border border-white/10 bg-white/5 p-2 text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-white/10 bg-black/10 p-4">
+              <p className="font-semibold text-white">{pendingDeleteUser.name}</p>
+              <p className="mt-1 text-sm text-gray-400">{pendingDeleteUser.email}</p>
+              <p className="mt-3 text-xs uppercase tracking-[0.18em] text-gray-500">
+                {formatRoleLabel(pendingDeleteUser.role)} account
+              </p>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setPendingDeleteUser(null)}
+                className="inline-flex flex-1 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 font-semibold text-white transition-colors hover:bg-white/10"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletingUserId === pendingDeleteUser.id}
+                onClick={() => deleteUser(pendingDeleteUser)}
+                className="inline-flex flex-1 items-center justify-center rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 font-semibold text-red-100 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deletingUserId === pendingDeleteUser.id ? "Removing..." : "Remove user"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

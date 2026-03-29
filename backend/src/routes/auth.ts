@@ -321,24 +321,50 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
     }
 
     const session = JSON.parse(sessionData);
-    
+
+    // ── Re-read onboarding_step from DB so the new JWT reflects actual state ──
+    // The session stored at login has onboardingCompleted=false (step was 0 then).
+    // Without this re-read, users who complete onboarding get a new JWT that still
+    // says onboardingCompleted=false and the Next.js middleware loops them back.
+    let freshOnboardingCompleted = session.onboardingCompleted as boolean;
+    let freshCollegeId = session.collegeId as string | null;
+    try {
+      const { data: freshUser } = await supabase
+        .from('users')
+        .select('onboarding_step, college_id')
+        .eq('id', decoded.userId)
+        .single();
+      if (freshUser) {
+        freshOnboardingCompleted = (freshUser.onboarding_step ?? 0) >= 5;
+        freshCollegeId = freshUser.college_id ?? freshCollegeId;
+      }
+    } catch {
+      // Non-fatal: fall back to cached session value
+    }
+
     // Rotate Session ID for security
     const newSessionId = uuidv4();
     await redisClient.del(sessionKey);
+
+    const updatedSession = {
+      ...session,
+      onboardingCompleted: freshOnboardingCompleted,
+      collegeId: freshCollegeId,
+    };
     await redisClient.set(
       `session:${decoded.userId}:${newSessionId}`,
-      JSON.stringify(session),
+      JSON.stringify(updatedSession),
       { EX: SESSION_EXPIRY }
     );
 
     // Issue new tokens
     const newAccessToken = jwt.sign(
-      { 
-        userId: decoded.userId, 
+      {
+        userId: decoded.userId,
         sessionId: newSessionId,
-        role: session.role, 
-        collegeId: session.collegeId,
-        onboardingCompleted: session.onboardingCompleted,
+        role: session.role,
+        collegeId: freshCollegeId,
+        onboardingCompleted: freshOnboardingCompleted,
         email: session.email
       },
       JWT_SECRET,

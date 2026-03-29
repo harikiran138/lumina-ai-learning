@@ -66,7 +66,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  const rawRole = payload.role || 'student'
+  const rawRole = typeof payload.role === 'string' ? payload.role : null
+  if (!rawRole) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('reason', 'session_sync_required')
+    return NextResponse.redirect(url)
+  }
   const role = normalizeRole(rawRole)
   const onboardingCompleted = payload.onboardingCompleted === true
 

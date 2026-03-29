@@ -13,6 +13,7 @@ def create_access_token(
     subject: Union[str, Any],
     expires_delta: timedelta = None,
     extra_claims: Optional[dict] = None,
+    secret_key: Optional[str] = None,
 ) -> str:
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -22,7 +23,7 @@ def create_access_token(
     to_encode = {"exp": expire, "sub": str(subject)}
     if extra_claims:
         to_encode.update(extra_claims)
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, secret_key or settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 

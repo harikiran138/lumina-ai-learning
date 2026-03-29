@@ -23,6 +23,14 @@ class UserStore:
     def get_password_hash(self, password):
         return get_password_hash(password)
 
+    def normalize_role(self, role: Optional[str]) -> str:
+        normalized = (role or "student").strip().lower()
+        if normalized == "teacher":
+            return "faculty"
+        if normalized == "admin":
+            return "super_admin"
+        return normalized
+
     def _sanitize_user(self, user: dict) -> dict:
         """Removes sensitive fields and normalizes user object for API consumption."""
         if not user:
@@ -37,12 +45,16 @@ class UserStore:
         if not avatar:
             avatar = f"https://ui-avatars.com/api/?name={name.replace(' ', '+')}&background=111827&color=F9FAFB"
 
+        created_at = safe_user.get("created_at") or safe_user.get("createdAt") or safe_user.get("updated_at")
         safe_user["name"] = name
         if not safe_user.get("full_name"):
             safe_user["full_name"] = name
         safe_user["avatar_url"] = avatar
         safe_user["avatar"] = avatar  # Backward compatibility
         safe_user["status"] = safe_user.get("status", "active")
+        safe_user["role"] = self.normalize_role(safe_user.get("role"))
+        safe_user["created_at"] = created_at
+        safe_user["createdAt"] = created_at
         
         return safe_user
 
@@ -59,7 +71,7 @@ class UserStore:
             "email": email,
             "password_hash": hashed_password,
             "name": full_name,
-            "role": role,
+            "role": self.normalize_role(role),
             "phone": phone or "N/A",
             "is_active": True
         }
@@ -128,7 +140,7 @@ class UserStore:
     async def update_user_role(self, user_id: str, role: str) -> bool:
         try:
             client = self.db.get_client()
-            response = client.table("users").update({"role": role}).eq("id", user_id).execute()
+            response = client.table("users").update({"role": self.normalize_role(role)}).eq("id", user_id).execute()
             return len(response.data) > 0
         except Exception as e:
             log.error("update_user_role_failed", error=str(e), user_id=user_id)

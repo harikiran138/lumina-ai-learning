@@ -20,6 +20,7 @@ from app.services.compliance_service import get_compliance_service
 from app.database.models import Institution, Department, Stakeholder
 from app.store.academic_store import AcademicStore
 from pydantic import BaseModel
+from app.store.config_store import config_store
 
 class CreateDeptRequest(BaseModel):
     institution_id: str
@@ -38,6 +39,16 @@ class CreateClassRequest(BaseModel):
 
 router = APIRouter()
 log = structlog.get_logger(__name__)
+LEGACY_ROLE_ALIASES = {
+    "teacher": "faculty",
+    "admin": "super_admin",
+}
+VALID_ROLES = {"student", "faculty", "hod", "college_admin", "super_admin"}
+
+
+def _normalize_admin_role(role: Optional[str]) -> str:
+    normalized = (role or "student").strip().lower()
+    return LEGACY_ROLE_ALIASES.get(normalized, normalized)
 
 
 def is_admin(current_user: dict = Depends(get_current_user)):
@@ -56,19 +67,16 @@ def is_admin(current_user: dict = Depends(get_current_user)):
 @router.get("/config")
 async def get_platform_config(admin: dict = Depends(is_admin)):
     """Fetch global platform configuration (Maintenance mode, feature flags)."""
-    # Mocking config for now, would typically come from a KV store or specific DB table
-    return {
-        "maintenance_mode": False,
-        "public_registration": True,
-        "ai_tutor_enabled": True,
-        "guardian_mode": "active",
-        "api_rate_limit": 10000
-    }
+    return await config_store.get_all_config()
 
 
 @router.post("/config")
 async def update_platform_config(config: dict, admin: dict = Depends(is_admin)):
     """Update global platform configuration."""
+    success = await config_store.update_bulk_config(config)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update configuration")
+    
     audit_logger.log(
         action="platform_config_updated",
         user_id=str(admin.get("id")),
@@ -112,28 +120,15 @@ async def get_guardian_signals(admin: dict = Depends(is_admin)):
     return await get_guardian_service().get_active_signals()
 
 
-# In-memory store for the role matrix (persisted to DB on a future migration)
-_role_matrix: dict = {
-    "roles": ["student", "teacher", "hod", "admin", "parent"],
-    "permissions": {
-        "course_create": ["admin", "teacher", "hod"],
-        "course_delete": ["admin"],
-        "user_manage": ["admin"],
-        "analytics_view": ["admin", "teacher", "hod"],
-        "billing_manage": ["admin"]
-    }
-}
-
-
 @router.get("/roles/matrix")
 async def get_role_matrix(admin: dict = Depends(is_admin)):
     """Fetch the functional role-per-permission matrix."""
-    return _role_matrix
+    return await config_store.get_role_matrix()
 
 
 @router.post("/roles/matrix")
 async def update_role_matrix(data: dict, admin: dict = Depends(is_admin)):
-    """Update the role-permission matrix. Validates structure then persists in memory."""
+    """Update the role-permission matrix. Validates structure then persists."""
     roles = data.get("roles")
     permissions = data.get("permissions")
 
@@ -149,15 +144,16 @@ async def update_role_matrix(data: dict, admin: dict = Depends(is_admin)):
         if unknown:
             raise HTTPException(status_code=400, detail=f"Unknown roles in '{perm}': {unknown}")
 
-    _role_matrix["roles"] = roles
-    _role_matrix["permissions"] = permissions
+    success = await config_store.update_role_matrix(data)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update role matrix")
 
     audit_logger.log(
         action="role_matrix_updated",
         user_id=str(admin.get("id")),
         metadata={"roles": roles, "permissions": list(permissions.keys())}
     )
-    return {"success": True, "matrix": _role_matrix}
+    return {"success": True, "matrix": data}
 
 
 @router.get("/users")
@@ -167,15 +163,17 @@ async def get_all_users(admin: dict = Depends(is_admin)):
     return await user_store.list_all_users()
 
 
-VALID_ROLES = {"student", "teacher", "faculty", "hod", "college_admin", "super_admin", "admin"}
-
 @router.post("/users")
 async def create_user(data: dict, admin: dict = Depends(is_admin)):
     """Create a user without replacing the admin session."""
-    role = (data.get("role") or "student").strip().lower()
+    role = _normalize_admin_role(data.get("role"))
 
     if role not in VALID_ROLES:
         raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(sorted(VALID_ROLES))}")
+
+    actor_role = _normalize_admin_role(admin.get("role"))
+    if role == "super_admin" and actor_role != "super_admin":
+        raise HTTPException(status_code=403, detail="Only a super admin can create another super admin")
 
     email = (data.get("email") or "").strip()
     password = data.get("password") or ""
@@ -193,6 +191,12 @@ async def create_user(data: dict, admin: dict = Depends(is_admin)):
         user = await user_store.create_user(email, password, full_name, role, phone)
         if data.get("department_id"):
             await user_store.update_user_fields(user["id"], {"department_id": data["department_id"]})
+        audit_logger.log(
+            action="admin_user_created",
+            user_id=str(admin.get("id")),
+            resource_id=str(user.get("id")),
+            metadata={"role": role, "email": email},
+        )
         return user
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -202,9 +206,28 @@ async def create_user(data: dict, admin: dict = Depends(is_admin)):
 async def delete_user(user_id: str, admin: dict = Depends(is_admin)):
     """Delete a user from the system."""
     user_store = UserStore()
+    target_user = await user_store.get_user_by_id(user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    actor_role = _normalize_admin_role(admin.get("role"))
+    target_role = _normalize_admin_role(target_user.get("role"))
+    if str(admin.get("id")) == user_id:
+        raise HTTPException(status_code=400, detail="You cannot delete your own admin account")
+    if target_role == "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin accounts cannot be deleted from the dashboard")
+    if target_role == "college_admin" and actor_role != "super_admin":
+        raise HTTPException(status_code=403, detail="Only a super admin can delete a college admin account")
+
     success = await user_store.delete_user(user_id)
     if not success:
         raise HTTPException(status_code=404, detail="User not found")
+    audit_logger.log(
+        action="admin_user_deleted",
+        user_id=str(admin.get("id")),
+        resource_id=user_id,
+        metadata={"deleted_role": target_role, "deleted_email": target_user.get("email")},
+    )
     return {"success": True}
 
 
@@ -219,21 +242,52 @@ async def update_user_status(user_id: str, status: str, admin: dict = Depends(is
         )
 
     user_store = UserStore()
+    target_user = await user_store.get_user_by_id(user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
     success = await user_store.update_user_status(user_id, normalized_status)
     if not success:
         raise HTTPException(status_code=404, detail="User not found")
+    audit_logger.log(
+        action="admin_user_status_updated",
+        user_id=str(admin.get("id")),
+        resource_id=user_id,
+        metadata={"status": normalized_status, "target_email": target_user.get("email")},
+    )
     return {"success": True}
 
 
 @router.post("/users/{user_id}/role")
 async def update_user_role(user_id: str, role: str, admin: dict = Depends(is_admin)):
     """Change a user's role."""
+    role = _normalize_admin_role(role)
     if role not in VALID_ROLES:
         raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(sorted(VALID_ROLES))}")
+
     user_store = UserStore()
+    target_user = await user_store.get_user_by_id(user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    actor_role = _normalize_admin_role(admin.get("role"))
+    target_role = _normalize_admin_role(target_user.get("role"))
+    if str(admin.get("id")) == user_id:
+        raise HTTPException(status_code=400, detail="You cannot change your own admin role from this screen")
+    if role == "super_admin" and actor_role != "super_admin":
+        raise HTTPException(status_code=403, detail="Only a super admin can assign the super admin role")
+    if target_role == "super_admin" and actor_role != "super_admin":
+        raise HTTPException(status_code=403, detail="Only a super admin can modify another super admin")
+
     success = await user_store.update_user_role(user_id, role)
     if not success:
         raise HTTPException(status_code=404, detail="User not found")
+    audit_logger.log(
+        action="admin_user_role_updated",
+        user_id=str(admin.get("id")),
+        resource_id=user_id,
+        metadata={"previous_role": target_role, "next_role": role, "target_email": target_user.get("email")},
+    )
     return {"success": True}
 
 

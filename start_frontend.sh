@@ -15,6 +15,7 @@ fi
 
 # Set Next.js environment variables
 export NEXT_PUBLIC_API_URL=http://localhost:8000
+export NEXT_PUBLIC_AUTH_URL=http://localhost:8000
 
 # Start Next.js development server
 echo "Starting Next.js on port 3000..."
