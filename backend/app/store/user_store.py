@@ -165,9 +165,11 @@ class UserStore:
             return False
 
     async def update_user_fields(self, user_id: str, updates: dict) -> bool:
+        from datetime import datetime
         restricted = {"id", "password", "password_hash", "email"}
         clean_updates = {k: v for k, v in updates.items() if k not in restricted}
-        
+        clean_updates.setdefault("updated_at", datetime.utcnow().isoformat())
+
         try:
             client = self.db.get_client()
             response = client.table("users").update(clean_updates).eq("id", user_id).execute()
@@ -177,9 +179,11 @@ class UserStore:
             return False
 
     def update_user_fields_sync(self, user_id: str, updates: dict) -> bool:
+        from datetime import datetime
         restricted = {"id", "password", "password_hash", "email"}
         clean_updates = {k: v for k, v in updates.items() if k not in restricted}
-        
+        clean_updates.setdefault("updated_at", datetime.utcnow().isoformat())
+
         try:
             client = self.db.get_client()
             # Try updating one by one or handle the case where some columns don't exist

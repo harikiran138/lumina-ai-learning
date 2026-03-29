@@ -327,6 +327,56 @@ async def create_enrollment_code(
     return {"code": code, "expiresAt": data["expires_at"], "batchId": batch_id, "section": section}
 
 
+@router.post("/enrollment/validate")
+async def validate_enrollment_code(payload: Dict[str, Any], current_user: dict = Depends(get_current_user)):
+    role = _normalize_role(current_user.get("role"))
+    if role != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+
+    code = (payload.get("enrollmentCode") or payload.get("code") or "").strip().upper()
+    if not code:
+        raise HTTPException(status_code=400, detail="Enrollment code is required")
+
+    record = await supabase_db.fetch_one("enrollment_codes", {"code": code})
+    if not record:
+        raise HTTPException(status_code=400, detail="Invalid enrollment code")
+
+    used_by = record.get("used_by")
+    if used_by and str(used_by) != str(current_user.get("id")):
+        raise HTTPException(status_code=400, detail="Enrollment code already used")
+
+    expires_at = record.get("expires_at")
+    if expires_at:
+        expiry = datetime.fromisoformat(str(expires_at).replace("Z", "+00:00"))
+        if expiry < datetime.now(expiry.tzinfo):
+            raise HTTPException(status_code=400, detail="Enrollment code expired")
+
+    batch = await supabase_db.fetch_one("batches", {"id": record.get("batch_id")})
+    if not batch:
+        raise HTTPException(status_code=404, detail="Batch not found")
+
+    dept_id = batch.get("dept_id") or batch.get("department_id")
+    department = await supabase_db.fetch_one("departments", {"id": dept_id}) if dept_id else None
+    if not department:
+        raise HTTPException(status_code=404, detail="Department not found")
+
+    return {
+        "valid": True,
+        "code": code,
+        "department": {
+            "id": department.get("id"),
+            "name": department.get("department_name") or department.get("name"),
+            "code": department.get("abbreviation") or department.get("code"),
+        },
+        "batch": {
+            "id": batch.get("id"),
+            "label": batch.get("label") or batch.get("name"),
+        },
+        "semester": batch.get("current_semester"),
+        "section": record.get("section"),
+    }
+
+
 @router.post("/enroll")
 async def enroll_with_code(payload: Dict[str, Any]):
     code = payload.get("enrollmentCode") or payload.get("code")

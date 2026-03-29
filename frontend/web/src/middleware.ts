@@ -31,6 +31,13 @@ function getRoleHome(role: string): string {
     hod: '/hod/dashboard',
     faculty: '/faculty/dashboard',
     student: '/student/dashboard',
+    parent: '/parent/dashboard',
+    mentor: '/mentor/dashboard',
+    peer_tutor: '/peer_tutor/dashboard',
+    counselor: '/counselor/dashboard',
+    content_creator: '/content_creator/studio',
+    researcher: '/researcher/portal',
+    alumni: '/alumni/dashboard',
   }
   return rolePaths[normalized] || '/'
 }
@@ -88,12 +95,19 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  const rolePaths = {
+  const rolePaths: Record<string, string> = {
     super_admin: '/admin',
     college_admin: '/college',
     hod: '/hod',
     faculty: '/faculty',
     student: '/student',
+    parent: '/parent',
+    mentor: '/mentor',
+    peer_tutor: '/peer_tutor',
+    counselor: '/counselor',
+    content_creator: '/content_creator',
+    researcher: '/researcher',
+    alumni: '/alumni',
   }
 
   for (const [expectedRole, path] of Object.entries(rolePaths)) {
@@ -117,6 +131,15 @@ export const config = {
     '/hod/:path*',
     '/college/:path*',
     '/faculty/:path*',
+    '/parent/:path*',
+    '/mentor/:path*',
+    '/peer_tutor/:path*',
+    '/counselor/:path*',
+    '/content_creator/:path*',
+    '/researcher/:path*',
+    '/alumni/:path*',
     '/onboarding',
+    '/onboarding/:path*',
+    '/change-password',
   ],
 }

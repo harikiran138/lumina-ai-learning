@@ -377,6 +377,108 @@ export class RealAPI {
     return res.ok ? await res.json() : [];
   }
 
+  async saveStudentPersonalDetails(payload: {
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    gender?: string;
+    phoneNumber: string;
+    email: string;
+  }): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/personal", {
+      method: "POST",
+      body: JSON.stringify({
+        first_name: payload.firstName,
+        last_name: payload.lastName,
+        date_of_birth: payload.dateOfBirth,
+        gender: payload.gender,
+        phone_number: payload.phoneNumber,
+        email: payload.email,
+      }),
+    });
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to save personal details");
+    }
+    return await parseJsonSafe(res) ?? {};
+  }
+
+  async validateEnrollmentCode(enrollmentCode: string): Promise<any> {
+    const res = await this.fetchAuthorized("/api/enrollment/validate", {
+      method: "POST",
+      body: JSON.stringify({ enrollmentCode }),
+    });
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to validate enrollment code");
+    }
+    return await parseJsonSafe(res) ?? {};
+  }
+
+  async saveStudentEnrollment(enrollmentCode: string): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/enrollment", {
+      method: "POST",
+      body: JSON.stringify({ enrollment_code: enrollmentCode }),
+    });
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to link enrollment");
+    }
+    return await parseJsonSafe(res) ?? {};
+  }
+
+  async getStudentOnboardingSubjects(batchId?: string): Promise<any[]> {
+    const suffix = batchId ? `?batch_id=${encodeURIComponent(batchId)}` : "";
+    const res = await this.fetchAuthorized(`/api/onboarding/student-subjects${suffix}`);
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to load onboarding subjects");
+    }
+    return (await parseJsonSafe(res)) ?? [];
+  }
+
+  async saveStudentSubjects(subjectIds: string[]): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/subjects", {
+      method: "POST",
+      body: JSON.stringify({ subject_ids: subjectIds }),
+    });
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to save subject selection");
+    }
+    return await parseJsonSafe(res) ?? {};
+  }
+
+  async saveStudentProfile(form: FormData): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/profile", {
+      method: "POST",
+      body: form,
+    });
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to save profile details");
+    }
+    return await parseJsonSafe(res) ?? {};
+  }
+
+  async saveStudentPreferences(payload: {
+    learningStyles: string[];
+    selfAssessment: "beginner" | "intermediate" | "advanced";
+  }): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/preferences", {
+      method: "POST",
+      body: JSON.stringify({
+        learning_styles: payload.learningStyles,
+        self_assessment: payload.selfAssessment,
+      }),
+    });
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to save learning preferences");
+    }
+    return await parseJsonSafe(res) ?? {};
+  }
+
   async getStudentOnboardingOptions(): Promise<any> {
     const res = await this.fetchAuthorized("/api/student/onboarding/options");
     if (!res.ok) {
