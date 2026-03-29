@@ -22,7 +22,10 @@ async def list_faculty_subjects(current_user: dict = Depends(get_current_user)):
     if not assignments:
         return []
     course_ids = list({item.get("course_id") for item in assignments if item.get("course_id")})
-    courses = await supabase_db.fetch_all("courses", {"id": course_ids}) if course_ids else []
+    courses = (
+        supabase_db.get_client().table("courses").select("*").in_("id", course_ids).execute().data or []
+        if course_ids else []
+    )
     course_lookup = {c["id"]: c for c in courses}
 
     results = []

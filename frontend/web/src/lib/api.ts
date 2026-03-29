@@ -822,21 +822,21 @@ export class RealAPI {
     return res.ok ? await res.json() : null;
   }
 
-  /** GET /api/courses/teacher/students/{id}/analytics — student detail analytics */
+  /** GET /api/teacher/students/{id}/analytics — student detail analytics */
   async getPersonalizationProfile(studentId: string): Promise<any> {
-    const res = await this.fetchAuthorized(`/api/courses/teacher/students/${studentId}/analytics`);
+    const res = await this.fetchAuthorized(`/api/teacher/students/${studentId}/analytics`);
     return res.ok ? await res.json() : null;
   }
 
-  /** GET /api/courses/teacher/alerts — teacher at-risk alerts */
+  /** GET /api/teacher/alerts — teacher at-risk alerts */
   async getTeacherAlerts(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/courses/teacher/alerts");
+    const res = await this.fetchAuthorized("/api/teacher/alerts");
     return res.ok ? await res.json() : [];
   }
 
-  /** GET /api/courses/teacher/verification/queue — teacher verification queue */
+  /** GET /api/teacher/verification/queue — teacher verification queue */
   async getTeacherVerificationQueue(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/courses/teacher/verification/queue");
+    const res = await this.fetchAuthorized("/api/teacher/verification/queue");
     return res.ok ? await res.json() : [];
   }
 

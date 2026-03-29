@@ -1023,3 +1023,12 @@ ADD COLUMN IF NOT EXISTS parent_email text;
 
 ALTER TABLE public.enrollment_codes
 ADD COLUMN IF NOT EXISTS used_by uuid REFERENCES public.users(id);
+
+-- ─── RLS Fix (Migration 015) ──────────────────────────────────────────────────
+-- Lumina uses its own JWT auth, not Supabase Auth, so auth.uid() is always NULL
+-- for backend service calls. Disable RLS on core tables so the FastAPI backend
+-- (anon key) can perform admin reads without a service role key.
+
+DROP POLICY IF EXISTS "Users can view own data" ON public.users;
+CREATE POLICY "Allow backend service reads" ON public.users FOR SELECT USING (true);
+ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
