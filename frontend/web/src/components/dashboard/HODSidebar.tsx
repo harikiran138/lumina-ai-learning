@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard,
   Building2,
@@ -15,87 +15,82 @@ import {
   X,
   Bell,
   ShieldCheck,
-  GraduationCap
+  GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
-  { name: "Dashboard", href: "/hod/dashboard", icon: LayoutDashboard },
-  { name: "My Department", href: "/hod/department", icon: Building2 },
-  { name: "Faculty Management", href: "/hod/faculty", icon: Users },
-  { name: "Program Management", href: "/hod/programs", icon: GraduationCap },
-  { name: "Approval Queue", href: "/hod/approvals", icon: ClipboardCheck },
-  { name: "Curriculum Map", href: "/hod/curriculum", icon: BookOpen },
-  { name: "Analytics", href: "/hod/analytics", icon: BarChart3 },
-  { name: "Settings", href: "/hod/settings", icon: Settings },
+  { name: "Dashboard",          href: "/hod/dashboard",   icon: LayoutDashboard },
+  { name: "My Department",      href: "/hod/department",  icon: Building2 },
+  { name: "Faculty Management", href: "/hod/faculty",     icon: Users },
+  { name: "Program Management", href: "/hod/programs",    icon: GraduationCap },
+  { name: "Approval Queue",     href: "/hod/approvals",   icon: ClipboardCheck },
+  { name: "Curriculum Map",     href: "/hod/curriculum",  icon: BookOpen },
+  { name: "Analytics",          href: "/hod/analytics",   icon: BarChart3 },
+  { name: "Compliance",         href: "/hod/compliance",  icon: ShieldCheck },
+  { name: "Settings",           href: "/hod/settings",    icon: Settings },
 ];
 
 export default function HODSidebar({
   isOpen,
   onClose,
-  onHoverChange,
+  // onHoverChange kept for backward compat but no longer triggers layout re-renders
+  onHoverChange: _onHoverChange,
 }: {
   isOpen?: boolean;
   onClose?: () => void;
   onHoverChange?: (hovered: boolean) => void;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [isHovered, setIsHovered] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(5);
+  const router   = useRouter();
+
+  const { user: storeUser, setUser: setStoreUser } = useAuthStore();
+  const [user, setUser] = useState<any>(storeUser ?? null);
+  const notificationCount = 5;
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const userData = await api.getCurrentUser();
-      setUser(userData);
-    };
-    fetchUser();
-  }, []);
+    if (storeUser) { setUser(storeUser); return; }
+    api.getCurrentUser().then((data) => {
+      if (data) { setUser(data); setStoreUser(data as any); }
+    });
+  }, [storeUser, setStoreUser]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await api.logout();
     router.push("/login");
-  };
+  }, [router]);
 
   return (
     <aside
-      onMouseEnter={() => {
-        setIsHovered(true);
-        onHoverChange?.(true);
-      }}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        onHoverChange?.(false);
-      }}
+      data-collapsed="true"
       className={cn(
-        "peer fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 transition-all duration-500 ease-in-out lg:translate-x-0 lg:flex flex-col overflow-hidden",
-        !isHovered ? "lg:w-20" : "lg:w-64",
+        "lumina-sidebar",
+        "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 flex flex-col",
         isOpen
-          ? "translate-x-0 bg-black/95 w-64 flex"
+          ? "translate-x-0 bg-black/95"
           : "-translate-x-[120%] lg:translate-x-0 hidden lg:flex",
       )}
     >
-      <div
-        className={cn(
-          "flex items-center justify-between border-b border-white/5 shrink-0 transition-all duration-500",
-          !isHovered ? "h-16 px-4 justify-center" : "h-20 px-6",
-        )}
-      >
-        <Link href="/" className="text-2xl font-display font-black flex items-center gap-2">
-          <span className="text-white">{!isHovered ? "L" : "Lumina"}</span>
+      {/* ── Logo header ── */}
+      <div className="sidebar-header flex items-center border-b border-white/5 shrink-0">
+        <Link href="/" className="font-display font-black text-2xl flex items-center gap-1 select-none">
+          <span className="sidebar-logo-icon text-white">L</span>
+          <span className="sidebar-logo-full text-white">Lumina</span>
           <span className="text-lumina-highlight">AI</span>
         </Link>
         <button
           onClick={onClose}
-          className="lg:hidden text-gray-400 hover:text-white transition-colors"
+          className="lg:hidden ml-auto text-gray-400 hover:text-white transition-colors"
+          aria-label="Close menu"
         >
           <X className="w-6 h-6" />
         </button>
       </div>
 
-      <nav className="p-4 space-y-1.5 flex-1 overflow-y-auto hide-scrollbar">
+      {/* ── Nav ── */}
+      <nav className="p-4 space-y-1 flex-1 overflow-y-auto hide-scrollbar">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
           return (
@@ -104,110 +99,62 @@ export default function HODSidebar({
               href={item.href}
               suppressHydrationWarning
               onClick={onClose}
+              aria-label={item.name}
               className={cn(
-                "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
-                !isHovered ? "justify-center px-0" : "px-4",
+                "sidebar-nav-item py-3 text-sm font-semibold rounded-xl relative group w-full",
                 isActive
                   ? "bg-lumina-highlight/15 text-lumina-highlight border border-lumina-highlight/30 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                   : "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
               )}
             >
               <item.icon
+                aria-hidden="true"
                 className={cn(
-                  "h-5 w-5 transition-all duration-500 shrink-0",
-                  !isHovered ? "mr-0 scale-110" : "mr-3",
-                  isActive
-                    ? "text-lumina-highlight"
-                    : "text-gray-500 group-hover:text-gray-300",
+                  "sidebar-icon h-5 w-5",
+                  isActive ? "text-lumina-highlight" : "text-gray-500 group-hover:text-gray-300",
                 )}
               />
-              <span
-                className={cn(
-                  "transition-all duration-500 whitespace-nowrap overflow-hidden truncate min-w-0",
-                  !isHovered ? "opacity-0 w-0" : "opacity-100 w-auto",
-                )}
-              >
-                {item.name}
-              </span>
-
-              {!isHovered && (
-                <div className="absolute left-full ml-4 px-3 py-1.5 bg-surface-950 border border-white/10 rounded-lg text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 translate-x-1 group-hover:translate-x-0 z-[60] shadow-premium">
-                  {item.name}
-                </div>
-              )}
+              <span className="sidebar-text truncate">{item.name}</span>
+              <span className="sidebar-tooltip">{item.name}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div
-        className={cn(
-          "p-4 border-t border-white/10 space-y-4 transition-all duration-500 shrink-0",
-          !isHovered && "px-3",
-        )}
-      >
+      {/* ── Bottom ── */}
+      <div className="sidebar-bottom border-t border-white/10 space-y-3 shrink-0">
         <Link
           href="/hod/notifications"
-          className={cn(
-            "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
-            !isHovered ? "justify-center px-0" : "px-4",
-            "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
-          )}
+          aria-label="Notifications"
+          className="sidebar-bottom-item sidebar-nav-item flex items-center w-full py-3 text-sm font-semibold rounded-xl text-gray-400 hover:bg-white/[0.03] hover:text-gray-200 relative group"
         >
-          <div className="relative">
-            <Bell
-              className={cn(
-                "h-5 w-5 transition-all duration-500 shrink-0",
-                !isHovered ? "mr-0 scale-110" : "mr-3",
-                "text-gray-500 group-hover:text-gray-300",
-              )}
-            />
+          <div className="sidebar-icon relative h-5 w-5">
+            <Bell className="h-5 w-5 text-gray-500 group-hover:text-gray-300" />
             {notificationCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                 {notificationCount}
               </span>
             )}
           </div>
-          <span
-            className={cn(
-              "transition-all duration-500 whitespace-nowrap overflow-hidden",
-              !isHovered ? "opacity-0 w-0" : "opacity-100 w-auto",
-            )}
-          >
-            Notifications
-          </span>
+          <span className="sidebar-text truncate">Notifications</span>
+          <span className="sidebar-tooltip">Notifications</span>
         </Link>
 
         {user && (
           <Link
             href="/hod/settings"
-            className={cn(
-              "flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-500 cursor-pointer overflow-hidden",
-              !isHovered ? "justify-center p-2" : "p-3",
-            )}
+            className="sidebar-user-card flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer overflow-hidden"
           >
             <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
               <img
-                src={
-                  user.avatar ||
-                  `https://ui-avatars.com/api/?name=${user.name}&background=random`
-                }
-                alt="User"
+                src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name ?? "H")}&background=random`}
+                alt="User avatar"
                 className="w-full h-full object-cover"
               />
             </div>
-            <div
-              className={cn(
-                "min-w-0 transition-all duration-500",
-                !isHovered ? "opacity-0 w-0" : "opacity-100 w-auto",
-              )}
-            >
-              <p className="text-xs font-bold text-white truncate">
-                {user.name}
-              </p>
-              <p className="text-[10px] text-gray-400 truncate tracking-tight">
-                {user.email}
-              </p>
+            <div className="sidebar-text min-w-0">
+              <p className="text-xs font-bold text-white truncate">{user.name}</p>
+              <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
             </div>
           </Link>
         )}
@@ -215,25 +162,11 @@ export default function HODSidebar({
         <button
           onClick={handleLogout}
           suppressHydrationWarning
-          className={cn(
-            "flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-300",
-            !isHovered ? "justify-center px-0" : "px-4",
-          )}
+          aria-label="Sign out"
+          className="sidebar-bottom-item flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-colors"
         >
-          <LogOut
-            className={cn(
-              "h-4 w-4 transition-all duration-500",
-              !isHovered ? "mr-0" : "mr-3",
-            )}
-          />
-          <span
-            className={cn(
-              "transition-all duration-500",
-              !isHovered ? "opacity-0 w-0" : "opacity-100 w-auto",
-            )}
-          >
-            Sign Out
-          </span>
+          <LogOut aria-hidden="true" className="sidebar-icon h-4 w-4" />
+          <span className="sidebar-text">Sign Out</span>
         </button>
       </div>
     </aside>

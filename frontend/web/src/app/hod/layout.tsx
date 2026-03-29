@@ -4,26 +4,12 @@ import HODSidebar from "@/components/dashboard/HODSidebar";
 import TopNav from "@/components/dashboard/TopNav";
 import { BGPattern } from "@/components/ui/BGPattern";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { useState, useEffect } from "react";
-import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { useAuthStore } from "@/store/useAuthStore";
 
-export default function HODLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function HODLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const userData = await api.getCurrentUser();
-      setUser(userData);
-    };
-    fetchUser();
-  }, []);
+  const { user } = useAuthStore();
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-black text-gray-100">
@@ -34,24 +20,18 @@ export default function HODLayout({
         className="fixed inset-0 z-0 pointer-events-none"
       />
 
+      {/* Sidebar expands as CSS overlay on hover — never pushes content */}
       <HODSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        onHoverChange={setIsSidebarExpanded}
       />
+
       <TopNav
-        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-        className={cn(
-          isSidebarExpanded ? "lg:left-72" : "lg:left-28",
-        )}
+        onMenuClick={() => setSidebarOpen((v) => !v)}
+        className="lg:left-28"
         user={
           user
-            ? {
-                name: user.name,
-                role: "HOD",
-                initial: user.name?.charAt(0) || "H",
-                avatar: user.avatar,
-              }
+            ? { name: user.name ?? "HOD", role: "HOD", initial: (user.name ?? "H").charAt(0), avatar: user.avatar }
             : { name: "HOD", role: "HOD", initial: "H" }
         }
       />
@@ -63,13 +43,9 @@ export default function HODLayout({
         />
       )}
 
-      <main
-        className={cn(
-          "pt-20 min-h-screen transition-all duration-300",
-          isSidebarExpanded ? "lg:ml-72" : "lg:ml-24",
-        )}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Stable margin — never shifts on hover */}
+      <main className="lg:ml-28 pt-20 min-h-screen">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
           <Breadcrumb />
           {children}
         </div>
