@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 import importlib.metadata
 
-# Python 3.8 compatibility shim for dependencies expecting packages_distributions
+# Legacy runtime compatibility shim for dependencies expecting packages_distributions
 if not hasattr(importlib.metadata, "packages_distributions"):
     try:
         import importlib_metadata
@@ -74,12 +74,13 @@ from .routers import (  # noqa: E402
     attendance,
     materials,
     faculty,
+    ai_queue,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
 from app.api.routers.automation import router as automation_router  # noqa: E402
 
-# Polyfill for python 3.8
+# Polyfill for older Python runtimes that do not expose asyncio.to_thread
 if not hasattr(asyncio, "to_thread"):
 
     async def to_thread(func, /, *args, **kwargs):
@@ -156,34 +157,44 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-os.makedirs("data/uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="data/uploads"), name="uploads")
+# Serverless environments (Vercel) have a read-only filesystem except /tmp.
+_IS_SERVERLESS = bool(os.getenv("VERCEL"))
+_upload_dir = "/tmp/uploads" if _IS_SERVERLESS else "data/uploads"
+_ppt_dir = "/tmp/presentations" if _IS_SERVERLESS else "static/presentations"
 
-os.makedirs("static/presentations", exist_ok=True)
-app.mount(
-    "/api/tutor/download-ppt", StaticFiles(directory="static/presentations"), name="presentations"
-)
+os.makedirs(_upload_dir, exist_ok=True)
+os.makedirs(_ppt_dir, exist_ok=True)
+
+if not _IS_SERVERLESS:
+    app.mount("/uploads", StaticFiles(directory=_upload_dir), name="uploads")
+    app.mount(
+        "/api/tutor/download-ppt", StaticFiles(directory=_ppt_dir), name="presentations"
+    )
 
 
 # Prevent Host Header Attacks
-allowed_hosts = ["localhost", "127.0.0.1", "testserver"]
+allowed_hosts = ["localhost", "127.0.0.1", "testserver", "*.vercel.app"]
 domain_name = os.getenv("DOMAIN_NAME")
 if domain_name:
     allowed_hosts.append(domain_name)
 
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
+# In serverless mode skip TrustedHostMiddleware — Vercel handles host validation
+if not _IS_SERVERLESS:
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
-# CORS Polish
+# CORS — allow local dev + any Vercel deployment + explicit FRONTEND_URL
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+_cors_origins = [
+    frontend_url,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        frontend_url,
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
-    ],
+    allow_origins=_cors_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -262,6 +273,7 @@ app.include_router(college_architecture.router, prefix="/api", tags=["College Ar
 app.include_router(attendance.router, prefix="/api", tags=["Attendance"])
 app.include_router(materials.router, prefix="/api", tags=["Materials"])
 app.include_router(faculty.router, prefix="/api", tags=["Faculty"])
+app.include_router(ai_queue.router, prefix="/api", tags=["AI Queue"])
 
 
 # --- Performance & Security Polish ---
@@ -341,7 +353,7 @@ async def health_check():
         health_report["status"] = "degraded"
         health_report["services"]["supabase"] = {"status": "error", "error": str(e)}
 
-    # MongoDB removed from health check
+    # Only active backend services are reported here.
 
     # 2. Check Redis
     try:
@@ -376,7 +388,8 @@ async def sentry_context_middleware(request: Request, call_next):
     # Check if user data exists in request state (set by auth middleware if present)
     user = getattr(request.state, "user", None)
     if user:
-        with sentry_sdk.configure_scope() as scope:
-            scope.set_user({"id": str(user.get("id")), "email": user.get("email")})
+        sentry_sdk.set_user({"id": str(user.get("id")), "email": user.get("email")})
+    else:
+        sentry_sdk.set_user(None)
 
     return response

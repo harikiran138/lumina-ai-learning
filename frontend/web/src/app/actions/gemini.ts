@@ -1,29 +1,20 @@
 "use server";
 
-import { generateText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getTextbookRecord, saveTextbookRecord } from "@/lib/textbook-store";
 
-// Initialize Groq helper - lazily or safely
-const createGroqClient = () => {
-  const apiKey = process.env.GROQ_API_KEY;
+const createGeminiModel = () => {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
   if (!apiKey) {
-    console.error("GROQ_API_KEY is missing");
+    console.error("GEMINI_API_KEY is missing");
     return null;
   }
-  return createOpenAI({
-    apiKey: apiKey,
-    baseURL: "https://api.groq.com/openai/v1",
-  });
+  const client = new GoogleGenerativeAI(apiKey);
+  return client.getGenerativeModel({ model: "gemini-1.5-flash" });
 };
 
-import { ObjectId } from "mongodb";
-import clientPromise from "@/lib/mongodb";
-
-// Helper for delay
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 /**
- * Stage 1: Save extracted textbook text to MongoDB (No AI)
+ * Stage 1: Save extracted textbook text to the local textbook store (No AI)
  */
 export async function saveTextbook(
   title: string,
@@ -31,18 +22,8 @@ export async function saveTextbook(
   userId?: string,
 ) {
   try {
-    const client = await clientPromise;
-    const db = client.db("lumina_db");
-
-    const result = await db.collection("textbooks").insertOne({
-      title,
-      content,
-      userId: userId || "anonymous",
-      createdAt: new Date(),
-      status: "raw",
-    });
-
-    return { success: true, id: result.insertedId.toString() };
+    const record = await saveTextbookRecord({ title, content, userId });
+    return { success: true, id: record.id };
   } catch (error: any) {
     console.error("Save Textbook Error:", error);
     return { success: false, error: error.message };
@@ -51,18 +32,14 @@ export async function saveTextbook(
 
 /**
  * Stage 2: Generate course from stored textbook (AI)
- * Fetches text from DB -> Chunks -> AI -> Course
+ * Fetches text from the local textbook store -> Chunks -> AI -> Course
  */
 /**
- * Fetch the raw content of a textbook from MongoDB
+ * Fetch the raw content of a textbook from the local textbook store
  */
 export async function getTextbookContent(textbookId: string) {
   try {
-    const client = await clientPromise;
-    const db = client.db("lumina_db");
-    const textbook = await db.collection("textbooks").findOne({
-      _id: new ObjectId(textbookId),
-    });
+    const textbook = await getTextbookRecord(textbookId);
 
     if (!textbook || !textbook.content) {
       return { success: false, error: "Textbook not found" };
@@ -85,8 +62,8 @@ export async function generateCourseChunk(
   totalChunks: number,
 ) {
   // Check configuration lazily
-  const groqProvider = createGroqClient();
-  if (!groqProvider) {
+  const model = createGeminiModel();
+  if (!model) {
     throw new Error("API Key is required");
   }
 
@@ -129,11 +106,8 @@ export async function generateCourseChunk(
             ${chunkText}
             `;
 
-    const { text } = await generateText({
-      model: groqProvider("llama-3.1-8b-instant"),
-      prompt: chunkPrompt,
-      temperature: 0.1,
-    });
+    const result = await model.generateContent(chunkPrompt);
+    const text = result.response.text();
 
     // Parse JSON safely
     let jsonStr = text;
@@ -158,8 +132,8 @@ export async function analyzeTableOfContents(
   tocText: string,
 ): Promise<{ success: boolean; structure?: any; error?: string }> {
   // Check configuration lazily
-  const groqProvider = createGroqClient();
-  if (!groqProvider) return { success: false, error: "API Key missing" };
+  const model = createGeminiModel();
+  if (!model) return { success: false, error: "API Key missing" };
 
   try {
     const prompt = `
@@ -189,11 +163,8 @@ export async function analyzeTableOfContents(
         OUTPUT JSON ONLY.
         `;
 
-    const { text } = await generateText({
-      model: groqProvider("llama-3.1-8b-instant"),
-      prompt: prompt,
-      temperature: 0.0,
-    });
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
 
     // Parse JSON safely
     let jsonStr = text;

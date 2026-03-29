@@ -106,7 +106,7 @@ lumina-ai-learning/
 │   │   │
 │   │   ├── database/                 # Database management
 │   │   │   ├── supabase_manager.py   # Supabase client singleton
-│   │   │   ├── manager.py            # Legacy Mongo manager (deprecated)
+│   │   │   ├── manager.py            # Shared database adapter alias
 │   │   │   └── migrations/           # SQL migration files
 │   │   │
 │   │   ├── services/                 # Business logic services
@@ -816,7 +816,6 @@ SUPABASE_SERVICE_ROLE_KEY=<service_role_key>  # For admin operations
 REDIS_URL=redis://localhost:6379
 CHROMA_DB_PATH=./chroma_db
 LUMINA_FORCE_LOCAL_STORE=false                 # Use local JSON fallback for dev/tests
-MONGODB_URI=mongodb://localhost:27017/lumina   # Legacy, optional (docker only)
 
 # ── AI PROVIDERS ───────────────────────────────────────────────
 GEMINI_API_KEY=<your_gemini_api_key>           # Google AI Studio
@@ -1045,8 +1044,7 @@ Before Phase 1 milestone, add:
 
 ### Dead Code / Legacy
 
-- `MongoDB` is still referenced in docker-compose for legacy paths; not required for core flows
-- `tutor_state (1).py` in `ai_engine/` is a duplicate; use `tutor_state.py`
+- `tutor_state (1).py` in `ai_engine/` was a duplicate; use `tutor_state.py`
 - `handwriting_simple.py` router appears to duplicate `handwriting.py`
 
 ---
@@ -1095,7 +1093,6 @@ Services started:
 |---------|------|-------------|
 | postgres | 5432 | PostgreSQL 16 |
 | redis | 6379 | Redis 7 (caching, queues) |
-| mongodb | 27017 | MongoDB (legacy) |
 | backend | 8000 | FastAPI backend |
 | celery | — | Async task worker |
 | frontend | 3000 | Next.js web app |

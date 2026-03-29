@@ -124,7 +124,7 @@ async def teacher_dashboard(
     analytics: AnalyticsStore = Depends(get_analytics_store),
 ):
     """Teacher dashboard stats with role check"""
-    if current_user.get("role") not in ["teacher", "admin", "hod"]:
+    if current_user.get("role") not in ["teacher", "faculty", "admin", "hod"]:
         raise HTTPException(status_code=403, detail="Teacher access required")
     overview = await analytics.get_teacher_dashboard_overview(current_user["id"])
     stats = await analytics.get_teacher_dashboard_stats(current_user["id"])

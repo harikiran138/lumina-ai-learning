@@ -5,20 +5,25 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from app.store.course_store import CourseStore
+from app.store.user_store import UserStore
 
 @pytest.fixture
 def store():
     return CourseStore()
 
+@pytest.fixture
+async def teacher():
+    user_store = UserStore()
+    email = f"teacher-{uuid.uuid4()}@test.com"
+    user = await user_store.create_user(email, "password123", "Test Teacher", "teacher")
+    yield user
+    # Optional cleanup: await user_store.delete_user(user["id"])
+
 @pytest.mark.asyncio
-async def test_create_course(store):
+async def test_create_course(store, teacher):
     test_id = str(uuid.uuid4())[:8]
     code = f"TEST-{test_id}"
-    
-    # Supabase needs a real teacher_id or we use a dummy one if it doesn't foreign key strictly, OR
-    # wait, the course_store doesn't natively crash if teacher_id is fake, unless RLS/FK mandates it.
-    # We will use a random UUID for teacher
-    teacher_id = str(uuid.uuid4())
+    teacher_id = teacher["id"]
     
     course = await store.create_course(f"Course {test_id}", code, "Desc", teacher_id)
     assert course["course_code"] == code
@@ -32,10 +37,10 @@ async def test_create_course(store):
 
 
 @pytest.mark.asyncio
-async def test_update_course(store):
+async def test_update_course(store, teacher):
     test_id = str(uuid.uuid4())[:8]
     code = f"TEST-{test_id}"
-    teacher_id = str(uuid.uuid4())
+    teacher_id = teacher["id"]
     
     course = await store.create_course(f"Course {test_id}", code, "Desc", teacher_id)
     
@@ -49,10 +54,10 @@ async def test_update_course(store):
 
 
 @pytest.mark.asyncio
-async def test_add_module(store):
+async def test_add_module(store, teacher):
     test_id = str(uuid.uuid4())[:8]
     code = f"TEST-{test_id}"
-    teacher_id = str(uuid.uuid4())
+    teacher_id = teacher["id"]
     course = await store.create_course(f"Course {test_id}", code, "Desc", teacher_id)
     
     success = await store.add_module(course["id"], {"id": "mod1", "title": "Module 1"})
@@ -67,10 +72,10 @@ async def test_add_module(store):
 
 
 @pytest.mark.asyncio
-async def test_update_modules(store):
+async def test_update_modules(store, teacher):
     test_id = str(uuid.uuid4())[:8]
     code = f"TEST-{test_id}"
-    teacher_id = str(uuid.uuid4())
+    teacher_id = teacher["id"]
     course = await store.create_course(f"Course {test_id}", code, "Desc", teacher_id)
     
     success = await store.update_modules(course["id"], [{"id": "mod2", "title": "Replaced Module"}])
@@ -85,10 +90,10 @@ async def test_update_modules(store):
 
 
 @pytest.mark.asyncio
-async def test_delete_course(store):
+async def test_delete_course(store, teacher):
     test_id = str(uuid.uuid4())[:8]
     code = f"TEST-{test_id}"
-    teacher_id = str(uuid.uuid4())
+    teacher_id = teacher["id"]
     course = await store.create_course(f"Course {test_id}", code, "Desc", teacher_id)
     
     success = await store.delete_course(course["id"])

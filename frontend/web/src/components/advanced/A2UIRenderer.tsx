@@ -27,6 +27,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getConfiguredApiBase } from "@/lib/api";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -1023,11 +1024,12 @@ const PPTDownloadComponent = ({
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
-      const apiBase =
-        process.env.NEXT_PUBLIC_API_URL ||
-        process.env.NEXT_PUBLIC_API_BASE ||
-        "http://127.0.0.1:8000";
-      const fullUrl = `${apiBase}${downloadUrl}`;
+      const apiBase = getConfiguredApiBase();
+      const fullUrl = downloadUrl.startsWith("http")
+        ? downloadUrl
+        : apiBase
+          ? `${apiBase}${downloadUrl}`
+          : downloadUrl;
       const link = document.createElement("a");
       link.href = fullUrl;
       link.download = filename;

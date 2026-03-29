@@ -109,6 +109,8 @@ export default function AdminUsersPage() {
           user.id === userId ? { ...user, role: nextRole } : user,
         ),
       );
+    } catch (err: any) {
+      setError(err?.message || "Unable to update role");
     } finally {
       setSavingUserId(null);
     }
@@ -126,17 +128,21 @@ export default function AdminUsersPage() {
           user.id === userId ? { ...user, status: nextStatus } : user,
         ),
       );
+    } catch (err: any) {
+      setError(err?.message || "Unable to update status");
     } finally {
       setSavingUserId(null);
     }
   };
 
   const deleteUser = async (userId: string) => {
-    if (!confirm("Delete this user and their local progress records?")) return;
+    if (!window.confirm("Delete this user and their local progress records?")) return;
     setDeletingUserId(userId);
     try {
       await api.deleteUser(userId);
       setUsers((current) => current.filter((user) => user.id !== userId));
+    } catch (err: any) {
+      setError(err?.message || "Unable to delete user");
     } finally {
       setDeletingUserId(null);
     }
@@ -271,11 +277,18 @@ export default function AdminUsersPage() {
                     <tr key={user.id} className="align-top">
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-4">
-                          <img
-                            src={user.avatar}
-                            alt={user.name}
-                            className="h-12 w-12 rounded-2xl border border-white/10 object-cover"
-                          />
+                          {user.avatar ? (
+                            <img
+                              src={user.avatar}
+                              alt={user.name}
+                              className="h-12 w-12 rounded-2xl border border-white/10 object-cover"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                            />
+                          ) : (
+                            <div className="h-12 w-12 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center text-sm font-bold text-gray-400">
+                              {(user.name || "?").charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <div className="min-w-0">
                             <p className="truncate font-semibold text-white">{user.name}</p>
                             <p className="truncate text-sm text-gray-400">{user.email}</p>

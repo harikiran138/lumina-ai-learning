@@ -13,7 +13,7 @@ docker-compose up --build
 ```
 
 This starts:
-- Postgres, Redis, and MongoDB
+- Postgres and Redis plus the backend/frontend application services
 - Backend FastAPI service on `http://localhost:8000`
 - Frontend Next.js app on `http://localhost:3000` (configured to talk to the backend via `NEXT_PUBLIC_API_URL`).
 
@@ -138,9 +138,9 @@ The top-level `README.md` describes the *aspirational* Lumina platform (multi-ag
 The backend is a monolithic FastAPI service structured into several domains that mirror the conceptual architecture from `PROJECT_STRUCTURE.md`:
 
 - `backend/app/`
-  - `main.py` constructs the FastAPI app, sets up CORS, mounts `/uploads`, wires Mongo via `app.database.manager`, and includes routers from `backend/routers` and the assessment API under `/api/assessment`.
+  - `main.py` constructs the FastAPI app, sets up CORS, mounts `/uploads`, wires the shared database adapter via `app.database.manager`, and includes routers from `backend/routers` and the assessment API under `/api/assessment`.
   - `core/` contains settings (`config.py`) and security primitives (JWT/token helpers).
-  - `database/manager.py` manages the async Mongo connection used by the app.
+  - `database/manager.py` exposes the shared Supabase-backed database adapter used by the app.
   - `assessment/` is a self-contained adaptive assessment subsystem with:
     - `api/` (HTTP router/endpoints),
     - `engine/` (adaptive_logic, knowledge_tracing, policy_engine, session_manager), and
@@ -152,8 +152,7 @@ The backend is a monolithic FastAPI service structured into several domains that
   - Additional routers (`ai.py`, `handwriting.py`, etc.) provide AI-centric endpoints used by the frontend.
 
 - `backend/store/`
-  - `database.py` provides a synchronous Mongo client used by the store layer.
-  - `course_store.py`, `assignment_store.py`, `user_store.py` encapsulate persistence logic; API routers largely delegate to these.
+  - `course_store.py`, `assignment_store.py`, `user_store.py` encapsulate persistence logic on top of Supabase/PostgreSQL and the local JSON fallback; API routers largely delegate to these.
 
 - `backend/ai_engine/`
   - `llm.py` abstracts over LLM providers (Ollama by default, Gemini when `GEMINI_API_KEY` is set) behind a simple `LLMProvider` interface.
@@ -185,7 +184,7 @@ The main user-facing app is a Next.js 15 project:
 
 - `frontend/web/src/lib/`
   - `ai-pipeline.ts` and the `ai-tutor/` directory encapsulate the client-side RAG and tutoring pipeline.
-  - `db.ts`, `mongodb.ts` and related utilities coordinate client persistence and backend interaction.
+  - API utilities and lightweight local persistence helpers coordinate frontend interaction with the FastAPI backend.
 
 - `frontend/web/src/components/`
   - Houses reusable UI building blocks for dashboards and the marketing/home experience.

@@ -9,13 +9,13 @@
 
 ## PRIORITY 1 — CRITICAL BUGS (will crash at runtime)
 
-### TASK-001: Fix CourseStore — MongoDB syntax still used after Supabase migration
+### TASK-001: Fix CourseStore — legacy NoSQL syntax still used after Supabase migration
 **File:** `backend/app/store/course_store.py` lines 93–111
-**Problem:** `add_module()` and `update_modules()` use MongoDB `update_one()`, `$push`, `$set` operators. These will raise `AttributeError` at runtime since the Supabase client has no `update_one()` method.
+**Problem:** `add_module()` and `update_modules()` use legacy `update_one()`, `$push`, `$set` operators. These will raise `AttributeError` at runtime since the Supabase client has no `update_one()` method.
 **Fix:**
 - `add_module(course_id, module)`: fetch the course, append `module` to `course["modules"]`, then call `self.courses_collection.update({"modules": updated_list}).eq("id", course_id).execute()`
 - `update_modules(course_id, modules)`: call `self.courses_collection.update({"modules": modules}).eq("id", course_id).execute()`
-- Remove all MongoDB-style dict filter syntax (`{"$or": [...]}`, `{"$push": {...}}`, `{"$set": {...}}`)
+- Remove all legacy dict filter syntax (`{"$or": [...]}`, `{"$push": {...}}`, `{"$set": {...}}`)
 - Remove `await` from these calls (Supabase client is synchronous, not async)
 **Acceptance:** Both methods execute without error and correctly write to the Supabase `courses` table.
 
@@ -188,9 +188,9 @@ Each test should create and clean up its own test data.
 
 ---
 
-### TASK-016: Update CourseStore docstring — says "MongoDB store"
+### TASK-016: Update CourseStore docstring — says "legacy store"
 **File:** `backend/app/store/course_store.py` line 12
-**Problem:** Docstring says `MongoDB store for Courses` — leftover from before Supabase migration.
+**Problem:** Docstring says `legacy store for Courses` — leftover from before Supabase migration.
 **Fix:** Change to `Supabase (PostgreSQL) store for Courses.`
 **Acceptance:** Docstring is accurate.
 

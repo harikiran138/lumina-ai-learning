@@ -132,7 +132,8 @@ class CourseStore:
         return None
 
     async def get_course_by_id(self, course_id: str) -> Optional[dict]:
-        return await self.db.fetch_one("courses", {"id": course_id})
+        course = await self.db.fetch_one("courses", {"id": course_id})
+        return self._normalize_course(course)
 
     async def update_course(self, course_id: str, updates: dict) -> bool:
         # Cleanup updates for PostgreSQL

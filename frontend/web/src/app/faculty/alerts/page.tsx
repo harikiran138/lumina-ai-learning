@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { 
-  ArrowLeft, 
-  AlertTriangle, 
-  TrendingDown, 
-  Clock, 
-  Zap, 
-  Search, 
+import { useState, useEffect } from "react";
+import {
+  ArrowLeft,
+  AlertTriangle,
+  TrendingDown,
+  Clock,
+  Zap,
+  Search,
   Filter,
   ChevronRight,
   MessageSquare,
@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 interface Alert {
   id: string;
@@ -32,37 +33,36 @@ interface Alert {
 }
 
 export default function AtRiskAlertsPage() {
-  const [alerts, setAlerts] = useState<Alert[]>([
-    {
-      id: "a1",
-      student_name: "Alice Chen",
-      type: "performance",
-      severity: "critical",
-      description: "Mastery in 'Asynchronous Execution' dropped by 42% in the last 48 hours.",
-      probability: 0.82,
-      trend: "Sharp Decline",
-      timestamp: "2 hours ago"
-    },
-    {
-      id: "a2",
-      student_name: "David Kim",
-      type: "engagement",
-      severity: "warning",
-      description: "Class attendance dropped from 98% to 65% since last week.",
-      trend: "Negative engagement velocity",
-      timestamp: "5 hours ago"
-    },
-    {
-      id: "a3",
-      student_name: "Charlie Day",
-      type: "dropout",
-      severity: "critical",
-      description: "Behavioral patterns match historic dropout profiles (Low activity + pending assignments).",
-      probability: 0.65,
-      trend: "High Risk",
-      timestamp: "1 day ago"
-    }
-  ]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getTeacherAlerts().then((data) => {
+      const mapped: Alert[] = (data || []).map((item: any) => ({
+        id: item.id,
+        student_name: item.student_name || item.user_name || "Student",
+        type: item.type || item.intervention_type || "performance",
+        severity: item.priority === "CRITICAL" ? "critical" : item.priority === "HIGH" ? "warning" : "stable",
+        description: item.description || item.recommended_action || "Alert detected.",
+        probability: item.dropout_probability,
+        trend: item.trend || item.status || "",
+        timestamp: item.created_at ? new Date(item.created_at).toLocaleDateString() : "Recently",
+      }));
+      setAlerts(mapped);
+    }).catch((err) => {
+      console.error("failed_to_load_alerts", err);
+    }).finally(() => {
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return (
+    <div className="flex min-h-[400px] items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
+    </div>
+  );
+
+  const criticalCount = alerts.filter((a) => a.severity === "critical").length;
 
   return (
     <div className="min-h-screen space-y-8 p-8">
@@ -79,7 +79,7 @@ export default function AtRiskAlertsPage() {
         <div className="flex items-center gap-3">
            <div className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-bold flex items-center gap-2">
             <UserMinus className="h-4 w-4" />
-            3 Critical Interventions Needed
+            {criticalCount} Critical Intervention{criticalCount !== 1 ? "s" : ""} Needed
           </div>
         </div>
       </header>

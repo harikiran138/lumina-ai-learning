@@ -2,11 +2,7 @@
 
 import { useState } from "react";
 import { Shield, Key, AlertTriangle, CheckCircle } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { api } from "@/lib/api";
 
 export default function AdminSecurity() {
   const [newPassword, setNewPassword] = useState("");
@@ -31,16 +27,11 @@ export default function AdminSecurity() {
     setSuccess(false);
 
     try {
-      const { data, error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      await api.changePassword(newPassword);
       setSuccess(true);
       setNewPassword("");
       setConfirmPassword("");
+      setTimeout(() => setSuccess(false), 5000);
     } catch (err: any) {
       setError(err?.message || "Failed to update password");
     } finally {
@@ -61,13 +52,13 @@ export default function AdminSecurity() {
             </h1>
             <p className="mt-4 max-w-xl text-base text-gray-300">
               Change your central administrative password to maintain security.
-              This direct DB update enforces immediate credential invalidation.
+              This update enforces immediate credential invalidation.
             </p>
           </div>
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 flex flex-col justify-center items-center text-center">
              <Shield className="h-12 w-12 text-amber-500 mb-2 opacity-80" />
              <p className="text-sm font-semibold text-white">System Secured</p>
-             <p className="text-xs text-gray-500 mt-1 mt-1">Updates propagate immediately across cluster endpoints.</p>
+             <p className="text-xs text-gray-500 mt-1">Updates propagate immediately across cluster endpoints.</p>
           </div>
         </div>
       </section>
@@ -91,7 +82,7 @@ export default function AdminSecurity() {
           <Key className="h-5 w-5 text-amber-500" />
           Update Password
         </h2>
-        
+
         <form onSubmit={handlePasswordUpdate} className="space-y-5 max-w-sm">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
@@ -115,7 +106,7 @@ export default function AdminSecurity() {
               placeholder="Re-type password"
             />
           </div>
-          
+
           <button
             type="submit"
             disabled={loading}

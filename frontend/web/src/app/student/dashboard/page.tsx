@@ -188,11 +188,11 @@ function SectionCard({
   className?: string;
 }) {
   return (
-    <section className={cn("glass-v2 border-white/5 overflow-hidden", className)}>
+    <section className={cn("glass-v2-gold border-white/5 overflow-hidden", className)}>
       <div className="flex items-start justify-between gap-4 p-6 border-b border-white/5">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-white/[0.04] border border-white/5 flex items-center justify-center text-lumina-primary">
+            <div className="w-11 h-11 rounded-2xl bg-white/[0.04] border border-white/5 flex items-center justify-center text-lumina-highlight">
               <Icon className="w-5 h-5" />
             </div>
             <div>
@@ -251,11 +251,11 @@ export default function StudentDashboard() {
             weeklyActivity.length > 0
               ? weeklyActivity.map((point) => point.minutes)
               : [0, 0, 0, 0, 0, 0, 0],
-          borderColor: "#FFD700",
-          backgroundColor: "rgba(255, 215, 0, 0.12)",
+          borderColor: "#fcc419",
+          backgroundColor: "rgba(252, 196, 25, 0.12)",
           fill: true,
           tension: 0.35,
-          pointBackgroundColor: "#FFD700",
+          pointBackgroundColor: "#fcc419",
           pointBorderColor: "#0A0A0A",
           pointBorderWidth: 2,
           pointRadius: 4,
@@ -306,7 +306,7 @@ export default function StudentDashboard() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col xl:flex-row gap-10 bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8 lg:p-12 relative overflow-hidden group">
         {/* Abstract Background for Header */}
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-lumina-primary/5 rounded-full blur-[100px] -mr-48 -mt-48 transition-all duration-700 group-hover:bg-lumina-highlight/5" />
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-lumina-highlight/10 rounded-full blur-[100px] -mr-48 -mt-48 transition-all duration-700 group-hover:bg-lumina-highlight/15" />
         
         <div className="flex-1 z-10">
           <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -428,7 +428,7 @@ export default function StudentDashboard() {
               </div>
               <Link
                 href={nextAction.href}
-                className="h-12 px-5 rounded-2xl bg-white/[0.04] border border-white/10 text-white font-semibold inline-flex items-center gap-2 hover:border-lumina-primary/30 hover:text-lumina-primary transition-all"
+                className="h-12 px-5 rounded-2xl bg-white/[0.04] border border-white/10 text-white font-semibold inline-flex items-center gap-2 hover:border-lumina-highlight/30 hover:text-lumina-highlight transition-all"
               >
                 {nextAction.ctaLabel}
                 <ArrowRight className="w-4 h-4" />
@@ -449,7 +449,7 @@ export default function StudentDashboard() {
           action={
             <Link
               href="/student/assignments"
-              className="text-sm font-semibold text-lumina-primary hover:text-white transition-colors"
+              className="text-sm font-semibold text-lumina-highlight hover:text-white transition-colors"
             >
               View all
             </Link>
@@ -484,7 +484,7 @@ export default function StudentDashboard() {
                     </div>
                     <Link
                       href={assignment.href}
-                      className="text-sm font-semibold text-lumina-primary hover:text-white transition-colors shrink-0"
+                      className="text-sm font-semibold text-lumina-highlight hover:text-white transition-colors shrink-0"
                     >
                       Open
                     </Link>
@@ -533,9 +533,9 @@ export default function StudentDashboard() {
                   legend: { display: false },
                   tooltip: {
                     backgroundColor: "rgba(10, 10, 10, 0.95)",
-                    titleColor: "#FFD700",
+                    titleColor: "#fcc419",
                     bodyColor: "#fff",
-                    borderColor: "rgba(255, 215, 0, 0.2)",
+                    borderColor: "rgba(252, 196, 25, 0.2)",
                     borderWidth: 1,
                     padding: 12,
                     cornerRadius: 12,
@@ -683,7 +683,7 @@ export default function StudentDashboard() {
               </div>
               <Link
                 href={resumeCourse.href}
-                className="h-12 px-5 rounded-2xl bg-white/[0.04] border border-white/10 text-white font-semibold inline-flex items-center gap-2 hover:border-lumina-primary/30 hover:text-lumina-primary transition-all"
+                className="h-12 px-5 rounded-2xl bg-white/[0.04] border border-white/10 text-white font-semibold inline-flex items-center gap-2 hover:border-lumina-highlight/30 hover:text-lumina-highlight transition-all"
               >
                 Continue course
                 <ArrowRight className="w-4 h-4" />
@@ -747,7 +747,7 @@ export default function StudentDashboard() {
               <ul className="space-y-2 text-sm text-gray-400">
                 {learningSignals.reasons.slice(0, 3).map((reason) => (
                   <li key={reason} className="flex gap-2">
-                    <span className="text-lumina-primary">•</span>
+                    <span className="text-lumina-highlight">•</span>
                     <span>{capitalizeSentence(reason)}</span>
                   </li>
                 ))}
@@ -778,7 +778,7 @@ export default function StudentDashboard() {
                         Confidence {roundValue(item.confidence)}%
                       </p>
                     </div>
-                    <span className="text-sm font-semibold text-lumina-primary">
+                    <span className="text-sm font-semibold text-lumina-highlight">
                       {roundValue(item.score)}%
                     </span>
                   </div>
@@ -814,7 +814,7 @@ export default function StudentDashboard() {
               </div>
               <Link
                 href={coachInsight.href}
-                className="h-12 px-5 rounded-2xl bg-white/[0.04] border border-white/10 text-white font-semibold inline-flex items-center gap-2 hover:border-lumina-primary/30 hover:text-lumina-primary transition-all"
+                className="h-12 px-5 rounded-2xl bg-white/[0.04] border border-white/10 text-white font-semibold inline-flex items-center gap-2 hover:border-lumina-highlight/30 hover:text-lumina-highlight transition-all"
               >
                 {coachInsight.actionLabel}
                 <ArrowRight className="w-4 h-4" />
@@ -836,7 +836,7 @@ export default function StudentDashboard() {
         action={
           <Link
             href="/student/courses"
-            className="text-sm font-semibold text-lumina-primary hover:text-white transition-colors"
+            className="text-sm font-semibold text-lumina-highlight hover:text-white transition-colors"
           >
             View all
           </Link>
@@ -878,7 +878,7 @@ export default function StudentDashboard() {
                     </div>
                     <Link
                       href={`/student/courses/${course.id}`}
-                      className="h-11 rounded-2xl bg-white/[0.04] border border-white/10 text-white font-semibold inline-flex items-center justify-center gap-2 hover:border-lumina-primary/30 hover:text-lumina-primary transition-all"
+                      className="h-11 rounded-2xl bg-white/[0.04] border border-white/10 text-white font-semibold inline-flex items-center justify-center gap-2 hover:border-lumina-highlight/30 hover:text-lumina-highlight transition-all"
                     >
                       Continue course
                       <ArrowRight className="w-4 h-4" />
@@ -926,7 +926,7 @@ export default function StudentDashboard() {
                   className={cn(
                     "rounded-3xl border p-5",
                     item.completed
-                      ? "border-lumina-primary/20 bg-lumina-primary/[0.08]"
+                      ? "border-lumina-highlight/20 bg-lumina-highlight/[0.08]"
                       : "border-white/5 bg-white/[0.02]",
                   )}
                 >
@@ -971,7 +971,7 @@ export default function StudentDashboard() {
 
 function ProgressBar({
   value,
-  tone = "from-lumina-primary to-amber-400",
+  tone = "from-lumina-highlight to-amber-400",
 }: {
   value: number;
   tone?: string;
@@ -1022,7 +1022,7 @@ function EmptyState({
       {actionLabel && href ? (
         <Link
           href={href}
-          className="inline-flex items-center gap-2 mt-5 text-sm font-semibold text-lumina-primary hover:text-white transition-colors"
+          className="inline-flex items-center gap-2 mt-5 text-sm font-semibold text-lumina-highlight hover:text-white transition-colors"
         >
           {actionLabel}
           <ArrowRight className="w-4 h-4" />
@@ -1040,7 +1040,7 @@ function StatusPill({
   tone: "accent" | "neutral" | "success" | "warning" | "danger";
 }) {
   const tones = {
-    accent: "bg-lumina-primary/10 text-lumina-primary border-lumina-primary/20",
+    accent: "bg-lumina-highlight/10 text-lumina-highlight border-lumina-highlight/20",
     neutral: "bg-white/[0.04] text-gray-300 border-white/10",
     success: "bg-lumina-highlight/10 text-lumina-highlight border-lumina-highlight/20",
     warning: "bg-amber-500/10 text-amber-300 border-amber-500/20",

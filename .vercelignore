@@ -1,0 +1,20 @@
+.git
+.next
+node_modules
+frontend/web/.next
+frontend/web/node_modules
+backend
+training
+output
+docs
+demo_scripts
+skills
+pathway agent
+Handwriting_Analysis_Project
+artificial_intelligence_tutorial.pdf
+lumina_backend.log
+static
+public
+supabase
+ecosystem_seed.sql
+database_schema.sql

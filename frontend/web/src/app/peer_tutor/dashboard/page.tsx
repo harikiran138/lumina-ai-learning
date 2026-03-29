@@ -31,6 +31,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { ClientOnlyChart } from '@/components/charts/ClientOnlyChart';
 import Link from 'next/link';
 
 const GlassCard: React.FC<{ className?: string; children: React.ReactNode }> = ({ className, children }) => (
@@ -225,31 +226,33 @@ export default function PeerTutorDashboard() {
               </div>
 
               <div className="h-48">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={earningsData}>
-                       <defs>
-                          <linearGradient id="colorCredits" x1="0" y1="0" x2="0" y2="1">
-                             <stop offset="5%" stopColor="#bf9304" stopOpacity={0.3} />
-                             <stop offset="95%" stopColor="#bf9304" stopOpacity={0} />
-                          </linearGradient>
-                       </defs>
-                       <XAxis dataKey="day" hide />
-                       <YAxis hide />
-                       <Tooltip 
-                          content={({ active, payload }) => {
-                             if (active && payload && payload.length) {
-                                return (
-                                   <div className="p-2 rounded-lg bg-black/80 border border-white/10 text-[10px] font-bold text-white">
-                                      {payload[0].value} Credits
-                                   </div>
-                                );
-                             }
-                             return null;
-                          }}
-                       />
-                       <Area type="monotone" dataKey="credits" stroke="#bf9304" fillOpacity={1} fill="url(#colorCredits)" strokeWidth={3} />
-                    </AreaChart>
-                 </ResponsiveContainer>
+                 <ClientOnlyChart>
+                    <ResponsiveContainer width="100%" height="100%">
+                       <AreaChart data={earningsData}>
+                          <defs>
+                             <linearGradient id="colorCredits" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#bf9304" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#bf9304" stopOpacity={0} />
+                             </linearGradient>
+                          </defs>
+                          <XAxis dataKey="day" hide />
+                          <YAxis hide />
+                          <Tooltip 
+                             content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                   return (
+                                      <div className="p-2 rounded-lg bg-black/80 border border-white/10 text-[10px] font-bold text-white">
+                                         {payload[0].value} Credits
+                                      </div>
+                                   );
+                                }
+                                return null;
+                             }}
+                          />
+                          <Area type="monotone" dataKey="credits" stroke="#bf9304" fillOpacity={1} fill="url(#colorCredits)" strokeWidth={3} />
+                       </AreaChart>
+                    </ResponsiveContainer>
+                 </ClientOnlyChart>
               </div>
 
               <div className="mt-8 pt-8 border-t border-white/5">

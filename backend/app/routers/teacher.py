@@ -188,7 +188,10 @@ async def process_physical_submission(
     assignment = await assignment_store.get_assignment_by_id(submission.get("assignment_id"))
     if assignment:
         expected = assignment.get("description") or assignment.get("title")
-        grading_result = grader_service.grade_submission(full_text, expected)
+        try:
+            grading_result = grader_service.grade_submission(full_text, expected)
+        except Exception as e:
+            grading_result = {"score": 0, "feedback": f"Grading service unavailable: {str(e)}"}
 
     await content_store.update_physical_submission(submission_id, {
         "ocr_extracted_text": {"full_text": str(full_text), "pages": extracted_texts},

@@ -10,7 +10,7 @@ from app.store.user_store import UserStore
 
 @pytest.fixture
 async def ac():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:  # nosec B113
         yield client
 
 def gen_user_data():

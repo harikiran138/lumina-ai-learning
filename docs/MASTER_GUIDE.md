@@ -66,7 +66,7 @@ This documentation pass also stabilized several broken cross-module connections:
 
 - course payloads are normalized so frontend pages can reliably read `name`, `title`, and `code`
 - tutor chat responses now return both `response` and `content` for UI compatibility
-- the learner profile store now works without the old Mongo-style dependency
+- the learner profile store now works without the old legacy NoSQL-style dependency
 - tutor-session deduplication now persists through a local JSON store
 - assignment extraction now supports text files and PDFs in addition to images
 - the grading worker now correctly handles sync grading plus async submission updates

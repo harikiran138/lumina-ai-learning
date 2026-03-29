@@ -1,0 +1,8 @@
+{
+  "model": "qwen/qwen3-next-80b-a3b-instruct:free",
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_AUTH_TOKEN": "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",
+    "ANTHROPIC_API_KEY": ""
+  }
+}

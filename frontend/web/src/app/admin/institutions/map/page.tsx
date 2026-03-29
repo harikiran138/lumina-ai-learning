@@ -13,6 +13,7 @@ import {
   Users,
   Search
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface Department {
@@ -41,22 +42,18 @@ export default function InstitutionMap() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/admin/institutions");
-        const data = await res.json();
-        
-        // Fetch departments and programs for each institution
-        const enriched = await Promise.all(data.map(async (inst: any) => {
-          const [dRes, pRes] = await Promise.all([
-            fetch(`/api/admin/institutions/${inst.id}/departments`),
-            fetch(`/api/admin/connections?inst_id=${inst.id}`) // Using connections to find programs loosely for now or adding a new endpoint
-          ]);
+        const data = await api.getInstitutions();
+
+        // Fetch departments for each institution
+        const enriched = await Promise.all((data || []).map(async (inst: any) => {
+          const departments = await api.getDepartments(inst.id);
           return {
             ...inst,
-            departments: await dRes.json(),
-            programs: [] // Placeholder until clarified
+            departments: departments || [],
+            programs: [],
           };
         }));
-        
+
         setInstitutions(enriched);
       } catch (err) {
         console.error("failed_to_load_institutions", err);

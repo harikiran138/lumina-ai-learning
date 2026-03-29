@@ -79,7 +79,7 @@ export function StatCard({
       )}
 
       {/* Modern Gradient Background */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/[0.03] to-transparent rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-lumina-highlight/[0.05] to-transparent rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none transition-all duration-500 group-hover:bg-lumina-highlight/[0.08]" />
     </div>
   );
 }
