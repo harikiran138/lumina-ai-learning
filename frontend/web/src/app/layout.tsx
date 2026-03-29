@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import GlobalErrorBoundary from "@/components/layout/GlobalErrorBoundary";
 import { Toaster } from "sonner";
+import { cn } from "@/lib/utils";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -31,7 +32,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${display.variable} ${inter.className} min-h-screen bg-background text-foreground`}>
+      <body className={cn(
+        inter.className,
+        inter.variable,
+        display.variable,
+        "min-h-screen bg-background text-foreground"
+      )} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

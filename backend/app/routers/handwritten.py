@@ -1,8 +1,10 @@
 import os
 import uuid
 import asyncio
+from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks, Form
+from pydantic import BaseModel
 from app.database.supabase_manager import supabase_db
 from app.database.models import (
     HandwrittenAssignment, HandwrittenQuestion, HandwrittenSubmission,
@@ -129,27 +131,64 @@ async def override_grade(
     if current_user.get("role") not in ["teacher", "faculty", "hod", "super_admin"]:
         raise HTTPException(status_code=403, detail="Only teachers can override grades")
     
+    now = datetime.now(timezone.utc).isoformat()
     update = {
-        "status": QuestionStatus.OVERRIDDEN,
+        "status": "teacher_reviewed",
         "teacher_score": score,
         "teacher_feedback": feedback,
         "final_score": score,
-        "overridden_at": settings.current_time_iso()
+        "overridden_at": now,
     }
-    
+
     await supabase_db.update("handwritten_submission_questions", update, {
         "submission_id": submission_id,
         "question_id": question_id
     })
-    
+
     # Recalculate total score
     all_q = await supabase_db.fetch_all("handwritten_submission_questions", {"submission_id": submission_id})
     total = sum(q.get("final_score") or 0 for q in all_q)
-    
+
     await supabase_db.update("handwritten_submissions", {
         "teacher_total_score": total,
         "final_score": total,
-        "status": SubmissionStatus.TEACHER_REVIEWED
+        "status": "teacher_reviewed"
     }, {"id": submission_id})
-    
+
+    return {"success": True, "total_score": total}
+
+
+class GradeBody(BaseModel):
+    teacher_score: float
+    teacher_feedback: str = ""
+
+
+@router.put("/submissions/{submission_id}/questions/{question_id}/grade")
+async def grade_question(
+    submission_id: str,
+    question_id: str,
+    body: GradeBody,
+    current_user: dict = Depends(get_current_user)
+):
+    if current_user.get("role") not in ["teacher", "faculty", "hod", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Only teachers can grade")
+    now = datetime.now(timezone.utc).isoformat()
+    update = {
+        "status": "teacher_reviewed",
+        "teacher_score": body.teacher_score,
+        "teacher_feedback": body.teacher_feedback,
+        "final_score": body.teacher_score,
+        "overridden_at": now,
+    }
+    await supabase_db.update("handwritten_submission_questions", update, {
+        "submission_id": submission_id,
+        "question_id": question_id
+    })
+    all_q = await supabase_db.fetch_all("handwritten_submission_questions", {"submission_id": submission_id})
+    total = sum(q.get("final_score") or 0 for q in all_q)
+    await supabase_db.update("handwritten_submissions", {
+        "teacher_total_score": total,
+        "final_score": total,
+        "status": "teacher_reviewed"
+    }, {"id": submission_id})
     return {"success": True, "total_score": total}

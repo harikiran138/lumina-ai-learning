@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
+  ArrowLeft,
   ArrowRight,
   Building2,
   CheckCircle2,
@@ -55,6 +57,7 @@ function redirectAfterAuth(user: AuthUser) {
 }
 
 export default function AuthGateway({ mode }: { mode: AuthMode }) {
+  const router = useRouter();
   const [activeRole, setActiveRole] = useState<LoginRole>("student");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -137,6 +140,14 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
 
   const isSignup = mode === "signup";
 
+  function handleBack() {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push("/");
+  }
+
   return (
     <div className="min-h-screen bg-black text-slate-100 flex overflow-hidden">
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-stone-950">
@@ -188,6 +199,17 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
         <div className="absolute bottom-1/4 -left-1/4 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="w-full max-w-md relative z-10">
+          {!isSignup ? (
+            <button
+              type="button"
+              onClick={handleBack}
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300 transition-colors hover:border-lumina-highlight/40 hover:text-white"
+            >
+              <ArrowLeft size={16} />
+              Back
+            </button>
+          ) : null}
+
           <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-lumina-highlight/30 bg-lumina-highlight/10 text-lg font-black text-lumina-highlight">
               L
