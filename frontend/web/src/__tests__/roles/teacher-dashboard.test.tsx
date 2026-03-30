@@ -10,6 +10,13 @@ import { server } from '../mocks/server'
 
 const BASE_URL = 'http://localhost:3001/api'
 
+type JsonObject = Record<string, unknown>
+
+async function readJsonObject(request: Request): Promise<JsonObject> {
+  const body = await request.json()
+  return body && typeof body === 'object' ? (body as JsonObject) : {}
+}
+
 // ==================== SECTION T1 — TEACHER DASHBOARD ====================
 
 describe('Teacher — Dashboard Overview (T1)', () => {
@@ -191,15 +198,16 @@ describe('Teacher — Course Management (T3)', () => {
         ])
       }),
       http.post(`${BASE_URL}/teacher/courses`, async ({ request }) => {
-        const body = await request.json()
-        if (!body.title) {
+        const body = await readJsonObject(request)
+        const title = typeof body.title === 'string' ? body.title : ''
+        if (!title) {
           return HttpResponse.json({ error: 'Title is required' }, { status: 400 })
         }
-        return HttpResponse.json({ id: 'tc-new', title: body.title, studentCount: 0, status: 'draft' }, { status: 201 })
+        return HttpResponse.json({ id: 'tc-new', title, studentCount: 0, status: 'draft' }, { status: 201 })
       }),
       http.put(`${BASE_URL}/teacher/courses/:id`, async ({ request }) => {
-        const body = await request.json()
-        return HttpResponse.json({ success: true, ...body })
+        const body = await readJsonObject(request)
+        return HttpResponse.json({ success: true, ...(body as any) })
       }),
       http.delete(`${BASE_URL}/teacher/courses/:id`, () => {
         return HttpResponse.json({ success: true })
@@ -280,11 +288,12 @@ describe('Teacher — Assignment Management (T4)', () => {
         ])
       }),
       http.post(`${BASE_URL}/teacher/assignments`, async ({ request }) => {
-        const body = await request.json()
-        if (!body.title) {
+        const body = await readJsonObject(request)
+        const title = typeof body.title === 'string' ? body.title : ''
+        if (!title) {
           return HttpResponse.json({ error: 'Title is required' }, { status: 400 })
         }
-        return HttpResponse.json({ id: 'ta-new', ...body }, { status: 201 })
+        return HttpResponse.json({ id: 'ta-new', ...(body as any) }, { status: 201 })
       })
     )
   })
@@ -358,8 +367,8 @@ describe('Teacher — Submission Review (T5)', () => {
         ])
       }),
       http.put(`${BASE_URL}/teacher/submissions/:id`, async ({ request }) => {
-        const body = await request.json()
-        return HttpResponse.json({ success: true, ...body })
+        const body = await readJsonObject(request)
+        return HttpResponse.json({ success: true, ...(body as any) })
       })
     )
   })

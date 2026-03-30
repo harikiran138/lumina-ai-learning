@@ -20,61 +20,49 @@ interface AuthState {
   refreshUser: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
 
-      setUser: (user) =>
-        set({ user, isAuthenticated: user !== null }),
+  setUser: (user) =>
+    set({ user, isAuthenticated: user !== null }),
 
-      login: async (identifier: string, password: string) => {
-        set({ isLoading: true });
-        try {
-          const user = await api.login(identifier, password);
-          set({ user, isAuthenticated: true, isLoading: false });
-          return user;
-        } catch (err) {
-          set({ isLoading: false });
-          throw err;
-        }
-      },
-
-      logout: async () => {
-        try {
-          await api.logout();
-        } catch {
-          // ignore network errors on logout
-        } finally {
-          set({ user: null, isAuthenticated: false });
-        }
-      },
-
-      refreshUser: async () => {
-        try {
-          const user = await api.getCurrentUser();
-          if (user) {
-            set({ user, isAuthenticated: true });
-          } else {
-            set({ user: null, isAuthenticated: false });
-          }
-        } catch {
-          set({ user: null, isAuthenticated: false });
-        }
-      },
-    }),
-    {
-      name: "lumina-auth",
-      storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? sessionStorage : ({} as Storage)
-      ),
-      // Only persist the user object, not loading state
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+  login: async (identifier: string, password: string) => {
+    set({ isLoading: true });
+    try {
+      const user = await api.login(identifier, password);
+      set({ user, isAuthenticated: true, isLoading: false });
+      return user;
+    } catch (err) {
+      set({ isLoading: false });
+      throw err;
     }
-  )
-);
+  },
+
+  logout: async () => {
+    try {
+      await api.logout();
+    } catch {
+      // ignore network errors on logout
+    } finally {
+      set({ user: null, isAuthenticated: false });
+    }
+  },
+
+  refreshUser: async () => {
+    try {
+      const user = await api.getCurrentUser();
+      if (user) {
+        set({ user, isAuthenticated: true });
+      } else {
+        set({ user: null, isAuthenticated: false });
+      }
+    } catch {
+      set({ user: null, isAuthenticated: false });
+    }
+  },
+}));
 
 /** Convenience selector — avoids re-subscribing to the full store */
 export const useUser = () => useAuthStore((s) => s.user);

@@ -33,8 +33,6 @@ export default function KnowledgeGraphPage() {
 
   useEffect(() => {
     const apiBase = getConfiguredApiBase();
-    const token = typeof window !== "undefined" ? sessionStorage.getItem("lumina_token") || "" : "";
-    const headers = { Authorization: `Bearer ${token}` };
 
     const fetchGraph = async () => {
       setIsLoading(true);
@@ -48,7 +46,7 @@ export default function KnowledgeGraphPage() {
       }
       try {
         // 1. Get enrolled courses from dashboard
-        const dashRes = await fetch(`${apiBase}/api/student/dashboard`, { headers });
+        const dashRes = await fetch(`${apiBase}/api/student/dashboard`, { credentials: "include" });
         const dash = dashRes.ok ? await dashRes.json() : {};
         const enrolled: any[] = dash.enrolledCourses || [];
 
@@ -69,7 +67,9 @@ export default function KnowledgeGraphPage() {
         setCourseTitle(primary.name || primary.title || "Learning Path");
 
         // 2. Fetch knowledge nodes for that course
-        const kgRes = await fetch(`${apiBase}/api/knowledge-graph/${primary.id}`, { headers });
+        const kgRes = await fetch(`${apiBase}/api/knowledge-graph/${primary.id}`, {
+          credentials: "include",
+        });
         const rawNodes: any[] = kgRes.ok ? await kgRes.json() : [];
 
         if (rawNodes.length === 0) {

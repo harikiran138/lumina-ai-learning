@@ -44,7 +44,7 @@ describe('Auth flow integration', () => {
     })
   })
 
-  it('calls the API and persists the access token on successful login', async () => {
+  it('calls the API and persists the user session without exposing the access token', async () => {
     server.use(
       http.post(`${BASE}/api/auth/login`, () =>
         HttpResponse.json({
@@ -65,7 +65,7 @@ describe('Auth flow integration', () => {
     await user.click(screen.getByRole('button', { name: /^login$/i }))
 
     await waitFor(() => {
-      expect(sessionStorage.getItem('lumina_token')).toBe('cookie-test-token')
+      expect(sessionStorage.getItem('lumina_token')).toBeNull()
       expect(sessionStorage.getItem('lumina_user')).toContain('alice@lumina.test')
     }, { timeout: 5000 })
   })

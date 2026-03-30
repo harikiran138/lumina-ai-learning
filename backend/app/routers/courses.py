@@ -303,8 +303,8 @@ async def create_course_form(
     store: CourseStore = Depends(get_course_store),
 ):
     """Create a course (form-data variant)."""
-    if current_user["role"] not in ("teacher", "admin", "hod"):
-        raise HTTPException(status_code=403, detail="Only teachers can create courses")
+    if current_user["role"] not in ("super_admin", "hod"):
+        raise HTTPException(status_code=403, detail="Only HOD or Admin can create courses")
     if await store.get_course_by_code(code):
         raise HTTPException(status_code=400, detail="Course code already exists")
     course = await store.create_course(
@@ -325,8 +325,8 @@ async def create_course_json(
     store: CourseStore = Depends(get_course_store),
 ):
     """Create a course (JSON body)."""
-    if current_user["role"] not in ("teacher", "admin", "hod"):
-        raise HTTPException(status_code=403, detail="Only teachers can create courses")
+    if current_user["role"] not in ("super_admin", "hod"):
+        raise HTTPException(status_code=403, detail="Only HOD or Admin can create courses")
     if await store.get_course_by_code(body.code):
         raise HTTPException(status_code=400, detail="Course code already exists")
     course_name = body.name or body.title
@@ -373,8 +373,8 @@ async def delete_course(
     store: CourseStore = Depends(get_course_store),
 ):
     """Delete a course."""
-    if current_user["role"] not in ("teacher", "admin", "hod"):
-        raise HTTPException(status_code=403, detail="Only teachers or admins can delete courses")
+    if current_user["role"] not in ("super_admin", "hod"):
+        raise HTTPException(status_code=403, detail="Only HOD or Admin can delete courses")
     success = await store.delete_course(course_id)
     if not success:
         raise HTTPException(status_code=404, detail="Course not found")

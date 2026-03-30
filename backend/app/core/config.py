@@ -6,9 +6,9 @@ import os
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Lumina Learning Platform"
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = "change_this_to_a_secure_random_string"
-    JWT_SECRET: str = os.getenv("JWT_SECRET", "supersecretjwtkeythatshouldbechanged123!")
-    JWT_REFRESH_SECRET: str = os.getenv("JWT_REFRESH_SECRET", "anotherverysecretrefreshkey123!")
+    SECRET_KEY: Optional[str] = None
+    JWT_SECRET: Optional[str] = None
+    JWT_REFRESH_SECRET: Optional[str] = None
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
 
     # Database
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Server
     HOST: str = "0.0.0.0"  # nosec B104
     PORT: int = 8000
-    SECURE_COOKIES: bool = False  # Set True in production (HTTPS required)
+    SECURE_COOKIES: bool = True if str(os.getenv("ENVIRONMENT")).lower() == "production" else str(os.getenv("SECURE_COOKIES", "True")).lower() == "true"
 
     # AI Configuration - Use GEMINI_API_KEY for both tutor and assessment
     ASSESSMENT_API_KEY: Optional[str] = None
@@ -41,6 +41,21 @@ class Settings(BaseSettings):
         # If ASSESSMENT_API_KEY not set, use GEMINI_API_KEY
         if not self.ASSESSMENT_API_KEY:
             self.ASSESSMENT_API_KEY = os.getenv("GEMINI_API_KEY")
+
+        # Security Check for Production or Development Secret Presence
+        is_prod = os.getenv("ENVIRONMENT", "").lower() == "production"
+        
+        # Mandatory Secrets Check
+        if not self.SECRET_KEY or not self.JWT_SECRET or not self.JWT_REFRESH_SECRET:
+            if is_prod:
+                import logging
+                logging.getLogger("uvicorn.error").critical("SECURITY ALERT: Missing secrets in PRODUCTION environment. Deployment blocked.")
+                raise ValueError("SECRET_KEY, JWT_SECRET, and JWT_REFRESH_SECRET MUST be set in .env for production.")
+            else:
+                # Default for local development ONLY if not in prod
+                self.SECRET_KEY = self.SECRET_KEY or "dev_secret_only_for_local_testing"
+                self.JWT_SECRET = self.JWT_SECRET or "dev_jwt_secret_only_for_local_testing"
+                self.JWT_REFRESH_SECRET = self.JWT_REFRESH_SECRET or "dev_refresh_secret_only_for_local_testing"
 
 
 settings = Settings()

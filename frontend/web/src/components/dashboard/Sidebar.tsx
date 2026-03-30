@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   LayoutDashboard,
   BookOpen,
@@ -28,70 +28,62 @@ import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { getRoleHome } from "@/lib/role-routing";
 import { useAuthStore } from "@/store/useAuthStore";
+import { IS_PROTOTYPE } from "@/lib/config";
 
 const roleNavItems: Record<string, any[]> = {
   student: [
     { name: "Dashboard",  href: "/student/dashboard",  icon: LayoutDashboard },
-    { name: "Enrollment", href: "/student/enrollment",  icon: CheckCircle },
-    { name: "Attendance", href: "/student/attendance",  icon: Calendar },
-    { name: "My Courses", href: "/student/courses",     icon: BookOpen },
-    { name: "Assignments",href: "/student/assignments", icon: FileText },
-    { name: "Results",    href: "/student/grades",      icon: BarChart2 },
+    { name: "Enrollment", href: "/student/enrollment",  icon: CheckCircle, isPrototype: true },
+    { name: "Attendance", href: "/student/attendance",  icon: Calendar, isPrototype: true },
+    { name: "My Courses", href: "/student/courses",     icon: BookOpen, isPrototype: true },
+    { name: "Assignments",href: "/student/assignments", icon: FileText, isPrototype: true },
+    { name: "Results",    href: "/student/grades",      icon: BarChart2, isPrototype: true },
     { name: "AI Tutor",   href: "/student/ai_tutor",    icon: Bot },
-    { name: "Assessment", href: "/student/assessment",  icon: Brain },
-    { name: "Progress",   href: "/student/progress",    icon: BarChart2 },
-    { name: "Community",  href: "/student/community",   icon: MessageSquare },
+    { name: "Assessment", href: "/student/assessment",  icon: Brain, isPrototype: true },
+    { name: "Progress",   href: "/student/progress",    icon: BarChart2, isPrototype: true },
+    { name: "Community",  href: "/student/community",   icon: MessageSquare, isPrototype: true },
     { name: "Profile",    href: "/student/profile",     icon: User },
     { name: "Settings",   href: "/student/settings",    icon: Settings },
   ],
   parent: [
     { name: "Dashboard", href: "/parent/dashboard", icon: LayoutDashboard },
-    { name: "Progress",  href: "/parent/progress",  icon: BarChart2 },
-    { name: "Goals",     href: "/parent/goals",     icon: Target },
-    { name: "Messages",  href: "/parent/messages",  icon: MessageSquare },
     { name: "Settings",  href: "/parent/settings",  icon: Settings },
   ],
   mentor: [
     { name: "Dashboard", href: "/mentor/dashboard", icon: LayoutDashboard },
-    { name: "Matches",   href: "/mentor/matches",   icon: Users },
-    { name: "Sessions",  href: "/mentor/sessions",  icon: Calendar },
-    { name: "Reviews",   href: "/mentor/reviews",   icon: CheckCircle },
     { name: "Settings",  href: "/mentor/settings",  icon: Settings },
   ],
   peer_tutor: [
     { name: "Dashboard", href: "/peer_tutor/dashboard", icon: LayoutDashboard },
-    { name: "Sessions",  href: "/peer_tutor/sessions",  icon: Clock },
-    { name: "Training",  href: "/peer_tutor/training",  icon: Brain },
     { name: "Settings",  href: "/peer_tutor/settings",  icon: Settings },
   ],
   counselor: [
     { name: "Dashboard",   href: "/counselor/dashboard", icon: LayoutDashboard },
-    { name: "Notes",       href: "/counselor/notes",     icon: FileText },
-    { name: "Safeguarding",href: "/counselor/safeguarding", icon: Bell },
   ],
   content_creator: [
     { name: "Dashboard", href: "/content_creator/dashboard", icon: LayoutDashboard },
+    { name: "Designer Dashboard", href: "/designer", icon: BookOpen },
   ],
   researcher: [
     { name: "Dashboard", href: "/researcher/dashboard", icon: LayoutDashboard },
-    { name: "Datasets",  href: "/researcher/datasets",  icon: BarChart2 },
   ],
   alumni: [
     { name: "Dashboard",  href: "/alumni/dashboard",   icon: LayoutDashboard },
-    { name: "Portfolio",  href: "/alumni/portfolio",   icon: Award },
   ],
   teacher: [
     { name: "Dashboard",    href: "/faculty/dashboard",    icon: LayoutDashboard },
-    { name: "Courses",      href: "/faculty/courses",      icon: BookOpen },
+    { name: "Courses",      href: "/faculty/courses",      icon: BookOpen, isPrototype: true },
     { name: "Students",     href: "/faculty/students",     icon: Users },
-    { name: "Verification", href: "/faculty/verification", icon: CheckCircle },
+    { name: "Verification", href: "/faculty/verification", icon: CheckCircle, isPrototype: true },
     { name: "Settings",     href: "/faculty/settings",     icon: Settings },
   ],
   admin: [
     { name: "Dashboard",   href: "/admin/dashboard",    icon: LayoutDashboard },
     { name: "Users",       href: "/admin/users",        icon: Users },
     { name: "Institutions",href: "/admin/institutions", icon: BookOpen },
+    /* HIDDEN MOCK UI:
     { name: "Analytics",   href: "/admin/analytics",   icon: BarChart2 },
+    */
     { name: "Settings",    href: "/admin/settings",    icon: Settings },
   ],
 };
@@ -141,7 +133,10 @@ export default function Sidebar({
   }, [clearAuth, router]);
 
   const currentRole = (user?.role as string) || "student";
-  const navItems    = roleNavItems[currentRole] ?? roleNavItems.student;
+  const navItems = useMemo(() => {
+    const rawItems = roleNavItems[currentRole] ?? roleNavItems.student;
+    return rawItems.filter(item => !item.isPrototype || IS_PROTOTYPE);
+  }, [currentRole]);
   const profileHref = profileHrefByRole[currentRole] ?? getRoleHome(currentRole);
 
   return (

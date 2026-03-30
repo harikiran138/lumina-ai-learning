@@ -25,6 +25,8 @@ export const metadata: Metadata = {
   description: "Teacher-verified AI tutoring and adaptive learning platform.",
 };
 
+import { AuthProvider } from "@/components/providers/auth-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -45,8 +47,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <GlobalErrorBoundary>
-            {children}
-            <Toaster theme="dark" richColors position="top-right" />
+            <AuthProvider>
+              {children}
+              <Toaster theme="dark" richColors position="top-right" />
+            </AuthProvider>
           </GlobalErrorBoundary>
         </ThemeProvider>
       </body>

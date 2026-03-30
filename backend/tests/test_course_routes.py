@@ -38,13 +38,24 @@ async def student_user():
     yield user, pwd
     await user_store.delete_user(user["id"])
 
+@pytest.fixture
+async def admin_user():
+    user_store = UserStore()
+    uid = str(uuid.uuid4())[:8]
+    email = f"admin_{uid}@example.com"
+    pwd = "password123"
+    phone = f"+1555{uuid.uuid4().int % 1000000:06d}"
+    user = await user_store.create_user(email, pwd, "Admin User", "admin", phone)
+    yield user, pwd
+    await user_store.delete_user(user["id"])
+
 async def get_token(ac, email, pwd):
     res = await ac.post("/api/auth/token", data={"username": email, "password": pwd})
     return res.json()["access_token"]
 
 @pytest.mark.asyncio
-async def test_create_course(ac, teacher_user):
-    user, pwd = teacher_user
+async def test_create_course(ac, admin_user):
+    user, pwd = admin_user
     token = await get_token(ac, user["email"], pwd)
     
     test_id = str(uuid.uuid4())[:8]
@@ -61,6 +72,19 @@ async def test_create_course(ac, teacher_user):
     
     store = CourseStore()
     await store.delete_course(course["id"])
+
+@pytest.mark.asyncio
+async def test_teacher_cannot_create_course(ac, teacher_user):
+    user, pwd = teacher_user
+    token = await get_token(ac, user["email"], pwd)
+    
+    res = await ac.post("/api/courses/", json={
+        "name": "Illegal Course",
+        "code": "FAIL-101",
+        "description": "Should fail"
+    }, headers={"Authorization": f"Bearer {token}"})
+    
+    assert res.status_code == 403
 
 
 @pytest.mark.asyncio
@@ -106,8 +130,8 @@ async def test_update_course(ac, teacher_user):
 
 
 @pytest.mark.asyncio
-async def test_delete_course(ac, teacher_user):
-    user, pwd = teacher_user
+async def test_delete_course(ac, admin_user):
+    user, pwd = admin_user
     token = await get_token(ac, user["email"], pwd)
     store = CourseStore()
     test_id = str(uuid.uuid4())[:8]

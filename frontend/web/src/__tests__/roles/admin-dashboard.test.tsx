@@ -10,6 +10,13 @@ import { server } from '../mocks/server'
 
 const BASE_URL = 'http://localhost:3001/api'
 
+type JsonObject = Record<string, unknown>
+
+async function readJsonObject(request: Request): Promise<JsonObject> {
+  const body = await request.json()
+  return body && typeof body === 'object' ? (body as JsonObject) : {}
+}
+
 // ==================== SECTION A1 — ADMIN DASHBOARD ====================
 
 describe('Admin — Dashboard Overview (A1)', () => {
@@ -85,14 +92,16 @@ describe('Admin — User Management (A2)', () => {
         ])
       }),
       http.post(`${BASE_URL}/admin/users`, async ({ request }) => {
-        const body = await request.json()
-        if (!body.name || !body.email) {
+        const body = await readJsonObject(request)
+        const name = typeof body.name === 'string' ? body.name : ''
+        const email = typeof body.email === 'string' ? body.email : ''
+        if (!name || !email) {
           return HttpResponse.json({ error: 'Name and email are required' }, { status: 400 })
         }
         return HttpResponse.json({ id: 'au-new', ...body }, { status: 201 })
       }),
       http.put(`${BASE_URL}/admin/users/:id`, async ({ request }) => {
-        const body = await request.json()
+        const body = await readJsonObject(request)
         return HttpResponse.json({ success: true, ...body })
       }),
       http.delete(`${BASE_URL}/admin/users/:id`, () => {

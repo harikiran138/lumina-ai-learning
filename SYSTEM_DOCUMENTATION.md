@@ -1,7 +1,7 @@
 # Lumina AI Learning Platform
 ## Production System Documentation
 
-Document status: generated from the audited codebase and live schema verification on 2026-03-30  
+Document status: generated from the audited codebase, then updated after hardening verification on 2026-03-30  
 Primary runtime boundary:
 - Frontend: `frontend/web` (Next.js App Router)
 - Backend: `backend/app` (FastAPI)
@@ -12,6 +12,7 @@ Important truth-of-system note:
 - This document reflects the active production-oriented runtime surface in `frontend/web` and `backend/app`.
 - The repository also contains legacy static HTML, Flutter previews, research assets, handwritten-assignment prototypes, and training pipelines. Those are documented as supporting or non-primary assets, not as the main web runtime.
 - Core auth and student onboarding flows are verified in code and through targeted tests.
+- Role-entry alias routing is now re-verified through middleware/unit/browser tests.
 - Live Supabase verification succeeded through the service client for key tables.
 - Direct raw PostgreSQL connectivity via `DATABASE_URL` timed out from this machine over the DB host path, so schema truth is taken from migrations plus live Supabase table access.
 
@@ -350,6 +351,7 @@ These routes exist and are wired as listed below.
 | Mentor | `/mentor/dashboard`, `/mentor/matches`, `/mentor/reviews`, `/mentor/sessions`, `/mentor/settings` | `getMentorMatches`, `getMentorSessions`, `submitPortfolioReview` |
 | Peer Tutor | `/peer_tutor/dashboard`, `/peer_tutor/sessions`, `/peer_tutor/training`, `/peer_tutor/settings` | `getPeerTutorSessions`, `getPeerTutorTraining` |
 | Counselor | `/counselor/dashboard`, `/counselor/notes`, `/counselor/safeguarding` | `getCounselorCases`, `getRiskAlerts`, `logSafeguardingEvent` |
+| Content Creator | `/content_creator/dashboard` | `getCreatorVerificationQueue` |
 | Researcher | `/researcher/dashboard`, `/researcher/datasets` | `getAnonymizedSnapshots` |
 | Alumni | `/alumni/dashboard`, `/alumni/portfolio` | `getAlumniPortfolio`, `getAlumniMentorshipMentees` |
 
@@ -444,6 +446,7 @@ Purpose:
 - token presence check
 - cookie JWT decode
 - role normalization
+- legacy route alias canonicalization
 - onboarding-completion enforcement
 - role-path scope enforcement
 
@@ -452,11 +455,12 @@ Behavior:
 - authenticated user with incomplete onboarding -> redirected to `/onboarding`
 - authenticated user entering wrong role namespace -> redirected to role home
 - completed user visiting onboarding -> redirected to role home
+- legacy aliases such as `/teacher/*`, `/peer-tutor/*`, `/creator/*`, `/content_creator/studio`, and `/researcher/portal` are redirected to live routes
 
 ## 4.7 Role-Based Redirect Targets
 
 Current configured targets:
-- `super_admin` -> `/admin`
+- `super_admin` -> `/admin/dashboard`
 - `college_admin` -> `/college`
 - `hod` -> `/hod/dashboard`
 - `faculty` -> `/faculty/dashboard`
@@ -465,13 +469,16 @@ Current configured targets:
 - `mentor` -> `/mentor/dashboard`
 - `peer_tutor` -> `/peer_tutor/dashboard`
 - `counselor` -> `/counselor/dashboard`
+- `content_creator` -> `/content_creator/dashboard`
+- `researcher` -> `/researcher/dashboard`
 - `alumni` -> `/alumni/dashboard`
 
-Known mismatch still present:
-- `content_creator` redirects to `/content_creator/studio`, but the active page is `/content_creator/dashboard`
-- `researcher` redirects to `/researcher/portal`, but active pages are `/researcher/dashboard` and `/researcher/datasets`
-
-This is a real remaining update required.
+Legacy aliases now normalized by middleware:
+- `/teacher/*` -> `/faculty/*`
+- `/peer-tutor/*` -> `/peer_tutor/*`
+- `/creator/*` -> `/content_creator/*`
+- `/content_creator/studio` -> `/content_creator/dashboard`
+- `/researcher/portal` -> `/researcher/dashboard`
 
 ## 4.8 Brute-Force Protection
 
@@ -1668,16 +1675,15 @@ Previously broken or inconsistent areas included:
 
 ### Routing
 - middleware enforces auth and onboarding
-- role-home redirects are mostly correct
+- role-home redirects are centralized and now corrected for the verified alias cases
 
 ## 14.3 Issues Still Needing Updates
 
 These are the remaining actionable updates identified during documentation:
 
-1. Redirect mismatch:
-   - `content_creator` still redirects to `/content_creator/studio`
-   - `researcher` still redirects to `/researcher/portal`
-   - active routes are `/content_creator/dashboard` and `/researcher/dashboard`
+1. Non-student full-flow verification gap:
+   - role-entry redirects are fixed and tested for the known alias cases
+   - full browser login-to-feature verification is still pending for most non-student roles
 
 2. Placeholder/UI-only pages:
    - several admin/faculty content, compliance, verification, grading, and analytics subpages do not call live APIs yet
@@ -1687,8 +1693,8 @@ These are the remaining actionable updates identified during documentation:
    - `DATABASE_URL` PostgreSQL connection timed out from this environment
    - runtime Supabase REST/service access is working, but direct SQL tooling should be hardened for operational maintenance
 
-4. Route duplication / legacy overlap:
-   - both `content-creator` and `content_creator` route families exist
+4. Route cleanup / legacy overlap:
+   - legacy aliases are now redirected correctly, but older path references still exist in parts of the repository
    - legacy HTML pages remain in the repository beside App Router pages
    - this creates documentation and maintenance overhead
 
@@ -1776,12 +1782,13 @@ Exact endpoint definitions are located in:
 
 # Appendix B: Validation and Verification Commands Used
 
-Commands executed in this documentation pass:
+Commands executed in the hardening and verification pass:
 
 ```bash
 supabase --version
-pytest backend/tests/test_onboarding_flow.py
-npm test -- --run src/__tests__/lib/student-onboarding.test.ts
+pytest backend/tests/test_auth_token_flow.py backend/tests/test_onboarding_flow.py
+npm test -- --run src/__tests__/integration/middleware.test.ts src/__tests__/integration/auth-flow.test.tsx src/__tests__/lib/student-onboarding.test.ts
+npm run test:e2e -- e2e/role-route-aliases.spec.ts
 ```
 
 Live Supabase service verification:
@@ -1794,36 +1801,41 @@ Operational caveat:
 
 # 16. Post-Hardening Status: Verified Working, Partially Complete, and Not Implemented
 
-This section was formally verified through the **System Hardening Master Verification** run containing exact Pytest and Playwright diagnostics and manual removals.
+This section reflects the real hardening pass completed against the current repository state. A section is marked verified only when it was exercised by tests or direct live checks in this session.
 
 ### ✅ VERIFIED WORKING SYSTEMS
-- **Authentication**: JWT, Token passing, Form interactions, Route Redirection maps perfectly to Postgres policies.
-- **Onboarding Sequence**: Form values accurately pass boundaries and assert DB changes strictly. Tested by Pytest API flow verification resolving program paths.
-- **Middleware Protections**: Re-tested ensuring role normalization (`admin` -> `super_admin`) routes dynamically without leakage.
-- **Database Architecture**: Extracted seamlessly into `FINAL_DATABASE_SCHEMA.sql` matching migration records perfectly.
+- **Authentication Core**: backend auth token flow tests pass; frontend login form tests pass; password-change redirect logic now uses shared role-home routing.
+- **Student Onboarding**: backend onboarding tests pass; frontend validation tests pass; strict five-step persistence remains the active student flow.
+- **Middleware and Role Entry**: alias-to-canonical route handling is verified for `teacher -> faculty`, `peer-tutor -> peer_tutor`, `content_creator/studio -> content_creator/dashboard`, and `researcher/portal -> researcher/dashboard`.
+- **Supabase Core Tables**: live service-client verification succeeded for `users`, `institutions`, `departments`, `batches`, `courses`, `student_subjects`, `login_attempts`, `login_history`, and `learner_profiles`.
 
 ### ⚠️ PARTIALLY COMPLETE
-- **Faculty Dashboard Backend Mappings**: The basic core routing is completed, and tests run. However, the user-defined edge cases for advanced course uploading and live AI-generator tracking exist only as simple templates requiring extended AI endpoints.
-- **Content Creator Role Dashboard**: Duplicate fake pages deleted, but pure functional connections rely heavily on unstructured data that requires testing.
+- **Role Dashboards Beyond Entry Routing**: student auth/onboarding is exercised end-to-end at test level, but most non-student roles were code-audited for route validity rather than fully browser-tested through login and deep feature flows.
+- **Faculty Secondary Modules**: calendar, content, grading, verification, messaging, and resources areas are not treated as verified production modules in this report because the active repository state no longer carries reliable page implementations for them.
+- **Content Creator Surface**: the live route is limited to `/content_creator/dashboard`; older alternate page trees were removed from the working tree, so content-creator expansion pages are not documented as working features.
+- **Researcher and Other Thin Role Areas**: dashboard entry is verified, but most deeper feature behavior remains dependent on thin or placeholder data surfaces.
 
 ### ❌ NOT IMPLEMENTED
-- UI mock-screens matching `/faculty/calendar`, `/faculty/content`, `/faculty/grading`, `/faculty/messages`, and `/faculty/resources`. These were explicitly deleted out of the codebase during system hardening due to "fake-backend" misalignment. They must be rebuilt utilizing strictly verified APIs next iteration.
+- Full browser login-to-dashboard-to-feature execution for every declared role (`admin`, `hod`, `parent`, `mentor`, `counselor`, `alumni`, and others) was not completed in this pass, so those flows cannot yet be claimed as fully production-verified.
+- A stable direct raw PostgreSQL verification path via `DATABASE_URL` is still unavailable from this machine because the connection times out before socket establishment.
+- Repo-wide frontend type health is still not fully clean; targeted checks showed no TypeScript errors in the files changed during this hardening pass, but unrelated older type debt remains elsewhere in the codebase.
 
 ---
 
 # 17. Improvement Recommendations (Next Level Architecture)
 
 ### Performance Improvements
-- Next.js 15 App Router caching mechanisms must strictly mark explicit layout trees as `static` per role where data mutations aren't common (like reading core policies).
-- Pytest metrics revealed normal performance, but high volume user testing suggests implementing Redis session caching for non-vital role-check data queries avoiding `users` hits recursively in API layer.
+- Centralize role navigation metadata so sidebars, middleware, password-change redirects, and marketing role links all read from one shared source. The new role-routing utility is the first step; remaining role-specific sidebars should converge on it.
+- Add focused smoke suites for each role home route and one critical transactional path per role, rather than relying on broad placeholder page trees.
 
 ### Security Upgrades
-- Docker container lockdown. Supabase local environments should explicitly drop generic port mappings matching the standard `.docker/run` logic and prefer stricter reverse proxy constraints. Lock down Supabase Database REST policies strictly to explicit headers from verified Node origins only.
+- Move frontend session handling fully to cookie-driven auth where possible so the session-storage access token is no longer needed by client fetch helpers.
+- Add automated assertions around role leakage prevention, especially for aliased legacy paths and mixed-role stale bookmarks.
 
 ### Architecture Improvements
-- Adopt explicit shared TypeScript packages aligning Zod Validation exactly 1:1 with Python Pydantic models. Right now, there is slight redundancy checking validation rules simultaneously in `lib/api.ts` clients.
-- Centralize mock generation scripts used in automated Jest and Pytest to standard JSON configurations that update mock payloads synchronously preventing drift.
+- Continue replacing role-local hardcoded route lists with shared typed configuration and generate navigation from that source.
+- Align frontend Zod schemas and backend Pydantic models for auth/profile/onboarding payloads to reduce test drift and duplicated validation semantics.
 
 ### Code Cleanup and Folder Restructuring
-- Further purging of `frontend/web/e2e` and `backend/tests` to maintain a single `core_e2e_features/` monorepo domain preventing double-maintenance of playwright logic across frameworks.
-
+- Remove or rebuild deleted/stale route trees instead of leaving historical imports and old path references scattered through the repo.
+- Separate verified production pages from experimental or archival UI shells so documentation and test coverage can map cleanly to the actual supported runtime surface.

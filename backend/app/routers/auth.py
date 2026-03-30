@@ -10,9 +10,12 @@ from app.store.user_store import UserStore
 from app.dependencies import get_user_store
 from app.database.supabase_manager import supabase_db
 from app.core.audit import audit_logger
+import logging
+
+logger = logging.getLogger("uvicorn.error")
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token", auto_error=False)
 
 from typing import Optional
 import uuid
@@ -27,12 +30,23 @@ _LOCK_MINUTES   = 15
 
 
 # ── Models ─────────────────────────────────────────────────────────────────────
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
 class UserCreate(BaseModel):
-    email: str
-    password: str
-    full_name: str
+    email: EmailStr
+    password: str = Field(min_length=8)
+    full_name: str = Field(min_length=2)
     role: str = "student"
     phone: Optional[str] = None
+
+    @field_validator('password')
+    @classmethod
+    def password_complexity(cls, v: str) -> str:
+        if not re.search(r"[A-Z]", v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r"[0-9]", v):
+            raise ValueError('Password must contain at least one number')
+        return v
 
 
 class Token(BaseModel):
@@ -68,12 +82,21 @@ class AcceptInvite(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
-    email: str
+    email: EmailStr
 
 
 class ResetPasswordRequest(BaseModel):
     token: str
-    newPassword: str
+    newPassword: str = Field(min_length=8)
+
+    @field_validator('newPassword')
+    @classmethod
+    def password_complexity(cls, v: str) -> str:
+        if not re.search(r"[A-Z]", v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r"[0-9]", v):
+            raise ValueError('Password must contain at least one number')
+        return v
 
 
 class LoginResponse(BaseModel):
@@ -544,21 +567,30 @@ async def refresh_token(
     response: Response,
     user_store: UserStore = Depends(get_user_store),
 ):
-    raw_token = request.cookies.get("refresh_token")
-    if not raw_token:
-        raise HTTPException(status_code=401, detail="No refresh token found")
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="Refresh token missing from cookies")
+    
     try:
         from jose import jwt
-        payload = jwt.decode(raw_token, settings.JWT_REFRESH_SECRET, algorithms=["HS256"])
+        payload = jwt.decode(refresh_token, settings.JWT_REFRESH_SECRET, algorithms=["HS256"])
+        
         if payload.get("type") != "refresh":
-            raise HTTPException(status_code=401, detail="Invalid refresh token")
+            raise HTTPException(status_code=401, detail="Invalid token type for refresh")
+            
         email = payload.get("sub")
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
+        if not email:
+            raise HTTPException(status_code=401, detail="Invalid token payload: missing subject")
+            
+    except Exception as e:
+        logger.warning(f"refresh_token_decode_failed: {str(e)}")
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
     user = await user_store.get_user_by_email(email)
     if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=401, detail="User associated with token not found")
+
+    _require_active_user(user)
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -567,6 +599,7 @@ async def refresh_token(
         extra_claims=_build_claims(user),
         secret_key=settings.JWT_SECRET,
     )
+    
     response.set_cookie(
         key="access_token",
         value=access_token,
@@ -576,32 +609,57 @@ async def refresh_token(
         max_age=int(access_token_expires.total_seconds()),
         path="/",
     )
-    return {"accessToken": access_token}
+    
+    return {
+        "accessToken": access_token,
+        "tokenType": "bearer",
+        "expiresIn": int(access_token_expires.total_seconds())
+    }
 
 
 async def get_current_user(
     request: Request,
-    token: str = Depends(oauth2_scheme),
+    token: Optional[str] = Depends(oauth2_scheme),
     user_store: UserStore = Depends(get_user_store),
 ):
-    if not token:
-        raise HTTPException(status_code=401, detail="Missing authorization token")
+    # Support both Authorization Header (Bearer) and HTTP-only Cookie
+    auth_token = token or request.cookies.get("access_token")
+    
+    if not auth_token:
+        # Check if it's an invited user with a temp token in the header
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            auth_token = auth_header.split(" ")[1]
+            
+    if not auth_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     try:
         from jose import jwt
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
-        user_id: Optional[str] = payload.get("userId")
-        email: Optional[str] = payload.get("sub") or payload.get("email")
-    except Exception:
+        # Core logic: Try decoding with JWT_SECRET first (primary app secret)
         try:
-            from jose import jwt
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-            user_id = payload.get("userId")
-            email = payload.get("sub") or payload.get("email")
+            payload = jwt.decode(auth_token, settings.JWT_SECRET, algorithms=["HS256"])
         except Exception:
-            raise HTTPException(status_code=401, detail="Invalid or expired access token")
-
-    if not user_id and not email:
-        raise HTTPException(status_code=401, detail="Token payload is missing user identity")
+            # Fallback to legacy SECRET_KEY if JWT_SECRET fails (for migration/compatibility)
+            payload = jwt.decode(auth_token, settings.SECRET_KEY, algorithms=["HS256"])
+            
+        user_id = payload.get("userId")
+        email = payload.get("sub") or payload.get("email")
+        
+        if not user_id and not email:
+            raise HTTPException(status_code=401, detail="Invalid token: no user identifier")
+            
+    except Exception as e:
+        logger.warning(f"token_validation_failed: {str(e)} path={request.url.path}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired session. Please log in again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     user = None
     if user_id:
@@ -610,7 +668,9 @@ async def get_current_user(
         user = await user_store.get_user_by_email(email)
         
     if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=401, detail="User session not found")
+
+    _require_active_user(user)
 
     request.state.user = user
     return user

@@ -56,6 +56,14 @@ export function getExpectedRoleForPath(pathname: string): string | null {
 }
 
 export function getCanonicalPath(pathname: string): string | null {
+  if (pathname === "/content_creator/studio" || pathname.startsWith("/content_creator/studio/")) {
+    return pathname.replace("/content_creator/studio", "/content_creator/dashboard")
+  }
+
+  if (pathname === "/researcher/portal" || pathname.startsWith("/researcher/portal/")) {
+    return pathname.replace("/researcher/portal", "/researcher/dashboard")
+  }
+
   if (pathname === "/teacher" || pathname.startsWith("/teacher/")) {
     return pathname.replace("/teacher", "/faculty")
   }
@@ -68,16 +76,8 @@ export function getCanonicalPath(pathname: string): string | null {
     return pathname.replace("/creator", "/content_creator")
   }
 
-  if (pathname === "/content_creator/studio") {
-    return "/content_creator/dashboard"
-  }
-
   if (pathname === "/content-creator" || pathname.startsWith("/content-creator/")) {
     return pathname.replace("/content-creator", "/content_creator")
-  }
-
-  if (pathname === "/researcher/portal") {
-    return "/researcher/dashboard"
   }
 
   return null

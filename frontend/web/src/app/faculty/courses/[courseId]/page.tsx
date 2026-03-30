@@ -169,6 +169,25 @@ export default function CourseManagementPage() {
     }
   };
 
+  const handleSubmitReview = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/content-designer/courses/${courseId}/submit`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+      });
+      if (res.ok) {
+        toast.success("Submitted for review!");
+        loadData();
+      } else {
+        toast.error("Failed to submit.");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center p-20 text-white">Loading...</div>
@@ -196,15 +215,41 @@ export default function CourseManagementPage() {
           >
             {course.name}
             <Settings className="w-4 h-4 opacity-0 group-hover:opacity-100 text-gray-400" />
-            <span className="px-2 py-0.5 rounded text-xs bg-green-500/20 text-green-400 border border-green-500/20">
-              Active
-            </span>
+            
+            {course.review_status === 'published' && (
+              <span className="px-2 py-0.5 rounded text-xs bg-green-500/20 text-green-400 border border-green-500/20">
+                Published
+              </span>
+            )}
+            {course.review_status === 'in_review' && (
+              <span className="px-2 py-0.5 rounded text-xs bg-blue-500/20 text-blue-400 border border-blue-500/20">
+                In Review
+              </span>
+            )}
+            {course.review_status === 'rejected' && (
+              <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/20">
+                Requires Changes
+              </span>
+            )}
+            {(course.review_status === 'draft' || !course.review_status) && (
+              <span className="px-2 py-0.5 rounded text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/20">
+                Draft
+              </span>
+            )}
+            
           </h1>
           <p className="text-gray-400 text-sm">
             Manage course content and students
           </p>
         </div>
       </div>
+
+      {course.review_status === 'rejected' && course.designer_notes && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
+          <h3 className="text-red-400 font-bold mb-2">Designer Feedback:</h3>
+          <p className="text-neutral-300 text-sm whitespace-pre-wrap">{course.designer_notes}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content Area (Modules) */}
@@ -456,6 +501,20 @@ export default function CourseManagementPage() {
                 </span>
               </div>
             </div>
+
+            {(course.review_status === 'draft' || course.review_status === 'rejected' || !course.review_status) && (
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <button
+                  onClick={handleSubmitReview}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  Submit for Content Review
+                </button>
+                <p className="text-xs text-gray-400 mt-2 text-center">
+                  Course must be approved before publishing
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

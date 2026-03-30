@@ -135,7 +135,12 @@ export default function CourseDetails({
     const interval = setInterval(() => {
       // Heartbeat activity logging every 5 minutes
       const elapsedMinutes = 5;
-      api.logActivity(courseId, elapsedMinutes).catch(console.error);
+      api
+        .logActivity({
+          course_id: courseId,
+          duration_minutes: elapsedMinutes,
+        })
+        .catch(console.error);
     }, 5 * 60 * 1000);
 
     return () => {
@@ -144,9 +149,14 @@ export default function CourseDetails({
       const totalElapsedMinutes = Math.floor((endTime - startTime) / (60 * 1000));
       if (totalElapsedMinutes > 0) {
         // Log remaining time on unmount
-        // Note: navigator.sendBeacon could be used here for reliability, 
+        // Note: navigator.sendBeacon could be used here for reliability,
         // but for now a simple catch-all logActivity is fine.
-        api.logActivity(courseId, totalElapsedMinutes % 5 || 1).catch(console.error);
+        api
+          .logActivity({
+            course_id: courseId,
+            duration_minutes: totalElapsedMinutes % 5 || 1,
+          })
+          .catch(console.error);
       }
     };
   }, [courseId, isLoading]);
