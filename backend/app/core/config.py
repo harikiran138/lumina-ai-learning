@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     SECRET_KEY: Optional[str] = None
     JWT_SECRET: Optional[str] = None
     JWT_REFRESH_SECRET: Optional[str] = None
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes (Replaced 8 days for security)
 
     # Database
     DATABASE_URL: str = "postgresql://lumina:lumina_password@localhost:5432/lumina_db"

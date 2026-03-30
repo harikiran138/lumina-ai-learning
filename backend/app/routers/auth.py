@@ -517,8 +517,8 @@ def login_json(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=settings.SECURE_COOKIES,
-        samesite="strict",
+        secure=True,
+        samesite="None",
         max_age=int(access_token_expires.total_seconds()),
         path="/",
     )
@@ -527,8 +527,8 @@ def login_json(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=settings.SECURE_COOKIES,
-        samesite="strict",
+        secure=True,
+        samesite="None",
         max_age=int(refresh_token_expires.total_seconds()),
         path="/",
     )
@@ -604,8 +604,8 @@ async def refresh_token(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=settings.SECURE_COOKIES,
-        samesite="strict",
+        secure=True,
+        samesite="None",
         max_age=int(access_token_expires.total_seconds()),
         path="/",
     )

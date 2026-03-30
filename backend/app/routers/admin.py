@@ -473,6 +473,12 @@ async def assign_hod(
     return {"status": "success", "department_id": dept_id, "hod_id": hod_id}
 
 
+@router.get("/teachers/stats", response_model=List[dict])
+async def get_teacher_stats(inst_id: Optional[str] = None, admin: dict = Depends(is_admin)):
+    """Fetch teacher utilization and risk metrics."""
+    return await AnalyticsStore().get_all_teacher_stats(inst_id)
+
+
 @router.get("/institutions/{inst_id}/programs")
 async def list_programs(inst_id: str, admin: dict = Depends(is_admin)):
     """List all programs for an institution."""

@@ -22,7 +22,7 @@ security:
 
 security-py:
 	@echo "🐍 Running Bandit Security Scan..."
-	@bandit -r backend/ -ll
+	@bandit -r backend/ -x backend/.venv -ll
 
 test-api:
 	@echo "📡 Running Newman API Tests..."

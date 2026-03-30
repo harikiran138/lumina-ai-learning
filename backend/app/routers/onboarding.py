@@ -150,29 +150,6 @@ async def _validate_enrollment_code_for_user(code: str, user_id: str) -> Dict[st
     if not normalized_code:
         raise HTTPException(status_code=400, detail="Enrollment code is required")
 
-    # Developer Bypass
-    if normalized_code == "LUMINA-STUDENT-2026":
-        # Try to find any real batch/dept to make subsequent steps work
-        real_depts = await supabase_db.fetch_all("departments", {})
-        real_batches = await supabase_db.fetch_all("batches", {})
-        
-        dept = real_depts[0] if real_depts else {"id": str(uuid.uuid4()), "department_name": "Lumina Engineering"}
-        batch = real_batches[0] if real_batches else {"id": str(uuid.uuid4()), "label": "Batch 2026", "current_semester": 1}
-        
-        return {
-            "code": normalized_code,
-            "record": {
-                "id": str(uuid.uuid4()),
-                "batch_id": batch["id"],
-                "section": "A",
-                "status": "active"
-            },
-            "batch": batch,
-            "department": dept,
-            "semester": batch.get("current_semester", 1),
-            "section": "A",
-        }
-
     record = await supabase_db.fetch_one("enrollment_codes", {"code": normalized_code})
     if not record:
         raise HTTPException(status_code=400, detail="Enrollment code is invalid")
