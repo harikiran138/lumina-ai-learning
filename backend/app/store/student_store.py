@@ -10,7 +10,7 @@ log = structlog.get_logger()
 class StudentStore:
     """
     Store for student-specific operations: Enrollment, Progress, Badges, Certificates.
-    Operates on 'student_progress' and 'users' tables in Supabase.
+    Operates on 'enrollments' and 'users' tables in Supabase.
     """
 
     def __init__(self):
@@ -58,7 +58,7 @@ class StudentStore:
         }
 
         try:
-            result = await self.db.insert("student_progress", progress_data)
+            result = await self.db.insert("enrollments", progress_data)
             return bool(result)
         except Exception as e:
             log.error("enroll_in_course_failed", student_id=student_id, course_id=course_id, error=str(e))
@@ -67,7 +67,7 @@ class StudentStore:
     async def get_enrollment(self, student_id: str, course_id: str) -> Optional[dict]:
         try:
             client = self.db.get_client()
-            response = client.table("student_progress").select("*").eq("student_id", student_id).eq("course_id", course_id).execute()
+            response = client.table("enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("get_enrollment_failed", student_id=student_id, course_id=course_id, error=str(e))
@@ -104,7 +104,7 @@ class StudentStore:
                 "last_accessed": datetime.utcnow().isoformat(),
             }
             
-            await self.db.update("student_progress", updates, {"id": enrollment["id"]})
+            await self.db.update("enrollments", updates, {"id": enrollment["id"]})
 
             return {"success": True, "lesson_id": lesson_id, "progress": progress_pct}
         except Exception as e:
@@ -147,7 +147,7 @@ class StudentStore:
             }
 
             client = self.db.get_client()
-            client.table("student_progress").update(updates).eq("id", enrollment["id"]).execute()
+            client.table("enrollments").update(updates).eq("id", enrollment["id"]).execute()
             return True
         except Exception as e:
             log.error("update_mastery_failed", student_id=student_id, course_id=course_id, error=str(e))
@@ -188,7 +188,7 @@ class StudentStore:
                 "last_accessed": now.isoformat(),
             }
 
-            await self.db.update("student_progress", updates, {"id": enrollment["id"]})
+            await self.db.update("enrollments", updates, {"id": enrollment["id"]})
             return True
         except Exception as e:
             log.error("log_activity_failed", student_id=student_id, error=str(e))

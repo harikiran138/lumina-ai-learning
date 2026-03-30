@@ -376,24 +376,31 @@ class AnalyticsStore:
         users = [self._normalize_user(item) for item in await self._read_table("users")]
         courses = [self._normalize_course(item) for item in await self._read_table("courses")]
 
-        # 'progress' table doesn't exist — read from enrollments and expand JSONB progress
+        # 'progress' table doesn't exist — read from enrollments and expand progress data
         raw_enrollments = await self._read_table("enrollments")
         progress = []
         for e in raw_enrollments:
+            # Handle both flat and nested progress schema
             p = e.get("progress") or {}
+            if not isinstance(p, dict): p = {}
+            
+            progress_val = p.get("percentage", e.get("progress_percentage", 0))
+            if progress_val == 0 and "progress" in e and isinstance(e["progress"], (int, float)):
+                progress_val = e["progress"]
+
             progress.append(self._normalize_progress({
                 "id": e.get("id"),
                 "course_id": e.get("course_id"),
                 "student_id": e.get("student_id"),
-                "progress": p.get("percentage", 0),
-                "mastery": p.get("mastery", 0),
-                "streak": p.get("streak", 0),
-                "hoursSpent": p.get("hoursSpent", 0),
-                "lastAccessed": p.get("lastAccessed"),
+                "progress": progress_val,
+                "mastery": p.get("mastery", e.get("mastery", 0)),
+                "streak": p.get("streak", e.get("streak", 0)),
+                "hoursSpent": p.get("hoursSpent", e.get("hours_spent", 0)),
+                "lastAccessed": p.get("lastAccessed", e.get("last_accessed")),
             }))
 
         assignments = [self._normalize_assignment(item) for item in await self._read_table("assignments")]
-        submissions = [self._normalize_submission(item) for item in await self._read_table("assignment_submissions")]
+        submissions = [self._normalize_submission(item) for item in await self._read_table("submissions")]
         
         # Actually fetch the new entities
         institutions = await self._read_table("institutions")

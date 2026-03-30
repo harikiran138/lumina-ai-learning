@@ -143,13 +143,16 @@ class _LocalTableQuery:
         table_rows = self.backend._tables.setdefault(self.table_name, [])
 
         if self._operation == "insert":
+            # For insert, self._payload is the data passed to .insert()
             payloads = self._payload if isinstance(self._payload, list) else [self._payload]
             inserted = []
-            for payload in payloads:
-                row = deepcopy(payload or {})
-                row.setdefault("id", str(uuid.uuid4()))
-                row.setdefault("created_at", datetime.utcnow().isoformat())
-                row.setdefault("updated_at", row["created_at"])
+            for p in payloads:
+                row = deepcopy(p or {})
+                if "id" not in row:
+                    row["id"] = str(uuid.uuid4())
+                now = datetime.utcnow().isoformat()
+                row.setdefault("created_at", now)
+                row.setdefault("updated_at", now)
                 table_rows.append(row)
                 inserted.append(deepcopy(row))
             return _LocalQueryResult(inserted)

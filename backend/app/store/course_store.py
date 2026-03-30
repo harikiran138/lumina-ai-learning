@@ -87,7 +87,8 @@ class CourseStore:
             result = await self.db.insert("courses", course_data)
             if result:
                 return self._normalize_course(result)
-            raise Exception("Failed to create course")
+            log.warning("create_course_no_result_returned", code=code, result=result)
+            raise Exception("Insert failed: no data returned")
         except Exception as e:
             log.error("create_course_failed", error=str(e), code=code)
             raise e
@@ -129,7 +130,8 @@ class CourseStore:
     async def get_course_by_code(self, code: str) -> Optional[dict]:
         try:
             client = self.db.get_client()
-            response = client.table("courses").select("*").or_(f"course_code.eq.{code}").execute()
+            # Try matching both legacy and new column names
+            response = client.table("courses").select("*").or_(f"code.eq.{code},course_code.eq.{code}").execute()
             if response.data:
                 return self._normalize_course(response.data[0])
         except Exception as e:

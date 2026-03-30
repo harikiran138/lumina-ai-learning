@@ -43,19 +43,29 @@ class Settings(BaseSettings):
             self.ASSESSMENT_API_KEY = os.getenv("GEMINI_API_KEY")
 
         # Security Check for Production or Development Secret Presence
-        is_prod = os.getenv("ENVIRONMENT", "").lower() == "production"
+        env = os.getenv("ENVIRONMENT", "").lower()
+        is_prod = env == "production"
         
         # Mandatory Secrets Check
-        if not self.SECRET_KEY or not self.JWT_SECRET or not self.JWT_REFRESH_SECRET:
+        secrets = {
+            "SECRET_KEY": self.SECRET_KEY,
+            "JWT_SECRET": self.JWT_SECRET,
+            "JWT_REFRESH_SECRET": self.JWT_REFRESH_SECRET
+        }
+        
+        missing = [k for k, v in secrets.items() if not v or (is_prod and len(v) < 32)]
+        
+        if missing:
             if is_prod:
                 import logging
-                logging.getLogger("uvicorn.error").critical("SECURITY ALERT: Missing secrets in PRODUCTION environment. Deployment blocked.")
-                raise ValueError("SECRET_KEY, JWT_SECRET, and JWT_REFRESH_SECRET MUST be set in .env for production.")
+                logger = logging.getLogger("uvicorn.error")
+                logger.critical(f"SECURITY ALERT: Missing or weak secrets in PRODUCTION ({', '.join(missing)}). Deployment blocked.")
+                raise ValueError(f"PRODUCTION REQUIREMENT: {', '.join(missing)} must be set and at least 32 characters long.")
             else:
                 # Default for local development ONLY if not in prod
-                self.SECRET_KEY = self.SECRET_KEY or "dev_secret_only_for_local_testing"
-                self.JWT_SECRET = self.JWT_SECRET or "dev_jwt_secret_only_for_local_testing"
-                self.JWT_REFRESH_SECRET = self.JWT_REFRESH_SECRET or "dev_refresh_secret_only_for_local_testing"
+                self.SECRET_KEY = self.SECRET_KEY or "dev_secret_only_for_local_testing_min_32_chars_long_12345"
+                self.JWT_SECRET = self.JWT_SECRET or "dev_jwt_secret_only_for_local_testing_min_32_chars_long_12345"
+                self.JWT_REFRESH_SECRET = self.JWT_REFRESH_SECRET or "dev_refresh_secret_only_for_local_testing_min_32_chars_long_12345"
 
 
 settings = Settings()
