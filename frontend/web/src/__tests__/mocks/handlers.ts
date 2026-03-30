@@ -2,6 +2,13 @@ import { http, HttpResponse } from 'msw'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
+type JsonObject = Record<string, unknown>
+
+async function readJsonObject(request: Request): Promise<JsonObject> {
+  const body = await request.json()
+  return body && typeof body === 'object' ? (body as JsonObject) : {}
+}
+
 export const handlers = [
   // ==================== AUTH ENDPOINTS ====================
   // Auth — login success
@@ -230,7 +237,7 @@ export const handlers = [
   }),
 
   http.put(`${BASE_URL}/student/profile`, async ({ request }) => {
-    const body = await request.json()
+    const body = await readJsonObject(request)
     return HttpResponse.json({
       ...body,
       id: 'u1',
@@ -391,15 +398,16 @@ export const handlers = [
   }),
 
   http.post(`${BASE_URL}/teacher/courses`, async ({ request }) => {
-    const body = await request.json()
-    if (!body.title) {
+    const body = await readJsonObject(request)
+    const title = typeof body.title === 'string' ? body.title : ''
+    if (!title) {
       return HttpResponse.json({ error: 'Title is required' }, { status: 400 })
     }
-    return HttpResponse.json({ id: 'tc-new', title: body.title, studentCount: 0, status: 'draft' }, { status: 201 })
+    return HttpResponse.json({ id: 'tc-new', title, studentCount: 0, status: 'draft' }, { status: 201 })
   }),
 
   http.put(`${BASE_URL}/teacher/courses/:id`, async ({ request }) => {
-    const body = await request.json()
+    const body = await readJsonObject(request)
     return HttpResponse.json({ success: true, ...body })
   }),
 
@@ -416,8 +424,9 @@ export const handlers = [
   }),
 
   http.post(`${BASE_URL}/teacher/assignments`, async ({ request }) => {
-    const body = await request.json()
-    if (!body.title) {
+    const body = await readJsonObject(request)
+    const title = typeof body.title === 'string' ? body.title : ''
+    if (!title) {
       return HttpResponse.json({ error: 'Title is required' }, { status: 400 })
     }
     return HttpResponse.json({ id: 'ta-new', ...body }, { status: 201 })
@@ -432,7 +441,7 @@ export const handlers = [
   }),
 
   http.put(`${BASE_URL}/teacher/submissions/:id`, async ({ request }) => {
-    const body = await request.json()
+    const body = await readJsonObject(request)
     return HttpResponse.json({ success: true, ...body })
   }),
 
@@ -473,15 +482,17 @@ export const handlers = [
   }),
 
   http.post(`${BASE_URL}/admin/users`, async ({ request }) => {
-    const body = await request.json()
-    if (!body.name || !body.email) {
+    const body = await readJsonObject(request)
+    const name = typeof body.name === 'string' ? body.name : ''
+    const email = typeof body.email === 'string' ? body.email : ''
+    if (!name || !email) {
       return HttpResponse.json({ error: 'Name and email are required' }, { status: 400 })
     }
     return HttpResponse.json({ id: 'au-new', ...body }, { status: 201 })
   }),
 
   http.put(`${BASE_URL}/admin/users/:id`, async ({ request }) => {
-    const body = await request.json()
+    const body = await readJsonObject(request)
     return HttpResponse.json({ success: true, ...body })
   }),
 
@@ -507,7 +518,7 @@ export const handlers = [
 
   // Create user (for admin)
   http.post(`${BASE_URL}/users`, async ({ request }) => {
-    const body = await request.json()
+    const body = await readJsonObject(request)
     return HttpResponse.json({ id: 'u-new', ...body }, { status: 201 })
   }),
 ]

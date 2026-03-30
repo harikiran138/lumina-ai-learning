@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Trophy, Medal, Star, Flame, Search, Filter, ArrowUp, ArrowDown, Minus } from "lucide-react";
-import { api, getConfiguredApiBase } from "@/lib/api";
+import { getConfiguredApiBase } from "@/lib/api";
 
 type LeaderboardEntry = {
   rank: number;
@@ -35,9 +35,7 @@ export default function StudentLeaderboard() {
         const res = await fetch(
           `${apiBase}/api/student/leaderboard?timeframe=${activeTimeframe}`,
           {
-            headers: {
-              Authorization: `Bearer ${sessionStorage.getItem("lumina_token") || ""}`,
-            },
+            credentials: "include",
           }
         );
         if (res.ok) {

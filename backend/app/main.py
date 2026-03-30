@@ -68,6 +68,7 @@ from app.routers import (  # noqa: E402
     peer_tutor,
     counselor,
     content_creator,
+    content_designer,
     researcher,
     alumni,
     curriculum,
@@ -111,6 +112,9 @@ if settings.SENTRY_DSN:
 
 logger = structlog.get_logger(__name__)
 log = logger # Alias for compatibility
+
+if os.getenv("ENVIRONMENT") == "production" and not settings.SECURE_COOKIES:
+    raise RuntimeError("SECURE_COOKIES must be True in production")
 
 
 @asynccontextmanager
@@ -284,6 +288,7 @@ app.include_router(mentor.router, prefix="/api/mentor", tags=["Mentor"])
 app.include_router(peer_tutor.router, prefix="/api/peer_tutor", tags=["Peer Tutor"])
 app.include_router(counselor.router, prefix="/api/counselor", tags=["Counselor"])
 app.include_router(content_creator.router, prefix="/api/content_creator", tags=["Content Creator"])
+app.include_router(content_designer.router, prefix="/api")
 app.include_router(researcher.router, prefix="/api/researcher", tags=["Researcher"])
 app.include_router(alumni.router, prefix="/api/alumni", tags=["Alumni"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])

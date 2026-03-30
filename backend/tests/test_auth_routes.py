@@ -16,7 +16,7 @@ async def ac():
 def gen_user_data():
     uid = str(uuid.uuid4())[:8]
     phone = f"+1555{uuid.uuid4().int % 1000000:06d}"
-    return f"test_{uid}@example.com", "password123", "Test User", "student", phone
+    return f"test_{uid}@example.com", "Password123", "Test User", "student", phone
 
 @pytest.mark.asyncio
 async def test_register(ac):
@@ -47,6 +47,9 @@ async def test_duplicate_email(ac):
         "password": pwd,
         "full_name": "Copycat",
     })
+    # Due to Pydantic validation being stricter now, 
+    # if the email is a duplicate but valid, it might still return 422 if it hits validation first,
+    # but here it should be 400 if it passes Pydantic and hits the UserStore check.
     assert res.status_code == 400
     
     await user_store.delete_user(user["id"])

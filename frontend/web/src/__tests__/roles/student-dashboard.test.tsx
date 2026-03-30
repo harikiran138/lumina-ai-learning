@@ -8,12 +8,18 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { server } from '../mocks/server'
-import { BrowserRouter } from 'react-router-dom'
 
 // Note: We use React Testing Library with MSW for integration-style tests
 // Some tests are adapted for jsdom environment
 
 const BASE_URL = 'http://localhost:3001/api'
+
+type JsonObject = Record<string, unknown>
+
+async function readJsonObject(request: Request): Promise<JsonObject> {
+  const body = await request.json()
+  return body && typeof body === 'object' ? (body as JsonObject) : {}
+}
 
 // ==================== SECTION S1 — DASHBOARD OVERVIEW ====================
 
@@ -303,7 +309,7 @@ describe('Student — Profile (S5)', () => {
         })
       }),
       http.put(`${BASE_URL}/student/profile`, async ({ request }) => {
-        const body = await request.json()
+        const body = await readJsonObject(request)
         return HttpResponse.json({ ...body, id: 'u1' })
       })
     )

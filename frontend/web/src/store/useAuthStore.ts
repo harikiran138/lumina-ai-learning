@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+
 
 export type Role = "super_admin" | "college_admin" | "admin" | "hod" | "faculty" | "teacher" | "student" | "parent" | "mentor" | "peer_tutor" | "counselor" | "content_creator" | "researcher" | "alumni";
 
@@ -27,25 +27,11 @@ interface AuthState {
   clearAuth: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
 
-      setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
-      clearAuth: () => set({ user: null, isAuthenticated: false, isLoading: false }),
-    }),
-    {
-      name: 'lumina-auth-cache',
-      storage: createJSONStorage(() =>
-        typeof window !== 'undefined' ? sessionStorage : ({} as Storage),
-      ),
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-      }),
-    },
-  ),
-);
+  setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
+  clearAuth: () => set({ user: null, isAuthenticated: false, isLoading: false }),
+}));

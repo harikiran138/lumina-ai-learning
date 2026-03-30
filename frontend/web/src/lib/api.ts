@@ -134,16 +134,6 @@ export class RealAPI {
   private token: string | null = null;
 
   private constructor() {
-    if (typeof window !== "undefined") {
-      const storedUser = sessionStorage.getItem("lumina_user");
-      const storedToken = sessionStorage.getItem("lumina_token");
-      if (storedUser) {
-        this.currentUser = JSON.parse(storedUser);
-      }
-      if (storedToken) {
-        this.token = storedToken;
-      }
-    }
   }
 
   public static getInstance(): RealAPI {
@@ -159,13 +149,6 @@ export class RealAPI {
 
   private persistToken(token: string | null) {
     this.token = token;
-    if (typeof window !== "undefined") {
-      if (token) {
-        sessionStorage.setItem("lumina_token", token);
-      } else {
-        sessionStorage.removeItem("lumina_token");
-      }
-    }
   }
 
   private async handleUnauthorized(): Promise<boolean> {
@@ -222,7 +205,11 @@ export class RealAPI {
         } else {
           headers.delete("Authorization");
         }
-        return fetchWithRetry(`${this.getApiBase()}${path}`, { ...options, headers })
+        return fetchWithRetry(`${this.getApiBase()}${path}`, {
+          ...options,
+          headers,
+          credentials: "include",
+        })
       }
     }
     return response;
@@ -297,9 +284,6 @@ export class RealAPI {
       preferences: userData.preferences || {},
     };
 
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("lumina_user", JSON.stringify(this.currentUser));
-    }
     return this.currentUser;
   }
 
@@ -333,9 +317,6 @@ export class RealAPI {
     }
     this.currentUser = null;
     this.persistToken(null);
-    if (typeof window !== "undefined") {
-      sessionStorage.removeItem("lumina_user");
-    }
   }
 
   async changePassword(tokenOrPassword: string | null, maybeNewPassword?: string): Promise<any> {
@@ -793,9 +774,7 @@ export class RealAPI {
           onboardingCompleted: true,
           onboardingStep: 5,
         };
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("lumina_user", JSON.stringify(this.currentUser));
-        }
+        // sessionStorage usage removed for security (Phase 3 cleanup)
       }
     }
     return tokenData ?? {};
@@ -1208,7 +1187,7 @@ export class RealAPI {
     return this.fetchJsonOrDefault("/api/student/certificates", []);
   }
   async getStudentMastery(..._args: any[]): Promise<any> {
-    const payload = await this.fetchJsonOrDefault("/api/student/profile/mastery", {});
+    const payload = (await this.fetchJsonOrDefault("/api/student/profile/mastery", null)) as any;
     return payload?.masteryMap || payload || {};
   }
   async getParentDashboard(..._args: any[]): Promise<any> { return this.getDashboardData("parent"); }
@@ -1323,9 +1302,7 @@ export class RealAPI {
     });
     const nextUser = this.currentUser ? { ...this.currentUser, ...data } : data;
     this.currentUser = nextUser;
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("lumina_user", JSON.stringify(nextUser));
-    }
+    // sessionStorage usage removed for security (Phase 3 cleanup)
     return response ?? nextUser;
   }
 
