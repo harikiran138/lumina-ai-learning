@@ -22,7 +22,7 @@ class FacultyOnboardingCompleteRequest(BaseModel):
 
 
 def _require_faculty(user: dict):
-    if user.get("role") not in {"teacher", "faculty", "hod", "admin", "college_admin", "super_admin"}:
+    if user.get("role") not in {"faculty", "hod", "college_admin", "super_admin"}:
         raise HTTPException(status_code=403, detail="Faculty access required")
 
 
@@ -69,7 +69,7 @@ def _build_assignment_views(
 @router.get("/faculty/onboarding/options")
 async def get_faculty_onboarding_options(current_user: dict = Depends(get_current_user)):
     _require_faculty(current_user)
-    if current_user.get("role") not in {"teacher", "faculty"}:
+    if current_user.get("role") != "faculty":
         raise HTTPException(status_code=403, detail="Teacher onboarding access required")
 
     teacher_id = str(current_user.get("id"))

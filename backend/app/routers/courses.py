@@ -257,7 +257,7 @@ async def teacher_courses(
     store: CourseStore = Depends(get_course_store),
 ):
     """List courses created by the authenticated teacher."""
-    if current_user["role"] not in ("teacher", "admin", "hod"):
+    if current_user["role"] not in ("teacher", "faculty", "admin", "hod"):
         raise HTTPException(status_code=403, detail="Teacher access required")
     return await store.get_courses_by_teacher(current_user["id"])
 
@@ -268,7 +268,7 @@ async def teacher_students(
     analytics: AnalyticsStore = Depends(get_analytics_store),
 ):
     """Get students enrolled in the teacher's courses."""
-    if current_user["role"] not in ("teacher", "admin", "hod"):
+    if current_user["role"] not in ("teacher", "faculty", "admin", "hod"):
         raise HTTPException(status_code=403, detail="Teacher access required")
     snapshot = await analytics.get_teacher_students_snapshot(current_user["id"])
     personalization = get_personalization_service()
@@ -303,8 +303,8 @@ async def create_course_form(
     store: CourseStore = Depends(get_course_store),
 ):
     """Create a course (form-data variant)."""
-    if current_user["role"] not in ("super_admin", "hod"):
-        raise HTTPException(status_code=403, detail="Only HOD or Admin can create courses")
+    if current_user["role"] not in ("super_admin", "hod", "teacher", "faculty"):
+        raise HTTPException(status_code=403, detail="Only Faculty, HOD or Admin can create courses")
     if await store.get_course_by_code(code):
         raise HTTPException(status_code=400, detail="Course code already exists")
     course = await store.create_course(
@@ -325,8 +325,8 @@ async def create_course_json(
     store: CourseStore = Depends(get_course_store),
 ):
     """Create a course (JSON body)."""
-    if current_user["role"] not in ("super_admin", "hod"):
-        raise HTTPException(status_code=403, detail="Only HOD or Admin can create courses")
+    if current_user["role"] not in ("super_admin", "faculty", "hod"):
+        raise HTTPException(status_code=403, detail="Only Faculty, HOD or Admin can create courses")
     if await store.get_course_by_code(body.code):
         raise HTTPException(status_code=400, detail="Course code already exists")
     course_name = body.name or body.title
@@ -337,11 +337,19 @@ async def create_course_json(
         name=course_name,
         code=body.code,
         description=body.description,
-        teacher_id=current_user["id"],
+        teacher_id=current_user.get("id"),
         difficulty_level=body.level,
         thumbnail_url=body.thumbnail or body.image,
         program_id=body.program_id,
     )
+    
+    if not course:
+        # Fallback if return data is missing due to RLS but insert succeeded
+        course = await store.get_course_by_code(body.code)
+        
+    if not course:
+        raise HTTPException(status_code=500, detail="Failed to create course record")
+
     from app.core.cache import invalidate_cache
     await invalidate_cache("courses:*")
     return course

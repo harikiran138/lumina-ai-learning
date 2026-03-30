@@ -23,7 +23,7 @@ def gen_user_data():
 async def teacher_user():
     user_store = UserStore()
     email, pwd, name, role, phone = gen_user_data()
-    user = await user_store.create_user(email, pwd, name, "teacher", phone)
+    user = await user_store.create_user(email, pwd, name, "student", phone)
     yield user, pwd
     await user_store.delete_user(user["id"])
 
@@ -74,7 +74,7 @@ async def test_create_course(ac, admin_user):
     await store.delete_course(course["id"])
 
 @pytest.mark.asyncio
-async def test_teacher_cannot_create_course(ac, teacher_user):
+async def test_student_cannot_create_course(ac, teacher_user):
     user, pwd = teacher_user
     token = await get_token(ac, user["email"], pwd)
     
