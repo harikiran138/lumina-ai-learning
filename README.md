@@ -59,7 +59,7 @@ Use those documents when making product promises, demos, or roadmap commitments.
 - ** Pedagogically Sound**: Built on learning science, not just engineering convenience
 - ** Privacy-First**: 100% self-hosted, zero external API dependency, complete data sovereignty
 - ** Agentic AI**: Multi-agent system with specialized roles collaborating via Model Context Protocol (MCP)
-- ** Production-Ready**: Enterprise-grade infrastructure with monitoring, scaling, and security
+- ** Production-Ready (MVP Level)**: Fully validated core systems including Auth, RBAC, Concurrency, and Performance benchmarks.
 
 ---
 

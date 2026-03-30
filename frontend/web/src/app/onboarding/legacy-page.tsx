@@ -853,12 +853,15 @@ export default function OnboardingPage() {
       if (!deptId) {
         throw new Error("Department ID is missing. Refresh and try again.");
       }
+      if (!collegeId) {
+        throw new Error("College ID is missing. Refresh and try again.");
+      }
       raiseIfInvalid(
         validateRequiredName(deptProfile.name, "Department name"),
         deptProfile.abbreviation.trim() ? null : "Department abbreviation is required",
       );
 
-      const updatedDepartment = await api.architectureUpdateDepartment(deptId, {
+      const updatedDepartment = await api.architectureUpdateDepartment(collegeId, deptId, {
         department_name: deptProfile.name,
         abbreviation: deptProfile.abbreviation,
         description: deptProfile.description,

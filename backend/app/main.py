@@ -428,6 +428,7 @@ if os.getenv("ENVIRONMENT") == "production":
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 _cors_origins = [
     frontend_url,
+    "https://lumina-platform.vercel.app",  # Add production URL
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:3001",
