@@ -34,3 +34,4 @@ debug_rag.py
 LUMINA_CREDENTIALS.csv
 LUMINA_ALL_CREDENTIALS.csv
 .env*.local
+.env*
