@@ -4,7 +4,7 @@ export const ROLE_HOME_ROUTES: Record<string, string> = {
   college_admin: "/college",
   hod: "/hod/dashboard",
   faculty: "/faculty/dashboard",
-  teacher: "/faculty/dashboard",
+  teacher: "/teacher/dashboard",
   student: "/student/dashboard",
   parent: "/parent/dashboard",
   mentor: "/mentor/dashboard",
@@ -19,7 +19,8 @@ const ROLE_PATH_PREFIXES: Record<string, string[]> = {
   super_admin: ["/admin"],
   college_admin: ["/college"],
   hod: ["/hod"],
-  faculty: ["/faculty", "/teacher"],
+  teacher: ["/teacher"],
+  faculty: ["/faculty"],
   student: ["/student"],
   parent: ["/parent"],
   mentor: ["/mentor"],
@@ -32,7 +33,6 @@ const ROLE_PATH_PREFIXES: Record<string, string[]> = {
 
 export function normalizeRole(role?: string | null): string {
   if (role === "admin") return "super_admin"
-  if (role === "teacher") return "faculty"
   return role || ""
 }
 
@@ -64,9 +64,7 @@ export function getCanonicalPath(pathname: string): string | null {
     return pathname.replace("/researcher/portal", "/researcher/dashboard")
   }
 
-  if (pathname === "/teacher" || pathname.startsWith("/teacher/")) {
-    return pathname.replace("/teacher", "/faculty")
-  }
+  // teacher is now a first-class role — no redirect needed
 
   if (pathname === "/peer-tutor" || pathname.startsWith("/peer-tutor/")) {
     return pathname.replace("/peer-tutor", "/peer_tutor")

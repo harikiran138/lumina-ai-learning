@@ -11,7 +11,7 @@ from app.dependencies import get_user_store
 from app.database.supabase_manager import supabase_db
 from app.core.audit import audit_logger
 import logging
-from app.core.rbac import normalize_role
+from app.core.rbac import normalize_role, SELF_SIGNUP_ROLES, INVITE_ONLY_ROLES, ALL_ROLES
 from app.core.limiter import limiter
 from app.core.blacklist import blacklist_token, is_token_revoked
 
@@ -307,25 +307,31 @@ def _decode_reset_token(token: str) -> dict:
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(user: UserCreate, user_store: UserStore = Depends(get_user_store)):
     try:
-        if user.role.lower() in {"admin", "hod"}:
+        normalized_role = normalize_role(user.role)
+
+        # Block invite-only roles from self-registration
+        if normalized_role in INVITE_ONLY_ROLES:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Direct registration as admin or HOD is prohibited",
+                detail=f"Registration as '{normalized_role}' requires an admin invitation.",
             )
-        if user.role.lower() not in {"student", "teacher"}:
+
+        # Validate the role is a known self-signup role
+        if normalized_role not in SELF_SIGNUP_ROLES:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid role. Must be student or teacher.",
+                detail=f"Invalid role '{user.role}'. Allowed: {', '.join(sorted(SELF_SIGNUP_ROLES))}.",
             )
+
         phone_val = user.phone or f"+1555{uuid.uuid4().int % 1000000:06d}"
         new_user = await user_store.create_user(
             email=user.email, password=user.password,
-            full_name=user.full_name, role=user.role, phone=phone_val,
+            full_name=user.full_name, role=normalized_role, phone=phone_val,
         )
         audit_logger.log(
             action="user_registered",
             user_id=str(new_user["id"]),
-            metadata={"email": user.email, "role": user.role},
+            metadata={"email": user.email, "role": normalized_role},
         )
         return new_user
     except ValueError as e:

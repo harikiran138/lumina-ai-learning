@@ -24,12 +24,8 @@ class UserStore:
         return get_password_hash(password)
 
     def normalize_role(self, role: Optional[str]) -> str:
-        normalized = (role or "student").strip().lower()
-        if normalized == "teacher":
-            return "faculty"
-        if normalized == "admin":
-            return "super_admin"
-        return normalized
+        from app.core.rbac import normalize_role as _normalize
+        return _normalize(role)
 
     def _sanitize_user(self, user: dict) -> dict:
         """Removes sensitive fields and normalizes user object for API consumption."""
