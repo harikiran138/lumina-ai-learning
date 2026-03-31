@@ -11,20 +11,13 @@ from app.store.institution_store import InstitutionStore
 from app.store.user_store import UserStore
 from app.store.student_store import StudentStore
 from app.core.security import get_password_hash, create_access_token
+from app.core.rbac import normalize_role
 
 router = APIRouter()
 
 
-def _normalize_role(role: str) -> str:
-    if role == "admin":
-        return "super_admin"
-    if role == "teacher":
-        return "faculty"
-    return role
-
-
 def _require_roles(user: dict, allowed: set):
-    role = _normalize_role(user.get("role"))
+    role = normalize_role(user.get("role"))
     if role not in allowed:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     return role
@@ -39,7 +32,7 @@ def _resolve_dept_id(user: dict) -> Optional[str]:
 
 
 def _enforce_college_scope(user: dict, college_id: str):
-    role = _normalize_role(user.get("role"))
+    role = normalize_role(user.get("role"))
     if role == "super_admin":
         return
     if _resolve_college_id(user) not in {college_id, None}:
@@ -329,7 +322,7 @@ async def create_enrollment_code(
 
 @router.post("/enrollment/validate")
 async def validate_enrollment_code(payload: Dict[str, Any], current_user: dict = Depends(get_current_user)):
-    role = _normalize_role(current_user.get("role"))
+    role = normalize_role(current_user.get("role"))
     if role != "student":
         raise HTTPException(status_code=403, detail="Student access required")
 

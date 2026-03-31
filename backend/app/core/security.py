@@ -20,7 +20,13 @@ def create_access_token(
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    to_encode = {"exp": expire, "sub": str(subject)}
+    import uuid
+    to_encode = {
+        "exp": expire, 
+        "sub": str(subject),
+        "jti": str(uuid.uuid4()),
+        "iat": datetime.now(timezone.utc)
+    }
     if extra_claims:
         to_encode.update(extra_claims)
     encoded_jwt = jwt.encode(to_encode, secret_key or settings.SECRET_KEY, algorithm=ALGORITHM)

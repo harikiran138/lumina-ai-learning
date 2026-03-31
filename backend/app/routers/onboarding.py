@@ -12,6 +12,7 @@ from .auth import get_current_user
 from app.database.supabase_manager import supabase_db
 from app.services.storage import storage_service
 from app.store.user_store import UserStore
+from app.core.rbac import normalize_role
 
 router = APIRouter()
 
@@ -42,7 +43,7 @@ class StudentPreferencesRequest(BaseModel):
 
 
 def _require_student(current_user: dict) -> str:
-    if _normalize_role(current_user.get("role")) != "student":
+    if normalize_role(current_user.get("role")) != "student":
         raise HTTPException(status_code=403, detail="Student access required")
     user_id = current_user.get("id")
     if not user_id:
@@ -665,7 +666,7 @@ async def get_onboarding_status(current_user: dict = Depends(get_current_user)):
 
     return {
         "step": step,
-        "role": _normalize_role(current_user.get("role")),
+        "role": normalize_role(current_user.get("role")),
         "isComplete": step >= 5,
         "collegeId": current_user.get("college_id") or current_user.get("institution_id"),
         "deptId": current_user.get("dept_id") or current_user.get("department_id"),
@@ -679,7 +680,7 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
     user_id = current_user.get("id")
     requested_step = int(payload.get("step", 0))
     step_data = payload.get("data") or {}
-    role = _normalize_role(current_user.get("role"))
+    role = normalize_role(current_user.get("role"))
 
     def require_fields(fields: list[str]):
         missing = [f for f in fields if not step_data.get(f)]
@@ -805,7 +806,7 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
 
 @router.get("/subjects")
 async def get_onboarding_subjects(current_user: dict = Depends(get_current_user)):
-    if _normalize_role(current_user.get("role")) != "student":
+    if normalize_role(current_user.get("role")) != "student":
         raise HTTPException(status_code=403, detail="Student access required")
     dept_id = current_user.get("dept_id") or current_user.get("department_id")
     batch_id = current_user.get("batch_id")
@@ -827,7 +828,7 @@ async def complete_onboarding(current_user: dict = Depends(get_current_user)):
     updated = await UserStore().update_user_fields(user_id, {"onboarding_step": 5})
     if not updated:
         raise HTTPException(status_code=500, detail="Failed to finalize onboarding")
-    role = _normalize_role(current_user.get("role"))
+    role = normalize_role(current_user.get("role"))
 
     if role in {"college_admin", "super_admin"}:
         college_id = current_user.get("college_id") or current_user.get("institution_id")

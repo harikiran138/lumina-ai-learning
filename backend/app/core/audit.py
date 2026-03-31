@@ -11,6 +11,34 @@ class AuditLogger:
     """
 
     @staticmethod
+    def log_security_event(
+        action: str,
+        user_id: Optional[str],
+        severity: str = "medium",  # low, medium, high, critical
+        metadata: Optional[Dict[str, Any]] = None,
+        ip_address: Optional[str] = None
+    ):
+        """
+        Log a security-sensitive event with elevated visibility.
+        """
+        event_data = {
+            "audit_type": "security_log",
+            "action": action,
+            "user_id": user_id,
+            "severity": severity,
+            "ip_address": ip_address,
+            "timestamp": datetime.utcnow().isoformat(),
+            **(metadata or {}),
+        }
+
+        if severity in ["high", "critical"]:
+            logger.critical(f"SENTINEL_SECURITY_ALERT: {action}", **event_data)
+        elif severity == "medium":
+            logger.warning(f"SENTINEL_SECURITY_EVENT: {action}", **event_data)
+        else:
+            logger.info(action, **event_data)
+
+    @staticmethod
     def log(
         action: str,
         user_id: str,

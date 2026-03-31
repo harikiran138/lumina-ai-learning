@@ -38,15 +38,17 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.middleware.trustedhost import TrustedHostMiddleware  # noqa: E402
 from fastapi.middleware.gzip import GZipMiddleware  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware  # noqa: E402
 from prometheus_fastapi_instrumentator import Instrumentator  # noqa: E402
-from slowapi import _rate_limit_exceeded_handler  # noqa: E402
-from slowapi.errors import RateLimitExceeded  # noqa: E402
 
 from app.database.manager import db  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.logging import configure_logging  # noqa: E402
 from app.core.limiter import limiter  # noqa: E402
+from app.core.middleware import SentinelMiddleware # noqa: E402
 
 from app.routers import (  # noqa: E402
     ai,
@@ -83,6 +85,8 @@ from app.routers import (  # noqa: E402
     unit_pipeline,
     handwritten,
     ai_tutor,
+    flashcards,
+    core_extensions,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
@@ -166,21 +170,23 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# 3. Add Rate Limiter
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# 3. Add Rate Limiter (Moved to specialized section)
 
-# --- GLOBAL CORS EXCEPTION HANDLERS ---
-# These ensure that even if an exception occurs before or during middleware execution, 
-# the client (the browser) still receives the necessary CORS headers to understand the error.
+_ALLOWED_CORS_ORIGINS = {
+    "https://lumina-platform.vercel.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+}
 
 def add_cors_headers(response: JSONResponse, request: Request) -> JSONResponse:
     origin = request.headers.get("origin")
-    if origin:
+    if origin and (origin in _ALLOWED_CORS_ORIGINS or os.getenv("FRONTEND_URL") == origin):
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "*"
-        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
     return response
 
 @app.exception_handler(StarletteHTTPException)
@@ -306,6 +312,16 @@ app.include_router(faculty.router, prefix="/api", tags=["Faculty"])
 app.include_router(ai_queue.router, prefix="/api", tags=["AI Queue"])
 app.include_router(unit_pipeline.router, prefix="/api/teacher", tags=["Unit Pipeline"])
 app.include_router(ai_tutor.router, prefix="/api/ai-tutor", tags=["AI Tutor"])
+app.include_router(flashcards.router)
+app.include_router(core_extensions.router)
+
+
+# --- RATE LIMITING (L5 Sentinel) ---
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+# --- GLOBAL CORS EXCEPTION HANDLERS ---
 
 
 # --- Performance & Security Polish ---
@@ -414,33 +430,26 @@ async def sentry_context_middleware(request: Request, call_next):
     return response
 
 
-# --- Middlewares (Outermost Last) ---
+# --- Middlewares (Enforced in LIFO order) ---
+
+# RBAC & Global Auth (L5 Sentinel)
+app.add_middleware(SentinelMiddleware)
 
 # SECURITY: TrustedHostMiddleware
 allowed_hosts = [
     "localhost", "127.0.0.1", "::1", "0.0.0.1", "testserver", "*.vercel.app",
-    "localhost:8000", "127.0.0.1:8000", "[::1]:8000"
+    "lumina-backend.onrender.com", "localhost:8000", "127.0.0.1:8000", "[::1]:8000"
 ]
 if os.getenv("ENVIRONMENT") == "production":
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
 # CORS: Outermost to ensure all responses (including errors) have headers
-frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
-_cors_origins = [
-    frontend_url,
-    "https://lumina-platform.vercel.app",  # Add production URL
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-]
-
+# CORS Lockdown (R-002 Fix): Strict whitelist only.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origins=list(_ALLOWED_CORS_ORIGINS) + ([os.getenv("FRONTEND_URL")] if os.getenv("FRONTEND_URL") else []),
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["Content-Disposition"],
 )
