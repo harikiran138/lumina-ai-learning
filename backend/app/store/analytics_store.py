@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from app.core.logging import structlog
 from app.database.supabase_manager import supabase_db
 from app.store.institution_store import InstitutionStore
+from app.core.rbac import normalize_role
 log = structlog.get_logger()
 
 
@@ -34,12 +35,7 @@ class AnalyticsStore:
         return default
 
     def _normalize_role(self, role: Any) -> str:
-        normalized = str(role or "student").strip().lower()
-        if normalized == "teacher":
-            return "faculty"
-        if normalized == "admin":
-            return "super_admin"
-        return normalized
+        return normalize_role(role)
 
     def _parse_datetime(self, value: Any) -> Optional[datetime]:
         if not value:

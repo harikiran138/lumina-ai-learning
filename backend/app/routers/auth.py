@@ -11,6 +11,9 @@ from app.dependencies import get_user_store
 from app.database.supabase_manager import supabase_db
 from app.core.audit import audit_logger
 import logging
+from app.core.rbac import normalize_role
+from app.core.limiter import limiter
+from app.core.blacklist import blacklist_token, is_token_revoked
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -107,17 +110,10 @@ class LoginResponse(BaseModel):
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
-def _normalize_role(role: str) -> str:
-    if role == "admin":
-        return "super_admin"
-    if role == "teacher":
-        return "faculty"
-    return role
-
-
 def _build_claims(user: dict) -> dict:
     return {
-        "role": _normalize_role(user.get("role")),
+        "id": str(user.get("id")),
+        "role": normalize_role(user.get("role")), # Using centralized logic
         "collegeId": user.get("college_id"),
         "deptId": user.get("dept_id") or user.get("department_id"),
         "batchId": user.get("batch_id"),
@@ -394,7 +390,26 @@ async def accept_invite(
 
 
 @router.post("/logout")
-def logout(response: Response):
+def logout(request: Request, response: Response):
+    # Extract access and refresh tokens to blacklist them (L5 Sentinel)
+    access_token = request.cookies.get("access_token")
+    refresh_token = request.cookies.get("refresh_token")
+    
+    from jose import jwt
+    for token in [access_token, refresh_token]:
+        if not token: continue
+        try:
+            # Decode without verification to get JTI and Exp quickly
+            payload = jwt.get_unverified_claims(token)
+            jti = payload.get("jti")
+            exp = payload.get("exp")
+            if jti and exp:
+                remaining = int(exp - datetime.now(timezone.utc).timestamp())
+                if remaining > 0:
+                    blacklist_token(jti, remaining)
+        except Exception:
+            pass
+
     response.delete_cookie("access_token", path="/")
     response.delete_cookie("refresh_token", path="/")
     return {"success": True}
@@ -432,6 +447,7 @@ async def reset_password(
 
 
 @router.post("/login", response_model=LoginResponse)
+@limiter.limit("5/minute")
 def login_json(
     payload: LoginRequest,
     request: Request,
@@ -482,7 +498,7 @@ def login_json(
     _clear_login_attempts(raw_identifier, ip_address)
 
     # ── Force-password-change flow ────────────────────────────────────────────
-    if _normalize_role(user.get("role")) == "student" and user.get("must_change_password"):
+    if normalize_role(user.get("role")) == "student" and user.get("must_change_password"):
         temp_token = create_access_token(
             subject=user["email"],
             expires_delta=timedelta(minutes=30),
@@ -548,7 +564,7 @@ def login_json(
         "accessToken": access_token,
         "user": {
             "id":               user.get("id"),
-            "role":             _normalize_role(user.get("role")),
+            "role":             normalize_role(user.get("role")),
             "fullName":         user.get("full_name") or user.get("name"),
             "email":            user.get("email"),
             "collegeId":        user.get("college_id"),
@@ -562,6 +578,7 @@ def login_json(
 
 
 @router.post("/refresh")
+@limiter.limit("5/minute")
 async def refresh_token(
     request: Request,
     response: Response,
@@ -575,6 +592,18 @@ async def refresh_token(
         from jose import jwt
         payload = jwt.decode(refresh_token, settings.JWT_REFRESH_SECRET, algorithms=["HS256"])
         
+        jti = payload.get("jti")
+        if is_token_revoked(jti):
+            audit_logger.log_security_event(
+                action="refresh_token_reuse_detected",
+                user_id=payload.get("sub"),
+                severity="high",
+                metadata={"jti": jti},
+                ip_address=request.client.host
+            )
+            # Standard Security: If a refresh token is reused, it might be a replay attack.
+            raise HTTPException(status_code=401, detail="Refresh token has been revoked or used.")
+            
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=401, detail="Invalid token type for refresh")
             
@@ -582,6 +611,13 @@ async def refresh_token(
         if not email:
             raise HTTPException(status_code=401, detail="Invalid token payload: missing subject")
             
+        # Blacklist the old refresh token as it's now 'used' (Rotation)
+        exp = payload.get("exp")
+        if jti and exp:
+            remaining = int(exp - datetime.now(timezone.utc).timestamp())
+            if remaining > 0:
+                blacklist_token(jti, remaining)
+                
     except Exception as e:
         logger.warning(f"refresh_token_decode_failed: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
@@ -649,7 +685,11 @@ async def get_current_user(
             
         user_id = payload.get("userId")
         email = payload.get("sub") or payload.get("email")
+        jti = payload.get("jti")
         
+        if jti and is_token_revoked(jti):
+            raise HTTPException(status_code=401, detail="Token has been revoked.")
+            
         if not user_id and not email:
             raise HTTPException(status_code=401, detail="Invalid token: no user identifier")
             

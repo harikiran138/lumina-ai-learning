@@ -115,7 +115,7 @@ export default function StudentOnboardingFlow() {
     gender: "",
     phoneNumber: "",
     email: "",
-    enrollmentCode: "LUMINA-STUDENT-2026",
+    enrollmentCode: "",
     batchId: "",
     batchLabel: "",
     section: "",
@@ -172,7 +172,7 @@ export default function StudentOnboardingFlow() {
           gender: step1.gender || "",
           phoneNumber: step1.phone || "",
           email: user.email || "",
-          enrollmentCode: step2.enrollmentCode || "LUMINA-STUDENT-2026",
+          enrollmentCode: step2.enrollmentCode || "",
           batchId: step2.batchId || status.batchId || "",
           batchLabel: step2.batchLabel || "",
           section: step2.section || "",
@@ -635,7 +635,7 @@ export default function StudentOnboardingFlow() {
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <input
                       className={`${baseInputClass} font-mono uppercase tracking-[0.25em]`}
-                      placeholder="e.g. LUMINA-STUDENT-2026"
+                      placeholder="e.g. ABCD-1234-EFGH"
                       value={student.enrollmentCode}
                       onChange={(event) => {
                         setEnrollmentPreview(null);

@@ -21,6 +21,7 @@ from app.database.models import Institution, Department, Stakeholder
 from app.store.academic_store import AcademicStore
 from pydantic import BaseModel
 from app.store.config_store import config_store
+from app.core.rbac import normalize_role, Role
 
 class CreateDeptRequest(BaseModel):
     institution_id: str
@@ -39,20 +40,13 @@ class CreateClassRequest(BaseModel):
 
 router = APIRouter()
 log = structlog.get_logger(__name__)
-LEGACY_ROLE_ALIASES = {
-    "teacher": "faculty",
-    "admin": "super_admin",
-}
-VALID_ROLES = {"student", "faculty", "hod", "college_admin", "super_admin"}
-
-
 def _normalize_admin_role(role: Optional[str]) -> str:
-    normalized = (role or "student").strip().lower()
-    return LEGACY_ROLE_ALIASES.get(normalized, normalized)
+    return normalize_role(role)
 
 
 def is_admin(current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") not in {"admin", "super_admin", "college_admin"}:
+    role = normalize_role(current_user.get("role"))
+    if role not in {Role.SUPER_ADMIN.value, Role.COLLEGE_ADMIN.value}:
         raise HTTPException(status_code=403, detail="Admin access required")
     
     # Requirement: Mandatory 2FA for all admin routes
@@ -168,8 +162,9 @@ async def create_user(data: dict, admin: dict = Depends(is_admin)):
     """Create a user without replacing the admin session."""
     role = _normalize_admin_role(data.get("role"))
 
-    if role not in VALID_ROLES:
-        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(sorted(VALID_ROLES))}")
+    valid_roles = {r.value for r in Role}
+    if role not in valid_roles:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(sorted(valid_roles))}")
 
     actor_role = _normalize_admin_role(admin.get("role"))
     if role == "super_admin" and actor_role != "super_admin":
@@ -262,8 +257,9 @@ async def update_user_status(user_id: str, status: str, admin: dict = Depends(is
 async def update_user_role(user_id: str, role: str, admin: dict = Depends(is_admin)):
     """Change a user's role."""
     role = _normalize_admin_role(role)
-    if role not in VALID_ROLES:
-        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(sorted(VALID_ROLES))}")
+    valid_roles = {r.value for r in Role}
+    if role not in valid_roles:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(sorted(valid_roles))}")
 
     user_store = UserStore()
     target_user = await user_store.get_user_by_id(user_id)

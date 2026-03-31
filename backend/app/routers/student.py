@@ -20,6 +20,7 @@ from app.store.analytics_store import AnalyticsStore
 from app.dependencies import get_user_data_store, get_student_store, get_assignment_store, get_analytics_store
 from .auth import get_current_user
 from app.database.supabase_manager import supabase_db
+from app.services.risk_service import get_risk_analysis_service
 
 router = APIRouter()
 
@@ -1771,3 +1772,28 @@ async def list_student_materials(course_id: str, current_user: dict = Depends(ge
     if not enrolled:
         raise HTTPException(status_code=403, detail="Not enrolled in this course")
     return await supabase_db.fetch_all("course_materials", {"course_id": course_id})
+
+
+@router.get("/risk-score")
+async def get_my_risk_score(current_user: dict = Depends(get_current_user)):
+    """Fetch the latest risk analysis for the current student."""
+    if current_user.get("role") != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+    
+    service = get_risk_analysis_service()
+    return await service.get_student_risk(current_user["id"])
+
+
+@router.post("/analyze-risk")
+async def trigger_risk_analysis(current_user: dict = Depends(get_current_user)):
+    """Trigger a fresh risk analysis for the current student."""
+    if current_user.get("role") != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+    
+    institution_id = current_user.get("institution_id")
+    if not institution_id:
+        # Fallback for dev/old users
+        institution_id = "00000000-0000-0000-0000-000000000000"
+        
+    service = get_risk_analysis_service()
+    return await service.run_risk_analysis(current_user["id"], institution_id)
