@@ -8,23 +8,30 @@ import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   Building2,
   CheckCircle2,
   ChevronRight,
+  Compass,
+  FlaskConical,
   GraduationCap,
+  HeartHandshake,
   Loader2,
   Lock,
   Mail,
   School,
   ShieldCheck,
   User,
+  Users,
+  Heart,
+  Crown,
 } from "lucide-react";
 import { api, type User as AuthUser } from "@/lib/api";
 import { getRoleHome, ROLE_HOME_ROUTES } from "@/lib/role-routing";
 import { useAuthStore } from "@/store/useAuthStore";
 
-type LoginRole = "student" | "faculty" | "admin";
-type SignupRole = "student" | "faculty";
+type LoginRole = "student" | "teacher" | "faculty" | "hod" | "admin" | "parent" | "mentor" | "peer_tutor" | "counselor" | "researcher";
+type SignupRole = "student" | "teacher" | "faculty" | "parent" | "mentor" | "peer_tutor" | "researcher";
 type AuthMode = "login" | "signup";
 
 type SignupForm = {
@@ -42,13 +49,24 @@ const loginRoleHints: Array<{
   helper: string;
 }> = [
   { id: "student", label: "Student", icon: GraduationCap, helper: "Roll number or student email" },
+  { id: "teacher", label: "Teacher", icon: BookOpen, helper: "Teacher email or ID" },
   { id: "faculty", label: "Faculty", icon: School, helper: "Faculty ID or institutional email" },
+  { id: "hod", label: "HOD", icon: Crown, helper: "Department head credentials" },
   { id: "admin", label: "Admin", icon: ShieldCheck, helper: "Administrative email access" },
+  { id: "parent", label: "Parent", icon: Users, helper: "Parent portal email" },
+  { id: "mentor", label: "Mentor", icon: Compass, helper: "Mentor email" },
+  { id: "counselor", label: "Counselor", icon: Heart, helper: "Counselor email" },
+  { id: "researcher", label: "Researcher", icon: FlaskConical, helper: "Research portal email" },
 ];
 
-const signupRoleOptions: Array<{ id: SignupRole; label: string; icon: typeof GraduationCap }> = [
-  { id: "student", label: "Student", icon: GraduationCap },
-  { id: "faculty", label: "Faculty", icon: School },
+const signupRoleOptions: Array<{ id: SignupRole; label: string; icon: typeof GraduationCap; desc: string }> = [
+  { id: "student", label: "Student", icon: GraduationCap, desc: "Adaptive learning & AI tutor" },
+  { id: "teacher", label: "Teacher", icon: BookOpen, desc: "Content creation & AI verification" },
+  { id: "faculty", label: "Faculty", icon: School, desc: "Course oversight & grading" },
+  { id: "parent", label: "Parent", icon: Users, desc: "Monitor child progress" },
+  { id: "mentor", label: "Mentor", icon: Compass, desc: "Guidance & support" },
+  { id: "peer_tutor", label: "Peer Tutor", icon: HeartHandshake, desc: "Collaborative learning" },
+  { id: "researcher", label: "Researcher", icon: FlaskConical, desc: "Educational impact studies" },
 ];
 
 const featurePillars = [
@@ -517,20 +535,28 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                   </div>
                 </label>
 
-                <div className="grid grid-cols-2 gap-3 rounded-2xl border border-white/8 bg-black/20 p-1.5">
+                <div className="space-y-2">
+                  <span className="block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Select your role</span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 rounded-2xl border border-white/8 bg-black/20 p-2">
                   {signupRoleOptions.map((role) => (
                     <button
                       key={role.id}
                       type="button"
                       onClick={() => setSignupForm((prev) => ({ ...prev, role: role.id }))}
-                      className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-colors ${
-                        signupForm.role === role.id ? "bg-lumina-highlight text-black" : "text-slate-400 hover:bg-white/5 hover:text-white"
+                      className={`flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-3 text-center transition-all ${
+                        signupForm.role === role.id ? "bg-lumina-highlight text-black shadow-[0_0_16px_rgba(250,204,21,0.15)]" : "text-slate-400 hover:bg-white/5 hover:text-white"
                       }`}
                     >
-                      <role.icon size={16} />
-                      {role.label}
+                      <role.icon size={18} />
+                      <span className="text-[11px] font-bold leading-tight">{role.label}</span>
                     </button>
                   ))}
+                  </div>
+                  {signupForm.role && (
+                    <p className="text-xs text-slate-500 pl-1">
+                      {signupRoleOptions.find(r => r.id === signupForm.role)?.desc}
+                    </p>
+                  )}
                 </div>
 
                 <label className="block">

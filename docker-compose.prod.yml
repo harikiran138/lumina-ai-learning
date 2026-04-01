@@ -1,0 +1,116 @@
+version: "3.8"
+
+services:
+  # --- Application Services ---
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+    # No host volumes for production — code is COPIED into image
+    volumes:
+      - chroma_data:/app/db/chroma
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://redis:6379/0
+      - CHROMA_DB_PATH=/app/db/chroma
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - ML_SERVICE_URL=http://ml-service:9000
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.worker.celery_app worker --loglevel=info
+    volumes:
+      - chroma_data:/app/db/chroma
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://redis:6379/0
+      - CHROMA_DB_PATH=/app/db/chroma
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend/web
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    environment:
+      - API_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  ml-service:
+    build:
+      context: ./backend
+      dockerfile: ml_services/Dockerfile
+    command: uvicorn ml_services.main:app --host 0.0.0.0 --port 9000
+    volumes:
+      - chroma_data:/app/db/chroma
+    ports:
+      - "9000:9000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://redis:6379/0
+      - CHROMA_DB_PATH=/app/db/chroma
+    networks:
+      - app-network
+
+  # --- Support Services ---
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  flower:
+    image: mher/flower
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - worker
+    networks:
+      - app-network
+
+volumes:
+  redis_data:
+  chroma_data:
+
+networks:
+  app-network:
+    driver: bridge

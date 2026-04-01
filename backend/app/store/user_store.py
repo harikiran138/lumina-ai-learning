@@ -24,12 +24,8 @@ class UserStore:
         return get_password_hash(password)
 
     def normalize_role(self, role: Optional[str]) -> str:
-        normalized = (role or "student").strip().lower()
-        if normalized == "teacher":
-            return "faculty"
-        if normalized == "admin":
-            return "super_admin"
-        return normalized
+        from app.core.rbac import normalize_role as _normalize
+        return _normalize(role)
 
     def _sanitize_user(self, user: dict) -> dict:
         """Removes sensitive fields and normalizes user object for API consumption."""
@@ -135,7 +131,34 @@ class UserStore:
             return []
 
     async def delete_user(self, user_id: str) -> bool:
-        return await self.db.delete("users", {"id": user_id})
+        """
+        Deletes a user and manually cascades to related tables to prevent orphan records.
+        Supabase doesn't always have FK cascades configured by defaults in all schemas.
+        """
+        try:
+            client = self.db.get_client()
+            # 1. Clean up user_data
+            client.table("user_data").delete().eq("id", user_id).execute()
+            client.table("user_data").delete().eq("user_id", user_id).execute()
+
+            # 2. Clean up enrollments / progress
+            client.table("enrollments").delete().eq("student_id", user_id).execute()
+            client.table("student_enrollments").delete().eq("student_id", user_id).execute()
+            client.table("student_progress").delete().eq("student_id", user_id).execute()
+
+            # 3. Clean up sessions
+            client.table("assessment_sessions").delete().eq("student_id", user_id).execute()
+
+            # 4. Clean up stakeholders/connections
+            client.table("stakeholders").delete().eq("user_id", user_id).execute()
+
+            # 5. Final user deletion
+            result = client.table("users").delete().eq("id", user_id).execute()
+            return len(result.data) > 0
+        except Exception as e:
+            log.error("delete_user_cascade_failed", error=str(e), user_id=user_id)
+            return await self.db.delete("users", {"id": user_id})
+
 
     async def update_user_role(self, user_id: str, role: str) -> bool:
         try:

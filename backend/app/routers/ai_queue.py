@@ -4,11 +4,12 @@ from typing import Optional, List, Any
 from datetime import datetime, timezone
 
 from .auth import get_current_user
+from app.api.deps import get_current_teacher
 from app.database.supabase_manager import supabase_db
 
 router = APIRouter()
 
-FACULTY_ROLES = {"teacher", "faculty", "hod", "admin", "college_admin", "super_admin"}
+
 
 
 # ── Request models ─────────────────────────────────────────────────────────────
@@ -25,6 +26,10 @@ class EditApproveRequest(BaseModel):
 
 class RejectRequest(BaseModel):
     faculty_note: str
+
+class EscalateRequest(BaseModel):
+    reason: Optional[str] = None
+
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -91,7 +96,7 @@ async def list_course_questions(
     current_user: dict = Depends(get_current_user),
 ):
     """List Q&As for a course. Students see only approved answers; faculty see all."""
-    is_faculty = current_user.get("role") in FACULTY_ROLES
+    is_faculty = current_user.get("role") in {"teacher", "faculty", "hod", "college_admin", "admin", "super_admin"}
     try:
         client = _client()
 
@@ -175,29 +180,33 @@ async def question_status(
 
 # ── Faculty endpoints ──────────────────────────────────────────────────────────
 
-def _require_faculty(user: dict):
-    if user.get("role") not in FACULTY_ROLES:
-        raise HTTPException(status_code=403, detail="Faculty access required")
+
 
 
 @router.get("/faculty/ai-queue")
-async def faculty_queue(current_user: dict = Depends(get_current_user)):
+async def faculty_queue(current_user: dict = Depends(get_current_teacher)):
     """Return all pending queue items across faculty's courses."""
-    _require_faculty(current_user)
     try:
         client = _client()
 
         # Fetch queue items for all courses belonging to this faculty
-        aq_res = (
+        aq_query = (
             client.table("ai_answer_queue")
             .select(
                 "id, question_id, ai_draft, ai_confidence, ai_sources, status, created_at, faculty_note,"
                 " course_id,"
                 " course_questions(question_text, student_id, created_at, context_lecture_id)"
             )
-            .order("created_at", desc=True)
-            .execute()
         )
+        role = current_user.get("role")
+        if role == "teacher":
+            aq_query = aq_query.eq("status", "pending")
+        elif role == "faculty":
+            aq_query = aq_query.eq("status", "escalated_to_faculty")
+        elif role == "hod":
+            aq_query = aq_query.eq("status", "escalated_to_hod")
+        
+        aq_res = aq_query.order("created_at", desc=True).execute()
 
         items: List[Any] = []
         for row in aq_res.data or []:
@@ -217,7 +226,7 @@ async def faculty_queue(current_user: dict = Depends(get_current_user)):
                 "created_at": row.get("created_at"),
             })
 
-        total_pending = sum(1 for i in items if i["status"] == "pending")
+        total_pending = sum(1 for i in items if i["status"] in ("pending", "escalated_to_faculty", "escalated_to_hod"))
         return {"items": items, "total_pending": total_pending}
     except HTTPException:
         raise
@@ -228,9 +237,8 @@ async def faculty_queue(current_user: dict = Depends(get_current_user)):
 @router.post("/faculty/ai-queue/{queue_id}/approve")
 async def approve_queue_item(
     queue_id: int,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_teacher),
 ):
-    _require_faculty(current_user)
     try:
         client = _client()
 
@@ -258,9 +266,8 @@ async def approve_queue_item(
 async def edit_approve_queue_item(
     queue_id: int,
     body: EditApproveRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_teacher),
 ):
-    _require_faculty(current_user)
     try:
         client = _client()
 
@@ -287,9 +294,8 @@ async def edit_approve_queue_item(
 async def reject_queue_item(
     queue_id: int,
     body: RejectRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_teacher),
 ):
-    _require_faculty(current_user)
     try:
         client = _client()
 
@@ -305,6 +311,41 @@ async def reject_queue_item(
         }).eq("id", queue_id).execute()
 
         return {"success": True, "status": "rejected"}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+@router.post("/faculty/ai-queue/{queue_id}/escalate")
+async def escalate_queue_item(
+    queue_id: int,
+    body: EscalateRequest,
+    current_user: dict = Depends(get_current_teacher),
+):
+    try:
+        client = _client()
+        existing = client.table("ai_answer_queue").select("id, status").eq("id", queue_id).execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Queue item not found")
+
+        role = current_user.get("role", "teacher")
+        
+        # Decide new status based on current role
+        if role == "teacher":
+            new_status = "escalated_to_faculty"
+        elif role == "faculty":
+            new_status = "escalated_to_hod"
+        else:
+            raise HTTPException(status_code=400, detail="Cannot escalate further. You are at top of escalation chain.")
+
+        client.table("ai_answer_queue").update({
+            "status": new_status,
+            "faculty_note": body.reason,
+            "reviewed_by": current_user["id"],
+            "reviewed_at": _now_iso(),
+        }).eq("id", queue_id).execute()
+
+        return {"success": True, "status": new_status}
     except HTTPException:
         raise
     except Exception as exc:

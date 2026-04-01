@@ -3,8 +3,9 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from .auth import get_current_user
+from app.api.deps import get_current_faculty as get_current_user
 from app.database.supabase_manager import supabase_db
+from app.database.scoped_db import get_scoped_db
 from app.services.personalization_service import get_personalization_service
 from app.personalization.schemas import InterventionUpdateRequest, InterventionStatus, InterventionPriority
 
@@ -22,8 +23,7 @@ class FacultyOnboardingCompleteRequest(BaseModel):
 
 
 def _require_faculty(user: dict):
-    if user.get("role") not in {"faculty", "hod", "college_admin", "super_admin"}:
-        raise HTTPException(status_code=403, detail="Faculty access required")
+    pass
 
 
 def _clamp_unit_interval(value: Any, default: float = 0.7) -> float:
@@ -73,16 +73,16 @@ async def get_faculty_onboarding_options(current_user: dict = Depends(get_curren
         raise HTTPException(status_code=403, detail="Teacher onboarding access required")
 
     teacher_id = str(current_user.get("id"))
-    assignments = await supabase_db.fetch_all("teacher_assignments", {"teacher_id": teacher_id})
+    db = get_scoped_db(current_user)
+    assignments = await db.fetch_all("teacher_assignments", {"teacher_id": teacher_id})
 
     course_ids = list({item.get("course_id") for item in assignments if item.get("course_id")})
     class_ids = list({item.get("class_id") for item in assignments if item.get("class_id")})
     batch_ids = list({item.get("batch_id") for item in assignments if item.get("batch_id")})
 
-    client = supabase_db.get_client()
-    courses = client.table("courses").select("*").in_("id", course_ids).execute().data or [] if course_ids else []
-    classes = client.table("classes").select("*").in_("id", class_ids).execute().data or [] if class_ids else []
-    batches = client.table("batches").select("*").in_("id", batch_ids).execute().data or [] if batch_ids else []
+    courses = db.table("courses").select("*").in_("id", course_ids).execute().data or [] if course_ids else []
+    classes = db.table("classes").select("*").in_("id", class_ids).execute().data or [] if class_ids else []
+    batches = db.table("batches").select("*").in_("id", batch_ids).execute().data or [] if batch_ids else []
 
     program_ids = list(
         {
@@ -92,18 +92,18 @@ async def get_faculty_onboarding_options(current_user: dict = Depends(get_curren
         }
     )
     programs = (
-        client.table("programs").select("*").in_("id", program_ids).execute().data or []
+        db.table("programs").select("*").in_("id", program_ids).execute().data or []
         if program_ids
         else []
     )
 
     teacher_profile = (
-        await supabase_db.fetch_one("teacher_profiles", {"employee_id": current_user.get("employee_id")})
+        await db.fetch_one("teacher_profiles", {"employee_id": current_user.get("employee_id")})
         if current_user.get("employee_id")
         else None
     )
-    dashboard_preferences = await supabase_db.fetch_all("dashboard_preferences", {"user_id": teacher_id})
-    existing_user_data = await supabase_db.fetch_one("user_data", {"user_id": teacher_id})
+    dashboard_preferences = await db.fetch_all("dashboard_preferences", {"user_id": teacher_id})
+    existing_user_data = await db.fetch_one("user_data", {"user_id": teacher_id})
     progress = (existing_user_data or {}).get("progress") or {}
 
     return {
@@ -131,10 +131,11 @@ async def complete_faculty_onboarding(
 
     teacher_id = str(current_user.get("id"))
     employee_id = current_user.get("employee_id")
+    db = get_scoped_db(current_user)
     if not employee_id:
         raise HTTPException(status_code=400, detail="Employee ID is missing from your teacher account")
 
-    assignments = await supabase_db.fetch_all("teacher_assignments", {"teacher_id": teacher_id})
+    assignments = await db.fetch_all("teacher_assignments", {"teacher_id": teacher_id})
     assignment_lookup = {str(item.get("id")): item for item in assignments if item.get("id")}
 
     if assignments and not payload.confirmed_assignment_ids:
@@ -154,10 +155,9 @@ async def complete_faculty_onboarding(
     class_ids = list({item.get("class_id") for item in confirmed_assignments if item.get("class_id")})
     batch_ids = list({item.get("batch_id") for item in confirmed_assignments if item.get("batch_id")})
 
-    client = supabase_db.get_client()
-    courses = client.table("courses").select("*").in_("id", course_ids).execute().data or [] if course_ids else []
-    classes = client.table("classes").select("*").in_("id", class_ids).execute().data or [] if class_ids else []
-    batches = client.table("batches").select("*").in_("id", batch_ids).execute().data or [] if batch_ids else []
+    courses = db.table("courses").select("*").in_("id", course_ids).execute().data or [] if course_ids else []
+    classes = db.table("classes").select("*").in_("id", class_ids).execute().data or [] if class_ids else []
+    batches = db.table("batches").select("*").in_("id", batch_ids).execute().data or [] if batch_ids else []
 
     program_ids = list(
         {
@@ -167,13 +167,13 @@ async def complete_faculty_onboarding(
         }
     )
     programs = (
-        client.table("programs").select("*").in_("id", program_ids).execute().data or []
+        db.table("programs").select("*").in_("id", program_ids).execute().data or []
         if program_ids
         else []
     )
 
     assignment_views = _build_assignment_views(confirmed_assignments, courses, classes, batches, programs)
-    existing_user_data = await supabase_db.fetch_one("user_data", {"user_id": teacher_id})
+    existing_user_data = await db.fetch_one("user_data", {"user_id": teacher_id})
     progress = (existing_user_data or {}).get("progress") or {}
     step_3 = progress.get("step_3") or {}
     step_4 = progress.get("step_4") or {}
@@ -202,7 +202,7 @@ async def complete_faculty_onboarding(
         skills_summary.append(f"Teaching styles: {', '.join(payload.teaching_styles)}")
 
     now = datetime.utcnow().isoformat()
-    teacher_profile = await supabase_db.upsert(
+    teacher_profile = await db.upsert(
         "teacher_profiles",
         {
             "employee_id": employee_id,
@@ -255,9 +255,9 @@ async def complete_faculty_onboarding(
             ],
             "updated_at": now,
         }
-        existing_dashboard = await supabase_db.fetch_one("dashboard_preferences", {"user_id": teacher_id})
+        existing_dashboard = await db.fetch_one("dashboard_preferences", {"user_id": teacher_id})
         if existing_dashboard and existing_dashboard.get("id"):
-            updated_dashboard = await supabase_db.update(
+            updated_dashboard = await db.update(
                 "dashboard_preferences",
                 dashboard_payload,
                 {"id": existing_dashboard["id"]},
@@ -265,11 +265,11 @@ async def complete_faculty_onboarding(
             if updated_dashboard is None:
                 raise HTTPException(status_code=500, detail="Failed to initialize faculty dashboard preferences")
         else:
-            created_dashboard = await supabase_db.insert("dashboard_preferences", dashboard_payload)
+            created_dashboard = await db.insert("dashboard_preferences", dashboard_payload)
             if created_dashboard is None:
                 raise HTTPException(status_code=500, detail="Failed to create faculty dashboard preferences")
 
-    updated_user = await supabase_db.update("users", {"onboarding_step": 5}, {"id": teacher_id})
+    updated_user = await db.update("users", {"onboarding_step": 5}, {"id": teacher_id})
     if updated_user is None:
         raise HTTPException(status_code=500, detail="Failed to update faculty onboarding state")
 
@@ -289,7 +289,7 @@ async def complete_faculty_onboarding(
     progress["onboarding_step"] = 5
 
     if existing_user_data:
-        updated_user_data = await supabase_db.update(
+        updated_user_data = await db.update(
             "user_data",
             {"progress": progress, "updated_at": now},
             {"user_id": teacher_id},
@@ -297,7 +297,7 @@ async def complete_faculty_onboarding(
         if updated_user_data is None:
             raise HTTPException(status_code=500, detail="Failed to store faculty onboarding progress")
     else:
-        created_user_data = await supabase_db.insert(
+        created_user_data = await db.insert(
             "user_data",
             {"user_id": teacher_id, "progress": progress, "updated_at": now},
         )
@@ -317,7 +317,8 @@ async def complete_faculty_onboarding(
 async def list_faculty_subjects(current_user: dict = Depends(get_current_user)):
     """List all subjects/courses assigned to this faculty member."""
     _require_faculty(current_user)
-    assignments = await supabase_db.fetch_all(
+    db = get_scoped_db(current_user)
+    assignments = await db.fetch_all(
         "teacher_assignments",
         {"teacher_id": current_user.get("id")},
     )
@@ -325,7 +326,7 @@ async def list_faculty_subjects(current_user: dict = Depends(get_current_user)):
         return []
     course_ids = list({item.get("course_id") for item in assignments if item.get("course_id")})
     courses = (
-        supabase_db.get_client().table("courses").select("*").in_("id", course_ids).execute().data or []
+        db.table("courses").select("*").in_("id", course_ids).execute().data or []
         if course_ids else []
     )
     course_lookup = {c["id"]: c for c in courses}
@@ -348,14 +349,15 @@ async def list_batch_students(
 ):
     """List all students in a specific batch/section."""
     _require_faculty(current_user)
+    db = get_scoped_db(current_user)
     filters = {"batch_id": batch_id, "role": "student"}
     if section:
         filters["section"] = section
-    students = await supabase_db.fetch_all("users", filters)
+    students = await db.fetch_all("users", filters)
     # Enrich with enrollment info if available
     enriched = []
     for student in students:
-        enrollments = await supabase_db.fetch_all("student_enrollments", {"student_id": student.get("id")})
+        enrollments = await db.fetch_all("student_enrollments", {"student_id": student.get("id")})
         student_data = {**student, "enrollments": enrollments or []}
         enriched.append(student_data)
     return enriched
@@ -365,9 +367,10 @@ async def list_batch_students(
 async def get_faculty_dashboard_summary(current_user: dict = Depends(get_current_user)):
     """Get faculty dashboard summary with courses, students, and pending tasks."""
     _require_faculty(current_user)
+    db = get_scoped_db(current_user)
 
     # Get teacher assignments
-    assignments = await supabase_db.fetch_all(
+    assignments = await db.fetch_all(
         "teacher_assignments",
         {"teacher_id": current_user.get("id")},
     )
@@ -378,17 +381,17 @@ async def get_faculty_dashboard_summary(current_user: dict = Depends(get_current
     # Get courses
     courses = []
     if course_ids:
-        courses = supabase_db.get_client().table("courses").select("*").in_("id", course_ids).execute().data or []
+        courses = db.table("courses").select("*").in_("id", course_ids).execute().data or []
 
     # Get total students across all classes
     total_students = 0
     if class_ids:
         for class_id in class_ids:
-            students = await supabase_db.fetch_all("student_enrollments", {"class_id": class_id})
+            students = await db.fetch_all("student_enrollments", {"class_id": class_id})
             total_students += len(students or [])
 
     # Get pending submissions to grade
-    pending_submissions = await supabase_db.fetch_all("submissions", {"graded_by": None, "status": "submitted"})
+    pending_submissions = await db.fetch_all("submissions", {"graded_by": None, "status": "submitted"})
 
     return {
         "total_courses": len(courses),
@@ -455,7 +458,8 @@ async def get_course_attendance(
 ):
     """Get attendance records for a course."""
     _require_faculty(current_user)
-    attendance_records = await supabase_db.fetch_all("attendance", {"course_id": course_id})
+    db = get_scoped_db(current_user)
+    attendance_records = await db.fetch_all("attendance", {"course_id": course_id})
     return attendance_records or []
 
 
@@ -466,10 +470,11 @@ async def mark_attendance(
 ):
     """Mark attendance for students."""
     _require_faculty(current_user)
+    db = get_scoped_db(current_user)
     created = []
     for record in records:
         try:
-            new_record = await supabase_db.insert("attendance", {
+            new_record = await db.insert("attendance", {
                 "course_id": record.get("course_id"),
                 "teacher_id": current_user.get("id"),
                 "student_id": record.get("student_id"),

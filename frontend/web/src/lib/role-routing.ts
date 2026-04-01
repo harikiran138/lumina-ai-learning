@@ -9,6 +9,7 @@ export const ROLE_HOME_ROUTES: Record<string, string> = {
   parent: "/parent/dashboard",
   mentor: "/mentor/dashboard",
   peer_tutor: "/peer_tutor/dashboard",
+  "peer-tutor": "/peer_tutor/dashboard",
   counselor: "/counselor/dashboard",
   content_creator: "/content_creator/dashboard",
   researcher: "/researcher/dashboard",
@@ -19,7 +20,8 @@ const ROLE_PATH_PREFIXES: Record<string, string[]> = {
   super_admin: ["/admin"],
   college_admin: ["/college"],
   hod: ["/hod"],
-  faculty: ["/faculty", "/teacher"],
+  teacher: ["/teacher"],
+  faculty: ["/faculty"],
   student: ["/student"],
   parent: ["/parent"],
   mentor: ["/mentor"],
@@ -32,7 +34,6 @@ const ROLE_PATH_PREFIXES: Record<string, string[]> = {
 
 export function normalizeRole(role?: string | null): string {
   if (role === "admin") return "super_admin"
-  if (role === "teacher") return "faculty"
   return role || ""
 }
 
@@ -67,7 +68,6 @@ export function getCanonicalPath(pathname: string): string | null {
   if (pathname === "/teacher" || pathname.startsWith("/teacher/")) {
     return pathname.replace("/teacher", "/faculty")
   }
-
   if (pathname === "/peer-tutor" || pathname.startsWith("/peer-tutor/")) {
     return pathname.replace("/peer-tutor", "/peer_tutor")
   }

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
-from .auth import get_current_user
+from app.api.deps import get_current_parent as get_current_user
 from app.store.parent_store import ParentStore
 from app.dependencies import get_parent_store
 
@@ -16,50 +16,6 @@ async def get_parent_dashboard(
     current_user: dict = Depends(get_current_user),
     store: ParentStore = Depends(get_parent_store)
 ):
-    if current_user.get("role") != "parent":
-        raise HTTPException(status_code=403, detail="Only parents can access this dashboard")
-    
-    links = await store.get_linked_children(current_user["id"])
-    children_data = []
-    for link in links:
-        child_id = link["child_id"]
-        if link["verified_by_admin"]:
-            mastery = await store.get_child_mastery(child_id)
-            assignments = await store.get_child_assignments(child_id)
-            children_data.append({
-                "id": child_id,
-                "name": link["child_name"],
-                "verified": True,
-                "mastery": mastery,
-                "assignments": assignments
-            })
-        else:
-            children_data.append({
-                "id": child_id,
-                "name": link["child_name"],
-                "verified": False,
-                "status": "Pending verification"
-            })
-    
-    # Fetch additional dashboard sections
-    messages = await store.get_messages(current_user["id"])
-    # goals = await store.get_goals(current_user["id"]) # Need to implement get_goals in store
-    
-    return {
-        "parent_id": current_user["id"],
-        "children": children_data,
-        "recent_activity": [],
-        "goals": [],
-        "messages": messages
-    }
-
-@router.get("/messages")
-async def get_parent_messages(
-    current_user: dict = Depends(get_current_user),
-    store: ParentStore = Depends(get_parent_store)
-):
-    if current_user.get("role") != "parent":
-        raise HTTPException(status_code=403, detail="Forbidden")
     return await store.get_messages(current_user["id"])
 
 @router.post("/goals")
@@ -68,8 +24,6 @@ async def set_child_goal(
     current_user: dict = Depends(get_current_user),
     store: ParentStore = Depends(get_parent_store)
 ):
-    if current_user.get("role") != "parent":
-        raise HTTPException(status_code=403, detail="Forbidden")
     
     # Verify link
     links = await store.get_linked_children(current_user["id"])
