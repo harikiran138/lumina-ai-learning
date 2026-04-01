@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
-from .auth import get_current_user
+from app.api.deps import get_current_mentor as get_current_user
 from app.store.mentor_store import MentorStore
 from app.dependencies import get_mentor_store
 
@@ -22,8 +22,6 @@ async def get_mentor_matches(
     current_user: dict = Depends(get_current_user),
     store: MentorStore = Depends(get_mentor_store)
 ):
-    if current_user.get("role") != "mentor":
-        raise HTTPException(status_code=403, detail="Forbidden")
     return await store.get_matches(current_user["id"])
 
 @router.get("/mentees/{mentee_id}/profile")
@@ -32,8 +30,6 @@ async def get_mentee_profile(
     current_user: dict = Depends(get_current_user),
     store: MentorStore = Depends(get_mentor_store)
 ):
-    if current_user.get("role") != "mentor":
-        raise HTTPException(status_code=403, detail="Forbidden")
     
     # Verify match
     matches = await store.get_matches(current_user["id"])
@@ -51,8 +47,6 @@ async def schedule_mentor_session(
     current_user: dict = Depends(get_current_user),
     store: MentorStore = Depends(get_mentor_store)
 ):
-    if current_user.get("role") != "mentor":
-        raise HTTPException(status_code=403, detail="Forbidden")
     
     session = await store.schedule_session(current_user["id"], request.mentee_id, request.scheduled_at, request.notes or "")
     if not session:
@@ -65,8 +59,6 @@ async def create_portfolio_review(
     current_user: dict = Depends(get_current_user),
     store: MentorStore = Depends(get_mentor_store)
 ):
-    if current_user.get("role") != "mentor":
-        raise HTTPException(status_code=403, detail="Forbidden")
     
     review = await store.create_portfolio_review(current_user["id"], request.mentee_id, request.portfolio_data, request.feedback)
     if not review:
@@ -78,6 +70,4 @@ async def get_mentor_sessions(
     current_user: dict = Depends(get_current_user),
     store: MentorStore = Depends(get_mentor_store)
 ):
-    if current_user.get("role") != "mentor":
-        raise HTTPException(status_code=403, detail="Forbidden")
     return await store.get_sessions(current_user["id"])
