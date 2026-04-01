@@ -104,12 +104,16 @@ export const config = {
     '/parent/:path*',
     '/mentor/:path*',
     '/peer_tutor/:path*',
+    '/peer-tutor/:path*',
     '/counselor/:path*',
     '/content_creator/:path*',
+    '/content-creator/:path*',
     '/researcher/:path*',
+    '/research-portal/:path*',
     '/alumni/:path*',
     '/onboarding',
     '/onboarding/:path*',
     '/change-password',
   ],
 }
+

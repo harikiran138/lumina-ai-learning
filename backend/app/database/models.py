@@ -124,6 +124,7 @@ class Course(BaseModel):
     modules: List[Module] = []
     published: bool = False
     thumbnail_url: Optional[str] = None
+    teacher_limit: Optional[int] = None
     created_at: str = Field(default_factory=current_time_iso)
     updated_at: str = Field(default_factory=current_time_iso)
 
@@ -357,9 +358,14 @@ class Department(BaseModel):
     id: str = Field(default_factory=generate_id)
     institution_id: str
     department_name: str
-    hod_name: Optional[str] = None
+    code: Optional[str] = None
+    hod_id: Optional[str] = None
+    teacher_limit: int = 10
+    class_limit: int = 10
+    course_limit: int = 10
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
+    metadata: Dict[str, Any] = {}
     created_at: str = Field(default_factory=current_time_iso)
     updated_at: str = Field(default_factory=current_time_iso)
 
@@ -422,6 +428,9 @@ class ClassSection(BaseModel):
     class_name: str
     batch: Optional[str] = None
     section: Optional[str] = None
+    student_limit: int = 60
+    teacher_limit: int = 5
+    metadata: Dict[str, Any] = {}
     created_at: str = Field(default_factory=current_time_iso)
 
 

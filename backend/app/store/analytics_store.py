@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from app.core.logging import structlog
 from app.database.supabase_manager import supabase_db
 from app.store.institution_store import InstitutionStore
+from app.core.rbac import normalize_role
 log = structlog.get_logger()
 
 
@@ -34,12 +35,7 @@ class AnalyticsStore:
         return default
 
     def _normalize_role(self, role: Any) -> str:
-        normalized = str(role or "student").strip().lower()
-        if normalized == "teacher":
-            return "faculty"
-        if normalized == "admin":
-            return "super_admin"
-        return normalized
+        return normalize_role(role)
 
     def _parse_datetime(self, value: Any) -> Optional[datetime]:
         if not value:
@@ -1348,58 +1344,64 @@ class AnalyticsStore:
             enrollments = enrollment_response.data or []
 
             if not enrollments:
-                progress_response = (
-                    client.table("student_progress")
-                    .select("*")
-                    .eq("student_id", student_id)
-                    .execute()
-                )
-                progress_rows = progress_response.data or []
-                enrollments = [
-                    {
-                        "student_id": row.get("student_id"),
-                        "course_id": row.get("course_id"),
-                        "status": "active",
-                        "completed_lessons": row.get("completed_lessons", []),
-                        "progress": {
-                            "percentage": 0, # Calculated later
-                            "mastery": row.get("mastery", 0),
-                            "streak": row.get("streak", 0),
-                            "lastAccessed": row.get("last_accessed"),
-                            "hoursSpent": row.get("hours_spent", 0),
-                        },
-                    }
-                    for row in progress_rows
-                    if row.get("course_id")
-                ]
+                try:
+                    progress_response = (
+                        client.table("student_progress")
+                        .select("*")
+                        .eq("student_id", student_id)
+                        .execute()
+                    )
+                    progress_rows = progress_response.data or []
+                    enrollments = [
+                        {
+                            "student_id": row.get("student_id"),
+                            "course_id": row.get("course_id"),
+                            "status": "active",
+                            "completed_lessons": row.get("completed_lessons", []),
+                            "progress": {
+                                "percentage": 0,
+                                "mastery": row.get("mastery", 0),
+                                "streak": row.get("streak", 0),
+                                "lastAccessed": row.get("last_accessed"),
+                                "hoursSpent": row.get("hours_spent", 0),
+                            },
+                        }
+                        for row in progress_rows
+                        if row.get("course_id")
+                    ]
+                except Exception as e:
+                    log.warning("dashboard_progress_fallback_failed", error=str(e))
 
             if not enrollments:
-                subject_response = (
-                    client.table("student_subjects")
-                    .select("subject_id")
-                    .eq("student_id", student_id)
-                    .execute()
-                )
-                subject_ids = [
-                    str(row.get("subject_id"))
-                    for row in (subject_response.data or [])
-                    if row.get("subject_id")
-                ]
-                enrollments = [
-                    {
-                        "student_id": student_id,
-                        "course_id": subject_id,
-                        "status": "active",
-                        "progress": {
-                            "percentage": 0,
-                            "mastery": 0,
-                            "streak": 0,
-                            "lastAccessed": None,
-                            "hoursSpent": 0,
-                        },
-                    }
-                    for subject_id in subject_ids
-                ]
+                try:
+                    subject_response = (
+                        client.table("student_subjects")
+                        .select("subject_id")
+                        .eq("student_id", student_id)
+                        .execute()
+                    )
+                    subject_ids = [
+                        str(row.get("subject_id"))
+                        for row in (subject_response.data or [])
+                        if row.get("subject_id")
+                    ]
+                    enrollments = [
+                        {
+                            "student_id": student_id,
+                            "course_id": subject_id,
+                            "status": "active",
+                            "progress": {
+                                "percentage": 0,
+                                "mastery": 0,
+                                "streak": 0,
+                                "lastAccessed": None,
+                                "hoursSpent": 0,
+                            },
+                        }
+                        for subject_id in subject_ids
+                    ]
+                except Exception as e:
+                    log.warning("dashboard_subjects_fallback_failed", error=str(e))
 
             log.info("dashboard_enrollment_check", student_id=student_id, count=len(enrollments))
 
@@ -1409,8 +1411,11 @@ class AnalyticsStore:
                     "enrolledCourses": [],
                     "overallMastery": 0,
                     "totalHours": 0,
+                    "className": None,
+                    "batch": None,
                     "badges": [],
                 }
+
 
             # Get all unique course IDs
             course_ids = list({str(e.get("course_id")) for e in enrollments if e.get("course_id")})
@@ -1516,3 +1521,69 @@ class AnalyticsStore:
         except Exception as e:
             log.error("top_topics_aggregation_failed", error=str(e))
             return []
+    async def get_all_teacher_stats(self, institution_id: Optional[str] = None) -> List[dict]:
+        """
+        Comprehensive teacher utilization and risk statistics for admins.
+        """
+        tables = await self._normalized_tables()
+        all_users = tables["users"]
+        all_courses = tables["courses"]
+        all_progress = tables["progress"]
+        all_depts = tables["departments"]
+
+        # Filter teachers for this institution
+        teachers = [
+            u for u in all_users 
+            if u.get("role") in ("faculty", "hod")
+        ]
+        
+        if institution_id:
+            institution_depts = {d["id"] for d in all_depts if d.get("institution_id") == institution_id}
+            teachers = [
+                u for u in teachers 
+                if u.get("institution_id") == institution_id or u.get("dept_id") in institution_depts or u.get("department_id") in institution_depts
+            ]
+
+        teacher_stats = []
+        for teacher in teachers:
+            t_id = teacher["id"]
+            # Get teacher's courses
+            t_courses = [c for c in all_courses if c.get("teacher_id") == t_id]
+            course_ids = {c["id"] for c in t_courses}
+            
+            # Get students across these courses
+            t_progress = [p for p in all_progress if p.get("course_id") in course_ids]
+            student_ids = {p["student_id"] for p in t_progress if p.get("student_id")}
+            
+            # Calculate mastery and risk
+            avg_mastery = sum(p["mastery"] for p in t_progress) / len(t_progress) if t_progress else 0
+            at_risk = sum(1 for p in t_progress if p["mastery"] < 60)
+            risk_score = (at_risk / len(t_progress)) * 100 if t_progress else 0
+            
+            # Last active from either user table or progress
+            last_active = teacher.get("updated_at") or teacher.get("created_at")
+
+            # Utilization (courses / max courses)
+            # Default limit is 10 as per model and 009_admin_limits.sql comments
+            limit = 10 
+            dept_id = teacher.get("dept_id") or teacher.get("department_id")
+            if dept_id:
+                dept = next((d for d in all_depts if d["id"] == dept_id), None)
+                if dept:
+                    limit = dept.get("course_limit") or 10
+            
+            utilization = (len(t_courses) / limit) if limit > 0 else 0
+
+            teacher_stats.append({
+                "teacher_id": t_id,
+                "name": teacher["name"],
+                "email": teacher["email"],
+                "courses_count": len(t_courses),
+                "students_count": len(student_ids),
+                "avg_mastery": round(avg_mastery, 1),
+                "utilization": round(utilization * 100, 1),
+                "risk_score": round(risk_score, 1),
+                "last_active": last_active
+            })
+            
+        return teacher_stats

@@ -46,19 +46,22 @@ class StudentStore:
         if existing:
             return True
 
-        progress_data = {
+        # Ensure progress object is fully initialized with defaults
+        enrollment_data = {
             "student_id": student_id,
             "course_id": course_id,
-            "concept_id": None,
-            "completed_lessons": [],
-            "mastery": 0.0,
-            "hours_spent": 0.0,
-            "streak": 0,
-            "last_accessed": None,
+            "status": "active",
+            "progress": {
+                "completed_lessons": [],
+                "mastery": 0.0,
+                "hours_spent": 0.0,
+                "streak": 0,
+                "last_accessed": datetime.utcnow().isoformat(),
+            }
         }
 
         try:
-            result = await self.db.insert("enrollments", progress_data)
+            result = await self.db.insert("enrollments", enrollment_data)
             return bool(result)
         except Exception as e:
             log.error("enroll_in_course_failed", student_id=student_id, course_id=course_id, error=str(e))
@@ -84,7 +87,8 @@ class StudentStore:
             if not enrollment:
                 return {"success": False, "error": "Not enrolled"}
 
-            completed_lessons = enrollment.get("completed_lessons") or []
+            progress = enrollment.get("progress") or {}
+            completed_lessons = progress.get("completed_lessons") or []
             if lesson_id not in completed_lessons:
                 completed_lessons.append(lesson_id)
             
@@ -99,9 +103,11 @@ class StudentStore:
             
             progress_pct = (len(completed_lessons) / total_lessons * 100) if total_lessons > 0 else 0
             
+            progress["completed_lessons"] = completed_lessons
+            progress["last_accessed"] = datetime.utcnow().isoformat()
+            
             updates = {
-                "completed_lessons": completed_lessons,
-                "last_accessed": datetime.utcnow().isoformat(),
+                "progress": progress
             }
             
             await self.db.update("enrollments", updates, {"id": enrollment["id"]})
@@ -132,26 +138,21 @@ class StudentStore:
             log.error("get_badges_failed", student_id=student_id, error=str(e))
         return []
 
-    async def update_mastery(self, student_id: str, course_id: str, mastery_score: float) -> bool:
-        """
-        Updates the mastery score in the enrollment progress.
-        """
-        try:
-            enrollment = await self.get_enrollment(student_id, course_id)
-            if not enrollment:
-                return False
-
-            updates = {
-                "mastery": round(mastery_score, 2)
-                # "last_accessed": datetime.utcnow().isoformat()
-            }
-
-            client = self.db.get_client()
-            client.table("enrollments").update(updates).eq("id", enrollment["id"]).execute()
-            return True
-        except Exception as e:
-            log.error("update_mastery_failed", student_id=student_id, course_id=course_id, error=str(e))
-            return False
+    async def update_mastery(self, student_id: str, course_id: str, mastery: float):
+        """Update student mastery level with a floor of 0.0."""
+        enrollment = await self.get_enrollment(student_id, course_id)
+        if not enrollment:
+            return
+        
+        progress = enrollment.get("progress") or {}
+        # Enforce non-negative mastery
+        progress["mastery"] = max(0.0, float(mastery))
+        
+        await supabase_db.update(
+            "enrollments",
+            {"progress": progress},
+            {"student_id": student_id, "course_id": course_id}
+        )
 
     async def log_activity(self, student_id: str, course_id: str, duration_minutes: int) -> bool:
         """
@@ -162,10 +163,11 @@ class StudentStore:
             if not enrollment:
                 return False
 
+            progress = enrollment.get("progress") or {}
             now = datetime.utcnow()
-            new_hours = (enrollment.get("hours_spent") or 0.0) + (duration_minutes / 60.0)
-            new_streak = enrollment.get("streak") or 0
-            last_accessed_str = enrollment.get("last_accessed")
+            new_hours = (progress.get("hours_spent") or 0.0) + (duration_minutes / 60.0)
+            new_streak = progress.get("streak") or 0
+            last_accessed_str = progress.get("last_accessed")
             
             if last_accessed_str:
                 last_accessed = self._parse_timestamp(last_accessed_str)
@@ -182,10 +184,12 @@ class StudentStore:
             else:
                 new_streak = 1
 
+            progress["hours_spent"] = round(new_hours, 2)
+            progress["streak"] = new_streak
+            progress["last_accessed"] = now.isoformat()
+
             updates = {
-                "hours_spent": round(new_hours, 2),
-                "streak": new_streak,
-                "last_accessed": now.isoformat(),
+                "progress": progress
             }
 
             await self.db.update("enrollments", updates, {"id": enrollment["id"]})

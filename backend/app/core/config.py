@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     SECRET_KEY: Optional[str] = None
     JWT_SECRET: Optional[str] = None
     JWT_REFRESH_SECRET: Optional[str] = None
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes (Replaced 8 days for security)
 
     # Database
     DATABASE_URL: str = "postgresql://lumina:lumina_password@localhost:5432/lumina_db"
@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://odyjksznsdeyweylovzl.supabase.co")
     SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "sb_publishable_6zHeJDU5hRv8c5dfW87W3A_3ZG5JlMQ")
     SUPABASE_SERVICE_ROLE_KEY: Optional[str] = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
 
     # Server
     HOST: str = "0.0.0.0"  # nosec B104

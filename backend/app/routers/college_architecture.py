@@ -5,26 +5,20 @@ import uuid
 import csv
 import io
 
-from .auth import get_current_user
+from app.routers.auth import get_current_user
+from app.api.deps import get_current_active_user, get_current_college_admin, get_current_hod, get_current_faculty
 from app.database.supabase_manager import supabase_db
 from app.store.institution_store import InstitutionStore
 from app.store.user_store import UserStore
 from app.store.student_store import StudentStore
 from app.core.security import get_password_hash, create_access_token
+from app.core.rbac import normalize_role
 
 router = APIRouter()
 
 
-def _normalize_role(role: str) -> str:
-    if role == "admin":
-        return "super_admin"
-    if role == "teacher":
-        return "faculty"
-    return role
-
-
 def _require_roles(user: dict, allowed: set):
-    role = _normalize_role(user.get("role"))
+    role = normalize_role(user.get("role"))
     if role not in allowed:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     return role
@@ -39,7 +33,7 @@ def _resolve_dept_id(user: dict) -> Optional[str]:
 
 
 def _enforce_college_scope(user: dict, college_id: str):
-    role = _normalize_role(user.get("role"))
+    role = normalize_role(user.get("role"))
     if role == "super_admin":
         return
     if _resolve_college_id(user) not in {college_id, None}:
@@ -53,7 +47,7 @@ async def list_colleges(current_user: dict = Depends(get_current_user)):
 
 
 @router.post("/colleges")
-async def create_college(payload: Dict[str, Any], current_user: dict = Depends(get_current_user)):
+async def create_college(payload: Dict[str, Any], current_user: dict = Depends(get_current_college_admin)):
     _require_roles(current_user, {"super_admin"})
     data = {
         "institution_name": payload.get("name") or payload.get("institution_name"),
@@ -72,7 +66,7 @@ async def create_college(payload: Dict[str, Any], current_user: dict = Depends(g
 
 
 @router.get("/colleges/{college_id}")
-async def get_college(college_id: str, current_user: dict = Depends(get_current_user)):
+async def get_college(college_id: str, current_user: dict = Depends(get_current_college_admin)):
     _require_roles(current_user, {"super_admin", "college_admin"})
     _enforce_college_scope(current_user, college_id)
     college = await InstitutionStore().get_institution(college_id)
@@ -82,7 +76,7 @@ async def get_college(college_id: str, current_user: dict = Depends(get_current_
 
 
 @router.patch("/colleges/{college_id}")
-async def update_college(college_id: str, payload: Dict[str, Any], current_user: dict = Depends(get_current_user)):
+async def update_college(college_id: str, payload: Dict[str, Any], current_user: dict = Depends(get_current_college_admin)):
     _require_roles(current_user, {"super_admin", "college_admin"})
     _enforce_college_scope(current_user, college_id)
     allowed = {
@@ -106,7 +100,7 @@ async def update_college(college_id: str, payload: Dict[str, Any], current_user:
 
 
 @router.delete("/colleges/{college_id}")
-async def delete_college(college_id: str, current_user: dict = Depends(get_current_user)):
+async def delete_college(college_id: str, current_user: dict = Depends(get_current_college_admin)):
     _require_roles(current_user, {"super_admin"})
     deleted = await supabase_db.delete("institutions", {"id": college_id})
     return {"deleted": bool(deleted)}
@@ -120,7 +114,7 @@ async def list_departments(college_id: str, current_user: dict = Depends(get_cur
 
 
 @router.post("/colleges/{college_id}/departments")
-async def create_department(college_id: str, payload: Dict[str, Any], current_user: dict = Depends(get_current_user)):
+async def create_department(college_id: str, payload: Dict[str, Any], current_user: dict = Depends(get_current_college_admin)):
     _require_roles(current_user, {"super_admin", "college_admin"})
     _enforce_college_scope(current_user, college_id)
     data = {
@@ -329,7 +323,7 @@ async def create_enrollment_code(
 
 @router.post("/enrollment/validate")
 async def validate_enrollment_code(payload: Dict[str, Any], current_user: dict = Depends(get_current_user)):
-    role = _normalize_role(current_user.get("role"))
+    role = normalize_role(current_user.get("role"))
     if role != "student":
         raise HTTPException(status_code=403, detail="Student access required")
 

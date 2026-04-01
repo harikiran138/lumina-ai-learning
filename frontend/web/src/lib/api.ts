@@ -47,14 +47,15 @@ async function fetchWithRetry(
   url: string,
   options: RequestInit,
   retries = 3,
-  timeoutMs = 30000
+  timeoutMs = 60000
 ): Promise<Response> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => {
+      console.warn(`[API] Request timed out after ${timeoutMs}ms: ${url}`);
       const reason =
         typeof DOMException !== 'undefined'
-          ? new DOMException('Request timed out', 'AbortError')
+          ? new DOMException(`Request timed out after ${timeoutMs}ms`, 'AbortError')
           : 'Request timed out'
       controller.abort(reason as any)
     }, timeoutMs)
@@ -175,56 +176,72 @@ export class RealAPI {
   private async fetchAuthorized(
     path: string,
     options: RequestInit = {},
+    timeoutMs?: number
   ): Promise<Response> {
-    const headers = new Headers(options.headers || {});
-    if (this.token) {
-      headers.set("Authorization", `Bearer ${this.token}`);
-    }
-    if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
-      headers.set("Content-Type", "application/json");
-    }
+    const isServer = typeof window === "undefined";
     const fullUrl = `${this.getApiBase()}${path}`;
-    let response: Response;
 
     try {
-      response = await fetchWithRetry(fullUrl, {
+      let headers: HeadersInit = {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      };
+
+      if (this.token) {
+        headers = { ...headers, "Authorization": `Bearer ${this.token}` };
+      }
+
+      // If body is FormData, delete Content-Type to let browser set it with boundary
+      if (options.body instanceof FormData) {
+        if (headers instanceof Headers) {
+          headers.delete("Content-Type");
+        } else {
+          delete (headers as any)["Content-Type"];
+        }
+      }
+
+      let response = await fetchWithRetry(fullUrl, {
         ...options,
         headers,
         credentials: "include",
-      });
+      }, 3, timeoutMs);
+
+      if (response.status === 401) {
+        const refreshed = await this.handleUnauthorized()
+        if (refreshed) {
+          const newHeaders = new Headers(headers);
+          if (this.token) {
+            newHeaders.set("Authorization", `Bearer ${this.token}`);
+          } else {
+            newHeaders.delete("Authorization");
+          }
+          return fetchWithRetry(fullUrl, {
+            ...options,
+            headers: newHeaders,
+            credentials: "include",
+          }, 3, timeoutMs)
+        }
+      }
+      return response;
     } catch (err) {
-      console.error(`fetchAuthorized caught network/CORS error for ${path} (Full URL: ${fullUrl}):`, err);
+      console.error(`fetchAuthorized caught network/CORS error for ${path}:`, err);
       throw err;
     }
-
-    if (response.status === 401) {
-      const refreshed = await this.handleUnauthorized()
-      if (refreshed) {
-        if (this.token) {
-          headers.set("Authorization", `Bearer ${this.token}`);
-        } else {
-          headers.delete("Authorization");
-        }
-        return fetchWithRetry(`${this.getApiBase()}${path}`, {
-          ...options,
-          headers,
-          credentials: "include",
-        })
-      }
-    }
-    return response;
   }
 
   private async fetchJsonOrDefault<T>(
     path: string,
-    fallback: T,
+    defaultValue: T,
     options: RequestInit = {},
+    timeoutMs?: number
   ): Promise<T> {
     try {
-      const res = await this.fetchAuthorized(path, options);
-      return res.ok ? ((await res.json()) as T) : fallback;
-    } catch {
-      return fallback;
+      const res = await this.fetchAuthorized(path, options, timeoutMs);
+      if (!res.ok) return defaultValue;
+      return (await res.json()) as T;
+    } catch (err) {
+      console.error(`Error fetching ${path}:`, err);
+      return defaultValue;
     }
   }
 
@@ -718,8 +735,8 @@ export class RealAPI {
     return await parseJsonSafe(res) ?? {};
   }
 
-  async architectureUpdateDepartment(deptId: string, data: any) {
-    const res = await this.fetchAuthorized(`/api/departments/${deptId}`, {
+  async architectureUpdateDepartment(institutionId: string, deptId: string, data: any) {
+    const res = await this.fetchAuthorized(`/api/admin/institutions/${institutionId}/departments/${deptId}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     });
@@ -866,19 +883,21 @@ export class RealAPI {
   }
 
   async updateDepartment(institutionId: string, deptId: string, data: any): Promise<any> {
-    const res = await this.fetchAuthorized(
-      `/api/admin/institutions/${institutionId}/departments/${deptId}`,
-      { method: "PATCH", body: JSON.stringify(data) },
-    );
-    return await parseJsonSafe(res) ?? {};
+    return this.architectureUpdateDepartment(institutionId, deptId, data);
   }
 
   async assignHod(institutionId: string, deptId: string, hodId: string): Promise<any> {
-    const res = await this.fetchAuthorized(
-      `/api/admin/institutions/${institutionId}/departments/${deptId}/hod`,
-      { method: "PATCH", body: JSON.stringify({ hod_id: hodId }) },
-    );
+    const res = await this.fetchAuthorized(`/api/admin/institutions/${institutionId}/departments/${deptId}/hod`, {
+      method: "PATCH",
+      body: JSON.stringify({ hod_id: hodId })
+    });
     return await parseJsonSafe(res) ?? {};
+  }
+
+  async getTeacherStats(instId?: string): Promise<any[]> {
+    const suffix = instId ? `?inst_id=${encodeURIComponent(instId)}` : "";
+    const res = await this.fetchAuthorized(`/api/admin/teachers/stats${suffix}`);
+    return res.ok ? await res.json() : [];
   }
 
   async deleteAdminDepartment(deptId: string): Promise<any> {
@@ -1321,7 +1340,7 @@ export class RealAPI {
     const form = new FormData();
     form.append("file", file);
     if (title) form.append("title", title);
-    const res = await this.fetchAuthorized("/api/teacher/units/upload", { method: "POST", body: form });
+    const res = await this.fetchAuthorized("/api/teacher/units/upload", { method: "POST", body: form }, 180000);
     if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || "Upload failed"); }
     return res.json();
   }
@@ -1335,7 +1354,7 @@ export class RealAPI {
   }
 
   async generateUnitPresentation(unitId: string): Promise<any> {
-    const res = await this.fetchAuthorized(`/api/teacher/units/${unitId}/generate-ppt`, { method: "POST" });
+    const res = await this.fetchAuthorized(`/api/teacher/units/${unitId}/generate-ppt`, { method: "POST" }, 120000);
     return res.json().catch(() => ({}));
   }
 
