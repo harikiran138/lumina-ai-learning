@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
-from .auth import get_current_user
+from app.api.deps import get_current_counselor as get_current_user
 from app.store.counselor_store import CounselorStore
 from app.dependencies import get_counselor_store
 
@@ -20,8 +20,6 @@ async def get_assigned_students(
     current_user: dict = Depends(get_current_user),
     store: CounselorStore = Depends(get_counselor_store)
 ):
-    if current_user.get("role") != "counselor":
-        raise HTTPException(status_code=403, detail="Forbidden")
     return await store.get_assigned_students(current_user["id"])
 
 @router.get("/crisis")
@@ -29,9 +27,6 @@ async def get_crisis_cases(
     current_user: dict = Depends(get_current_user),
     store: CounselorStore = Depends(get_counselor_store)
 ):
-    # Security: Ensure only authorized roles (counselor, admin) can access this
-    if current_user.get("role") not in ["counselor", "admin"]:
-        raise HTTPException(status_code=403, detail="Forbidden")
     return await store.get_crisis_cases()
 
 @router.post("/notes")
@@ -40,8 +35,6 @@ async def add_counseling_note(
     current_user: dict = Depends(get_current_user),
     store: CounselorStore = Depends(get_counselor_store)
 ):
-    if current_user.get("role") != "counselor":
-        raise HTTPException(status_code=403, detail="Forbidden")
     
     # Note: Encryption happens client-side as per spec, we just store the payload
     note = await store.add_note(current_user["id"], request.student_id, request.encrypted_content)
@@ -55,8 +48,6 @@ async def reveal_student_identity(
     current_user: dict = Depends(get_current_user),
     store: CounselorStore = Depends(get_counselor_store)
 ):
-    if current_user.get("role") not in ["counselor", "admin"]:
-        raise HTTPException(status_code=403, detail="Forbidden")
     
     # Log the reveal as per safeguarding requirement
     await store.log_reveal(current_user["id"], request.student_id, request.reason)

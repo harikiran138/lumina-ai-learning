@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from .auth import get_current_user
 from app.database.supabase_manager import supabase_db
+from app.database.scoped_db import get_scoped_db
 from app.services.storage import storage_service
 from app.store.user_store import UserStore
 from app.core.rbac import normalize_role
@@ -92,15 +93,15 @@ def _validate_date_of_birth(value: str) -> str:
     return parsed.date().isoformat()
 
 
-async def _get_user_record(user_id: str) -> Dict[str, Any]:
-    record = await supabase_db.fetch_one("users", {"id": user_id})
+async def _get_user_record(user_id: str, db: Any) -> Dict[str, Any]:
+    record = await db.fetch_one("users", {"id": user_id})
     if not record:
         raise HTTPException(status_code=404, detail="User record not found")
     return record
 
 
-async def _get_progress_record(user_id: str) -> Dict[str, Any]:
-    existing = await supabase_db.fetch_one("user_data", {"user_id": user_id})
+async def _get_progress_record(user_id: str, db: Any) -> Dict[str, Any]:
+    existing = await db.fetch_one("user_data", {"user_id": user_id})
     return (existing or {}).get("progress") or {}
 
 
@@ -108,10 +109,11 @@ async def _persist_progress(
     user_id: str,
     target_step: int,
     step_data: Dict[str, Any],
+    db: Any,
     user_updates: Optional[Dict[str, Any]] = None,
     completed: bool = False,
 ) -> Dict[str, Any]:
-    user_record = await _get_user_record(user_id)
+    user_record = await _get_user_record(user_id, db)
     current_step = int(user_record.get("onboarding_step") or 0)
     next_step = 5 if completed else max(current_step, target_step)
 
@@ -135,8 +137,8 @@ async def _persist_progress(
     return progress
 
 
-async def _require_step_access(user_id: str, target_step: int) -> Dict[str, Any]:
-    user_record = await _get_user_record(user_id)
+async def _require_step_access(user_id: str, target_step: int, db: Any) -> Dict[str, Any]:
+    user_record = await _get_user_record(user_id, db)
     current_step = int(user_record.get("onboarding_step") or 0)
     if current_step < target_step - 1:
         raise HTTPException(
@@ -146,12 +148,12 @@ async def _require_step_access(user_id: str, target_step: int) -> Dict[str, Any]
     return user_record
 
 
-async def _validate_enrollment_code_for_user(code: str, user_id: str) -> Dict[str, Any]:
+async def _validate_enrollment_code_for_user(code: str, user_id: str, db: Any) -> Dict[str, Any]:
     normalized_code = (code or "").strip().upper()
     if not normalized_code:
         raise HTTPException(status_code=400, detail="Enrollment code is required")
 
-    record = await supabase_db.fetch_one("enrollment_codes", {"code": normalized_code})
+    record = await db.fetch_one("enrollment_codes", {"code": normalized_code})
     if not record:
         raise HTTPException(status_code=400, detail="Enrollment code is invalid")
 
@@ -165,12 +167,12 @@ async def _validate_enrollment_code_for_user(code: str, user_id: str) -> Dict[st
         if expires < datetime.now(expires.tzinfo):
             raise HTTPException(status_code=400, detail="Enrollment code has expired")
 
-    batch = await supabase_db.fetch_one("batches", {"id": record.get("batch_id")})
+    batch = await db.fetch_one("batches", {"id": record.get("batch_id")})
     if not batch:
         raise HTTPException(status_code=404, detail="Linked batch could not be found")
 
     dept_id = batch.get("dept_id") or batch.get("department_id")
-    department = await supabase_db.fetch_one("departments", {"id": dept_id}) if dept_id else None
+    department = await db.fetch_one("departments", {"id": dept_id}) if dept_id else None
     if not department:
         raise HTTPException(status_code=404, detail="Linked department could not be found")
 
@@ -185,8 +187,8 @@ async def _validate_enrollment_code_for_user(code: str, user_id: str) -> Dict[st
     }
 
 
-async def _get_subject_rows_for_batch(batch_id: str) -> List[Dict[str, Any]]:
-    batch = await supabase_db.fetch_one("batches", {"id": batch_id})
+async def _get_subject_rows_for_batch(batch_id: str, db: Any) -> List[Dict[str, Any]]:
+    batch = await db.fetch_one("batches", {"id": batch_id})
     if not batch:
         # Developer Bypass Fallback: If batch not found, return mock subjects
         return [
@@ -200,7 +202,7 @@ async def _get_subject_rows_for_batch(batch_id: str) -> List[Dict[str, Any]]:
     if not dept_id or semester is None:
         raise HTTPException(status_code=400, detail="Batch is missing department or semester mapping")
 
-    subjects = await supabase_db.fetch_all("courses", {"department_id": dept_id, "semester": semester})
+    subjects = await db.fetch_all("courses", {"department_id": dept_id, "semester": semester})
     return subjects or []
 
 
@@ -246,7 +248,8 @@ async def save_student_personal_details(
     current_user: dict = Depends(get_current_user),
 ):
     user_id = _require_student(current_user)
-    await _require_step_access(user_id, 1)
+    db = get_scoped_db(current_user)
+    await _require_step_access(user_id, 1, db)
 
     first_name = _validate_required_text(payload.first_name, "First name")
     last_name = _validate_required_text(payload.last_name, "Last name")
@@ -275,6 +278,7 @@ async def save_student_personal_details(
         user_id,
         1,
         step_data,
+        db,
         {
             "first_name": first_name,
             "last_name": last_name,
@@ -303,7 +307,7 @@ async def save_student_enrollment(
     department_id = department.get("id")
     institution_id = department.get("institution_id")
 
-    await supabase_db.update(
+    await db.update(
         "enrollment_codes",
         {"used_by": user_id, "updated_at": datetime.utcnow().isoformat()},
         {"id": enrollment["record"].get("id")},
@@ -322,6 +326,7 @@ async def save_student_enrollment(
         user_id,
         2,
         step_data,
+        db,
         {
             "college_id": institution_id,
             "dept_id": department_id,
@@ -356,13 +361,14 @@ async def list_student_onboarding_subjects(
     current_user: dict = Depends(get_current_user),
 ):
     user_id = _require_student(current_user)
-    await _require_step_access(user_id, 3)
+    db = get_scoped_db(current_user)
+    await _require_step_access(user_id, 3, db)
 
     resolved_batch_id = batch_id or current_user.get("batch_id")
     if not resolved_batch_id:
         raise HTTPException(status_code=400, detail="Batch must be linked before loading subjects")
 
-    subjects = await _get_subject_rows_for_batch(str(resolved_batch_id))
+    subjects = await _get_subject_rows_for_batch(str(resolved_batch_id), db)
     return [
         {
             "id": row.get("id"),
@@ -383,13 +389,14 @@ async def save_student_subjects(
     current_user: dict = Depends(get_current_user),
 ):
     user_id = _require_student(current_user)
-    user_record = await _require_step_access(user_id, 3)
+    db = get_scoped_db(current_user)
+    user_record = await _require_step_access(user_id, 3, db)
 
     batch_id = user_record.get("batch_id") or current_user.get("batch_id")
     if not batch_id:
         raise HTTPException(status_code=400, detail="Batch must be linked before selecting subjects")
 
-    available_subjects = await _get_subject_rows_for_batch(str(batch_id))
+    available_subjects = await _get_subject_rows_for_batch(str(batch_id), db)
     available_subject_ids = {str(row.get("id")) for row in available_subjects if row.get("id")}
     selected_subject_ids = [str(subject_id) for subject_id in (payload.subject_ids or []) if str(subject_id).strip()]
 
@@ -400,9 +407,9 @@ async def save_student_subjects(
     if invalid_ids:
         raise HTTPException(status_code=400, detail="One or more selected subjects are not available for your batch")
 
-    await supabase_db.delete("student_subjects", {"student_id": user_id})
+    await db.delete("student_subjects", {"student_id": user_id})
     for subject_id in selected_subject_ids:
-        await supabase_db.insert("student_subjects", {"student_id": user_id, "subject_id": subject_id})
+        await db.insert("student_subjects", {"student_id": user_id, "subject_id": subject_id})
 
     selected_subjects = [
         {
@@ -413,7 +420,7 @@ async def save_student_subjects(
         for row in available_subjects
         if str(row.get("id")) in set(selected_subject_ids)
     ]
-    await _persist_progress(user_id, 3, {"subjectIds": selected_subject_ids, "subjects": selected_subjects})
+    await _persist_progress(user_id, 3, {"subjectIds": selected_subject_ids, "subjects": selected_subjects}, db)
     return {"step": 3, "success": True, "subjects": selected_subjects}
 
 
@@ -425,7 +432,8 @@ async def save_student_profile_details(
     current_user: dict = Depends(get_current_user),
 ):
     user_id = _require_student(current_user)
-    user_record = await _require_step_access(user_id, 4)
+    db = get_scoped_db(current_user)
+    user_record = await _require_step_access(user_id, 4, db)
 
     validated_emergency_contact = _validate_phone(emergency_contact, "Emergency contact")
     validated_parent_email = None
@@ -465,6 +473,7 @@ async def save_student_profile_details(
         user_id,
         4,
         step_data,
+        db,
         {
             "emergency_contact": validated_emergency_contact,
             "parent_email": validated_parent_email,
@@ -480,7 +489,8 @@ async def save_student_preferences(
     current_user: dict = Depends(get_current_user),
 ):
     user_id = _require_student(current_user)
-    user_record = await _require_step_access(user_id, 5)
+    db = get_scoped_db(current_user)
+    user_record = await _require_step_access(user_id, 5, db)
 
     learning_styles = [str(item).strip() for item in (payload.learning_styles or []) if str(item).strip()]
     if len(learning_styles) < 1:
@@ -490,7 +500,7 @@ async def save_student_preferences(
     if self_assessment not in {"beginner", "intermediate", "advanced"}:
         raise HTTPException(status_code=400, detail="Self assessment must be Beginner, Intermediate, or Advanced")
 
-    progress = await _get_progress_record(user_id)
+    progress = await _get_progress_record(user_id, db)
     step_three = progress.get("step_3") or {}
     subject_ids = [str(subject_id) for subject_id in (step_three.get("subjectIds") or []) if str(subject_id).strip()]
     if not subject_ids:
@@ -508,13 +518,13 @@ async def save_student_preferences(
 
     course_lookup: Dict[str, Dict[str, Any]] = {}
     for subject_id in subject_ids:
-        course = await supabase_db.fetch_one("courses", {"id": subject_id})
+        course = await db.fetch_one("courses", {"id": subject_id})
         if not course:
             raise HTTPException(status_code=400, detail="Selected subjects are no longer available")
         course_lookup[subject_id] = course
 
-    selected_class = await _pick_default_class(str(batch_id), section)
-    enrollment_record = await supabase_db.fetch_one("student_enrollments", {"student_id": user_id})
+    selected_class = await _pick_default_class(str(batch_id), section, db)
+    enrollment_record = await db.fetch_one("student_enrollments", {"student_id": user_id})
 
     program_id = (
         (selected_class or {}).get("program_id")
@@ -528,7 +538,7 @@ async def save_student_preferences(
     )
 
     if not program_id and dept_id:
-        program_rows = await supabase_db.fetch_all("programs", {"department_id": dept_id})
+        program_rows = await db.fetch_all("programs", {"department_id": dept_id})
         active_programs = [row for row in program_rows if (row.get("status") or "active") == "active"]
         fallback_programs = active_programs or program_rows
         if len(fallback_programs) == 1:
@@ -545,7 +555,7 @@ async def save_student_preferences(
             )
 
     if not current_semester_id and program_id and batch.get("current_semester"):
-        semester_match = await supabase_db.fetch_one(
+        semester_match = await db.fetch_one(
             "semesters",
             {"program_id": program_id, "semester_number": batch.get("current_semester")},
         )
@@ -555,7 +565,7 @@ async def save_student_preferences(
     now = datetime.utcnow().isoformat()
 
     if program_id:
-        enrollment_upsert = await supabase_db.upsert(
+        enrollment_upsert = await db.upsert(
             "student_enrollments",
             {
                 "student_id": user_id,
@@ -572,14 +582,14 @@ async def save_student_preferences(
             raise HTTPException(status_code=500, detail="Failed to update student enrollment")
 
     score = _self_assessment_score(self_assessment)
-    await supabase_db.delete("student_subjects", {"student_id": user_id})
+    await db.delete("student_subjects", {"student_id": user_id})
     for subject_id in subject_ids:
-        await supabase_db.insert("student_subjects", {"student_id": user_id, "subject_id": subject_id})
-        await supabase_db.delete(
+        await db.insert("student_subjects", {"student_id": user_id, "subject_id": subject_id})
+        await db.delete(
             "skill_mastery",
             {"user_id": user_id, "course_id": subject_id, "skill_name": "initial_self_assessment"},
         )
-        await supabase_db.insert(
+        await db.insert(
             "skill_mastery",
             {
                 "user_id": user_id,
@@ -593,7 +603,7 @@ async def save_student_preferences(
                 "updated_at": now,
             },
         )
-        await supabase_db.upsert(
+        await db.upsert(
             "enrollments",
             {
                 "student_id": user_id,
@@ -610,7 +620,7 @@ async def save_student_preferences(
             on_conflict="student_id, course_id",
         )
 
-    learner_profile = await supabase_db.upsert(
+    learner_profile = await db.upsert(
         "learner_profiles",
         {
             "user_id": user_id,
@@ -641,6 +651,7 @@ async def save_student_preferences(
         user_id,
         5,
         step_data,
+        db,
         {
             "section": (selected_class or {}).get("section")
             or (selected_class or {}).get("section_name")
@@ -661,7 +672,8 @@ async def save_student_preferences(
 async def get_onboarding_status(current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("id")
     step = current_user.get("onboarding_step", 0) or 0
-    existing = await supabase_db.fetch_one("user_data", {"user_id": user_id})
+    db = get_scoped_db(current_user)
+    existing = await db.fetch_one("user_data", {"user_id": user_id})
     progress = (existing or {}).get("progress") or {}
 
     return {

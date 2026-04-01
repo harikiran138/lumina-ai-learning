@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any
 
 from app.services.personalization_service import get_personalization_service
 from app.personalization.schemas import InterventionUpdateRequest, InterventionStatus, InterventionPriority
-from .auth import get_current_user
+from app.api.deps import get_current_teacher as get_current_user
 from app.store.content_store import ContentStore
 from app.store.course_store import CourseStore
 from app.store.assignment_store import AssignmentStore
@@ -19,8 +19,7 @@ assignment_store = AssignmentStore()
 teacher_store = TeacherStore()
 
 def check_teacher_role(user: dict):
-    if user.get("role") not in {"teacher", "faculty", "admin", "hod"}:
-        raise HTTPException(status_code=403, detail="Teacher access required")
+    pass
 
 @router.get("/dashboard/summary")
 async def get_teacher_dashboard_summary(

@@ -7,12 +7,14 @@ from typing import Optional, List
 from datetime import datetime, timedelta
 
 from app.routers.auth import get_current_user
+from app.api.deps import get_current_college_admin
 from app.store.user_store import UserStore
 from app.store.course_store import CourseStore
 from app.store.analytics_store import AnalyticsStore
 from app.store.institution_store import InstitutionStore
 from app.services.personalization_service import get_personalization_service
 from app.database.supabase_manager import supabase_db
+from app.database.scoped_db import get_scoped_db
 import structlog
 from app.core.audit import audit_logger
 from app.services.guardian_service import get_guardian_service
@@ -44,11 +46,7 @@ def _normalize_admin_role(role: Optional[str]) -> str:
     return normalize_role(role)
 
 
-def is_admin(current_user: dict = Depends(get_current_user)):
-    role = normalize_role(current_user.get("role"))
-    if role not in {Role.SUPER_ADMIN.value, Role.COLLEGE_ADMIN.value}:
-        raise HTTPException(status_code=403, detail="Admin access required")
-    
+def is_admin(current_user: dict = Depends(get_current_college_admin)):
     # Requirement: Mandatory 2FA for all admin routes
     # In a real system, we'd check if the session has a 2FA flag
     if not current_user.get("two_factor_enabled"):
@@ -307,8 +305,9 @@ async def get_all_courses(admin: dict = Depends(is_admin)):
 @router.get("/logs/ai")
 async def get_ai_logs(admin: dict = Depends(is_admin)):
     """Fetch AI interaction logs."""
+    db = get_scoped_db(admin)
     try:
-        response = supabase_db.client.table("ai_logs").select("*").order("timestamp", desc=True).limit(100).execute()
+        response = db.table("ai_logs").select("*").order("timestamp", desc=True).limit(100).execute()
         return response.data
     except Exception as e:
         return []
@@ -316,8 +315,9 @@ async def get_ai_logs(admin: dict = Depends(is_admin)):
 @router.delete("/logs/ai/{log_id}")
 async def delete_ai_log(log_id: str, admin: dict = Depends(is_admin)):
     """Delete a specific AI log entry."""
+    db = get_scoped_db(admin)
     try:
-        res = supabase_db.client.table("ai_logs").delete().eq("id", log_id).execute()
+        res = db.table("ai_logs").delete().eq("id", log_id).execute()
         if not res.data:
             raise HTTPException(status_code=404, detail="Log entry not found")
         return {"success": True}
@@ -328,8 +328,9 @@ async def delete_ai_log(log_id: str, admin: dict = Depends(is_admin)):
 @router.get("/logs/chat")
 async def get_chat_logs(admin: dict = Depends(is_admin)):
     """Fetch AI tutor chat conversation logs."""
+    db = get_scoped_db(admin)
     try:
-        response = supabase_db.client.table("conversations").select("*").order("last_updated", desc=True).limit(100).execute()
+        response = db.table("conversations").select("*").order("last_updated", desc=True).limit(100).execute()
         return response.data
     except Exception as e:
         return []
@@ -427,7 +428,8 @@ async def update_department(
         raise HTTPException(status_code=400, detail="No valid fields to update")
 
     payload["updated_at"] = datetime.utcnow().isoformat()
-    result = await supabase_db.update(
+    db = get_scoped_db(admin)
+    result = await db.update(
         "departments",
         payload,
         {"id": dept_id, "institution_id": inst_id},
@@ -459,7 +461,8 @@ async def assign_hod(
     await user_store.update_user_fields(hod_id, {"department_id": dept_id})
 
     # Update department
-    res = await supabase_db.update(
+    db = get_scoped_db(admin)
+    res = await db.update(
         "departments",
         {"hod_id": hod_id, "updated_at": datetime.utcnow().isoformat()},
         {"id": dept_id, "institution_id": inst_id},
@@ -491,7 +494,8 @@ async def create_program(inst_id: str, data: dict, admin: dict = Depends(is_admi
 @router.get("/programs/{program_id}/semesters")
 async def list_semesters(program_id: str, admin: dict = Depends(is_admin)):
     """List semesters for a program."""
-    return await supabase_db.fetch_all("semesters", {"program_id": program_id})
+    db = get_scoped_db(admin)
+    return await db.fetch_all("semesters", {"program_id": program_id})
 
 
 @router.post("/programs/{program_id}/semesters")
@@ -505,7 +509,8 @@ async def create_semester(program_id: str, data: dict, admin: dict = Depends(is_
         "semester_number": semester_number,
         "title": data.get("title"),
     }
-    return await supabase_db.insert("semesters", payload)
+    db = get_scoped_db(admin)
+    return await db.insert("semesters", payload)
 
 
 @router.patch("/classes/{class_id}")
@@ -529,7 +534,8 @@ async def update_class(class_id: str, data: dict, admin: dict = Depends(is_admin
         raise HTTPException(status_code=400, detail="No valid fields to update")
 
     payload["updated_at"] = datetime.utcnow().isoformat()
-    result = await supabase_db.update("classes", payload, {"id": class_id})
+    db = get_scoped_db(admin)
+    result = await db.update("classes", payload, {"id": class_id})
     if not result:
         raise HTTPException(status_code=404, detail="Class not found")
     return result[0]
@@ -538,9 +544,9 @@ async def update_class(class_id: str, data: dict, admin: dict = Depends(is_admin
 @router.get("/classes/{class_id}/summary")
 async def class_summary(class_id: str, admin: dict = Depends(is_admin)):
     """Summarize class capacity usage and assignments."""
-    client = supabase_db.get_client()
+    db = get_scoped_db(admin)
     students = (
-        client.table("student_enrollments")
+        db.table("student_enrollments")
         .select("id")
         .eq("class_id", class_id)
         .execute()
@@ -548,7 +554,7 @@ async def class_summary(class_id: str, admin: dict = Depends(is_admin)):
         or []
     )
     assignments = (
-        client.table("teacher_assignments")
+        db.table("teacher_assignments")
         .select("*")
         .eq("class_id", class_id)
         .execute()
@@ -561,7 +567,7 @@ async def class_summary(class_id: str, admin: dict = Depends(is_admin)):
     courses = {}
     if course_ids:
         course_rows = (
-            client.table("courses")
+            db.table("courses")
             .select("id, title, course_name, name, course_code, code")
             .in_("id", course_ids)
             .execute()
@@ -628,8 +634,9 @@ async def get_connections(inst_id: Optional[str] = None, program_id: Optional[st
 @router.get("/compliance/deletions")
 async def get_deletion_requests(admin: dict = Depends(is_admin)):
     """List pending and completed data deletion requests."""
+    db = get_scoped_db(admin)
     try:
-        response = supabase_db.client.table("deletion_requests").select("*").order("created_at", desc=True).execute()
+        response = db.table("deletion_requests").select("*").order("created_at", desc=True).execute()
         return response.data
     except Exception:
         return []
@@ -639,15 +646,16 @@ async def get_deletion_requests(admin: dict = Depends(is_admin)):
 async def process_deletion_request(request_id: str, admin: dict = Depends(is_admin)):
     """Approve and process a data deletion request."""
     # Fetch request to get user_id
+    db = get_scoped_db(admin)
     try:
-        req_res = supabase_db.client.table("deletion_requests").select("user_id").eq("id", request_id).single().execute()
+        req_res = db.table("deletion_requests").select("user_id").eq("id", request_id).single().execute()
         user_id = req_res.data.get("user_id") if req_res.data else "unknown"
         
         success = await get_compliance_service().process_deletion_pipeline(request_id, user_id)
         if not success:
             raise HTTPException(status_code=500, detail="Pipeline execution failed")
 
-        supabase_db.client.table("deletion_requests").update({
+        db.table("deletion_requests").update({
             "status": "completed",
             "completed_at": datetime.utcnow().isoformat()
         }).eq("id", request_id).execute()
@@ -659,8 +667,9 @@ async def process_deletion_request(request_id: str, admin: dict = Depends(is_adm
 @router.get("/compliance/audit-logs")
 async def get_compliance_audit_logs(admin: dict = Depends(is_admin)):
     """Fetch immutable audit logs for compliance tracking."""
+    db = get_scoped_db(admin)
     try:
-        response = supabase_db.client.table("audit_logs").select("*").order("created_at", desc=True).limit(200).execute()
+        response = db.table("audit_logs").select("*").order("created_at", desc=True).limit(200).execute()
         return response.data
     except Exception:
         return []
@@ -745,7 +754,8 @@ async def bulk_enrollment(
             if not user:
                 # 2. Basic User Creation (Inactive)
                 user_id = str(uuid.uuid4())
-                await supabase_db.insert(
+                db = get_scoped_db(admin)
+                await db.insert(
                     "users",
                     {
                         "id": user_id,
@@ -763,11 +773,11 @@ async def bulk_enrollment(
 
             # 3. Handle Department / Batch mapping if provided
             if dept_code:
-                dept = await supabase_db.fetch_one("departments", {"code": dept_code})
+                dept = await db.fetch_one("departments", {"code": dept_code})
                 if dept:
                     update_data = {"dept_id": dept["id"]}
                     if batch_label:
-                        batch = await supabase_db.fetch_one(
+                        batch = await db.fetch_one(
                             "batches", {"dept_id": dept["id"], "label": batch_label}
                         )
                         if batch:
@@ -776,11 +786,11 @@ async def bulk_enrollment(
                         update_data["section"] = section
                     
                     await user_store.update_user_fields(user_id, update_data)
-
+ 
             # 4. Generate Invite Token
             invite_token = str(uuid.uuid4())
             expires_at = (datetime.utcnow() + timedelta(days=7)).isoformat()
-            await supabase_db.insert(
+            await db.insert(
                 "invite_tokens",
                 {"user_id": user_id, "token": invite_token, "expires_at": expires_at},
             )

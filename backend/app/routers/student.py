@@ -18,8 +18,9 @@ from app.store.student_store import StudentStore
 from app.store.assignment_store import AssignmentStore
 from app.store.analytics_store import AnalyticsStore
 from app.dependencies import get_user_data_store, get_student_store, get_assignment_store, get_analytics_store
-from .auth import get_current_user
+from app.api.deps import get_current_student as get_current_user
 from app.database.supabase_manager import supabase_db
+from app.database.scoped_db import get_scoped_db
 from app.services.risk_service import get_risk_analysis_service
 
 router = APIRouter()
@@ -1430,26 +1431,27 @@ async def complete_student_onboarding(
         user_updates["section"] = selected_class.get("section")
     elif (selected_class or {}).get("section_name"):
         user_updates["section"] = selected_class.get("section_name")
-    updated_user = await supabase_db.update("users", user_updates, {"id": student_id})
+    db = get_scoped_db(current_user)
+    updated_user = await db.update("users", user_updates, {"id": student_id})
     if updated_user is None:
         raise HTTPException(status_code=500, detail="Failed to update student onboarding state")
 
-    await supabase_db.delete("student_subjects", {"student_id": student_id})
+    await db.delete("student_subjects", {"student_id": student_id})
     for subject_id in payload.subject_ids:
         course = course_lookup.get(str(subject_id))
         if not course:
             continue
-        await supabase_db.insert(
+        await db.insert(
             "student_subjects",
             {"student_id": student_id, "subject_id": subject_id},
         )
 
         score = _clamp_unit_interval(payload.skill_levels.get(subject_id), default=0.5)
-        await supabase_db.delete(
+        await db.delete(
             "skill_mastery",
             {"user_id": student_id, "course_id": subject_id, "skill_name": "initial_self_assessment"},
         )
-        await supabase_db.insert(
+        await db.insert(
             "skill_mastery",
             {
                 "user_id": student_id,
@@ -1464,7 +1466,7 @@ async def complete_student_onboarding(
             },
         )
 
-        await supabase_db.upsert(
+        await db.upsert(
             "enrollments",
             {
                 "student_id": student_id,
@@ -1501,7 +1503,7 @@ async def complete_student_onboarding(
         for sid in payload.subject_ids
     }
 
-    learner_profile = await supabase_db.upsert(
+    learner_profile = await db.upsert(
         "learner_profiles",
         {
             "user_id": student_id,
@@ -1536,7 +1538,7 @@ async def complete_student_onboarding(
     if not learner_profile:
         raise HTTPException(status_code=500, detail="Failed to initialize learner profile")
 
-    existing_user_data = await supabase_db.fetch_one("user_data", {"user_id": student_id})
+    existing_user_data = await db.fetch_one("user_data", {"user_id": student_id})
     progress = (existing_user_data or {}).get("progress") or {}
     progress["step_5"] = {
         "classId": payload.class_id,
@@ -1557,13 +1559,13 @@ async def complete_student_onboarding(
     progress["onboarding_step"] = 5
 
     if existing_user_data:
-        await supabase_db.update(
+        await db.update(
             "user_data",
             {"progress": progress, "updated_at": now},
             {"user_id": student_id},
         )
     else:
-        await supabase_db.insert(
+        await db.insert(
             "user_data",
             {"user_id": student_id, "progress": progress, "updated_at": now},
         )
@@ -1582,11 +1584,11 @@ async def complete_student_onboarding(
 async def get_student_attendance_summary(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "student":
         raise HTTPException(status_code=403, detail="Student access required")
-    client = supabase_db.get_client()
-    rows = client.table("attendance").select("*").eq("student_id", current_user.get("id")).execute()
+    db = get_scoped_db(current_user)
+    rows = db.table("attendance").select("*").eq("student_id", current_user.get("id")).execute()
     attendance = rows.data or []
     course_ids = list({row.get("course_id") for row in attendance if row.get("course_id")})
-    courses = client.table("courses").select("id,title,course_name,name").in_("id", course_ids).execute() if course_ids else None
+    courses = db.table("courses").select("id,title,course_name,name").in_("id", course_ids).execute() if course_ids else None
     course_lookup = {c["id"]: c for c in (courses.data if courses else [])}
     summary = {}
     for row in attendance:
@@ -1617,9 +1619,9 @@ async def get_student_attendance_summary(current_user: dict = Depends(get_curren
 async def get_student_attendance_detail(course_id: str, current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "student":
         raise HTTPException(status_code=403, detail="Student access required")
-    client = supabase_db.get_client()
+    db = get_scoped_db(current_user)
     rows = (
-        client.table("attendance")
+        db.table("attendance")
         .select("class_date,is_present")
         .eq("student_id", current_user.get("id"))
         .eq("course_id", course_id)
@@ -1640,19 +1642,19 @@ async def list_student_assignments(current_user: dict = Depends(get_current_user
     batch_id = current_user.get("batch_id")
     section = current_user.get("section")
 
-    client = supabase_db.get_client()
-    courses_res = client.table("courses").select("id,title,course_name,name").eq("department_id", dept_id).execute() if dept_id else None
+    db = get_scoped_db(current_user)
+    courses_res = db.table("courses").select("id,title,course_name,name").eq("department_id", dept_id).execute() if dept_id else None
     course_ids = [c["id"] for c in (courses_res.data or [])] if courses_res else []
     if not course_ids:
         return []
 
-    assignments_res = client.table("assignments").select("*").in_("course_id", course_ids).execute()
+    assignments_res = db.table("assignments").select("*").in_("course_id", course_ids).execute()
     assignments = assignments_res.data or []
 
-    submissions_res = client.table("submissions").select("*").eq("student_uuid", current_user.get("id")).execute()
+    submissions_res = db.table("submissions").select("*").eq("student_uuid", current_user.get("id")).execute()
     submissions = submissions_res.data or []
     if not submissions:
-        legacy_res = client.table("submissions").select("*").eq("student_id", current_user.get("id")).execute()
+        legacy_res = db.table("submissions").select("*").eq("student_id", current_user.get("id")).execute()
         submissions = legacy_res.data or []
     submission_map = {}
     for s in submissions:
@@ -1697,7 +1699,8 @@ async def submit_student_assignment(
     if current_user.get("role") != "student":
         raise HTTPException(status_code=403, detail="Student access required")
     # Validate assignment
-    assignment = await supabase_db.fetch_one("assignments", {"id": assignment_id})
+    db = get_scoped_db(current_user)
+    assignment = await db.fetch_one("assignments", {"id": assignment_id})
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
     if assignment.get("due_date") and assignment.get("due_date") < datetime.now(timezone.utc).isoformat():
@@ -1705,7 +1708,7 @@ async def submit_student_assignment(
     if current_user.get("batch_id") != assignment.get("batch_id") or current_user.get("section") != assignment.get("section"):
         raise HTTPException(status_code=403, detail="This assignment is not assigned to your batch")
 
-    existing = await supabase_db.fetch_one(
+    existing = await db.fetch_one(
         "submissions",
         {"assignment_uuid": assignment_id, "student_uuid": current_user.get("id")},
     )
@@ -1722,28 +1725,28 @@ async def submit_student_assignment(
         "status": "submitted",
         "submitted_at": datetime.now(timezone.utc).isoformat(),
     }
-    return await supabase_db.insert("submissions", data)
+    return await db.insert("submissions", data)
 
 
 @router.get("/grades")
 async def list_student_grades(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "student":
         raise HTTPException(status_code=403, detail="Student access required")
-    client = supabase_db.get_client()
-    submissions_res = client.table("submissions").select("*").eq("student_uuid", current_user.get("id")).execute()
+    db = get_scoped_db(current_user)
+    submissions_res = db.table("submissions").select("*").eq("student_uuid", current_user.get("id")).execute()
     submissions = submissions_res.data or []
     if not submissions:
-        legacy_res = client.table("submissions").select("*").eq("student_id", current_user.get("id")).execute()
+        legacy_res = db.table("submissions").select("*").eq("student_id", current_user.get("id")).execute()
         submissions = legacy_res.data or []
     assignment_ids = list({
         s.get("assignment_uuid") or s.get("assignment_id")
         for s in submissions
         if s.get("assignment_uuid") or s.get("assignment_id")
     })
-    assignments_res = client.table("assignments").select("*").in_("id", assignment_ids).execute() if assignment_ids else None
+    assignments_res = db.table("assignments").select("*").in_("id", assignment_ids).execute() if assignment_ids else None
     assignments = assignments_res.data if assignments_res else []
     course_ids = list({a.get("course_id") for a in assignments if a.get("course_id")})
-    courses_res = client.table("courses").select("id,title,course_name,name").in_("id", course_ids).execute() if course_ids else None
+    courses_res = db.table("courses").select("id,title,course_name,name").in_("id", course_ids).execute() if course_ids else None
     course_lookup = {c["id"]: c for c in (courses_res.data or [])}
     assignment_lookup = {a["id"]: a for a in assignments}
 
@@ -1768,10 +1771,11 @@ async def list_student_grades(current_user: dict = Depends(get_current_user)):
 async def list_student_materials(course_id: str, current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "student":
         raise HTTPException(status_code=403, detail="Student access required")
-    enrolled = await supabase_db.fetch_one("student_subjects", {"student_id": current_user.get("id"), "subject_id": course_id})
+    db = get_scoped_db(current_user)
+    enrolled = await db.fetch_one("student_subjects", {"student_id": current_user.get("id"), "subject_id": course_id})
     if not enrolled:
         raise HTTPException(status_code=403, detail="Not enrolled in this course")
-    return await supabase_db.fetch_all("course_materials", {"course_id": course_id})
+    return await db.fetch_all("course_materials", {"course_id": course_id})
 
 
 @router.get("/risk-score")
