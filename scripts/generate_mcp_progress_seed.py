@@ -32,7 +32,7 @@ def generate_sql():
                 less_idx = 0
                 comp_lessons = []
                 
-            sql.append(f"""  # nosec B608
+            sql.append(f"""
             INSERT INTO public.progress (user_id, course_id, completed_lessons, hours_spent, current_module_index, current_lesson_index)
             VALUES ('{student_id}', '{course_id}', '{json.dumps(comp_lessons)}'::jsonb, {hours}, {mod_idx}, {less_idx})
             ON CONFLICT (user_id, course_id) DO UPDATE SET

@@ -68,8 +68,8 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="text-white min-h-screen bg-black selection:bg-lumina-highlight/40 selection:text-white">
-      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-lumina-highlight/5 bg-black/60 backdrop-blur-3xl">
+    <div className="text-white min-h-screen bg-slate-950 selection:bg-lumina-highlight/30 selection:text-white">
+      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex-shrink-0">
@@ -81,10 +81,11 @@ export default function Home() {
 
             <nav className="hidden xl:flex md:items-center md:space-x-8">
               {[
-                { label: "How It Works", href: "#how-it-works" },
-                { label: "Roles", href: "#roles" },
-                { label: "Verification", href: "#verification" },
-                { label: "Privacy", href: "#privacy" },
+                { label: "Platform", href: "/platform" },
+                { label: "Technology", href: "/technology" },
+                { label: "Roles", href: "/roles" },
+                { label: "Privacy", href: "/privacy" },
+                { label: "Research", href: "/research" },
               ].map((item) => (
                 <Link
                   key={item.label}

@@ -39,7 +39,7 @@ def generate_sql():
     # Admin
     admin_id = generate_uuid()
     admins.append(admin_id)
-    sql.append(f"""  # nosec B608
+    sql.append(f"""
     INSERT INTO public.users (id, email, password_hash, name, role, is_active)
     VALUES ('{admin_id}', 'admin.system@lumina.com', crypt('Admin@123', gen_salt('bf')), 'System Admin', 'admin', true)
     ON CONFLICT (email) DO NOTHING;
@@ -50,7 +50,7 @@ def generate_sql():
         teacher_id = generate_uuid()
         teachers.append(teacher_id)
         name = f"Teacher {i}"
-        sql.append(f"""  # nosec B608
+        sql.append(f"""
         INSERT INTO public.users (id, email, password_hash, name, role, is_active)
         VALUES ('{teacher_id}', 'teacher{i}@lumina.com', crypt('teacher123', gen_salt('bf')), '{name}', 'teacher', true)
         ON CONFLICT (email) DO NOTHING;
@@ -61,7 +61,7 @@ def generate_sql():
         student_id = generate_uuid()
         students.append(student_id)
         name = f"Student {i}"
-        sql.append(f"""  # nosec B608
+        sql.append(f"""
         INSERT INTO public.users (id, email, password_hash, name, role, is_active)
         VALUES ('{student_id}', 'student{i}@lumina.com', crypt('student123', gen_salt('bf')), '{name}', 'student', true)
         ON CONFLICT (email) DO NOTHING;
@@ -77,7 +77,7 @@ def generate_sql():
             title = f"Course {c_idx} by Teacher {t_idx+1}: Intro to {subject.capitalize()}"
             desc = f"A comprehensive {difficulty} guide to {subject}."
             
-            sql.append(f"""  # nosec B608
+            sql.append(f"""
             INSERT INTO public.courses (id, name, code, description, teacher_id, is_published, subject, difficulty_level)
             VALUES ('{course_id}', '{title}', 'SUBJ-{t_idx}{c_idx}', '{desc}', '{teacher_id}', true, '{subject}', '{difficulty}')
             ON CONFLICT DO NOTHING;
@@ -116,7 +116,7 @@ def generate_sql():
             else:
                 hours = random.uniform(1.0, 9.0)
                 
-            sql.append(f"""  # nosec B608
+            sql.append(f"""
             INSERT INTO public.progress (user_id, course_id, completed_lessons, hours_spent, current_module_index, current_lesson_index)
             VALUES ('{student_id}', '{course_id}', '{comp_lessons}'::jsonb, {hours:.2f}, {mod_idx}, {less_idx})
             ON CONFLICT (user_id, course_id) DO UPDATE SET

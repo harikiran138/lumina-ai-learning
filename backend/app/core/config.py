@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     # Server
     HOST: str = "0.0.0.0"  # nosec B104
     PORT: int = 8000
-    SECURE_COOKIES: bool = True if str(os.getenv("ENVIRONMENT")).lower() == "production" else str(os.getenv("SECURE_COOKIES", "True")).lower() == "true"
+    SECURE_COOKIES: bool = False  # Set True in production (HTTPS required)
 
     # AI Configuration - Use GEMINI_API_KEY for both tutor and assessment
     ASSESSMENT_API_KEY: Optional[str] = None

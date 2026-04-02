@@ -33,6 +33,8 @@ export default function KnowledgeGraphPage() {
 
   useEffect(() => {
     const apiBase = getConfiguredApiBase();
+    const token = typeof window !== "undefined" ? sessionStorage.getItem("lumina_token") || "" : "";
+    const headers = { Authorization: `Bearer ${token}` };
 
     const fetchGraph = async () => {
       setIsLoading(true);
