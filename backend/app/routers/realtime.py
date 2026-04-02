@@ -63,6 +63,7 @@ class _ConnectionManager:
 
 manager = _ConnectionManager()
 _COMMUNITY_CHANNEL = "community"
+_REDIS_COMMUNITY_CHANNEL = "lumina:community"
 
 
 # ---------------------------------------------------------------------------
@@ -155,7 +156,7 @@ async def community_ws(
             # Cross-process fan-out via Redis
             if redis_pubsub:
                 try:
-                    redis_pubsub.publish("lumina:community", json.dumps(broadcast_payload))
+                    redis_pubsub.publish(_REDIS_COMMUNITY_CHANNEL, json.dumps(broadcast_payload))
                 except Exception as exc:
                     log.warning("redis_publish_failed", error=str(exc))
 
