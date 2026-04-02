@@ -1,182 +1,63 @@
-"use client";
-
+import React from "react";
 import Link from "next/link";
-import { 
-  User, 
-  GraduationCap, 
-  Users, 
-  ShieldCheck, 
-  Clock, 
-  ChevronRight,
-  Sparkles,
-  BookOpen,
-  MessageSquare,
-  Search,
-  Settings,
-  Heart
-} from "lucide-react";
-import { DottedSurface } from "@/components/ui/DottedSurface";
+import { roleRegistry } from "@/data/roleData";
+import RoleCards from "@/components/home/RoleCards";
 import Footer from "@/components/layout/Footer";
+import RoleIndexHeader from "@/components/roles/RoleIndexHeader";
+import { ArrowLeft } from "lucide-react";
 
-const roles = [
-  {
-    id: "student",
-    title: "Student",
-    description: "Adaptive AI tutoring, spaced repetition, knowledge graph mastery, exam readiness prediction, and a full learning loop — personalized every session.",
-    icon: GraduationCap,
-    href: "/student/dashboard",
-    color: "gold"
-  },
-  {
-    id: "faculty",
-    title: "Faculty",
-    description: "AI gatekeeper, content creator, and evaluation authority. Verify AI answers, manage question banks, control knowledge graphs, and run live classes.",
-    icon: User,
-    href: "/faculty/dashboard",
-    color: "amber"
-  },
-  {
-    id: "parent",
-    title: "Parent",
-    description: "Privacy-safe progress monitoring and growth trajectory view.",
-    icon: Heart,
-    href: "/parent/dashboard",
-    color: "amber"
-  },
-  {
-    id: "hod",
-    title: "Head of Department",
-    description: "Departmental oversight, teacher assignments, and academic performance.",
-    icon: ShieldCheck,
-    href: "/hod/dashboard",
-    color: "gold"
-  },
-  {
-    id: "mentor",
-    title: "Mentor",
-    description: "Guided support and advanced feedback for specialized learners.",
-    icon: Users,
-    href: "/mentor/dashboard",
-    color: "gold"
-  },
-  {
-    id: "content-creator",
-    title: "Content Creator",
-    description: "Building blueprints and pedagogical rules for the AI engine.",
-    icon: BookOpen,
-    href: "/content_creator/dashboard",
-    color: "amber"
-  },
-  {
-    id: "counselor",
-    title: "Counselor",
-    description: "Well-being monitoring and intervention strategy support.",
-    icon: MessageSquare,
-    href: "/counselor/dashboard",
-    color: "gold"
-  },
-  {
-    id: "researcher",
-    title: "Researcher",
-    description: "Deep data access and cognitive modeling experimentation.",
-    icon: Search,
-    href: "/researcher/dashboard",
-    color: "amber"
-  },
-  {
-    id: "peer-tutor",
-    title: "Peer Tutor",
-    description: "Collaborative learning and verified peer-to-peer support.",
-    icon: Clock,
-    href: "/peer_tutor/dashboard",
-    color: "gold"
-  },
-  {
-    id: "alumni",
-    title: "Alumni",
-    description: "Post-course resource access and lifelong learning graph.",
-    icon: Sparkles,
-    href: "/alumni/dashboard",
-    color: "amber"
-  }
-];
+export const metadata = {
+  title: "Role Ecosystem | Lumina AI",
+  description: "Explore the 9 defined roles within the Lumina AI Learning Platform and how they collaborate to create a personalized educational experience.",
+};
 
-export default function RolesPortalPage() {
+export default function RolesIndexPage() {
   return (
-    <div className="text-white min-h-screen bg-slate-950 selection:bg-lumina-highlight/30 selection:text-white">
-      {/* Header */}
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-lumina-highlight/30">
       <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            <Link href="/" className="text-2xl font-black text-white flex items-center font-display tracking-tight">
-              <span className="gradient-text">Lumina</span>
-              <span className="ml-1 text-lumina-highlight">AI</span>
-            </Link>
-            
-            <nav className="hidden md:flex items-center space-x-8">
-              <Link href="/platform" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors">Platform</Link>
-              <Link href="/roles" className="text-xs font-bold uppercase tracking-widest text-white">Roles</Link>
-              <Link href="/contact" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors">Contact</Link>
-            </nav>
-
-            <Link
-              href="/login"
-              className="bg-lumina-highlight text-black text-xs font-bold uppercase tracking-[0.2em] py-3 px-6 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all shadow-lg"
-            >
-              Get Started
-            </Link>
-          </div>
+        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+          <Link href="/" className="text-xl font-black text-white flex items-center font-display tracking-tight group">
+            <span className="gradient-text transition-all duration-300 group-hover:drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]">Lumina</span>
+            <span className="ml-0.5 text-lumina-highlight">AI</span>
+          </Link>
+          
+          <Link 
+            href="/" 
+            className="flex items-center space-x-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-lumina-highlight transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back Home</span>
+          </Link>
         </div>
       </header>
 
-      <main className="pt-32 pb-32">
-        <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.4em] text-lumina-highlight mb-4">
-            Unified Ecosystem
-          </p>
-          <h1 className="text-5xl md:text-7xl font-display font-black tracking-tight mb-8">
-            Tailored for every <br />
-            <span className="text-lumina-highlight">Stakeholder.</span>
-          </h1>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            One platform, ten distinct interfaces. Lumina provides dedicated workspaces for everyone involved in the learning journey.
-          </p>
-        </section>
+      <main className="pt-32 pb-20">
+        <RoleIndexHeader />
 
-        <section className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {roles.map((role) => (
-              <Link 
-                key={role.id} 
-                href={role.href}
-                className="glass-v2 border border-white/5 p-8 rounded-[32px] hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300 group relative overflow-hidden"
-              >
-                <div className="absolute -top-12 -right-12 w-32 h-32 bg-lumina-highlight/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                
-                <div className={`h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
-                   <role.icon className={`w-7 h-7 ${role.id === 'admin' ? 'text-lumina-highlight' : 'text-gray-400 group-hover:text-white'}`} />
-                </div>
-                
-                <h3 className="text-xl font-bold text-white mb-3 group-hover:text-lumina-highlight transition-colors flex items-center gap-2">
-                   {role.title}
-                   {role.id === 'admin' && <Sparkles className="w-3 h-3" />}
-                </h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                   {role.description}
+        <RoleCards />
+
+        <section className="py-20 border-t border-white/5">
+          <div className="container mx-auto px-6 max-w-4xl">
+            <div className="p-12 rounded-[2.5rem] bg-gradient-to-br from-white/[0.03] to-transparent border border-white/5">
+              <h2 className="text-3xl font-black mb-6 font-display tracking-tight">Security-First <span className="text-lumina-highlight">Design</span></h2>
+              <div className="grid md:grid-cols-2 gap-8 text-sm text-slate-500 leading-relaxed text-slate-300">
+                <p>
+                  Our role-based access control (RBAC) is more than just permissions. It is an architectural 
+                  guarantee that student data remains private, teacher efforts are amplified, and 
+                  institutional integrity is maintained.
                 </p>
-                
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500 group-hover:text-white transition-colors">
-                   View Dashboard
-                   <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </Link>
-            ))}
+                <p>
+                  Every role is backed by the Lumina Guardian Engine, ensuring AI interactions 
+                  remain pedagogically sound and data interactions remain strictly compliant 
+                  with global privacy standards.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
       </main>
 
       <Footer />
-      <DottedSurface />
     </div>
   );
 }
