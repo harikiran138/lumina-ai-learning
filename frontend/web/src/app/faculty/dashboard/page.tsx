@@ -20,6 +20,8 @@ import {
   Zap,
   CheckCircle,
   AlertCircle,
+  ShieldCheck,
+  Database,
 } from "lucide-react";
 
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -33,6 +35,7 @@ interface TeacherSummary {
   pendingGrading: number;
   atRiskStudents: number;
   upcomingDeadlines: number;
+  pendingAIVerifications: number;
 }
 
 interface TeacherCourseCard {
@@ -148,6 +151,7 @@ const EMPTY_SUMMARY: TeacherSummary = {
   pendingGrading: 0,
   atRiskStudents: 0,
   upcomingDeadlines: 0,
+  pendingAIVerifications: 0,
 };
 
 const EMPTY_SNAPSHOT: TeacherWeeklySnapshot = {
@@ -356,7 +360,7 @@ export default function TeacherDashboard() {
               so you can move from insight to action without jumping between pages.
             </p>
 
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <div className="mt-8 grid gap-4 md:grid-cols-4">
               <QuickAction
                 href="/faculty/create-course"
                 icon={PlusCircle}
@@ -372,11 +376,18 @@ export default function TeacherDashboard() {
                 tone="amber"
               />
               <QuickAction
+                href="/faculty/verification-queue"
+                icon={ShieldCheck}
+                title="AI Verify Queue"
+                description="Review and approve AI-generated answers before students see them."
+                tone="gold"
+              />
+              <QuickAction
                 href="/faculty/ai-generator"
                 icon={Sparkles}
                 title="Generate with AI"
                 description="Draft content faster with the course generator and tutor tooling."
-                tone="gold"
+                tone="amber"
               />
             </div>
           </div>
@@ -409,7 +420,7 @@ export default function TeacherDashboard() {
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-4">
+      <div className="grid gap-6 xl:grid-cols-5">
         <StatCard
           title="Students"
           value={summary.totalStudents}
@@ -436,6 +447,13 @@ export default function TeacherDashboard() {
           value={summary.pendingGrading}
           subtitle={`${summary.upcomingDeadlines} tasks need attention`}
           icon={ClipboardCheck}
+          color="gold"
+        />
+        <StatCard
+          title="AI Verify Queue"
+          value={summary.pendingAIVerifications}
+          subtitle="AI answers awaiting your review"
+          icon={ShieldCheck}
           color="gold"
         />
       </div>
@@ -809,7 +827,7 @@ export default function TeacherDashboard() {
         subtitle="Roster health is derived from course progress, mastery, and recency of activity."
         action={
           <Link
-            href="/teacher/students"
+            href="/faculty/students"
             className="inline-flex items-center gap-2 text-sm font-semibold text-amber-300 transition-colors hover:text-white"
           >
             Open students
@@ -874,6 +892,51 @@ export default function TeacherDashboard() {
             ))}
           </div>
         )}
+      </Panel>
+
+      <Panel
+        title="AI Verification Queue"
+        subtitle="AI-generated answers waiting for your review. Students cannot see these until you approve."
+        action={
+          <Link
+            href="/faculty/verification-queue"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-lumina-highlight transition-colors hover:text-white"
+          >
+            Open full queue
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        }
+      >
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 px-5 py-4 mb-4 flex items-start gap-3">
+          <ShieldCheck className="h-5 w-5 text-amber-300 shrink-0 mt-0.5" />
+          <p className="text-sm text-gray-300">
+            <span className="font-semibold text-amber-200">Faculty is the only AI gatekeeper.</span>{" "}
+            No AI answer reaches a student without your explicit approval. Your edits also
+            train the AI to improve future answers.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5">
+            <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Pending Review</p>
+            <p className="mt-2 text-4xl font-bold text-amber-300">
+              {summary.pendingAIVerifications || 0}
+            </p>
+            <Link
+              href="/faculty/verification-queue"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-amber-300 hover:text-white transition-colors"
+            >
+              Review now <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+            <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Approved Today</p>
+            <p className="mt-2 text-4xl font-bold text-lumina-highlight">0</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+            <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Edited by You</p>
+            <p className="mt-2 text-4xl font-bold text-white">0</p>
+          </div>
+        </div>
       </Panel>
     </div>
   );
