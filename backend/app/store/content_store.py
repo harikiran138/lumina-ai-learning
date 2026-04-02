@@ -66,17 +66,24 @@ class ContentStore:
         data = {
             "assignment_id": assignment_id,
             "student_id": student_id,
-            "teacher_id": teacher_id,
-            "submission_images": submission_images,
-            "assessment_status": "uploaded",
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat()
+            "submission_type": "physical",
+            "metadata": {"images": submission_images, "teacher_id": teacher_id},
+            "status": "uploaded",
+            "submitted_at": datetime.utcnow().isoformat(),
         }
-        return await self.db.insert("physical_submissions", data)
+        return await self.db.insert("assignment_submissions", data)
 
     async def get_physical_submission(self, submission_id: str) -> Optional[dict]:
-        return await self.db.fetch_one("physical_submissions", {"id": submission_id})
+        return await self.db.fetch_one("assignment_submissions", {"id": submission_id})
 
     async def update_physical_submission(self, submission_id: str, updates: dict) -> Optional[dict]:
-        updates["updated_at"] = datetime.utcnow().isoformat()
-        return await self.db.update("physical_submissions", updates, {"id": submission_id})
+        # Map physical-specific keys to unified schema if they crop up
+        mapped_updates = dict(updates)
+        if "assessment_status" in mapped_updates:
+            mapped_updates["status"] = mapped_updates.pop("assessment_status")
+        if "total_ai_marks" in mapped_updates:
+            mapped_updates["marks"] = mapped_updates.pop("total_ai_marks")
+        if "updated_at" in mapped_updates:
+            mapped_updates.pop("updated_at") # Use graded_at or just remove if unsupported initially
+
+        return await self.db.update("assignment_submissions", mapped_updates, {"id": submission_id})

@@ -212,7 +212,7 @@ class AnalyticsStore:
 
     def _normalize_submission(self, item: dict) -> dict:
         status = self._coalesce(item, "status", default="submitted")
-        grade = item.get("grade")
+        grade = item.get("marks")
         return {
             **item,
             "id": str(self._coalesce(item, "id", "_id", default="")),
@@ -401,7 +401,7 @@ class AnalyticsStore:
             }))
 
         assignments = [self._normalize_assignment(item) for item in await self._read_table("assignments")]
-        submissions = [self._normalize_submission(item) for item in await self._read_table("submissions")]
+        submissions = [self._normalize_submission(item) for item in await self._read_table("assignment_submissions")]
         
         # Actually fetch the new entities
         institutions = await self._read_table("institutions")

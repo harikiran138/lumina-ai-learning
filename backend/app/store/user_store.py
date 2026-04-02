@@ -52,7 +52,14 @@ class UserStore:
         safe_user["avatar_url"] = avatar
         safe_user["profile_photo_url"] = avatar
         safe_user["status"] = safe_user.get("status", "active")
-        safe_user["role"] = self.normalize_role(safe_user.get("role"))
+        
+        roles_data = safe_user.get("user_roles")
+        primary_role = None
+        if roles_data and isinstance(roles_data, list) and len(roles_data) > 0:
+            if isinstance(roles_data[0].get("roles"), dict):
+                primary_role = roles_data[0]["roles"].get("name")
+        
+        safe_user["role"] = self.normalize_role(primary_role or safe_user.get("role"))
         safe_user["created_at"] = created_at
         
         # Ensure institutional fields are present
@@ -114,24 +121,27 @@ class UserStore:
 
     async def get_user_by_email(self, email: str) -> Optional[dict]:
         try:
-            response = self.db.table("users").select("*").eq("email", email).execute()
+            response = self.db.table("users").select("*, user_roles(roles(name))").eq("email", email).execute()
             if response.data:
-                return response.data[0]
+                return self._sanitize_user(response.data[0])
         except Exception as e:
             log.error("get_user_by_email_failed", error=str(e), email=email)
         return None
 
     def get_user_by_email_sync(self, email: str) -> Optional[dict]:
         try:
-            response = self.db.table("users").select("*").eq("email", email).execute()
+            response = self.db.table("users").select("*, user_roles(roles(name))").eq("email", email).execute()
             if response.data:
-                return response.data[0]
+                return self._sanitize_user(response.data[0])
         except Exception as e:
             log.error("get_user_by_email_failed_sync", error=str(e), email=email)
         return None
 
     async def get_user_by_id(self, user_id: str) -> Optional[dict]:
-        return await self.db.fetch_one("users", {"id": user_id})
+        response = self.db.table("users").select("*, user_roles(roles(name))").eq("id", user_id).execute()
+        if response.data:
+            return self._sanitize_user(response.data[0])
+        return None
 
     async def list_all_users(self) -> List[dict]:
         try:

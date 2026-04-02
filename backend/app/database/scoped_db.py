@@ -5,10 +5,11 @@ from .supabase_manager import supabase_db, SupabaseManager
 from fastapi import HTTPException
 
 class ScopedQueryBuilder:
-    def __init__(self, table_name: str, institution_id: str, is_super_admin: bool = False, client=None):
+    def __init__(self, table_name: str, institution_id: str, is_super_admin: bool = False, client=None, show_deleted: bool = False):
         self.table_name = table_name
         self.institution_id = institution_id
         self.is_super_admin = is_super_admin
+        self.show_deleted = show_deleted
         # Use provided scoped client or fall back to global
         self.client = client or supabase_db.get_client()
         self.query = self.client.table(table_name)
@@ -19,6 +20,9 @@ class ScopedQueryBuilder:
 
     def select(self, columns: str = "*"):
         self.query = self.query.select(columns)
+        # Automatically filter out soft-deleted records unless asked
+        if not self.show_deleted:
+            self.query = self.query.eq("is_deleted", False)
         return self
 
     def insert(self, data: Dict[str, Any]):
@@ -49,6 +53,13 @@ class ScopedQueryBuilder:
     def delete(self):
         self.query = self.query.delete()
         return self
+
+    def soft_delete(self):
+        from datetime import datetime
+        return self.update({
+            "is_deleted": True,
+            "deleted_at": datetime.utcnow().isoformat()
+        })
 
     def eq(self, column: str, value: Any):
         self.query = self.query.eq(column, value)
@@ -111,22 +122,23 @@ class ScopedSupabase:
         """Returns the Postgrest client for direct usage."""
         return self._scoped_client or supabase_db.get_client()
 
-    def table(self, table_name: str) -> ScopedQueryBuilder:
+    def table(self, table_name: str, show_deleted: bool = False) -> ScopedQueryBuilder:
         return ScopedQueryBuilder(
             table_name, 
             self.institution_id, 
             self.is_super_admin, 
-            client=self._scoped_client
+            client=self._scoped_client,
+            show_deleted=show_deleted
         )
-    async def fetch_one(self, table: str, query_filter: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        qb = self.table(table).select("*")
+    async def fetch_one(self, table: str, query_filter: Dict[str, Any], show_deleted: bool = False) -> Optional[Dict[str, Any]]:
+        qb = self.table(table, show_deleted=show_deleted).select("*")
         for k, v in query_filter.items():
             qb = qb.eq(k, v)
         res = qb.limit(1).execute()
         return res.data[0] if res.data else None
 
-    async def fetch_all(self, table: str, query_filter: Optional[Dict[str, Any]] = None, limit: int = 1000) -> List[Dict[str, Any]]:
-        qb = self.table(table).select("*")
+    async def fetch_all(self, table: str, query_filter: Optional[Dict[str, Any]] = None, limit: int = 1000, show_deleted: bool = False) -> List[Dict[str, Any]]:
+        qb = self.table(table, show_deleted=show_deleted).select("*")
         if query_filter:
             for k, v in query_filter.items():
                 qb = qb.eq(k, v)
@@ -148,8 +160,12 @@ class ScopedSupabase:
         res = self.table(table).upsert(data, on_conflict=on_conflict).execute()
         return res.data[0] if res.data else None
 
-    async def delete(self, table: str, query_filter: Dict[str, Any]) -> bool:
-        qb = self.table(table).delete()
+    async def delete(self, table: str, query_filter: Dict[str, Any], permanent: bool = False) -> bool:
+        if permanent:
+            qb = self.table(table, show_deleted=True).delete()
+        else:
+            qb = self.table(table).soft_delete()
+            
         for k, v in query_filter.items():
             qb = qb.eq(k, v)
         res = qb.execute()
