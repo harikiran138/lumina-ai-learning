@@ -5,6 +5,11 @@
 @source "../../../components/**/*.{js,ts,jsx,tsx,mdx,html}";
 @source "../../../lib/**/*.{js,ts,jsx,tsx,mdx,html}";
 
+/* System font stack – used as fallback when Google Fonts are unavailable */
+:root {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
 
 :root {
   --background: 222 47% 11%;
