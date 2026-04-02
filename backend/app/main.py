@@ -462,9 +462,16 @@ if os.getenv("ENVIRONMENT") == "production":
 
 # CORS: Outermost to ensure all responses (including errors) have headers
 # CORS Lockdown (R-002 Fix): Strict whitelist only.
+origins = list(_ALLOWED_CORS_ORIGINS)
+# Safely add FRONTEND_URL if it's not a wildcard
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url and frontend_url != "*":
+    if frontend_url not in origins:
+        origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=list(_ALLOWED_CORS_ORIGINS) + ([os.getenv("FRONTEND_URL")] if os.getenv("FRONTEND_URL") else []),
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
