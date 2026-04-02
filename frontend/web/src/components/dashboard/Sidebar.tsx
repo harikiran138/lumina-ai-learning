@@ -22,7 +22,7 @@ CheckCircle,
 Bell,
 TrendingUp,
 
-// ✅ ALL REQUIRED ICONS
+// ✅ ALL MERGED ICONS
 Star,
 GraduationCap,
 AlertTriangle,
@@ -33,6 +33,11 @@ RefreshCw,
 Network,
 NotebookPen,
 ClipboardList,
+Activity,
+Zap,
+Lock,
+Share2,
+BarChart,
 
 } from "lucide-react";
 
@@ -74,6 +79,17 @@ peer_tutor: [
 { name: "Settings", href: "/peer_tutor/settings", icon: Settings },
 ],
 
+counselor: [
+{ name: "Dashboard", href: "/counselor/dashboard", icon: LayoutDashboard },
+{ name: "At-Risk Students", href: "/counselor/at-risk", icon: AlertTriangle },
+{ name: "Behavior Analytics", href: "/counselor/behavior-analytics", icon: Activity },
+{ name: "Interventions", href: "/counselor/interventions", icon: Zap },
+{ name: "Session Notes", href: "/counselor/notes", icon: Lock },
+{ name: "Referrals", href: "/counselor/referrals", icon: Share2 },
+{ name: "Reports", href: "/counselor/reports", icon: BarChart },
+{ name: "Settings", href: "/counselor/settings", icon: Settings },
+],
+
 teacher: [
 { name: "Dashboard", href: "/faculty/dashboard", icon: LayoutDashboard },
 { name: "Students", href: "/faculty/students", icon: Users },
@@ -93,6 +109,7 @@ const profileHrefByRole: Record<string, string> = {
 student: "/student/profile",
 parent: "/parent/settings",
 peer_tutor: "/peer_tutor/settings",
+counselor: "/counselor/settings",
 teacher: "/faculty/settings",
 admin: "/admin/platform/profile",
 };
