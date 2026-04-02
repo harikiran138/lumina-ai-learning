@@ -87,6 +87,8 @@ from app.routers import (  # noqa: E402
     ai_tutor,
     flashcards,
     core_extensions,
+    notifications,
+    realtime,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
@@ -326,6 +328,8 @@ app.include_router(unit_pipeline.router, prefix="/api/teacher", tags=["Unit Pipe
 app.include_router(ai_tutor.router, prefix="/api/ai-tutor", tags=["AI Tutor"])
 app.include_router(flashcards.router)
 app.include_router(core_extensions.router)
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+app.include_router(realtime.router, prefix="/ws", tags=["Real-time WebSocket"])
 
 
 # --- RATE LIMITING (L5 Sentinel) ---
