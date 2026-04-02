@@ -16,13 +16,24 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
 ];
+const allowedOriginPatterns = [
+  /^https:\/\/lumina-[a-z0-9-]+\.vercel\.app$/i,
+];
+
+function isAllowedOrigin(origin?: string) {
+  const frontendUrl = process.env.FRONTEND_URL;
+  return (
+    !origin ||
+    allowedOrigins.includes(origin) ||
+    origin === frontendUrl ||
+    allowedOriginPatterns.some((pattern) => pattern.test(origin))
+  );
+}
 
 // Middleware
 app.use(cors({
   origin: (origin, callback) => {
-    const frontendUrl = process.env.FRONTEND_URL;
-    // Allow requests with no origin (like mobile apps or curl) or if origin is in whitelist
-    if (!origin || allowedOrigins.includes(origin) || origin === frontendUrl) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -32,6 +43,10 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+app.options('*', cors({
+  origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
+  credentials: true,
+}));
 
 // Routes
 app.use('/api/auth', authRoutes);

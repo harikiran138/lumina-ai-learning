@@ -194,6 +194,7 @@ _ALLOWED_CORS_ORIGINS = {
     "http://127.0.0.1:3001",
     "https://lumina-ai-blond.vercel.app",
 }
+_ALLOWED_CORS_ORIGIN_REGEX = r"^https://lumina-[a-z0-9-]+\.vercel\.app$"
 
 def add_cors_headers(response: JSONResponse, request: Request) -> JSONResponse:
     origin = request.headers.get("origin")
@@ -472,6 +473,7 @@ if frontend_url and frontend_url != "*":
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=_ALLOWED_CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
