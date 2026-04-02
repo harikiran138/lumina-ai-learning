@@ -8,23 +8,33 @@ import {
   Users,
   Settings,
   LogOut,
-  Database,
-  Shield,
-  Landmark,
   Building2,
-  BookOpen,
+  ShieldCheck,
+  Bot,
+  BarChart3,
+  Scale,
+  Bell,
+  Link2,
+  FileText,
+  History,
+  UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 
 const navItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { name: "Institutions", href: "/admin/institution", icon: Landmark },
-  { name: "Departments", href: "/admin/departments", icon: Building2 },
-  { name: "Classes", href: "/admin/classes", icon: BookOpen },
-  { name: "Users", href: "/admin/users", icon: Users },
-  { name: "System", href: "/admin/system", icon: Database },
-  { name: "Security", href: "/admin/security", icon: Shield },
+  { name: "User Management", href: "/admin/users", icon: Users },
+  { name: "Roles & Permissions", href: "/admin/governance/role-permissions", icon: ShieldCheck },
+  { name: "Department Management", href: "/admin/departments", icon: Building2 },
+  { name: "AI Usage & Cost", href: "/admin/ai-usage", icon: Bot },
+  { name: "Institution Analytics", href: "/admin/analytics/institution", icon: BarChart3 },
+  { name: "Policies & Compliance", href: "/admin/compliance/dashboard", icon: Scale },
+  { name: "Alert Configuration", href: "/admin/alert-config", icon: Bell },
+  { name: "Integrations", href: "/admin/integrations", icon: Link2 },
+  { name: "Reports & Export", href: "/admin/analytics/reports", icon: FileText },
+  { name: "Audit Logs", href: "/admin/compliance/audit-logs", icon: History },
+  { name: "Notifications", href: "/admin/notifications", icon: UserCog },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 

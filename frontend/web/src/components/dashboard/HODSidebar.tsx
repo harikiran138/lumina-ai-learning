@@ -5,24 +5,38 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard,
-  Building2,
   Users,
   BookOpen,
   LogOut,
   X,
   Bell,
   GraduationCap,
+  Network,
+  BarChart3,
+  Timer,
+  Zap,
+  AlertOctagon,
+  Star,
+  CheckSquare,
+  BookMarked,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
-  { name: "Dashboard",          href: "/hod/dashboard",   icon: LayoutDashboard },
-  { name: "Department Overview",href: "/hod/dashboard",   icon: Building2 },
-  { name: "Faculty Management", href: "/hod/faculty",     icon: Users },
-  { name: "Program Management", href: "/hod/programs",    icon: GraduationCap },
-  { name: "Curriculum Map",     href: "/hod/curriculum",  icon: BookOpen },
+  { name: "Dashboard",          href: "/hod/dashboard",          icon: LayoutDashboard },
+  { name: "Knowledge Graph",    href: "/hod/knowledge-graph",    icon: Network },
+  { name: "Faculty Performance",href: "/hod/faculty-performance",icon: BarChart3 },
+  { name: "Syllabus Tracker",   href: "/hod/syllabus-tracker",   icon: CheckSquare },
+  { name: "AI SLA Monitor",     href: "/hod/sla-monitor",        icon: Timer },
+  { name: "Interventions",      href: "/hod/interventions",      icon: Zap },
+  { name: "At-Risk Students",   href: "/hod/at-risk",            icon: AlertOctagon },
+  { name: "Alumni Feedback",    href: "/hod/alumni-feedback",    icon: Star },
+  { name: "Alert Center",       href: "/hod/alerts",             icon: Bell },
+  { name: "Faculty Management", href: "/hod/faculty",            icon: Users },
+  { name: "Program Management", href: "/hod/programs",           icon: GraduationCap },
+  { name: "Curriculum Map",     href: "/hod/curriculum",         icon: BookOpen },
 ];
 
 export default function HODSidebar({
@@ -118,7 +132,7 @@ export default function HODSidebar({
       {/* ── Bottom ── */}
       <div className="sidebar-bottom border-t border-white/10 space-y-3 shrink-0">
         <Link
-          href="/hod/dashboard"
+          href="/hod/alerts"
           aria-label="Notifications"
           className="sidebar-bottom-item sidebar-nav-item flex items-center w-full py-3 text-sm font-semibold rounded-xl text-gray-400 hover:bg-white/[0.03] hover:text-gray-200 relative group"
         >
