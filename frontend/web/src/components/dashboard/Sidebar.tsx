@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useMemo } from "react";
+
 import {
 LayoutDashboard,
 BookOpen,
@@ -19,91 +20,63 @@ Users,
 Calendar,
 CheckCircle,
 Bell,
-Award,
 TrendingUp,
+
+// ✅ ALL REQUIRED ICONS
+Star,
+GraduationCap,
 AlertTriangle,
+ScrollText,
+Award,
 Trophy,
 RefreshCw,
 Network,
 NotebookPen,
 ClipboardList,
+
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { getRoleHome } from "@/lib/role-routing";
 import { useAuthStore } from "@/store/useAuthStore";
-import { IS_PROTOTYPE } from "@/lib/config";
 
-/* =========================
-ROLE NAVIGATION CONFIG
-========================= */
+/* ================= ROLE NAV ================= */
 const roleNavItems: Record<string, any[]> = {
+
 student: [
 { name: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard },
-{ name: "Enrollment", href: "/student/enrollment", icon: CheckCircle, isPrototype: true },
-{ name: "Attendance", href: "/student/attendance", icon: Calendar, isPrototype: true },
-{ name: "My Courses", href: "/student/courses", icon: BookOpen, isPrototype: true },
-{ name: "Assignments", href: "/student/assignments", icon: FileText, isPrototype: true },
-{ name: "Results", href: "/student/grades", icon: BarChart2, isPrototype: true },
+{ name: "Courses", href: "/student/courses", icon: BookOpen },
+{ name: "Assignments", href: "/student/assignments", icon: FileText },
 { name: "AI Tutor", href: "/student/ai_tutor", icon: Bot },
-{ name: "Assessment", href: "/student/assessment", icon: Brain, isPrototype: true },
-{ name: "Progress", href: "/student/progress", icon: BarChart2, isPrototype: true },
-{ name: "Knowledge Graph", href: "/student/progress/knowledge-graph", icon: Network, isPrototype: true },
-{ name: "Daily Revision", href: "/student/spaced_repetition", icon: RefreshCw },
+{ name: "Knowledge Graph", href: "/student/progress/knowledge-graph", icon: Network },
+{ name: "Revision", href: "/student/spaced_repetition", icon: RefreshCw },
 { name: "Exam Readiness", href: "/student/exam_readiness", icon: ClipboardList },
-{ name: "Community", href: "/student/community", icon: MessageSquare, isPrototype: true },
-{ name: "Leaderboard", href: "/student/leaderboard", icon: Trophy, isPrototype: true },
-{ name: "Achievements", href: "/student/achievements", icon: Award, isPrototype: true },
-{ name: "My Notes", href: "/student/my_notes", icon: NotebookPen, isPrototype: true },
+{ name: "Leaderboard", href: "/student/leaderboard", icon: Trophy },
+{ name: "Notes", href: "/student/my_notes", icon: NotebookPen },
 { name: "Profile", href: "/student/profile", icon: User },
-{ name: "Settings", href: "/student/settings", icon: Settings },
 ],
 
 parent: [
 { name: "Dashboard", href: "/parent/dashboard", icon: LayoutDashboard },
-{ name: "Child Progress", href: "/parent/progress", icon: TrendingUp },
+{ name: "Progress", href: "/parent/progress", icon: TrendingUp },
 { name: "Assignments", href: "/parent/assignments", icon: ClipboardList },
-{ name: "Attendance", href: "/parent/attendance", icon: Calendar },
-{ name: "Messages", href: "/parent/messages", icon: MessageSquare },
-{ name: "Weekly Reports", href: "/parent/weekly-reports", icon: FileText },
 { name: "Alerts", href: "/parent/alerts", icon: AlertTriangle },
-{ name: "Notifications", href: "/parent/alerts#notifications", icon: Bell },
 { name: "Settings", href: "/parent/settings", icon: Settings },
-],
-
-mentor: [
-{ name: "Dashboard", href: "/mentor/dashboard", icon: LayoutDashboard },
-{ name: "Settings", href: "/mentor/settings", icon: Settings },
 ],
 
 peer_tutor: [
 { name: "Dashboard", href: "/peer_tutor/dashboard", icon: LayoutDashboard },
+{ name: "Students", href: "/peer_tutor/students", icon: GraduationCap },
+{ name: "Escalations", href: "/peer_tutor/escalations", icon: AlertTriangle },
+{ name: "Feedback", href: "/peer_tutor/feedback", icon: Star },
+{ name: "Certificate", href: "/peer_tutor/certificate", icon: ScrollText },
 { name: "Settings", href: "/peer_tutor/settings", icon: Settings },
-],
-
-counselor: [
-{ name: "Dashboard", href: "/counselor/dashboard", icon: LayoutDashboard },
-],
-
-content_creator: [
-{ name: "Dashboard", href: "/content_creator/dashboard", icon: LayoutDashboard },
-{ name: "Designer Dashboard", href: "/designer", icon: BookOpen },
-],
-
-researcher: [
-{ name: "Dashboard", href: "/researcher/dashboard", icon: LayoutDashboard },
-],
-
-alumni: [
-{ name: "Dashboard", href: "/alumni/dashboard", icon: LayoutDashboard },
 ],
 
 teacher: [
 { name: "Dashboard", href: "/faculty/dashboard", icon: LayoutDashboard },
-{ name: "Courses", href: "/faculty/courses", icon: BookOpen, isPrototype: true },
 { name: "Students", href: "/faculty/students", icon: Users },
-{ name: "Verification", href: "/faculty/verification", icon: CheckCircle, isPrototype: true },
 { name: "Settings", href: "/faculty/settings", icon: Settings },
 ],
 
@@ -115,33 +88,22 @@ admin: [
 ],
 };
 
-/* =========================
-PROFILE ROUTING
-========================= */
+/* ================= PROFILE ================= */
 const profileHrefByRole: Record<string, string> = {
 student: "/student/profile",
+parent: "/parent/settings",
+peer_tutor: "/peer_tutor/settings",
 teacher: "/faculty/settings",
 admin: "/admin/platform/profile",
-parent: "/parent/settings",
-mentor: "/mentor/settings",
-peer_tutor: "/peer_tutor/settings",
-counselor: "/counselor/dashboard",
-alumni: "/alumni/dashboard",
-researcher: "/researcher/dashboard",
-content_creator: "/content_creator/dashboard",
 };
 
-/* =========================
-SIDEBAR COMPONENT
-========================= */
+/* ================= COMPONENT ================= */
 export default function Sidebar({
 isOpen,
 onClose,
-isCollapsed = true,
 }: {
 isOpen?: boolean;
 onClose?: () => void;
-isCollapsed?: boolean;
 }) {
 const pathname = usePathname();
 const router = useRouter();
@@ -149,7 +111,6 @@ const router = useRouter();
 const { user: storeUser, setUser, clearAuth } = useAuthStore();
 const [user, setLocalUser] = useState<any>(storeUser ?? null);
 
-/* ===== USER FETCH ===== */
 useEffect(() => {
 if (storeUser) {
 setLocalUser(storeUser);
@@ -167,25 +128,21 @@ api.getCurrentUser().then((data) => {
 
 }, [storeUser, setUser]);
 
-/* ===== LOGOUT ===== */
 const handleLogout = useCallback(async () => {
 await api.logout();
 clearAuth();
 router.push("/login");
 }, [clearAuth, router]);
 
-/* ===== ROLE ===== */
 const currentRole = (user?.role as string) || "student";
 
 const navItems = useMemo(() => {
-const items = roleNavItems[currentRole] ?? roleNavItems.student;
-return items.filter((item) => !item.isPrototype || IS_PROTOTYPE);
+return roleNavItems[currentRole] ?? roleNavItems.student;
 }, [currentRole]);
 
 const profileHref =
 profileHrefByRole[currentRole] ?? getRoleHome(currentRole);
 
-/* ===== UI ===== */
 return ( <aside className="lumina-sidebar fixed left-4 top-4 bottom-4 flex flex-col z-50">
 
 ```
