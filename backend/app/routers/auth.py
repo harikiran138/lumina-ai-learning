@@ -139,15 +139,15 @@ def _resolve_identifier(identifier: str, user_store: UserStore) -> Optional[dict
         if _ROLL_RE.match(identifier):
             r = client.table("users").select("*, user_roles(roles(name))").eq("roll_number", identifier).limit(1).execute()
             if r.data:
-                return user_store._sanitize_user(r.data[0])
+                return user_store._sanitize_user(r.data[0], include_sensitive=True)
         elif _EMP_RE.match(identifier):
             r = client.table("users").select("*, user_roles(roles(name))").eq("employee_id", identifier).limit(1).execute()
             if r.data:
-                return user_store._sanitize_user(r.data[0])
+                return user_store._sanitize_user(r.data[0], include_sensitive=True)
     except Exception:
         pass
     # Default: treat as email
-    return user_store.get_user_by_email_sync(identifier)
+    return user_store.get_user_by_email_sync(identifier, include_sensitive=True)
 
 
 def _check_college_login_policy(user: dict):
@@ -356,7 +356,7 @@ def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     user_store: UserStore = Depends(get_user_store),
 ):
-    user = user_store.get_user_by_email_sync(form_data.username)
+    user = user_store.get_user_by_email_sync(form_data.username, include_sensitive=True)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -389,7 +389,7 @@ async def accept_invite(
     user_id = invite_payload.get("userId")
     if not user_id:
         raise HTTPException(status_code=400, detail="Invalid token payload")
-    user = await user_store.get_user_by_id(user_id)
+    user = await user_store.get_user_by_id(user_id, include_sensitive=True)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     hashed_password = get_password_hash(payload.password)
@@ -652,16 +652,16 @@ async def refresh_token(
     try:
         import uuid
         uuid.UUID(sub_val)
-        user = await user_store.get_user_by_id(sub_val)
+        user = await user_store.get_user_by_id(sub_val, include_sensitive=True)
     except (ValueError, TypeError):
         if "@" in sub_val:
-            user = await user_store.get_user_by_email(sub_val)
+            user = await user_store.get_user_by_email(sub_val, include_sensitive=True)
 
     if not user:
         # Check if email claim is present
         email_claim = payload.get("email")
         if email_claim:
-            user = await user_store.get_user_by_email(email_claim)
+            user = await user_store.get_user_by_email(email_claim, include_sensitive=True)
             
     if not user:
         raise HTTPException(status_code=401, detail="User associated with token not found")
@@ -755,15 +755,15 @@ async def get_current_user(
             # Check if it looks like a UUID
             import uuid
             uuid.UUID(user_id)
-            user = await user_store.get_user_by_id(user_id)
+            user = await user_store.get_user_by_id(user_id, include_sensitive=True)
         except (ValueError, TypeError):
             # If not a UUID, it might be an email stored in sub (legacy)
             if "@" in user_id:
-                user = await user_store.get_user_by_email(user_id)
+                user = await user_store.get_user_by_email(user_id, include_sensitive=True)
     
     # Fallback to email claim if ID failed
     if not user and email:
-        user = await user_store.get_user_by_email(email)
+        user = await user_store.get_user_by_email(email, include_sensitive=True)
         
     if user is None:
         raise HTTPException(status_code=401, detail="User session not found")

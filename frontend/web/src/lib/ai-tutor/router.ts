@@ -1,5 +1,5 @@
 import { getCachedResponse, cacheResponse } from "./cache";
-import { getConfiguredApiBase } from "@/lib/api";
+import { RealAPI } from "@/lib/api";
 
 export interface ChatResponse {
   text: string;
@@ -87,22 +87,11 @@ export const processMessage = async (
   let attempts = 0;
   const maxAttempts = 2;
 
-  // Determine API Base URL
-  const API_BASE = getConfiguredApiBase();
-  if (!API_BASE) {
-    return {
-      text: "The AI tutor API is not configured for this deployment yet.",
-      source: "fallback",
-      latency: Math.round(performance.now() - startTime),
-    };
-  }
-
   while (attempts < maxAttempts) {
     try {
-      // Updated to match backend 'ai.py' endpoint /api/tutor/chat
-      const response = await fetch(`${API_BASE}/api/tutor/chat`, {
+      const api = RealAPI.getInstance();
+      const response = await api.fetchAuthorized("/api/tutor/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: question,
           user_id: userId || "guest",
