@@ -1,16 +1,42 @@
 // API client for the Lumina FastAPI backend
 
-const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "0.0.0.0"]);
+const LOCAL_API_BASE = "http://127.0.0.1:8000";
+const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
 
-function getLocalServiceBase(port: number): string | null {
-  if (typeof window === "undefined") return null;
-  const hostname = window.location.hostname;
-  if (!LOCAL_HOSTNAMES.has(hostname) && !hostname.includes("localhost")) return null;
-  const protocol = window.location.protocol === "https:" ? "https" : "http";
-  
-  // Return the current hostname as preference, but 127.0.0.1 is the most reliable fallback
-  if (hostname === "localhost") return `${protocol}://127.0.0.1:${port}`;
-  return `${protocol}://${hostname}:${port}`;
+export function getConfiguredApiBase(): string | null {
+  const explicitBase =
+    process.env.NEXT_PUBLIC_API_URL?.trim() ||
+    process.env.NEXT_PUBLIC_API_BASE?.trim();
+
+  if (explicitBase) {
+    return explicitBase.replace(/\/+$/, "");
+  }
+
+  if (
+    typeof window !== "undefined" &&
+    LOCAL_HOSTNAMES.has(window.location.hostname)
+  ) {
+    return LOCAL_API_BASE;
+  }
+
+  return null;
+}
+
+export function requireApiBase(): string {
+  const apiBase = getConfiguredApiBase();
+  if (apiBase) {
+    return apiBase;
+  }
+
+  throw new Error(
+    "API is not configured for this deployment. Set NEXT_PUBLIC_API_URL in Vercel.",
+  );
+}
+
+// ── Cookie helpers for auth token ────────────────────────────────────────────
+function setAuthCookie(token: string): void {
+  if (typeof document === 'undefined') return
+  document.cookie = `auth_token=${token}; path=/; SameSite=Strict; max-age=86400`
 }
 
 export function getConfiguredApiBase(): string | null {
@@ -148,10 +174,6 @@ export class RealAPI {
     return requireApiBase();
   }
 
-  private persistToken(token: string | null) {
-    this.token = token;
-  }
-
   private async handleUnauthorized(): Promise<boolean> {
     try {
       const res = await fetch(`${requireAuthBase()}/api/auth/refresh`, {
@@ -245,6 +267,19 @@ export class RealAPI {
     }
   }
 
+  private async fetchJsonOrDefault<T>(
+    path: string,
+    fallback: T,
+    options: RequestInit = {},
+  ): Promise<T> {
+    try {
+      const res = await this.fetchAuthorized(path, options);
+      return res.ok ? ((await res.json()) as T) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
   // --- Auth APIs ---
   async login(
     paramsOrIdentifier: {
@@ -271,12 +306,25 @@ export class RealAPI {
 
     if (!res.ok) {
       const error = await parseJsonSafe(res);
-      throw new Error(error?.error || error?.detail || `Authentication failed (${res.status})`);
+      throw new Error(error?.detail || `Authentication failed (${res.status})`);
     }
-
     const tokenData = await parseJsonSafe(res);
-    if (tokenData?.accessToken) {
-      this.persistToken(tokenData.accessToken);
+    if (tokenData.forcePasswordChange) {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("temp_token", tokenData.tempToken);
+      }
+      const forcedUser: User = {
+        id: tokenData.user?.id || "",
+        email,
+        name: email.split("@")[0],
+        role: "student",
+        status: "active",
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(email.split("@")[0])}&background=random`,
+        createdAt: new Date().toISOString(),
+        mustChangePassword: true,
+      };
+      this.currentUser = forcedUser;
+      return forcedUser;
     }
     
     // Express backend sets the cookies automatically.
@@ -319,8 +367,8 @@ export class RealAPI {
         role: userData.role || "student",
       }),
     });
-    if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.error || e?.detail || "Registration failed"); }
-    return this.login({ identifier: userData.email!, password: userData.password });
+    if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.detail || "Registration failed"); }
+    return this.login(userData.email!, userData.password);
   }
 
   async logout(): Promise<void> {
@@ -530,19 +578,13 @@ export class RealAPI {
       method: "PATCH",
       body: JSON.stringify({ step, data }),
     });
-    if (!res.ok) {
-      const error = await parseJsonSafe(res);
-      throw new Error(error?.detail || "Failed to save onboarding step");
-    }
+    if (!res.ok) return { success: false };
     return await parseJsonSafe(res) ?? {};
   }
 
   async completeOnboarding(): Promise<any> {
     const res = await this.fetchAuthorized("/api/onboarding/complete", { method: "POST" });
-    if (!res.ok) {
-      const error = await parseJsonSafe(res);
-      throw new Error(error?.detail || "Failed to complete onboarding");
-    }
+    if (!res.ok) return { success: false };
     return await parseJsonSafe(res) ?? {};
   }
 
@@ -702,10 +744,6 @@ export class RealAPI {
     const res = await this.fetchAuthorized(`/api/colleges/${collegeId}`, { method: "PATCH", body: JSON.stringify(data)});
     return await parseJsonSafe(res) ?? {};
   }
-  async architectureCreateCollege(data: any) {
-    const res = await this.fetchAuthorized("/api/colleges", { method: "POST", body: JSON.stringify(data)});
-    return await parseJsonSafe(res) ?? {};
-  }
   async architectureCreateDepartment(collegeId: string, data: any) {
     const res = await this.fetchAuthorized(`/api/colleges/${collegeId}/departments`, { method: "POST", body: JSON.stringify(data)});
     return await parseJsonSafe(res) ?? {};
@@ -735,71 +773,9 @@ export class RealAPI {
     return await parseJsonSafe(res) ?? {};
   }
 
-  async architectureUpdateDepartment(institutionId: string, deptId: string, data: any) {
-    const res = await this.fetchAuthorized(`/api/admin/institutions/${institutionId}/departments/${deptId}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    });
-    return await parseJsonSafe(res) ?? {};
-  }
-
-  async assignSubject(subjectId: string, data: any) {
-    const res = await this.fetchAuthorized(`/api/subjects/${subjectId}/assign`, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-    return await parseJsonSafe(res) ?? {};
-  }
-
-  async listCollegeUsers(
-    collegeId: string,
-    params?: { role?: string; deptId?: string; batchId?: string; section?: string },
-  ) {
-    const query = new URLSearchParams();
-    if (params?.role) query.append("role", params.role);
-    if (params?.deptId) query.append("dept_id", params.deptId);
-    if (params?.batchId) query.append("batch_id", params.batchId);
-    if (params?.section) query.append("section", params.section);
-
-    const suffix = query.toString() ? `?${query.toString()}` : "";
-    const res = await this.fetchAuthorized(`/api/colleges/${collegeId}/users${suffix}`);
-    return res.ok ? await res.json() : [];
-  }
-
-  async getFacultySubjectAssignments(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/faculty/subjects");
-    return res.ok ? await res.json() : [];
-  }
-
-  async refreshSession(): Promise<any> {
-    const res = await fetch(`${requireAuthBase()}/api/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-    });
-
-    if (!res.ok) {
-      const error = await parseJsonSafe(res);
-      throw new Error(error?.detail || "Failed to refresh session");
-    }
-
-    const tokenData = await parseJsonSafe(res);
-    if (tokenData?.accessToken) {
-      this.persistToken(tokenData.accessToken);
-      if (this.currentUser) {
-        this.currentUser = {
-          ...this.currentUser,
-          onboardingCompleted: true,
-          onboardingStep: 5,
-        };
-        // sessionStorage usage removed for security (Phase 3 cleanup)
-      }
-    }
-    return tokenData ?? {};
-  }
-
   // Enrollment
   async redeemEnrollmentCode(code: string) {
-    const res = await this.fetchAuthorized("/api/enroll", { method: "POST", body: JSON.stringify({ code })});
+    const res = await this.fetchAuthorized("/api/enroll/redeem", { method: "POST", body: JSON.stringify({ code })});
     return await parseJsonSafe(res) ?? {};
   }
 
@@ -883,21 +859,19 @@ export class RealAPI {
   }
 
   async updateDepartment(institutionId: string, deptId: string, data: any): Promise<any> {
-    return this.architectureUpdateDepartment(institutionId, deptId, data);
-  }
-
-  async assignHod(institutionId: string, deptId: string, hodId: string): Promise<any> {
-    const res = await this.fetchAuthorized(`/api/admin/institutions/${institutionId}/departments/${deptId}/hod`, {
-      method: "PATCH",
-      body: JSON.stringify({ hod_id: hodId })
-    });
+    const res = await this.fetchAuthorized(
+      `/api/admin/institutions/${institutionId}/departments/${deptId}`,
+      { method: "PATCH", body: JSON.stringify(data) },
+    );
     return await parseJsonSafe(res) ?? {};
   }
 
-  async getTeacherStats(instId?: string): Promise<any[]> {
-    const suffix = instId ? `?inst_id=${encodeURIComponent(instId)}` : "";
-    const res = await this.fetchAuthorized(`/api/admin/teachers/stats${suffix}`);
-    return res.ok ? await res.json() : [];
+  async assignHod(institutionId: string, deptId: string, hodId: string): Promise<any> {
+    const res = await this.fetchAuthorized(
+      `/api/admin/institutions/${institutionId}/departments/${deptId}/hod`,
+      { method: "PATCH", body: JSON.stringify({ hod_id: hodId }) },
+    );
+    return await parseJsonSafe(res) ?? {};
   }
 
   async deleteAdminDepartment(deptId: string): Promise<any> {
@@ -975,14 +949,6 @@ export class RealAPI {
   async getRoleMatrix(): Promise<any> {
     const res = await this.fetchAuthorized("/api/admin/roles/matrix");
     return res.ok ? await res.json() : { roles: [], permissions: {} };
-  }
-
-  async updateRoleMatrix(matrix: { roles: string[]; permissions: Record<string, string[]> }): Promise<any> {
-    const res = await this.fetchAuthorized("/api/admin/roles/matrix", {
-      method: "POST",
-      body: JSON.stringify(matrix),
-    });
-    return await parseJsonSafe(res) ?? {};
   }
 
   async getSystemHealth(): Promise<any> {
@@ -1117,43 +1083,28 @@ export class RealAPI {
     return res.ok ? await res.json() : null;
   }
 
-  /** GET /api/teacher/students/{id}/analytics — student detail analytics */
+  /** GET /api/courses/teacher/students/{id}/analytics — student detail analytics */
   async getPersonalizationProfile(studentId: string): Promise<any> {
-    const res = await this.fetchAuthorized(`/api/teacher/students/${studentId}/analytics`);
+    const res = await this.fetchAuthorized(`/api/courses/teacher/students/${studentId}/analytics`);
     return res.ok ? await res.json() : null;
   }
 
-  /** GET /api/teacher/alerts — teacher at-risk alerts */
+  /** GET /api/courses/teacher/alerts — teacher at-risk alerts */
   async getTeacherAlerts(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/teacher/alerts");
+    const res = await this.fetchAuthorized("/api/courses/teacher/alerts");
     return res.ok ? await res.json() : [];
   }
 
-  /** GET /api/teacher/verification/queue — teacher verification queue */
+  /** GET /api/courses/teacher/verification/queue — teacher verification queue */
   async getTeacherVerificationQueue(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/teacher/verification/queue");
+    const res = await this.fetchAuthorized("/api/courses/teacher/verification/queue");
     return res.ok ? await res.json() : [];
   }
 
   // --- Legacy Compatibility ---
   async init(..._args: any[]): Promise<RealAPI> { return this; }
   async getAllCourses(..._args: any[]): Promise<any> { return this.listCourses(); }
-  async getExploreCourses(..._args: any[]): Promise<any> {
-    const [enrolled, catalog] = await Promise.all([
-      this.getStudentCourses(),
-      this.listCourses(this.currentUser?.deptId || undefined),
-    ]);
-    const enrolledIds = new Set((enrolled || []).map((course: any) => String(course.id)));
-    const recommended = (catalog || [])
-      .filter((course: any) => course?.id && !enrolledIds.has(String(course.id)))
-      .map((course: any) => ({
-        ...course,
-        name: course.name || course.course_name || course.title,
-        title: course.title || course.name || course.course_name,
-        description: course.description || "",
-      }));
-    return { enrolled, recommended };
-  }
+  async getExploreCourses(..._args: any[]): Promise<any> { return this.listCourses(); }
   async searchCourses(query?: string, ..._args: any[]): Promise<any> {
     const courses = await this.listCourses();
     if (!query) return courses;
@@ -1183,9 +1134,8 @@ export class RealAPI {
     });
   }
   async enrollInCourse(courseId: string, ..._args: any[]): Promise<any> {
-    return this.fetchJsonOrDefault(`/api/student/enroll`, { success: false }, {
+    return this.fetchJsonOrDefault(`/api/student/courses/${courseId}/enroll`, { success: false }, {
       method: "POST",
-      body: JSON.stringify({ course_id: courseId }),
     });
   }
   async addModule(..._args: any[]): Promise<any> { return { success: false }; }
@@ -1199,16 +1149,9 @@ export class RealAPI {
   async getStudentProfile(..._args: any[]): Promise<any> {
     return this.fetchJsonOrDefault("/api/student/profile", this.currentUser);
   }
-  async getStudentBadges(..._args: any[]): Promise<any> {
-    return this.fetchJsonOrDefault("/api/student/badges", []);
-  }
-  async getStudentCertificates(..._args: any[]): Promise<any> {
-    return this.fetchJsonOrDefault("/api/student/certificates", []);
-  }
-  async getStudentMastery(..._args: any[]): Promise<any> {
-    const payload = (await this.fetchJsonOrDefault("/api/student/profile/mastery", null)) as any;
-    return payload?.masteryMap || payload || {};
-  }
+  async getStudentBadges(..._args: any[]): Promise<any> { return []; }
+  async getStudentCertificates(..._args: any[]): Promise<any> { return []; }
+  async getStudentMastery(..._args: any[]): Promise<any> { return {}; }
   async getParentDashboard(..._args: any[]): Promise<any> { return this.getDashboardData("parent"); }
   async setParentGoal(..._args: any[]): Promise<any> { return { success: false }; }
   async getHODDashboard(..._args: any[]): Promise<any> { return this.getDashboardData("hod"); }
@@ -1240,36 +1183,16 @@ export class RealAPI {
   async getCreatorVerificationQueue(..._args: any[]): Promise<any> { return []; }
   async getContentCreatorBlueprints(..._args: any[]): Promise<any> { return []; }
   async getAnonymizedSnapshots(..._args: any[]): Promise<any> { return []; }
-  async getCommunityData(channelId = "general", ..._args: any[]): Promise<any> {
-    return this.fetchJsonOrDefault(`/api/community/data?channel_id=${encodeURIComponent(channelId)}`, {
-      channels: [],
-      messages: [],
-    });
-  }
+  async getCommunityData(..._args: any[]): Promise<any> { return { channels: [], messages: [] }; }
   async getAllChatRooms(..._args: any[]): Promise<any> { return []; }
   async getChatMessages(..._args: any[]): Promise<any> { return []; }
   async getChatHistory(..._args: any[]): Promise<any> { return []; }
   async sendChatMessage(..._args: any[]): Promise<any> { return { success: false }; }
   async saveChatMessage(..._args: any[]): Promise<any> { return { success: false }; }
-  async sendCommunityMessage(channelId: string, content: string, ..._args: any[]): Promise<any> {
-    const res = await this.fetchAuthorized("/api/community/send", {
-      method: "POST",
-      body: JSON.stringify({ channel_id: channelId, content }),
-    });
-    if (!res.ok) {
-      const e = await parseJsonSafe(res);
-      throw new Error(e?.detail || "Failed to send community message");
-    }
-    return await parseJsonSafe(res) ?? { success: false };
-  }
+  async sendCommunityMessage(..._args: any[]): Promise<any> { return { success: false }; }
   async chatWithAI(..._args: any[]): Promise<any> { return { response: "" }; }
   async logAIInteraction(..._args: any[]): Promise<any> { return { success: true }; }
-  async logActivity(data: { course_id: string; duration_minutes: number }, ..._args: any[]): Promise<any> {
-    return this.fetchJsonOrDefault("/api/student/log-activity", { success: false }, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
+  async logActivity(..._args: any[]): Promise<any> { return { success: true }; }
   async exportData(..._args: any[]): Promise<any> { return { success: false }; }
   async importData(..._args: any[]): Promise<any> { return { success: false }; }
   async getAllChatUsers(..._args: any[]): Promise<any> { return []; }
@@ -1281,11 +1204,7 @@ export class RealAPI {
       JSON.stringify(user).toLowerCase().includes(normalized),
     );
   }
-  async listFacultyByDept(deptId?: string, ..._args: any[]): Promise<any> {
-    if (!this.currentUser?.collegeId) return [];
-    const users = await this.listCollegeUsers(this.currentUser.collegeId, { deptId });
-    return users.filter((user: any) => ["faculty", "teacher", "hod"].includes(user.role));
-  }
+  async listFacultyByDept(_deptId?: string, ..._args: any[]): Promise<any> { return []; }
   async inviteStudent(..._args: any[]): Promise<any> { return { success: false }; }
   async approveTeacherRequest(requestId: string, ..._args: any[]): Promise<any> {
     return this.updateTeacherRequest(requestId, "approved");
@@ -1294,35 +1213,17 @@ export class RealAPI {
     return this.updateTeacherRequest(requestId, "rejected");
   }
   async requestTeacherAssignment(..._args: any[]): Promise<any> { return { success: false }; }
-  async createNote(data: any = {}, ..._args: any[]): Promise<any> {
-    return this.fetchJsonOrDefault("/api/student/notes", { success: false }, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-  async updateNote(noteId: string, data: any = {}, ..._args: any[]): Promise<any> {
-    return this.fetchJsonOrDefault(`/api/student/notes/${noteId}`, { success: false }, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
-  }
-  async deleteNote(noteId: string, ..._args: any[]): Promise<any> {
-    return this.fetchJsonOrDefault(`/api/student/notes/${noteId}`, { success: false }, {
-      method: "DELETE",
-    });
-  }
-  async getNotes(..._args: any[]): Promise<any> {
-    return this.fetchJsonOrDefault("/api/student/notes", []);
-  }
+  async createNote(..._args: any[]): Promise<any> { return { success: false }; }
+  async updateNote(..._args: any[]): Promise<any> { return { success: false }; }
+  async deleteNote(..._args: any[]): Promise<any> { return { success: false }; }
+  async getNotes(..._args: any[]): Promise<any> { return []; }
   async updateProfile(data: any = {}, ..._args: any[]): Promise<any> {
-    const response = await this.fetchJsonOrDefault("/api/student/profile/update", null, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
     const nextUser = this.currentUser ? { ...this.currentUser, ...data } : data;
     this.currentUser = nextUser;
-    // sessionStorage usage removed for security (Phase 3 cleanup)
-    return response ?? nextUser;
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("lumina_user", JSON.stringify(nextUser));
+    }
+    return nextUser;
   }
 
   // --- Aliases & Legacy ---

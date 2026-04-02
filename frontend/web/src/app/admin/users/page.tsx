@@ -174,18 +174,12 @@ export default function AdminUsersPage() {
     }
   };
 
-  const deleteUser = async (user: AdminUser) => {
-    const blockedReason = getDeleteBlockReason(user);
-    if (blockedReason) {
-      setError(blockedReason);
-      setPendingDeleteUser(null);
-      return;
-    }
-    setDeletingUserId(user.id);
+  const deleteUser = async (userId: string) => {
+    if (!window.confirm("Delete this user and their local progress records?")) return;
+    setDeletingUserId(userId);
     try {
-      await api.deleteUser(user.id);
-      setUsers((current) => current.filter((item) => item.id !== user.id));
-      setPendingDeleteUser(null);
+      await api.deleteUser(userId);
+      setUsers((current) => current.filter((user) => user.id !== userId));
     } catch (err: any) {
       setError(err?.message || "Unable to delete user");
     } finally {

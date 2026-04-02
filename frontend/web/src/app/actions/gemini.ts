@@ -1,7 +1,6 @@
 "use server";
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getTextbookRecord, saveTextbookRecord } from "@/lib/textbook-store";
 
 const createGeminiModel = () => {
   const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
@@ -22,8 +21,21 @@ export async function saveTextbook(
   userId?: string,
 ) {
   try {
-    const record = await saveTextbookRecord({ title, content, userId });
-    return { success: true, id: record.id };
+    const client = await clientPromise;
+    if (!client) {
+      return { success: false, error: "MongoDB is not configured" };
+    }
+    const db = client.db("lumina_db");
+
+    const result = await db.collection("textbooks").insertOne({
+      title,
+      content,
+      userId: userId || "anonymous",
+      createdAt: new Date(),
+      status: "raw",
+    });
+
+    return { success: true, id: result.insertedId.toString() };
   } catch (error: any) {
     console.error("Save Textbook Error:", error);
     return { success: false, error: error.message };
@@ -39,7 +51,14 @@ export async function saveTextbook(
  */
 export async function getTextbookContent(textbookId: string) {
   try {
-    const textbook = await getTextbookRecord(textbookId);
+    const client = await clientPromise;
+    if (!client) {
+      return { success: false, error: "MongoDB is not configured" };
+    }
+    const db = client.db("lumina_db");
+    const textbook = await db.collection("textbooks").findOne({
+      _id: new ObjectId(textbookId),
+    });
 
     if (!textbook || !textbook.content) {
       return { success: false, error: "Textbook not found" };

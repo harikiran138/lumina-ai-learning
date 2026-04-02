@@ -2,8 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from datetime import timedelta, datetime, timezone
-import re
-
 from app.core.security import create_access_token, verify_password, get_password_hash
 from app.core.config import settings
 from app.store.user_store import UserStore
@@ -549,22 +547,13 @@ def login_json(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=True,
-        samesite="None",
+        secure=settings.SECURE_COOKIES,
+        samesite="strict",
         max_age=int(refresh_token_expires.total_seconds()),
         path="/",
     )
 
-    user_store.update_user_fields_sync(
-        user["id"], {"last_login_at": datetime.now(timezone.utc).isoformat()}
-    )
-
-    _log_login_history(
-        user_id=user.get("id"), identifier=raw_identifier,
-        identifier_type=identifier_type, success=True, failure_reason=None,
-        ip_address=ip_address, user_agent=user_agent,
-        role=user.get("role"), college_id=user.get("college_id"),
-    )
+    user_store.update_user_fields_sync(user["id"], {"last_login_at": datetime.now(timezone.utc).isoformat()})
 
     return {
         "accessToken": access_token,

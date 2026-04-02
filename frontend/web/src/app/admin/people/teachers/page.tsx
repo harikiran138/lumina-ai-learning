@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import {
   Users,
   Search,
@@ -52,25 +52,8 @@ export default function TeachersScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [userData, statsData] = await Promise.all([
-          api.getAllUsers(),
-          api.getTeacherStats()
-        ]);
-        
-        const teacherList = (userData || []).filter((u: any) => 
-          u.role === "teacher" || u.role === "faculty" || u.role === "hod"
-        );
-        setTeachers(teacherList);
-        
-        const statsMap: Record<string, TeacherStats> = {};
-        (statsData || []).forEach((s: any) => {
-          statsMap[s.teacher_id] = {
-            ...s,
-            risk_level: s.utilization_score > 90 ? "high" : s.utilization_score > 75 ? "medium" : "low",
-            performance_trend: s.average_mastery > 80 ? "up" : s.average_mastery < 60 ? "down" : "stable"
-          };
-        });
-        setStats(statsMap);
+        const data = await api.getAllUsers();
+        setTeachers((data || []).filter((u: any) => u.role === "teacher" || u.role === "faculty" || u.role === "hod"));
       } catch (err) {
         console.error("failed_to_load_teachers_or_stats", err);
       } finally {
@@ -156,11 +139,9 @@ export default function TeachersScreen() {
                 className="w-80 rounded-2xl border border-white/10 bg-white/5 py-2.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-lumina-highlight/50 transition-all"
               />
             </div>
-            <div className="flex gap-2">
-              <FilterChip label="All" active />
-              <FilterChip label="High Risk" />
-              <FilterChip label="Top Performers" />
-            </div>
+            <button className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-white transition-colors">
+              Advanced Filters
+            </button>
           </div>
           <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
             {filteredTeachers.length} Educators Listed
@@ -178,30 +159,17 @@ export default function TeachersScreen() {
                 <th className="p-6 text-right">Access Control</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 font-inter">
-              {filteredTeachers.map((t) => {
-                const s = stats[t.id];
-                return (
-                  <tr key={t.id} className="hover:bg-white/[0.02] transition-colors group">
-                    <td className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="relative h-12 w-12 rounded-2xl overflow-hidden bg-slate-900 border border-white/10 flex items-center justify-center text-lg font-bold text-lumina-highlight">
-                          {t.avatar_url ? (
-                            <img src={t.avatar_url} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            (t.name || "?").charAt(0).toUpperCase()
-                          )}
-                          {t.status === "active" && (
-                            <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-black bg-green-500" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-white group-hover:text-lumina-highlight transition-colors">{t.name}</p>
-                          <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                            <Shield className="h-3 w-3" />
-                            {t.role.toUpperCase()} • {t.department_name || "General"}
-                          </p>
-                        </div>
+            <tbody className="divide-y divide-white/5">
+              {teachers.map((t) => (
+                <tr key={t.id} className="hover:bg-white/[0.02] transition-colors group">
+                  <td className="p-4 pl-6">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center text-xs font-bold text-gray-400">
+                        {t.avatar_url ? (
+                          <img src={t.avatar_url} alt="" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                        ) : (
+                          (t.name || "?").charAt(0).toUpperCase()
+                        )}
                       </div>
                     </td>
                     <td className="p-6">

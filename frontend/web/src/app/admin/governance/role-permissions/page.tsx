@@ -25,11 +25,17 @@ export default function RolePermissions() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api
-      .getRoleMatrix()
-      .then(setMatrix)
-      .catch((err) => setError(err?.message || "Failed to load permissions"))
-      .finally(() => setLoading(false));
+    const load = async () => {
+      try {
+        const data = await api.getRoleMatrix();
+        setMatrix(data);
+      } catch (err) {
+        console.error("failed_to_load_role_matrix", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
   const togglePermission = (perm: string, role: string) => {

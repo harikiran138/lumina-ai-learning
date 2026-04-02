@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Trophy, Medal, Star, Flame, Search, Filter, ArrowUp, ArrowDown, Minus } from "lucide-react";
-import { getConfiguredApiBase } from "@/lib/api";
+import { api, getConfiguredApiBase } from "@/lib/api";
 
 type LeaderboardEntry = {
   rank: number;

@@ -301,11 +301,37 @@ class OCRService:
         Tries local TrOCR; falls back gracefully.
         """
         try:
-            with open(file_path, "rb") as f:
-                content = f.read()
-            image = Image.open(io.BytesIO(content))
-            result = run_trocr(image)
-            return result.text
+            import torch
+            from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+            self._has_local_deps = True
+        except ImportError:
+            self._has_local_deps = False
+        self._local_deps_checked = True
+
+    def _load_model(self):
+        """Lazy load the model only when needed for local fallback."""
+        if self.model is not None:
+            return
+        
+        self._check_local_dependencies()
+        if not self._has_local_deps:
+            return
+
+        import torch
+        from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+        
+        device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
+        model_name = "microsoft/trocr-small-handwritten"
+        
+        print(f"Loading local OCR fallback: {model_name} on {device}...")
+        try:
+            self.processor = TrOCRProcessor.from_pretrained(model_name)  # nosec B615
+            self.model = VisionEncoderDecoderModel.from_pretrained(model_name).to(device)  # nosec B615
+            if device == "cpu":
+                self.model = torch.quantization.quantize_dynamic(
+                    self.model, {torch.nn.Linear}, dtype=torch.qint8
+                )
+            print("✅ Local OCR fallback loaded.")
         except Exception as e:
             log.warning("local_trocr_unavailable", error=str(e))
             return f"[OCR unavailable — teacher review required]"

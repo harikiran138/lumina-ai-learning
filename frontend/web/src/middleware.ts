@@ -63,13 +63,6 @@ export function middleware(request: NextRequest) {
   }
   const role = normalizeRole(rawRole)
   const onboardingCompleted = payload.onboardingCompleted === true
-  const canonicalPath = getCanonicalPath(pathname)
-
-  if (canonicalPath && canonicalPath !== pathname) {
-    const url = request.nextUrl.clone()
-    url.pathname = canonicalPath
-    return NextResponse.redirect(url)
-  }
 
   if (!onboardingCompleted && !pathname.startsWith('/onboarding') && !isPublic) {
     const url = request.nextUrl.clone()
@@ -83,11 +76,22 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  const expectedRole = getExpectedRoleForPath(pathname)
-  if (expectedRole && role !== 'super_admin' && role !== expectedRole) {
-    const url = request.nextUrl.clone()
-    url.pathname = getRoleHome(role)
-    return NextResponse.redirect(url)
+  const rolePaths = {
+    super_admin: '/admin',
+    college_admin: '/college',
+    hod: '/hod',
+    faculty: '/faculty',
+    student: '/student',
+  }
+
+  for (const [expectedRole, path] of Object.entries(rolePaths)) {
+    if (pathname.startsWith(path)) {
+      if (role !== 'super_admin' && role !== expectedRole) {
+        const url = request.nextUrl.clone()
+        url.pathname = `/${role === 'super_admin' ? 'admin' : role}/dashboard`
+        return NextResponse.redirect(url)
+      }
+    }
   }
 
   return NextResponse.next()
@@ -101,19 +105,7 @@ export const config = {
     '/hod/:path*',
     '/college/:path*',
     '/faculty/:path*',
-    '/parent/:path*',
-    '/mentor/:path*',
-    '/peer_tutor/:path*',
-    '/peer-tutor/:path*',
-    '/counselor/:path*',
-    '/content_creator/:path*',
-    '/content-creator/:path*',
-    '/researcher/:path*',
-    '/research-portal/:path*',
-    '/alumni/:path*',
     '/onboarding',
-    '/onboarding/:path*',
-    '/change-password',
   ],
 }
 

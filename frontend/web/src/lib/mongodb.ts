@@ -1,18 +1,17 @@
 import { MongoClient } from "mongodb";
 import { attachDatabasePool } from "@vercel/functions";
 
-const uri = process.env.MONGODB_URI || process.env.lumina_MONGODB_URI || "";
+const rawUri = process.env.MONGODB_URI || process.env.lumina_MONGODB_URI || "";
+const isPlaceholderMongoUri =
+  rawUri.includes("mongodb+srv://user:pass@cluster.mongodb.net/test") ||
+  rawUri.includes("mongodb://localhost:27017/lumina_db");
+const uri = isPlaceholderMongoUri ? "" : rawUri;
 const options = {};
-
-if (!uri && process.env.NODE_ENV === "production") {
-  // Log but don't crash top-level - this allows the build/import to succeed
-  console.error(
-    "CRITICAL: MONGODB_URI is not defined in Environment Variables.",
-  );
-}
+const mongoDisabledMessage =
+  "MongoDB URI not configured. Database features will be disabled.";
 
 let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
+let clientPromise: Promise<MongoClient | null>;
 
 if (process.env.NODE_ENV === "development") {
   // In development mode, use a global variable so that the value
@@ -28,12 +27,8 @@ if (process.env.NODE_ENV === "development") {
       attachDatabasePool(client);
       globalWithMongo._mongoClientPromise = client.connect();
     } else {
-      console.warn(
-        "MongoDB URI not found. Database features will be disabled.",
-      );
-      globalWithMongo._mongoClientPromise = Promise.reject(
-        new Error("MongoDB URI is not defined"),
-      );
+      console.warn(mongoDisabledMessage);
+      globalWithMongo._mongoClientPromise = Promise.resolve(null);
     }
   }
   clientPromise = globalWithMongo._mongoClientPromise;
@@ -45,8 +40,8 @@ if (process.env.NODE_ENV === "development") {
     attachDatabasePool(client);
     clientPromise = client.connect();
   } else {
-    console.warn("MongoDB URI not found. Database features will be disabled.");
-    clientPromise = Promise.reject(new Error("MongoDB URI is not defined"));
+    console.warn(mongoDisabledMessage);
+    clientPromise = Promise.resolve(null);
   }
 }
 
