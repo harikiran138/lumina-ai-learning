@@ -23,6 +23,11 @@ import {
   Target,
   Award,
   Clock,
+  Trophy,
+  RefreshCw,
+  Network,
+  NotebookPen,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -32,18 +37,24 @@ import { IS_PROTOTYPE } from "@/lib/config";
 
 const roleNavItems: Record<string, any[]> = {
   student: [
-    { name: "Dashboard",  href: "/student/dashboard",  icon: LayoutDashboard },
-    { name: "Enrollment", href: "/student/enrollment",  icon: CheckCircle, isPrototype: true },
-    { name: "Attendance", href: "/student/attendance",  icon: Calendar, isPrototype: true },
-    { name: "My Courses", href: "/student/courses",     icon: BookOpen, isPrototype: true },
-    { name: "Assignments",href: "/student/assignments", icon: FileText, isPrototype: true },
-    { name: "Results",    href: "/student/grades",      icon: BarChart2, isPrototype: true },
-    { name: "AI Tutor",   href: "/student/ai_tutor",    icon: Bot },
-    { name: "Assessment", href: "/student/assessment",  icon: Brain, isPrototype: true },
-    { name: "Progress",   href: "/student/progress",    icon: BarChart2, isPrototype: true },
-    { name: "Community",  href: "/student/community",   icon: MessageSquare, isPrototype: true },
-    { name: "Profile",    href: "/student/profile",     icon: User },
-    { name: "Settings",   href: "/student/settings",    icon: Settings },
+    { name: "Dashboard",       href: "/student/dashboard",                icon: LayoutDashboard },
+    { name: "Enrollment",      href: "/student/enrollment",               icon: CheckCircle, isPrototype: true },
+    { name: "Attendance",      href: "/student/attendance",               icon: Calendar, isPrototype: true },
+    { name: "My Courses",      href: "/student/courses",                  icon: BookOpen, isPrototype: true },
+    { name: "Assignments",     href: "/student/assignments",              icon: FileText, isPrototype: true },
+    { name: "Results",         href: "/student/grades",                   icon: BarChart2, isPrototype: true },
+    { name: "AI Tutor",        href: "/student/ai_tutor",                 icon: Bot },
+    { name: "Assessment",      href: "/student/assessment",               icon: Brain, isPrototype: true },
+    { name: "Progress",        href: "/student/progress",                 icon: BarChart2, isPrototype: true },
+    { name: "Knowledge Graph", href: "/student/progress/knowledge-graph", icon: Network, isPrototype: true },
+    { name: "Daily Revision",  href: "/student/spaced_repetition",        icon: RefreshCw },
+    { name: "Exam Readiness",  href: "/student/exam_readiness",           icon: ClipboardList },
+    { name: "Community",       href: "/student/community",                icon: MessageSquare, isPrototype: true },
+    { name: "Leaderboard",     href: "/student/leaderboard",              icon: Trophy, isPrototype: true },
+    { name: "Achievements",    href: "/student/achievements",             icon: Award, isPrototype: true },
+    { name: "My Notes",        href: "/student/my_notes",                 icon: NotebookPen, isPrototype: true },
+    { name: "Profile",         href: "/student/profile",                  icon: User },
+    { name: "Settings",        href: "/student/settings",                 icon: Settings },
   ],
   parent: [
     { name: "Dashboard", href: "/parent/dashboard", icon: LayoutDashboard },

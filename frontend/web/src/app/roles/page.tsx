@@ -22,7 +22,7 @@ const roles = [
   {
     id: "student",
     title: "Student",
-    description: "Personalized AI tutoring and mastery-based learning paths.",
+    description: "Adaptive AI tutoring, spaced repetition, knowledge graph mastery, exam readiness prediction, and a full learning loop — personalized every session.",
     icon: GraduationCap,
     href: "/student/dashboard",
     color: "gold"
