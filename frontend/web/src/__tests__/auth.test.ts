@@ -10,7 +10,7 @@ const BASE = 'http://127.0.0.1:8000';
 describe('Auth API in frontend API Service', () => {
   beforeEach(() => {
     sessionStorage.clear();
-    document.cookie = 'auth_token=; path=/; max-age=0';
+    document.cookie = 'access_token=; path=/; max-age=0';
   });
 
   it('should login successfully, fetch profile, and set auth cookie', async () => {
@@ -58,7 +58,7 @@ describe('Auth API in frontend API Service', () => {
 
   it('should clear session correctly on logout', async () => {
     // Manually set something to check it DOESN'T exist after
-    document.cookie = 'auth_token=test-token; path=/';
+    document.cookie = 'access_token=test-token; path=/';
 
     const { api } = await import('../lib/api');
     await api.logout();

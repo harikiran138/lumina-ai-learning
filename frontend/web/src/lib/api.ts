@@ -50,7 +50,8 @@ export function requireAuthBase(): string {
 // ── Cookie helpers for auth token ────────────────────────────────────────────
 function setAuthCookie(token: string): void {
   if (typeof document === 'undefined') return
-  document.cookie = `auth_token=${token}; path=/; SameSite=Strict; max-age=86400`
+  // Align with middleware and backend name
+  document.cookie = `access_token=${token}; path=/; SameSite=Lax; max-age=86400`
 }
 
 // ── Fetch with retry + timeout ────────────────────────────────────────────────
@@ -165,7 +166,10 @@ export class RealAPI {
           if (token) {
               setAuthCookie(token);
           } else {
-            document.cookie = `auth_token=; path=/; SameSite=Strict; max-age=0`;
+            // Clear all possible auth cookies
+            document.cookie = `access_token=; path=/; SameSite=Lax; max-age=0`;
+            document.cookie = `refresh_token=; path=/; SameSite=Lax; max-age=0`;
+            document.cookie = `auth_token=; path=/; SameSite=Lax; max-age=0`;
           }
       }
   }
@@ -356,15 +360,22 @@ export class RealAPI {
 
   async logout(): Promise<void> {
     try {
+      // 1. Clear Supabase session globally as requested
+      const { supabase } = await import("@/lib/supabase");
+      await supabase.auth.signOut();
+
+      // 2. Call backend to clear HTTP-only cookies and blacklist token
       await fetch(`${requireAuthBase()}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
-    } catch {
-      // ignore logout network errors
+    } catch (err) {
+      console.warn("Logout request failed:", err);
+    } finally {
+      // 3. Clear local state and client-side cookies
+      this.currentUser = null;
+      this.persistToken(null);
     }
-    this.currentUser = null;
-    this.persistToken(null);
   }
 
   async changePassword(tokenOrPassword: string | null, maybeNewPassword?: string): Promise<any> {
