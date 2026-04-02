@@ -22,6 +22,14 @@ export function getConfiguredApiBase(): string | null {
   return null;
 }
 
+export function getConfiguredAuthBase(): string | null {
+  const explicitBase = process.env.NEXT_PUBLIC_AUTH_URL?.trim();
+  if (explicitBase) return explicitBase.replace(/\/+$/, "");
+  
+  // Default to API base for auth if not explicitly set
+  return getConfiguredApiBase();
+}
+
 export function requireApiBase(): string {
   const apiBase = getConfiguredApiBase();
   if (apiBase) {
@@ -33,40 +41,17 @@ export function requireApiBase(): string {
   );
 }
 
+export function requireAuthBase(): string {
+  const authBase = getConfiguredAuthBase();
+  if (authBase) return authBase;
+  throw new Error("Auth API is not configured. Set NEXT_PUBLIC_AUTH_URL or NEXT_PUBLIC_API_URL");
+}
+
 // ── Cookie helpers for auth token ────────────────────────────────────────────
 function setAuthCookie(token: string): void {
   if (typeof document === 'undefined') return
   document.cookie = `auth_token=${token}; path=/; SameSite=Strict; max-age=86400`
 }
-
-export function getConfiguredApiBase(): string | null {
-  const explicitBase =
-    process.env.NEXT_PUBLIC_API_URL?.trim() ||
-    process.env.NEXT_PUBLIC_API_BASE?.trim();
-
-  if (explicitBase) return explicitBase.replace(/\/+$/, "");
-  return getLocalServiceBase(8000);
-}
-
-export function getConfiguredAuthBase(): string | null {
-  const explicitBase = process.env.NEXT_PUBLIC_AUTH_URL?.trim();
-  if (explicitBase) return explicitBase.replace(/\/+$/, "");
-  return getLocalServiceBase(8000); // Default to backend port
-}
-
-export function requireApiBase(): string {
-  const apiBase = getConfiguredApiBase();
-  if (apiBase) return apiBase;
-  throw new Error("API is not configured for this deployment. Set NEXT_PUBLIC_API_URL in Vercel.");
-}
-
-export function requireAuthBase(): string {
-  const authBase = getConfiguredAuthBase();
-  if (authBase) return authBase;
-  throw new Error("Auth API is not configured. Set NEXT_PUBLIC_AUTH_URL");
-}
-
-// Cookies are now HttpOnly and managed by the Express backend.
 
 // ── Fetch with retry + timeout ────────────────────────────────────────────────
 async function fetchWithRetry(
@@ -126,12 +111,12 @@ async function fetchWithRetry(
 
 // Safely parse JSON from a Response — returns null if the body is HTML or unparseable.
 async function parseJsonSafe(res: Response): Promise<any> {
-  const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
 }
 
 export interface User {
@@ -174,6 +159,17 @@ export class RealAPI {
     return requireApiBase();
   }
 
+  private persistToken(token: string | null) {
+      this.token = token;
+      if (typeof window !== "undefined") {
+          if (token) {
+              setAuthCookie(token);
+          } else {
+            document.cookie = `auth_token=; path=/; SameSite=Strict; max-age=0`;
+          }
+      }
+  }
+
   private async handleUnauthorized(): Promise<boolean> {
     try {
       const res = await fetch(`${requireAuthBase()}/api/auth/refresh`, {
@@ -200,7 +196,6 @@ export class RealAPI {
     options: RequestInit = {},
     timeoutMs?: number
   ): Promise<Response> {
-    const isServer = typeof window === "undefined";
     const fullUrl = `${this.getApiBase()}${path}`;
 
     try {
@@ -267,19 +262,6 @@ export class RealAPI {
     }
   }
 
-  private async fetchJsonOrDefault<T>(
-    path: string,
-    fallback: T,
-    options: RequestInit = {},
-  ): Promise<T> {
-    try {
-      const res = await this.fetchAuthorized(path, options);
-      return res.ok ? ((await res.json()) as T) : fallback;
-    } catch {
-      return fallback;
-    }
-  }
-
   // --- Auth APIs ---
   async login(
     paramsOrIdentifier: {
@@ -313,13 +295,14 @@ export class RealAPI {
       if (typeof window !== "undefined") {
         sessionStorage.setItem("temp_token", tokenData.tempToken);
       }
+      const userEmail = tokenData.user?.email || identifier;
       const forcedUser: User = {
         id: tokenData.user?.id || "",
-        email,
-        name: email.split("@")[0],
+        email: userEmail,
+        name: userEmail.split("@")[0],
         role: "student",
         status: "active",
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(email.split("@")[0])}&background=random`,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userEmail.split("@")[0])}&background=random`,
         createdAt: new Date().toISOString(),
         mustChangePassword: true,
       };
@@ -740,6 +723,10 @@ export class RealAPI {
   }
 
   // --- College Architecture Helpers ---
+  async architectureCreateCollege(data: any) {
+    const res = await this.fetchAuthorized(`/api/colleges`, { method: "POST", body: JSON.stringify(data)});
+    return await parseJsonSafe(res) ?? {};
+  }
   async architectureUpdateCollege(collegeId: string, data: any) {
     const res = await this.fetchAuthorized(`/api/colleges/${collegeId}`, { method: "PATCH", body: JSON.stringify(data)});
     return await parseJsonSafe(res) ?? {};

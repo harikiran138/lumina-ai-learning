@@ -33,3 +33,14 @@ debug_rag.py
 .firebase/
 LUMINA_CREDENTIALS.csv
 LUMINA_ALL_CREDENTIALS.csv
+
+# Virtual Environments
+.venv
+.venv*
+venv/
+env/
+bin/
+lib/
+include/
+share/
+

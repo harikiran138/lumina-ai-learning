@@ -400,7 +400,7 @@ export default function OnboardingPage() {
 
         const nextStep = Math.max(1, Number(status.step || snapshot.currentStep || 1));
         if (nextStep >= 5) {
-          await api.refreshSession().catch(() => undefined);
+          await api.getCurrentUser().catch(() => undefined);
           clearSnapshot(normalizedRole);
           router.push(ROLE_ROUTES[normalizedRole] || "/");
           return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Users,
   Search,
@@ -160,16 +160,23 @@ export default function TeachersScreen() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {teachers.map((t) => (
-                <tr key={t.id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="p-4 pl-6">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center text-xs font-bold text-gray-400">
-                        {t.avatar_url ? (
-                          <img src={t.avatar_url} alt="" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                        ) : (
-                          (t.name || "?").charAt(0).toUpperCase()
-                        )}
+              {teachers.map((t) => {
+                const s = stats[t.id];
+                return (
+                  <tr key={t.id} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="p-4 pl-6">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center text-xs font-bold text-gray-400">
+                          {t.avatar_url ? (
+                            <img src={t.avatar_url} alt="" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                          ) : (
+                            (t.name || "?").charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-white">{t.name}</span>
+                          <span className="text-[10px] text-gray-500 font-medium">{t.email}</span>
+                        </div>
                       </div>
                     </td>
                     <td className="p-6">

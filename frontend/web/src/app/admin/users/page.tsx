@@ -545,7 +545,7 @@ export default function AdminUsersPage() {
               <button
                 type="button"
                 disabled={deletingUserId === pendingDeleteUser.id}
-                onClick={() => deleteUser(pendingDeleteUser)}
+                onClick={() => deleteUser(pendingDeleteUser.id)}
                 className="inline-flex flex-1 items-center justify-center rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 font-semibold text-red-100 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {deletingUserId === pendingDeleteUser.id ? "Removing..." : "Remove user"}
