@@ -10,9 +10,24 @@ dotenv.config();
 const app = express();
 const PORT = process.env.AUTH_PORT || 4000;
 
+const allowedOrigins = [
+  'https://lumina-ai-blond.vercel.app',
+  'https://lumina-platform.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001',
+];
+
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    const frontendUrl = process.env.FRONTEND_URL;
+    // Allow requests with no origin (like mobile apps or curl) or if origin is in whitelist
+    if (!origin || allowedOrigins.includes(origin) || origin === frontendUrl) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true, // required for cookies
 }));
 app.use(express.json());
