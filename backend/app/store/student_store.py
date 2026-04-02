@@ -13,8 +13,9 @@ class StudentStore:
     Operates on 'enrollments' and 'users' tables in Supabase.
     """
 
-    def __init__(self):
-        self.db = supabase_db
+    def __init__(self, db: Optional[Any] = None):
+        # Allow injecting a scoped database, otherwise fall back to global supabase_db
+        self.db = db or supabase_db
 
     def _parse_timestamp(self, value: str):
         if not value:
@@ -69,8 +70,7 @@ class StudentStore:
 
     async def get_enrollment(self, student_id: str, course_id: str) -> Optional[dict]:
         try:
-            client = self.db.get_client()
-            response = client.table("enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).execute()
+            response = self.db.table("enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("get_enrollment_failed", student_id=student_id, course_id=course_id, error=str(e))
@@ -93,8 +93,7 @@ class StudentStore:
                 completed_lessons.append(lesson_id)
             
             # Fetch course to calculate progress percentage
-            client = self.db.get_client()
-            course_res = client.table("courses").select("modules").eq("id", course_id).execute()
+            course_res = self.db.table("courses").select("modules").eq("id", course_id).execute()
             total_lessons = 0
             if course_res.data:
                 modules = course_res.data[0].get("modules", [])
@@ -129,9 +128,8 @@ class StudentStore:
         Fetches badges from user profile metadata.
         """
         try:
-            client = self.db.get_client()
             # Badges might be in learner_profiles
-            response = client.table("learner_profiles").select("metadata").eq("student_id", student_id).execute()
+            response = self.db.table("learner_profiles").select("metadata").eq("student_id", student_id).execute()
             if response.data:
                 return response.data[0].get("metadata", {}).get("badges", [])
         except Exception as e:
@@ -148,7 +146,7 @@ class StudentStore:
         # Enforce non-negative mastery
         progress["mastery"] = max(0.0, float(mastery))
         
-        await supabase_db.update(
+        await self.db.update(
             "enrollments",
             {"progress": progress},
             {"student_id": student_id, "course_id": course_id}

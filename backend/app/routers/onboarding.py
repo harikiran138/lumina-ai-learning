@@ -122,7 +122,7 @@ async def _persist_progress(
     if not updated:
         raise HTTPException(status_code=500, detail="Failed to persist onboarding user fields")
 
-    existing_record = await supabase_db.fetch_one("user_data", {"user_id": user_id})
+    existing_record = await db.fetch_one("user_data", {"user_id": user_id})
     progress = (existing_record or {}).get("progress") or {}
     progress[f"step_{target_step}"] = step_data
     progress["onboarding_step"] = next_step
@@ -131,9 +131,9 @@ async def _persist_progress(
 
     payload = {"progress": progress, "updated_at": datetime.utcnow().isoformat()}
     if existing_record:
-        await supabase_db.update("user_data", payload, {"user_id": user_id})
+        await db.update("user_data", payload, {"user_id": user_id})
     else:
-        await supabase_db.insert("user_data", {"user_id": user_id, **payload})
+        await db.insert("user_data", {"user_id": user_id, **payload})
     return progress
 
 
@@ -215,11 +215,11 @@ def _self_assessment_score(level: str) -> float:
     return lookup.get(level, 0.35)
 
 
-async def _pick_default_class(batch_id: Optional[str], section: Optional[str]) -> Optional[Dict[str, Any]]:
+async def _pick_default_class(batch_id: Optional[str], section: Optional[str], db: Any) -> Optional[Dict[str, Any]]:
     if not batch_id:
         return None
 
-    class_rows = await supabase_db.fetch_all("classes", {"batch_id": batch_id})
+    class_rows = await db.fetch_all("classes", {"batch_id": batch_id})
     if not class_rows:
         return None
 
@@ -234,12 +234,7 @@ async def _pick_default_class(batch_id: Optional[str], section: Optional[str]) -
     return None
 
 
-def _normalize_role(role: str) -> str:
-    if role == "admin":
-        return "super_admin"
-    if role == "teacher":
-        return "faculty"
-    return role
+# Local role normalization is deprecated in favor of app.core.rbac.normalize_role
 
 
 @router.post("/personal")
@@ -298,9 +293,10 @@ async def save_student_enrollment(
     current_user: dict = Depends(get_current_user),
 ):
     user_id = _require_student(current_user)
-    await _require_step_access(user_id, 2)
+    db = get_scoped_db(current_user)
+    await _require_step_access(user_id, 2, db)
 
-    enrollment = await _validate_enrollment_code_for_user(payload.enrollment_code, user_id)
+    enrollment = await _validate_enrollment_code_for_user(payload.enrollment_code, user_id, db)
     batch = enrollment["batch"]
     department = enrollment["department"]
     section = enrollment["section"]
@@ -512,7 +508,7 @@ async def save_student_preferences(
     if not batch_id or not dept_id:
         raise HTTPException(status_code=400, detail="Enrollment details are incomplete")
 
-    batch = await supabase_db.fetch_one("batches", {"id": batch_id})
+    batch = await db.fetch_one("batches", {"id": batch_id})
     if not batch:
         raise HTTPException(status_code=400, detail="Batch details could not be found")
 
@@ -693,6 +689,7 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
     requested_step = int(payload.get("step", 0))
     step_data = payload.get("data") or {}
     role = normalize_role(current_user.get("role"))
+    db = get_scoped_db(current_user)
 
     def require_fields(fields: list[str]):
         missing = [f for f in fields if not step_data.get(f)]
@@ -752,7 +749,7 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
         if requested_step == 2:
             if step_data.get("confirmBatch") is not True:
                 # log a correction request, still allow progression
-                await supabase_db.insert(
+                await db.insert(
                     "correction_requests",
                     {
                         "student_id": user_id,
@@ -786,19 +783,19 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
         raise HTTPException(status_code=500, detail="Failed to persist onboarding user fields")
 
     # Persist step data inside user_data.progress
-    existing = await supabase_db.fetch_one("user_data", {"user_id": user_id})
+    existing = await db.fetch_one("user_data", {"user_id": user_id})
     progress = (existing or {}).get("progress") or {}
     progress[f"step_{requested_step}"] = step_data
     progress["onboarding_step"] = requested_step
 
     if existing:
-        await supabase_db.update(
+        await db.update(
             "user_data",
             {"progress": progress, "updated_at": datetime.utcnow().isoformat()},
             {"user_id": user_id},
         )
     else:
-        await supabase_db.insert(
+        await db.insert(
             "user_data",
             {"user_id": user_id, "progress": progress, "updated_at": datetime.utcnow().isoformat()},
         )
@@ -806,9 +803,9 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
     # Optional: handle elective selections for students
     if step_data.get("selectedElectives"):
         electives = step_data.get("selectedElectives") or []
-        await supabase_db.delete("student_subjects", {"student_id": user_id})
+        await db.delete("student_subjects", {"student_id": user_id})
         for subject_id in electives:
-            await supabase_db.insert(
+            await db.insert(
                 "student_subjects",
                 {"student_id": user_id, "subject_id": subject_id},
             )
@@ -824,11 +821,12 @@ async def get_onboarding_subjects(current_user: dict = Depends(get_current_user)
     batch_id = current_user.get("batch_id")
     if not dept_id or not batch_id:
         return []
-    batch = await supabase_db.fetch_one("batches", {"id": batch_id})
+    db = get_scoped_db(current_user)
+    batch = await db.fetch_one("batches", {"id": batch_id})
     semester = batch.get("current_semester") if batch else None
     if not semester:
         return []
-    return await supabase_db.fetch_all(
+    return await db.fetch_all(
         "courses",
         {"department_id": dept_id, "semester": semester},
     )
@@ -845,7 +843,8 @@ async def complete_onboarding(current_user: dict = Depends(get_current_user)):
     if role in {"college_admin", "super_admin"}:
         college_id = current_user.get("college_id") or current_user.get("institution_id")
         if college_id:
-            await supabase_db.update(
+            db = get_scoped_db(current_user)
+            await db.update(
                 "institutions",
                 {
                     "onboarding_status": "ACTIVE",
@@ -855,18 +854,19 @@ async def complete_onboarding(current_user: dict = Depends(get_current_user)):
                 {"id": college_id},
             )
 
-    existing = await supabase_db.fetch_one("user_data", {"user_id": user_id})
+    db = get_scoped_db(current_user)
+    existing = await db.fetch_one("user_data", {"user_id": user_id})
     progress = (existing or {}).get("progress") or {}
     progress["onboarding_status"] = "COMPLETED"
     progress["onboarding_step"] = 5
     if existing:
-        await supabase_db.update(
+        await db.update(
             "user_data",
             {"progress": progress, "updated_at": datetime.utcnow().isoformat()},
             {"user_id": user_id},
         )
     else:
-        await supabase_db.insert(
+        await db.insert(
             "user_data",
             {"user_id": user_id, "progress": progress, "updated_at": datetime.utcnow().isoformat()},
         )

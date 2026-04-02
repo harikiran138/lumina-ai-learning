@@ -13,8 +13,8 @@ class AssignmentStore:
     Operates on 'assignments' and 'submissions' tables.
     """
 
-    def __init__(self):
-        self.db = supabase_db
+    def __init__(self, db: Optional[Any] = None):
+        self.db = db or supabase_db
 
     async def create_assignment(
         self,

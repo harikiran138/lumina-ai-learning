@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Any
 from datetime import datetime
 import uuid
 from app.database.supabase_manager import supabase_db
@@ -12,8 +12,8 @@ class CourseStore:
     Supabase (PostgreSQL) store for Courses.
     """
 
-    def __init__(self):
-        self.db = supabase_db
+    def __init__(self, db: Optional[Any] = None):
+        self.db = db or supabase_db
 
     def _normalize_course(self, course: Optional[dict]) -> Optional[dict]:
         if not course:

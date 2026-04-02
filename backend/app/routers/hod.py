@@ -20,17 +20,45 @@ async def get_hod_dashboard(current_user: dict = Depends(get_current_hod)):
     students = await academic_store.get_department_students(dept_id)
     requests = await teacher_store.get_pending_requests_by_department(dept_id)
 
+    # Standardized structure
     return {
-        "department": dept,
-        "summary": {
-            "totalTeachers": len(teachers),
-            "totalStudents": len(students),
-            "totalPrograms": len(programs),
-            "pendingRequests": len(requests)
+        "stats": [
+            {"label": "Total Students", "value": str(len(students)), "trend": "Stable", "icon": "Users"},
+            {"label": "Dep. Faculty", "value": str(len(teachers)), "trend": "Consistent", "icon": "GraduationCap"},
+            {"label": "Programs", "value": str(len(programs)), "trend": "Active", "icon": "BookOpen"},
+            {"label": "Pending Requests", "value": str(len(requests)), "trend": "Action Required", "icon": "ClipboardCheck"},
+        ],
+        "alerts": [
+            {
+                "id": str(r.get("id")),
+                "type": "request",
+                "title": f"Approval Needed: {r.get('teacher_name', 'Teacher Request')}",
+                "description": f"Request for {r.get('program_name', 'Teaching Program')}",
+                "priority": "high",
+            }
+            for r in requests[:5]
+        ],
+        "charts": {
+            "departmentPerformance": [
+                {"program": p.get("name"), "mastery": 75} # Example data
+                for p in programs[:5]
+            ]
         },
-        "teachers": teachers,
-        "programs": programs,
-        "requests": requests
+        "feed": [
+            {
+                "id": str(r.get("id")),
+                "type": "request_update",
+                "title": "New Teacher Request",
+                "time": r.get("created_at"),
+                "meta": {"teacher_id": r.get("teacher_id")}
+            }
+            for r in requests[:5]
+        ],
+        "meta": {
+            "department": dept,
+            "teachers": teachers,
+            "programs": programs,
+        }
     }
 
 @router.get("/department")

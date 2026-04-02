@@ -10,8 +10,8 @@ class AcademicStore:
     Supabase store for Academic hierarchy, Credits, and Promotions.
     """
 
-    def __init__(self):
-        self.db = supabase_db
+    def __init__(self, db: Optional[Any] = None):
+        self.db = db or supabase_db
 
     def _normalize_class(self, cls: Optional[dict]) -> Optional[dict]:
         if not cls:

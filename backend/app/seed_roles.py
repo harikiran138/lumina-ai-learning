@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.store.user_store import UserStore
 from app.store.parent_store import ParentStore
 from app.store.mentor_store import MentorStore
@@ -8,6 +8,8 @@ from app.store.counselor_store import CounselorStore
 from app.store.researcher_store import ResearcherStore
 from app.store.content_creator_store import ContentCreatorStore
 from app.store.student_store import StudentStore
+from app.store.peer_tutor_store import PeerTutorStore
+from app.store.academic_store import AcademicStore
 from app.core.logging import structlog
 
 log = structlog.get_logger()
@@ -20,18 +22,23 @@ async def seed_roles():
     researcher_store = ResearcherStore()
     creator_store = ContentCreatorStore()
     student_store = StudentStore()
+    peer_tutor_store = PeerTutorStore()
+    academic_store = AcademicStore()
 
     password = "DemoPassword123!"
     
     roles_to_seed = [
         {"email": "student@lumina.ai", "name": "Sam Student", "role": "student"},
         {"email": "teacher@lumina.ai", "name": "Terry Teacher", "role": "teacher"},
-        {"email": "admin@lumina.ai", "name": "Alex Admin", "role": "admin"},
+        {"email": "faculty@lumina.ai", "name": "Fiona Faculty", "role": "faculty"},
+        {"email": "hod@lumina.ai", "name": "Harry HOD", "role": "hod"},
+        {"email": "admin@lumina.ai", "name": "Alex Admin", "role": "college_admin"},
         {"email": "parent@lumina.ai", "name": "Pat Parent", "role": "parent"},
         {"email": "mentor@lumina.ai", "name": "Morgan Mentor", "role": "mentor"},
+        {"email": "peertutor@lumina.ai", "name": "Peter Peer", "role": "peer_tutor"},
         {"email": "counselor@lumina.ai", "name": "Chris Counselor", "role": "counselor"},
         {"email": "researcher@lumina.ai", "name": "Robin Researcher", "role": "researcher"},
-        {"email": "creator@lumina.ai", "name": "Casey Creator", "role": "content_creator"},
+        {"email": "superadmin@lumina.ai", "name": "Sasha Super", "role": "super_admin"},
     ]
 
     created_users = {}
@@ -58,7 +65,24 @@ async def seed_roles():
 
     student_id = created_users.get("student", {}).get("id")
     teacher_id = created_users.get("teacher", {}).get("id")
+    faculty_id = created_users.get("faculty", {}).get("id")
+    hod_id = created_users.get("hod", {}).get("id")
     
+    # 1. Setup Institutional Data (Department for HOD/Faculty)
+    print("\n--- Seeding Institutional Data ---")
+    dept_id = "dept_stem_001"
+    try:
+        await academic_store.db.insert("departments", {
+            "id": dept_id,
+            "department_name": "STEM & AI",
+            "code": "STEM",
+            "hod_id": hod_id,
+            "institution_id": "inst_001"
+        }, upsert=True)
+        print(f"Department linked to HOD: {hod_id}")
+    except Exception as e:
+        print(f"Note: Department seeding info: {e}")
+
     if student_id:
         print("\n--- Seeding Role-Specific Data ---")
         
@@ -66,22 +90,12 @@ async def seed_roles():
         parent_id = created_users.get("parent", {}).get("id")
         if parent_id:
             print("Seeding Parent data...")
-            # Link parent to student
             await parent_store.db.insert("parent_child_links", {
                 "parent_id": parent_id,
                 "child_id": student_id,
                 "verified_by_admin": True
-            })
-            await parent_store.create_goal(parent_id, student_id, "Complete the Advanced Physics module by Friday and achieve 90% mastery.")
-            
-            parent_msg = {
-                "parent_id": parent_id,
-                "content": "Welcome to Lumina Parent Portal. You can now track your child's progress."
-            }
-            if teacher_id:
-                parent_msg["teacher_id"] = teacher_id
-                
-            await parent_store.db.insert("parent_messages", parent_msg)
+            }, upsert=True)
+            await parent_store.create_goal(parent_id, student_id, "Complete the Advanced Physics module.")
 
         # 2. Mentor Data
         mentor_id = created_users.get("mentor", {}).get("id")
@@ -91,80 +105,54 @@ async def seed_roles():
                 "mentor_id": mentor_id,
                 "mentee_id": student_id,
                 "status": "active"
-            })
-            await mentor_store.schedule_session(
-                mentor_id, 
-                student_id, 
-                datetime.now().isoformat(), 
-                "Initial career guidance focus session."
-            )
+            }, upsert=True)
 
-        # 3. Counselor Data
+        # 3. Peer Tutor Data
+        peer_tutor_id = created_users.get("peer_tutor", {}).get("id")
+        if peer_tutor_id:
+            print("Seeding Peer Tutor data...")
+            await peer_tutor_store.db.insert("tutor_sessions", {
+                "tutor_id": peer_tutor_id,
+                "student_id": student_id,
+                "session_type": "peer_review",
+                "status": "scheduled",
+                "scheduled_at": (datetime.now() + timedelta(days=1)).isoformat()
+            })
+
+        # 4. Counselor Data
         counselor_id = created_users.get("counselor", {}).get("id")
         if counselor_id:
             print("Seeding Counselor data...")
             await counselor_store.db.insert("counselor_assignments", {
                 "counselor_id": counselor_id,
                 "student_id": student_id
-            })
-            await counselor_store.add_note(counselor_id, student_id, "Student expressions interest in deep learning and AI Ethics.")
+            }, upsert=True)
+            await counselor_store.add_note(counselor_id, student_id, "Student expression interest in AI Ethics.")
 
-        # 4. Researcher Data
+        # 5. Researcher Data
         researcher_id = created_users.get("researcher", {}).get("id")
         if researcher_id:
-            print("Seeding Researcher data...")
-            await researcher_store.log_query(researcher_id, {"subject": "STEM", "metric": "average_mastery", "year": 2026})
-            
-            # Seed Anonymised Snapshots
+            print("Seeding Researcher snapshots...")
             snapshots = [
                 {
                     "snapshot_date": "2026-03-01",
-                    "dataset_type": "STEM_Mastery_Q1",
-                    "data_json": {"metrics": {"avg_mastery": 0.85}, "cohort_size": 1200},
-                    "institution_id_hash": "hash_stem_001"
-                },
-                {
-                    "snapshot_date": "2026-03-05",
-                    "dataset_type": "Humanities_Engagement",
-                    "data_json": {"metrics": {"engagement_score": 92}, "cohort_size": 850},
-                    "institution_id_hash": "hash_hum_002"
-                },
-                {
-                    "snapshot_date": "2026-03-10",
-                    "dataset_type": "Global_Peer_Network",
-                    "data_json": {"metrics": {"network_density": 0.45}, "cohort_size": 2100},
-                    "institution_id_hash": "hash_global_003"
+                    "dataset_type": "STEM_Mastery",
+                    "data_json": {"avg_mastery": 0.85},
+                    "institution_id_hash": "inst_hash_001"
                 }
             ]
             for snap in snapshots:
-                await researcher_store.db.insert("anonymised_snapshots", snap)
+                await researcher_store.db.insert("anonymised_snapshots", snap, upsert=True)
 
-        # 5. Creator Data
-        creator_id = created_users.get("content_creator", {}).get("id")
-        if creator_id:
-            print("Seeding Creator data...")
-            blueprint = await creator_store.create_blueprint(
-                creator_id, 
-                "Quantum Computing for Beginners", 
-                {"objectives": ["Understand qubits", "Superposition", "Entanglement"]}
-            )
-            if blueprint:
-                await creator_store.add_lesson_sequence(blueprint["id"], [
-                    {"title": "Introduction to Qubits", "type": "video", "order": 1},
-                    {"title": "The Bloch Sphere", "type": "interactive", "order": 2}
-                ])
-                
-            # Add another blueprint for variety
-            bp2 = await creator_store.create_blueprint(
-                creator_id,
-                "Ethics in Artificial Intelligence",
-                {"objectives": ["Bias Detection", "Transparency", "Accountability"]}
-            )
-            if bp2:
-                await creator_store.add_lesson_sequence(bp2["id"], [
-                    {"title": "Historical Context of Bias", "type": "text", "order": 1},
-                    {"title": "Algorithmic Fairness", "type": "quiz", "order": 2}
-                ])
+        # 6. HOD / Risk Data
+        if hod_id:
+            print("Seeding Risk Scores for HOD dashboard...")
+            await academic_store.db.insert("student_risk_factors", {
+                "student_id": student_id,
+                "risk_score": 0.15,
+                "risk_level": "low",
+                "factors": ["attendance", "engagement"]
+            }, upsert=True)
 
     print("\n--- Seeding Complete ---")
 

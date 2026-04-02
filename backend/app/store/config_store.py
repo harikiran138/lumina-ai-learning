@@ -11,8 +11,8 @@ class ConfigStore:
     Uses 'platform_config' and 'role_configs' tables in Supabase.
     """
 
-    def __init__(self):
-        self.db = supabase_db
+    def __init__(self, db: Optional[Any] = None):
+        self.db = db or supabase_db
         self.config_table = "platform_config"
         self.role_table = "role_configs"
         self._cache = {}
@@ -105,13 +105,13 @@ class ConfigStore:
 
     def _get_default_role_matrix(self) -> Dict[str, Any]:
         return {
-            "roles": ["student", "teacher", "hod", "admin", "parent"],
+            "roles": ["student", "faculty", "hod", "college_admin", "super_admin", "parent", "guest"],
             "permissions": {
-                "course_create": ["admin", "teacher", "hod"],
-                "course_delete": ["admin"],
-                "user_manage": ["admin"],
-                "analytics_view": ["admin", "teacher", "hod"],
-                "billing_manage": ["admin"]
+                "course_create": ["super_admin", "college_admin", "faculty", "hod"],
+                "course_delete": ["super_admin", "college_admin"],
+                "user_manage": ["super_admin", "college_admin"],
+                "analytics_view": ["super_admin", "college_admin", "faculty", "hod"],
+                "billing_manage": ["super_admin", "college_admin"]
             }
         }
 

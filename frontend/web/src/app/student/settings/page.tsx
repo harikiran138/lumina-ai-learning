@@ -19,6 +19,8 @@ import {
   Brain,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { ParentConnect } from "@/components/student/ParentConnect";
+import { Users } from "lucide-react";
 
 type NotificationPrefs = {
   email: boolean;
@@ -202,6 +204,7 @@ export default function StudentSettings() {
     { id: "appearance", label: "Appearance", icon: Moon },
     { id: "language", label: "Language", icon: Globe },
     { id: "privacy", label: "Privacy", icon: Shield },
+    { id: "parent-link", label: "Parent Link", icon: Users },
   ];
 
   if (isLoading) {
@@ -537,6 +540,12 @@ export default function StudentSettings() {
                 })
               }
             />
+          </div>
+        )}
+
+        {activeSection === "parent-link" && (
+          <div className="flex justify-center py-4">
+            <ParentConnect />
           </div>
         )}
       </div>
