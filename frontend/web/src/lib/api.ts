@@ -318,7 +318,9 @@ export class RealAPI {
     const userData = tokenData.user;
     if (!userData) throw new Error("Login failed: User data not found in response.");
 
-    // Persist token from JSON body when present (supplementary to HTTP-only cookie)
+    // Some deployment configurations return the access token in the JSON response
+    // body in addition to (or instead of) setting it as an HTTP-only cookie.
+    // Persist it here so that fetchAuthorized can attach it as a Bearer header.
     if (tokenData.accessToken) {
       this.persistToken(tokenData.accessToken);
     }
@@ -344,7 +346,7 @@ export class RealAPI {
     return this.currentUser;
   }
 
-  async getCurrentUser(): Promise<any> {
+  async getCurrentUser(): Promise<User | null> {
     if (this.currentUser) return this.currentUser;
     // After a page refresh the in-memory value is lost; re-hydrate from the
     // backend using the HTTP-only cookie that was already set during login.

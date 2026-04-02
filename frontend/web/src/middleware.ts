@@ -46,7 +46,10 @@ export function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // Redirect canonical path aliases first (e.g. /teacher/* → /faculty/*)
+  // Redirect legacy/alias paths to canonical routes before any auth check.
+  // Aliases handled: /teacher/* → /faculty/*, /peer-tutor/* → /peer_tutor/*,
+  //                  /creator/* → /content_creator/*, /researcher/portal/* → /researcher/dashboard/*,
+  //                  /content_creator/studio/* → /content_creator/dashboard/*
   const canonical = getCanonicalPath(pathname)
   if (canonical) {
     const url = request.nextUrl.clone()
