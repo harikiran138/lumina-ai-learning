@@ -4,6 +4,7 @@
   "description": "AI-powered learning management system",
   "scripts": {
     "dev": "next dev",
+    "clean": "rm -rf .next node_modules/.cache",
     "build": "next build",
     "build:analyze": "ANALYZE=true next build",
     "start": "next start",
