@@ -25,6 +25,7 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { OfflineBanner } from "@/components/shared/OfflineBanner";
 
 export default function RootLayout({
   children,
@@ -41,6 +42,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <GlobalErrorBoundary>
+            <OfflineBanner />
             {children}
             <Toaster theme="dark" richColors position="top-right" />
           </GlobalErrorBoundary>

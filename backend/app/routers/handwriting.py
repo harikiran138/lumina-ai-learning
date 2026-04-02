@@ -41,33 +41,54 @@ async def upload_document(
             shutil.copyfileobj(file.file, buffer)
 
         # 2. Analyze (Digitize)
-        # Assuming analyze takes a file path
         analysis_result = agent.analyze(file_path)
         extracted_text = analysis_result.get("extracted_text", "")
 
-        # 3. Process based on Type
+        # 3. Confidence gate — if OCR confidence is below 70 % the submission
+        #    must be flagged for manual teacher review instead of auto-processing.
+        ocr_confidence: float = float(analysis_result.get("confidence", 1.0))
+        OCR_CONFIDENCE_THRESHOLD = 0.70
+
+        requires_teacher_review = ocr_confidence < OCR_CONFIDENCE_THRESHOLD
+
+        # 4. Build base document record
         doc_data = {
             "id": file_id,
             "course_id": course_id,
             "type": type,
             "image_path": file_path,
             "digital_text": extracted_text,
+            "ocr_confidence": round(ocr_confidence, 4),
+            "requires_teacher_review": requires_teacher_review,
             "timestamp": datetime.now().isoformat(),
             "assignment_id": assignment_id,
         }
 
         if type == "note":
-            # AI Improvements for Notes
-            system_promt = (
-                "You are an expert academic assistant. Improve and summarize the following notes."
-            )
-            user_prompt = f"Notes:\n{extracted_text}\n\nTask:\n1. Create a concise summary.\n2. Provide an improved, well-structured version of these notes."
+            if requires_teacher_review:
+                # Low-confidence notes: skip AI enhancement; surface original scan.
+                doc_data["ai_analysis"] = None
+                doc_data["review_reason"] = (
+                    f"OCR confidence {ocr_confidence:.0%} is below the required "
+                    f"{OCR_CONFIDENCE_THRESHOLD:.0%} threshold. "
+                    "Please verify the digitized text manually."
+                )
+            else:
+                # AI Improvements for Notes
+                system_promt = (
+                    "You are an expert academic assistant. Improve and summarize the following notes."
+                )
+                user_prompt = (
+                    f"Notes:\n{extracted_text}\n\nTask:\n"
+                    "1. Create a concise summary.\n"
+                    "2. Provide an improved, well-structured version of these notes."
+                )
 
-            try:
-                ai_response = await llm.agenerate(user_prompt, system_promt)
-                doc_data["ai_analysis"] = ai_response
-            except Exception as e:
-                doc_data["ai_analysis"] = f"AI Analysis failed: {e}"
+                try:
+                    ai_response = await llm.agenerate(user_prompt, system_promt)
+                    doc_data["ai_analysis"] = ai_response
+                except Exception as e:
+                    doc_data["ai_analysis"] = f"AI Analysis failed: {e}"
 
             # Store in State
             state = await state_store.get_state(user_id)
@@ -75,17 +96,31 @@ async def upload_document(
             await state_store.update_state(user_id, state)
 
         elif type == "assignment":
-            # Initial state for assignment
-            doc_data["status"] = "submitted"
-            doc_data["score"] = None
-            doc_data["remarks"] = ""
+            if requires_teacher_review:
+                # Low-confidence submissions wait for manual teacher grading.
+                doc_data["status"] = "pending_review"
+                doc_data["score"] = None
+                doc_data["remarks"] = (
+                    f"Automatic processing skipped: OCR confidence {ocr_confidence:.0%} "
+                    f"is below {OCR_CONFIDENCE_THRESHOLD:.0%}. Teacher review required."
+                )
+            else:
+                # High-confidence: proceed with normal submission flow.
+                doc_data["status"] = "submitted"
+                doc_data["score"] = None
+                doc_data["remarks"] = ""
 
             # Store in State
             state = await state_store.get_state(user_id)
             state["assignments"].append(doc_data)
             await state_store.update_state(user_id, state)
 
-        return {"status": "success", "data": doc_data}
+        return {
+            "status": "success",
+            "data": doc_data,
+            "ocr_confidence": ocr_confidence,
+            "requires_teacher_review": requires_teacher_review,
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
