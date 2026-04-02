@@ -57,16 +57,16 @@ class Token(BaseModel):
 
 class UserResponse(BaseModel):
     id: str
+    fullName: str
     email: str
-    name: str
     role: str
-    created_at: str
-    full_name: Optional[str] = None
-    college_id: Optional[str] = None
-    dept_id: Optional[str] = None
-    batch_id: Optional[str] = None
-    onboarding_step: Optional[int] = None
-    profile_photo_url: Optional[str] = None
+    department: Optional[str] = None
+    collegeId: Optional[str] = None
+    deptId: Optional[str] = None
+    batchId: Optional[str] = None
+    onboardingStep: Optional[int] = 0
+    profilePhotoUrl: Optional[str] = None
+    mustChangePassword: Optional[bool] = False
 
 
 class LoginRequest(BaseModel):
@@ -102,21 +102,23 @@ class ResetPasswordRequest(BaseModel):
 
 class LoginResponse(BaseModel):
     accessToken: Optional[str] = None
-    user: Optional[dict] = None
+    user: Optional[UserResponse] = None
     forcePasswordChange: Optional[bool] = None
     tempToken: Optional[str] = None
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 def _build_claims(user: dict) -> dict:
+    """Standardizes JWT claims as per platform architecture."""
     return {
+        "sub": str(user.get("id")),
         "id": str(user.get("id")),
-        "role": normalize_role(user.get("role")), # Using centralized logic
+        "email": user.get("email"),
+        "fullName": user.get("full_name") or user.get("name", "Unknown"),
+        "role": normalize_role(user.get("role", "guest")),
         "collegeId": user.get("college_id"),
         "deptId": user.get("dept_id") or user.get("department_id"),
-        "batchId": user.get("batch_id"),
-        "email": user.get("email"),
-        "onboardingCompleted": (user.get("onboarding_step") or 0) >= 5,
+        "batchId": user.get("batch_id")
     }
 
 
@@ -331,7 +333,15 @@ async def register(user: UserCreate, user_store: UserStore = Depends(get_user_st
             user_id=str(new_user["id"]),
             metadata={"email": user.email, "role": normalized_role},
         )
-        return new_user
+        return UserResponse(
+            id=str(new_user["id"]),
+            fullName=new_user.get("full_name") or new_user.get("name", "Unknown"),
+            email=new_user["email"],
+            role=new_user.get("role", "student"),
+            department=new_user.get("department_id") or new_user.get("dept_id"),
+            collegeId=new_user.get("college_id"),
+            onboardingStep=new_user.get("onboarding_step", 0)
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
@@ -362,7 +372,7 @@ def login_for_access_token(
         )
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        subject=user["email"],
+        subject=str(user["id"]),
         expires_delta=access_token_expires,
         extra_claims=_build_claims(user),
         secret_key=settings.JWT_SECRET,
@@ -383,10 +393,12 @@ async def accept_invite(
         raise HTTPException(status_code=404, detail="User not found")
     hashed_password = get_password_hash(payload.password)
     updates = {"password_hash": hashed_password, "is_active": True, "onboarding_step": 0}
-    if invite_payload.get("collegeId"):
-        updates["college_id"] = invite_payload.get("collegeId")
-    if invite_payload.get("deptId"):
-        updates["dept_id"] = invite_payload.get("deptId")
+    if invite_payload.get("institution_id"):
+        updates["institution_id"] = invite_payload.get("institution_id")
+    if invite_payload.get("college_id"):
+        updates["college_id"] = invite_payload.get("college_id")
+    if invite_payload.get("department_id"):
+        updates["department_id"] = invite_payload.get("department_id")
     if invite_payload.get("role"):
         updates["role"] = invite_payload.get("role")
     await user_store.update_user_fields(user_id, updates)
@@ -519,7 +531,7 @@ def login_json(
     # ── Normal login ──────────────────────────────────────────────────────────
     access_token_expires  = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        subject=user["email"],
+        subject=str(user["id"]),
         expires_delta=access_token_expires,
         extra_claims=_build_claims(user),
         secret_key=settings.JWT_SECRET,
@@ -527,7 +539,7 @@ def login_json(
 
     refresh_token_expires = timedelta(days=7)
     refresh_token = create_access_token(
-        subject=user["email"],
+        subject=str(user["id"]),
         expires_delta=refresh_token_expires,
         extra_claims={"type": "refresh", **_build_claims(user)},
         secret_key=settings.JWT_REFRESH_SECRET,
@@ -537,8 +549,8 @@ def login_json(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=True,
-        samesite="None",
+        secure=settings.SECURE_COOKIES,
+        samesite="Lax" if not settings.SECURE_COOKIES else "None",
         max_age=int(access_token_expires.total_seconds()),
         path="/",
     )
@@ -548,7 +560,7 @@ def login_json(
         value=refresh_token,
         httponly=True,
         secure=settings.SECURE_COOKIES,
-        samesite="strict",
+        samesite="Lax" if not settings.SECURE_COOKIES else "None",
         max_age=int(refresh_token_expires.total_seconds()),
         path="/",
     )
@@ -557,18 +569,18 @@ def login_json(
 
     return {
         "accessToken": access_token,
-        "user": {
-            "id":               user.get("id"),
-            "role":             normalize_role(user.get("role")),
-            "fullName":         user.get("full_name") or user.get("name"),
-            "email":            user.get("email"),
-            "collegeId":        user.get("college_id"),
-            "deptId":           user.get("dept_id") or user.get("department_id"),
-            "batchId":          user.get("batch_id"),
-            "onboardingStep":   user.get("onboarding_step", 0),
-            "profilePhotoUrl":  user.get("profile_photo_url") or user.get("avatar"),
-            "mustChangePassword": user.get("must_change_password", False),
-        },
+        "user": UserResponse(
+            id=str(user.get("id")),
+            role=normalize_role(user.get("role", "student")),
+            fullName=user.get("full_name") or user.get("name", "Unknown"),
+            email=user.get("email"),
+            collegeId=user.get("college_id"),
+            deptId=user.get("dept_id") or user.get("department_id"),
+            batchId=user.get("batch_id"),
+            onboardingStep=user.get("onboarding_step", 0),
+            profilePhotoUrl=user.get("profile_photo_url") or user.get("avatar"),
+            mustChangePassword=user.get("must_change_password", False),
+        ),
     }
 
 
@@ -602,8 +614,8 @@ async def refresh_token(
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=401, detail="Invalid token type for refresh")
             
-        email = payload.get("sub")
-        if not email:
+        sub_val = payload.get("sub")
+        if not sub_val:
             raise HTTPException(status_code=401, detail="Invalid token payload: missing subject")
             
         # Blacklist the old refresh token as it's now 'used' (Rotation)
@@ -617,7 +629,21 @@ async def refresh_token(
         logger.warning(f"refresh_token_decode_failed: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
-    user = await user_store.get_user_by_email(email)
+    user = None
+    try:
+        import uuid
+        uuid.UUID(sub_val)
+        user = await user_store.get_user_by_id(sub_val)
+    except (ValueError, TypeError):
+        if "@" in sub_val:
+            user = await user_store.get_user_by_email(sub_val)
+
+    if not user:
+        # Check if email claim is present
+        email_claim = payload.get("email")
+        if email_claim:
+            user = await user_store.get_user_by_email(email_claim)
+            
     if not user:
         raise HTTPException(status_code=401, detail="User associated with token not found")
 
@@ -625,7 +651,7 @@ async def refresh_token(
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        subject=user["email"],
+        subject=str(user["id"]),
         expires_delta=access_token_expires,
         extra_claims=_build_claims(user),
         secret_key=settings.JWT_SECRET,
@@ -635,8 +661,8 @@ async def refresh_token(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=True,
-        samesite="None",
+        secure=settings.SECURE_COOKIES,
+        samesite="Lax" if not settings.SECURE_COOKIES else "None",
         max_age=int(access_token_expires.total_seconds()),
         path="/",
     )
@@ -671,16 +697,23 @@ async def get_current_user(
 
     try:
         from jose import jwt
-        # Core logic: Try decoding with JWT_SECRET first (primary app secret)
-        try:
-            payload = jwt.decode(auth_token, settings.JWT_SECRET, algorithms=["HS256"])
-        except Exception:
-            # Fallback to legacy SECRET_KEY if JWT_SECRET fails (for migration/compatibility)
-            payload = jwt.decode(auth_token, settings.SECRET_KEY, algorithms=["HS256"])
-            
-        user_id = payload.get("userId")
-        email = payload.get("sub") or payload.get("email")
-        jti = payload.get("jti")
+        # Core logic: Try decoding with JWT_SECRET first (standard app flow)
+        # Fallback to legacy SECRET_KEY if JWT_SECRET fails (for background transition)
+        decoded_payload = None
+        for secret in [settings.JWT_SECRET, settings.SECRET_KEY]:
+            try:
+                decoded_payload = jwt.decode(auth_token, secret, algorithms=["HS256"])
+                if decoded_payload: break
+            except Exception:
+                continue
+
+        if not decoded_payload:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        # Prioritize sub as user ID, then check custom userId, then email
+        user_id = decoded_payload.get("userId") or decoded_payload.get("sub") or decoded_payload.get("id")
+        email = decoded_payload.get("email") or decoded_payload.get("sub")
+        jti = decoded_payload.get("jti")
         
         if jti and is_token_revoked(jti):
             raise HTTPException(status_code=401, detail="Token has been revoked.")
@@ -697,8 +730,19 @@ async def get_current_user(
         )
 
     user = None
+    # Try ID lookup first (preferred)
     if user_id:
-        user = await user_store.get_user_by_id(user_id)
+        try:
+            # Check if it looks like a UUID
+            import uuid
+            uuid.UUID(user_id)
+            user = await user_store.get_user_by_id(user_id)
+        except (ValueError, TypeError):
+            # If not a UUID, it might be an email stored in sub (legacy)
+            if "@" in user_id:
+                user = await user_store.get_user_by_email(user_id)
+    
+    # Fallback to email claim if ID failed
     if not user and email:
         user = await user_store.get_user_by_email(email)
         
@@ -706,6 +750,10 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="User session not found")
 
     _require_active_user(user)
+
+    # ATTACH ACCESS TOKEN for ScopedSupabase
+    # The auth_token variable is available from the parent closure in get_current_user
+    user["access_token"] = auth_token
 
     request.state.user = user
     return user
@@ -773,4 +821,16 @@ async def change_password(
 
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: dict = Depends(get_current_user)):
-    return current_user
+    return UserResponse(
+        id=str(current_user["id"]),
+        fullName=current_user.get("full_name") or current_user.get("name", "Unknown"),
+        email=current_user["email"],
+        role=current_user.get("role", "student"),
+        department=current_user.get("department_id") or current_user.get("dept_id"),
+        collegeId=current_user.get("college_id"),
+        deptId=current_user.get("dept_id") or current_user.get("department_id"),
+        batchId=current_user.get("batch_id"),
+        onboardingStep=current_user.get("onboarding_step", 0),
+        profilePhotoUrl=current_user.get("profile_photo_url") or current_user.get("avatar"),
+        mustChangePassword=current_user.get("must_change_password", False),
+    )

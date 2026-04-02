@@ -13,8 +13,8 @@ class UserDataStore:
     Operates on the 'user_data' table with JSONB fields.
     """
 
-    def __init__(self):
-        self.db = supabase_db
+    def __init__(self, db: Optional[Any] = None):
+        self.db = db or supabase_db
 
     async def _get_or_create_user_data(self, user_id: str) -> dict:
         """Retrieves user data or creates it if it doesn't exist."""

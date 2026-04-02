@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import datetime
 import uuid
 from app.database.supabase_manager import supabase_db
@@ -13,9 +13,9 @@ class UserStore:
     Supabase store for Users.
     """
 
-    def __init__(self):
-        # supabase_db is the production-ready manager instance
-        self.db = supabase_db
+    def __init__(self, db: Optional[Any] = None):
+        # Allow injecting a scoped database, otherwise fall back to global supabase_db
+        self.db = db or supabase_db
 
     def verify_password(self, plain_password, hashed_password):
         return verify_password(plain_password, hashed_password)
@@ -34,28 +34,40 @@ class UserStore:
         
         safe_user = user.copy()
         safe_user.pop("password_hash", None)
+        safe_user.pop("hashed_password", None)
         
         # Consistent naming for frontend (name, avatar, status)
         name = safe_user.get("name") or safe_user.get("full_name") or "Unnamed User"
-        avatar = safe_user.get("avatar_url") or safe_user.get("avatar")
+        avatar = safe_user.get("profile_photo_url") or safe_user.get("avatar_url") or safe_user.get("avatar") or safe_user.get("profile_image")
+        
         if not avatar:
             avatar = f"https://ui-avatars.com/api/?name={name.replace(' ', '+')}&background=111827&color=F9FAFB"
-
+        
+        # Date normalization
         created_at = safe_user.get("created_at") or safe_user.get("createdAt") or safe_user.get("updated_at")
+        
+        # Merge fields for consistency
         safe_user["name"] = name
-        if not safe_user.get("full_name"):
-            safe_user["full_name"] = name
+        safe_user["full_name"] = name
         safe_user["avatar_url"] = avatar
-        safe_user["avatar"] = avatar  # Backward compatibility
+        safe_user["profile_photo_url"] = avatar
         safe_user["status"] = safe_user.get("status", "active")
         safe_user["role"] = self.normalize_role(safe_user.get("role"))
         safe_user["created_at"] = created_at
-        safe_user["createdAt"] = created_at
+        
+        # Ensure institutional fields are present
+        safe_user["college_id"] = safe_user.get("college_id")
+        safe_user["dept_id"] = safe_user.get("dept_id") or safe_user.get("department_id")
+        safe_user["batch_id"] = safe_user.get("batch_id")
+        safe_user["onboarding_step"] = safe_user.get("onboarding_step", 0)
+        safe_user["must_change_password"] = safe_user.get("must_change_password", False)
         
         return safe_user
 
     async def create_user(
-        self, email: str, password: str, full_name: str, role: str = "student", phone: str = ""
+        self, email: str, password: str, full_name: str, role: str = "student", 
+        phone: str = "", college_id: str = None, dept_id: str = None, 
+        batch_id: str = None, roll_number: str = None, employee_id: str = None
     ) -> dict:
         existing_user = await self.get_user_by_email(email)
         if existing_user:
@@ -67,22 +79,25 @@ class UserStore:
             "email": email,
             "password_hash": hashed_password,
             "name": full_name,
+            "full_name": full_name,
             "role": self.normalize_role(role),
             "phone": phone or "N/A",
-            "is_active": True
+            "is_active": True,
+            "college_id": college_id,
+            "dept_id": dept_id,
+            "batch_id": batch_id,
+            "roll_number": roll_number,
+            "employee_id": employee_id,
+            "onboarding_step": 0
         }
 
         try:
-            # Use SupabaseManager's insert
-            # Ensure we are targeting the public schema explicitly if possible
-            client = self.db.get_client()
-            insert_result = client.table("users").insert(user_data).execute()
+            insert_result = self.db.table("users").insert(user_data).execute()
             
             # Fallback: If RLS prevents returning the row on insert, fetch it explicitly
             result = insert_result.data[0] if insert_result.data else await self.get_user_by_email(email)
             
             if not result:
-                # Last resort check
                 log.warning("insert_result_empty_trying_retry", email=email)
                 result = await self.get_user_by_email(email)
                 
@@ -99,8 +114,7 @@ class UserStore:
 
     async def get_user_by_email(self, email: str) -> Optional[dict]:
         try:
-            client = self.db.get_client()
-            response = client.table("users").select("*").eq("email", email).execute()
+            response = self.db.table("users").select("*").eq("email", email).execute()
             if response.data:
                 return response.data[0]
         except Exception as e:
@@ -109,10 +123,7 @@ class UserStore:
 
     def get_user_by_email_sync(self, email: str) -> Optional[dict]:
         try:
-            import anyio.from_thread
-            # If we are inside a threadpool, we just execute it.
-            client = self.db.get_client()
-            response = client.table("users").select("*").eq("email", email).execute()
+            response = self.db.table("users").select("*").eq("email", email).execute()
             if response.data:
                 return response.data[0]
         except Exception as e:
@@ -133,10 +144,10 @@ class UserStore:
     async def delete_user(self, user_id: str) -> bool:
         """
         Deletes a user and manually cascades to related tables to prevent orphan records.
-        Supabase doesn't always have FK cascades configured by defaults in all schemas.
         """
         try:
-            client = self.db.get_client()
+            client = self.db.get_client() if hasattr(self.db, "get_client") else self.db
+            
             # 1. Clean up user_data
             client.table("user_data").delete().eq("id", user_id).execute()
             client.table("user_data").delete().eq("user_id", user_id).execute()
@@ -157,13 +168,15 @@ class UserStore:
             return len(result.data) > 0
         except Exception as e:
             log.error("delete_user_cascade_failed", error=str(e), user_id=user_id)
-            return await self.db.delete("users", {"id": user_id})
-
+            try:
+                # Fallback to basic delete
+                return await self.db.delete("users", {"id": user_id})
+            except Exception:
+                return False
 
     async def update_user_role(self, user_id: str, role: str) -> bool:
         try:
-            client = self.db.get_client()
-            response = client.table("users").update({"role": self.normalize_role(role)}).eq("id", user_id).execute()
+            response = self.db.table("users").update({"role": self.normalize_role(role)}).eq("id", user_id).execute()
             return len(response.data) > 0
         except Exception as e:
             log.error("update_user_role_failed", error=str(e), user_id=user_id)
@@ -180,8 +193,7 @@ class UserStore:
         }
 
         try:
-            client = self.db.get_client()
-            response = client.table("users").update(updates).eq("id", user_id).execute()
+            response = self.db.table("users").update(updates).eq("id", user_id).execute()
             return len(response.data) > 0
         except Exception as e:
             log.error("update_user_status_failed", error=str(e), user_id=user_id)
@@ -194,8 +206,7 @@ class UserStore:
         clean_updates.setdefault("updated_at", datetime.utcnow().isoformat())
 
         try:
-            client = self.db.get_client()
-            response = client.table("users").update(clean_updates).eq("id", user_id).execute()
+            response = self.db.table("users").update(clean_updates).eq("id", user_id).execute()
             return len(response.data) > 0
         except Exception as e:
             log.error("update_user_fields_failed", error=str(e), user_id=user_id)
@@ -208,18 +219,12 @@ class UserStore:
         clean_updates.setdefault("updated_at", datetime.utcnow().isoformat())
 
         try:
-            client = self.db.get_client()
-            # Try updating one by one or handle the case where some columns don't exist
-            # For robustness, we try to update what we can
-            response = client.table("users").update(clean_updates).eq("id", user_id).execute()
+            response = self.db.table("users").update(clean_updates).eq("id", user_id).execute()
             return len(response.data) > 0
         except Exception as e:
-            # Check if it's a missing column error
             err_str = str(e)
             if "Could not find the" in err_str and "column" in err_str:
                 log.warning("update_user_fields_partial_fail", error=err_str, user_id=user_id)
-                # Try to exclude the problematic column if we can identify it
-                # For now, just return True to allow login to proceed even if tracking fails
                 return True
             log.error("update_user_fields_failed_sync", error=err_str, user_id=user_id)
             return False

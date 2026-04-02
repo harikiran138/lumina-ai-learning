@@ -1,15 +1,17 @@
 from typing import Any, Dict, List, Optional
-
-from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+
+import structlog
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
+import json
 
 from app.database.supabase_manager import supabase_db
 from app.store.local_store import LocalJsonStore
-from app.core.logging import structlog
 from .auth import get_current_user
+from app.database.scoped_db import get_scoped_db
 
 log = structlog.get_logger()
-router = APIRouter()
+router = APIRouter(prefix="/api/knowledge-graph", tags=["knowledge-graph"])
 
 
 class KnowledgeNodePayload(BaseModel):

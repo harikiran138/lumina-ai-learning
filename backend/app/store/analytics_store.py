@@ -16,8 +16,8 @@ class AnalyticsStore:
     Aggregated analytics store for dashboard-facing payloads.
     """
 
-    def __init__(self):
-        self.db = supabase_db
+    def __init__(self, db: Optional[Any] = None):
+        self.db = db or supabase_db
 
     @property
     def sessions_collection(self):
@@ -296,14 +296,19 @@ class AnalyticsStore:
         return (due.date() - datetime.now(timezone.utc).date()).days
 
     def _status_from_score(self, mastery: int, last_active: Optional[str]) -> str:
-        if mastery < 55:
-            return "needs-attention"
+        # Aligning with PersonalizationService risk thresholds
+        # Standard: < 60 is critical/needs-attention, 60-80 is watch, > 80 is on-track
+        if mastery < 60:
+            return "critical"
+        
         last_seen = self._parse_datetime(last_active)
         if last_seen and last_seen < datetime.now(timezone.utc) - timedelta(days=7):
-            return "needs-attention"
-        if mastery < 75:
-            return "watch"
-        return "on-track"
+            return "critical"
+        
+        if mastery < 80:
+            return "warning"
+            
+        return "healthy"
 
     def _scope_users_for_institution(
         self,

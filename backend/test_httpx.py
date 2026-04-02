@@ -10,9 +10,15 @@ def new_getaddrinfo(*args, **kwargs):
     return [res for res in responses if res[0] == socket.AF_INET]
 socket.getaddrinfo = new_getaddrinfo
 
-load_dotenv("/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/.env")
+# Correct path for backend tests
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
-url = os.getenv("SUPABASE_URL") + "/rest/v1/users?select=*"
+supabase_url = os.getenv("SUPABASE_URL")
+if not supabase_url:
+    print("Warning: SUPABASE_URL not found in environment.")
+    url = None
+else:
+    url = supabase_url + "/rest/v1/users?select=*"
 headers = {
     "apikey": os.getenv("SUPABASE_SERVICE_ROLE_KEY"),
     "Authorization": f"Bearer {os.getenv('SUPABASE_SERVICE_ROLE_KEY')}"

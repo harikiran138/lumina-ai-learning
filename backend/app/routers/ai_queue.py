@@ -4,7 +4,11 @@ from typing import Optional, List, Any
 from datetime import datetime, timezone
 
 from .auth import get_current_user
+<<<<<<< HEAD
+from app.api.deps import get_current_faculty
+=======
 from app.api.deps import get_current_teacher
+>>>>>>> main
 from app.database.supabase_manager import supabase_db
 
 router = APIRouter()
@@ -68,21 +72,26 @@ async def ask_question(
 
         question_id = q_res.data[0]["id"]
 
+        # Determine initial status
+        role = current_user.get("role")
+        initial_status = "priority" if role in {"super_admin", "college_admin"} else "pending"
+
         # Insert AI queue placeholder
         client.table("ai_answer_queue").insert({
             "question_id": question_id,
             "course_id": course_id,
-            "ai_draft": "Processing...",
+            "ai_draft": "Processing (Priority)..." if initial_status == "priority" else "Processing...",
             "ai_confidence": None,
             "ai_sources": None,
-            "status": "pending",
+            "status": initial_status,
             "created_at": _now_iso(),
         }).execute()
 
+        msg = "Your question has been prioritized for immediate AI processing" if initial_status == "priority" else "Your question has been submitted for teacher review"
         return {
             "question_id": question_id,
-            "status": "pending_review",
-            "message": "Your question has been submitted for teacher review",
+            "status": "pending_review" if initial_status == "pending" else "priority_processing",
+            "message": msg,
         }
     except HTTPException:
         raise
@@ -184,7 +193,11 @@ async def question_status(
 
 
 @router.get("/faculty/ai-queue")
+<<<<<<< HEAD
+async def faculty_queue(current_user: dict = Depends(get_current_faculty)):
+=======
 async def faculty_queue(current_user: dict = Depends(get_current_teacher)):
+>>>>>>> main
     """Return all pending queue items across faculty's courses."""
     try:
         client = _client()
@@ -199,7 +212,11 @@ async def faculty_queue(current_user: dict = Depends(get_current_teacher)):
             )
         )
         role = current_user.get("role")
+<<<<<<< HEAD
+        if role == "faculty":
+=======
         if role == "teacher":
+>>>>>>> main
             aq_query = aq_query.eq("status", "pending")
         elif role == "faculty":
             aq_query = aq_query.eq("status", "escalated_to_faculty")
@@ -237,7 +254,11 @@ async def faculty_queue(current_user: dict = Depends(get_current_teacher)):
 @router.post("/faculty/ai-queue/{queue_id}/approve")
 async def approve_queue_item(
     queue_id: int,
+<<<<<<< HEAD
+    current_user: dict = Depends(get_current_faculty),
+=======
     current_user: dict = Depends(get_current_teacher),
+>>>>>>> main
 ):
     try:
         client = _client()
@@ -266,7 +287,11 @@ async def approve_queue_item(
 async def edit_approve_queue_item(
     queue_id: int,
     body: EditApproveRequest,
+<<<<<<< HEAD
+    current_user: dict = Depends(get_current_faculty),
+=======
     current_user: dict = Depends(get_current_teacher),
+>>>>>>> main
 ):
     try:
         client = _client()
@@ -294,7 +319,11 @@ async def edit_approve_queue_item(
 async def reject_queue_item(
     queue_id: int,
     body: RejectRequest,
+<<<<<<< HEAD
+    current_user: dict = Depends(get_current_faculty),
+=======
     current_user: dict = Depends(get_current_teacher),
+>>>>>>> main
 ):
     try:
         client = _client()
@@ -320,7 +349,11 @@ async def reject_queue_item(
 async def escalate_queue_item(
     queue_id: int,
     body: EscalateRequest,
+<<<<<<< HEAD
+    current_user: dict = Depends(get_current_faculty),
+=======
     current_user: dict = Depends(get_current_teacher),
+>>>>>>> main
 ):
     try:
         client = _client()
@@ -328,12 +361,21 @@ async def escalate_queue_item(
         if not existing.data:
             raise HTTPException(status_code=404, detail="Queue item not found")
 
+<<<<<<< HEAD
+        role = current_user.get("role", "faculty")
+        
+        # Decide new status based on current role
+        if role == "faculty":
+            new_status = "escalated_to_faculty"
+        elif role == "hod":
+=======
         role = current_user.get("role", "teacher")
         
         # Decide new status based on current role
         if role == "teacher":
             new_status = "escalated_to_faculty"
         elif role == "faculty":
+>>>>>>> main
             new_status = "escalated_to_hod"
         else:
             raise HTTPException(status_code=400, detail="Cannot escalate further. You are at top of escalation chain.")

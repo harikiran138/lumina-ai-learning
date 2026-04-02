@@ -19,8 +19,8 @@ class PersonalizationStore:
     interventions, rubrics, and scorecards.
     """
 
-    def __init__(self):
-        self.db = supabase_db
+    def __init__(self, db=None):
+        self.db = db or supabase_db
 
     def _supports_remote_user_id(self, user_id: Optional[str]) -> bool:
         if not user_id:

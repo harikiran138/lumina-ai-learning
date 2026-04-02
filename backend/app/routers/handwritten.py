@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks, Form
 from pydantic import BaseModel
-from app.database.supabase_manager import supabase_db
+from app.database.scoped_db import get_scoped_db
 from app.database.models import (
     HandwrittenAssignment, HandwrittenQuestion, HandwrittenSubmission,
     SubmissionStatus, QuestionStatus, Rubric
@@ -30,13 +30,14 @@ async def create_assignment(
     if current_user.get("role") not in ["teacher", "faculty", "hod", "super_admin"]:
         raise HTTPException(status_code=403, detail="Only teachers can create assignments")
     
+    db = get_scoped_db(current_user)
     assignment = HandwrittenAssignment(
         teacher_id=current_user["id"],
         title=title,
         description=description,
         total_marks=total_marks
     )
-    await supabase_db.insert("handwritten_assignments", assignment.model_dump())
+    await db.insert("handwritten_assignments", assignment.model_dump())
     return assignment
 
 
@@ -56,6 +57,7 @@ async def add_question(
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid rubric JSON")
 
+    db = get_scoped_db(current_user)
     question = HandwrittenQuestion(
         assignment_id=assignment_id,
         number=number,
@@ -63,7 +65,7 @@ async def add_question(
         max_marks=max_marks,
         rubric=rubric
     )
-    await supabase_db.insert("handwritten_questions", question.model_dump())
+    await db.insert("handwritten_questions", question.model_dump())
     return question
 
 
@@ -79,6 +81,8 @@ async def upload_submission(
     # 1. Validation
     if file.content_type not in ["application/pdf", "image/jpeg", "image/png"]:
         raise HTTPException(status_code=400, detail="Only PDF or Image files allowed")
+    
+    db = get_scoped_db(current_user)
     
     # 2. Save file locally (Vercel/Serverless compatible)
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
@@ -96,7 +100,7 @@ async def upload_submission(
         original_file_path=file_path,
         file_type="pdf" if "pdf" in file.content_type else "image"
     )
-    await supabase_db.insert("handwritten_submissions", submission.model_dump())
+    await db.insert("handwritten_submissions", submission.model_dump())
 
     # 4. Trigger Background Processing
     background_tasks.add_task(process_handwritten_submission, submission.id)
@@ -106,7 +110,8 @@ async def upload_submission(
 
 @router.get("/submissions/{submission_id}", response_model=HandwrittenSubmission)
 async def get_submission(submission_id: str, current_user: dict = Depends(get_current_user)):
-    sub = await supabase_db.fetch_one("handwritten_submissions", {"id": submission_id})
+    db = get_scoped_db(current_user)
+    sub = await db.fetch_one("handwritten_submissions", {"id": submission_id})
     if not sub:
         raise HTTPException(status_code=404, detail="Submission not found")
     return sub
@@ -114,7 +119,8 @@ async def get_submission(submission_id: str, current_user: dict = Depends(get_cu
 
 @router.get("/submissions/{submission_id}/results")
 async def get_submission_results(submission_id: str, current_user: dict = Depends(get_current_user)):
-    questions = await supabase_db.fetch_all("handwritten_submission_questions", {"submission_id": submission_id})
+    db = get_scoped_db(current_user)
+    questions = await db.fetch_all("handwritten_submission_questions", {"submission_id": submission_id})
     return questions
 
 
@@ -131,6 +137,7 @@ async def override_grade(
     if current_user.get("role") not in ["teacher", "faculty", "hod", "super_admin"]:
         raise HTTPException(status_code=403, detail="Only teachers can override grades")
     
+    db = get_scoped_db(current_user)
     now = datetime.now(timezone.utc).isoformat()
     update = {
         "status": "teacher_reviewed",
@@ -140,16 +147,16 @@ async def override_grade(
         "overridden_at": now,
     }
 
-    await supabase_db.update("handwritten_submission_questions", update, {
+    await db.update("handwritten_submission_questions", update, {
         "submission_id": submission_id,
         "question_id": question_id
     })
 
     # Recalculate total score
-    all_q = await supabase_db.fetch_all("handwritten_submission_questions", {"submission_id": submission_id})
+    all_q = await db.fetch_all("handwritten_submission_questions", {"submission_id": submission_id})
     total = sum(q.get("final_score") or 0 for q in all_q)
 
-    await supabase_db.update("handwritten_submissions", {
+    await db.update("handwritten_submissions", {
         "teacher_total_score": total,
         "final_score": total,
         "status": "teacher_reviewed"
@@ -172,6 +179,8 @@ async def grade_question(
 ):
     if current_user.get("role") not in ["teacher", "faculty", "hod", "super_admin"]:
         raise HTTPException(status_code=403, detail="Only teachers can grade")
+    
+    db = get_scoped_db(current_user)
     now = datetime.now(timezone.utc).isoformat()
     update = {
         "status": "teacher_reviewed",
@@ -180,13 +189,13 @@ async def grade_question(
         "final_score": body.teacher_score,
         "overridden_at": now,
     }
-    await supabase_db.update("handwritten_submission_questions", update, {
+    await db.update("handwritten_submission_questions", update, {
         "submission_id": submission_id,
         "question_id": question_id
     })
-    all_q = await supabase_db.fetch_all("handwritten_submission_questions", {"submission_id": submission_id})
+    all_q = await db.fetch_all("handwritten_submission_questions", {"submission_id": submission_id})
     total = sum(q.get("final_score") or 0 for q in all_q)
-    await supabase_db.update("handwritten_submissions", {
+    await db.update("handwritten_submissions", {
         "teacher_total_score": total,
         "final_score": total,
         "status": "teacher_reviewed"

@@ -592,9 +592,9 @@ export class RealAPI {
   async getDashboardData(userRole: string): Promise<any> {
     const roleMap: Record<string, string> = {
       student: "/api/student/dashboard",
-      teacher: "/api/courses/teacher/dashboard",
-      faculty: "/api/courses/teacher/dashboard",
-      college_admin: "/api/college/dashboard",
+      teacher: "/api/teacher/dashboard",
+      faculty: "/api/faculty/dashboard",
+      admin: "/api/admin/dashboard",
       hod: "/api/hod/dashboard"
     };
     const path = roleMap[userRole] || `/api/${userRole}/dashboard`;
