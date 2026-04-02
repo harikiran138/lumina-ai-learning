@@ -30,7 +30,7 @@ const roles = [
   {
     id: "faculty",
     title: "Faculty",
-    description: "Verification queue and live operational classroom insights.",
+    description: "AI gatekeeper, content creator, and evaluation authority. Verify AI answers, manage question banks, control knowledge graphs, and run live classes.",
     icon: User,
     href: "/faculty/dashboard",
     color: "amber"
