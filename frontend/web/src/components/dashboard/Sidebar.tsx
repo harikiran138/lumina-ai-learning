@@ -23,6 +23,12 @@ import {
   Target,
   Award,
   Clock,
+  AlertTriangle,
+  Activity,
+  Zap,
+  Lock,
+  Share2,
+  BarChart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -58,7 +64,16 @@ const roleNavItems: Record<string, any[]> = {
     { name: "Settings",  href: "/peer_tutor/settings",  icon: Settings },
   ],
   counselor: [
-    { name: "Dashboard",   href: "/counselor/dashboard", icon: LayoutDashboard },
+    { name: "Dashboard",          href: "/counselor/dashboard",          icon: LayoutDashboard },
+    { name: "At-Risk Students",   href: "/counselor/at-risk",            icon: AlertTriangle },
+    { name: "Behavior Analytics", href: "/counselor/behavior-analytics", icon: Activity },
+    { name: "Interventions",      href: "/counselor/interventions",      icon: Zap },
+    { name: "Session Notes",      href: "/counselor/notes",              icon: Lock },
+    { name: "Referrals",          href: "/counselor/referrals",          icon: Share2 },
+    { name: "Communication",      href: "/counselor/communication",      icon: MessageSquare },
+    { name: "Reports",            href: "/counselor/reports",            icon: BarChart },
+    { name: "Notifications",      href: "/counselor/notifications",      icon: Bell },
+    { name: "Settings",           href: "/counselor/settings",           icon: Settings },
   ],
   content_creator: [
     { name: "Dashboard", href: "/content_creator/dashboard", icon: LayoutDashboard },
@@ -95,7 +110,7 @@ const profileHrefByRole: Record<string, string> = {
   parent:          "/parent/settings",
   mentor:          "/mentor/settings",
   peer_tutor:      "/peer_tutor/settings",
-  counselor:       "/counselor/notes",
+  counselor:       "/counselor/settings",
   alumni:          "/alumni/portfolio",
   researcher:      "/researcher/dashboard",
   content_creator: "/content_creator/dashboard",
