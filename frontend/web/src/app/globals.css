@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@config "../../tailwind.config.ts";
+@config "../../tailwind.config.mjs";
 
 @source "../../**/*.{js,ts,jsx,tsx,mdx,html}";
 @source "../../../components/**/*.{js,ts,jsx,tsx,mdx,html}";
