@@ -31,6 +31,7 @@ export default function CollegeLayout({ children }: { children: React.ReactNode 
       <CollegeSidebar />
       <TopNav
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+        className="lg:left-24 transition-all duration-500"
         user={
           user
             ? {
@@ -50,7 +51,7 @@ export default function CollegeLayout({ children }: { children: React.ReactNode 
         />
       )}
 
-      <main className="lg:ml-28 pt-20 min-h-screen">
+      <main className="lg:ml-24 pt-20 min-h-screen transition-all duration-500">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Breadcrumb />
           {children}

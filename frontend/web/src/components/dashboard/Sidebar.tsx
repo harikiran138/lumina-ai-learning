@@ -127,6 +127,7 @@ const router = useRouter();
 
 const { user: storeUser, setUser, clearAuth } = useAuthStore();
 const [user, setLocalUser] = useState<any>(storeUser ?? null);
+const [isHovered, setIsHovered] = useState(false);
 
 useEffect(() => {
 if (storeUser) {
@@ -134,14 +135,12 @@ setLocalUser(storeUser);
 return;
 }
 
-```
-api.getCurrentUser().then((data) => {
-  if (data) {
-    setLocalUser(data);
-    setUser(data as any);
-  }
-});
-```
+  api.getCurrentUser().then((data) => {
+    if (data) {
+      setLocalUser(data);
+      setUser(data as any);
+    }
+  });
 
 }, [storeUser, setUser]);
 
@@ -160,14 +159,22 @@ return roleNavItems[currentRole] ?? roleNavItems.student;
 const profileHref =
 profileHrefByRole[currentRole] ?? getRoleHome(currentRole);
 
-return ( <aside className="lumina-sidebar fixed left-4 top-4 bottom-4 flex flex-col z-50">
+return ( 
+<aside 
+  onMouseEnter={() => setIsHovered(true)}
+  onMouseLeave={() => setIsHovered(false)}
+  className={cn(
+    "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 transition-all duration-500 hidden lg:flex flex-col overflow-hidden",
+    !isHovered ? "w-20" : "w-64",
+    isOpen ? "!flex" : "hidden lg:flex"
+  )}
+>
 
-```
   {/* LOGO */}
-  <div className="flex items-center border-b border-white/5">
-    <Link href="/" className="text-2xl font-bold flex gap-1">
-      <span>Lumina</span>
-      <span className="text-yellow-400">AI</span>
+  <div className={cn("flex items-center border-b border-white/5", !isHovered ? "justify-center h-16" : "px-6 h-20")}> 
+    <Link href="/" className="text-2xl font-bold flex gap-1"> 
+      <span>{!isHovered ? "L" : "Lumina"}</span> 
+      <span className="text-yellow-400">AI</span> 
     </Link>
 
     <button onClick={onClose} className="lg:hidden ml-auto">
@@ -190,8 +197,8 @@ return ( <aside className="lumina-sidebar fixed left-4 top-4 bottom-4 flex flex-
             isActive ? "bg-yellow-500/20 text-yellow-400" : "text-gray-400"
           )}
         >
-          <item.icon className="w-5 h-5" />
-          <span>{item.name}</span>
+          <item.icon className="w-5 h-5 flex-shrink-0" />
+          {isHovered && <span>{item.name}</span>}
         </Link>
       );
     })}
@@ -203,21 +210,29 @@ return ( <aside className="lumina-sidebar fixed left-4 top-4 bottom-4 flex flex-
       <Link href={profileHref} className="flex items-center gap-2">
         <img
           src={`https://ui-avatars.com/api/?name=${user.name}`}
-          className="w-8 h-8 rounded-full"
+          className="w-8 h-8 rounded-full flex-shrink-0"
         />
-        <div>
-          <p>{user.name}</p>
-          <p className="text-xs">{user.email}</p>
-        </div>
+        {isHovered && (
+          <div className="overflow-hidden">
+            <p className="truncate">{user.name}</p>
+            <p className="text-xs truncate">{user.email}</p>
+          </div>
+        )}
       </Link>
     )}
 
-    <button onClick={handleLogout} className="mt-3 text-red-400">
-      Logout
+    <button 
+      onClick={handleLogout} 
+      className={cn(
+        "mt-3 text-red-400 flex items-center gap-3 w-full",
+        !isHovered ? "justify-center" : "px-3"
+      )}
+    >
+      <LogOut className="w-5 h-5" />
+      {isHovered && <span>Logout</span>}
     </button>
   </div>
 </aside>
-```
 
 );
 }
