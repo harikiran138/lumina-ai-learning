@@ -61,7 +61,9 @@
   }
 }
 
-@source "../**/*.{js,ts,jsx,tsx,mdx,html}";
+@source "../../**/*.{js,ts,jsx,tsx,mdx,html}";
+@source "../../../components/**/*.{js,ts,jsx,tsx,mdx,html}";
+@source "../../../lib/**/*.{js,ts,jsx,tsx,mdx,html}";
 
 :root {
   --background: 20 10% 4%;
