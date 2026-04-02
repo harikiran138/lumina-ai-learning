@@ -2,14 +2,12 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import {
   getCanonicalPath,
-  getExpectedRoleForPath,
   getRoleHome,
   normalizeRole,
 } from '@/lib/role-routing'
 
 /**
- * Decodes a JWT payload WITHOUT verifying the signature (Edge runtime cannot use crypto libs).
- * Returns null if the token is malformed OR if it is expired.
+ * Decode JWT (no signature verification for Edge runtime)
  */
 function decodeToken(token: string): Record<string, unknown> | null {
   try {
@@ -18,15 +16,16 @@ function decodeToken(token: string): Record<string, unknown> | null {
 
     const base64Url = parts[1]
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+
     const jsonPayload = decodeURIComponent(
       atob(base64)
         .split('')
         .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     )
+
     const payload = JSON.parse(jsonPayload)
 
-    // Reject tokens whose `exp` claim has already passed.
     const exp = payload?.exp
     if (typeof exp === 'number' && Date.now() / 1000 > exp) {
       return null
@@ -38,28 +37,28 @@ function decodeToken(token: string): Record<string, unknown> | null {
   }
 }
 
-// Maps each role to the URL prefix it is allowed to access.
-// super_admin bypasses all path-role checks.
-const ROLE_PATH_MAP: Record<string, string> = {
-  super_admin:      '/admin',
-  college_admin:    '/college',
-  hod:              '/hod',
-  faculty:          '/faculty',
-  teacher:          '/faculty',
-  student:          '/student',
-  parent:           '/parent',
-  mentor:           '/mentor',
-  peer_tutor:       '/peer_tutor',
-  counselor:        '/counselor',
-  content_creator:  '/content_creator',
-  researcher:       '/researcher',
-  alumni:           '/alumni',
+/**
+ * Path → Role mapping
+ */
+const PROTECTED_PATHS: Record<string, string> = {
+  '/admin': 'super_admin',
+  '/college': 'college_admin',
+  '/hod': 'hod',
+  '/faculty': 'faculty',
+  '/student': 'student',
+  '/parent': 'parent',
+  '/mentor': 'mentor',
+  '/peer_tutor': 'peer_tutor',
+  '/counselor': 'counselor',
+  '/content_creator': 'content_creator',
+  '/researcher': 'researcher',
+  '/alumni': 'alumni',
 }
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Canonical redirect (e.g. /teacher → /faculty)
+  // ✅ Canonical redirects (aliases → correct routes)
   const canonical = getCanonicalPath(pathname)
   if (canonical) {
     const url = request.nextUrl.clone()
@@ -74,29 +73,27 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/api/') ||
     pathname === '/'
 
-  // Only use the access_token for routing decisions.
-  // The refresh_token is an opaque rotation credential — it must not be used to
-  // infer role or session state; that is the backend's job at /api/auth/refresh.
   const accessToken = request.cookies.get('access_token')?.value
 
+  // 🚫 Not logged in
   if (!accessToken) {
     if (!isPublic) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
-      // If a refresh_token exists the client-side auth provider will call
-      // /api/auth/refresh automatically after hydration.
+
       const reason = request.cookies.get('refresh_token')?.value
         ? 'session_expired'
         : 'unauthorized'
+
       url.searchParams.set('reason', reason)
       return NextResponse.redirect(url)
     }
     return NextResponse.next()
   }
 
+  // 🔍 Decode token
   const payload = decodeToken(accessToken)
   if (!payload) {
-    // Token present but expired or malformed — force re-login.
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('reason', 'session_expired')
@@ -114,6 +111,7 @@ export function middleware(request: NextRequest) {
   const role = normalizeRole(rawRole)
   const onboardingCompleted = payload.onboardingCompleted === true
 
+  // 🚧 Onboarding checks
   if (!onboardingCompleted && !pathname.startsWith('/onboarding') && !isPublic) {
     const url = request.nextUrl.clone()
     url.pathname = '/onboarding'
@@ -126,20 +124,16 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Enforce role ↔ path ownership for every protected route.
-  for (const [pathRole, pathPrefix] of Object.entries(ROLE_PATH_MAP)) {
-    if (!pathname.startsWith(pathPrefix)) continue
-
-    // super_admin may visit any dashboard.
-    if (role === 'super_admin') break
-
-    if (role !== pathRole) {
-      // Redirect the user to their own home rather than showing a 403.
-      const url = request.nextUrl.clone()
-      url.pathname = getRoleHome(role)
-      return NextResponse.redirect(url)
+  // 🔐 Role-based access control
+  for (const [pathPrefix, expectedRole] of Object.entries(PROTECTED_PATHS)) {
+    if (pathname === pathPrefix || pathname.startsWith(`${pathPrefix}/`)) {
+      if (role !== 'super_admin' && role !== expectedRole) {
+        const url = request.nextUrl.clone()
+        url.pathname = getRoleHome(role)
+        return NextResponse.redirect(url)
+      }
+      break
     }
-    break
   }
 
   return NextResponse.next()
@@ -163,4 +157,3 @@ export const config = {
     '/onboarding',
   ],
 }
-
