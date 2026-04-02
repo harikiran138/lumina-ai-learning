@@ -22,7 +22,7 @@ const roles = [
   {
     id: "student",
     title: "Student",
-    description: "Personalized AI tutoring and mastery-based learning paths.",
+    description: "Adaptive AI tutoring, spaced repetition, knowledge graph mastery, exam readiness prediction, and a full learning loop — personalized every session.",
     icon: GraduationCap,
     href: "/student/dashboard",
     color: "gold"
@@ -30,7 +30,7 @@ const roles = [
   {
     id: "faculty",
     title: "Faculty",
-    description: "Verification queue and live operational classroom insights.",
+    description: "AI gatekeeper, content creator, and evaluation authority. Verify AI answers, manage question banks, control knowledge graphs, and run live classes.",
     icon: User,
     href: "/faculty/dashboard",
     color: "amber"
