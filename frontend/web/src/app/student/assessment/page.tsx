@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { api, getConfiguredApiBase } from "@/lib/api";
+import { RealAPI } from "@/lib/api";
 import {
   Loader2,
   CheckCircle2,
@@ -46,7 +46,7 @@ export default function AssessmentPage() {
 
   useEffect(() => {
     let mounted = true;
-    api
+    RealAPI.getInstance()
       .getCurrentUser()
       .then((user) => {
         if (!mounted) return;
@@ -102,8 +102,7 @@ export default function AssessmentPage() {
   };
 
   // API Base URL
-  const apiRoot = getConfiguredApiBase();
-  const API_BASE = apiRoot ? `${apiRoot}/api/assessment` : null;
+  const API_BASE = "/api/assessment";
 
   const startAssessment = async () => {
     console.log("Starting assessment, connecting to:", API_BASE);
@@ -116,9 +115,8 @@ export default function AssessmentPage() {
       return;
     }
     try {
-      const res = await fetch(`${API_BASE}/start`, {
+      const res = await RealAPI.getInstance().fetchAuthorized(`${API_BASE}/start`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           student_id: currentUserId || "demo_student",
           topic: topic,
@@ -139,7 +137,7 @@ export default function AssessmentPage() {
     } catch (err) {
       console.error("Assessment start failed:", err);
       setCompletionReason(
-        `Failed to connect to assessment server (${API_BASE}). Ensure the backend is running and NEXT_PUBLIC_API_URL is correct.`,
+        `Failed to connect to assessment server. Ensure the backend is running.`,
       );
       setStatus("completed");
     }
@@ -147,10 +145,7 @@ export default function AssessmentPage() {
 
   const fetchReport = async (sid: string) => {
     try {
-      if (!API_BASE) {
-        throw new Error("Assessment API is not configured");
-      }
-      const res = await fetch(`${API_BASE}/report/${sid}`);
+      const res = await RealAPI.getInstance().fetchAuthorized(`${API_BASE}/report/${sid}`);
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(`Report error: ${res.status} ${txt}`);
@@ -173,10 +168,7 @@ export default function AssessmentPage() {
   const loadNextQuestion = async (sid: string) => {
     setStatus("loading");
     try {
-      if (!API_BASE) {
-        throw new Error("Assessment API is not configured");
-      }
-      const res = await fetch(`${API_BASE}/next-question/${sid}`);
+      const res = await RealAPI.getInstance().fetchAuthorized(`${API_BASE}/next-question/${sid}`);
 
       if (!res.ok) {
         if (res.status === 404) {
@@ -240,9 +232,8 @@ export default function AssessmentPage() {
     };
 
     try {
-      const res = await fetch(`${API_BASE}/submit`, {
+      const res = await RealAPI.getInstance().fetchAuthorized(`${API_BASE}/submit`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           session_id: sessionId,
           question_id: question.id,
@@ -281,7 +272,7 @@ export default function AssessmentPage() {
     if (confirm("Are you sure you want to end the assessment early?")) {
       setStatus("loading");
       try {
-        await fetch(`${API_BASE}/complete/${sessionId}`, { method: "POST" });
+        await RealAPI.getInstance().fetchAuthorized(`${API_BASE}/complete/${sessionId}`, { method: "POST" });
         // After manual completion, load the summary report
         await fetchReport(sessionId);
       } catch (err) {

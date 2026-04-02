@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Trophy, Medal, Star, Flame, Search, Filter, ArrowUp, ArrowDown, Minus } from "lucide-react";
-import { api, getConfiguredApiBase } from "@/lib/api";
+import { RealAPI } from "@/lib/api";
 
 type LeaderboardEntry = {
   rank: number;
@@ -27,17 +27,7 @@ export default function StudentLeaderboard() {
     const fetchLeaderboard = async () => {
       setIsLoading(true);
       try {
-        const apiBase = getConfiguredApiBase();
-        if (!apiBase) {
-          setLeaderboard([]);
-          return;
-        }
-        const res = await fetch(
-          `${apiBase}/api/student/leaderboard?timeframe=${activeTimeframe}`,
-          {
-            credentials: "include",
-          }
-        );
+        const res = await RealAPI.getInstance().fetchAuthorized(`/api/student/leaderboard?timeframe=${activeTimeframe}`);
         if (res.ok) {
           const data = await res.json();
           const entries: LeaderboardEntry[] = (data.entries || []).map((e: any) => ({

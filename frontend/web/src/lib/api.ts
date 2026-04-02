@@ -1,6 +1,7 @@
 // API client for the Lumina FastAPI backend
 
 const LOCAL_API_BASE = "http://127.0.0.1:8000";
+const HOSTED_API_BASE = "/api";
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
 
 export function getConfiguredApiBase(): string | null {
@@ -8,18 +9,35 @@ export function getConfiguredApiBase(): string | null {
     process.env.NEXT_PUBLIC_API_URL?.trim() ||
     process.env.NEXT_PUBLIC_API_BASE?.trim();
 
-  if (explicitBase) {
+  if (typeof window !== "undefined") {
+    const isLocalHost = LOCAL_HOSTNAMES.has(window.location.hostname);
+    if (isLocalHost) {
+      return explicitBase ? explicitBase.replace(/\/+$/, "") : LOCAL_API_BASE;
+    }
+
+    if (!explicitBase) {
+      return HOSTED_API_BASE;
+    }
+
+    if (explicitBase.startsWith("/")) {
+      return explicitBase.replace(/\/+$/, "") || "/";
+    }
+
+    try {
+      const parsed = new URL(explicitBase);
+      if (parsed.origin !== window.location.origin && parsed.hostname.endsWith(".onrender.com")) {
+        // Prefer same-origin `/api` on hosted frontends so cookies and auth flows
+        // work through the Vercel rewrite instead of cross-origin browser CORS.
+        return HOSTED_API_BASE;
+      }
+    } catch {
+      return explicitBase.replace(/\/+$/, "");
+    }
+
     return explicitBase.replace(/\/+$/, "");
   }
 
-  if (
-    typeof window !== "undefined" &&
-    LOCAL_HOSTNAMES.has(window.location.hostname)
-  ) {
-    return LOCAL_API_BASE;
-  }
-
-  return null;
+  return explicitBase ? explicitBase.replace(/\/+$/, "") : null;
 }
 
 export function getConfiguredAuthBase(): string | null {
@@ -95,7 +113,11 @@ async function fetchWithRetry(
 
       if (attempt === retries) {
         if (err instanceof TypeError && err.message === "Failed to fetch") {
-          console.error(`[Lumina API] Network Error: Failed to fetch from ${url}. Is the backend running on port 8000?`, err);
+          const isLocal = url.includes("localhost") || url.includes("127.0.0.1") || url.includes(":8000");
+          const msg = isLocal 
+            ? `[Lumina API] Network Error: Failed to fetch from ${url}. Is the local backend running on port 8000?`
+            : `[Lumina API] Network Error: Failed to connect to ${url}. This may be a CORS issue or the server may be down.`;
+          console.error(msg, err);
         } else {
           console.error(`Final fetch failure for ${url}:`, err);
         }
@@ -149,6 +171,19 @@ export class RealAPI {
   private constructor() {
   }
 
+  private buildUrl(base: string, path: string): string {
+    const b = base.replace(/\/+$/, "");
+    const p = path.replace(/^\/+/, "");
+    
+    // If base is .../api and path is api/auth/login, we want .../api/auth/login
+    // Similarly for /auth if the base already includes it.
+    if (b.endsWith("/api") && p.startsWith("api/")) {
+        return `${b}/${p.substring(4)}`;
+    }
+    
+    return `${b}/${p}`;
+  }
+
   public static getInstance(): RealAPI {
     if (!RealAPI.instance) {
       RealAPI.instance = new RealAPI();
@@ -176,7 +211,8 @@ export class RealAPI {
 
   private async handleUnauthorized(): Promise<boolean> {
     try {
-      const res = await fetch(`${requireAuthBase()}/api/auth/refresh`, {
+      const url = this.buildUrl(requireAuthBase(), "/api/auth/refresh");
+      const res = await fetch(url, {
         method: 'POST',
         credentials: 'include',
       })
@@ -195,12 +231,12 @@ export class RealAPI {
     return false
   }
 
-  private async fetchAuthorized(
+  public async fetchAuthorized(
     path: string,
     options: RequestInit = {},
     timeoutMs?: number
   ): Promise<Response> {
-    const fullUrl = `${this.getApiBase()}${path}`;
+    const fullUrl = this.buildUrl(this.getApiBase(), path);
 
     try {
       let headers: HeadersInit = {
@@ -208,7 +244,13 @@ export class RealAPI {
         ...(options.headers || {}),
       };
 
-      if (this.token) {
+      const hasAuth = options.headers && (
+        (options.headers instanceof Headers && options.headers.has("Authorization")) ||
+        (Array.isArray(options.headers) && options.headers.some(([k]) => k.toLowerCase() === "authorization")) ||
+        (typeof options.headers === "object" && Object.keys(options.headers).some(k => k.toLowerCase() === "authorization"))
+      );
+
+      if (this.token && !hasAuth) {
         headers = { ...headers, "Authorization": `Bearer ${this.token}` };
       }
 
@@ -283,7 +325,8 @@ export class RealAPI {
     const { identifier, password, role_hint, college_id } = params;
     if (!password) throw new Error("Password is required for login.");
 
-    const res = await fetchWithRetry(`${requireAuthBase()}/api/auth/login`, {
+    const url = this.buildUrl(requireAuthBase(), "/api/auth/login");
+    const res = await fetchWithRetry(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ identifier, password, role_hint, college_id }),
@@ -385,7 +428,8 @@ export class RealAPI {
 
   async createUser(userData: Partial<User> & { password?: string }): Promise<any> {
     if (!userData.password) throw new Error("Password is required for signup.");
-    const res = await fetchWithRetry(`${requireAuthBase()}/api/auth/register`, {
+    const url = this.buildUrl(requireAuthBase(), "/api/auth/register");
+    const res = await fetchWithRetry(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -407,7 +451,8 @@ export class RealAPI {
       await supabase.auth.signOut();
 
       // 2. Call backend to clear HTTP-only cookies and blacklist token
-      await fetch(`${requireAuthBase()}/api/auth/logout`, {
+      const url = this.buildUrl(requireAuthBase(), "/api/auth/logout");
+      await fetch(url, {
         method: "POST",
         credentials: "include",
       });
@@ -420,10 +465,14 @@ export class RealAPI {
     }
   }
 
-  async changePassword(tokenOrPassword: string | null, maybeNewPassword?: string): Promise<any> {
-    const newPassword = maybeNewPassword ?? tokenOrPassword;
+  async changePassword(newPassword: string, token?: string | null): Promise<any> {
+    const headers: any = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
     const res = await this.fetchAuthorized("/api/auth/change-password", {
       method: "POST",
+      headers,
       body: JSON.stringify({ newPassword }),
     });
     if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.detail || "Failed to change password"); }
@@ -431,7 +480,8 @@ export class RealAPI {
   }
 
   async forgotPassword(email: string): Promise<any> {
-    const res = await fetch(`${requireAuthBase()}/api/auth/forgot-password`, {
+    const url = this.buildUrl(requireAuthBase(), "/api/auth/forgot-password");
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
@@ -441,7 +491,8 @@ export class RealAPI {
   }
 
   async resetPassword(token: string, newPassword: string): Promise<any> {
-    const res = await fetch(`${requireAuthBase()}/api/auth/reset-password`, {
+    const url = this.buildUrl(requireAuthBase(), "/api/auth/reset-password");
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, newPassword }),
@@ -779,6 +830,48 @@ export class RealAPI {
   async architectureCreateCollege(data: any) {
     const res = await this.fetchAuthorized(`/api/colleges`, { method: "POST", body: JSON.stringify(data)});
     return await parseJsonSafe(res) ?? {};
+  }
+
+  // --- Content Designer APIs ---
+  async getDesignerQueue(): Promise<any[]> {
+    return await this.fetchJsonOrDefault("/api/content-designer/queue", []);
+  }
+
+  async getCourseById(courseId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/courses/${courseId}`);
+    if (!res.ok) throw new Error("Course not found");
+    return await res.json();
+  }
+
+  async approveCourse(courseId: string): Promise<void> {
+    const res = await this.fetchAuthorized(`/api/content-designer/courses/${courseId}/approve`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+        const e = await parseJsonSafe(res);
+        throw new Error(e?.detail || "Failed to approve course");
+    }
+  }
+
+  async rejectCourse(courseId: string, feedback: string): Promise<void> {
+    const res = await this.fetchAuthorized(`/api/content-designer/courses/${courseId}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ feedback }),
+    });
+    if (!res.ok) {
+        const e = await parseJsonSafe(res);
+        throw new Error(e?.detail || "Failed to reject course");
+    }
+  }
+
+  // --- Faculty Specific ---
+  async getFacultyCourse(courseId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/faculty/courses/${courseId}`);
+    if (!res.ok) {
+        const e = await parseJsonSafe(res);
+        throw new Error(e?.detail || "Failed to load faculty course details");
+    }
+    return await res.json();
   }
   async architectureUpdateCollege(collegeId: string, data: any) {
     const res = await this.fetchAuthorized(`/api/colleges/${collegeId}`, { method: "PATCH", body: JSON.stringify(data)});
@@ -1211,6 +1304,20 @@ export class RealAPI {
     return this.fetchJsonOrDefault("/api/alumni/portfolio", null);
   }
   async getAlumniMentorshipMentees(..._args: any[]): Promise<any> { return []; }
+  async getAlumniSessions(..._args: any[]): Promise<any> { return []; }
+  async getAlumniJobBoard(..._args: any[]): Promise<any> { return []; }
+  async postAlumniJob(payload: any = {}, ..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault("/api/alumni/jobs", { success: false }, { method: "POST", body: JSON.stringify(payload) });
+  }
+  async getAlumniNetwork(..._args: any[]): Promise<any> { return []; }
+  async getAlumniReports(..._args: any[]): Promise<any> { return {}; }
+  async getAlumniNotifications(..._args: any[]): Promise<any> { return []; }
+  async submitAlumniCurriculumFeedback(payload: any = {}, ..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault("/api/alumni/curriculum-feedback", { success: false }, { method: "POST", body: JSON.stringify(payload) });
+  }
+  async submitAlumniInterviewFeedback(payload: any = {}, ..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault("/api/alumni/interview-feedback", { success: false }, { method: "POST", body: JSON.stringify(payload) });
+  }
   async getPeerTutorSessions(..._args: any[]): Promise<any> { return []; }
   async getPeerTutorTraining(..._args: any[]): Promise<any> { return []; }
   async getCounselorCases(..._args: any[]): Promise<any> { return []; }
@@ -1330,6 +1437,18 @@ export class RealAPI {
     );
     if (!res.ok) throw new Error("Grade save failed");
     return res.json();
+  }
+
+  /** POST /api/content-designer/courses/{id}/submit — submit course for review */
+  async submitCourseReview(courseId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/content-designer/courses/${courseId}/submit`, {
+      method: "POST"
+    });
+    if (!res.ok) {
+      const e = await parseJsonSafe(res);
+      throw new Error(e?.detail || "Failed to submit course for review");
+    }
+    return await parseJsonSafe(res);
   }
 }
 

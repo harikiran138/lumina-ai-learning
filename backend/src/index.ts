@@ -10,13 +10,43 @@ dotenv.config();
 const app = express();
 const PORT = process.env.AUTH_PORT || 4000;
 
+const allowedOrigins = [
+  'https://lumina-ai-blond.vercel.app',
+  'https://lumina-platform.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001',
+];
+const allowedOriginPatterns = [
+  /^https:\/\/lumina-[a-z0-9-]+\.vercel\.app$/i,
+];
+
+function isAllowedOrigin(origin?: string) {
+  const frontendUrl = process.env.FRONTEND_URL;
+  return (
+    !origin ||
+    allowedOrigins.includes(origin) ||
+    origin === frontendUrl ||
+    allowedOriginPatterns.some((pattern) => pattern.test(origin))
+  );
+}
+
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true, // required for cookies
 }));
 app.use(express.json());
 app.use(cookieParser());
+app.options('*', cors({
+  origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
+  credentials: true,
+}));
 
 // Routes
 app.use('/api/auth', authRoutes);

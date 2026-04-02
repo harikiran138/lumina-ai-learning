@@ -13,15 +13,46 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 const JWT_SECRET = process.env.JWT_SECRET || 'lumina-secret-key-2024';
 
+const allowedOrigins = [
+  'https://lumina-ai-blond.vercel.app',
+  'https://lumina-platform.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+];
+const allowedOriginPatterns = [
+  /^https:\/\/lumina-[a-z0-9-]+\.vercel\.app$/i,
+];
+
+function isAllowedOrigin(origin) {
+  const envFrontend = process.env.FRONTEND_URL;
+  return (
+    !origin ||
+    allowedOrigins.includes(origin) ||
+    origin === envFrontend ||
+    allowedOriginPatterns.some((pattern) => pattern.test(origin))
+  );
+}
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(cookieParser());
+app.options('*', cors({
+  origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
+  credentials: true,
+}));
 
 // Rate limiting
 const limiter = rateLimit({

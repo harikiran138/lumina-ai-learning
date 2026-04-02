@@ -35,7 +35,7 @@ export default function ResetPasswordPage() {
   const onSubmit = async (data: ResetPasswordFormData) => {
     setIsSubmitting(true);
     try {
-      await api.changePassword(null, data.password);
+      await api.changePassword(data.password);
       toast.success("Password updated successfully!");
       
       // Get user to determine next redirect

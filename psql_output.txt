@@ -1,0 +1,67 @@
+BEGIN
+psql:migrate_unified_schema.sql:9: NOTICE:  column "is_deleted" of relation "users" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:10: NOTICE:  column "deleted_at" of relation "users" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:26: NOTICE:  relation "attendance_sessions" already exists, skipping
+CREATE TABLE
+psql:migrate_unified_schema.sql:39: NOTICE:  relation "attendance_records" already exists, skipping
+CREATE TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+psql:migrate_unified_schema.sql:46: NOTICE:  column "is_deleted" of relation "attendance_sessions" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:47: NOTICE:  column "deleted_at" of relation "attendance_sessions" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:48: NOTICE:  column "created_at" of relation "attendance_sessions" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+DO
+psql:migrate_unified_schema.sql:90: NOTICE:  relation "assignment_submissions" already exists, skipping
+CREATE TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+psql:migrate_unified_schema.sql:98: NOTICE:  column "feedback" of relation "assignment_submissions" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+psql:migrate_unified_schema.sql:100: NOTICE:  column "graded_at" of relation "assignment_submissions" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:101: NOTICE:  column "is_deleted" of relation "assignment_submissions" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:102: NOTICE:  column "deleted_at" of relation "assignment_submissions" already exists, skipping
+ALTER TABLE
+DO
+psql:migrate_unified_schema.sql:141: NOTICE:  column "is_deleted" of relation "courses" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:142: NOTICE:  column "deleted_at" of relation "courses" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:144: NOTICE:  column "is_deleted" of relation "assignments" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:145: NOTICE:  column "deleted_at" of relation "assignments" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:147: NOTICE:  column "is_deleted" of relation "institutions" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:148: NOTICE:  column "deleted_at" of relation "institutions" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:150: NOTICE:  column "is_deleted" of relation "departments" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:151: NOTICE:  column "deleted_at" of relation "departments" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:153: NOTICE:  column "is_deleted" of relation "programs" already exists, skipping
+ALTER TABLE
+psql:migrate_unified_schema.sql:154: NOTICE:  column "deleted_at" of relation "programs" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+COMMIT

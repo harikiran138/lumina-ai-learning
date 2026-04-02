@@ -16,7 +16,7 @@ import {
   Calendar,
   Zap,
 } from "lucide-react";
-import { getConfiguredApiBase } from "@/lib/api";
+import { RealAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 // --- Types ---
@@ -77,19 +77,14 @@ export default function ExamReadinessPage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const apiBase = getConfiguredApiBase();
-        if (apiBase) {
-          const res = await fetch(`${apiBase}/api/student/exam-readiness`, {
-            credentials: "include",
-          });
-          if (res.ok) {
-            setData(await res.json());
-            setIsLoading(false);
-            return;
-          }
+        const res = await RealAPI.getInstance().fetchAuthorized("/api/student/exam-readiness");
+        if (res.ok) {
+          setData(await res.json());
+          setIsLoading(false);
+          return;
         }
-      } catch {
-        // fall through to mock
+      } catch (err) {
+        console.warn("Exam readiness fetch failed, using fallback:", err);
       }
       setData(MOCK_DATA);
       setIsLoading(false);

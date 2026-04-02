@@ -28,7 +28,7 @@ export default function HODLayout({ children }: { children: React.ReactNode }) {
 
       <TopNav
         onMenuClick={() => setSidebarOpen((v) => !v)}
-        className="lg:left-28"
+        className="lg:left-24 transition-all duration-500"
         user={
           user
             ? { name: user.name ?? "HOD", role: "HOD", initial: (user.name ?? "H").charAt(0), avatar: user.avatar }
@@ -44,7 +44,7 @@ export default function HODLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Stable margin — never shifts on hover */}
-      <main className="lg:ml-28 pt-20 min-h-screen">
+      <main className="lg:ml-24 pt-20 min-h-screen transition-all duration-500">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
           <Breadcrumb />
           {children}

@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Dict, Set
+from typing import Dict, List, Optional, Set
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from jose import jwt, JWTError
@@ -51,7 +51,7 @@ class _ConnectionManager:
         self._channels.get(channel, set()).discard(ws)
 
     async def broadcast(self, channel: str, payload: dict) -> None:
-        dead: list[WebSocket] = []
+        dead: List[WebSocket] = []
         for ws in list(self._channels.get(channel, set())):
             try:
                 await ws.send_json(payload)
@@ -70,7 +70,7 @@ _REDIS_COMMUNITY_CHANNEL = "lumina:community"
 # JWT helper (Edge-safe decode + expiry check)
 # ---------------------------------------------------------------------------
 
-def _decode_ws_token(token: str) -> dict | None:
+def _decode_ws_token(token: str) -> Optional[dict]:
     """Decode and validate a JWT for a WebSocket connection."""
     for secret in filter(None, [settings.JWT_SECRET, settings.SECRET_KEY]):
         try:
@@ -81,7 +81,7 @@ def _decode_ws_token(token: str) -> dict | None:
     return None
 
 
-def _auth_ws(ws: WebSocket, token: str | None) -> dict | None:
+def _auth_ws(ws: WebSocket, token: Optional[str]) -> Optional[dict]:
     """
     Extract & validate the bearer token from the WebSocket handshake.
     Priority: query param `access_token` → cookie `access_token`.
@@ -101,7 +101,7 @@ def _auth_ws(ws: WebSocket, token: str | None) -> dict | None:
 @router.websocket("/community")
 async def community_ws(
     ws: WebSocket,
-    access_token: str | None = Query(default=None),
+    access_token: Optional[str] = Query(default=None),
 ):
     """
     WebSocket endpoint for real-time community chat.
@@ -173,7 +173,7 @@ async def community_ws(
 async def ai_tutor_ws(
     ws: WebSocket,
     user_id: str,
-    access_token: str | None = Query(default=None),
+    access_token: Optional[str] = Query(default=None),
 ):
     """
     WebSocket endpoint for streaming AI tutor responses.

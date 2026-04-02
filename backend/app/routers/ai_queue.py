@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from .auth import get_current_user
 from app.api.deps import get_current_teacher
 from app.database.supabase_manager import supabase_db
+from app.core.audit import audit_logger
 
 router = APIRouter()
 
@@ -16,7 +17,7 @@ router = APIRouter()
 
 class AskQuestionRequest(BaseModel):
     question_text: str
-    context_lecture_id: Optional[int] = None
+    context_lecture_id: Optional[str] = None
 
 
 class EditApproveRequest(BaseModel):
@@ -42,11 +43,43 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _ensure_verified_answer_entry(
+    client: Any,
+    queue_id: str,
+    question_text: str,
+    answer: str,
+    course_id: Optional[str],
+    reviewer_id: str,
+):
+    existing = (
+        client.table("verified_answers_bank")
+        .select("id")
+        .eq("source_queue_id", queue_id)
+        .limit(1)
+        .execute()
+    )
+    if existing.data:
+        return existing.data[0]
+
+    result = client.table("verified_answers_bank").insert({
+        "question": question_text,
+        "answer": answer,
+        "course_id": course_id,
+        "source_queue_id": queue_id,
+        "created_by": reviewer_id,
+        "verified_by": reviewer_id,
+        "answer_type": "text",
+        "is_active": True,
+        "difficulty": "medium"
+    }).execute()
+    return (result.data or [None])[0]
+
+
 # ── Student endpoints ──────────────────────────────────────────────────────────
 
 @router.post("/courses/{course_id}/questions")
 async def ask_question(
-    course_id: int,
+    course_id: str,
     body: AskQuestionRequest,
     current_user: dict = Depends(get_current_user),
 ):
@@ -97,7 +130,7 @@ async def ask_question(
 
 @router.get("/courses/{course_id}/questions")
 async def list_course_questions(
-    course_id: int,
+    course_id: str,
     current_user: dict = Depends(get_current_user),
 ):
     """List Q&As for a course. Students see only approved answers; faculty see all."""
@@ -241,24 +274,53 @@ async def faculty_queue(current_user: dict = Depends(get_current_teacher)):
 
 @router.post("/faculty/ai-queue/{queue_id}/approve")
 async def approve_queue_item(
-    queue_id: int,
+    queue_id: str,
     current_user: dict = Depends(get_current_teacher),
 ):
     try:
         client = _client()
 
-        # Verify item exists
-        existing = client.table("ai_answer_queue").select("id, ai_draft").eq("id", queue_id).execute()
+        # Verify item exists and get related course_questions for the bank
+        existing = client.table("ai_answer_queue").select("id, ai_draft, question_id, course_id, course_questions(question_text, student_id)").eq("id", queue_id).execute()
         if not existing.data:
             raise HTTPException(status_code=404, detail="Queue item not found")
 
-        ai_draft = existing.data[0].get("ai_draft", "")
+        q_item = existing.data[0]
+        ai_draft = q_item.get("ai_draft", "")
+        question_text = (q_item.get("course_questions") or {}).get("question_text", "Unknown Question")
+        if not ai_draft or ai_draft.lower().startswith("processing"):
+            raise HTTPException(status_code=409, detail="AI answer is not ready for approval")
+
+        # 1. Update AI Answer Queue
         client.table("ai_answer_queue").update({
             "status": "approved",
             "final_answer": ai_draft,
             "reviewed_by": current_user["id"],
             "reviewed_at": _now_iso(),
+            "released_to_student": True,
+            "added_to_bank": True
         }).eq("id", queue_id).execute()
+
+        # 2. Add to Verified Answers Bank
+        _ensure_verified_answer_entry(
+            client=client,
+            queue_id=queue_id,
+            question_text=question_text,
+            answer=ai_draft,
+            course_id=q_item.get("course_id"),
+            reviewer_id=current_user["id"],
+        )
+
+        audit_logger.log(
+            action="ai_answer_approved",
+            user_id=str(current_user["id"]),
+            resource_id=str(queue_id),
+            metadata={
+                "question_id": q_item.get("question_id"),
+                "course_id": q_item.get("course_id"),
+                "approval_type": "direct",
+            },
+        )
 
         return {"success": True, "status": "approved"}
     except HTTPException:
@@ -269,16 +331,19 @@ async def approve_queue_item(
 
 @router.post("/faculty/ai-queue/{queue_id}/edit-approve")
 async def edit_approve_queue_item(
-    queue_id: int,
+    queue_id: str,
     body: EditApproveRequest,
     current_user: dict = Depends(get_current_teacher),
 ):
     try:
         client = _client()
 
-        existing = client.table("ai_answer_queue").select("id").eq("id", queue_id).execute()
+        existing = client.table("ai_answer_queue").select("id, question_id, course_id, course_questions(question_text)").eq("id", queue_id).execute()
         if not existing.data:
             raise HTTPException(status_code=404, detail="Queue item not found")
+
+        q_item = existing.data[0]
+        question_text = (q_item.get("course_questions") or {}).get("question_text", "Unknown Question")
 
         client.table("ai_answer_queue").update({
             "status": "edited_approved",
@@ -286,7 +351,29 @@ async def edit_approve_queue_item(
             "faculty_note": body.faculty_note,
             "reviewed_by": current_user["id"],
             "reviewed_at": _now_iso(),
+            "released_to_student": True,
+            "added_to_bank": True
         }).eq("id", queue_id).execute()
+
+        _ensure_verified_answer_entry(
+            client=client,
+            queue_id=queue_id,
+            question_text=question_text,
+            answer=body.final_answer,
+            course_id=q_item.get("course_id"),
+            reviewer_id=current_user["id"],
+        )
+
+        audit_logger.log(
+            action="ai_answer_approved",
+            user_id=str(current_user["id"]),
+            resource_id=str(queue_id),
+            metadata={
+                "question_id": q_item.get("question_id"),
+                "course_id": q_item.get("course_id"),
+                "approval_type": "edited",
+            },
+        )
 
         return {"success": True, "status": "edited_approved"}
     except HTTPException:
@@ -297,7 +384,7 @@ async def edit_approve_queue_item(
 
 @router.post("/faculty/ai-queue/{queue_id}/reject")
 async def reject_queue_item(
-    queue_id: int,
+    queue_id: str,
     body: RejectRequest,
     current_user: dict = Depends(get_current_teacher),
 ):
@@ -315,6 +402,13 @@ async def reject_queue_item(
             "reviewed_at": _now_iso(),
         }).eq("id", queue_id).execute()
 
+        audit_logger.log(
+            action="ai_answer_rejected",
+            user_id=str(current_user["id"]),
+            resource_id=str(queue_id),
+            metadata={"reason": body.faculty_note},
+        )
+
         return {"success": True, "status": "rejected"}
     except HTTPException:
         raise
@@ -323,7 +417,7 @@ async def reject_queue_item(
 
 @router.post("/faculty/ai-queue/{queue_id}/escalate")
 async def escalate_queue_item(
-    queue_id: int,
+    queue_id: str,
     body: EscalateRequest,
     current_user: dict = Depends(get_current_teacher),
 ):
@@ -349,6 +443,13 @@ async def escalate_queue_item(
             "reviewed_by": current_user["id"],
             "reviewed_at": _now_iso(),
         }).eq("id", queue_id).execute()
+
+        audit_logger.log(
+            action="ai_answer_escalated",
+            user_id=str(current_user["id"]),
+            resource_id=str(queue_id),
+            metadata={"new_status": new_status, "reason": body.reason},
+        )
 
         return {"success": True, "status": new_status}
     except HTTPException:

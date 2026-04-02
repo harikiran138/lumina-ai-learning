@@ -44,3 +44,4 @@ lib/
 include/
 share/
 
+.env*.local
