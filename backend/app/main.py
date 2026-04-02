@@ -192,6 +192,7 @@ _ALLOWED_CORS_ORIGINS = {
     "http://127.0.0.1:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3001",
+    "https://lumina-ai-blond.vercel.app",
 }
 
 def add_cors_headers(response: JSONResponse, request: Request) -> JSONResponse:

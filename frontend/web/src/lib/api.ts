@@ -149,6 +149,19 @@ export class RealAPI {
   private constructor() {
   }
 
+  private buildUrl(base: string, path: string): string {
+    const b = base.replace(/\/+$/, "");
+    const p = path.replace(/^\/+/, "");
+    
+    // If base is .../api and path is api/auth/login, we want .../api/auth/login
+    // Similarly for /auth if the base already includes it.
+    if (b.endsWith("/api") && p.startsWith("api/")) {
+        return `${b}/${p.substring(4)}`;
+    }
+    
+    return `${b}/${p}`;
+  }
+
   public static getInstance(): RealAPI {
     if (!RealAPI.instance) {
       RealAPI.instance = new RealAPI();
@@ -176,7 +189,8 @@ export class RealAPI {
 
   private async handleUnauthorized(): Promise<boolean> {
     try {
-      const res = await fetch(`${requireAuthBase()}/api/auth/refresh`, {
+      const url = this.buildUrl(requireAuthBase(), "/api/auth/refresh");
+      const res = await fetch(url, {
         method: 'POST',
         credentials: 'include',
       })
@@ -200,7 +214,7 @@ export class RealAPI {
     options: RequestInit = {},
     timeoutMs?: number
   ): Promise<Response> {
-    const fullUrl = `${this.getApiBase()}${path}`;
+    const fullUrl = this.buildUrl(this.getApiBase(), path);
 
     try {
       let headers: HeadersInit = {
@@ -283,7 +297,8 @@ export class RealAPI {
     const { identifier, password, role_hint, college_id } = params;
     if (!password) throw new Error("Password is required for login.");
 
-    const res = await fetchWithRetry(`${requireAuthBase()}/api/auth/login`, {
+    const url = this.buildUrl(requireAuthBase(), "/api/auth/login");
+    const res = await fetchWithRetry(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ identifier, password, role_hint, college_id }),
@@ -385,7 +400,8 @@ export class RealAPI {
 
   async createUser(userData: Partial<User> & { password?: string }): Promise<any> {
     if (!userData.password) throw new Error("Password is required for signup.");
-    const res = await fetchWithRetry(`${requireAuthBase()}/api/auth/register`, {
+    const url = this.buildUrl(requireAuthBase(), "/api/auth/register");
+    const res = await fetchWithRetry(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -407,7 +423,8 @@ export class RealAPI {
       await supabase.auth.signOut();
 
       // 2. Call backend to clear HTTP-only cookies and blacklist token
-      await fetch(`${requireAuthBase()}/api/auth/logout`, {
+      const url = this.buildUrl(requireAuthBase(), "/api/auth/logout");
+      await fetch(url, {
         method: "POST",
         credentials: "include",
       });
@@ -431,7 +448,8 @@ export class RealAPI {
   }
 
   async forgotPassword(email: string): Promise<any> {
-    const res = await fetch(`${requireAuthBase()}/api/auth/forgot-password`, {
+    const url = this.buildUrl(requireAuthBase(), "/api/auth/forgot-password");
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
@@ -441,7 +459,8 @@ export class RealAPI {
   }
 
   async resetPassword(token: string, newPassword: string): Promise<any> {
-    const res = await fetch(`${requireAuthBase()}/api/auth/reset-password`, {
+    const url = this.buildUrl(requireAuthBase(), "/api/auth/reset-password");
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, newPassword }),
