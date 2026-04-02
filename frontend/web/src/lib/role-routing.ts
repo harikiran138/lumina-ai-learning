@@ -34,6 +34,8 @@ const ROLE_PATH_PREFIXES: Record<string, string[]> = {
 
 export function normalizeRole(role?: string | null): string {
   if (role === "admin") return "super_admin"
+  if (role === "teacher") return "faculty"
+  if (role === "peer-tutor") return "peer_tutor"
   return role || ""
 }
 
@@ -50,7 +52,7 @@ export function getRolePathPrefixes(role?: string | null): string[] {
 export function getExpectedRoleForPath(pathname: string): string | null {
   for (const [role, prefixes] of Object.entries(ROLE_PATH_PREFIXES)) {
     if (prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
-      return role
+      return normalizeRole(role)
     }
   }
   return null

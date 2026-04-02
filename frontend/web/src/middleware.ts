@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import {
   getCanonicalPath,
-  getExpectedRoleForPath,
   getRoleHome,
   normalizeRole,
 } from '@/lib/role-routing'
@@ -23,12 +22,40 @@ function decodeToken(token: string) {
   }
 }
 
+// Map each path prefix to the role that is allowed to access it.
+// super_admin can access all paths.
+const PROTECTED_PATHS: Record<string, string> = {
+  '/admin': 'super_admin',
+  '/college': 'college_admin',
+  '/hod': 'hod',
+  '/faculty': 'faculty',
+  '/student': 'student',
+  '/parent': 'parent',
+  '/mentor': 'mentor',
+  '/peer_tutor': 'peer_tutor',
+  '/counselor': 'counselor',
+  '/content_creator': 'content_creator',
+  '/researcher': 'researcher',
+  '/alumni': 'alumni',
+}
+
 export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get('access_token')?.value
   const refreshToken = request.cookies.get('refresh_token')?.value
   const token = accessToken || refreshToken // use whichever is available to decode payload
-  
+
   const { pathname } = request.nextUrl
+
+  // Redirect legacy/alias paths to canonical routes before any auth check.
+  // Aliases handled: /teacher/* → /faculty/*, /peer-tutor/* → /peer_tutor/*,
+  //                  /creator/* → /content_creator/*, /researcher/portal/* → /researcher/dashboard/*,
+  //                  /content_creator/studio/* → /content_creator/dashboard/*
+  const canonical = getCanonicalPath(pathname)
+  if (canonical) {
+    const url = request.nextUrl.clone()
+    url.pathname = canonical
+    return NextResponse.redirect(url)
+  }
 
   const isPublic =
     pathname.startsWith('/login') ||
@@ -76,21 +103,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  const rolePaths = {
-    super_admin: '/admin',
-    college_admin: '/college',
-    hod: '/hod',
-    faculty: '/faculty',
-    student: '/student',
-  }
-
-  for (const [expectedRole, path] of Object.entries(rolePaths)) {
-    if (pathname.startsWith(path)) {
+  // Enforce role-based path access
+  for (const [pathPrefix, expectedRole] of Object.entries(PROTECTED_PATHS)) {
+    if (pathname === pathPrefix || pathname.startsWith(`${pathPrefix}/`)) {
       if (role !== 'super_admin' && role !== expectedRole) {
         const url = request.nextUrl.clone()
-        url.pathname = `/${role === 'super_admin' ? 'admin' : role}/dashboard`
+        url.pathname = getRoleHome(role)
         return NextResponse.redirect(url)
       }
+      break
     }
   }
 
@@ -105,6 +126,13 @@ export const config = {
     '/hod/:path*',
     '/college/:path*',
     '/faculty/:path*',
+    '/parent/:path*',
+    '/mentor/:path*',
+    '/peer_tutor/:path*',
+    '/counselor/:path*',
+    '/content_creator/:path*',
+    '/researcher/:path*',
+    '/alumni/:path*',
     '/onboarding',
   ],
 }
