@@ -22,11 +22,28 @@ class User(BaseModel):
     email: EmailStr
     hashed_password: str
     full_name: str
-    role: str = "student"  # student, teacher, hod, admin
+    role: str = "student"
     profile_image: Optional[str] = None
+    
+    # Institutional Scoping
+    institution_id: Optional[str] = None
+    college_id: Optional[str] = None
+    department_id: Optional[str] = None
+    batch_id: Optional[str] = None
+    
+    # Identifiers
+    roll_number: Optional[str] = None
+    employee_id: Optional[str] = None
+    phone: str = ""
+    
+    # Flags & State
+    onboarding_step: int = 0
+    must_change_password: bool = False
+    is_active: bool = True
+    
     created_at: str = Field(default_factory=current_time_iso)
     last_login: Optional[str] = None
-    is_active: bool = True
+
 
 
 class Session(BaseModel):

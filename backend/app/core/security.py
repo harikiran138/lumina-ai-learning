@@ -25,7 +25,8 @@ def create_access_token(
         "exp": expire, 
         "sub": str(subject),
         "jti": str(uuid.uuid4()),
-        "iat": datetime.now(timezone.utc)
+        "iat": datetime.now(timezone.utc),
+        "iss": "lumina-platform"
     }
     if extra_claims:
         to_encode.update(extra_claims)

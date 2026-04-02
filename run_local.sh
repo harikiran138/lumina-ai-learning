@@ -91,7 +91,7 @@ fi
 if [ ! -d "frontend/web/node_modules" ]; then
     echo -e "\n${YELLOW}📦 Installing frontend dependencies...${NC}"
     cd frontend/web
-    npm install
+    npm install --legacy-peer-deps
     cd ../..
     echo -e "${GREEN}✓ Frontend dependencies installed${NC}"
 else

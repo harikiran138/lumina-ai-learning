@@ -10,8 +10,8 @@ class TeacherStore:
     Supabase store for Teacher requests and class assignments.
     """
 
-    def __init__(self):
-        self.db = supabase_db
+    def __init__(self, db: Optional[Any] = None):
+        self.db = db or supabase_db
 
     async def create_request(self, teacher_id: str, course_id: str, class_id: str, message: Optional[str] = None) -> Optional[dict]:
         """Teacher requests access to a specific course and class/section."""

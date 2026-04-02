@@ -88,6 +88,7 @@ class RiskSummary(BaseModel):
     risk_score: float = Field(default=0.0, ge=0.0, le=1.0)
     confidence: float = Field(default=0.5, ge=0.0, le=1.0)
     reasons: List[str] = Field(default_factory=list)
+    category_breakdown: Dict[str, float] = Field(default_factory=dict) # e.g. {"performance": 0.3, "engagement": 0.1}
     last_evaluated_at: Optional[datetime] = None
 
 

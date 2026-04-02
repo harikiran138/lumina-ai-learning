@@ -12,8 +12,9 @@ class InstitutionStore:
     Supabase store for Institutions, Departments, and Stakeholders.
     """
 
-    def __init__(self):
-        self.db = supabase_db
+    def __init__(self, db: Optional[Any] = None):
+        # Allow injecting a scoped database, otherwise fall back to global supabase_db
+        self.db = db or supabase_db
 
     # --- Institution CRUD ---
 
@@ -60,8 +61,7 @@ class InstitutionStore:
     async def update_institution_status(self, inst_id: str, status: str) -> bool:
         """Explicitly update the onboarding status of an institution."""
         try:
-            client = self.db.get_client()
-            response = client.table("institutions").update({
+            response = self.db.table("institutions").update({
                 "onboarding_status": status,
                 "updated_at": datetime.utcnow().isoformat()
             }).eq("id", inst_id).execute()
@@ -149,8 +149,7 @@ class InstitutionStore:
     async def create_stakeholder(self, data: dict) -> dict:
         try:
             # Attempt to find existing stakeholder to update
-            client = self.db.get_client()
-            query = client.table("stakeholders").select("*")
+            query = self.db.table("stakeholders").select("*")
             if data.get("user_id"):
                 query = query.eq("user_id", data["user_id"])
             if data.get("institution_id"):
@@ -162,10 +161,10 @@ class InstitutionStore:
             if existing.data:
                 sid = existing.data[0]["id"]
                 data["updated_at"] = datetime.utcnow().isoformat()
-                res = client.table("stakeholders").update(data).eq("id", sid).execute()
+                res = self.db.table("stakeholders").update(data).eq("id", sid).execute()
                 return res.data[0] if res.data else existing.data[0]
 
-            res = client.table("stakeholders").insert(data).execute()
+            res = self.db.table("stakeholders").insert(data).execute()
             
             # Logic Update: If an institution is linked for the first time, progress its onboarding status
             if data.get("institution_id"):

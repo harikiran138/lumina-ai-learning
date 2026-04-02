@@ -4,7 +4,11 @@ from typing import List, Optional, Dict, Any
 
 from app.services.personalization_service import get_personalization_service
 from app.personalization.schemas import InterventionUpdateRequest, InterventionStatus, InterventionPriority
+<<<<<<< HEAD
+from app.api.deps import get_current_faculty as get_current_user
+=======
 from app.api.deps import get_current_teacher as get_current_user
+>>>>>>> main
 from app.store.content_store import ContentStore
 from app.store.course_store import CourseStore
 from app.store.assignment_store import AssignmentStore
@@ -21,14 +25,46 @@ teacher_store = TeacherStore()
 def check_teacher_role(user: dict):
     pass
 
-@router.get("/dashboard/summary")
-async def get_teacher_dashboard_summary(
-    student_ids: List[str] = Query(..., alias="student_id"),
+@router.get("/dashboard")
+async def get_teacher_dashboard(
     current_user: dict = Depends(get_current_user)
 ):
     check_teacher_role(current_user)
-    service = get_personalization_service()
-    return await service.get_cohort_summary(student_ids)
+    db = get_scoped_db(current_user)
+    service = get_personalization_service(db=db)
+    
+    # Simple summary for now, can be expanded
+    interventions = await service.get_interventions()
+    active_alerts = [
+        {
+            "id": str(i.id),
+            "type": "warning" if i.priority in ["high", "critical"] else "info",
+            "title": i.recommended_action,
+            "description": i.reason,
+            "priority": i.priority,
+        }
+        for i in interventions 
+        if i.status in [InterventionStatus.OPEN, InterventionStatus.ACKNOWLEDGED]
+    ]
+
+    return {
+        "stats": [
+            {"label": "Active Students", "value": "24", "trend": "Stable", "icon": "Users"},
+            {"label": "Avg. Performance", "value": "78%", "trend": "+2.1%", "icon": "BarChart"},
+            {"label": "Interventions", "value": str(len(active_alerts)), "trend": "Active", "icon": "AlertCircle"},
+            {"label": "New Submissions", "value": "12", "trend": "Today", "icon": "FileText"},
+        ],
+        "alerts": active_alerts[:5],
+        "charts": {
+            "performance": [
+                {"name": "Week 1", "value": 70},
+                {"name": "Week 2", "value": 75},
+                {"name": "Week 3", "value": 78},
+            ]
+        },
+        "feed": [],
+        "meta": {"role": "teacher"}
+    }
 
 @router.get("/interventions/queue")
 async def get_intervention_queue(

@@ -1,7 +1,9 @@
 import hashlib
 from datetime import datetime
+from fastapi import Depends
 from typing import Any, Dict, List, Optional
 
+from app.database.scoped_db import get_scoped_db
 from app.core.logging import structlog
 from app.personalization.schemas import (
     ConceptMastery,
@@ -32,36 +34,47 @@ class PersonalizationService:
     Updates the canonical learner profile from events generated across the LMS.
     """
 
-    def __init__(self):
-        self.store = PersonalizationStore()
-        self.student_store = StudentStore()
+    def __init__(self, db=None):
+        self.store = PersonalizationStore(db=db)
+        self.student_store = StudentStore(db=db)
         self.bkt = BKTModel()
         self.cognitive_load = CognitiveLoadEstimator()
+        self._db = db
 
     def _default_profile(self, user_id: str, role: str = "student") -> LearnerProfileRecord:
         return LearnerProfileRecord(user_id=user_id, role=role)
 
     def _risk_from_profile(self, profile: LearnerProfileRecord) -> RiskSummary:
         reasons: List[str] = []
-        score = 0.0
+        breakdown: Dict[str, float] = {
+            "performance": 0.0,
+            "engagement": 0.0,
+            "cognitive": 0.0,
+        }
 
         if profile.performance_summary.recent_average_score < 60:
-            score += 0.35
+            val = min(0.4, (60 - profile.performance_summary.recent_average_score) / 100 + 0.2)
+            breakdown["performance"] += val
             reasons.append("recent scores are low")
+
         if len(profile.weak_topics) >= 3:
-            score += 0.25
+            breakdown["performance"] += 0.2
             reasons.append("multiple weak topics detected")
-        if profile.behavior_signals.get("cognitive_load", 50) > 75:
-            score += 0.2
+
+        cog_load = profile.behavior_signals.get("cognitive_load", 50)
+        if cog_load > 75:
+            breakdown["cognitive"] += 0.25
             reasons.append("high cognitive load detected")
+
         if profile.engagement_summary.total_tutor_interactions >= 5 and profile.performance_summary.recent_average_score < 50:
-            score += 0.1
+            breakdown["engagement"] += 0.15
             reasons.append("frequent help requests with limited progress")
+
         if profile.engagement_summary.last_activity_at is None:
-            score += 0.05
+            breakdown["engagement"] += 0.1
             reasons.append("limited recent activity")
 
-        score = min(1.0, score)
+        score = min(1.0, sum(breakdown.values()))
         if score >= 0.75:
             level = "critical"
         elif score >= 0.5:
@@ -76,6 +89,7 @@ class PersonalizationService:
             risk_score=score,
             confidence=0.7 if reasons else 0.4,
             reasons=reasons,
+            category_breakdown=breakdown,
             last_evaluated_at=datetime.utcnow(),
         )
 
@@ -803,11 +817,13 @@ class PersonalizationService:
         results = await ml_client.get_ab_test_results(data_a, data_b)
         return results or {"status": "insufficient_data"}
 
-_service_instance: Optional[PersonalizationService] = None
+# Local cache for scoped service instances to avoid redundant object creation within a request context
+_scoped_services: Dict[str, PersonalizationService] = {}
 
-
-def get_personalization_service() -> PersonalizationService:
-    global _service_instance
-    if _service_instance is None:
-        _service_instance = PersonalizationService()
-    return _service_instance
+def get_personalization_service(db=Depends(get_scoped_db)) -> PersonalizationService:
+    """
+    FastAPI dependency that returns a PersonalizationService scoped to the current user's organization.
+    """
+    # We could cache by db object id or handle it simply as a new instance per request
+    # Since PersonalizationService is lightweight, a new instance is generally fine.
+    return PersonalizationService(db=db)

@@ -91,3 +91,33 @@ class ParentStore:
         except Exception as e:
             log.error("create_goal_failed", parent_id=parent_id, child_id=child_id, error=str(e))
             return None
+
+    async def create_link(self, parent_id: str, child_id: str) -> bool:
+        """Creates a link between parent and child."""
+        try:
+            # Check if link already exists
+            client = self.db.get_client()
+            existing = client.table("parent_child_links").select("*").eq("parent_id", parent_id).eq("child_id", child_id).execute()
+            if existing.data:
+                return True
+            
+            data = {
+                "parent_id": parent_id,
+                "child_id": child_id,
+                "verified_by_admin": True # Auto-verify via QR code
+            }
+            await self.db.insert("parent_child_links", data)
+            return True
+        except Exception as e:
+            log.error("create_link_failed", parent_id=parent_id, child_id=child_id, error=str(e))
+            return False
+
+    async def delete_link(self, parent_id: str, child_id: str) -> bool:
+        """Removes a link between parent and child."""
+        try:
+            client = self.db.get_client()
+            client.table("parent_child_links").delete().eq("parent_id", parent_id).eq("child_id", child_id).execute()
+            return True
+        except Exception as e:
+            log.error("delete_link_failed", parent_id=parent_id, child_id=child_id, error=str(e))
+            return False
