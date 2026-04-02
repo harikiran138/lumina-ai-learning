@@ -527,6 +527,15 @@ def login_json(
             ip_address=ip_address, user_agent=user_agent,
             role=user.get("role"), college_id=user.get("college_id"),
         )
+        audit_logger.log(
+            action="user_login",
+            user_id=str(user.get("id")),
+            metadata={
+                "identifier_type": identifier_type,
+                "college_id": user.get("college_id"),
+                "force_password_change": True,
+            },
+        )
         return {"forcePasswordChange": True, "tempToken": temp_token}
 
     # ── Normal login ──────────────────────────────────────────────────────────
@@ -567,6 +576,15 @@ def login_json(
     )
 
     user_store.update_user_fields_sync(user["id"], {"last_login_at": datetime.now(timezone.utc).isoformat()})
+    audit_logger.log(
+        action="user_login",
+        user_id=str(user.get("id")),
+        metadata={
+            "identifier_type": identifier_type,
+            "college_id": user.get("college_id"),
+            "force_password_change": False,
+        },
+    )
 
     return {
         "accessToken": access_token,

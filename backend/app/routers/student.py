@@ -25,6 +25,7 @@ from app.api.deps import get_current_student as get_current_user
 from app.database.supabase_manager import supabase_db
 from app.database.scoped_db import get_scoped_db
 from app.services.risk_service import get_risk_analysis_service
+from app.core.audit import audit_logger
 import uuid
 import secrets
 
@@ -1749,8 +1750,12 @@ async def submit_student_assignment(
         raise HTTPException(status_code=404, detail="Assignment not found")
     if assignment.get("due_date") and assignment.get("due_date") < datetime.now(timezone.utc).isoformat():
         raise HTTPException(status_code=400, detail="Submission deadline has passed")
-    if current_user.get("batch_id") != assignment.get("batch_id") or current_user.get("section") != assignment.get("section"):
+    if assignment.get("batch_id") and current_user.get("batch_id") != assignment.get("batch_id"):
         raise HTTPException(status_code=403, detail="This assignment is not assigned to your batch")
+    if assignment.get("section") and current_user.get("section") != assignment.get("section"):
+        raise HTTPException(status_code=403, detail="This assignment is not assigned to your section")
+    if not payload.get("content_url") and not payload.get("text_content"):
+        raise HTTPException(status_code=400, detail="Submission content is required")
 
     existing = await db.fetch_one(
         "assignment_submissions",
@@ -1762,13 +1767,28 @@ async def submit_student_assignment(
     data = {
         "assignment_id": assignment_id,
         "student_id": current_user.get("id"),
+        "course_id": assignment.get("course_id"),
         "content_url": payload.get("content_url"),
         "text_content": payload.get("text_content"),
         "submission_type": "online",
         "status": "submitted",
         "submitted_at": datetime.now(timezone.utc).isoformat(),
     }
-    return await db.insert("assignment_submissions", data)
+    submission = await db.insert("assignment_submissions", data)
+    if not submission:
+        raise HTTPException(status_code=500, detail="Failed to save submission")
+
+    audit_logger.log(
+        action="assignment_submitted",
+        user_id=str(current_user.get("id")),
+        resource_id=str(submission.get("id")),
+        metadata={
+            "assignment_id": assignment_id,
+            "course_id": assignment.get("course_id"),
+            "submission_type": "online",
+        },
+    )
+    return submission
 
 
 @router.get("/grades")

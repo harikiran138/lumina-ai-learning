@@ -58,9 +58,18 @@ class AssignmentStore:
             return []
 
     async def submit_assignment(self, assignment_id: str, student_id: str, file_path: str, content: str = "", submission_type: str = "online") -> dict:
+        assignment = await self.get_assignment(assignment_id)
+        if not assignment:
+            raise ValueError("Assignment not found")
+
+        existing_submission = await self.get_student_submission(assignment_id, student_id)
+        if existing_submission:
+            raise ValueError("Submission already exists")
+
         submission_data = {
             "assignment_id": str(assignment_id),
             "student_id": str(student_id),
+            "course_id": assignment.get("course_id"),
             "content_url": file_path,
             "text_content": content or "Submitted via Lumina AI",
             "submission_type": submission_type,
