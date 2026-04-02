@@ -75,7 +75,7 @@ async def upload_document(
                 )
             else:
                 # AI Improvements for Notes
-                system_promt = (
+                system_prompt = (
                     "You are an expert academic assistant. Improve and summarize the following notes."
                 )
                 user_prompt = (
@@ -85,7 +85,7 @@ async def upload_document(
                 )
 
                 try:
-                    ai_response = await llm.agenerate(user_prompt, system_promt)
+                    ai_response = await llm.agenerate(user_prompt, system_prompt)
                     doc_data["ai_analysis"] = ai_response
                 except Exception as e:
                     doc_data["ai_analysis"] = f"AI Analysis failed: {e}"
