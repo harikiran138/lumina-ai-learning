@@ -37,9 +37,8 @@ function decodeToken(token: string): Record<string, unknown> | null {
   }
 }
 
-/**
- * Path → Role mapping
- */
+// Map each path prefix to the role that is allowed to access it.
+// super_admin can access all paths.
 const PROTECTED_PATHS: Record<string, string> = {
   '/admin': 'super_admin',
   '/college': 'college_admin',
@@ -56,9 +55,16 @@ const PROTECTED_PATHS: Record<string, string> = {
 }
 
 export function middleware(request: NextRequest) {
+  const accessToken = request.cookies.get('access_token')?.value
+  const refreshToken = request.cookies.get('refresh_token')?.value
+  const token = accessToken || refreshToken // use whichever is available to decode payload
+
   const { pathname } = request.nextUrl
 
-  // ✅ Canonical redirects (aliases → correct routes)
+  // Redirect legacy/alias paths to canonical routes before any auth check.
+  // Aliases handled: /teacher/* → /faculty/*, /peer-tutor/* → /peer_tutor/*,
+  //                  /creator/* → /content_creator/*, /researcher/portal/* → /researcher/dashboard/*,
+  //                  /content_creator/studio/* → /content_creator/dashboard/*
   const canonical = getCanonicalPath(pathname)
   if (canonical) {
     const url = request.nextUrl.clone()
@@ -73,15 +79,13 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/api/') ||
     pathname === '/'
 
-  const accessToken = request.cookies.get('access_token')?.value
-
   // 🚫 Not logged in
-  if (!accessToken) {
+  if (!token) {
     if (!isPublic) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
 
-      const reason = request.cookies.get('refresh_token')?.value
+      const reason = refreshToken
         ? 'session_expired'
         : 'unauthorized'
 
@@ -92,7 +96,7 @@ export function middleware(request: NextRequest) {
   }
 
   // 🔍 Decode token
-  const payload = decodeToken(accessToken)
+  const payload = decodeToken(token)
   if (!payload) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
