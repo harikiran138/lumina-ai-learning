@@ -5,8 +5,8 @@
     "scripts": {
         "dev": "cd frontend/web && npm run dev",
         "start": "cd frontend/web && npm run start",
-        "build": "cd frontend/web && npm install && npm run build",
-        "vercel-build": "cd frontend/web && npm install && npm run build",
+        "build": "cd frontend/web && npm install --legacy-peer-deps && npm run build",
+        "vercel-build": "cd frontend/web && npm install --legacy-peer-deps && npm run build",
         "test": "npm run test:frontend && npm run test:backend && npm run test:e2e",
         "test:frontend": "cd frontend/web && npm test",
         "test:backend": "cd backend && ../.venv/bin/python -m pytest tests",

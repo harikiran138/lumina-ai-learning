@@ -146,11 +146,7 @@ class StudentStore:
         # Enforce non-negative mastery
         progress["mastery"] = max(0.0, float(mastery))
         
-<<<<<<< HEAD
         await self.db.update(
-=======
-        await supabase_db.update(
->>>>>>> main
             "enrollments",
             {"progress": progress},
             {"student_id": student_id, "course_id": course_id}

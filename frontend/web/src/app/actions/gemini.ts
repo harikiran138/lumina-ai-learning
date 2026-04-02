@@ -1,6 +1,8 @@
 "use server";
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 
 const createGeminiModel = () => {
   const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;

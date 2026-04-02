@@ -1,22 +1,74 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
+import { 
+  Building2, 
+  Shield, 
+  MapPin, 
+  Settings, 
+  Calendar, 
+  ArrowRight, 
+  Plus, 
+  Mail, 
+  Users, 
+  Trash2, 
+  GraduationCap, 
+  UserCircle 
+} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import StudentOnboardingFlow from "@/components/onboarding/StudentOnboardingFlow";
 
-import LegacyOnboardingPage from "./legacy-page";
+type Role = "super_admin" | "college_admin" | "hod" | "faculty" | "student";
 
 export default function OnboardingPage() {
-  const [role, setRole] = useState<string | null>(null);
+  const router = useRouter();
+  const [role, setRole] = useState<Role | null>(null);
+  const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [totalSteps] = useState(5);
+  const [saving, setSaving] = useState(false);
+  const [collegeId, setCollegeId] = useState<string | null>(null);
+  const [deptId, setDeptId] = useState<string | null>(null);
+
+  const [collegeProfile, setCollegeProfile] = useState({
+    collegeName: "",
+    collegeCode: "",
+    city: "",
+    state: "",
+    academicYear: "",
+    logoUrl: "",
+  });
+
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [subjectsList, setSubjectsList] = useState<any[]>([]);
+  const [batchesList, setBatchesList] = useState<any[]>([]);
 
   useEffect(() => {
-    const loadRole = async () => {
-      const user = await api.getCurrentUser();
-      setRole(user?.role || null);
-      setReady(true);
+    const init = async () => {
+      try {
+        const user = await api.getCurrentUser();
+        if (!user) {
+          router.push("/login");
+          return;
+        }
+        const status = await api.getOnboardingStatus();
+        setRole(status.role as Role);
+        setCollegeId(status.collegeId || user.collegeId || null);
+        setDeptId(status.deptId || user.deptId || null);
+        setCurrentStep(status.step || 1);
+        setReady(true);
+      } catch (err: any) {
+        toast.error("Failed to load onboarding status");
+      } finally {
+        setLoading(false);
+      }
     };
+    init();
+  }, [router]);
 
   useEffect(() => {
     const loadDeptResources = async () => {
@@ -32,8 +84,8 @@ export default function OnboardingPage() {
         toast.error(err?.message || "Failed to load department resources");
       }
     };
-    loadDeptResources();
-  }, [deptId, role]);
+    if (ready) loadDeptResources();
+  }, [deptId, role, ready]);
 
   const routeByRole = (r: Role) => {
     const routes: Record<Role, string> = {
@@ -51,7 +103,6 @@ export default function OnboardingPage() {
     setCurrentStep(prev => prev + 1);
   };
 
-  // Step Handlers
   const handleSaveStep = async (handler: () => Promise<void>) => {
     setSaving(true);
     try {
@@ -122,14 +173,15 @@ export default function OnboardingPage() {
     await api.updateOnboardingStep(currentStep, {});
     if (currentStep + 1 >= totalSteps) {
       await api.completeOnboarding();
-      routeByRole(role);
+      if (role) routeByRole(role);
     } else {
       setCurrentStep(prev => prev + 1);
     }
   });
 
-  // UI Components
-  const StepIcon = STEP_ICONS[currentStep] || UserCircle;
+  const StepIcon = currentStep === 1 ? UserCircle : 
+                   currentStep === 2 ? Building2 : 
+                   currentStep === 3 ? Settings : Users;
 
   if (loading) {
     return (
@@ -147,6 +199,8 @@ export default function OnboardingPage() {
     return <StudentOnboardingFlow />;
   }
 
+  return (
+    <div className="min-h-screen bg-[#090909] text-white flex flex-col justify-center items-center p-6">
       {/* Main Form Container */}
       <div className="w-full max-w-4xl">
         <AnimatePresence mode="wait">
@@ -313,14 +367,13 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
-                    {/* Steps 3-5: save progress and route on final step */}
                     {currentStep > 2 && (
                         <div className="text-center py-20">
                             <h2 className="text-3xl font-black mb-4">Step {currentStep} of {totalSteps}</h2>
                             <p className="text-gray-400 mb-8">
                               {currentStep + 1 >= totalSteps
                                 ? "Your institution is configured. Click below to enter your dashboard."
-                                : `Continuing setup for ${role.replace("_", " ")}`}
+                                : `Continuing setup for ${role?.replace("_", " ")}`}
                             </p>
                             <button
                               className="px-12 py-4 bg-lumina-primary text-black font-bold rounded-2xl disabled:opacity-50"
@@ -334,21 +387,20 @@ export default function OnboardingPage() {
                 </div>
             )}
 
-            {/* HOD / Faculty / Student: save progress each step and route on completion */}
             {role !== "college_admin" && (
                 <div className="space-y-6">
                     <h2 className="text-2xl font-bold flex items-center gap-3">
                         <StepIcon className="w-6 h-6 text-lumina-primary" />
-                        Step {currentStep} of {totalSteps}: {role.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())} Setup
+                        Step {currentStep} of {totalSteps}: {role?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())} Setup
                     </h2>
                     <p className="text-gray-400">
                       {currentStep + 1 >= totalSteps
                         ? "Your profile is ready. Click below to enter your dashboard."
-                        : `Please complete the setup for your ${role.replace("_", " ")} profile to access the dashboard.`}
+                        : `Please complete the setup for your ${role?.replace("_", " ")} profile to access the dashboard.`}
                     </p>
                     <div className="p-8 border border-white/10 bg-white/5 rounded-3xl text-center">
                         <GraduationCap className="w-12 h-12 text-lumina-primary/50 mx-auto mb-4" />
-                        <p className="text-gray-400 font-medium">Profile configuration for {role.replace(/_/g, " ")}</p>
+                        <p className="text-gray-400 font-medium">Profile configuration for {role?.replace(/_/g, " ")}</p>
                         <p className="text-gray-600 text-sm mt-2">Step {currentStep} of {totalSteps}</p>
                     </div>
                     <button
@@ -378,13 +430,6 @@ export default function OnboardingPage() {
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: rgba(255, 255, 255, 0.2);
-        }
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 8s linear infinite;
         }
       `}</style>
     </div>

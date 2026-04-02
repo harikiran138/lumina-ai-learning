@@ -9,6 +9,7 @@ from app.dependencies import get_user_store
 from app.database.supabase_manager import supabase_db
 from app.core.audit import audit_logger
 import logging
+import re
 from app.core.rbac import normalize_role, SELF_SIGNUP_ROLES, INVITE_ONLY_ROLES, ALL_ROLES
 from app.core.limiter import limiter
 from app.core.blacklist import blacklist_token, is_token_revoked

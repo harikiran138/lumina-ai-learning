@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 
 import AdminSidebar from "@/components/dashboard/AdminSidebar";

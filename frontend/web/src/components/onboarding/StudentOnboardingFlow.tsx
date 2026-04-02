@@ -149,7 +149,7 @@ export default function StudentOnboardingFlow() {
           return;
         }
         if (Number(status.step || 0) >= 5) {
-          await api.refreshSession().catch(() => undefined);
+          await api.getCurrentUser().catch(() => undefined);
           router.push("/student/dashboard");
           return;
         }
@@ -441,7 +441,7 @@ export default function StudentOnboardingFlow() {
         }
 
         await api.saveStudentPreferences(result.data);
-        await api.refreshSession().catch(() => undefined);
+        await api.getCurrentUser().catch(() => undefined);
         setCompletedStep(5);
         setSuccessMessage("Onboarding completed successfully.");
         toast.success("Student onboarding completed");

@@ -4,17 +4,14 @@ from typing import List, Optional, Dict, Any
 
 from app.services.personalization_service import get_personalization_service
 from app.personalization.schemas import InterventionUpdateRequest, InterventionStatus, InterventionPriority
-<<<<<<< HEAD
-from app.api.deps import get_current_faculty as get_current_user
-=======
 from app.api.deps import get_current_teacher as get_current_user
->>>>>>> main
 from app.store.content_store import ContentStore
 from app.store.course_store import CourseStore
 from app.store.assignment_store import AssignmentStore
 from app.store.teacher_store import TeacherStore
 from app.services.ocr_service import ocr_service
 from app.services.grader_service import grader_service
+from app.database.scoped_db import get_scoped_db
 
 router = APIRouter()
 content_store = ContentStore()
