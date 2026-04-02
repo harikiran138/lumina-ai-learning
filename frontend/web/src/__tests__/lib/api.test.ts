@@ -27,10 +27,10 @@ describe('fetchWithRetry', () => {
 
 describe('auth cookie helpers', () => {
   beforeEach(() => {
-    document.cookie = 'auth_token=; path=/; max-age=0'
+    document.cookie = 'access_token=; path=/; max-age=0'
   })
 
-  it('sets auth_token cookie after login succeeds', async () => {
+  it('sets access_token cookie after login succeeds', async () => {
     server.use(
       http.post(`${BASE}/api/auth/login`, () =>
         HttpResponse.json({
@@ -44,14 +44,14 @@ describe('auth cookie helpers', () => {
     )
     const { api } = await import('@/lib/api')
     await api.login('test@lumina.test', 'Password1')
-    expect(document.cookie).toContain('auth_token=test-token-abc')
+    expect(document.cookie).toContain('access_token=test-token-abc')
   })
 
-  it('clears auth_token cookie after logout', async () => {
-    document.cookie = 'auth_token=some-token; path=/'
+  it('clears access_token cookie after logout', async () => {
+    document.cookie = 'access_token=some-token; path=/'
     const { api } = await import('@/lib/api')
     await api.logout()
-    expect(document.cookie).not.toContain('auth_token=some-token')
+    expect(document.cookie).not.toContain('access_token=some-token')
   })
 })
 

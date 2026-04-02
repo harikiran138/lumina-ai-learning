@@ -29,7 +29,7 @@ const BASE = 'http://127.0.0.1:8000'
 describe('Auth flow integration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    document.cookie = 'auth_token=; path=/; max-age=0'
+    document.cookie = 'access_token=; path=/; max-age=0'
     sessionStorage.clear()
   })
 
