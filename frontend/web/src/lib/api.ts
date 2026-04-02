@@ -1,6 +1,7 @@
 // API client for the Lumina FastAPI backend
 
 const LOCAL_API_BASE = "http://127.0.0.1:8000";
+const HOSTED_API_BASE = "/api";
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
 
 export function getConfiguredApiBase(): string | null {
@@ -8,18 +9,35 @@ export function getConfiguredApiBase(): string | null {
     process.env.NEXT_PUBLIC_API_URL?.trim() ||
     process.env.NEXT_PUBLIC_API_BASE?.trim();
 
-  if (explicitBase) {
+  if (typeof window !== "undefined") {
+    const isLocalHost = LOCAL_HOSTNAMES.has(window.location.hostname);
+    if (isLocalHost) {
+      return explicitBase ? explicitBase.replace(/\/+$/, "") : LOCAL_API_BASE;
+    }
+
+    if (!explicitBase) {
+      return HOSTED_API_BASE;
+    }
+
+    if (explicitBase.startsWith("/")) {
+      return explicitBase.replace(/\/+$/, "") || "/";
+    }
+
+    try {
+      const parsed = new URL(explicitBase);
+      if (parsed.origin !== window.location.origin && parsed.hostname.endsWith(".onrender.com")) {
+        // Prefer same-origin `/api` on hosted frontends so cookies and auth flows
+        // work through the Vercel rewrite instead of cross-origin browser CORS.
+        return HOSTED_API_BASE;
+      }
+    } catch {
+      return explicitBase.replace(/\/+$/, "");
+    }
+
     return explicitBase.replace(/\/+$/, "");
   }
 
-  if (
-    typeof window !== "undefined" &&
-    LOCAL_HOSTNAMES.has(window.location.hostname)
-  ) {
-    return LOCAL_API_BASE;
-  }
-
-  return null;
+  return explicitBase ? explicitBase.replace(/\/+$/, "") : null;
 }
 
 export function getConfiguredAuthBase(): string | null {

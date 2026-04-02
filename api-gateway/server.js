@@ -20,13 +20,25 @@ const allowedOrigins = [
   'http://localhost:3001',
   'http://localhost:3002',
 ];
+const allowedOriginPatterns = [
+  /^https:\/\/lumina-[a-z0-9-]+\.vercel\.app$/i,
+];
+
+function isAllowedOrigin(origin) {
+  const envFrontend = process.env.FRONTEND_URL;
+  return (
+    !origin ||
+    allowedOrigins.includes(origin) ||
+    origin === envFrontend ||
+    allowedOriginPatterns.some((pattern) => pattern.test(origin))
+  );
+}
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
   origin: (origin, callback) => {
-    const envFrontend = process.env.FRONTEND_URL;
-    if (!origin || allowedOrigins.includes(origin) || origin === envFrontend) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -37,6 +49,10 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(cookieParser());
+app.options('*', cors({
+  origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
+  credentials: true,
+}));
 
 // Rate limiting
 const limiter = rateLimit({
