@@ -27,14 +27,16 @@ class UserStore:
         from app.core.rbac import normalize_role as _normalize
         return _normalize(role)
 
-    def _sanitize_user(self, user: dict) -> dict:
-        """Removes sensitive fields and normalizes user object for API consumption."""
+    def _sanitize_user(self, user: dict, include_sensitive: bool = False) -> dict:
+        """Normalizes a user object while only retaining secrets for internal auth flows."""
         if not user:
             return {}
         
         safe_user = user.copy()
-        safe_user.pop("password_hash", None)
-        safe_user.pop("hashed_password", None)
+        password_hash = safe_user.get("password_hash") or safe_user.get("hashed_password")
+        if not include_sensitive:
+            safe_user.pop("password_hash", None)
+            safe_user.pop("hashed_password", None)
         
         # Consistent naming for frontend (name, avatar, status)
         name = safe_user.get("name") or safe_user.get("full_name") or "Unnamed User"
@@ -52,7 +54,14 @@ class UserStore:
         safe_user["avatar_url"] = avatar
         safe_user["profile_photo_url"] = avatar
         safe_user["status"] = safe_user.get("status", "active")
-        safe_user["role"] = self.normalize_role(safe_user.get("role"))
+        
+        roles_data = safe_user.get("user_roles")
+        primary_role = None
+        if roles_data and isinstance(roles_data, list) and len(roles_data) > 0:
+            if isinstance(roles_data[0].get("roles"), dict):
+                primary_role = roles_data[0]["roles"].get("name")
+        
+        safe_user["role"] = self.normalize_role(primary_role or safe_user.get("role"))
         safe_user["created_at"] = created_at
         
         # Ensure institutional fields are present
@@ -61,6 +70,8 @@ class UserStore:
         safe_user["batch_id"] = safe_user.get("batch_id")
         safe_user["onboarding_step"] = safe_user.get("onboarding_step", 0)
         safe_user["must_change_password"] = safe_user.get("must_change_password", False)
+        if include_sensitive and password_hash:
+            safe_user["password_hash"] = password_hash
         
         return safe_user
 
@@ -112,26 +123,29 @@ class UserStore:
             log.error("create_user_failed", error=str(e), email=email)
             raise e
 
-    async def get_user_by_email(self, email: str) -> Optional[dict]:
+    async def get_user_by_email(self, email: str, include_sensitive: bool = False) -> Optional[dict]:
         try:
-            response = self.db.table("users").select("*").eq("email", email).execute()
+            response = self.db.table("users").select("*, user_roles(roles(name))").eq("email", email).execute()
             if response.data:
-                return response.data[0]
+                return self._sanitize_user(response.data[0], include_sensitive=include_sensitive)
         except Exception as e:
             log.error("get_user_by_email_failed", error=str(e), email=email)
         return None
 
-    def get_user_by_email_sync(self, email: str) -> Optional[dict]:
+    def get_user_by_email_sync(self, email: str, include_sensitive: bool = False) -> Optional[dict]:
         try:
-            response = self.db.table("users").select("*").eq("email", email).execute()
+            response = self.db.table("users").select("*, user_roles(roles(name))").eq("email", email).execute()
             if response.data:
-                return response.data[0]
+                return self._sanitize_user(response.data[0], include_sensitive=include_sensitive)
         except Exception as e:
             log.error("get_user_by_email_failed_sync", error=str(e), email=email)
         return None
 
-    async def get_user_by_id(self, user_id: str) -> Optional[dict]:
-        return await self.db.fetch_one("users", {"id": user_id})
+    async def get_user_by_id(self, user_id: str, include_sensitive: bool = False) -> Optional[dict]:
+        response = self.db.table("users").select("*, user_roles(roles(name))").eq("id", user_id).execute()
+        if response.data:
+            return self._sanitize_user(response.data[0], include_sensitive=include_sensitive)
+        return None
 
     async def list_all_users(self) -> List[dict]:
         try:

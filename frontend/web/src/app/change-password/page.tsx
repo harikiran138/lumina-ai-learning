@@ -25,29 +25,14 @@ export default function ChangePasswordPage() {
     try {
       const tempToken =
         typeof window !== "undefined" ? sessionStorage.getItem("temp_token") : null;
+      
+      await api.changePassword(password, tempToken);
+      
       if (tempToken) {
-        const apiBase = getConfiguredApiBase();
-        if (!apiBase) {
-          throw new Error("Password service is not configured for this deployment.");
-        }
-        const res = await fetch(`${apiBase}/api/auth/change-password`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${tempToken}`,
-          },
-          body: JSON.stringify({ newPassword: password, confirmPassword: confirm }),
-        });
-        if (!res.ok) {
-          let detail = "Unable to update password";
-          try { detail = (await res.json())?.detail || detail; } catch { /* ignore */ }
-          throw new Error(detail);
-        }
         sessionStorage.removeItem("temp_token");
         toast.success("Password updated — completing your profile setup");
         router.push("/onboarding");
       } else {
-        await api.changePassword(password);
         toast.success("Password updated");
         // Route back to the user's own dashboard based on their role
         const user = await api.getCurrentUser();

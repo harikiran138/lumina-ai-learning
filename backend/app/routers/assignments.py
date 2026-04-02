@@ -228,14 +228,14 @@ async def get_assignment_analytics(
             "max_grade": None,
         }
 
-    grades = [s.get("grade") for s in submissions if s.get("grade") is not None]
-    graded_count = len(grades)
+    marks_list = [s.get("marks") for s in submissions if s.get("marks") is not None]
+    graded_count = len(marks_list)
     ungraded_count = len(submissions) - graded_count
 
-    if grades:
-        avg_grade = sum(grades) / len(grades)
-        min_grade = min(grades)
-        max_grade = max(grades)
+    if marks_list:
+        avg_grade = sum(marks_list) / len(marks_list)
+        min_grade = min(marks_list)
+        max_grade = max(marks_list)
     else:
         avg_grade = min_grade = max_grade = None
 
@@ -268,19 +268,19 @@ async def get_submission_report(
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
 
-    grade = submission.get("grade")
+    marks = submission.get("marks")
     feedback = submission.get("feedback")
-    ocr_text = submission.get("ocr_text")
+    text_content = submission.get("text_content")
     scorecard = await personalization_store.get_scorecard(submission_id)
     confidence = scorecard.confidence if scorecard else None
     review_required = scorecard.review_required if scorecard else None
 
     # Derive simple level label from numeric grade if present (0–100 assumed)
     level = None
-    if isinstance(grade, (int, float)):
-        if grade < 40:
+    if isinstance(marks, (int, float)):
+        if marks < 40:
             level = "weak"
-        elif grade < 70:
+        elif marks < 70:
             level = "developing"
         else:
             level = "strong"
@@ -299,10 +299,10 @@ async def get_submission_report(
             "submitted_at": submission.get("submitted_at"),
             "status": submission.get("status"),
         },
-        "score": grade,
+        "score": marks,
         "confidence": confidence,
         "review_required": review_required,
         "level": level,
         "feedback": feedback,
-        "ocr_text": ocr_text,
+        "text_content": text_content,
     }

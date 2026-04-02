@@ -392,7 +392,7 @@ async def get_faculty_dashboard_summary(current_user: dict = Depends(get_current
             total_students += len(students or [])
 
     # Get pending submissions to grade
-    pending_submissions = await db.fetch_all("submissions", {"graded_by": None, "status": "submitted"})
+    pending_submissions = await db.fetch_all("assignment_submissions", {"graded_by": None, "status": "submitted"})
 
     # Get active interventions
     service = get_personalization_service(db=db)
@@ -500,35 +500,67 @@ async def get_course_attendance(
     """Get attendance records for a course."""
     _require_faculty(current_user)
     db = get_scoped_db(current_user)
-    attendance_records = await db.fetch_all("attendance", {"course_id": course_id})
-    return attendance_records or []
+    # Get attendance sessions for the course
+    sessions = await db.fetch_all("attendance_sessions", {"course_id": course_id})
+    return sessions or []
 
 
 @router.post("/faculty/attendance/mark")
-async def mark_attendance(
+async def mark_attendance_faculty(
     records: List[Dict[str, Any]],
     current_user: dict = Depends(get_current_user)
 ):
-    """Mark attendance for students."""
+    """Mark attendance for students via faculty router."""
     _require_faculty(current_user)
     db = get_scoped_db(current_user)
-    created = []
+    
+    if not records:
+        raise HTTPException(status_code=400, detail="No attendance records provided")
+
+    # Group by session (assuming one session per call)
+    first = records[0]
+    course_id = first.get("course_id")
+    batch_id = first.get("batch_id")
+    section = first.get("section")
+    class_date = first.get("class_date", datetime.utcnow().strftime("%Y-%m-%d"))
+
+    if not all([course_id, batch_id, section]):
+        raise HTTPException(status_code=400, detail="Missing required session fields (course_id, batch_id, section)")
+
+    # 1. Create/Update Session
+    session_data = {
+        "course_id": course_id,
+        "teacher_id": current_user.get("id"),
+        "batch_id": batch_id,
+        "section": section,
+        "class_date": class_date,
+        "updated_at": datetime.utcnow().isoformat()
+    }
+    
+    session_res = db.table("attendance_sessions").upsert(
+        session_data, on_conflict="course_id,batch_id,section,class_date"
+    ).execute()
+    
+    if not session_res.data:
+        raise HTTPException(status_code=500, detail="Failed to create attendance session")
+    
+    session_id = session_res.data[0]["id"]
+
+    # 2. Insert Records
+    normalized_records = []
     for record in records:
-        try:
-            new_record = await db.insert("attendance", {
-                "course_id": record.get("course_id"),
-                "teacher_id": current_user.get("id"),
-                "student_id": record.get("student_id"),
-                "batch_id": record.get("batch_id"),
-                "section": record.get("section"),
-                "class_date": record.get("class_date", datetime.utcnow().strftime("%Y-%m-%d")),
-                "is_present": record.get("is_present", False),
-            })
-            if new_record:
-                created.append(new_record)
-        except Exception:
-            pass  # Skip duplicates or errors
-    return {"created": len(created), "records": created}
+        normalized_records.append({
+            "session_id": session_id,
+            "student_id": record.get("student_id"),
+            "is_present": bool(record.get("is_present", False)),
+            "created_at": datetime.utcnow().isoformat(),
+        })
+
+    response = db.table("attendance_records").upsert(
+        normalized_records, on_conflict="session_id,student_id"
+    ).execute()
+    
+    return {"created": len(response.data or []), "session_id": session_id}
 
 
 @router.get("/faculty/analytics/misconceptions")

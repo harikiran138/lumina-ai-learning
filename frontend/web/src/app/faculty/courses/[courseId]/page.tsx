@@ -171,20 +171,12 @@ export default function CourseManagementPage() {
 
   const handleSubmitReview = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/content-designer/courses/${courseId}/submit`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-      });
-      if (res.ok) {
-        toast.success("Submitted for review!");
-        loadData();
-      } else {
-        toast.error("Failed to submit.");
-      }
-    } catch (err) {
+      await api.submitCourseReview(courseId);
+      toast.success("Submitted for review!");
+      loadData();
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.message || "Failed to submit.");
     }
   };
 

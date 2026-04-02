@@ -25,6 +25,7 @@ from app.api.deps import get_current_student as get_current_user
 from app.database.supabase_manager import supabase_db
 from app.database.scoped_db import get_scoped_db
 from app.services.risk_service import get_risk_analysis_service
+from app.core.audit import audit_logger
 import uuid
 import secrets
 
@@ -1600,14 +1601,27 @@ async def get_student_attendance_summary(current_user: dict = Depends(get_curren
     if current_user.get("role") != "student":
         raise HTTPException(status_code=403, detail="Student access required")
     db = get_scoped_db(current_user)
-    rows = db.table("attendance").select("*").eq("student_id", current_user.get("id")).execute()
-    attendance = rows.data or []
-    course_ids = list({row.get("course_id") for row in attendance if row.get("course_id")})
+    
+    # Fetch records for student
+    records_res = db.table("attendance_records").select("*").eq("student_id", current_user.get("id")).execute()
+    records = records_res.data or []
+    if not records:
+        return {"subjects": [], "threshold": 75}
+        
+    session_ids = list({r.get("session_id") for r in records if r.get("session_id")})
+    sessions_res = db.table("attendance_sessions").select("*").in_("id", session_ids).execute() if session_ids else None
+    sessions = {s["id"]: s for s in (sessions_res.data or [])} if sessions_res else {}
+    
+    course_ids = list({s.get("course_id") for s in sessions.values() if s.get("course_id")})
     courses = db.table("courses").select("id,title,course_name,name").in_("id", course_ids).execute() if course_ids else None
     course_lookup = {c["id"]: c for c in (courses.data if courses else [])}
+    
     summary = {}
-    for row in attendance:
-        cid = row.get("course_id")
+    for row in records:
+        session = sessions.get(row.get("session_id"))
+        if not session:
+            continue
+        cid = session.get("course_id")
         if not cid:
             continue
         item = summary.setdefault(cid, {"total": 0, "present": 0})
@@ -1635,15 +1649,33 @@ async def get_student_attendance_detail(course_id: str, current_user: dict = Dep
     if current_user.get("role") != "student":
         raise HTTPException(status_code=403, detail="Student access required")
     db = get_scoped_db(current_user)
-    rows = (
-        db.table("attendance")
-        .select("class_date,is_present")
+    
+    sessions_res = db.table("attendance_sessions").select("id, class_date").eq("course_id", course_id).execute()
+    sessions = sessions_res.data or []
+    if not sessions:
+        return {"classes": [], "total": 0, "attended": 0}
+        
+    session_lookup = {s["id"]: s for s in sessions}
+    
+    records_res = (
+        db.table("attendance_records")
+        .select("session_id,is_present")
         .eq("student_id", current_user.get("id"))
-        .eq("course_id", course_id)
-        .order("class_date")
+        .in_("session_id", list(session_lookup.keys()))
         .execute()
     )
-    classes = rows.data or []
+    records = records_res.data or []
+    
+    classes = []
+    for r in records:
+        sess = session_lookup.get(r.get("session_id"))
+        if sess:
+            classes.append({
+                "class_date": sess.get("class_date"),
+                "is_present": r.get("is_present")
+            })
+            
+    classes.sort(key=lambda x: x.get("class_date") or "")
     total = len(classes)
     attended = len([c for c in classes if c.get("is_present")])
     return {"classes": classes, "total": total, "attended": attended}
@@ -1666,14 +1698,12 @@ async def list_student_assignments(current_user: dict = Depends(get_current_user
     assignments_res = db.table("assignments").select("*").in_("course_id", course_ids).execute()
     assignments = assignments_res.data or []
 
-    submissions_res = db.table("submissions").select("*").eq("student_uuid", current_user.get("id")).execute()
+    submissions_res = db.table("assignment_submissions").select("*").eq("student_id", current_user.get("id")).execute()
     submissions = submissions_res.data or []
-    if not submissions:
-        legacy_res = db.table("submissions").select("*").eq("student_id", current_user.get("id")).execute()
-        submissions = legacy_res.data or []
+
     submission_map = {}
     for s in submissions:
-        key = s.get("assignment_uuid") or s.get("assignment_id")
+        key = s.get("assignment_id")
         if key:
             submission_map[key] = s
 
@@ -1720,27 +1750,45 @@ async def submit_student_assignment(
         raise HTTPException(status_code=404, detail="Assignment not found")
     if assignment.get("due_date") and assignment.get("due_date") < datetime.now(timezone.utc).isoformat():
         raise HTTPException(status_code=400, detail="Submission deadline has passed")
-    if current_user.get("batch_id") != assignment.get("batch_id") or current_user.get("section") != assignment.get("section"):
+    if assignment.get("batch_id") and current_user.get("batch_id") != assignment.get("batch_id"):
         raise HTTPException(status_code=403, detail="This assignment is not assigned to your batch")
+    if assignment.get("section") and current_user.get("section") != assignment.get("section"):
+        raise HTTPException(status_code=403, detail="This assignment is not assigned to your section")
+    if not payload.get("content_url") and not payload.get("text_content"):
+        raise HTTPException(status_code=400, detail="Submission content is required")
 
     existing = await db.fetch_one(
-        "submissions",
-        {"assignment_uuid": assignment_id, "student_uuid": current_user.get("id")},
+        "assignment_submissions",
+        {"assignment_id": assignment_id, "student_id": current_user.get("id")},
     )
     if existing:
         raise HTTPException(status_code=409, detail="Already submitted")
 
     data = {
         "assignment_id": assignment_id,
-        "assignment_uuid": assignment_id,
         "student_id": current_user.get("id"),
-        "student_uuid": current_user.get("id"),
+        "course_id": assignment.get("course_id"),
         "content_url": payload.get("content_url"),
         "text_content": payload.get("text_content"),
+        "submission_type": "online",
         "status": "submitted",
         "submitted_at": datetime.now(timezone.utc).isoformat(),
     }
-    return await db.insert("submissions", data)
+    submission = await db.insert("assignment_submissions", data)
+    if not submission:
+        raise HTTPException(status_code=500, detail="Failed to save submission")
+
+    audit_logger.log(
+        action="assignment_submitted",
+        user_id=str(current_user.get("id")),
+        resource_id=str(submission.get("id")),
+        metadata={
+            "assignment_id": assignment_id,
+            "course_id": assignment.get("course_id"),
+            "submission_type": "online",
+        },
+    )
+    return submission
 
 
 @router.get("/grades")
@@ -1748,15 +1796,13 @@ async def list_student_grades(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "student":
         raise HTTPException(status_code=403, detail="Student access required")
     db = get_scoped_db(current_user)
-    submissions_res = db.table("submissions").select("*").eq("student_uuid", current_user.get("id")).execute()
+    submissions_res = db.table("assignment_submissions").select("*").eq("student_id", current_user.get("id")).execute()
     submissions = submissions_res.data or []
-    if not submissions:
-        legacy_res = db.table("submissions").select("*").eq("student_id", current_user.get("id")).execute()
-        submissions = legacy_res.data or []
+    
     assignment_ids = list({
-        s.get("assignment_uuid") or s.get("assignment_id")
+        s.get("assignment_id")
         for s in submissions
-        if s.get("assignment_uuid") or s.get("assignment_id")
+        if s.get("assignment_id")
     })
     assignments_res = db.table("assignments").select("*").in_("id", assignment_ids).execute() if assignment_ids else None
     assignments = assignments_res.data if assignments_res else []
@@ -1767,7 +1813,7 @@ async def list_student_grades(current_user: dict = Depends(get_current_user)):
 
     results = []
     for submission in submissions:
-        assignment_id = submission.get("assignment_uuid") or submission.get("assignment_id")
+        assignment_id = submission.get("assignment_id")
         assignment = assignment_lookup.get(assignment_id)
         course = course_lookup.get(assignment.get("course_id")) if assignment else {}
         results.append({
@@ -1775,7 +1821,8 @@ async def list_student_grades(current_user: dict = Depends(get_current_user)):
             "assignmentId": assignment_id,
             "assignmentTitle": assignment.get("title") if assignment else None,
             "courseName": course.get("title") or course.get("course_name") or course.get("name"),
-            "marks": submission.get("marks") or submission.get("score"),
+            "marks": submission.get("marks"),
+
             "feedback": submission.get("feedback"),
             "gradedAt": submission.get("graded_at"),
         })

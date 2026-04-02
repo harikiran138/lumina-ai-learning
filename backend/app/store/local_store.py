@@ -10,7 +10,7 @@ DEFAULT_LOCAL_DB = {
     "progress": [],
     "certificates": [],
     "assignments": [],
-    "submissions": [],
+    "assignment_submissions": [],
     "user_data": [],
     "assessment_sessions": [],
     "knowledge_nodes": [],

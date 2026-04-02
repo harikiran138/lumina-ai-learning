@@ -294,47 +294,23 @@ async def run_gemini_ocr(image: Image.Image, confidence_threshold: float = 0.70)
 
 
 class OCRService:
-    @staticmethod
-    def extract_text(file_path: str, file_type: str = "image") -> str:
-        """
-        Main entry point for extracting text from a file path.
-        Tries local TrOCR; falls back gracefully.
-        """
-        try:
-            import torch
-            from transformers import TrOCRProcessor, VisionEncoderDecoderModel
-            self._has_local_deps = True
-        except ImportError:
-            self._has_local_deps = False
-        self._local_deps_checked = True
+    def __init__(self):
+        self.processor = None
+        self.model = None
 
-    def _load_model(self):
-        """Lazy load the model only when needed for local fallback."""
-        if self.model is not None:
-            return
+    async def extract_text(self, image: Image.Image, method: str = "auto") -> OCRResult:
+        """
+        Main entry point for extracting text from an image.
+        Methods: "auto", "gemini", "api", "local"
+        """
+        if method == "gemini" or (method == "auto" and settings.ASSESSMENT_API_KEY):
+            return await run_gemini_ocr(image)
         
-        self._check_local_dependencies()
-        if not self._has_local_deps:
-            return
-
-        import torch
-        from transformers import TrOCRProcessor, VisionEncoderDecoderModel
-        
-        device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
-        model_name = "microsoft/trocr-small-handwritten"
-        
-        print(f"Loading local OCR fallback: {model_name} on {device}...")
-        try:
-            self.processor = TrOCRProcessor.from_pretrained(model_name)  # nosec B615
-            self.model = VisionEncoderDecoderModel.from_pretrained(model_name).to(device)  # nosec B615
-            if device == "cpu":
-                self.model = torch.quantization.quantize_dynamic(
-                    self.model, {torch.nn.Linear}, dtype=torch.qint8
-                )
-            print("✅ Local OCR fallback loaded.")
-        except Exception as e:
-            log.warning("local_trocr_unavailable", error=str(e))
-            return f"[OCR unavailable — teacher review required]"
+        if method == "api" or (method == "auto" and settings.HF_TOKEN):
+            return await run_trocr_api(image, settings.HF_TOKEN)
+            
+        # Fallback to local TrOCR
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, run_trocr, image)
 
 ocr_service = OCRService()
-

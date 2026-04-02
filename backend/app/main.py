@@ -14,6 +14,7 @@ load_dotenv()
 import os  # noqa: E402
 import time  # noqa: E402
 import socket # noqa: E402
+import re # noqa: E402
 
 
 # FORCE IPv4 to prevent IPv6 blackhole hanging (Mac/Supabase bug)
@@ -192,15 +193,25 @@ _ALLOWED_CORS_ORIGINS = {
     "http://127.0.0.1:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3001",
+    "https://lumina-ai-blond.vercel.app",
+    "https://lumina-r14oxh9hj-chepuri-hari-kirans-projects.vercel.app",
+    "https://lumina-ai-learning.vercel.app",
 }
+_ALLOWED_CORS_ORIGIN_REGEX = r"^https://lumina-[a-z0-9-]+\.vercel\.app$"
 
 def add_cors_headers(response: JSONResponse, request: Request) -> JSONResponse:
     origin = request.headers.get("origin")
-    if origin and (origin in _ALLOWED_CORS_ORIGINS or os.getenv("FRONTEND_URL") == origin):
+    # Check against allowed list or matching the Vercel regex
+    is_allowed = origin and (
+        origin in _ALLOWED_CORS_ORIGINS or 
+        os.getenv("FRONTEND_URL") == origin or
+        re.match(_ALLOWED_CORS_ORIGIN_REGEX, origin)
+    )
+    if is_allowed:
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
     return response
 
 @app.exception_handler(StarletteHTTPException)
@@ -461,11 +472,19 @@ if os.getenv("ENVIRONMENT") == "production":
 
 # CORS: Outermost to ensure all responses (including errors) have headers
 # CORS Lockdown (R-002 Fix): Strict whitelist only.
+origins = list(_ALLOWED_CORS_ORIGINS)
+# Safely add FRONTEND_URL if it's not a wildcard
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url and frontend_url != "*":
+    if frontend_url not in origins:
+        origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=list(_ALLOWED_CORS_ORIGINS) + ([os.getenv("FRONTEND_URL")] if os.getenv("FRONTEND_URL") else []),
+    allow_origins=origins,
+    allow_origin_regex=_ALLOWED_CORS_ORIGIN_REGEX,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["Content-Disposition"],
 )

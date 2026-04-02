@@ -30,7 +30,7 @@ export default function FacultyLayout({ children }: { children: React.ReactNode 
       {/* TopNav: fixed left offset = sidebar collapsed width (5rem) + gap (1rem left) = ~6rem = 24 units */}
       <TopNav
         onMenuClick={() => setSidebarOpen((v) => !v)}
-        className="lg:left-28"
+        className="lg:left-24 transition-all duration-500"
         user={
           user
             ? { name: user.name ?? "Faculty", role: "Faculty", initial: (user.name ?? "F").charAt(0), avatar: user.avatar }
@@ -46,7 +46,7 @@ export default function FacultyLayout({ children }: { children: React.ReactNode 
       )}
 
       {/* Main: stable margin — never shifts on sidebar hover */}
-      <main className="lg:ml-28 pt-20 min-h-screen">
+      <main className="lg:ml-24 pt-20 min-h-screen transition-all duration-500">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
           <Breadcrumb />
           {children}

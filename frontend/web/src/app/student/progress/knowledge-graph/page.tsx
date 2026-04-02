@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Brain, ArrowLeft, Info, Search, Filter, Layers, Zap } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { getConfiguredApiBase } from "@/lib/api";
+import { RealAPI } from "@/lib/api";
 
 type Node = {
   id: string;
@@ -32,23 +32,11 @@ export default function KnowledgeGraphPage() {
   const [primaryCourseId, setPrimaryCourseId] = useState<string | null>(null);
 
   useEffect(() => {
-    const apiBase = getConfiguredApiBase();
-    const token = typeof window !== "undefined" ? sessionStorage.getItem("lumina_token") || "" : "";
-    const headers = { Authorization: `Bearer ${token}` };
-
     const fetchGraph = async () => {
       setIsLoading(true);
-      if (!apiBase) {
-        setNodes([]);
-        setEdges([]);
-        setCourseTitle("API not configured");
-        setCoverage(0);
-        setIsLoading(false);
-        return;
-      }
       try {
         // 1. Get enrolled courses from dashboard
-        const dashRes = await fetch(`${apiBase}/api/student/dashboard`, { credentials: "include" });
+        const dashRes = await RealAPI.getInstance().fetchAuthorized("/api/student/dashboard");
         const dash = dashRes.ok ? await dashRes.json() : {};
         const enrolled: any[] = dash.enrolledCourses || [];
 
@@ -69,9 +57,7 @@ export default function KnowledgeGraphPage() {
         setCourseTitle(primary.name || primary.title || "Learning Path");
 
         // 2. Fetch knowledge nodes for that course
-        const kgRes = await fetch(`${apiBase}/api/knowledge-graph/${primary.id}`, {
-          credentials: "include",
-        });
+        const kgRes = await RealAPI.getInstance().fetchAuthorized(`/api/knowledge-graph/${primary.id}`);
         const rawNodes: any[] = kgRes.ok ? await kgRes.json() : [];
 
         if (rawNodes.length === 0) {
