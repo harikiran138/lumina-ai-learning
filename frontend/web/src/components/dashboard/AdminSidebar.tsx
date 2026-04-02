@@ -8,24 +8,33 @@ import {
   Users,
   Settings,
   LogOut,
-  Database,
   Shield,
   Landmark,
-  Building2,
-  BookOpen,
+  Bot,
+  CreditCard,
+  BarChart3,
+  Activity,
+  Lock,
+  ScrollText,
+  FileDown,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 
 const navItems = [
-  { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { name: "Institutions", href: "/admin/institution", icon: Landmark },
-  { name: "Departments", href: "/admin/departments", icon: Building2 },
-  { name: "Classes", href: "/admin/classes", icon: BookOpen },
-  { name: "Users", href: "/admin/users", icon: Users },
-  { name: "System", href: "/admin/system", icon: Database },
-  { name: "Security", href: "/admin/security", icon: Shield },
-  { name: "Settings", href: "/admin/settings", icon: Settings },
+  { name: "Dashboard",              href: "/admin/dashboard",                  icon: LayoutDashboard },
+  { name: "Institution Management", href: "/admin/institution",                icon: Landmark },
+  { name: "Global User Overview",   href: "/admin/users",                      icon: Users },
+  { name: "AI Model Control",       href: "/admin/ai/model-hub",               icon: Bot },
+  { name: "Billing & Subscriptions",href: "/admin/platform/billing",           icon: CreditCard },
+  { name: "Platform Analytics",     href: "/admin/analytics/institution",      icon: BarChart3 },
+  { name: "System Health",          href: "/admin/governance/system-health",   icon: Activity },
+  { name: "Compliance & Security",  href: "/admin/compliance/dashboard",       icon: Lock },
+  { name: "Audit Logs",             href: "/admin/compliance/audit-logs",      icon: ScrollText },
+  { name: "Reports & Export",       href: "/admin/analytics/reports",          icon: FileDown },
+  { name: "Notifications",          href: "/admin/notifications",              icon: Bell },
+  { name: "Settings",               href: "/admin/settings",                   icon: Settings },
 ];
 
 export default function AdminSidebar({ user: userProp }: { user?: any }) {
