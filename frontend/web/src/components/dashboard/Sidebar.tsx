@@ -56,7 +56,7 @@ const roleNavItems: Record<string, any[]> = {
     { name: "Messages",       href: "/parent/messages",        icon: MessageSquare },
     { name: "Weekly Reports", href: "/parent/weekly-reports",  icon: FileText },
     { name: "Alerts",         href: "/parent/alerts",          icon: AlertTriangle },
-    { name: "Notifications",  href: "/parent/alerts",          icon: Bell },
+    { name: "Notifications",  href: "/parent/alerts#notifications", icon: Bell },
     { name: "Settings",       href: "/parent/settings",        icon: Settings },
   ],
   mentor: [

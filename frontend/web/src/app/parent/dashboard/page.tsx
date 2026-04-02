@@ -499,7 +499,7 @@ export default function ParentDashboard() {
                   </div>
                   <div className="flex justify-between text-[10px] text-gray-500 mt-1.5">
                     <span>{goal.child_name}</span>
-                    <span>Due March 12</span>
+                    <span>Due: {goal.target_date ? new Date(goal.target_date).toLocaleDateString() : "TBD"}</span>
                   </div>
                 </div>
               ))}
