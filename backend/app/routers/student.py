@@ -1,6 +1,8 @@
 import asyncio
 import json
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+import structlog
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
@@ -22,6 +24,10 @@ from app.api.deps import get_current_student as get_current_user
 from app.database.supabase_manager import supabase_db
 from app.database.scoped_db import get_scoped_db
 from app.services.risk_service import get_risk_analysis_service
+
+import uuid
+import secrets
+from app.store.redis_client import redis_client
 
 router = APIRouter()
 
@@ -518,8 +524,9 @@ async def save_quiz_result(
     """
     # Use ID from token, not request body
     payload = request.model_dump()
+    db = get_scoped_db(current_user)
     await store.add_quiz_attempt(current_user["id"], payload)
-    await get_personalization_service().record_event(
+    await get_personalization_service(db=db).record_event(
         current_user["id"],
         LearningEventType.QUIZ_RESULT,
         payload=QuizResultPayload(**payload).model_dump(exclude_none=True),
@@ -562,7 +569,8 @@ async def save_note(
     if not note:
         raise HTTPException(status_code=500, detail="Failed to save note")
 
-    await get_personalization_service().record_event(
+    db = get_scoped_db(current_user)
+    await get_personalization_service(db=db).record_event(
         current_user["id"],
         LearningEventType.NOTE_ADDED,
         payload=NoteAddedPayload(
@@ -632,12 +640,13 @@ async def get_student_dashboard(
     except Exception:
         pass
 
-    personalization = get_personalization_service()
+    db = get_scoped_db(current_user)
+    personalization = get_personalization_service(db=db)
 
-    dashboard_data = await analytics.get_student_full_dashboard(current_user["id"])
+    analytics_scoped = AnalyticsStore(db=db)
+    dashboard_data = await analytics_scoped.get_student_full_dashboard(current_user["id"])
 
     if not dashboard_data:
-        # Return empty structure if not found
         dashboard_data = {
             "currentStreak": 0,
             "enrolledCourses": [],
@@ -649,13 +658,14 @@ async def get_student_dashboard(
     profile, interventions, events = await asyncio.gather(
         personalization.get_profile(current_user["id"], role=current_user.get("role", "student")),
         personalization.get_interventions(user_id=current_user["id"]),
-        personalization.store.list_events(current_user["id"], limit=120),
+        personalization.store.list_events(current_user["id"], limit=10),
     )
 
     enrolled_courses = dashboard_data.get("enrolledCourses", [])
     weak_topics = _build_weak_topics(profile)
     weekly_activity = _build_weekly_activity(events)
-    due_assignments = await _build_due_assignments(enrolled_courses, current_user["id"], assignment_store)
+    assignment_store_scoped = AssignmentStore(db=db)
+    due_assignments = await _build_due_assignments(enrolled_courses, current_user["id"], assignment_store_scoped)
     resume_course = _pick_resume_course(enrolled_courses)
     next_action = _build_next_action(
         due_assignments,
@@ -664,83 +674,73 @@ async def get_student_dashboard(
         enrolled_courses,
         float(dashboard_data.get("overallMastery", 0) or 0),
     )
-    today_plan = _build_study_plan(
-        due_assignments,
-        weak_topics,
-        resume_course,
-        float(dashboard_data.get("overallMastery", 0) or 0),
-    )
     coach_insight = _build_coach_insight(profile, interventions, weak_topics)
-    mastery_breakdown = [
-        {
-            "topic": item["topic"],
-            "score": item["score"],
-            "confidence": item["confidence"],
-            "attempts": item["attempts"],
-            "status": item["status"],
-        }
-        for item in weak_topics
-    ]
-    pending_assignments = len([item for item in due_assignments if not item["submitted"]])
-    weekly_minutes = round(sum(item["minutes"] for item in weekly_activity), 2)
+    
     display_name = (
         current_user.get("full_name")
         or current_user.get("name")
         or current_user.get("email", "Scholar").split("@")[0]
     )
 
-    dashboard_data.update(
-        {
+    result = {
+        "stats": [
+            {"label": "Overall Mastery", "value": f"{dashboard_data.get('overallMastery', 0)}%", "trend": "+2%", "icon": "GraduationCap"},
+            {"label": "Current Streak", "value": f"{dashboard_data.get('currentStreak', 0)} days", "trend": "Stable", "icon": "Flame"},
+            {"label": "Learning Hours", "value": f"{dashboard_data.get('totalHours', 0)}h", "trend": "+5h", "icon": "Clock"},
+            {"label": "Badges Earned", "value": str(len(dashboard_data.get("badges", []))), "trend": "New!", "icon": "Award"},
+        ],
+        "alerts": [
+            {
+                "id": str(i.id),
+                "type": "warning" if i.priority in ["high", "critical"] else "info",
+                "title": i.recommended_action,
+                "description": i.reason,
+                "priority": i.priority,
+            }
+            for i in interventions if i.status == "open"
+        ] + [
+            {
+                "id": f"assignment-{a['id']}",
+                "type": "deadline",
+                "title": f"Due Soon: {a['title']}",
+                "description": f"Due in {a['days_until']} days",
+                "priority": "high" if a['days_until'] <= 2 else "medium",
+            }
+            for a in due_assignments if a.get('days_until') is not None and a['days_until'] <= 5
+        ],
+        "charts": {
+            "masteryHistory": [
+                {"date": s.recorded_at.isoformat(), "score": round(s.readiness * 100, 1)}
+                for s in profile.kpi_history[-14:]
+            ],
+            "engagement": weekly_activity
+        },
+        "feed": [
+            {
+                "id": str(e["id"]),
+                "type": e["event_type"],
+                "title": e["event_type"].replace("_", " ").title(),
+                "time": e["created_at"].isoformat() if hasattr(e["created_at"], "isoformat") else e["created_at"],
+                "meta": e["payload"]
+            }
+            for e in events
+        ],
+        "meta": {
             "studentName": display_name,
-            "weeklyActivity": weekly_activity,
-            "weeklyMinutes": weekly_minutes,
-            "pendingAssignments": pending_assignments,
-            "dueAssignments": due_assignments[:5],
+            "riskLevel": profile.risk_summary.risk_level,
             "nextAction": next_action,
-            "todayPlan": today_plan,
-            "weakTopics": weak_topics,
-            "masteryBreakdown": mastery_breakdown,
-            "resumeCourse": resume_course,
             "coachInsight": coach_insight,
-            "learningSignals": {
-                "behaviorLabel": profile.behavior_signals.get("behavior_label", "neutral"),
-                "cognitiveLoad": profile.behavior_signals.get("cognitive_load", 50),
-                "riskLevel": profile.risk_summary.risk_level,
-                "riskScore": round(profile.risk_summary.risk_score * 100, 2),
-                "reasons": profile.risk_summary.reasons,
-                "engagementScore": min(
-                    100,
-                    int(
-                        profile.engagement_summary.total_minutes
-                        + (profile.engagement_summary.current_streak * 5)
-                        + (profile.engagement_summary.total_lessons_completed * 2)
-                    ),
-                ),
-                "recentAverageScore": round(profile.performance_summary.recent_average_score, 2),
-            },
-            "achievementSummary": _build_achievement_summary(
-                int(dashboard_data.get("currentStreak", 0) or 0),
-                float(dashboard_data.get("overallMastery", 0) or 0),
-                enrolled_courses,
-                dashboard_data.get("badges", []),
-            ),
-            "openInterventions": len(
-                [
-                    item
-                    for item in interventions
-                    if getattr(getattr(item, "status", None), "value", getattr(item, "status", None))
-                    == "open"
-                ]
-            ),
+            "enrolledCourses": enrolled_courses,
+            "resumeCourse": resume_course
         }
-    )
+    }
 
     try:
-        await redis_client.setex(cache_key, 300, json.dumps(dashboard_data, default=str))
+        await redis_client.setex(cache_key, 300, json.dumps(result, default=str))
     except Exception:
         pass
 
-    return dashboard_data
+    return result
 
 
 @router.post("/enroll")
@@ -752,7 +752,9 @@ async def enroll_in_course(
     """
     Enroll the CURRENT student in a course.
     """
-    success = await store.enroll_in_course(current_user["id"], request.course_id)
+    db = get_scoped_db(current_user)
+    student_store = StudentStore(db=db)
+    success = await student_store.enroll_in_course(current_user["id"], request.course_id)
     if not success:
         raise HTTPException(status_code=400, detail="Enrollment failed or already enrolled")
 
@@ -768,11 +770,13 @@ async def complete_lesson(
     """
     Mark a lesson as complete for the CURRENT student.
     """
-    result = await store.complete_lesson(current_user["id"], request.course_id, request.lesson_id)
+    db = get_scoped_db(current_user)
+    student_store = StudentStore(db=db)
+    result = await student_store.complete_lesson(current_user["id"], request.course_id, request.lesson_id)
     if not result.get("success"):
         raise HTTPException(status_code=500, detail="Failed to mark lesson as complete")
 
-    await get_personalization_service().record_event(
+    await get_personalization_service(db=db).record_event(
         current_user["id"],
         LearningEventType.LESSON_COMPLETED,
         payload=LessonCompletedPayload(
@@ -797,13 +801,15 @@ async def log_activity(
     """
     Log student activity time and update streak.
     """
-    success = await store.log_activity(
+    db = get_scoped_db(current_user)
+    student_store = StudentStore(db=db)
+    success = await student_store.log_activity(
         current_user["id"], request.course_id, request.duration_minutes
     )
     if not success:
         raise HTTPException(status_code=500, detail="Failed to log activity")
 
-    await get_personalization_service().record_event(
+    await get_personalization_service(db=db).record_event(
         current_user["id"],
         LearningEventType.ACTIVITY_LOGGED,
         payload=ActivityLoggedPayload(
@@ -830,7 +836,9 @@ async def get_badges(
     """
     Get all badges for the CURRENT student.
     """
-    return await store.get_badges(current_user["id"])
+    db = get_scoped_db(current_user)
+    student_store = StudentStore(db=db)
+    return await student_store.get_badges(current_user["id"])
 
 
 @router.get("/certificates")
@@ -840,7 +848,9 @@ async def get_certificates(
     """
     Get all certificates for the CURRENT student.
     """
-    return await store.get_certificates(current_user["id"])
+    db = get_scoped_db(current_user)
+    student_store = StudentStore(db=db)
+    return await student_store.get_certificates(current_user["id"])
 
 
 @router.post("/profile/update")
@@ -854,7 +864,9 @@ async def update_profile(
     """
     from app.store.user_store import UserStore
 
-    user_store = UserStore()
+    db = get_scoped_db(current_user)
+    user_store = UserStore(db=db)
+    user_data_store = UserDataStore(db=db)
 
     user_fields = {}
     for field in ("name", "phone"):
@@ -885,11 +897,11 @@ async def update_profile(
 
     saved_settings = {}
     if profile_settings:
-        saved_settings = await store.update_profile_settings(current_user["id"], profile_settings)
+        saved_settings = await user_data_store.update_profile_settings(current_user["id"], profile_settings)
         if not saved_settings:
             raise HTTPException(status_code=500, detail="Failed to update profile settings")
 
-    await get_personalization_service().record_event(
+    await get_personalization_service(db=db).record_event(
         current_user["id"],
         LearningEventType.PROFILE_UPDATED,
         payload={"updated_fields": list(user_fields.keys()) + list(profile_settings.keys())},
@@ -913,7 +925,8 @@ async def get_learner_analytics(
     """
     Get deep learner analytics (cognitive load, engagement, behavior).
     """
-    profile = await get_personalization_service().get_profile(
+    db = get_scoped_db(current_user)
+    profile = await get_personalization_service(db=db).get_profile(
         current_user["id"], role=current_user.get("role", "student")
     )
     mastery_scores = [item.score for item in profile.mastery_state.values()]
@@ -943,7 +956,8 @@ async def get_mastery_projections(
     """
     Get mastery projections based on BKT/DKT models.
     """
-    profile = await get_personalization_service().get_profile(
+    db = get_scoped_db(current_user)
+    profile = await get_personalization_service(db=db).get_profile(
         current_user["id"], role=current_user.get("role", "student")
     )
     mastery_map = {topic: item.score for topic, item in profile.mastery_state.items()}
@@ -959,21 +973,22 @@ async def get_mastery_projections(
 @router.get("/profile")  # Changed from /profile/{user_id}
 async def get_profile(
     current_user: dict = Depends(get_current_user),
-    store: UserDataStore = Depends(get_user_data_store),
 ):
     """
     Get the full profile for the CURRENT user.
     """
     from app.store.analytics_store import AnalyticsStore
 
-    analytics = AnalyticsStore()
-    profile_data = await get_personalization_service().get_profile(
+    db = get_scoped_db(current_user)
+    user_data_store = UserDataStore(db=db)
+    analytics = AnalyticsStore(db=db)
+    profile_data = await get_personalization_service(db=db).get_profile(
         current_user["id"], role=current_user.get("role", "student")
     )
-    quiz_stats = await store.get_recent_quiz_stats(current_user["id"])
-    profile_settings = await store.get_profile_settings(current_user["id"])
+    quiz_stats = await user_data_store.get_recent_quiz_stats(current_user["id"])
+    profile_settings = await user_data_store.get_profile_settings(current_user["id"])
     dashboard_stats = await analytics.get_student_dashboard_stats(current_user["id"])
-    notes = await store.get_notes(current_user["id"])
+    notes = await user_data_store.get_notes(current_user["id"])
     display_name = current_user.get("name") or current_user.get("full_name")
     
     recent_activity = [
@@ -1030,10 +1045,8 @@ async def get_leaderboard(
     """
     Returns a ranked leaderboard of students ordered by computed XP from learner_events.
     """
-    from app.database.supabase_manager import supabase_db
-    from collections import defaultdict
-
-    client = supabase_db.get_client()
+    db = get_scoped_db(current_user)
+    client = db.get_client()
     entries: List[Dict[str, Any]] = []
 
     if client:
@@ -1118,7 +1131,8 @@ async def list_student_subjects(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "student":
         raise HTTPException(status_code=403, detail="Student access required")
     student_id = current_user.get("id")
-    client = supabase_db.get_client()
+    db = get_scoped_db(current_user)
+    client = db.get_client()
     enrollment_rows = (
         client.table("enrollments")
         .select("*")
@@ -1208,7 +1222,8 @@ async def get_student_onboarding_options(current_user: dict = Depends(get_curren
     student_id = current_user.get("id")
     dept_id = current_user.get("dept_id") or current_user.get("department_id")
     batch_id = current_user.get("batch_id")
-    client = supabase_db.get_client()
+    db = get_scoped_db(current_user)
+    client = db.get_client()
     if client is None:
         return {
             "classes": [],
@@ -1217,7 +1232,7 @@ async def get_student_onboarding_options(current_user: dict = Depends(get_curren
             "currentEnrollment": None
         }
 
-    batch = await supabase_db.fetch_one("batches", {"id": batch_id}) if batch_id else None
+    batch = await db.fetch_one("batches", {"id": batch_id}) if batch_id else None
 
     class_rows: List[Dict[str, Any]] = []
     try:
@@ -1243,7 +1258,7 @@ async def get_student_onboarding_options(current_user: dict = Depends(get_curren
     semester = batch.get("current_semester") if batch else None
     subjects: List[Dict[str, Any]] = []
     if dept_id and semester:
-        subjects = await supabase_db.fetch_all("courses", {"department_id": dept_id, "semester": semester})
+        subjects = await db.fetch_all("courses", {"department_id": dept_id, "semester": semester})
 
     selected_subjects = (
         client.table("student_subjects")
@@ -1326,6 +1341,7 @@ async def complete_student_onboarding(
     dept_id = current_user.get("dept_id") or current_user.get("department_id")
     batch_id = current_user.get("batch_id")
 
+    db = get_scoped_db(current_user)
     if not payload.batch_confirmed:
         raise HTTPException(status_code=400, detail="Batch details must be confirmed before finishing onboarding")
     if not payload.subject_ids:
@@ -1335,14 +1351,14 @@ async def complete_student_onboarding(
     if not all(payload.consents.get(key) is True for key in required_consents):
         raise HTTPException(status_code=400, detail="All mandatory consents must be accepted")
 
-    batch = await supabase_db.fetch_one("batches", {"id": batch_id}) if batch_id else None
+    batch = await db.fetch_one("batches", {"id": batch_id}) if batch_id else None
     if not batch:
         raise HTTPException(status_code=400, detail="Batch details are missing from your account")
 
-    selected_class = await supabase_db.fetch_one("classes", {"id": payload.class_id}) if payload.class_id else None
-    enrollment_record = await supabase_db.fetch_one("student_enrollments", {"student_id": student_id})
+    selected_class = await db.fetch_one("classes", {"id": payload.class_id}) if payload.class_id else None
+    enrollment_record = await db.fetch_one("student_enrollments", {"student_id": student_id})
     if not selected_class and batch_id:
-        class_candidates = await supabase_db.fetch_all("classes", {"batch_id": batch_id})
+        class_candidates = await db.fetch_all("classes", {"batch_id": batch_id})
         selected_class = _pick_preferred_class(class_candidates, current_user.get("section"))
 
     if selected_class and dept_id and selected_class.get("department_id") not in {None, dept_id}:
@@ -1352,7 +1368,7 @@ async def complete_student_onboarding(
 
     course_lookup: Dict[str, Dict[str, Any]] = {}
     for subject_id in payload.subject_ids:
-        course = await supabase_db.fetch_one("courses", {"id": subject_id})
+        course = await db.fetch_one("courses", {"id": subject_id})
         if course:
             course_lookup[str(subject_id)] = course
 
@@ -1801,3 +1817,27 @@ async def trigger_risk_analysis(current_user: dict = Depends(get_current_user)):
         
     service = get_risk_analysis_service()
     return await service.run_risk_analysis(current_user["id"], institution_id)
+@router.get("/connection-token")
+async def get_connection_token(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Generates a temporary connection token for parent-student linking.
+    Expires in 10 minutes (600 seconds).
+    """
+    try:
+        # Generate a unique token
+        token = secrets.token_urlsafe(16)
+        key = f"student_connect:{token}"
+        
+        # Store in Redis: token -> student_id
+        await redis_client.setex(key, 600, current_user["id"])
+        
+        return {
+            "token": token,
+            "expires_in": 600,
+            "display_id": current_user["id"] # Optional: use for manual entry if needed
+        }
+    except Exception as e:
+        log.error("get_connection_token_failed", user_id=current_user["id"], error=str(e))
+        raise HTTPException(status_code=500, detail="Failed to generate connection token")

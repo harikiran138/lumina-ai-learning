@@ -221,12 +221,16 @@ class SupabaseManager:
     """
     Production-ready Supabase client manager.
     Handles initialization, retries, and provides query helpers.
+    Supports instance-specific clients for RLS-aware scoping.
     """
 
     _client: Optional[Client] = None
     _local_client: Optional[_LocalSupabaseClient] = None
     _init_attempted = False
     _last_error = None
+
+    def __init__(self, client: Optional[Client] = None):
+        self._instance_client = client
 
     @classmethod
     def _use_local_backend(cls) -> bool:
@@ -235,7 +239,7 @@ class SupabaseManager:
     @classmethod
     def get_client(cls, force_new: bool = False) -> Client:
         """
-        Returns a singleton instance of the Supabase client.
+        Returns a singleton instance of the Supabase service-role client.
         """
         if cls._use_local_backend():
             if cls._local_client is None or force_new:
@@ -281,6 +285,9 @@ class SupabaseManager:
 
     @property
     def client(self) -> Client:
+        """Returns the instance-specific client if available, otherwise the service-role client."""
+        if self._instance_client:
+            return self._instance_client
         return self.get_client()
 
     async def connect(self):
@@ -377,5 +384,28 @@ class SupabaseManager:
         except Exception as e:
             log.error("delete_failed", table=table, error=str(e))
             return False
+
+
+def get_scoped_db(user: Dict[str, Any]) -> SupabaseManager:
+    """
+    Returns a scoped SupabaseManager instance for the given user.
+    If the user is a super_admin, it returns the global service role client.
+    Otherwise, it returns a client scoped with the user's JWT.
+    """
+    global supabase_db
+    if user.get("role") == "super_admin":
+        return supabase_db
+    
+    jwt = user.get("access_token")
+    if jwt:
+        client = create_client(
+            settings.SUPABASE_URL,
+            settings.SUPABASE_ANON_KEY,
+            options=ClientOptions(headers={"Authorization": f"Bearer {jwt}"})
+        )
+        return SupabaseManager(client=client)
+    
+    return supabase_db
+
 
 supabase_db = SupabaseManager()

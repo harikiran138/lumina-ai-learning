@@ -8,6 +8,7 @@ import io
 from app.routers.auth import get_current_user
 from app.api.deps import get_current_active_user, get_current_college_admin, get_current_hod, get_current_faculty
 from app.database.supabase_manager import supabase_db
+from app.database.scoped_db import get_scoped_db
 from app.store.institution_store import InstitutionStore
 from app.store.user_store import UserStore
 from app.store.student_store import StudentStore
@@ -42,8 +43,8 @@ def _enforce_college_scope(user: dict, college_id: str):
 
 @router.get("/colleges")
 async def list_colleges(current_user: dict = Depends(get_current_user)):
-    _require_roles(current_user, {"super_admin"})
-    return await InstitutionStore().list_institutions()
+    db = get_scoped_db(current_user)
+    return await InstitutionStore(db=db).list_institutions()
 
 
 @router.post("/colleges")
@@ -60,16 +61,25 @@ async def create_college(payload: Dict[str, Any], current_user: dict = Depends(g
         "login_policy": payload.get("login_policy") or payload.get("loginPolicy") or "email_only",
         "is_active": payload.get("is_active") if payload.get("is_active") is not None else True,
     }
+    db = get_scoped_db(current_user)
     if not data.get("institution_name"):
         raise HTTPException(status_code=400, detail="Missing college name")
-    return await InstitutionStore().create_institution(data)
+    return await InstitutionStore(db=db).create_institution(data)
 
 
 @router.get("/colleges/{college_id}")
 async def get_college(college_id: str, current_user: dict = Depends(get_current_college_admin)):
     _require_roles(current_user, {"super_admin", "college_admin"})
+    db = get_scoped_db(current_user)
+    inst_store = InstitutionStore(db=db)
+    user_cid = _resolve_college_id(current_user)
+    
+    if college_id == "me" or college_id == user_cid:
+        _enforce_college_scope(current_user, user_cid)
+        return await inst_store.get_institution(user_cid)
+    
     _enforce_college_scope(current_user, college_id)
-    college = await InstitutionStore().get_institution(college_id)
+    college = await inst_store.get_institution(college_id)
     if not college:
         raise HTTPException(status_code=404, detail="College not found")
     return college
@@ -78,6 +88,7 @@ async def get_college(college_id: str, current_user: dict = Depends(get_current_
 @router.patch("/colleges/{college_id}")
 async def update_college(college_id: str, payload: Dict[str, Any], current_user: dict = Depends(get_current_college_admin)):
     _require_roles(current_user, {"super_admin", "college_admin"})
+    db = get_scoped_db(current_user)
     _enforce_college_scope(current_user, college_id)
     allowed = {
         "institution_name",
@@ -93,7 +104,7 @@ async def update_college(college_id: str, payload: Dict[str, Any], current_user:
     if not data:
         raise HTTPException(status_code=400, detail="No valid fields to update")
     data["updated_at"] = datetime.utcnow().isoformat()
-    result = await supabase_db.update("institutions", data, {"id": college_id})
+    result = await db.update("institutions", data, {"id": college_id})
     if not result:
         raise HTTPException(status_code=404, detail="College not found")
     return result
@@ -102,20 +113,26 @@ async def update_college(college_id: str, payload: Dict[str, Any], current_user:
 @router.delete("/colleges/{college_id}")
 async def delete_college(college_id: str, current_user: dict = Depends(get_current_college_admin)):
     _require_roles(current_user, {"super_admin"})
-    deleted = await supabase_db.delete("institutions", {"id": college_id})
+    db = get_scoped_db(current_user)
+    _enforce_college_scope(current_user, college_id)
+    deleted = await db.delete("institutions", {"id": college_id})
     return {"deleted": bool(deleted)}
 
 
 @router.get("/colleges/{college_id}/departments")
 async def list_departments(college_id: str, current_user: dict = Depends(get_current_user)):
     _require_roles(current_user, {"super_admin", "college_admin", "hod", "faculty"})
+    db = get_scoped_db(current_user)
+    inst_store = InstitutionStore(db=db)
     _enforce_college_scope(current_user, college_id)
-    return await InstitutionStore().list_departments(college_id)
+    return await inst_store.list_departments(college_id)
 
 
 @router.post("/colleges/{college_id}/departments")
 async def create_department(college_id: str, payload: Dict[str, Any], current_user: dict = Depends(get_current_college_admin)):
     _require_roles(current_user, {"super_admin", "college_admin"})
+    db = get_scoped_db(current_user)
+    inst_store = InstitutionStore(db=db)
     _enforce_college_scope(current_user, college_id)
     data = {
         "institution_id": college_id,
@@ -127,12 +144,13 @@ async def create_department(college_id: str, payload: Dict[str, Any], current_us
     }
     if not data.get("department_name"):
         raise HTTPException(status_code=400, detail="Missing department name")
-    return await InstitutionStore().create_department(data)
+    return await inst_store.create_department(data)
 
 
 @router.patch("/departments/{dept_id}")
 async def update_department(dept_id: str, payload: Dict[str, Any], current_user: dict = Depends(get_current_user)):
     _require_roles(current_user, {"super_admin", "college_admin", "hod"})
+    db = get_scoped_db(current_user)
     allowed = {
         "department_name",
         "abbreviation",
@@ -145,7 +163,7 @@ async def update_department(dept_id: str, payload: Dict[str, Any], current_user:
     if not data:
         raise HTTPException(status_code=400, detail="No valid fields to update")
     data["updated_at"] = datetime.utcnow().isoformat()
-    result = await supabase_db.update("departments", data, {"id": dept_id})
+    result = await db.update("departments", data, {"id": dept_id})
     if not result:
         raise HTTPException(status_code=404, detail="Department not found")
     return result
@@ -154,13 +172,15 @@ async def update_department(dept_id: str, payload: Dict[str, Any], current_user:
 @router.get("/departments/{dept_id}/batches")
 async def list_batches(dept_id: str, current_user: dict = Depends(get_current_user)):
     _require_roles(current_user, {"super_admin", "college_admin", "hod", "faculty", "student"})
-    return await supabase_db.fetch_all("batches", {"dept_id": dept_id})
+    db = get_scoped_db(current_user)
+    return await db.fetch_all("batches", {"dept_id": dept_id})
 
 
 @router.post("/departments/{dept_id}/batches")
 async def create_batch(dept_id: str, payload: Dict[str, Any], current_user: dict = Depends(get_current_user)):
     _require_roles(current_user, {"super_admin", "college_admin", "hod"})
-    dept = await supabase_db.fetch_one("departments", {"id": dept_id})
+    db = get_scoped_db(current_user)
+    dept = await db.fetch_one("departments", {"id": dept_id})
     if not dept:
         raise HTTPException(status_code=404, detail="Department not found")
 
@@ -175,19 +195,21 @@ async def create_batch(dept_id: str, payload: Dict[str, Any], current_user: dict
     }
     if not data.get("year") or not data.get("label"):
         raise HTTPException(status_code=400, detail="Missing batch year/label")
-    return await supabase_db.insert("batches", data)
+    return await db.insert("batches", data)
 
 
 @router.get("/departments/{dept_id}/subjects")
 async def list_subjects(dept_id: str, current_user: dict = Depends(get_current_user)):
     _require_roles(current_user, {"super_admin", "college_admin", "hod", "faculty", "student"})
-    return await supabase_db.fetch_all("courses", {"department_id": dept_id})
+    db = get_scoped_db(current_user)
+    return await db.fetch_all("courses", {"department_id": dept_id})
 
 
 @router.post("/departments/{dept_id}/subjects")
 async def create_subject(dept_id: str, payload: Dict[str, Any], current_user: dict = Depends(get_current_user)):
     _require_roles(current_user, {"super_admin", "college_admin", "hod"})
-    dept = await supabase_db.fetch_one("departments", {"id": dept_id})
+    db = get_scoped_db(current_user)
+    dept = await db.fetch_one("departments", {"id": dept_id})
     if not dept:
         raise HTTPException(status_code=404, detail="Department not found")
 
@@ -202,12 +224,13 @@ async def create_subject(dept_id: str, payload: Dict[str, Any], current_user: di
     }
     if not data.get("course_name") or not data.get("course_code"):
         raise HTTPException(status_code=400, detail="Missing subject name/code")
-    return await supabase_db.insert("courses", data)
+    return await db.insert("courses", data)
 
 
 @router.post("/subjects/{subject_id}/assign")
 async def assign_subject(subject_id: str, payload: Dict[str, Any], current_user: dict = Depends(get_current_user)):
     _require_roles(current_user, {"super_admin", "college_admin", "hod"})
+    db = get_scoped_db(current_user)
     data = {
         "course_id": subject_id,
         "teacher_id": payload.get("faculty_id"),
@@ -219,7 +242,7 @@ async def assign_subject(subject_id: str, payload: Dict[str, Any], current_user:
     }
     if not data.get("teacher_id") or not data.get("batch_id"):
         raise HTTPException(status_code=400, detail="Missing faculty or batch assignment")
-    return await supabase_db.insert("teacher_assignments", data)
+    return await db.insert("teacher_assignments", data)
 
 
 @router.get("/colleges/{college_id}/users")
@@ -232,6 +255,7 @@ async def list_users(
     current_user: dict = Depends(get_current_user),
 ):
     _require_roles(current_user, {"super_admin", "college_admin", "hod", "faculty"})
+    db = get_scoped_db(current_user)
     _enforce_college_scope(current_user, college_id)
     filters = {"college_id": college_id}
     if role:
@@ -242,12 +266,13 @@ async def list_users(
         filters["batch_id"] = batch_id
     if section:
         filters["section"] = section
-    return await supabase_db.fetch_all("users", filters)
+    return await db.fetch_all("users", filters)
 
 
 @router.post("/colleges/{college_id}/invite")
 async def invite_user(college_id: str, payload: Dict[str, Any], current_user: dict = Depends(get_current_user)):
     _require_roles(current_user, {"super_admin", "college_admin", "hod"})
+    db = get_scoped_db(current_user)
     _enforce_college_scope(current_user, college_id)
     email = payload.get("email")
     role = payload.get("role")
@@ -256,13 +281,13 @@ async def invite_user(college_id: str, payload: Dict[str, Any], current_user: di
     if not email or not role:
         raise HTTPException(status_code=400, detail="Missing email or role")
 
-    user_store = UserStore()
+    user_store = UserStore(db=db)
     existing = await user_store.get_user_by_email(email)
     if existing:
         user_id = existing["id"]
     else:
         user_id = str(uuid.uuid4())
-        await supabase_db.insert(
+        await db.insert(
             "users",
             {
                 "id": user_id,
@@ -297,8 +322,8 @@ async def invite_user(college_id: str, payload: Dict[str, Any], current_user: di
 async def create_enrollment_code(
     batch_id: str, payload: Dict[str, Any], current_user: dict = Depends(get_current_user)
 ):
-    _require_roles(current_user, {"super_admin", "college_admin", "hod"})
-    batch = await supabase_db.fetch_one("batches", {"id": batch_id})
+    db = get_scoped_db(current_user)
+    batch = await db.fetch_one("batches", {"id": batch_id})
     if not batch:
         raise HTTPException(status_code=404, detail="Batch not found")
 
@@ -317,7 +342,7 @@ async def create_enrollment_code(
         "created_at": datetime.utcnow().isoformat(),
         "used_by": None,
     }
-    await supabase_db.insert("enrollment_codes", data)
+    await db.insert("enrollment_codes", data)
     return {"code": code, "expiresAt": data["expires_at"], "batchId": batch_id, "section": section}
 
 
@@ -345,12 +370,12 @@ async def validate_enrollment_code(payload: Dict[str, Any], current_user: dict =
         if expiry < datetime.now(expiry.tzinfo):
             raise HTTPException(status_code=400, detail="Enrollment code expired")
 
-    batch = await supabase_db.fetch_one("batches", {"id": record.get("batch_id")})
+    batch = await db.fetch_one("batches", {"id": record.get("batch_id")})
     if not batch:
         raise HTTPException(status_code=404, detail="Batch not found")
 
     dept_id = batch.get("dept_id") or batch.get("department_id")
-    department = await supabase_db.fetch_one("departments", {"id": dept_id}) if dept_id else None
+    department = await db.fetch_one("departments", {"id": dept_id}) if dept_id else None
     if not department:
         raise HTTPException(status_code=404, detail="Department not found")
 
@@ -382,6 +407,11 @@ async def enroll_with_code(payload: Dict[str, Any]):
     if not all([code, roll_number, full_name, email, password]):
         raise HTTPException(status_code=400, detail="Missing enrollment fields")
 
+    # Validation/Enrollment usually happens without a full session yet, 
+    # but we can use the global supabase_db for the internal enrollment logic 
+    # or a system-scoped client if we have one. 
+    # For now, since we are creating/updating users, we use supabase_db.
+    
     record = await supabase_db.fetch_one("enrollment_codes", {"code": code})
     if not record:
         raise HTTPException(status_code=400, detail="Invalid enrollment code")
@@ -399,7 +429,9 @@ async def enroll_with_code(payload: Dict[str, Any]):
     if not dept:
         raise HTTPException(status_code=404, detail="Department not found")
 
-    user_store = UserStore()
+    # When enrolling, we might not have a current_user in the session yet.
+    # The stores will fall back to supabase_db if no db is passed.
+    user_store = UserStore() 
     existing = await user_store.get_user_by_email(email)
     if existing:
         user_id = existing.get("id")
@@ -446,7 +478,8 @@ async def enroll_with_code(payload: Dict[str, Any]):
     # Auto-enroll in courses for this department
     try:
         courses = await supabase_db.fetch_all("courses", {"department_id": dept.get("id")})
-        student_store = StudentStore()
+        # Use a system-level student store here since we are in the middle of creation
+        student_store = StudentStore(db=supabase_db) 
         for course in courses:
             await student_store.enroll_in_course(user_id, course.get("id"))
     except Exception as e:
@@ -496,11 +529,13 @@ async def bulk_enroll_students(
     if not batch_id or not students:
         raise HTTPException(status_code=400, detail="Missing batch or students")
 
-    batch = await supabase_db.fetch_one("batches", {"id": batch_id})
+    db = get_scoped_db(current_user)
+    
+    batch = await db.fetch_one("batches", {"id": batch_id})
     if not batch:
         raise HTTPException(status_code=404, detail="Batch not found")
 
-    dept = await supabase_db.fetch_one("departments", {"id": batch.get("dept_id")})
+    dept = await db.fetch_one("departments", {"id": batch.get("dept_id")})
     if not dept:
         raise HTTPException(status_code=404, detail="Department not found")
     if dept.get("institution_id") != college_id:
@@ -515,7 +550,7 @@ async def bulk_enroll_students(
         if not email or not roll or not full_name:
             results["skipped"] += 1
             continue
-        existing = await supabase_db.fetch_one("users", {"email": email})
+        existing = await db.fetch_one("users", {"email": email})
         if existing:
             results["skipped"] += 1
             continue
@@ -524,7 +559,7 @@ async def bulk_enroll_students(
         password = default_password or f"{roll}@{batch_year}" if batch_year else str(uuid.uuid4())
 
         user_id = str(uuid.uuid4())
-        await supabase_db.insert(
+        await db.insert(
             "users",
             {
                 "id": user_id,
@@ -547,8 +582,8 @@ async def bulk_enroll_students(
         )
         # Auto-enroll in courses for this department
         try:
-            courses = await supabase_db.fetch_all("courses", {"department_id": dept.get("id")})
-            student_store = StudentStore()
+            courses = await db.fetch_all("courses", {"department_id": dept.get("id")})
+            student_store = StudentStore(db=db)
             for course in courses:
                 await student_store.enroll_in_course(user_id, course.get("id"))
         except Exception as e:

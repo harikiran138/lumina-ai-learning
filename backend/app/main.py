@@ -123,7 +123,19 @@ if os.getenv("ENVIRONMENT") == "production" and not settings.SECURE_COOKIES:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # 1. Rule 2: Automated Validation Layer
+    critical_env_vars = {
+        "SUPABASE_URL": settings.SUPABASE_URL,
+        "SUPABASE_KEY": settings.SUPABASE_ANON_KEY or settings.SUPABASE_SERVICE_ROLE_KEY,
+        "JWT_SECRET": settings.JWT_SECRET,
+        "REDACT_PII_LOGS": settings.REDACT_PII_LOGS
+    }
+    missing_vars = [k for k, v in critical_env_vars.items() if v is None or v == ""]
+    if missing_vars:
+        logger.critical("startup_validation_failed", missing=missing_vars)
+        raise RuntimeError(f"CRITICAL: Missing required environment variables: {', '.join(missing_vars)}")
+
+    # 2. Database Connection
     try:
         await db.connect()
         from app.database.supabase_manager import supabase_db
@@ -136,7 +148,7 @@ async def lifespan(app: FastAPI):
         print(f"WARNING: Could not connect to database: {e}")
         print("Starting in limited functionality mode.")
 
-    # Startup automation scheduler
+    # 3. Startup automation scheduler
     try:
         from app.automation.scheduler import setup_scheduled_jobs
         setup_scheduled_jobs(app)
@@ -308,7 +320,7 @@ app.include_router(onboarding.router, prefix="/api/onboarding", tags=["Onboardin
 app.include_router(college_architecture.router, prefix="/api", tags=["College Architecture"])
 app.include_router(attendance.router, prefix="/api", tags=["Attendance"])
 app.include_router(materials.router, prefix="/api", tags=["Materials"])
-app.include_router(faculty.router, prefix="/api", tags=["Faculty"])
+app.include_router(faculty.router, prefix="/api/faculty", tags=["Faculty"])
 app.include_router(ai_queue.router, prefix="/api", tags=["AI Queue"])
 app.include_router(unit_pipeline.router, prefix="/api/teacher", tags=["Unit Pipeline"])
 app.include_router(ai_tutor.router, prefix="/api/ai-tutor", tags=["AI Tutor"])

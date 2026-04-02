@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     SECRET_KEY: Optional[str] = None
     JWT_SECRET: Optional[str] = None
     JWT_REFRESH_SECRET: Optional[str] = None
+    REDACT_PII_LOGS: bool = os.getenv("REDACT_PII_LOGS", "True").lower() == "true"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes (Replaced 8 days for security)
 
     # Database
@@ -23,7 +24,7 @@ class Settings(BaseSettings):
     # Server
     HOST: str = "0.0.0.0"  # nosec B104
     PORT: int = 8000
-    SECURE_COOKIES: bool = True if str(os.getenv("ENVIRONMENT")).lower() == "production" else str(os.getenv("SECURE_COOKIES", "True")).lower() == "true"
+    SECURE_COOKIES: bool = os.getenv("ENVIRONMENT", "local").lower() == "production" or os.getenv("SECURE_COOKIES", "False").lower() == "true"
 
     # AI Configuration - Use GEMINI_API_KEY for both tutor and assessment
     ASSESSMENT_API_KEY: Optional[str] = None
