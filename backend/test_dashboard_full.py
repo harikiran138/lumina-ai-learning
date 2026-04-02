@@ -5,7 +5,7 @@ login_payload = {'username': 'student@lumina.com', 'password': 'student123'}
 
 try:
     # 1. Login
-    res = requests.post(f'{base_url}/api/auth/token', data=login_payload)  # nosec B113
+    res = requests.post(f'{base_url}/api/auth/token', data=login_payload, timeout=30)
     token = res.json()['access_token']
     headers = {'Authorization': f'Bearer {token}'}
     print("Logged in.")
@@ -15,7 +15,7 @@ try:
     course_id = "3ca8f41f-a4c9-49f5-bb14-e52ceda64c13"
 
     # 3. Log Activity (10 minutes)
-    log_res = requests.post(  # nosec B113
+    log_res = requests.post(
         f'{base_url}/api/student/log-activity',
         headers=headers,
         json={'course_id': course_id, 'duration_minutes': 10},
@@ -25,7 +25,7 @@ try:
     print(f"Log Activity Response: {log_res.text}")
 
     # 4. Fetch Dashboard
-    dash_res = requests.get(f'{base_url}/api/student/dashboard', headers=headers)  # nosec B113
+    dash_res = requests.get(f'{base_url}/api/student/dashboard', headers=headers, timeout=30)
     print(f"Dashboard Response: {dash_res.text}")
     
     dashboard = dash_res.json()
