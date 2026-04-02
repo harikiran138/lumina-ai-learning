@@ -51,14 +51,18 @@ async def get_current_user(
             # Fallback to legacy SECRET_KEY if JWT_SECRET fails
             payload = jwt.decode(auth_token, settings.SECRET_KEY, algorithms=["HS256"])
             
-        user_id = payload.get("user_id") or payload.get("userId")
+        user_id = payload.get("user_id") or payload.get("userId") or payload.get("id")
         email = payload.get("sub") or payload.get("email")
         
         if not user_id and not email:
             raise HTTPException(status_code=401, detail="Invalid token: no user identifier")
             
         # Real lookup against UserStore
-        user = await user_store.get_user_by_id(user_id) if user_id else await user_store.get_user_by_email(email)
+        user = (
+            await user_store.get_user_by_id(user_id, include_sensitive=True)
+            if user_id
+            else await user_store.get_user_by_email(email, include_sensitive=True)
+        )
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
             

@@ -9,6 +9,7 @@ import {
   X,
   ArrowLeft 
 } from "lucide-react";
+import { RealAPI } from "@/lib/api";
 
 export default function DesignerReviewPage() {
   const router = useRouter();
@@ -24,15 +25,8 @@ export default function DesignerReviewPage() {
 
   const fetchCourse = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/courses/${courseId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setCourse(data);
-      }
+      const data = await RealAPI.getInstance().getCourseById(courseId);
+      setCourse(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -42,13 +36,8 @@ export default function DesignerReviewPage() {
 
   const handleApprove = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/content-designer/courses/${courseId}/approve`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-      });
-      if (res.ok) router.push("/designer");
+      await RealAPI.getInstance().approveCourse(courseId);
+      router.push("/designer");
     } catch (err) {
       console.error("Failed to approve", err);
     }
@@ -57,15 +46,8 @@ export default function DesignerReviewPage() {
   const handleReject = async () => {
     if (!feedback.trim()) return alert("Please provide feedback for rejection.");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/content-designer/courses/${courseId}/reject`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-        body: JSON.stringify({ feedback }),
-      });
-      if (res.ok) router.push("/designer");
+      await RealAPI.getInstance().rejectCourse(courseId, feedback);
+      router.push("/designer");
     } catch (err) {
       console.error("Failed to reject", err);
     }

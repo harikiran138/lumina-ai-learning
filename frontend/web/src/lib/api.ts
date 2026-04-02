@@ -95,7 +95,11 @@ async function fetchWithRetry(
 
       if (attempt === retries) {
         if (err instanceof TypeError && err.message === "Failed to fetch") {
-          console.error(`[Lumina API] Network Error: Failed to fetch from ${url}. Is the backend running on port 8000?`, err);
+          const isLocal = url.includes("localhost") || url.includes("127.0.0.1") || url.includes(":8000");
+          const msg = isLocal 
+            ? `[Lumina API] Network Error: Failed to fetch from ${url}. Is the local backend running on port 8000?`
+            : `[Lumina API] Network Error: Failed to connect to ${url}. This may be a CORS issue or the server may be down.`;
+          console.error(msg, err);
         } else {
           console.error(`Final fetch failure for ${url}:`, err);
         }
@@ -209,7 +213,7 @@ export class RealAPI {
     return false
   }
 
-  private async fetchAuthorized(
+  public async fetchAuthorized(
     path: string,
     options: RequestInit = {},
     timeoutMs?: number
@@ -222,7 +226,13 @@ export class RealAPI {
         ...(options.headers || {}),
       };
 
-      if (this.token) {
+      const hasAuth = options.headers && (
+        (options.headers instanceof Headers && options.headers.has("Authorization")) ||
+        (Array.isArray(options.headers) && options.headers.some(([k]) => k.toLowerCase() === "authorization")) ||
+        (typeof options.headers === "object" && Object.keys(options.headers).some(k => k.toLowerCase() === "authorization"))
+      );
+
+      if (this.token && !hasAuth) {
         headers = { ...headers, "Authorization": `Bearer ${this.token}` };
       }
 
@@ -437,10 +447,14 @@ export class RealAPI {
     }
   }
 
-  async changePassword(tokenOrPassword: string | null, maybeNewPassword?: string): Promise<any> {
-    const newPassword = maybeNewPassword ?? tokenOrPassword;
+  async changePassword(newPassword: string, token?: string | null): Promise<any> {
+    const headers: any = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
     const res = await this.fetchAuthorized("/api/auth/change-password", {
       method: "POST",
+      headers,
       body: JSON.stringify({ newPassword }),
     });
     if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.detail || "Failed to change password"); }
@@ -798,6 +812,48 @@ export class RealAPI {
   async architectureCreateCollege(data: any) {
     const res = await this.fetchAuthorized(`/api/colleges`, { method: "POST", body: JSON.stringify(data)});
     return await parseJsonSafe(res) ?? {};
+  }
+
+  // --- Content Designer APIs ---
+  async getDesignerQueue(): Promise<any[]> {
+    return await this.fetchJsonOrDefault("/api/content-designer/queue", []);
+  }
+
+  async getCourseById(courseId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/courses/${courseId}`);
+    if (!res.ok) throw new Error("Course not found");
+    return await res.json();
+  }
+
+  async approveCourse(courseId: string): Promise<void> {
+    const res = await this.fetchAuthorized(`/api/content-designer/courses/${courseId}/approve`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+        const e = await parseJsonSafe(res);
+        throw new Error(e?.detail || "Failed to approve course");
+    }
+  }
+
+  async rejectCourse(courseId: string, feedback: string): Promise<void> {
+    const res = await this.fetchAuthorized(`/api/content-designer/courses/${courseId}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ feedback }),
+    });
+    if (!res.ok) {
+        const e = await parseJsonSafe(res);
+        throw new Error(e?.detail || "Failed to reject course");
+    }
+  }
+
+  // --- Faculty Specific ---
+  async getFacultyCourse(courseId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/faculty/courses/${courseId}`);
+    if (!res.ok) {
+        const e = await parseJsonSafe(res);
+        throw new Error(e?.detail || "Failed to load faculty course details");
+    }
+    return await res.json();
   }
   async architectureUpdateCollege(collegeId: string, data: any) {
     const res = await this.fetchAuthorized(`/api/colleges/${collegeId}`, { method: "PATCH", body: JSON.stringify(data)});
@@ -1363,6 +1419,18 @@ export class RealAPI {
     );
     if (!res.ok) throw new Error("Grade save failed");
     return res.json();
+  }
+
+  /** POST /api/content-designer/courses/{id}/submit — submit course for review */
+  async submitCourseReview(courseId: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/content-designer/courses/${courseId}/submit`, {
+      method: "POST"
+    });
+    if (!res.ok) {
+      const e = await parseJsonSafe(res);
+      throw new Error(e?.detail || "Failed to submit course for review");
+    }
+    return await parseJsonSafe(res);
   }
 }
 

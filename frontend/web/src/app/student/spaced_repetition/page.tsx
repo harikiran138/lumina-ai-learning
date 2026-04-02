@@ -14,7 +14,7 @@ import {
   Zap,
   Flame,
 } from "lucide-react";
-import { getConfiguredApiBase } from "@/lib/api";
+import { RealAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 // --- Types ---
@@ -124,26 +124,21 @@ export default function SpacedRepetitionPage() {
     const fetchCards = async () => {
       setIsLoading(true);
       try {
-        const apiBase = getConfiguredApiBase();
-        if (apiBase) {
-          const res = await fetch(`${apiBase}/api/student/spaced-repetition`, {
-            credentials: "include",
+        const res = await RealAPI.getInstance().fetchAuthorized("/api/student/spaced-repetition");
+        if (res.ok) {
+          const data = await res.json();
+          setCards(data.cards ?? []);
+          setSessionStats({
+            reviewedToday: data.reviewedToday ?? 0,
+            dueToday: data.dueToday ?? data.cards?.length ?? 0,
+            streak: data.streak ?? 0,
+            nextReviewIn: data.nextReviewIn ?? "Tomorrow",
           });
-          if (res.ok) {
-            const data = await res.json();
-            setCards(data.cards ?? []);
-            setSessionStats({
-              reviewedToday: data.reviewedToday ?? 0,
-              dueToday: data.dueToday ?? data.cards?.length ?? 0,
-              streak: data.streak ?? 0,
-              nextReviewIn: data.nextReviewIn ?? "Tomorrow",
-            });
-            setIsLoading(false);
-            return;
-          }
+          setIsLoading(false);
+          return;
         }
-      } catch {
-        // fall through to mock
+      } catch (err) {
+        console.warn("Spaced repetition fetch failed, using fallback:", err);
       }
       setCards(MOCK_CARDS);
       setSessionStats({ reviewedToday: 3, dueToday: MOCK_CARDS.length, streak: 7, nextReviewIn: "Tomorrow" });
@@ -163,17 +158,12 @@ export default function SpacedRepetitionPage() {
         rating,
       );
       try {
-        const apiBase = getConfiguredApiBase();
-        if (apiBase) {
-          await fetch(`${apiBase}/api/student/spaced-repetition/review`, {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ cardId: currentCard.id, rating, newInterval: interval, newEaseFactor: easeFactor }),
-          });
-        }
-      } catch {
-        // ignore — session continues offline
+        await RealAPI.getInstance().fetchAuthorized("/api/student/spaced-repetition/review", {
+          method: "POST",
+          body: JSON.stringify({ cardId: currentCard.id, rating, newInterval: interval, newEaseFactor: easeFactor }),
+        });
+      } catch (err) {
+        console.warn("Spaced repetition review submission failed:", err);
       }
       setReviewedCount((prev) => prev + 1);
       setIsFlipped(false);

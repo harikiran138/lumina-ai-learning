@@ -7,6 +7,7 @@ import {
   CheckCircle, 
   Clock
 } from "lucide-react";
+import { RealAPI } from "@/lib/api";
 
 interface Course {
   id: string;
@@ -28,15 +29,8 @@ export default function DesignerDashboard() {
 
   const fetchQueue = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/content-designer/queue`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setCourses(data);
-      }
+      const data = await RealAPI.getInstance().getDesignerQueue();
+      setCourses(data);
     } catch (err) {
       console.error(err);
     } finally {
