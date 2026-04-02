@@ -1211,6 +1211,20 @@ export class RealAPI {
     return this.fetchJsonOrDefault("/api/alumni/portfolio", null);
   }
   async getAlumniMentorshipMentees(..._args: any[]): Promise<any> { return []; }
+  async getAlumniSessions(..._args: any[]): Promise<any> { return []; }
+  async getAlumniJobBoard(..._args: any[]): Promise<any> { return []; }
+  async postAlumniJob(payload: any = {}, ..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault("/api/alumni/jobs", { success: false }, { method: "POST", body: JSON.stringify(payload) });
+  }
+  async getAlumniNetwork(..._args: any[]): Promise<any> { return []; }
+  async getAlumniReports(..._args: any[]): Promise<any> { return {}; }
+  async getAlumniNotifications(..._args: any[]): Promise<any> { return []; }
+  async submitAlumniCurriculumFeedback(payload: any = {}, ..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault("/api/alumni/curriculum-feedback", { success: false }, { method: "POST", body: JSON.stringify(payload) });
+  }
+  async submitAlumniInterviewFeedback(payload: any = {}, ..._args: any[]): Promise<any> {
+    return this.fetchJsonOrDefault("/api/alumni/interview-feedback", { success: false }, { method: "POST", body: JSON.stringify(payload) });
+  }
   async getPeerTutorSessions(..._args: any[]): Promise<any> { return []; }
   async getPeerTutorTraining(..._args: any[]): Promise<any> { return []; }
   async getCounselorCases(..._args: any[]): Promise<any> { return []; }
