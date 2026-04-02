@@ -23,6 +23,9 @@ import {
   Target,
   Award,
   Clock,
+  TrendingUp,
+  AlertTriangle,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -46,8 +49,15 @@ const roleNavItems: Record<string, any[]> = {
     { name: "Settings",   href: "/student/settings",    icon: Settings },
   ],
   parent: [
-    { name: "Dashboard", href: "/parent/dashboard", icon: LayoutDashboard },
-    { name: "Settings",  href: "/parent/settings",  icon: Settings },
+    { name: "Dashboard",      href: "/parent/dashboard",       icon: LayoutDashboard },
+    { name: "Child Progress", href: "/parent/progress",        icon: TrendingUp },
+    { name: "Assignments",    href: "/parent/assignments",     icon: ClipboardList },
+    { name: "Attendance",     href: "/parent/attendance",      icon: Calendar },
+    { name: "Messages",       href: "/parent/messages",        icon: MessageSquare },
+    { name: "Weekly Reports", href: "/parent/weekly-reports",  icon: FileText },
+    { name: "Alerts",         href: "/parent/alerts",          icon: AlertTriangle },
+    { name: "Notifications",  href: "/parent/alerts",          icon: Bell },
+    { name: "Settings",       href: "/parent/settings",        icon: Settings },
   ],
   mentor: [
     { name: "Dashboard", href: "/mentor/dashboard", icon: LayoutDashboard },
