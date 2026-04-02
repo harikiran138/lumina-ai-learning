@@ -1,6 +1,6 @@
 import re
 from typing import Optional, List, Any
-from fastapi import Request
+from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from jose import jwt, JWTError
@@ -73,6 +73,7 @@ class SentinelMiddleware(BaseHTTPMiddleware):
             decoded_payload = None
             for secret in [settings.JWT_SECRET, settings.SECRET_KEY]:
                 try:
+                    if not secret: continue
                     decoded_payload = jwt.decode(token, secret, algorithms=["HS256"])
                     if decoded_payload: break
                 except JWTError:
@@ -123,7 +124,6 @@ class SentinelMiddleware(BaseHTTPMiddleware):
                             "detail": f"Forbidden: Insufficient permissions for {path}. Required: {allowed_roles}"
                         }
                     )
-
         
         # 4. Proceed
         response = await call_next(request)

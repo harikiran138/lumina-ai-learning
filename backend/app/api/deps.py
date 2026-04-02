@@ -62,7 +62,7 @@ async def get_current_user(
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
             
-        # ATTACH ACCESS TOKEN for ScopedSupabase
+        # ATTACH ACCESS TOKEN for ScopedSupabase (Lumina Shield)
         user["access_token"] = auth_token
         
         return user
@@ -128,22 +128,16 @@ async def get_current_faculty(current_user: dict = Depends(get_current_active_us
     current_user["resolved_department_id"] = dept_id
     return current_user
 
+async def get_current_teacher(current_user: dict = Depends(get_current_active_user)) -> dict:
+    role = normalize_role(current_user.get("role"))
+    if role not in {"teacher", "faculty", "hod", "college_admin", "super_admin"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Teacher privileges required")
+    return current_user
+
 async def get_current_student(current_user: dict = Depends(get_current_active_user)) -> dict:
     role = normalize_role(current_user.get("role"))
     if role != "student":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Student privileges required")
-    return current_user
-
-async def get_current_parent(current_user: dict = Depends(get_current_active_user)) -> dict:
-    role = normalize_role(current_user.get("role"))
-    if role not in {"parent", "super_admin"}:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Parent privileges required")
-    return current_user
-
-async def get_current_guest(current_user: dict = Depends(get_current_active_user)) -> dict:
-    role = normalize_role(current_user.get("role"))
-    if role not in {"guest", "student", "parent", "faculty", "hod", "college_admin", "super_admin"}:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Guest privileges required")
     return current_user
 
 async def get_current_mentor(current_user: dict = Depends(get_current_active_user)) -> dict:
@@ -158,16 +152,28 @@ async def get_current_peer_tutor(current_user: dict = Depends(get_current_active
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Peer Tutor privileges required")
     return current_user
 
+async def get_current_counselor(current_user: dict = Depends(get_current_active_user)) -> dict:
+    role = normalize_role(current_user.get("role"))
+    if role not in {"counselor", "college_admin", "super_admin"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Counselor privileges required")
+    return current_user
+
+async def get_current_parent(current_user: dict = Depends(get_current_active_user)) -> dict:
+    role = normalize_role(current_user.get("role"))
+    if role not in {"parent", "super_admin"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Parent privileges required")
+    return current_user
+
+async def get_current_guest(current_user: dict = Depends(get_current_active_user)) -> dict:
+    role = normalize_role(current_user.get("role"))
+    if role not in {"guest", "student", "parent", "faculty", "hod", "college_admin", "super_admin"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Guest privileges required")
+    return current_user
+
 async def get_current_researcher(current_user: dict = Depends(get_current_active_user)) -> dict:
     role = normalize_role(current_user.get("role"))
     if role not in {"researcher", "super_admin"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Researcher privileges required")
-    return current_user
-
-async def get_current_counselor(current_user: dict = Depends(get_current_active_user)) -> dict:
-    role = normalize_role(current_user.get("role"))
-    if role not in {"counselor", "super_admin"}:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Counselor privileges required")
     return current_user
 
 async def get_current_content_creator(current_user: dict = Depends(get_current_active_user)) -> dict:

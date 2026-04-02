@@ -550,8 +550,12 @@ async def assign_hod(
 @router.get("/teachers/stats", response_model=List[dict])
 async def get_teacher_stats(inst_id: Optional[str] = None, admin: dict = Depends(is_admin)):
     """Fetch teacher utilization and risk metrics."""
+<<<<<<< HEAD
     db = get_scoped_db(admin)
     return await AnalyticsStore(db=db).get_all_teacher_stats(inst_id)
+=======
+    return await AnalyticsStore().get_all_teacher_stats(inst_id)
+>>>>>>> main
 
 
 @router.get("/institutions/{inst_id}/programs")

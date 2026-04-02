@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional, List
 from supabase import create_client, ClientOptions
 from app.core.config import settings
 from .supabase_manager import supabase_db, SupabaseManager
+from fastapi import HTTPException
 
 class ScopedQueryBuilder:
     def __init__(self, table_name: str, institution_id: str, is_super_admin: bool = False, client=None):
@@ -12,8 +13,7 @@ class ScopedQueryBuilder:
         self.client = client or supabase_db.get_client()
         self.query = self.client.table(table_name)
         
-        # Apply institution filter if not super admin and using service role client
-        # (If using a JWT client, RLS should handle this, but adding it doesn't hurt)
+        # Apply institution filter if not super admin
         if not is_super_admin and institution_id:
             self.query = self.query.eq("institution_id", institution_id)
 
@@ -23,6 +23,7 @@ class ScopedQueryBuilder:
 
     def insert(self, data: Dict[str, Any]):
         if not self.is_super_admin and self.institution_id:
+            # Force institution_id on insert
             if isinstance(data, list):
                 for item in data:
                     item["institution_id"] = self.institution_id
@@ -96,6 +97,8 @@ class ScopedSupabase:
         self._scoped_client = None
         if self.jwt and not self.is_super_admin:
             try:
+                # Use a lightweight client with the user's JWT for RLS
+                from supabase import create_client, ClientOptions
                 self._scoped_client = create_client(
                     settings.SUPABASE_URL,
                     settings.SUPABASE_ANON_KEY,
@@ -115,8 +118,6 @@ class ScopedSupabase:
             self.is_super_admin, 
             client=self._scoped_client
         )
-
-    # Proxy helpers
     async def fetch_one(self, table: str, query_filter: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         qb = self.table(table).select("*")
         for k, v in query_filter.items():

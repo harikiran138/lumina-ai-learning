@@ -24,10 +24,13 @@ from app.api.deps import get_current_student as get_current_user
 from app.database.supabase_manager import supabase_db
 from app.database.scoped_db import get_scoped_db
 from app.services.risk_service import get_risk_analysis_service
+<<<<<<< HEAD
 
 import uuid
 import secrets
 from app.store.redis_client import redis_client
+=======
+>>>>>>> main
 
 router = APIRouter()
 
@@ -1817,6 +1820,7 @@ async def trigger_risk_analysis(current_user: dict = Depends(get_current_user)):
         
     service = get_risk_analysis_service()
     return await service.run_risk_analysis(current_user["id"], institution_id)
+<<<<<<< HEAD
 @router.get("/connection-token")
 async def get_connection_token(
     current_user: Dict[str, Any] = Depends(get_current_user)
@@ -1841,3 +1845,5 @@ async def get_connection_token(
     except Exception as e:
         log.error("get_connection_token_failed", user_id=current_user["id"], error=str(e))
         raise HTTPException(status_code=500, detail="Failed to generate connection token")
+=======
+>>>>>>> main

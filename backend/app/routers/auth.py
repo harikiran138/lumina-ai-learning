@@ -63,6 +63,12 @@ class UserResponse(BaseModel):
     email: str
     role: str
     department: Optional[str] = None
+    collegeId: Optional[str] = None
+    deptId: Optional[str] = None
+    batchId: Optional[str] = None
+    onboardingStep: Optional[int] = 0
+    profilePhotoUrl: Optional[str] = None
+    mustChangePassword: Optional[bool] = False
 
 
 class LoginRequest(BaseModel):
@@ -108,14 +114,14 @@ def _build_claims(user: dict) -> dict:
     """Standardizes JWT claims as per platform architecture."""
     return {
         "sub": str(user.get("id")),
-        "userId": str(user.get("id")),
+        "id": str(user.get("id")),
         "email": user.get("email"),
         "fullName": user.get("full_name") or user.get("name", "Unknown"),
         "role": normalize_role(user.get("role", "guest")),
-        "department": user.get("department_id") or user.get("dept_id"),
-        "collegeId": user.get("college_id")
+        "collegeId": user.get("college_id"),
+        "deptId": user.get("dept_id") or user.get("department_id"),
+        "batchId": user.get("batch_id")
     }
-
 
 
 def _get_identifier_type(identifier: str) -> str:
@@ -334,7 +340,9 @@ async def register(user: UserCreate, user_store: UserStore = Depends(get_user_st
             fullName=new_user.get("full_name") or new_user.get("name", "Unknown"),
             email=new_user["email"],
             role=new_user.get("role", "student"),
-            department=new_user.get("department_id") or new_user.get("dept_id")
+            department=new_user.get("department_id") or new_user.get("dept_id"),
+            collegeId=new_user.get("college_id"),
+            onboardingStep=new_user.get("onboarding_step", 0)
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -573,12 +581,17 @@ def login_json(
     return {
         "accessToken": access_token,
         "user": UserResponse(
-            id=str(user["id"]),
+            id=str(user.get("id")),
+            role=normalize_role(user.get("role", "student")),
             fullName=user.get("full_name") or user.get("name", "Unknown"),
-            email=user["email"],
-            role=user.get("role", "guest"),
-            department=user.get("department_id") or user.get("dept_id")
-        )
+            email=user.get("email"),
+            collegeId=user.get("college_id"),
+            deptId=user.get("dept_id") or user.get("department_id"),
+            batchId=user.get("batch_id"),
+            onboardingStep=user.get("onboarding_step", 0),
+            profilePhotoUrl=user.get("profile_photo_url") or user.get("avatar"),
+            mustChangePassword=user.get("must_change_password", False),
+        ),
     }
 
 
@@ -694,7 +707,7 @@ async def get_current_user(
         )
 
     try:
-        from jose import jwt, JWTError
+        from jose import jwt
         # Core logic: Try decoding with JWT_SECRET first (standard app flow)
         # Fallback to legacy SECRET_KEY if JWT_SECRET fails (for background transition)
         decoded_payload = None
@@ -702,15 +715,15 @@ async def get_current_user(
             try:
                 decoded_payload = jwt.decode(auth_token, secret, algorithms=["HS256"])
                 if decoded_payload: break
-            except JWTError:
+            except Exception:
                 continue
 
         if not decoded_payload:
             raise HTTPException(status_code=401, detail="Invalid token")
 
         # Prioritize sub as user ID, then check custom userId, then email
-        user_id = decoded_payload.get("sub")
-        email = decoded_payload.get("email")
+        user_id = decoded_payload.get("userId") or decoded_payload.get("sub") or decoded_payload.get("id")
+        email = decoded_payload.get("email") or decoded_payload.get("sub")
         jti = decoded_payload.get("jti")
         
         if jti and is_token_revoked(jti):
@@ -823,6 +836,12 @@ async def read_users_me(current_user: dict = Depends(get_current_user)):
         id=str(current_user["id"]),
         fullName=current_user.get("full_name") or current_user.get("name", "Unknown"),
         email=current_user["email"],
-        role=current_user.get("role", "guest"),
-        department=current_user.get("department_id") or current_user.get("dept_id")
+        role=current_user.get("role", "student"),
+        department=current_user.get("department_id") or current_user.get("dept_id"),
+        collegeId=current_user.get("college_id"),
+        deptId=current_user.get("dept_id") or current_user.get("department_id"),
+        batchId=current_user.get("batch_id"),
+        onboardingStep=current_user.get("onboarding_step", 0),
+        profilePhotoUrl=current_user.get("profile_photo_url") or current_user.get("avatar"),
+        mustChangePassword=current_user.get("must_change_password", False),
     )
