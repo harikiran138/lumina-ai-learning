@@ -381,7 +381,11 @@ async def get_faculty_dashboard_summary(current_user: dict = Depends(get_current
     # Get courses
     courses_data = []
     if course_ids:
+<<<<<<< HEAD
         courses_data = db.table("courses").select("*").in_("id", course_ids).execute().data or []
+=======
+        courses = db.table("courses").select("*").in_("id", course_ids).execute().data or []
+>>>>>>> main
 
     # Get total students across all classes
     total_students = 0
@@ -392,6 +396,7 @@ async def get_faculty_dashboard_summary(current_user: dict = Depends(get_current
 
     # Get pending submissions to grade
     pending_submissions = await db.fetch_all("submissions", {"graded_by": None, "status": "submitted"})
+<<<<<<< HEAD
 
     # Get active interventions
     service = get_personalization_service(db=db)
@@ -408,6 +413,8 @@ async def get_faculty_dashboard_summary(current_user: dict = Depends(get_current
         for i in interventions 
         if i.status in [InterventionStatus.OPEN, InterventionStatus.ACKNOWLEDGED]
     ]
+=======
+>>>>>>> main
 
     return {
         "stats": [

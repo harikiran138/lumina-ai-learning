@@ -689,7 +689,10 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
     requested_step = int(payload.get("step", 0))
     step_data = payload.get("data") or {}
     role = normalize_role(current_user.get("role"))
+<<<<<<< HEAD
     db = get_scoped_db(current_user)
+=======
+>>>>>>> main
 
     def require_fields(fields: list[str]):
         missing = [f for f in fields if not step_data.get(f)]

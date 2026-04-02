@@ -4,7 +4,11 @@ from typing import List, Optional, Dict, Any
 
 from app.services.personalization_service import get_personalization_service
 from app.personalization.schemas import InterventionUpdateRequest, InterventionStatus, InterventionPriority
+<<<<<<< HEAD
 from app.api.deps import get_current_faculty as get_current_user
+=======
+from app.api.deps import get_current_teacher as get_current_user
+>>>>>>> main
 from app.store.content_store import ContentStore
 from app.store.course_store import CourseStore
 from app.store.assignment_store import AssignmentStore

@@ -59,6 +59,8 @@ class UserStore:
         safe_user["college_id"] = safe_user.get("college_id")
         safe_user["dept_id"] = safe_user.get("dept_id") or safe_user.get("department_id")
         safe_user["batch_id"] = safe_user.get("batch_id")
+        safe_user["onboarding_step"] = safe_user.get("onboarding_step", 0)
+        safe_user["must_change_password"] = safe_user.get("must_change_password", False)
         
         return safe_user
 
@@ -90,16 +92,12 @@ class UserStore:
         }
 
         try:
-            # Use SupabaseManager's insert
-            # Ensure we are targeting the public schema explicitly if possible
-            # Use the injected DB's table method which may be scoped
             insert_result = self.db.table("users").insert(user_data).execute()
             
             # Fallback: If RLS prevents returning the row on insert, fetch it explicitly
             result = insert_result.data[0] if insert_result.data else await self.get_user_by_email(email)
             
             if not result:
-                # Last resort check
                 log.warning("insert_result_empty_trying_retry", email=email)
                 result = await self.get_user_by_email(email)
                 
@@ -125,8 +123,6 @@ class UserStore:
 
     def get_user_by_email_sync(self, email: str) -> Optional[dict]:
         try:
-            import anyio.from_thread
-            # If we are inside a threadpool, we just execute it.
             response = self.db.table("users").select("*").eq("email", email).execute()
             if response.data:
                 return response.data[0]
@@ -148,31 +144,35 @@ class UserStore:
     async def delete_user(self, user_id: str) -> bool:
         """
         Deletes a user and manually cascades to related tables to prevent orphan records.
-        Supabase doesn't always have FK cascades configured by defaults in all schemas.
         """
         try:
+            client = self.db.get_client() if hasattr(self.db, "get_client") else self.db
+            
             # 1. Clean up user_data
-            self.db.table("user_data").delete().eq("id", user_id).execute()
-            self.db.table("user_data").delete().eq("user_id", user_id).execute()
-    
+            client.table("user_data").delete().eq("id", user_id).execute()
+            client.table("user_data").delete().eq("user_id", user_id).execute()
+
             # 2. Clean up enrollments / progress
-            self.db.table("enrollments").delete().eq("student_id", user_id).execute()
-            self.db.table("student_enrollments").delete().eq("student_id", user_id).execute()
-            self.db.table("student_progress").delete().eq("student_id", user_id).execute()
-    
+            client.table("enrollments").delete().eq("student_id", user_id).execute()
+            client.table("student_enrollments").delete().eq("student_id", user_id).execute()
+            client.table("student_progress").delete().eq("student_id", user_id).execute()
+
             # 3. Clean up sessions
-            self.db.table("assessment_sessions").delete().eq("student_id", user_id).execute()
-    
+            client.table("assessment_sessions").delete().eq("student_id", user_id).execute()
+
             # 4. Clean up stakeholders/connections
-            self.db.table("stakeholders").delete().eq("user_id", user_id).execute()
-    
+            client.table("stakeholders").delete().eq("user_id", user_id).execute()
+
             # 5. Final user deletion
-            result = self.db.table("users").delete().eq("id", user_id).execute()
+            result = client.table("users").delete().eq("id", user_id).execute()
             return len(result.data) > 0
         except Exception as e:
             log.error("delete_user_cascade_failed", error=str(e), user_id=user_id)
-            return await self.db.delete("users", {"id": user_id})
-
+            try:
+                # Fallback to basic delete
+                return await self.db.delete("users", {"id": user_id})
+            except Exception:
+                return False
 
     async def update_user_role(self, user_id: str, role: str) -> bool:
         try:
@@ -219,17 +219,12 @@ class UserStore:
         clean_updates.setdefault("updated_at", datetime.utcnow().isoformat())
 
         try:
-            # Try updating one by one or handle the case where some columns don't exist
-            # For robustness, we try to update what we can
             response = self.db.table("users").update(clean_updates).eq("id", user_id).execute()
             return len(response.data) > 0
         except Exception as e:
-            # Check if it's a missing column error
             err_str = str(e)
             if "Could not find the" in err_str and "column" in err_str:
                 log.warning("update_user_fields_partial_fail", error=err_str, user_id=user_id)
-                # Try to exclude the problematic column if we can identify it
-                # For now, just return True to allow login to proceed even if tracking fails
                 return True
             log.error("update_user_fields_failed_sync", error=err_str, user_id=user_id)
             return False
