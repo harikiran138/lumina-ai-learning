@@ -23,6 +23,10 @@ import {
   Target,
   Award,
   Clock,
+  Star,
+  GraduationCap,
+  AlertTriangle,
+  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -54,8 +58,16 @@ const roleNavItems: Record<string, any[]> = {
     { name: "Settings",  href: "/mentor/settings",  icon: Settings },
   ],
   peer_tutor: [
-    { name: "Dashboard", href: "/peer_tutor/dashboard", icon: LayoutDashboard },
-    { name: "Settings",  href: "/peer_tutor/settings",  icon: Settings },
+    { name: "Dashboard",     href: "/peer_tutor/dashboard",     icon: LayoutDashboard },
+    { name: "Peer Q&A",      href: "/peer_tutor/qa",            icon: MessageSquare },
+    { name: "Study Groups",  href: "/peer_tutor/study-groups",  icon: Users },
+    { name: "My Students",   href: "/peer_tutor/students",      icon: GraduationCap },
+    { name: "Mentor Credits",href: "/peer_tutor/credits",       icon: Award },
+    { name: "Escalations",   href: "/peer_tutor/escalations",   icon: AlertTriangle },
+    { name: "Feedback",      href: "/peer_tutor/feedback",      icon: Star },
+    { name: "Certificate",   href: "/peer_tutor/certificate",   icon: ScrollText },
+    { name: "Notifications", href: "/peer_tutor/notifications", icon: Bell },
+    { name: "Settings",      href: "/peer_tutor/settings",      icon: Settings },
   ],
   counselor: [
     { name: "Dashboard",   href: "/counselor/dashboard", icon: LayoutDashboard },
