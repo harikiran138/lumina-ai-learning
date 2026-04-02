@@ -318,6 +318,13 @@ export class RealAPI {
     const userData = tokenData.user;
     if (!userData) throw new Error("Login failed: User data not found in response.");
 
+    // Some deployment configurations return the access token in the JSON response
+    // body in addition to (or instead of) setting it as an HTTP-only cookie.
+    // Persist it here so that fetchAuthorized can attach it as a Bearer header.
+    if (tokenData.accessToken) {
+      this.persistToken(tokenData.accessToken);
+    }
+
     const displayName = userData.fullName || userData.name || identifier;
     this.currentUser = {
       id: userData.id,
@@ -339,7 +346,42 @@ export class RealAPI {
     return this.currentUser;
   }
 
-  async getCurrentUser(): Promise<any> { return this.currentUser; }
+  async getCurrentUser(): Promise<User | null> {
+    if (this.currentUser) return this.currentUser;
+    // After a page refresh the in-memory value is lost; re-hydrate from the
+    // backend using the HTTP-only cookie that was already set during login.
+    try {
+      const res = await this.fetchAuthorized("/api/auth/me");
+      if (res.ok) {
+        const userData = await parseJsonSafe(res);
+        if (userData?.id) {
+          const displayName = userData.fullName || userData.name || userData.email;
+          this.currentUser = {
+            id: userData.id,
+            email: userData.email,
+            name: displayName,
+            role: userData.role,
+            onboardingStep: userData.onboardingStep ?? 0,
+            onboardingCompleted: (userData.onboardingStep ?? 0) >= 5,
+            mustChangePassword: userData.mustChangePassword ?? false,
+            collegeId: userData.collegeId ?? null,
+            deptId: userData.deptId ?? null,
+            batchId: userData.batchId ?? null,
+            avatar:
+              userData.profilePhotoUrl ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`,
+            status: userData.status || "active",
+            createdAt: userData.created_at || new Date().toISOString(),
+            preferences: userData.preferences || {},
+          };
+          return this.currentUser;
+        }
+      }
+    } catch {
+      // Network error or not authenticated – return null below
+    }
+    return null;
+  }
 
   async createUser(userData: Partial<User> & { password?: string }): Promise<any> {
     if (!userData.password) throw new Error("Password is required for signup.");
