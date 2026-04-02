@@ -161,7 +161,7 @@ describe('storage', () => {
     expect(() => storage.remove('neverSet')).not.toThrow()
   })
 
-  it('handles non-serialisable data gracefully (circular reference)', () => {
+  it('handles non-serializable data gracefully (circular reference)', () => {
     const circular: Record<string, unknown> = {}
     circular.self = circular
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})

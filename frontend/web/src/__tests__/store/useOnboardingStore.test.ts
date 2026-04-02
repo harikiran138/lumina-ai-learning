@@ -8,7 +8,7 @@ beforeEach(() => {
 
 describe('useOnboardingStore – saveSnapshot', () => {
   it('stores a snapshot under the given role key', () => {
-    const { saveSnapshot, snapshots } = useOnboardingStore.getState()
+    const { saveSnapshot } = useOnboardingStore.getState()
     saveSnapshot('student', { step: 1, name: 'Alice' })
     expect(useOnboardingStore.getState().snapshots['student']).toEqual({ step: 1, name: 'Alice' })
   })
