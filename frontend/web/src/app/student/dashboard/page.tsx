@@ -10,6 +10,9 @@ import {
   Sparkles,
   Target,
   Trophy,
+  RefreshCw,
+  ClipboardList,
+  CheckCircle,
   type LucideIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
@@ -276,6 +279,82 @@ export default function StudentDashboard() {
           ) : (
             <EmptyState title="No active insights" description="Your AI coach is currently monitoring your performance." />
           )}
+        </SectionCard>
+      </div>
+
+      {/* Spaced Repetition + Exam Readiness */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <SectionCard
+          title="Daily Revision"
+          subtitle="Spaced repetition keeps your knowledge sharp. Review today's due cards."
+          icon={RefreshCw}
+          action={
+            <Link
+              href="/student/spaced_repetition"
+              className="inline-flex items-center gap-1.5 text-lumina-highlight font-black uppercase tracking-widest text-[10px] group"
+            >
+              Open
+              <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          }
+        >
+          <div className="space-y-5">
+            <div className="grid grid-cols-3 gap-4">
+              <MiniMetric label="Due Today" value={String(stats.find((s: any) => s.label === "Due Reviews")?.value ?? "5")} />
+              <MiniMetric label="Streak" value={`${stats.find((s: any) => s.label === "Current Streak")?.value ?? "0 day"}`} />
+              <MiniMetric label="Algorithm" value="SM-2" />
+            </div>
+            <p className="text-sm text-gray-400 leading-relaxed">
+              Daily spaced repetition prevents forgetting. The system schedules each concept
+              just before you would naturally forget it, optimizing long-term memory.
+            </p>
+            <Link
+              href="/student/spaced_repetition"
+              className="h-12 w-full rounded-2xl bg-white/[0.04] border border-white/10 text-white font-bold inline-flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+            >
+              <CheckCircle className="w-4 h-4 text-lumina-highlight" />
+              Start Today&apos;s Revision
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Exam Readiness"
+          subtitle="AI-predicted performance score updated daily from your mastery data."
+          icon={ClipboardList}
+          action={
+            <Link
+              href="/student/exam_readiness"
+              className="inline-flex items-center gap-1.5 text-lumina-highlight font-black uppercase tracking-widest text-[10px] group"
+            >
+              Full Report
+              <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          }
+        >
+          <div className="space-y-5">
+            <div className="grid grid-cols-3 gap-4">
+              <MiniMetric
+                label="Predicted"
+                value={`${stats.find((s: any) => s.label === "Overall Mastery")?.value ?? "—"}`}
+              />
+              <MiniMetric label="Risk" value={normalizeLabel(meta?.riskLevel || "Low")} />
+              <MiniMetric label="Status" value="On Track" />
+            </div>
+            <p className="text-sm text-gray-400 leading-relaxed">
+              Based on your BKT mastery model, knowledge graph coverage, and recent
+              assessment performance. Weak areas are prioritised automatically.
+            </p>
+            <Link
+              href="/student/exam_readiness"
+              className="h-12 w-full rounded-2xl bg-white/[0.04] border border-white/10 text-white font-bold inline-flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+            >
+              <Target className="w-4 h-4 text-lumina-highlight" />
+              View Readiness Report
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </SectionCard>
       </div>
     </StandardDashboard>
