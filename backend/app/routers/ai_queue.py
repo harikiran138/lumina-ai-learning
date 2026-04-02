@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from .auth import get_current_user
 from app.api.deps import get_current_teacher
 from app.database.supabase_manager import supabase_db
+from app.core.audit import audit_logger
 
 router = APIRouter()
 
@@ -40,6 +41,38 @@ def _client():
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _ensure_verified_answer_entry(
+    client: Any,
+    queue_id: str,
+    question_text: str,
+    answer: str,
+    course_id: Optional[str],
+    reviewer_id: str,
+):
+    existing = (
+        client.table("verified_answers_bank")
+        .select("id")
+        .eq("source_queue_id", queue_id)
+        .limit(1)
+        .execute()
+    )
+    if existing.data:
+        return existing.data[0]
+
+    result = client.table("verified_answers_bank").insert({
+        "question": question_text,
+        "answer": answer,
+        "course_id": course_id,
+        "source_queue_id": queue_id,
+        "created_by": reviewer_id,
+        "verified_by": reviewer_id,
+        "answer_type": "text",
+        "is_active": True,
+        "difficulty": "medium"
+    }).execute()
+    return (result.data or [None])[0]
 
 
 # ── Student endpoints ──────────────────────────────────────────────────────────
@@ -255,6 +288,8 @@ async def approve_queue_item(
         q_item = existing.data[0]
         ai_draft = q_item.get("ai_draft", "")
         question_text = (q_item.get("course_questions") or {}).get("question_text", "Unknown Question")
+        if not ai_draft or ai_draft.lower().startswith("processing"):
+            raise HTTPException(status_code=409, detail="AI answer is not ready for approval")
 
         # 1. Update AI Answer Queue
         client.table("ai_answer_queue").update({
@@ -267,17 +302,25 @@ async def approve_queue_item(
         }).eq("id", queue_id).execute()
 
         # 2. Add to Verified Answers Bank
-        client.table("verified_answers_bank").insert({
-            "question": question_text,
-            "answer": ai_draft,
-            "course_id": q_item.get("course_id"),
-            "source_queue_id": queue_id,
-            "created_by": current_user["id"],
-            "verified_by": current_user["id"],
-            "answer_type": "text",
-            "is_active": True,
-            "difficulty": "medium"  # default
-        }).execute()
+        _ensure_verified_answer_entry(
+            client=client,
+            queue_id=queue_id,
+            question_text=question_text,
+            answer=ai_draft,
+            course_id=q_item.get("course_id"),
+            reviewer_id=current_user["id"],
+        )
+
+        audit_logger.log(
+            action="ai_answer_approved",
+            user_id=str(current_user["id"]),
+            resource_id=str(queue_id),
+            metadata={
+                "question_id": q_item.get("question_id"),
+                "course_id": q_item.get("course_id"),
+                "approval_type": "direct",
+            },
+        )
 
         return {"success": True, "status": "approved"}
     except HTTPException:
@@ -312,17 +355,25 @@ async def edit_approve_queue_item(
             "added_to_bank": True
         }).eq("id", queue_id).execute()
 
-        client.table("verified_answers_bank").insert({
-            "question": question_text,
-            "answer": body.final_answer,
-            "course_id": q_item.get("course_id"),
-            "source_queue_id": queue_id,
-            "created_by": current_user["id"],
-            "verified_by": current_user["id"],
-            "answer_type": "text",
-            "is_active": True,
-            "difficulty": "medium"
-        }).execute()
+        _ensure_verified_answer_entry(
+            client=client,
+            queue_id=queue_id,
+            question_text=question_text,
+            answer=body.final_answer,
+            course_id=q_item.get("course_id"),
+            reviewer_id=current_user["id"],
+        )
+
+        audit_logger.log(
+            action="ai_answer_approved",
+            user_id=str(current_user["id"]),
+            resource_id=str(queue_id),
+            metadata={
+                "question_id": q_item.get("question_id"),
+                "course_id": q_item.get("course_id"),
+                "approval_type": "edited",
+            },
+        )
 
         return {"success": True, "status": "edited_approved"}
     except HTTPException:
@@ -350,6 +401,13 @@ async def reject_queue_item(
             "reviewed_by": current_user["id"],
             "reviewed_at": _now_iso(),
         }).eq("id", queue_id).execute()
+
+        audit_logger.log(
+            action="ai_answer_rejected",
+            user_id=str(current_user["id"]),
+            resource_id=str(queue_id),
+            metadata={"reason": body.faculty_note},
+        )
 
         return {"success": True, "status": "rejected"}
     except HTTPException:
@@ -385,6 +443,13 @@ async def escalate_queue_item(
             "reviewed_by": current_user["id"],
             "reviewed_at": _now_iso(),
         }).eq("id", queue_id).execute()
+
+        audit_logger.log(
+            action="ai_answer_escalated",
+            user_id=str(current_user["id"]),
+            resource_id=str(queue_id),
+            metadata={"new_status": new_status, "reason": body.reason},
+        )
 
         return {"success": True, "status": new_status}
     except HTTPException:

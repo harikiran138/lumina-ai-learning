@@ -1,8 +1,35 @@
-from typing import Any, Dict, Optional, List
-from supabase import create_client, ClientOptions
+import os
+from typing import Any, Dict, Optional, List, Set
+from supabase import ClientOptions
 from app.core.config import settings
-from .supabase_manager import supabase_db, SupabaseManager
-from fastapi import HTTPException
+from .supabase_manager import supabase_db
+
+
+def _load_soft_delete_tables() -> Set[str]:
+    raw_tables = os.getenv("LUMINA_SOFT_DELETE_TABLES", "")
+    return {
+        table_name.strip()
+        for table_name in raw_tables.split(",")
+        if table_name.strip()
+    }
+
+
+SOFT_DELETE_TABLES = _load_soft_delete_tables()
+
+
+def _supports_soft_delete(table_name: str) -> bool:
+    return table_name in SOFT_DELETE_TABLES
+
+
+def _response_rows(response: Any) -> List[Dict[str, Any]]:
+    data = getattr(response, "data", None)
+    if data is None:
+        return []
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        return [data]
+    return []
 
 class ScopedQueryBuilder:
     def __init__(self, table_name: str, institution_id: str, is_super_admin: bool = False, client=None, show_deleted: bool = False):
@@ -10,6 +37,7 @@ class ScopedQueryBuilder:
         self.institution_id = institution_id
         self.is_super_admin = is_super_admin
         self.show_deleted = show_deleted
+        self.soft_delete_enabled = _supports_soft_delete(table_name)
         # Use provided scoped client or fall back to global
         self.client = client or supabase_db.get_client()
         self.query = self.client.table(table_name)
@@ -20,8 +48,8 @@ class ScopedQueryBuilder:
 
     def select(self, columns: str = "*"):
         self.query = self.query.select(columns)
-        # Automatically filter out soft-deleted records unless asked
-        if not self.show_deleted:
+        # Only apply the soft-delete filter to tables that explicitly support it.
+        if self.soft_delete_enabled and not self.show_deleted:
             self.query = self.query.eq("is_deleted", False)
         return self
 
@@ -56,6 +84,8 @@ class ScopedQueryBuilder:
 
     def soft_delete(self):
         from datetime import datetime
+        if not self.soft_delete_enabled:
+            return self.delete()
         return self.update({
             "is_deleted": True,
             "deleted_at": datetime.utcnow().isoformat()
@@ -135,7 +165,8 @@ class ScopedSupabase:
         for k, v in query_filter.items():
             qb = qb.eq(k, v)
         res = qb.limit(1).execute()
-        return res.data[0] if res.data else None
+        rows = _response_rows(res)
+        return rows[0] if rows else None
 
     async def fetch_all(self, table: str, query_filter: Optional[Dict[str, Any]] = None, limit: int = 1000, show_deleted: bool = False) -> List[Dict[str, Any]]:
         qb = self.table(table, show_deleted=show_deleted).select("*")
@@ -143,22 +174,25 @@ class ScopedSupabase:
             for k, v in query_filter.items():
                 qb = qb.eq(k, v)
         res = qb.limit(limit).execute()
-        return res.data or []
+        return _response_rows(res)
 
     async def insert(self, table: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         res = self.table(table).insert(data).execute()
-        return res.data[0] if res.data else None
+        rows = _response_rows(res)
+        return rows[0] if rows else None
 
     async def update(self, table: str, data: Dict[str, Any], query_filter: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         qb = self.table(table).update(data)
         for k, v in query_filter.items():
             qb = qb.eq(k, v)
         res = qb.execute()
-        return res.data[0] if res.data else None
+        rows = _response_rows(res)
+        return rows[0] if rows else None
 
     async def upsert(self, table: str, data: Dict[str, Any], on_conflict: str = 'id') -> Optional[Dict[str, Any]]:
         res = self.table(table).upsert(data, on_conflict=on_conflict).execute()
-        return res.data[0] if res.data else None
+        rows = _response_rows(res)
+        return rows[0] if rows else None
 
     async def delete(self, table: str, query_filter: Dict[str, Any], permanent: bool = False) -> bool:
         if permanent:
@@ -169,7 +203,7 @@ class ScopedSupabase:
         for k, v in query_filter.items():
             qb = qb.eq(k, v)
         res = qb.execute()
-        return len(res.data) > 0
+        return len(_response_rows(res)) > 0
 
 def get_scoped_db(user: dict) -> ScopedSupabase:
     return ScopedSupabase(user)
