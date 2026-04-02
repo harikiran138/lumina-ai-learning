@@ -106,7 +106,6 @@ const unreadCount = notifications.filter((n) => !n.read).length;
 
 return ( <div className="space-y-6">
 
-```
   {/* HEADER */}
   <div className="flex justify-between items-center">
     <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -162,7 +161,6 @@ return ( <div className="space-y-6">
   </div>
 
 </div>
-```
 
 );
 }

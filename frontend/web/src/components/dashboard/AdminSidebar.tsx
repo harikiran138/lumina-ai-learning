@@ -105,7 +105,6 @@ className={cn(
 {/* LOGO */}
 <div className={cn("flex items-center border-b border-white/5", !isHovered ? "justify-center h-16" : "px-6 h-20")}> <Link href="/" className="text-2xl font-bold flex gap-1"> <span>{!isHovered ? "L" : "Lumina"}</span> <span className="text-yellow-400">AI</span> </Link> </div>
 
-```
   {/* NAV */}
   <nav className="p-4 flex-1 overflow-y-auto">
     {navItems.map((item) => {
@@ -150,7 +149,6 @@ className={cn(
     </button>
   </div>
 </aside>
-```
 
 );
 }

@@ -1,9 +1,20 @@
 "use server";
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import clientPromise from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { createClient } from "@supabase/supabase-js";
 
+// ── Supabase server client (uses service role for server actions) ──────────────
+const getSupabaseAdmin = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
+  if (!url || !key) throw new Error("Supabase env vars missing");
+  return createClient(url, key);
+};
+
+// ── Gemini model factory ───────────────────────────────────────────────────────
 const createGeminiModel = () => {
   const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
   if (!apiKey) {
@@ -15,7 +26,7 @@ const createGeminiModel = () => {
 };
 
 /**
- * Stage 1: Save extracted textbook text to the local textbook store (No AI)
+ * Stage 1: Save extracted textbook text to Supabase textbooks table
  */
 export async function saveTextbook(
   title: string,
@@ -23,21 +34,21 @@ export async function saveTextbook(
   userId?: string,
 ) {
   try {
-    const client = await clientPromise;
-    if (!client) {
-      return { success: false, error: "MongoDB is not configured" };
-    }
-    const db = client.db("lumina_db");
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from("textbooks")
+      .insert({
+        title,
+        content,
+        user_id: userId || "anonymous",
+        created_at: new Date().toISOString(),
+        status: "raw",
+      })
+      .select("id")
+      .single();
 
-    const result = await db.collection("textbooks").insertOne({
-      title,
-      content,
-      userId: userId || "anonymous",
-      createdAt: new Date(),
-      status: "raw",
-    });
-
-    return { success: true, id: result.insertedId.toString() };
+    if (error) throw error;
+    return { success: true, id: data.id.toString() };
   } catch (error: any) {
     console.error("Save Textbook Error:", error);
     return { success: false, error: error.message };
@@ -45,28 +56,22 @@ export async function saveTextbook(
 }
 
 /**
- * Stage 2: Generate course from stored textbook (AI)
- * Fetches text from the local textbook store -> Chunks -> AI -> Course
- */
-/**
- * Fetch the raw content of a textbook from the local textbook store
+ * Fetch the raw content of a textbook from Supabase
  */
 export async function getTextbookContent(textbookId: string) {
   try {
-    const client = await clientPromise;
-    if (!client) {
-      return { success: false, error: "MongoDB is not configured" };
-    }
-    const db = client.db("lumina_db");
-    const textbook = await db.collection("textbooks").findOne({
-      _id: new ObjectId(textbookId),
-    });
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from("textbooks")
+      .select("id, title, content")
+      .eq("id", textbookId)
+      .single();
 
-    if (!textbook || !textbook.content) {
+    if (error || !data?.content) {
       return { success: false, error: "Textbook not found" };
     }
 
-    return { success: true, content: textbook.content, title: textbook.title };
+    return { success: true, content: data.content, title: data.title };
   } catch (error: any) {
     console.error("Get Textbook Error:", error);
     return { success: false, error: error.message };
@@ -82,7 +87,6 @@ export async function generateCourseChunk(
   chunkIndex: number,
   totalChunks: number,
 ) {
-  // Check configuration lazily
   const model = createGeminiModel();
   if (!model) {
     throw new Error("API Key is required");
@@ -130,7 +134,6 @@ export async function generateCourseChunk(
     const result = await model.generateContent(chunkPrompt);
     const text = result.response.text();
 
-    // Parse JSON safely
     let jsonStr = text;
     if (jsonStr.includes("```json")) {
       jsonStr = jsonStr.split("```json")[1].split("```")[0];
@@ -152,7 +155,6 @@ export async function generateCourseChunk(
 export async function analyzeTableOfContents(
   tocText: string,
 ): Promise<{ success: boolean; structure?: any; error?: string }> {
-  // Check configuration lazily
   const model = createGeminiModel();
   if (!model) return { success: false, error: "API Key missing" };
 
@@ -187,7 +189,6 @@ export async function analyzeTableOfContents(
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
-    // Parse JSON safely
     let jsonStr = text;
     if (jsonStr.includes("```json")) {
       jsonStr = jsonStr.split("```json")[1].split("```")[0];

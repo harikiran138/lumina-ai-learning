@@ -91,10 +91,8 @@ const load = useCallback(async () => {
 const data = await api.getDashboardData("admin");
 setSummary(data?.summary || EMPTY_SUMMARY);
 
-```
-const queue = await api.getAdminQueueHealth();
-setQueueHealth(queue || {});
-```
+  const queue = await api.getAdminQueueHealth();
+  setQueueHealth(queue || {});
 
 }, []);
 
@@ -104,7 +102,6 @@ load();
 
 return ( <div className="space-y-6">
 
-```
   {/* HEADER */}
   <section className="p-6 border rounded-xl">
     <h1 className="text-3xl font-bold">Admin Control Center</h1>
@@ -183,7 +180,6 @@ return ( <div className="space-y-6">
   </section>
 
 </div>
-```
 
 );
 }
