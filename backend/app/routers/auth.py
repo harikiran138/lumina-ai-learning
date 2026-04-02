@@ -137,13 +137,13 @@ def _resolve_identifier(identifier: str, user_store: UserStore) -> Optional[dict
     try:
         client = supabase_db.get_client()
         if _ROLL_RE.match(identifier):
-            r = client.table("users").select("*").eq("roll_number", identifier).limit(1).execute()
+            r = client.table("users").select("*, user_roles(roles(name))").eq("roll_number", identifier).limit(1).execute()
             if r.data:
-                return r.data[0]
+                return user_store._sanitize_user(r.data[0])
         elif _EMP_RE.match(identifier):
-            r = client.table("users").select("*").eq("employee_id", identifier).limit(1).execute()
+            r = client.table("users").select("*, user_roles(roles(name))").eq("employee_id", identifier).limit(1).execute()
             if r.data:
-                return r.data[0]
+                return user_store._sanitize_user(r.data[0])
     except Exception:
         pass
     # Default: treat as email
