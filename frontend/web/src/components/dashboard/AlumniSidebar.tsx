@@ -6,43 +6,36 @@ import { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard,
   Users,
+  Calendar,
+  Mic2,
+  Briefcase,
   BookOpen,
-  LogOut,
-  X,
-  Bell,
-  GraduationCap,
   Network,
   BarChart3,
-  Timer,
-  Zap,
-  AlertOctagon,
-  Star,
-  CheckSquare,
-  BookMarked,
+  Bell,
+  Settings,
+  LogOut,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navItems = [
-  { name: "Dashboard",          href: "/hod/dashboard",          icon: LayoutDashboard },
-  { name: "Knowledge Graph",    href: "/hod/knowledge-graph",    icon: Network },
-  { name: "Faculty Performance",href: "/hod/faculty-performance",icon: BarChart3 },
-  { name: "Syllabus Tracker",   href: "/hod/syllabus-tracker",   icon: CheckSquare },
-  { name: "AI SLA Monitor",     href: "/hod/sla-monitor",        icon: Timer },
-  { name: "Interventions",      href: "/hod/interventions",      icon: Zap },
-  { name: "At-Risk Students",   href: "/hod/at-risk",            icon: AlertOctagon },
-  { name: "Alumni Feedback",    href: "/hod/alumni-feedback",    icon: Star },
-  { name: "Alert Center",       href: "/hod/alerts",             icon: Bell },
-  { name: "Faculty Management", href: "/hod/faculty",            icon: Users },
-  { name: "Program Management", href: "/hod/programs",           icon: GraduationCap },
-  { name: "Curriculum Map",     href: "/hod/curriculum",         icon: BookOpen },
+  { name: "Dashboard",           href: "/alumni/dashboard",             icon: LayoutDashboard },
+  { name: "My Mentees",          href: "/alumni/mentees",               icon: Users },
+  { name: "Mentorship Sessions", href: "/alumni/sessions",              icon: Calendar },
+  { name: "Mock Interviews",     href: "/alumni/mock-interviews",       icon: Mic2 },
+  { name: "Job Board",           href: "/alumni/job-board",             icon: Briefcase },
+  { name: "Curriculum Feedback", href: "/alumni/curriculum-feedback",   icon: BookOpen },
+  { name: "Alumni Network",      href: "/alumni/network",               icon: Network },
+  { name: "Reports",             href: "/alumni/reports",               icon: BarChart3 },
+  { name: "Settings",            href: "/alumni/settings",              icon: Settings },
 ];
 
-export default function HODSidebar({
+export default function AlumniSidebar({
   isOpen,
   onClose,
-  // onHoverChange kept for backward compat but no longer triggers layout re-renders
   onHoverChange: _onHoverChange,
 }: {
   isOpen?: boolean;
@@ -55,7 +48,7 @@ export default function HODSidebar({
 
   const { user: storeUser, setUser: setStoreUser, clearAuth } = useAuthStore();
   const [user, setUser] = useState<any>(storeUser ?? null);
-  const notificationCount = 5;
+  const notificationCount = 3;
 
   useEffect(() => {
     if (storeUser) { setUser(storeUser); return; }
@@ -81,7 +74,7 @@ export default function HODSidebar({
           : "-translate-x-[120%] lg:translate-x-0 hidden lg:flex",
       )}
     >
-      {/* ── Logo header ── */}
+      {/* Logo header */}
       <div className="sidebar-header flex items-center border-b border-white/5 shrink-0">
         <Link href="/" className="font-display font-black text-2xl flex items-center gap-1 select-none">
           <span className="sidebar-logo-icon text-white">L</span>
@@ -97,7 +90,7 @@ export default function HODSidebar({
         </button>
       </div>
 
-      {/* ── Nav ── */}
+      {/* Nav */}
       <nav className="p-4 space-y-1 flex-1 overflow-y-auto hide-scrollbar">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
@@ -129,17 +122,18 @@ export default function HODSidebar({
         })}
       </nav>
 
-      {/* ── Bottom ── */}
+      {/* Bottom section */}
       <div className="sidebar-bottom border-t border-white/10 space-y-3 shrink-0">
+        {/* Notifications */}
         <Link
-          href="/hod/alerts"
+          href="/alumni/notifications"
           aria-label="Notifications"
           className="sidebar-bottom-item sidebar-nav-item flex items-center w-full py-3 text-sm font-semibold rounded-xl text-gray-400 hover:bg-white/[0.03] hover:text-gray-200 relative group"
         >
           <div className="sidebar-icon relative h-5 w-5">
             <Bell className="h-5 w-5 text-gray-500 group-hover:text-gray-300" />
             {notificationCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                 {notificationCount}
               </span>
             )}
@@ -148,14 +142,15 @@ export default function HODSidebar({
           <span className="sidebar-tooltip">Notifications</span>
         </Link>
 
+        {/* User profile */}
         {user && (
           <Link
-            href="/hod/dashboard"
+            href="/alumni/settings"
             className="sidebar-user-card flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer overflow-hidden"
           >
             <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
               <img
-                src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name ?? "H")}&background=random`}
+                src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name ?? "A")}&background=random`}
                 alt="User avatar"
                 className="w-full h-full object-cover"
               />
