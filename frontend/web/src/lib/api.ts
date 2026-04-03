@@ -98,17 +98,26 @@ async function fetchWithRetry(
 
       // Retry on 5xx Server Errors
       if (!response.ok && response.status >= 500) {
-        throw new Error(`Server Error: ${response.status}`);
+        throw new Error(`Server Error: ${response.status}`)
       }
 
       return response
     } catch (err: any) {
-      // If we failed to fetch from localhost, and it's a TypeError (Network Error), 
-      // try failing over to 127.0.0.1 if the URL contains localhost.
-      if (err instanceof TypeError && url.includes("localhost") && !url.includes("127.0.0.1")) {
-        const fallbackUrl = url.replace("localhost", "127.0.0.1");
-        console.warn(`Localhost fetch failed, trying fallback to 127.0.0.1: ${fallbackUrl}`);
-        return fetchWithRetry(fallbackUrl, options, attempt); // retry immediate with fallback
+      // Robust Local Hostname Fallback:
+      // On some OS environments (especially macOS), a process may bind only to IPv4 (127.0.0.1) 
+      // but the browser resolves 'localhost' to IPv6 (::1). Fallback bi-directionally.
+      if (err instanceof TypeError && (url.includes("localhost") || url.includes("127.0.0.1"))) {
+        const isCurrentlyLocalhost = url.includes("localhost")
+        const fallbackUrl = isCurrentlyLocalhost 
+          ? url.replace("localhost", "127.0.0.1") 
+          : url.replace("127.0.0.1", "localhost")
+        
+        if (attempt <= retries) {
+          console.warn(`[Lumina API] Fetch failed for ${url}, trying fallback to ${fallbackUrl}`)
+          // Call recursive but decrement from the ORIGINAL budget, don't restart attempts.
+          // Since we're halfway through an attempt, this is part of the current attempt's recovery.
+          return fetchWithRetry(fallbackUrl, options, retries - 1, timeoutMs)
+        }
       }
 
       if (attempt === retries) {

@@ -22,7 +22,7 @@ test.describe('Student Onboarding Flow', () => {
     await expect(page).toHaveURL(/\/onboarding/, { timeout: 10000 });
 
     // 2. Step 1: Personal Info
-    await expect(page.getByText(/personal details/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /personal details/i })).toBeVisible();
     await page.getByPlaceholder(/enter first name/i).fill('Test');
     await page.getByPlaceholder(/enter last name/i).fill('Student');
     await page.locator('input[type="date"]').fill('2005-01-01');

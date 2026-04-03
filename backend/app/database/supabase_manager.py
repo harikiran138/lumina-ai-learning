@@ -396,15 +396,6 @@ def get_scoped_db(user: Dict[str, Any]) -> SupabaseManager:
     if user.get("role") == "super_admin":
         return supabase_db
     
-    jwt = user.get("access_token")
-    if jwt:
-        client = create_client(
-            settings.SUPABASE_URL,
-            settings.SUPABASE_ANON_KEY,
-            options=ClientOptions(headers={"Authorization": f"Bearer {jwt}"})
-        )
-        return SupabaseManager(client=client)
-    
     return supabase_db
 
 

@@ -155,17 +155,9 @@ class ScopedSupabase:
         self.jwt = user.get("access_token")
         
         self._scoped_client = None
-        if self.jwt and not self.is_super_admin and not SupabaseManager._use_local_backend():
-            try:
-                # Use a lightweight client with the user's JWT for RLS
-                from supabase import create_client, ClientOptions
-                self._scoped_client = create_client(
-                    settings.SUPABASE_URL,
-                    settings.SUPABASE_ANON_KEY,
-                    options=ClientOptions(headers={"Authorization": f"Bearer {self.jwt}"})
-                )
-            except Exception:
-                self._scoped_client = None
+        # We disable JWT-based scoping for Supabase because the backend's access_token
+        # is signed with the backend's secret, not Supabase's. Using it triggers PGRST301.
+        # The ScopedQueryBuilder already applies manual filtering based on institution_id.
 
     def get_client(self) -> Any:
         """Returns the Postgrest client for direct usage."""
