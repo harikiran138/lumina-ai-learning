@@ -6,10 +6,10 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Literal
 import logging
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, Response
 from pydantic import BaseModel, Field, EmailStr
 
-from .auth import get_current_user
+from .auth import get_current_user, build_claims, settings, create_access_token
 from app.database.supabase_manager import supabase_db
 from app.database.scoped_db import get_scoped_db
 from app.services.storage import storage_service
@@ -23,6 +23,45 @@ logger = logging.getLogger("uvicorn.error")
 
 EMAIL_REGEX = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 PHONE_DIGIT_REGEX = re.compile(r"\D")
+
+
+def _set_session_cookies(response: Response, user: dict):
+    """Refreshes access and refresh tokens and sets them as cookies."""
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        subject=str(user["id"]),
+        expires_delta=access_token_expires,
+        extra_claims=build_claims(user),
+        secret_key=settings.JWT_SECRET,
+    )
+
+    refresh_token_expires = timedelta(days=7)
+    refresh_token = create_access_token(
+        subject=str(user["id"]),
+        expires_delta=refresh_token_expires,
+        extra_claims={"type": "refresh", **build_claims(user)},
+        secret_key=settings.JWT_REFRESH_SECRET,
+    )
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=False,
+        secure=settings.SECURE_COOKIES,
+        samesite="Lax" if not settings.SECURE_COOKIES else "None",
+        max_age=int(access_token_expires.total_seconds()),
+        path="/",
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=False,
+        secure=settings.SECURE_COOKIES,
+        samesite="Lax" if not settings.SECURE_COOKIES else "None",
+        max_age=int(refresh_token_expires.total_seconds()),
+        path="/",
+    )
 
 
 def default_onboarding_state(role: str = "student") -> Dict[str, Any]:
@@ -513,6 +552,7 @@ async def save_student_profile_details(
 @router.post("/preferences")
 async def save_student_preferences(
     payload: StudentPreferencesRequest,
+    response: Response,
     current_user: dict = Depends(get_current_user),
 ):
     user_id = _require_student(current_user)
@@ -686,6 +726,11 @@ async def save_student_preferences(
         },
         completed=True,
     )
+    # Refresh session cookies to update onboarding status in JWT
+    updated_user = await UserStore(db=db).get_user_by_id(user_id)
+    if updated_user:
+        _set_session_cookies(response, updated_user)
+
     return {
         "step": 5,
         "success": True,
@@ -913,16 +958,28 @@ async def get_onboarding_subjects(current_user: dict = Depends(get_current_user)
 
 
 @router.post("/complete")
-async def complete_onboarding(current_user: dict = Depends(get_current_user)):
+async def complete_onboarding(
+    response: Response,
+    current_user: dict = Depends(get_current_user)
+):
     user_id = current_user.get("id")
     role = current_user.get("role")
     
     onboarding_service = OnboardingService(db=supabase_db)
-    return await onboarding_service.complete_onboarding(
+    result = await onboarding_service.complete_onboarding(
         user_id=user_id,
         role=role,
         current_user=current_user
     )
+
+    if result.get("success"):
+        # Refresh session cookies to update onboarding status in JWT
+        db = get_scoped_db(current_user)
+        updated_user = await UserStore(db=db).get_user_by_id(user_id)
+        if updated_user:
+            _set_session_cookies(response, updated_user)
+            
+    return result
 
 
 @router.post("/start")
