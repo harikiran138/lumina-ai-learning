@@ -22,7 +22,8 @@ GLOBAL_TABLES = {
     "roles",
     "permissions",
     "users",
-    "institution_login_policies"
+    "institution_login_policies",
+    "batches"
 }
 
 
@@ -151,7 +152,7 @@ class ScopedSupabase:
         self.user = user
         self.role = user.get("role")
         self.is_super_admin = (self.role == "super_admin")
-        self.institution_id = user.get("institution_id") or user.get("college_id")
+        self.institution_id = user.get("college_id") or user.get("institution_id")
         self.jwt = user.get("access_token")
         
         self._scoped_client = None
@@ -175,7 +176,7 @@ class ScopedSupabase:
         qb = self.table(table, show_deleted=show_deleted).select("*")
         for k, v in query_filter.items():
             qb = qb.eq(k, v)
-        res = qb.limit(1).execute()
+        res = await qb.limit(1).execute()
         rows = _response_rows(res)
         return rows[0] if rows else None
 
@@ -184,11 +185,11 @@ class ScopedSupabase:
         if query_filter:
             for k, v in query_filter.items():
                 qb = qb.eq(k, v)
-        res = qb.limit(limit).execute()
+        res = await qb.limit(limit).execute()
         return _response_rows(res)
 
     async def insert(self, table: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        res = self.table(table).insert(data).execute()
+        res = await self.table(table).insert(data).execute()
         rows = _response_rows(res)
         return rows[0] if rows else None
 
@@ -196,12 +197,12 @@ class ScopedSupabase:
         qb = self.table(table).update(data)
         for k, v in query_filter.items():
             qb = qb.eq(k, v)
-        res = qb.execute()
+        res = await qb.execute()
         rows = _response_rows(res)
         return rows[0] if rows else None
 
     async def upsert(self, table: str, data: Dict[str, Any], on_conflict: str = 'id') -> Optional[Dict[str, Any]]:
-        res = self.table(table).upsert(data, on_conflict=on_conflict).execute()
+        res = await self.table(table).upsert(data, on_conflict=on_conflict).execute()
         rows = _response_rows(res)
         return rows[0] if rows else None
 
@@ -213,7 +214,7 @@ class ScopedSupabase:
             
         for k, v in query_filter.items():
             qb = qb.eq(k, v)
-        res = qb.execute()
+        res = await qb.execute()
         return len(_response_rows(res)) > 0
 
 def get_scoped_db(user: dict) -> ScopedSupabase:

@@ -3,11 +3,11 @@ import os
 import re
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
+import logging
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
-from pydantic import BaseModel, Field
-import logging
+from pydantic import BaseModel, Field, EmailStr
 
 from .auth import get_current_user
 from app.database.supabase_manager import supabase_db
@@ -26,12 +26,12 @@ PHONE_DIGIT_REGEX = re.compile(r"\D")
 
 
 class StudentPersonalDetailsRequest(BaseModel):
-    first_name: str
-    last_name: str
-    date_of_birth: str
+    first_name: str = Field(min_length=2)
+    last_name: str = Field(min_length=2)
+    date_of_birth: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$") # YYYY-MM-DD
     gender: Optional[str] = None
-    phone_number: str
-    email: str
+    phone_number: str = Field(min_length=8, max_length=15)
+    email: EmailStr
 
 
 class StudentEnrollmentRequest(BaseModel):
@@ -44,7 +44,7 @@ class StudentSubjectsRequest(BaseModel):
 
 class StudentPreferencesRequest(BaseModel):
     learning_styles: List[str] = Field(min_length=1)
-    self_assessment: str
+    self_assessment: Literal["beginner", "intermediate", "advanced"]
 
 
 class AdaptiveOnboardingStartRequest(BaseModel):
@@ -207,12 +207,11 @@ async def _validate_enrollment_code_for_user(code: str, user_id: str, db: Any) -
 async def _get_subject_rows_for_batch(batch_id: str, db: Any) -> List[Dict[str, Any]]:
     batch = await db.fetch_one("batches", {"id": batch_id})
     if not batch:
-        # Developer Bypass Fallback: If batch not found, return mock subjects
-        return [
-            {"id": str(uuid.uuid4()), "course_name": "Artificial Intelligence", "course_code": "AI101", "credits": 4, "semester": 1, "type": "core"},
-            {"id": str(uuid.uuid4()), "course_name": "Data Structures", "course_code": "DS202", "credits": 3, "semester": 1, "type": "core"},
-            {"id": str(uuid.uuid4()), "course_name": "Operating Systems", "course_code": "OS303", "credits": 3, "semester": 1, "type": "elective"},
-        ]
+        logger.error(f"batch_not_found_for_subjects: {batch_id}")
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Enrollment details not found for batch ID {batch_id}. Please restart onboarding."
+        )
 
     dept_id = batch.get("dept_id") or batch.get("department_id")
     semester = batch.get("current_semester")

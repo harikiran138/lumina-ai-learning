@@ -1,38 +1,52 @@
 import os
 import sys
-import httpx
-from supabase import create_client, Client, ClientOptions
+import psycopg2
 from dotenv import load_dotenv
 
-load_dotenv()
-
-# --- Patch for httpx/supabase compatibility issue ---
-_OriginalHttpxSyncClient = httpx.Client.__init__
-def _patched_httpx_init(self, *args, **kwargs):
-    kwargs.pop("proxy", None)
-    _OriginalHttpxSyncClient(self, *args, **kwargs)
-httpx.Client.__init__ = _patched_httpx_init
-# ---------------------------------------------------
-
-def test_connection():
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
+def test_db_connection():
+    load_dotenv()
     
-    if not url or not key:
-        print("❌ Error: SUPABASE_URL and key must be set in .env")
+    # We prioritize DATABASE_URL which is the standard for PostgreSQL
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        print("ERROR: DATABASE_URL not found in environment.")
         sys.exit(1)
         
-    print(f"🔗 Connecting to Supabase at {url}...")
+    print(f"Connecting to: {db_url.split('@')[-1]}") # Log without credentials
+    
     try:
-        supabase: Client = create_client(url, key)
-        # Test basic connectivity by fetching a single user or health check
-        # Note: We use the REST API via the client
-        response = supabase.table("users").select("id").limit(1).execute()
-        print("✅ Successfully connected to Supabase REST API")
-        print(f"📊 Table 'users' is reachable. Rows found: {len(response.data)}")
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor()
+        
+        # 1. Verify Server Version
+        cur.execute("SELECT version();")
+        version = cur.fetchone()
+        print(f"SUCCESS: PostgreSQL Connection Established.")
+        print(f"Server Version: {version[0]}")
+        
+        # 2. Verify Onboarding Tables (Section 10a requirement)
+        required_tables = [
+            "users", "onboarding_sessions", "user_data", "learner_profiles", 
+            "teacher_profiles", "student_subjects", "institutions", "batches", "departments"
+        ]
+        
+        print("\nVerifying Core Table Existence:")
+        for table in required_tables:
+            cur.execute(f"SELECT COUNT(*) FROM information_schema.tables WHERE table_name = %s", (table,))
+            exists = cur.fetchone()[0] > 0
+            if exists:
+                cur.execute(f"SELECT COUNT(*) FROM {table}")
+                count = cur.fetchone()[0]
+                print(f"  [PASS] {table}: {count} rows")
+            else:
+                print(f"  [FAIL] {table}: TABLE NOT FOUND")
+        
+        cur.close()
+        conn.close()
+        
     except Exception as e:
-        print(f"❌ Connection failed: {str(e)}")
+        print(f"FAILED: Could not connect to PostgreSQL - {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
-    test_connection()
+    test_db_connection()
