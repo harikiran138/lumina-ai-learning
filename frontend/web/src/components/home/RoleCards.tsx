@@ -121,43 +121,33 @@ export default function RoleCards() {
           </motion.p>
         </div>
 
-        {/* Role cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        {/* Compact Role Grid */}
+        <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto">
           {roles.map((role, i) => (
             <Link
               key={i}
               href={`/roles/${role.slug}`}
-              className="group block"
+              className="group relative"
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                whileHover={{ scale: 1.02, y: -5 }}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                whileHover={{ scale: 1.05 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.05, duration: 0.4 }}
-                className="glass-v2-gold h-full p-8 flex flex-col items-center text-center hover:bg-white/[0.05] hover:border-lumina-highlight/40 transition-all duration-500 relative overflow-hidden cursor-pointer"
+                transition={{ delay: i * 0.05, duration: 0.3 }}
+                className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl transition-all duration-300 w-24 sm:w-28 md:w-32"
               >
-                {/* Glow effect on hover */}
-                <div className="absolute inset-0 bg-lumina-highlight/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-                
-                <div className="w-16 h-16 rounded-2xl bg-lumina-highlight/10 border border-lumina-highlight/15 flex items-center justify-center mb-6 group-hover:bg-lumina-highlight/20 group-hover:border-lumina-highlight/35 group-hover:shadow-[0_0_30px_rgba(255,215,0,0.2)] transition-all duration-400 relative z-10">
-                  <role.icon className="h-8 w-8 text-lumina-highlight" />
+                {/* Minimal Icon Container */}
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center mb-3 group-hover:bg-lumina-highlight/10 group-hover:border-lumina-highlight/30 group-hover:shadow-[0_0_20px_rgba(255,215,0,0.15)] transition-all duration-300">
+                  <role.icon className="h-6 w-6 sm:h-7 sm:w-7 text-slate-400 group-hover:text-lumina-highlight transition-colors duration-300" />
                 </div>
                 
-                <h3 className="text-xl font-black text-white mb-2 font-display relative z-10">{role.title}</h3>
-                
-                <p className="text-xs text-amber-400 font-black uppercase tracking-[0.15em] mb-4 leading-tight relative z-10">
-                  {role.purpose}
-                </p>
-                
-                <div className="pt-4 border-t border-white/5 w-full relative z-10">
-                  <p className="text-xs text-slate-500 font-sans leading-relaxed mb-4">{role.access}</p>
-                  
-                  <div className="flex items-center justify-center space-x-1 text-xs font-black uppercase tracking-widest text-lumina-highlight opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                    <span>Learn More</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                </div>
+                <span className="text-[11px] sm:text-xs font-black text-slate-400 group-hover:text-white uppercase tracking-[0.12em] text-center transition-colors duration-300">
+                  {role.title}
+                </span>
+
+                {/* Subtle underline on hover */}
+                <div className="w-0 h-[2px] bg-lumina-highlight mt-1.5 group-hover:w-full transition-all duration-300 opacity-0 group-hover:opacity-100" />
               </motion.div>
             </Link>
           ))}

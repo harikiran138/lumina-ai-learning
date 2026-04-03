@@ -16,9 +16,9 @@ const RoleHero = ({ title, tagline, purpose, iconName }: RoleHeroProps) => {
   const Icon = (LucideIcons as any)[iconName] || Smartphone;
 
   return (
-    <section className="relative pt-32 pb-16 overflow-hidden bg-slate-950">
+    <section className="relative pt-32 pb-16 overflow-hidden bg-transparent">
       <div className="absolute inset-0 neural-mesh opacity-[0.03] pointer-events-none" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-lumina-highlight/5 rounded-full blur-[120px] pointer-events-none opacity-30" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-r from-amber-500/10 via-transparent to-transparent rounded-full blur-[120px] pointer-events-none opacity-30" />
       
       <div className="container mx-auto px-6 relative z-10">
         <motion.div 

@@ -18,14 +18,14 @@ class StorageService:
         self.use_s3 = all([self.aws_access_key, self.aws_secret_key, self.bucket_name])
 
         if self.use_s3:
-            print("🚀 S3 Storage Enabled")
+            print("[INFO] S3 Storage Enabled")
             self.s3_client = boto3.client(
                 "s3",
                 aws_access_key_id=self.aws_access_key,
                 aws_secret_access_key=self.aws_secret_key,
             )
         else:
-            print("⚠️ AWS Credentials missing. Falling back to local storage (data/uploads)")
+            print("[WARN] AWS Credentials missing. Falling back to local storage (data/uploads)")
 
     def upload_file(self, file_obj: UploadFile, file_name: str) -> str:
         """
@@ -37,7 +37,7 @@ class StorageService:
                 self.s3_client.upload_fileobj(file_obj.file, self.bucket_name, file_name)
                 return f"s3://{self.bucket_name}/{file_name}"
             except Exception as e:
-                print(f"❌ S3 Upload Failed: {e}")
+                print(f"[ERROR] S3 Upload Failed: {e}")
                 raise e
         else:
             # Local Fallback
@@ -62,7 +62,7 @@ class StorageService:
                 )
                 return f"s3://{self.bucket_name}/{file_name}"
             except Exception as e:
-                print(f"❌ S3 Byte Upload Failed: {e}")
+                print(f"[ERROR] S3 Byte Upload Failed: {e}")
                 raise e
         else:
             file_path = os.path.join(self.upload_dir, file_name)
@@ -83,7 +83,7 @@ class StorageService:
             bucket = parts[0]
             key = parts[1]
 
-            print(f"⬇️ Downloading from S3: {key}")
+            print(f"[INFO] Downloading from S3: {key}")
             self.s3_client.download_file(bucket, key, destination_path)
         else:
             # Local File

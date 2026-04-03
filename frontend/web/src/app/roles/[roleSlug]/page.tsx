@@ -31,9 +31,12 @@ export default async function RolePage({ params }: { params: Promise<{ roleSlug:
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-lumina-highlight/30">
+    <div className="min-h-screen bg-black text-white selection:bg-lumina-highlight/30 relative overflow-hidden">
+      {/* Background Neural Mesh */}
+      <div className="absolute inset-0 neural-mesh opacity-40 pointer-events-none" />
+
       {/* Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl">
+      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-black/50 backdrop-blur-md">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/" className="text-xl font-black text-white flex items-center font-display tracking-tight group">
             <span className="gradient-text transition-all duration-300 group-hover:drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]">Lumina</span>
@@ -50,7 +53,7 @@ export default async function RolePage({ params }: { params: Promise<{ roleSlug:
         </div>
       </header>
 
-      <main className="pt-20">
+      <main className="pt-20 relative z-10">
         <RoleHero 
           title={role.title} 
           tagline={role.tagline} 
@@ -76,7 +79,7 @@ export default async function RolePage({ params }: { params: Promise<{ roleSlug:
         />
 
         {/* Action Section */}
-        <section className="py-24 border-t border-white/5 bg-lumina-highlight/5 h-[400px] flex items-center justify-center">
+        <section className="py-24 border-t border-white/5 bg-white/[0.02] flex items-center justify-center">
           <div className="container mx-auto px-6 text-center">
             <h2 className="text-4xl font-black mb-8 font-display">Ready to initialize the <span className="gradient-text-gold">{role.title}</span> boundary?</h2>
             <Link 
