@@ -13,6 +13,7 @@ from .auth import get_current_user
 from app.database.supabase_manager import supabase_db
 from app.database.scoped_db import get_scoped_db
 from app.services.storage import storage_service
+from app.services.adaptive_onboarding import AdaptiveOnboardingEngine
 from app.store.user_store import UserStore
 from app.core.rbac import normalize_role
 
@@ -43,6 +44,19 @@ class StudentSubjectsRequest(BaseModel):
 class StudentPreferencesRequest(BaseModel):
     learning_styles: List[str] = Field(min_length=1)
     self_assessment: str
+
+
+class AdaptiveOnboardingStartRequest(BaseModel):
+    role: Optional[str] = None
+    force_restart: bool = False
+
+
+class AdaptiveOnboardingAnswerRequest(BaseModel):
+    session_id: str
+    question_id: str
+    answer: Any
+    confidence: Optional[float] = Field(default=None, ge=0, le=1)
+    time_taken_seconds: Optional[int] = Field(default=None, ge=0)
 
 
 def _require_student(current_user: dict) -> str:
@@ -675,12 +689,24 @@ async def get_onboarding_status(
         db = get_scoped_db(current_user)
         # Check if they have existing data
         existing = await db.fetch_one("user_data", {"user_id": user_id})
-        
+        role = normalize_role(current_user.get("role"))
         step = current_user.get("onboarding_step", 0) or 0
+        adaptive_profile = None
+        adaptive_session = None
+        adaptive_completed = role != "student"
+
+        if role == "student":
+            adaptive_profile = await db.fetch_one("onboarding_profiles", {"user_id": user_id})
+            adaptive_session = await db.fetch_one(
+                "onboarding_sessions",
+                {"user_id": user_id, "status": "in_progress"},
+            )
+            adaptive_completed = str((adaptive_profile or {}).get("status") or "").lower() == "completed"
+
         status = "not_started"
         if step > 0:
             status = "in_progress"
-        if step >= 5:
+        if step >= 5 and adaptive_completed:
             status = "completed"
 
         progress = {}
@@ -689,19 +715,31 @@ async def get_onboarding_status(
 
         return {
             "step": step,
-            "role": normalize_role(current_user.get("role")),
-            "isComplete": step >= 5,
+            "role": role,
+            "isComplete": step >= 5 and adaptive_completed,
             "progress": progress,
             "status": status,
+            "adaptiveOnboardingCompleted": adaptive_completed,
+            "adaptiveOnboardingStatus": (
+                "completed"
+                if adaptive_completed
+                else (adaptive_session or {}).get("status") or (adaptive_profile or {}).get("status") or "pending"
+            ),
+            "adaptiveSessionId": (adaptive_session or {}).get("id") or (adaptive_profile or {}).get("latest_session_id"),
         }
     except Exception as e:
         logger.error(f"error_fetching_onboarding_status: {e}", exc_info=True)
-        # Fail-safe: Never return 500
+        # Fail-safe: Always include the role even in errors to prevent 'undefined' UI states
+        role = normalize_role(current_user.get("role")) if current_user else "student"
         return {
             "status": "not_started",
             "step": 0,
             "isComplete": False,
-            "progress": {}
+            "progress": {},
+            "role": role,
+            "adaptiveOnboardingCompleted": role != "student",
+            "adaptiveOnboardingStatus": "pending",
+            "adaptiveSessionId": None,
         }
 
 
@@ -893,3 +931,55 @@ async def complete_onboarding(current_user: dict = Depends(get_current_user)):
             {"user_id": user_id, "progress": progress, "updated_at": datetime.utcnow().isoformat()},
         )
     return {"step": 5, "complete": True}
+
+
+@router.post("/start")
+async def start_adaptive_onboarding(
+    payload: AdaptiveOnboardingStartRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    db = get_scoped_db(current_user)
+    engine = AdaptiveOnboardingEngine(db)
+    try:
+        return await engine.start_session(
+            current_user=current_user,
+            requested_role=payload.role,
+            force_restart=payload.force_restart,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/answer")
+async def answer_adaptive_onboarding(
+    payload: AdaptiveOnboardingAnswerRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    db = get_scoped_db(current_user)
+    engine = AdaptiveOnboardingEngine(db)
+    try:
+        return await engine.submit_answer(
+            current_user=current_user,
+            session_id=payload.session_id,
+            question_id=payload.question_id,
+            answer=payload.answer,
+            confidence=payload.confidence,
+            time_taken_seconds=payload.time_taken_seconds,
+        )
+    except ValueError as exc:
+        message = str(exc)
+        status_code = 404 if "not found" in message.lower() else 400
+        raise HTTPException(status_code=status_code, detail=message) from exc
+
+
+@router.get("/result")
+async def get_adaptive_onboarding_result(
+    session_id: Optional[str] = Query(default=None),
+    current_user: dict = Depends(get_current_user),
+):
+    db = get_scoped_db(current_user)
+    engine = AdaptiveOnboardingEngine(db)
+    try:
+        return await engine.get_result(current_user=current_user, session_id=session_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc

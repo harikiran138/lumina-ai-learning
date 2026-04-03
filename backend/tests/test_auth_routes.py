@@ -19,22 +19,56 @@ def gen_user_data():
     return f"test_{uid}@example.com", "Password123", "Test User", "student", phone
 
 @pytest.mark.asyncio
-async def test_register(ac):
-    email, pwd, name, role, phone = gen_user_data()
+async def test_register_student_tc_signup_001(ac):
+    """TC-SIGNUP-001: Student registration."""
+    email, pwd, name, _, phone = gen_user_data()
     res = await ac.post("/api/auth/register", json={
         "email": email,
         "password": pwd,
         "full_name": name,
-        "role": role,
+        "role": "student",
         "phone": phone
     })
     assert res.status_code == 201
     
-    # Check if user exists
     user_store = UserStore()
     user = await user_store.get_user_by_email(email)
     assert user is not None
+    assert user["role"] == "student"
     await user_store.delete_user(user["id"])
+
+@pytest.mark.asyncio
+async def test_register_faculty_tc_signup_002(ac):
+    """TC-SIGNUP-002: Faculty registration."""
+    email, pwd, name, _, phone = gen_user_data()
+    res = await ac.post("/api/auth/register", json={
+        "email": email,
+        "password": pwd,
+        "full_name": name,
+        "role": "faculty",
+        "phone": phone
+    })
+    assert res.status_code == 201
+    
+    user_store = UserStore()
+    user = await user_store.get_user_by_email(email)
+    assert user is not None
+    assert user["role"] == "faculty"
+    await user_store.delete_user(user["id"])
+
+@pytest.mark.asyncio
+async def test_register_invalid_role_tc_signup_003(ac):
+    """TC-SIGNUP-003: Invalid role block (Invite-only role)."""
+    email, pwd, name, _, phone = gen_user_data()
+    res = await ac.post("/api/auth/register", json={
+        "email": email,
+        "password": pwd,
+        "full_name": name,
+        "role": "super_admin",
+        "phone": phone
+    })
+    # Should be 403 Forbidden or 400 Bad Request depending on implementation
+    assert res.status_code in (400, 403)
 
 @pytest.mark.asyncio
 async def test_duplicate_email(ac):

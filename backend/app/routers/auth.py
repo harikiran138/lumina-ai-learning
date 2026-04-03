@@ -19,7 +19,7 @@ logger = logging.getLogger("uvicorn.error")
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token", auto_error=False)
 
-from typing import Optional
+from typing import Optional, Tuple
 import uuid
 
 # ── Regex patterns for identifier resolution ───────────────────────────────────
@@ -66,6 +66,8 @@ class UserResponse(BaseModel):
     deptId: Optional[str] = None
     batchId: Optional[str] = None
     onboardingStep: Optional[int] = 0
+    onboardingCompleted: Optional[bool] = False
+    adaptiveOnboardingCompleted: Optional[bool] = False
     profilePhotoUrl: Optional[str] = None
     mustChangePassword: Optional[bool] = False
 
@@ -109,8 +111,50 @@ class LoginResponse(BaseModel):
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
+def _is_adaptive_onboarding_completed(user: dict) -> bool:
+    user_id = str(user.get("id") or "")
+    if not user_id:
+        return False
+
+    try:
+        client = supabase_db.get_client()
+        profile = (
+            client.table("onboarding_profiles")
+            .select("status")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+        if profile.data:
+            return str(profile.data[0].get("status") or "").lower() == "completed"
+
+        progress = (
+            client.table("user_data")
+            .select("progress")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+        if progress.data:
+            adaptive = ((progress.data[0] or {}).get("progress") or {}).get("adaptive_onboarding") or {}
+            return str(adaptive.get("status") or "").lower() == "completed"
+    except Exception:
+        pass
+
+    return False
+
+
+def _is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
+    onboarding_step = int(user.get("onboarding_step") or 0)
+    role = normalize_role(user.get("role", "guest"))
+    adaptive_completed = role != "student" or _is_adaptive_onboarding_completed(user)
+    return onboarding_step >= 5 and adaptive_completed, adaptive_completed
+
+
 def _build_claims(user: dict) -> dict:
     """Standardizes JWT claims as per platform architecture."""
+    onboarding_step = int(user.get("onboarding_step") or 0)
+    onboarding_completed, adaptive_completed = _is_onboarding_complete(user)
     return {
         "sub": str(user.get("id")),
         "id": str(user.get("id")),
@@ -119,7 +163,10 @@ def _build_claims(user: dict) -> dict:
         "role": normalize_role(user.get("role", "guest")),
         "collegeId": user.get("college_id"),
         "deptId": user.get("dept_id") or user.get("department_id"),
-        "batchId": user.get("batch_id")
+        "batchId": user.get("batch_id"),
+        "onboardingStep": onboarding_step,
+        "onboardingCompleted": onboarding_completed,
+        "adaptiveOnboardingCompleted": adaptive_completed,
     }
 
 
@@ -174,6 +221,9 @@ def _check_college_login_policy(user: dict):
 def _require_active_user(user: dict):
     if user.get("is_active") is False:
         raise HTTPException(status_code=403, detail="Account is inactive")
+
+_LOCK_THRESHOLD = 5
+_LOCK_MINUTES = 15
 
 
 # ── Brute-force helpers (non-blocking — swallow all DB errors) ─────────────────
@@ -308,7 +358,14 @@ def _decode_reset_token(token: str) -> dict:
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(user: UserCreate, user_store: UserStore = Depends(get_user_store)):
     try:
-        normalized_role = normalize_role(user.role)
+        requested_role = str(user.role).strip().lower()
+        normalized_role = normalize_role(requested_role)
+
+        if requested_role not in ALL_ROLES and normalized_role == "student" and requested_role != "student":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid role '{user.role}'. Allowed: {', '.join(sorted(SELF_SIGNUP_ROLES))}.",
+            )
 
         # Block invite-only roles from self-registration
         if normalized_role in INVITE_ONLY_ROLES:
@@ -341,7 +398,9 @@ async def register(user: UserCreate, user_store: UserStore = Depends(get_user_st
             role=new_user.get("role", "student"),
             department=new_user.get("department_id") or new_user.get("dept_id"),
             collegeId=new_user.get("college_id"),
-            onboardingStep=new_user.get("onboarding_step", 0)
+            onboardingStep=new_user.get("onboarding_step", 0),
+            onboardingCompleted=False,
+            adaptiveOnboardingCompleted=new_user.get("role") != "student",
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -356,8 +415,19 @@ def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     user_store: UserStore = Depends(get_user_store),
 ):
+    ip_address = "0.0.0.0" # OAuth2PasswordRequestForm doesn't expose request easily
+    
+    # ── Brute-force lock check ────────────────────────────────────────────────
+    remaining = _check_brute_force(form_data.username, ip_address)
+    if remaining is not None:
+        raise HTTPException(
+            status_code=423,
+            detail=f"Too many failed attempts. Try again in {remaining} seconds.",
+        )
+
     user = user_store.get_user_by_email_sync(form_data.username, include_sensitive=True)
     if not user:
+        _record_failed_attempt(form_data.username, ip_address)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -366,6 +436,7 @@ def login_for_access_token(
     _require_active_user(user)
     _check_college_login_policy(user)
     if not verify_password(form_data.password, user["password_hash"]):
+        _record_failed_attempt(form_data.username, ip_address)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -586,6 +657,8 @@ def login_json(
         },
     )
 
+    onboarding_completed, adaptive_completed = _is_onboarding_complete(user)
+
     return {
         "accessToken": access_token,
         "user": UserResponse(
@@ -597,6 +670,8 @@ def login_json(
             deptId=user.get("dept_id") or user.get("department_id"),
             batchId=user.get("batch_id"),
             onboardingStep=user.get("onboarding_step", 0),
+            onboardingCompleted=onboarding_completed,
+            adaptiveOnboardingCompleted=adaptive_completed,
             profilePhotoUrl=user.get("profile_photo_url") or user.get("avatar"),
             mustChangePassword=user.get("must_change_password", False),
         ),
@@ -840,6 +915,7 @@ async def change_password(
 
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: dict = Depends(get_current_user)):
+    onboarding_completed, adaptive_completed = _is_onboarding_complete(current_user)
     return UserResponse(
         id=str(current_user["id"]),
         fullName=current_user.get("full_name") or current_user.get("name", "Unknown"),
@@ -850,6 +926,8 @@ async def read_users_me(current_user: dict = Depends(get_current_user)):
         deptId=current_user.get("dept_id") or current_user.get("department_id"),
         batchId=current_user.get("batch_id"),
         onboardingStep=current_user.get("onboarding_step", 0),
+        onboardingCompleted=onboarding_completed,
+        adaptiveOnboardingCompleted=adaptive_completed,
         profilePhotoUrl=current_user.get("profile_photo_url") or current_user.get("avatar"),
         mustChangePassword=current_user.get("must_change_password", False),
     )

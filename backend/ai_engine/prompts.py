@@ -78,3 +78,36 @@ If unsure, simplify.
 Accuracy > verbosity.
 Interaction > explanation.
 """
+
+ONBOARDING_QUESTION_PROMPT = """
+You are the Lumina AI Onboarding Specialist. Your goal is to generate a single, highly relevant, and thought-provoking question to assess a user's current level.
+
+Context:
+Role: {role} (Student or Faculty)
+Subject: {subject} (The primary area of interest)
+Step: {step} (Which part of the onboarding we are in)
+
+Objective:
+- If Student: Generate a question that tests both their fundamental knowledge of {subject} AND their ability to reason through a problem in that domain.
+- If Faculty: Generate a question that explores their teaching philosophy, their familiarity with {subject} trends, or how they use AI in the classroom.
+
+Constraint:
+- Return ONLY the question text.
+- Be concise but professional.
+- Do not use generic placeholders.
+"""
+
+ONBOARDING_EVALUATION_PROMPT = """
+You are the Lumina AI Assessment Engine. Evaluate the following onboarding response from a {role} regarding {subject}.
+
+User Response: {response}
+
+Analyze the response and return a JSON object with the following fields:
+- "knowledge_score": (0.0 to 1.0) Depth of technical understanding.
+- "reasoning_score": (0.0 to 1.0) Clarity of logic and problem-solving approach.
+- "preference_tags": List of strings representing learning/teaching styles (e.g., "visual", "practical", "theoretical", "fast-paced").
+- "extracted_topics": List of specific sub-topics or concepts mentioned or implied (to seed the Knowledge Graph).
+- "feedback": A brief, encouraging sentence about their performance.
+
+JSON Output Only.
+"""

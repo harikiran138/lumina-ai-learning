@@ -348,3 +348,226 @@ async def test_college_update_returns_single_object(ac, local_db):
     payload = response.json()
     assert payload["id"] == "college-1"
     assert payload["institution_name"] == "Lumina Engineering College"
+
+
+@pytest.mark.asyncio
+async def test_student_adaptive_onboarding_creates_profile_and_mastery(ac, local_db):
+    local_db.table("users").insert(
+        {
+            "id": "student-adaptive-1",
+            "email": "adaptive.student@example.com",
+            "role": "student",
+            "college_id": "college-1",
+            "dept_id": "dept-1",
+            "batch_id": "batch-1",
+            "onboarding_step": 5,
+        }
+    ).execute()
+    local_db.table("courses").insert(
+        {
+            "id": "course-adaptive-1",
+            "department_id": "dept-1",
+            "course_name": "Circuit Theory",
+            "course_code": "ECE101",
+            "semester": 1,
+        }
+    ).execute()
+    local_db.table("user_data").insert(
+        {
+            "user_id": "student-adaptive-1",
+            "progress": {
+                "step_3": {"subjectIds": ["course-adaptive-1"]},
+                "step_5": {
+                    "selfAssessment": "intermediate",
+                    "learningStyles": ["step_by_step"],
+                },
+            },
+        }
+    ).execute()
+
+    _override_user(
+        {
+            "id": "student-adaptive-1",
+            "email": "adaptive.student@example.com",
+            "role": "student",
+            "college_id": "college-1",
+            "dept_id": "dept-1",
+            "batch_id": "batch-1",
+        }
+    )
+    try:
+        start = await ac.post("/api/onboarding/start", json={"role": "student"})
+        assert start.status_code == 200
+        start_payload = start.json()
+        assert start_payload["status"] == "in_progress"
+        assert start_payload["question"]["dimension"] == "knowledge"
+
+        answer_1 = await ac.post(
+            "/api/onboarding/answer",
+            json={
+                "session_id": start_payload["sessionId"],
+                "question_id": start_payload["question"]["id"],
+                "answer": "Voltage is the electrical potential difference that pushes charge through a circuit.",
+            },
+        )
+        assert answer_1.status_code == 200
+        answer_1_payload = answer_1.json()
+        assert answer_1_payload["question"]["dimension"] == "reasoning"
+        assert len(answer_1_payload["question"]["prompt"].strip()) > 20
+
+        answer_2 = await ac.post(
+            "/api/onboarding/answer",
+            json={
+                "session_id": start_payload["sessionId"],
+                "question_id": answer_1_payload["question"]["id"],
+                "answer": "If the voltage is higher, the circuit has more push to move charge, like pressure moving water through a pipe.",
+            },
+        )
+        assert answer_2.status_code == 200
+        answer_2_payload = answer_2.json()
+        assert answer_2_payload["question"]["responseType"] == "multi_select"
+
+        answer_3 = await ac.post(
+            "/api/onboarding/answer",
+            json={
+                "session_id": start_payload["sessionId"],
+                "question_id": answer_2_payload["question"]["id"],
+                "answer": ["examples", "step_by_step"],
+            },
+        )
+        assert answer_3.status_code == 200
+        answer_3_payload = answer_3.json()
+        assert answer_3_payload["question"]["responseType"] == "single_select"
+
+        answer_4 = await ac.post(
+            "/api/onboarding/answer",
+            json={
+                "session_id": start_payload["sessionId"],
+                "question_id": answer_3_payload["question"]["id"],
+                "answer": "high",
+            },
+        )
+    finally:
+        _clear_overrides()
+
+    assert answer_4.status_code == 200
+    final_payload = answer_4.json()
+    assert final_payload["complete"] is True
+    assert final_payload["result"]["level"] in {"Basic", "Intermediate", "Advanced"}
+
+    profile = await supabase_db.fetch_one("onboarding_profiles", {"user_id": "student-adaptive-1"})
+    assert profile is not None
+    assert profile["status"] == "completed"
+    assert profile["latest_session_id"] == start_payload["sessionId"]
+
+    learner_profile = await supabase_db.fetch_one("learner_profiles", {"user_id": "student-adaptive-1"})
+    assert learner_profile is not None
+    assert learner_profile["learning_style"] in {"examples", "step_by_step", "story", "visual", "formula"}
+
+    mastery_rows = await supabase_db.fetch_all("skill_mastery", {"user_id": "student-adaptive-1"})
+    assert len(mastery_rows) == 1
+    assert mastery_rows[0]["course_id"] == "course-adaptive-1"
+    assert mastery_rows[0]["skill_name"] == "adaptive_onboarding_baseline"
+
+
+@pytest.mark.asyncio
+async def test_faculty_adaptive_onboarding_returns_role_specific_prompt(ac, local_db):
+    local_db.table("users").insert(
+        {
+            "id": "faculty-adaptive-1",
+            "email": "faculty.adaptive@example.com",
+            "role": "faculty",
+            "college_id": "college-1",
+            "dept_id": "dept-1",
+            "onboarding_step": 5,
+        }
+    ).execute()
+
+    _override_user(
+        {
+            "id": "faculty-adaptive-1",
+            "email": "faculty.adaptive@example.com",
+            "role": "faculty",
+            "college_id": "college-1",
+            "dept_id": "dept-1",
+        }
+    )
+    try:
+        response = await ac.post("/api/onboarding/start", json={"role": "faculty"})
+    finally:
+        _clear_overrides()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["role"] == "faculty"
+    assert payload["question"]["dimension"] == "expertise"
+    assert any(keyword in payload["question"]["prompt"].lower() for keyword in ["teach", "student", "feedback"])
+
+
+@pytest.mark.asyncio
+async def test_adaptive_onboarding_resumes_in_progress_session(ac, local_db):
+    local_db.table("users").insert(
+        {
+            "id": "student-adaptive-resume-1",
+            "email": "resume.student@example.com",
+            "role": "student",
+            "college_id": "college-1",
+            "dept_id": "dept-1",
+            "batch_id": "batch-1",
+            "onboarding_step": 5,
+        }
+    ).execute()
+    local_db.table("courses").insert(
+        {
+            "id": "course-adaptive-resume-1",
+            "department_id": "dept-1",
+            "course_name": "Engineering Physics",
+            "course_code": "PHY101",
+            "semester": 1,
+        }
+    ).execute()
+    local_db.table("user_data").insert(
+        {
+            "user_id": "student-adaptive-resume-1",
+            "progress": {
+                "step_3": {"subjectIds": ["course-adaptive-resume-1"]},
+                "step_5": {"selfAssessment": "beginner", "learningStyles": ["visual_learner"]},
+            },
+        }
+    ).execute()
+
+    _override_user(
+        {
+            "id": "student-adaptive-resume-1",
+            "email": "resume.student@example.com",
+            "role": "student",
+            "college_id": "college-1",
+            "dept_id": "dept-1",
+            "batch_id": "batch-1",
+        }
+    )
+    try:
+        first_start = await ac.post("/api/onboarding/start", json={"role": "student"})
+        assert first_start.status_code == 200
+        first_payload = first_start.json()
+
+        answer_response = await ac.post(
+            "/api/onboarding/answer",
+            json={
+                "session_id": first_payload["sessionId"],
+                "question_id": first_payload["question"]["id"],
+                "answer": "Motion is how an object changes position over time.",
+            },
+        )
+        assert answer_response.status_code == 200
+        in_progress_payload = answer_response.json()
+
+        resumed = await ac.post("/api/onboarding/start", json={"role": "student"})
+    finally:
+        _clear_overrides()
+
+    assert resumed.status_code == 200
+    resumed_payload = resumed.json()
+    assert resumed_payload["sessionId"] == first_payload["sessionId"]
+    assert resumed_payload["questionsAnswered"] == 1
+    assert resumed_payload["question"]["id"] == in_progress_payload["question"]["id"]
