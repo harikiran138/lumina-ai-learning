@@ -503,12 +503,17 @@ export class RealAPI {
 
   // --- Onboarding & Status ---
   async getOnboardingStatus(): Promise<any> {
-    const res = await this.fetchAuthorized("/api/onboarding/status");
-    if (!res.ok) {
-      const error = await parseJsonSafe(res);
-      throw new Error(error?.detail || "Failed to load onboarding status");
+    try {
+      const res = await this.fetchAuthorized("/api/onboarding/status");
+      if (!res.ok) {
+        console.warn(`[api] Onboarding API failed with status ${res.status}`);
+        return { status: "not_started", step: 0, isComplete: false, progress: {} };
+      }
+      return await res.json();
+    } catch (error) {
+      console.error("[api] getOnboardingStatus failed:", error);
+      return { status: "not_started", step: 0, isComplete: false, progress: {} };
     }
-    return await res.json();
   }
 
   async getOnboardingSubjects(): Promise<any[]> {

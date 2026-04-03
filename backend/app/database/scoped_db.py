@@ -16,6 +16,15 @@ def _load_soft_delete_tables() -> Set[str]:
 
 SOFT_DELETE_TABLES = _load_soft_delete_tables()
 
+# Tables that are not scoped by institution (global or user-only)
+GLOBAL_TABLES = {
+    "user_data",
+    "roles",
+    "permissions",
+    "users",
+    "institution_login_policies"
+}
+
 
 def _supports_soft_delete(table_name: str) -> bool:
     return table_name in SOFT_DELETE_TABLES
@@ -42,19 +51,27 @@ class ScopedQueryBuilder:
         self.client = client or supabase_db.get_client()
         self.query = self.client.table(table_name)
         
-        # Apply institution filter if not super admin
-        if not is_super_admin and institution_id:
-            self.query = self.query.eq("institution_id", institution_id)
-
-    def select(self, columns: str = "*"):
-        self.query = self.query.select(columns)
-        # Only apply the soft-delete filter to tables that explicitly support it.
+        # Store scoping parameters for later application in action methods
+        self.is_global = table_name in GLOBAL_TABLES
+        
+    def _apply_auth_filters(self):
+        """Internal helper to apply institution scoping and soft-delete filters."""
+        if not self.is_super_admin and self.institution_id and not self.is_global:
+            # Force institution_id filter for non-global tables
+            self.query = self.query.eq("institution_id", self.institution_id)
+        
+        # Apply the soft-delete filter if enabled and required
         if self.soft_delete_enabled and not self.show_deleted:
             self.query = self.query.eq("is_deleted", False)
         return self
 
+    def select(self, columns: str = "*"):
+        self.query = self.query.select(columns)
+        self._apply_auth_filters()
+        return self
+
     def insert(self, data: Dict[str, Any]):
-        if not self.is_super_admin and self.institution_id:
+        if not self.is_super_admin and self.institution_id and not self.is_global:
             # Force institution_id on insert
             if isinstance(data, list):
                 for item in data:
@@ -65,7 +82,7 @@ class ScopedQueryBuilder:
         return self
 
     def upsert(self, data: Dict[str, Any], on_conflict: str = 'id'):
-        if not self.is_super_admin and self.institution_id:
+        if not self.is_super_admin and self.institution_id and not self.is_global:
             if isinstance(data, list):
                 for item in data:
                     item["institution_id"] = self.institution_id
@@ -76,10 +93,12 @@ class ScopedQueryBuilder:
 
     def update(self, data: Dict[str, Any]):
         self.query = self.query.update(data)
+        self._apply_auth_filters()
         return self
 
     def delete(self):
         self.query = self.query.delete()
+        self._apply_auth_filters()
         return self
 
     def soft_delete(self):
