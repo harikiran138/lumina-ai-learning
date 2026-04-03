@@ -2,15 +2,13 @@ import pytest
 import asyncio
 from datetime import datetime, timezone
 from httpx import AsyncClient, ASGITransport
-from app.main import app
 from app.store.user_store import UserStore
 from app.store.course_store import CourseStore
 from app.core.config import settings
 
 @pytest.fixture
-async def ac():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        yield client
+async def ac(async_client):
+    yield async_client
 
 @pytest.mark.asyncio
 async def test_academic_stress_concurrency(ac):
@@ -56,7 +54,8 @@ async def test_academic_stress_concurrency(ac):
     # 3. Simulate Concurrent Login & Enrollment
     async def student_workflow(s_data):
         # Create a private client for each student to maintain session (cookies)
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as sac:
+        from app.main import app
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", timeout=10.0) as sac:
             # Login
             login_res = await sac.post("/api/auth/login", json={
                 "identifier": s_data["email"],
@@ -84,7 +83,8 @@ async def test_academic_stress_concurrency(ac):
     assert all(results), "Not all concurrent enrollments succeeded"
     
     # 4. Teacher Verification (Performance check for large student lists)
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as tac:
+    from app.main import app
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", timeout=10.0) as tac:
         await tac.post("/api/auth/login", json={"identifier": teacher_email, "password": "StressPassword123!"})
         
         start_time = datetime.now(timezone.utc)

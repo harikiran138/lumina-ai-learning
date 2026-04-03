@@ -23,7 +23,9 @@ GLOBAL_TABLES = {
     "permissions",
     "users",
     "institution_login_policies",
-    "batches"
+    "batches",
+    "learner_profiles",
+    "assessment_sessions"
 }
 
 
@@ -140,7 +142,16 @@ class ScopedQueryBuilder:
         return self
 
     def execute(self):
+        """Synchronous execution for backward compatibility with established store patterns."""
         return self.query.execute()
+
+    async def async_execute(self):
+        """Asynchronous execution for modern FastAPI routes."""
+        import asyncio
+        # supabase-py's SyncRequestBuilder is synchronous. 
+        # We wrap it in a thread to prevent blocking the event loop.
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self.query.execute)
 
 
 class ScopedSupabase:
@@ -176,7 +187,7 @@ class ScopedSupabase:
         qb = self.table(table, show_deleted=show_deleted).select("*")
         for k, v in query_filter.items():
             qb = qb.eq(k, v)
-        res = await qb.limit(1).execute()
+        res = await qb.limit(1).async_execute()
         rows = _response_rows(res)
         return rows[0] if rows else None
 
@@ -185,11 +196,11 @@ class ScopedSupabase:
         if query_filter:
             for k, v in query_filter.items():
                 qb = qb.eq(k, v)
-        res = await qb.limit(limit).execute()
+        res = await qb.limit(limit).async_execute()
         return _response_rows(res)
 
     async def insert(self, table: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        res = await self.table(table).insert(data).execute()
+        res = await self.table(table).insert(data).async_execute()
         rows = _response_rows(res)
         return rows[0] if rows else None
 
@@ -197,12 +208,12 @@ class ScopedSupabase:
         qb = self.table(table).update(data)
         for k, v in query_filter.items():
             qb = qb.eq(k, v)
-        res = await qb.execute()
+        res = await qb.async_execute()
         rows = _response_rows(res)
         return rows[0] if rows else None
 
     async def upsert(self, table: str, data: Dict[str, Any], on_conflict: str = 'id') -> Optional[Dict[str, Any]]:
-        res = await self.table(table).upsert(data, on_conflict=on_conflict).execute()
+        res = await self.table(table).upsert(data, on_conflict=on_conflict).async_execute()
         rows = _response_rows(res)
         return rows[0] if rows else None
 
@@ -214,7 +225,7 @@ class ScopedSupabase:
             
         for k, v in query_filter.items():
             qb = qb.eq(k, v)
-        res = await qb.execute()
+        res = await qb.async_execute()
         return len(_response_rows(res)) > 0
 
 def get_scoped_db(user: dict) -> ScopedSupabase:

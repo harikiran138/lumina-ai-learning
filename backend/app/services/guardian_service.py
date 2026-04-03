@@ -1,7 +1,7 @@
 import structlog
 from typing import List, Dict, Any
-from datetime import datetime, timedelta
-import random
+from datetime import datetime
+from app.database.supabase_manager import supabase_db
 
 log = structlog.get_logger(__name__)
 
@@ -11,29 +11,29 @@ class GuardianService:
     """
     
     def __init__(self):
-        # In production, this would interface with a monitoring DB or vector store
-        pass
+        self.db = supabase_db
 
     async def get_active_signals(self) -> List[Dict[str, Any]]:
         """
         Fetch current active safety signals and flags.
         """
-        # Mocking dynamic signals for verification
-        signal_types = ["hallucination_detected", "policy_violation", "low_confidence", "anomalous_usage"]
-        severities = ["low", "medium", "high", "critical"]
-        
-        signals = []
-        for i in range(5):
-            signals.append({
-                "id": f"sig-{i}",
-                "type": random.choice(signal_types),
-                "severity": random.choice(severities),
-                "source": "LLM-Monitor-Alpha",
-                "message": f"Detected potential issue in session {random.randint(1000, 9999)}",
-                "timestamp": (datetime.utcnow() - timedelta(minutes=random.randint(1, 60))).isoformat(),
-                "status": "pending"
+        guardian_logs = await self.db.fetch_all("guardian_log", limit=50)
+        if guardian_logs:
+            return guardian_logs
+
+        recommendations = await self.db.fetch_all("intervention_recommendations", {"status": "pending"}, limit=10)
+        fallback_signals: List[Dict[str, Any]] = []
+        for index, recommendation in enumerate(recommendations):
+            fallback_signals.append({
+                "id": recommendation.get("id") or f"guardian-{index}",
+                "type": recommendation.get("recommendation_type") or "intervention_recommendation",
+                "severity": recommendation.get("priority") or "medium",
+                "source": "teacher-verified-ai",
+                "message": recommendation.get("summary") or recommendation.get("recommended_action") or "Intervention requires review.",
+                "timestamp": recommendation.get("updated_at") or recommendation.get("created_at") or datetime.utcnow().isoformat(),
+                "status": recommendation.get("status") or "pending",
             })
-        return signals
+        return fallback_signals
 
     async def register_violation(self, user_id: str, session_id: str, violation_type: str, details: Dict[str, Any]):
         """
@@ -44,7 +44,17 @@ class GuardianService:
                     session_id=session_id, 
                     type=violation_type,
                     **details)
-        # Would persist to 'guardian_signals' table
+        await self.db.insert(
+            "guardian_log",
+            {
+                "user_id": user_id,
+                "session_id": session_id,
+                "signal_type": violation_type,
+                "details": details,
+                "status": "pending",
+                "created_at": datetime.utcnow().isoformat(),
+            },
+        )
         return True
 
 def get_guardian_service():

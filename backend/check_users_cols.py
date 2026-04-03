@@ -16,7 +16,7 @@ async def check_users():
             print("Columns in 'users' table:", list(res[0].keys()))
         else:
             # If table is empty, try to get columns from information_schema
-            res = await supabase_db.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'")
+            res = await supabase_db.execute("SELECT column_name FROM information_schema.columns WHERE table_name = %s", ("users",))
             print("Columns in 'users' table (via info schema):", [r['column_name'] for r in res])
     except Exception as e:
         print(f"Error: {e}")

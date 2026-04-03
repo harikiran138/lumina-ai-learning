@@ -1,5 +1,7 @@
 # Lumina AI Learning Platform — System Audit & Documentation
-> Generated: 2026-03-30 | Auditor: Claude (Principal Architect)
+> Generated: 2026-04-03 | Auditor: Codex (Senior Principal Engineer / QA Architect)
+>
+> This document was corrected after a stabilization pass. Validation statements below only describe flows that were explicitly re-verified during this pass; they are not blanket claims for the untouched remainder of the repository.
 
 ---
 
@@ -55,7 +57,7 @@ Browser (Next.js 15)
 | `super_admin` | `/admin` | Full platform control |
 | `college_admin` | `/college` | Institution management |
 | `hod` | `/hod` | Department head |
-| `faculty` | `/faculty` | Teacher/instructor |
+| `teacher` | `/faculty` | Teacher/instructor (canonical backend role; `faculty` treated as legacy alias) |
 | `student` | `/student` | Learner |
 | `parent` | `/parent` | Guardian monitoring |
 | `mentor` | `/mentor` | 1:1 mentor |
@@ -603,15 +605,15 @@ Step 5 → Learning preferences + completion
 
 ### Role Normalization
 Backend normalizes roles on login:
-- `"teacher"` → `"faculty"`
-- `"admin"` → `"super_admin"`
+- `"faculty"` → `"teacher"`
+- `"admin"` remains `"admin"`
 
 Frontend routing by role:
 ```
 super_admin     → /admin/dashboard
 college_admin   → /college
 hod             → /hod/dashboard
-faculty         → /faculty/dashboard
+teacher         → /faculty/dashboard
 student         → /student/dashboard (or /onboarding if step < 5)
 parent          → /parent/dashboard
 mentor          → /mentor/dashboard
@@ -638,6 +640,18 @@ mentor          → /mentor/dashboard
 **Fix 1–3: `backend/app/database/migrations/017_missing_auth_and_subjects_tables.sql`**
 Created migration adding `student_subjects`, `login_attempts`, `login_history` with proper FKs and indexes.
 
+**Fix 7: `backend/app/database/migrations/020_rls_and_support_tables_hardening.sql`**
+Added `CREATE TABLE IF NOT EXISTS` coverage for `student_subjects`, `learner_profiles`, `intervention_recommendations`, and `automation_job_logs`, then enabled RLS policies for per-user access on the learner/guardian support tables.
+
+**Fix 8: test infrastructure + auth dependency stabilization**
+The backend test harness now uses `httpx.ASGITransport`, a shared async client fixture, lifespan handling, and stronger local Supabase mocks with real chained filters and relation projection support.
+
+**Fix 9: role consistency**
+Canonical teaching role is now `teacher`; `faculty` is handled as a legacy alias for backward compatibility across backend and frontend routing.
+
+**Fix 10: security/runtime hardening**
+Cache-key hashing moved from MD5 to SHA-256, guardian signal generation no longer uses `random`, and the onboarding completion path was fixed to avoid structlog/std-logging API mismatches that caused 500s.
+
 **Fix 4: `backend/app/routers/onboarding.py`**
 Profile photo step now falls back to a generated avatar (`ui-avatars.com`) when no photo is uploaded and no existing photo exists. Onboarding no longer blocked by storage service.
 
@@ -651,6 +665,23 @@ Both `update_user_fields` (async) and `update_user_fields_sync` now automaticall
 
 ## 9. Final Validation Report
 
+### Verified On 2026-04-03
+
+The following command completed successfully during the stabilization pass:
+
+```bash
+pytest backend/tests/test_onboarding_flow.py \
+       backend/tests/test_onboarding_master.py \
+       backend/tests/test_student_onboarding_integrity.py \
+       backend/tests/test_auth_session_hardening.py \
+       backend/tests/test_auth_routes.py \
+       backend/tests/test_auth_token_flow.py \
+       backend/tests/test_user_store.py \
+       backend/tests/test_student_dashboard.py -q
+```
+
+Result: `43 passed` (1 environment warning from `google.api_core` on Python 3.8).
+
 ### Data Flow Verification
 
 | Feature | UI → API | API → DB | DB → UI | Status |
@@ -660,7 +691,8 @@ Both `update_user_fields` (async) and `update_user_fields_sync` now automaticall
 | Student Onboarding Step 2 | ✅ `POST /api/onboarding/enrollment` | ✅ `enrollment_codes`, `users` | ✅ dept/batch info returned | ✅ OK |
 | Student Onboarding Step 3 | ✅ `GET/POST /api/onboarding/student-subjects` | ✅ `student_subjects` (after fix) | ✅ subject list returned | ✅ FIXED |
 | Student Onboarding Step 4 | ✅ `POST /api/onboarding/profile` | ✅ `users` updated | ✅ (avatar fallback) | ✅ FIXED |
-| Student Onboarding Step 5 | ✅ `POST /api/onboarding/preferences` | ✅ `skill_mastery`, `enrollments`, `learner_profiles` | ✅ complete:true | ✅ OK |
+| Student Onboarding Step 5 | ✅ `POST /api/onboarding/preferences` | ✅ `skill_mastery`, `enrollments`, `learner_profiles` | ✅ complete:true | ✅ VERIFIED |
+| Student Onboarding Completion | ✅ `POST /api/onboarding/complete` | ✅ `users`, `user_data`, `learner_profiles` sync | ✅ status now reports complete | ✅ VERIFIED |
 | Student Dashboard | ✅ `GET /api/student/dashboard` | ✅ `enrollments`, `learning_events` | ✅ JSON response | ✅ OK |
 | AI Tutor | ✅ `POST /api/ai/ask` | ✅ `conversations` | ✅ answer streamed | ✅ OK |
 | Brute Force Protection | ✅ checked on every login | ✅ `login_attempts` (after fix) | ✅ 423 lockout response | ✅ FIXED |
@@ -683,6 +715,12 @@ Both `update_user_fields` (async) and `update_user_fields_sync` now automaticall
 | Admin Panel | ✅ | ✅ | ✅ | ✅ |
 | Auth / Login | ✅ | ✅ | ✅ (after fix) | ✅ |
 | Profile | ✅ | ✅ | ✅ (after fix) | ✅ |
+
+### Scope Note
+
+- Verified directly in this pass: auth flows, onboarding flows, onboarding completion state, user store persistence, student dashboard/grades API slice.
+- Hardened but not exhaustively re-verified end-to-end in this pass: guardian dashboard enrichment, handwriting OCR routing, frontend API base URL handling, RLS migration SQL.
+- Still recommended before production cut: full repository pytest run, frontend test run, and migration application against a staging Supabase instance.
 
 ---
 
@@ -710,13 +748,14 @@ NEXT_PUBLIC_SUPABASE_URL=https://odyjksznsdeyweylovzl.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
 ```
 
-### Run Migration 017 (REQUIRED)
-The three missing tables must be created before the backend handles any student onboarding or login:
+### Run Required Migrations
+The support tables and RLS policies must be created before the backend handles onboarding, learner profiling, intervention tracking, or job logging:
 
 ```bash
-# Option 1: Supabase Dashboard → SQL Editor → paste 017_missing_auth_and_subjects_tables.sql
+# Option 1: Supabase Dashboard → SQL Editor → paste the migration files
 # Option 2: psql
 psql "$DATABASE_URL" -f backend/app/database/migrations/017_missing_auth_and_subjects_tables.sql
+psql "$DATABASE_URL" -f backend/app/database/migrations/020_rls_and_support_tables_hardening.sql
 ```
 
 ### Post-Deploy Verification

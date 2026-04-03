@@ -1,10 +1,12 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
 from typing import Optional
-import shutil
 import os
 import uuid
 from datetime import datetime
+from io import BytesIO
+from PIL import Image
 from app.services.ocr_service import ocr_service
+from app.store.assignment_store import AssignmentStore
 
 router = APIRouter()
 
@@ -41,15 +43,11 @@ async def upload_document(
         # Returns either local path or s3:// key
         file_location = storage_service.upload_file(file, file_name)
 
-        # 3. Perform Real OCR
+        # 3. Perform OCR with TrOCR/Gemini pipeline
         print(f"Starting OCR for file: {file_name}")
-        extracted_text = ""
-
-        import asyncio
-
-        extracted_text = await asyncio.to_thread(ocr_service.extract_text, content, ext.lower())
-        if not extracted_text.strip():
-            extracted_text = "[Unsupported or empty document content]"
+        image = Image.open(BytesIO(content))
+        ocr_result = await ocr_service.extract_text(image, method="auto")
+        extracted_text = ocr_result.text.strip() or "[Unsupported or empty document content]"
 
         print(f"OCR Complete. Extracted {len(extracted_text)} characters.")
 
@@ -60,6 +58,9 @@ async def upload_document(
             "type": type,
             "image_path": f"/uploads/{file_name}",  # Fixed: use file_name instead of undefined filename
             "digital_text": extracted_text,
+            "ocr_confidence": ocr_result.confidence,
+            "requires_teacher_review": ocr_result.is_flagged,
+            "ocr_model": ocr_result.model_used,
             "timestamp": datetime.now().isoformat(),
             "assignment_id": assignment_id,
         }
@@ -71,11 +72,38 @@ async def upload_document(
             user_ds.add_note(user_id, extracted_text)
             doc_data["ai_analysis"] = "Note digitized and saved to your personal knowledge base."
         elif type == "assignment" and assignment_id:
-            # In a real implementation, we would register this as a submission
-            # and trigger the background grading worker.
-            doc_data[
-                "ai_analysis"
-            ] = "Assignment uploaded. Head to assignments to track grading status."
+            assignment_store = AssignmentStore()
+            submission = await assignment_store.submit_assignment(
+                assignment_id,
+                user_id,
+                file_location,
+                content=extracted_text,
+                submission_type="handwriting_upload",
+            )
+            if ocr_result.is_flagged:
+                await assignment_store.db.update(
+                    "assignment_submissions",
+                    {
+                        "status": "pending_review",
+                        "text_content": extracted_text,
+                        "review_reason": "OCR confidence below teacher-review threshold",
+                    },
+                    {"id": submission["id"]},
+                )
+                doc_data["ai_analysis"] = "OCR completed. Submission routed to teacher review before grading."
+            else:
+                from app.worker import task_grade_submission
+
+                task = task_grade_submission.delay(
+                    assignment_id,
+                    submission["id"],
+                    "",
+                    file_location,
+                    None,
+                )
+                doc_data["ai_analysis"] = "OCR completed. AI assessment queued for teacher verification."
+                doc_data["grading_task_id"] = task.id
+            doc_data["submission_id"] = submission["id"]
 
         return {"status": "success", "data": doc_data}
 

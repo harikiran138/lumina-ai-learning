@@ -1,16 +1,16 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
-import logging
 import uuid
 import mimetypes
 import os
 
 from fastapi import HTTPException
+import structlog
 from app.database.supabase_manager import supabase_db
 from app.store.user_store import UserStore
 from app.core.rbac import normalize_role
 
-logger = logging.getLogger("uvicorn.error")
+logger = structlog.get_logger(__name__)
 
 class OnboardingService:
     def __init__(self, db: Any = None):

@@ -10,7 +10,7 @@ from app.database.supabase_manager import supabase_db
 from app.core.audit import audit_logger
 import logging
 import re
-from app.core.rbac import normalize_role, SELF_SIGNUP_ROLES, INVITE_ONLY_ROLES, ALL_ROLES
+from app.core.rbac import normalize_role, SELF_SIGNUP_ROLES, INVITE_ONLY_ROLES, ALL_ROLES, VALID_ROLES
 from app.core.limiter import limiter
 from app.core.blacklist import blacklist_token, is_token_revoked
 
@@ -118,6 +118,16 @@ def _is_adaptive_onboarding_completed(user: dict) -> bool:
 
     try:
         client = supabase_db.get_client()
+        learner_profile = (
+            client.table("learner_profiles")
+            .select("status")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+        if learner_profile.data:
+            return str(learner_profile.data[0].get("status") or "").lower() in {"completed", "active"}
+
         profile = (
             client.table("onboarding_profiles")
             .select("status")
@@ -221,6 +231,9 @@ def _check_college_login_policy(user: dict):
 def _require_active_user(user: dict):
     if user.get("is_active") is False:
         raise HTTPException(status_code=403, detail="Account is inactive")
+    role = normalize_role(user.get("role"))
+    if role not in ALL_ROLES and role not in VALID_ROLES:
+        raise HTTPException(status_code=403, detail="Account role is not allowed")
 
 _LOCK_THRESHOLD = 5
 _LOCK_MINUTES = 15
@@ -412,10 +425,11 @@ async def register(user: UserCreate, user_store: UserStore = Depends(get_user_st
 
 @router.post("/token", response_model=Token)
 def login_for_access_token(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     user_store: UserStore = Depends(get_user_store),
 ):
-    ip_address = "0.0.0.0" # OAuth2PasswordRequestForm doesn't expose request easily
+    ip_address = (request.client.host if request.client else "0.0.0.0")  # nosec B104
     
     # ── Brute-force lock check ────────────────────────────────────────────────
     remaining = _check_brute_force(form_data.username, ip_address)
@@ -435,7 +449,7 @@ def login_for_access_token(
         )
     _require_active_user(user)
     _check_college_login_policy(user)
-    if not verify_password(form_data.password, user["password_hash"]):
+    if not verify_password(form_data.password, user.get("password_hash", "")):
         _record_failed_attempt(form_data.username, ip_address)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -546,7 +560,7 @@ def login_json(
     if not raw_identifier:
         raise HTTPException(status_code=400, detail="Identifier or email is required")
 
-    ip_address = (request.client.host if request.client else "0.0.0.0")
+    ip_address = (request.client.host if request.client else "0.0.0.0")  # nosec B104
     user_agent = request.headers.get("user-agent", "")
 
     # ── Brute-force lock check ────────────────────────────────────────────────

@@ -70,7 +70,7 @@ class StudentStore:
 
     async def get_enrollment(self, student_id: str, course_id: str) -> Optional[dict]:
         try:
-            response = self.db.table("enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).execute()
+            response = await self.db.table("enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).async_execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("get_enrollment_failed", student_id=student_id, course_id=course_id, error=str(e))
@@ -93,7 +93,7 @@ class StudentStore:
                 completed_lessons.append(lesson_id)
             
             # Fetch course to calculate progress percentage
-            course_res = self.db.table("courses").select("modules").eq("id", course_id).execute()
+            course_res = await self.db.table("courses").select("modules").eq("id", course_id).async_execute()
             total_lessons = 0
             if course_res.data:
                 modules = course_res.data[0].get("modules", [])
@@ -129,7 +129,7 @@ class StudentStore:
         """
         try:
             # Badges might be in learner_profiles
-            response = self.db.table("learner_profiles").select("metadata").eq("student_id", student_id).execute()
+            response = await self.db.table("learner_profiles").select("metadata").eq("student_id", student_id).async_execute()
             if response.data:
                 return response.data[0].get("metadata", {}).get("badges", [])
         except Exception as e:

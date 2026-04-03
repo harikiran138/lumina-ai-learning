@@ -25,6 +25,20 @@ EMAIL_REGEX = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 PHONE_DIGIT_REGEX = re.compile(r"\D")
 
 
+def default_onboarding_state(role: str = "student") -> Dict[str, Any]:
+    normalized_role = normalize_role(role)
+    return {
+        "status": "not_started",
+        "step": 0,
+        "isComplete": False,
+        "progress": {},
+        "role": normalized_role,
+        "adaptiveOnboardingCompleted": normalized_role != "student",
+        "adaptiveOnboardingStatus": "pending",
+        "adaptiveSessionId": None,
+    }
+
+
 class StudentPersonalDetailsRequest(BaseModel):
     first_name: str = Field(min_length=2)
     last_name: str = Field(min_length=2)
@@ -691,6 +705,8 @@ async def get_onboarding_status(
         existing = await db.fetch_one("user_data", {"user_id": user_id})
         role = normalize_role(current_user.get("role"))
         step = current_user.get("onboarding_step", 0) or 0
+        if not existing and not step:
+            return default_onboarding_state(role)
         adaptive_profile = None
         adaptive_session = None
         adaptive_completed = role != "student"
@@ -701,7 +717,7 @@ async def get_onboarding_status(
                 "assessment_sessions",
                 {"user_id": user_id, "status": "in_progress"},
             )
-            adaptive_completed = str((adaptive_profile or {}).get("status") or "").lower() == "completed"
+            adaptive_completed = str((adaptive_profile or {}).get("status") or "").lower() in {"completed", "active"}
 
         status = "not_started"
         if step > 0:
@@ -731,16 +747,7 @@ async def get_onboarding_status(
         logger.error(f"error_fetching_onboarding_status: {e}", exc_info=True)
         # Fail-safe: Always include the role even in errors to prevent 'undefined' UI states
         role = normalize_role(current_user.get("role")) if current_user else "student"
-        return {
-            "status": "not_started",
-            "step": 0,
-            "isComplete": False,
-            "progress": {},
-            "role": role,
-            "adaptiveOnboardingCompleted": role != "student",
-            "adaptiveOnboardingStatus": "pending",
-            "adaptiveSessionId": None,
-        }
+        return default_onboarding_state(role)
 
 
 @router.patch("/step")
@@ -788,7 +795,7 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
             for batch in batches:
                 if not batch.get("year") or not batch.get("label") or not batch.get("sections"):
                     raise HTTPException(status_code=400, detail="Batch year, label, sections required")
-    elif role == "faculty":
+    elif role == "teacher":
         if requested_step == 1:
             require_fields(["fullName", "employeeId"])
         if requested_step == 2:

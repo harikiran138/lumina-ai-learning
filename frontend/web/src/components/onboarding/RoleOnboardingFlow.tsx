@@ -127,7 +127,7 @@ export default function RoleOnboardingFlow({ role }: RoleOnboardingFlowProps) {
     try {
       const result = validateRoleStep(role, currentStep, values);
       if (!result.success) {
-        setErrors(fieldErrors(result) as Record<string, string>);
+        setErrors(fieldErrors(result as any) as Record<string, string>);
         return;
       }
 

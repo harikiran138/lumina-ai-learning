@@ -2,19 +2,16 @@ import pytest
 import asyncio
 from jose import jwt
 from datetime import datetime, timedelta, timezone
-from httpx import AsyncClient, ASGITransport
-from app.main import app
 from app.core.config import settings
 from app.store.user_store import UserStore
 
 @pytest.fixture
-async def ac():
+async def ac(async_client):
     # Force SECURE_COOKIES to False for local testing because httpx uses http://localhost
     old_secure = settings.SECURE_COOKIES
     settings.SECURE_COOKIES = False
     try:
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:
-            yield client
+        yield async_client
     finally:
         settings.SECURE_COOKIES = old_secure
 

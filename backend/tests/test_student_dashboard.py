@@ -4,11 +4,10 @@ import uuid
 from datetime import datetime, timedelta
 
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from app.main import app
 from app.database.supabase_manager import supabase_db
 from app.routers.auth import get_current_user
 from app.api.deps import get_current_student
@@ -19,12 +18,8 @@ from app.store.user_store import UserStore
 
 
 @pytest.fixture
-async def ac():
-    async with AsyncClient(  # nosec B113
-        transport=ASGITransport(app=app),
-        base_url="http://localhost",
-    ) as client:
-        yield client
+async def ac(async_client):
+    yield async_client
 
 
 @pytest.fixture
@@ -36,11 +31,13 @@ def _override_user(user: dict):
     async def _get_user():
         return user
 
+    from app.main import app
     app.dependency_overrides[get_current_user] = _get_user
     app.dependency_overrides[get_current_student] = _get_user
 
 
 def _clear_overrides():
+    from app.main import app
     app.dependency_overrides.pop(get_current_user, None)
     app.dependency_overrides.pop(get_current_student, None)
 
@@ -62,8 +59,6 @@ async def _token(client: AsyncClient, email: str, password: str) -> str:
         data={"username": email, "password": password},
     )
     assert response.status_code == 200
-    print(payload)
-
     return response.json()["access_token"]
 
 
@@ -191,8 +186,6 @@ async def test_student_subjects_include_enrollment_progress(ac, local_db):
         _clear_overrides()
 
     assert response.status_code == 200
-    print(payload)
-
     payload = response.json()
     assert len(payload) == 1
     assert payload[0]["id"] == "course-subject-1"
@@ -233,7 +226,6 @@ async def test_student_grades_support_assignment_id_fallback(ac, local_db):
         _clear_overrides()
 
     assert response.status_code == 200
-    print(payload)
 
     payload = response.json()
     assert len(payload) == 1

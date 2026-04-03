@@ -23,7 +23,7 @@ except ImportError:
 def cache_key(*args, **kwargs) -> str:
     """Generate a cache key from function arguments."""
     key_data = json.dumps({"args": args, "kwargs": kwargs}, sort_keys=True)
-    return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()  # nosec B303 B324
+    return hashlib.sha256(key_data.encode()).hexdigest()
 
 
 def redis_cache(ttl: int = 300):

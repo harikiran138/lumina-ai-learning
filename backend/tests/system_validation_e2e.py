@@ -3,12 +3,12 @@ import asyncio
 import uuid
 import time
 import json
-from httpx import ASGITransport, AsyncClient
 from datetime import datetime, timezone
 
 from app.main import app
 from app.database.supabase_manager import supabase_db, SupabaseManager
 from app.routers.auth import get_current_user, create_access_token
+from app.api.deps import get_current_active_user, get_current_student, get_current_college_admin
 from app.store.user_store import UserStore
 from app.store.student_store import StudentStore
 from app.core.security import get_password_hash
@@ -20,17 +20,22 @@ def db():
     return supabase_db.get_client(force_new=True)
 
 @pytest.fixture
-async def ac():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:
-        yield client
+async def ac(async_client):
+    yield async_client
 
 def _override_user(user: dict):
     async def _get_user():
         return user
     app.dependency_overrides[get_current_user] = _get_user
+    app.dependency_overrides[get_current_active_user] = _get_user
+    app.dependency_overrides[get_current_student] = _get_user
+    app.dependency_overrides[get_current_college_admin] = _get_user
 
 def _clear_overrides():
     app.dependency_overrides.pop(get_current_user, None)
+    app.dependency_overrides.pop(get_current_active_user, None)
+    app.dependency_overrides.pop(get_current_student, None)
+    app.dependency_overrides.pop(get_current_college_admin, None)
 
 def create_val_id():
     return f"val_{uuid.uuid4().hex[:8]}"

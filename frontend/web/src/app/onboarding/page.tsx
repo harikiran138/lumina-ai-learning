@@ -21,7 +21,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import StudentOnboardingFlow from "@/components/onboarding/StudentOnboardingFlow";
 
-type Role = "super_admin" | "college_admin" | "hod" | "faculty" | "student";
+type Role = "super_admin" | "college_admin" | "hod" | "teacher" | "student";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -69,7 +69,7 @@ export default function OnboardingPage() {
       super_admin: "/admin",
       college_admin: "/college",
       hod: "/hod",
-      faculty: "/faculty",
+      teacher: "/faculty",
       student: "/student/dashboard",
     };
     router.push(routes[r] || "/");

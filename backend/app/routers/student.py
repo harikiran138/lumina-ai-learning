@@ -1816,13 +1816,18 @@ async def list_student_grades(current_user: dict = Depends(get_current_user)):
         assignment_id = submission.get("assignment_id")
         assignment = assignment_lookup.get(assignment_id)
         course = course_lookup.get(assignment.get("course_id")) if assignment else {}
+        normalized_grade = submission.get("grade")
+        if normalized_grade is None:
+            normalized_grade = submission.get("marks")
+        if normalized_grade is None:
+            normalized_grade = submission.get("score")
         results.append({
             "submissionId": submission.get("id"),
             "assignmentId": assignment_id,
             "assignmentTitle": assignment.get("title") if assignment else None,
             "courseName": course.get("title") or course.get("course_name") or course.get("name"),
-            "marks": submission.get("marks"),
-
+            "grade": normalized_grade,
+            "marks": submission.get("marks", normalized_grade),
             "feedback": submission.get("feedback"),
             "gradedAt": submission.get("graded_at"),
         })
