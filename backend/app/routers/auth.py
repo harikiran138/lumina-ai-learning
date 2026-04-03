@@ -515,8 +515,20 @@ def logout(request: Request, response: Response):
         except Exception:
             pass
 
-    response.delete_cookie("access_token", path="/")
-    response.delete_cookie("refresh_token", path="/")
+    # SECURITY: Explicitly delete with all possible flags to ensure browser compatibility
+    # Path must match the path used to set the cookie (default is /)
+    response.delete_cookie(
+        key="access_token",
+        path="/",
+        secure=settings.SECURE_COOKIES,
+        samesite="Lax" if not settings.SECURE_COOKIES else "None"
+    )
+    response.delete_cookie(
+        key="refresh_token",
+        path="/",
+        secure=settings.SECURE_COOKIES,
+        samesite="Lax" if not settings.SECURE_COOKIES else "None"
+    )
     return {"success": True}
 
 

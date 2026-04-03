@@ -96,7 +96,9 @@ export default function HeroSection() {
           {floatingCards.map((card, i) => (
             <div
               key={i}
-              className={`flex-1 flex items-start gap-3 p-4 rounded-2xl border ${card.border} ${card.bg} backdrop-blur-sm shadow-lg min-w-[220px]`}
+              className={`flex-1 flex items-start gap-3 p-4 rounded-2xl border ${card.border} ${card.bg} backdrop-blur-sm shadow-lg min-w-[220px] glass-shimmer ${
+                i === 0 ? "animate-float" : i === 1 ? "animate-float-delay" : "animate-float-delay-2"
+              }`}
             >
               <div className={`mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center ${card.bg} border ${card.border}`}>
                 <card.icon className={`h-4 w-4 ${card.color}`} />

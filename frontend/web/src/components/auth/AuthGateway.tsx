@@ -3,7 +3,7 @@
 import React, { startTransition, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   ArrowLeft,
@@ -96,9 +96,10 @@ function redirectAfterAuth(router: ReturnType<typeof useRouter>, user: AuthUser)
       ? "/onboarding"
       : getRoleHome(user.role);
 
-  startTransition(() => {
-    router.replace(destination);
-  });
+  // Force a full location reload to clear Next.js internal router state, 
+  // ensuring the middleware sees the NEW cookie and doesn't flicker 
+  // with a cached version of the previous role's dashboard.
+  window.location.href = destination;
 }
 
 export default function AuthGateway({ mode }: { mode: AuthMode }) {
@@ -141,11 +142,22 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
     return null;
   }, [signupForm]);
 
+  const searchParams = useSearchParams();
+  const reason = searchParams.get("reason");
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+
   useEffect(() => {
+    if (reason === "session_expired" || reason === "unauthorized" || reason === "session_sync_required") {
+      // BREAK REDIRECT LOOP: If the middleware just sent us here for a reason,
+      // it means our session is likely invalid. Clear the store and stay here.
+      clearAuth();
+      return;
+    }
+
     if (user) {
       redirectAfterAuth(router, user as AuthUser);
     }
-  }, [router, user]);
+  }, [router, user, reason, clearAuth]);
 
   useEffect(() => {
     router.prefetch("/login");
@@ -447,6 +459,34 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                   </div>
                 ) : null}
               </div>
+
+              {reason === "session_expired" && !error && (
+                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+                    <div>
+                      <p className="text-sm font-bold text-amber-100">Session Expired</p>
+                      <p className="mt-1 text-xs leading-5 text-amber-200/80">
+                        Your session has timed out for security. Please log in again to continue.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {reason === "unauthorized" && !error && (
+                <div className="rounded-2xl border border-blue-500/30 bg-blue-500/10 px-4 py-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <Lock className="mt-0.5 h-5 w-5 shrink-0 text-blue-400" />
+                    <div>
+                      <p className="text-sm font-bold text-blue-100">Authorization Required</p>
+                      <p className="mt-1 text-xs leading-5 text-blue-200/80" id="login-auth-required-msg">
+                        Please sign in to access the requested page.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {error ? (
                 <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-4">

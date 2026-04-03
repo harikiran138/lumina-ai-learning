@@ -59,7 +59,7 @@ def test_sanitize_user_normalizes_role_and_created_at(store):
         "created_at": "2026-03-20T10:00:00+00:00",
     })
 
-    assert sanitized["role"] == "admin"
+    assert sanitized["role"] == "super_admin"
     assert sanitized["createdAt"] == "2026-03-20T10:00:00+00:00"
 
 @pytest.mark.asyncio

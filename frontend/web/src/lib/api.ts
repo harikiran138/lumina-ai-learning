@@ -206,16 +206,28 @@ export class RealAPI {
 
   private persistToken(token: string | null) {
       this.token = token;
-      if (typeof window !== "undefined") {
-          if (token) {
-              setAuthCookie(token);
-          } else {
-            // Clear all possible auth cookies
-            document.cookie = `access_token=; path=/; SameSite=Lax; max-age=0`;
-            document.cookie = `refresh_token=; path=/; SameSite=Lax; max-age=0`;
-            document.cookie = `auth_token=; path=/; SameSite=Lax; max-age=0`;
-          }
+    if (typeof window !== "undefined") {
+      if (token) {
+        setAuthCookie(token);
+      } else {
+        // Clear all possible auth cookies with common variations
+        const paths = ["/", "/api"];
+        const domains = [window.location.hostname];
+
+        // Ensure we try both Secure and SameSite flags (Production fallback)
+        const commonFlags = [
+          "; path=/; SameSite=Lax",
+          "; path=/; SameSite=None; Secure",
+          "; path=/; max-age=0",
+        ];
+
+        ["access_token", "refresh_token", "auth_token"].forEach((name) => {
+          commonFlags.forEach((flags) => {
+            document.cookie = `${name}=${flags}`;
+          });
+        });
       }
+    }
   }
 
   private toUser(userData: any, fallbackName?: string): User {

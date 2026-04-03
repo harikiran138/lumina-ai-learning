@@ -20,6 +20,9 @@ class PersonalizationStore:
     """
 
     def __init__(self, db=None):
+        from fastapi.params import Depends
+        if isinstance(db, Depends):
+            db = None
         self.db = db or supabase_db
 
     def _supports_remote_user_id(self, user_id: Optional[str]) -> bool:

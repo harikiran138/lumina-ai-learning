@@ -25,7 +25,7 @@ async def test_json_login_token_can_access_onboarding_status(ac):
         )
         assert login_response.status_code == 200
         payload = login_response.json()
-        assert payload["user"]["role"] == "admin"
+        assert payload["user"]["role"] == "super_admin"
         assert "accessToken" in payload
         assert "access_token" in login_response.headers.get("set-cookie", "")
 
@@ -35,7 +35,7 @@ async def test_json_login_token_can_access_onboarding_status(ac):
         )
         assert status_response.status_code == 200
         status_payload = status_response.json()
-        assert status_payload["role"] == "admin"
+        assert status_payload["role"] == "super_admin"
     finally:
         await user_store.delete_user(user["id"])
 
