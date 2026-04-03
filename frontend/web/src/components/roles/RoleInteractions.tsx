@@ -15,7 +15,7 @@ interface RoleInteractionsProps {
 
 const RoleInteractions = ({ interactions }: RoleInteractionsProps) => {
   return (
-    <section className="py-24 bg-slate-950">
+    <section className="py-24 bg-white/[0.02]">
       <div className="container mx-auto px-6">
         <div className="mb-12">
           <h2 className="text-3xl font-black text-white font-display tracking-tight mb-2 uppercase italic tracking-widest opacity-50">Architectural Dependencies</h2>

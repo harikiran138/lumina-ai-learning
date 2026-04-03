@@ -15,7 +15,7 @@ interface RoleFeaturesProps {
 
 const RoleFeatures = ({ features }: RoleFeaturesProps) => {
   return (
-    <section className="py-24 bg-slate-950">
+    <section className="py-24 bg-white/[0.02]">
       <div className="container mx-auto px-6">
         <div className="mb-16">
           <h2 className="text-4xl font-black text-white font-display tracking-tight mb-4">

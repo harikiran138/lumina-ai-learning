@@ -56,15 +56,17 @@ This system must be:
 ## 🏗️ Architecture Overview
 
 ```
-Frontend (React)
+- [x] Frontend Dependencies Setup
+    - [x] Run `npm install` in `frontend/web`
    ↓
 Assessment API (FastAPI)
    ↓
 Adaptive Engine
    ├─ Knowledge Tracing
-   ├─ Policy Decision
-   ├─ Question Selector
-   └─ Stop Controller
+  - [x] Environment Preparation
+    - [x] Create `data/uploads` directory
+    - [x] Create `static/presentations` directory
+    - [x] Create `backend/db/chroma` directory
    ↓
 LLM Content Generator
    ↓
@@ -213,10 +215,14 @@ Select **best next question** (not random).
 
 ### Strategy Mix
 
-* 40% weakest concept
-* 25% mastery confirmation
-* 20% challenge
-* 15% spaced review
+- [x] Frontend Dependencies Setup
+    - [x] Run `npm install` in `frontend/web`
+- [x] Backend Dependencies Setup
+    - [x] Create Python virtual environment (`.venv`)
+    - [x] Install `requirements.txt`
+- [x] Launch Services
+    - [x] Start FastAPI Backend (Port 8000)
+    - [x] Start Next.js Frontend (Port 3000)
 
 ### Actions
 
