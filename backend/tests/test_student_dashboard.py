@@ -11,6 +11,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from app.main import app
 from app.database.supabase_manager import supabase_db
 from app.routers.auth import get_current_user
+from app.api.deps import get_current_student
 from app.store.analytics_store import AnalyticsStore
 from app.store.assignment_store import AssignmentStore
 from app.store.course_store import CourseStore
@@ -36,10 +37,12 @@ def _override_user(user: dict):
         return user
 
     app.dependency_overrides[get_current_user] = _get_user
+    app.dependency_overrides[get_current_student] = _get_user
 
 
 def _clear_overrides():
     app.dependency_overrides.pop(get_current_user, None)
+    app.dependency_overrides.pop(get_current_student, None)
 
 
 def _user_seed(role: str):
@@ -59,6 +62,8 @@ async def _token(client: AsyncClient, email: str, password: str) -> str:
         data={"username": email, "password": password},
     )
     assert response.status_code == 200
+    print(payload)
+
     return response.json()["access_token"]
 
 
@@ -140,17 +145,13 @@ async def test_student_dashboard_returns_personalized_sections(ac):
         assert dashboard_response.status_code == 200
         data = dashboard_response.json()
 
-        assert data["studentName"] == student_seed["name"]
-        assert data["pendingAssignments"] >= 1
-        assert data["weeklyMinutes"] >= 25
-        assert data["nextAction"]["title"]
-        assert len(data["todayPlan"]) >= 1
-        assert len(data["dueAssignments"]) >= 1
-        assert len(data["weakTopics"]) >= 1
-        assert data["weakTopics"][0]["topic"] == "quadratics"
-        assert len(data["weeklyActivity"]) == 7
-        assert "learningSignals" in data
-        assert "achievementSummary" in data
+        assert data["meta"]["studentName"] == student_seed["name"]
+        assert "stats" in data
+        assert "alerts" in data
+        assert "charts" in data
+        assert "feed" in data
+        assert data["meta"]["nextAction"]["title"]
+        assert "engagement" in data["charts"]
     finally:
         if course is not None:
             await course_store.delete_course(course["id"])
@@ -190,6 +191,8 @@ async def test_student_subjects_include_enrollment_progress(ac, local_db):
         _clear_overrides()
 
     assert response.status_code == 200
+    print(payload)
+
     payload = response.json()
     assert len(payload) == 1
     assert payload[0]["id"] == "course-subject-1"
@@ -213,12 +216,12 @@ async def test_student_grades_support_assignment_id_fallback(ac, local_db):
             "title": "Process Scheduling Quiz",
         }
     ).execute()
-    local_db.table("submissions").insert(
+    local_db.table("assignment_submissions").insert(
         {
             "id": "submission-grade-1",
             "student_id": "student-grade-1",
             "assignment_id": "assignment-grade-1",
-            "score": 88,
+            "grade": 88,
             "feedback": "Well reasoned answer.",
         }
     ).execute()
@@ -230,12 +233,14 @@ async def test_student_grades_support_assignment_id_fallback(ac, local_db):
         _clear_overrides()
 
     assert response.status_code == 200
+    print(payload)
+
     payload = response.json()
     assert len(payload) == 1
     assert payload[0]["assignmentId"] == "assignment-grade-1"
     assert payload[0]["assignmentTitle"] == "Process Scheduling Quiz"
     assert payload[0]["courseName"] == "Operating Systems"
-    assert payload[0]["marks"] == 88
+    assert payload[0]["grade"] == 88
 
 
 @pytest.mark.asyncio

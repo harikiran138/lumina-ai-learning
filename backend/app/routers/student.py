@@ -715,16 +715,16 @@ async def get_student_dashboard(
             ],
             "engagement": weekly_activity
         },
-        "feed": [
-            {
-                "id": str(e["id"]),
-                "type": e["event_type"],
-                "title": e["event_type"].replace("_", " ").title(),
-                "time": e["created_at"].isoformat() if hasattr(e["created_at"], "isoformat") else e["created_at"],
-                "meta": e["payload"]
-            }
-            for e in events
-        ],
+            "feed": [
+                {
+                    "id": str(getattr(e, "id", e.get("id") if isinstance(e, dict) else None)),
+                    "type": getattr(getattr(e, "event_type", e.get("event_type") if isinstance(e, dict) else ""), "value", getattr(e, "event_type", e.get("event_type") if isinstance(e, dict) else "")),
+                    "title": str(getattr(getattr(e, "event_type", e.get("event_type") if isinstance(e, dict) else ""), "value", getattr(e, "event_type", e.get("event_type") if isinstance(e, dict) else ""))).replace("_", " ").title(),
+                    "time": getattr(e, "created_at", e.get("created_at") if isinstance(e, dict) else None).isoformat() if hasattr(getattr(e, "created_at", e.get("created_at") if isinstance(e, dict) else None), "isoformat") else getattr(e, "created_at", e.get("created_at") if isinstance(e, dict) else None),
+                    "meta": getattr(e, "payload", e.get("payload") if isinstance(e, dict) else {})
+                }
+                for e in events
+            ],
         "meta": {
             "studentName": display_name,
             "riskLevel": profile.risk_summary.risk_level,
@@ -1808,7 +1808,7 @@ async def list_student_grades(current_user: dict = Depends(get_current_user)):
     assignments = assignments_res.data if assignments_res else []
     course_ids = list({a.get("course_id") for a in assignments if a.get("course_id")})
     courses_res = db.table("courses").select("id,title,course_name,name").in_("id", course_ids).execute() if course_ids else None
-    course_lookup = {c["id"]: c for c in (courses_res.data or [])}
+    course_lookup = {c["id"]: c for c in (courses_res.data if courses_res else [])}
     assignment_lookup = {a["id"]: a for a in assignments}
 
     results = []

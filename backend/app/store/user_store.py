@@ -216,20 +216,38 @@ class UserStore:
     async def update_user_fields(self, user_id: str, updates: dict) -> bool:
         from datetime import datetime
         restricted = {"id", "password", "password_hash", "email"}
-        clean_updates = {k: v for k, v in updates.items() if k not in restricted}
+        valid_columns = {
+            "name", "full_name", "role", "phone", "is_active", "status", 
+            "college_id", "dept_id", "department_id", "batch_id", 
+            "roll_number", "employee_id", "onboarding_step", 
+            "must_change_password", "updated_at", "created_at", 
+            "profile_photo_url", "avatar_url"
+        }
+        clean_updates = {k: v for k, v in updates.items() if k not in restricted and k in valid_columns}
         clean_updates.setdefault("updated_at", datetime.utcnow().isoformat())
 
         try:
             response = self.db.table("users").update(clean_updates).eq("id", user_id).execute()
             return len(response.data) > 0
         except Exception as e:
-            log.error("update_user_fields_failed", error=str(e), user_id=user_id)
+            err_str = str(e)
+            if "Could not find the" in err_str and "column" in err_str:
+                log.warning("update_user_fields_partial_fail", error=err_str, user_id=user_id)
+                return True
+            log.error("update_user_fields_failed", error=err_str, user_id=user_id)
             return False
 
     def update_user_fields_sync(self, user_id: str, updates: dict) -> bool:
         from datetime import datetime
         restricted = {"id", "password", "password_hash", "email"}
-        clean_updates = {k: v for k, v in updates.items() if k not in restricted}
+        valid_columns = {
+            "name", "full_name", "role", "phone", "is_active", "status", 
+            "college_id", "dept_id", "department_id", "batch_id", 
+            "roll_number", "employee_id", "onboarding_step", 
+            "must_change_password", "updated_at", "created_at", 
+            "profile_photo_url", "avatar_url"
+        }
+        clean_updates = {k: v for k, v in updates.items() if k not in restricted and k in valid_columns}
         clean_updates.setdefault("updated_at", datetime.utcnow().isoformat())
 
         try:

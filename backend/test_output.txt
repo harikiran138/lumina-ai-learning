@@ -1,0 +1,418 @@
+...............F..FF.FFFF.F..F.......F...............F..F...........FFF. [ 84%]
+.........FF..                                                            [100%]
+=================================== FAILURES ===================================
+_________________________________ test_get_me __________________________________
+tests/test_auth_routes.py:136: in test_get_me
+    assert res.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = <Response [429 Too Many Requests]>.status_code
+------------------------------ Captured log call -------------------------------
+WARNING  slowapi:extension.py:510 ratelimit 200 per 1 day (127.0.0.1) exceeded at endpoint: /api/auth/me
+________________ test_cookie_session_persists_after_json_login _________________
+tests/test_auth_session_hardening.py:78: in test_cookie_session_persists_after_json_login
+    assert login_response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = <Response [429 Too Many Requests]>.status_code
+------------------------------ Captured log call -------------------------------
+WARNING  slowapi:extension.py:510 ratelimit 5 per 1 minute (127.0.0.1) exceeded at endpoint: /api/auth/login
+__________ test_refresh_reissues_access_cookie_with_onboarding_claims __________
+tests/test_auth_session_hardening.py:102: in test_refresh_reissues_access_cookie_with_onboarding_claims
+    assert login_response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = <Response [429 Too Many Requests]>.status_code
+------------------------------ Captured log call -------------------------------
+WARNING  slowapi:extension.py:510 ratelimit 5 per 1 minute (127.0.0.1) exceeded at endpoint: /api/auth/login
+_______________ test_student_token_cannot_access_admin_dashboard _______________
+tests/test_auth_session_hardening.py:164: in test_student_token_cannot_access_admin_dashboard
+    assert login_response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = <Response [429 Too Many Requests]>.status_code
+------------------------------ Captured log call -------------------------------
+WARNING  slowapi:extension.py:510 ratelimit 5 per 1 minute (127.0.0.1) exceeded at endpoint: /api/auth/login
+______________ test_json_login_token_can_access_onboarding_status ______________
+tests/test_auth_token_flow.py:30: in test_json_login_token_can_access_onboarding_status
+    assert login_response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = <Response [429 Too Many Requests]>.status_code
+------------------------------ Captured log call -------------------------------
+WARNING  slowapi:extension.py:510 ratelimit 5 per 1 minute (127.0.0.1) exceeded at endpoint: /api/auth/login
+_____________________ test_refresh_reissues_access_cookie ______________________
+tests/test_auth_token_flow.py:63: in test_refresh_reissues_access_cookie
+    assert login_response.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = <Response [429 Too Many Requests]>.status_code
+------------------------------ Captured log call -------------------------------
+WARNING  slowapi:extension.py:510 ratelimit 5 per 1 minute (127.0.0.1) exceeded at endpoint: /api/auth/login
+______________________________ test_create_course ______________________________
+tests/test_course_routes.py:69: in test_create_course
+    assert res.status_code == 200 # endpoint returns 200
+E   assert 403 == 200
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+______________________________ test_list_courses _______________________________
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/anyio/streams/memory.py:98: in receive
+    return self.receive_nowait()
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/anyio/streams/memory.py:93: in receive_nowait
+    raise WouldBlock
+E   anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:78: in call_next
+    message = await recv_stream.receive()
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/anyio/streams/memory.py:118: in receive
+    raise EndOfStream
+E   anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+tests/test_course_routes.py:92: in test_list_courses
+    res = await ac.get("/api/courses/list")
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1814: in get
+    return await self.request(
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1585: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1674: in send
+    response = await self._send_handling_auth(
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1702: in _send_handling_auth
+    response = await self._send_handling_redirects(
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1739: in _send_handling_redirects
+    response = await self._send_single_request(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1776: in _send_single_request
+    response = await transport.handle_async_request(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_transports/asgi.py:157: in handle_async_request
+    await self.app(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/applications.py:1106: in __call__
+    await super().__call__(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/applications.py:122: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/errors.py:184: in __call__
+    raise exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/errors.py:162: in __call__
+    await self.app(scope, receive, _send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/cors.py:83: in __call__
+    await self.app(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/core/middleware.py:73: in dispatch
+    return await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/main.py:451: in sentry_context_middleware
+    response = await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/main.py:382: in dispatch
+    response = await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/main.py:363: in dispatch
+    response = await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/slowapi/middleware.py:136: in dispatch
+    response = await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/prometheus_fastapi_instrumentator/middleware.py:169: in __call__
+    raise exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/prometheus_fastapi_instrumentator/middleware.py:167: in __call__
+    await self.app(scope, receive, send_wrapper)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/main.py:275: in dispatch
+    response = await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/main.py:265: in add_diagnostic_header
+    response = await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/gzip.py:24: in __call__
+    await responder(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/gzip.py:44: in __call__
+    await self.app(scope, receive, self.send_with_gzip)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/exceptions.py:79: in __call__
+    raise exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/exceptions.py:68: in __call__
+    await self.app(scope, receive, sender)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/middleware/asyncexitstack.py:20: in __call__
+    raise e
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/middleware/asyncexitstack.py:17: in __call__
+    await self.app(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/routing.py:718: in __call__
+    await route.handle(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/routing.py:276: in handle
+    await self.app(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/routing.py:66: in app
+    response = await func(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/routing.py:274: in app
+    raw_response = await run_endpoint_function(
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/routing.py:191: in run_endpoint_function
+    return await dependant.call(**values)
+app/core/cache.py:46: in wrapper
+    cache_suffix = cache_key(*args, **kwargs)
+app/core/cache.py:17: in cache_key
+    return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()  # nosec B303 B324
+E   TypeError: openssl_md5() takes at most 1 argument (2 given)
+------------------------------ Captured log call -------------------------------
+WARNING  app.core.middleware:middleware.py:72 {"path": "/api/courses/list", "event": "missing_auth_token", "level": "warning", "timestamp": "2026-04-03T03:07:41.581885Z", "func_name": "dispatch", "filename": "middleware.py", "lineno": 72}
+ERROR    app.main:main.py:230 {"error": "openssl_md5() takes at most 1 argument (2 given)", "path": "/api/courses/list", "event": "unhandled_exception", "level": "error", "exception": "Traceback (most recent call last):\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/anyio/streams/memory.py\", line 98, in receive\n    return self.receive_nowait()\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/anyio/streams/memory.py\", line 93, in receive_nowait\n    raise WouldBlock\nanyio.WouldBlock\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 78, in call_next\n    message = await recv_stream.receive()\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/anyio/streams/memory.py\", line 118, in receive\n    raise EndOfStream\nanyio.EndOfStream\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/errors.py\", line 162, in __call__\n    await self.app(scope, receive, _send)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/cors.py\", line 83, in __call__\n    await self.app(scope, receive, send)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/core/middleware.py\", line 73, in dispatch\n    return await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py\", line 451, in sentry_context_middleware\n    response = await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py\", line 382, in dispatch\n    response = await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py\", line 363, in dispatch\n    response = await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/slowapi/middleware.py\", line 136, in dispatch\n    response = await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/prometheus_fastapi_instrumentator/middleware.py\", line 169, in __call__\n    raise exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/prometheus_fastapi_instrumentator/middleware.py\", line 167, in __call__\n    await self.app(scope, receive, send_wrapper)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py\", line 275, in dispatch\n    response = await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py\", line 265, in add_diagnostic_header\n    response = await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/gzip.py\", line 24, in __call__\n    await responder(scope, receive, send)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/gzip.py\", line 44, in __call__\n    await self.app(scope, receive, self.send_with_gzip)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/exceptions.py\", line 79, in __call__\n    raise exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/exceptions.py\", line 68, in __call__\n    await self.app(scope, receive, sender)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/middleware/asyncexitstack.py\", line 20, in __call__\n    raise e\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/middleware/asyncexitstack.py\", line 17, in __call__\n    await self.app(scope, receive, send)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/routing.py\", line 718, in __call__\n    await route.handle(scope, receive, send)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/routing.py\", line 276, in handle\n    await self.app(scope, receive, send)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/routing.py\", line 66, in app\n    response = await func(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/routing.py\", line 274, in app\n    raw_response = await run_endpoint_function(\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/routing.py\", line 191, in run_endpoint_function\n    return await dependant.call(**values)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/core/cache.py\", line 46, in wrapper\n    cache_suffix = cache_key(*args, **kwargs)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/core/cache.py\", line 17, in cache_key\n    return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()  # nosec B303 B324\nTypeError: openssl_md5() takes at most 1 argument (2 given)", "timestamp": "2026-04-03T03:07:41.589152Z", "func_name": "universal_exception_handler", "filename": "main.py", "lineno": 230}
+______________________________ test_delete_course ______________________________
+tests/test_course_routes.py:142: in test_delete_course
+    assert res.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+_________________________ test_explanation_reward_loop _________________________
+tests/test_explanation_engine.py:71: in test_explanation_reward_loop
+    assert profile.explanation_profile.last_plan is not None
+E   AssertionError: assert None is not None
+E    +  where None = ExplanationProfile(strategies={}, primary_mode=None, last_plan=None, updated_at=datetime.datetime(2026, 4, 3, 3, 7, 44, 844892)).last_plan
+E    +    where ExplanationProfile(strategies={}, primary_mode=None, last_plan=None, updated_at=datetime.datetime(2026, 4, 3, 3, 7, 44, 844892)) = LearnerProfileRecord(user_id='test_user_reward', role='student', grade_level=None, goals=[], preferences=LearnerPrefer...created_at=datetime.datetime(2026, 4, 3, 3, 7, 44, 844898), updated_at=datetime.datetime(2026, 4, 3, 3, 7, 44, 844899)).explanation_profile
+------------------------------ Captured log call -------------------------------
+WARNING  app.store.personalization_store:personalization_store.py:40 {"user_id": "test_user_reward", "error": "'Depends' object has no attribute 'fetch_one'", "event": "learner_profile_fetch_failed", "level": "warning", "timestamp": "2026-04-03T03:07:44.844082Z", "func_name": "get_profile", "filename": "personalization_store.py", "lineno": 40}
+WARNING  app.store.personalization_store:personalization_store.py:51 {"user_id": "test_user_reward", "error": "'Depends' object has no attribute 'upsert'", "event": "learner_profile_upsert_failed", "level": "warning", "timestamp": "2026-04-03T03:07:44.844253Z", "func_name": "upsert_profile", "filename": "personalization_store.py", "lineno": 51}
+WARNING  app.store.personalization_store:personalization_store.py:70 {"user_id": "test_user_reward", "error": "'Depends' object has no attribute 'upsert'", "event": "learning_event_insert_failed", "level": "warning", "timestamp": "2026-04-03T03:07:44.844356Z", "func_name": "append_event", "filename": "personalization_store.py", "lineno": 70}
+WARNING  app.store.personalization_store:personalization_store.py:40 {"user_id": "test_user_reward", "error": "'Depends' object has no attribute 'fetch_one'", "event": "learner_profile_fetch_failed", "level": "warning", "timestamp": "2026-04-03T03:07:44.844401Z", "func_name": "get_profile", "filename": "personalization_store.py", "lineno": 40}
+WARNING  app.store.personalization_store:personalization_store.py:51 {"user_id": "test_user_reward", "error": "'Depends' object has no attribute 'upsert'", "event": "learner_profile_upsert_failed", "level": "warning", "timestamp": "2026-04-03T03:07:44.844473Z", "func_name": "upsert_profile", "filename": "personalization_store.py", "lineno": 51}
+WARNING  app.store.personalization_store:personalization_store.py:86 {"user_id": "test_user_reward", "error": "'Depends' object has no attribute 'get_client'", "event": "learning_events_list_failed", "level": "warning", "timestamp": "2026-04-03T03:07:44.844546Z", "func_name": "list_events", "filename": "personalization_store.py", "lineno": 86}
+WARNING  app.store.personalization_store:personalization_store.py:51 {"user_id": "test_user_reward", "error": "'Depends' object has no attribute 'upsert'", "event": "learner_profile_upsert_failed", "level": "warning", "timestamp": "2026-04-03T03:07:44.844676Z", "func_name": "upsert_profile", "filename": "personalization_store.py", "lineno": 51}
+WARNING  app.store.personalization_store:personalization_store.py:99 {"user_id": "test_user_reward", "error": "'Depends' object has no attribute 'upsert'", "event": "intervention_upsert_failed", "level": "warning", "timestamp": "2026-04-03T03:07:44.844789Z", "func_name": "upsert_intervention", "filename": "personalization_store.py", "lineno": 99}
+WARNING  app.store.personalization_store:personalization_store.py:40 {"user_id": "test_user_reward", "error": "'Depends' object has no attribute 'fetch_one'", "event": "learner_profile_fetch_failed", "level": "warning", "timestamp": "2026-04-03T03:07:44.844844Z", "func_name": "get_profile", "filename": "personalization_store.py", "lineno": 40}
+WARNING  app.store.personalization_store:personalization_store.py:51 {"user_id": "test_user_reward", "error": "'Depends' object has no attribute 'upsert'", "event": "learner_profile_upsert_failed", "level": "warning", "timestamp": "2026-04-03T03:07:44.844920Z", "func_name": "upsert_profile", "filename": "personalization_store.py", "lineno": 51}
+______ test_student_onboarding_complete_resolves_program_from_department _______
+tests/test_onboarding_flow.py:127: in test_student_onboarding_complete_resolves_program_from_department
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+__________________ test_college_update_returns_single_object ___________________
+tests/test_onboarding_flow.py:347: in test_college_update_returns_single_object
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+_____________ test_student_dashboard_returns_personalized_sections _____________
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/anyio/streams/memory.py:98: in receive
+    return self.receive_nowait()
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/anyio/streams/memory.py:93: in receive_nowait
+    raise WouldBlock
+E   anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:78: in call_next
+    message = await recv_stream.receive()
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/anyio/streams/memory.py:118: in receive
+    raise EndOfStream
+E   anyio.EndOfStream
+
+During handling of the above exception, another exception occurred:
+tests/test_student_dashboard.py:135: in test_student_dashboard_returns_personalized_sections
+    dashboard_response = await ac.get(
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1814: in get
+    return await self.request(
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1585: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1674: in send
+    response = await self._send_handling_auth(
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1702: in _send_handling_auth
+    response = await self._send_handling_redirects(
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1739: in _send_handling_redirects
+    response = await self._send_single_request(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:1776: in _send_single_request
+    response = await transport.handle_async_request(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_transports/asgi.py:157: in handle_async_request
+    await self.app(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/applications.py:1106: in __call__
+    await super().__call__(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/applications.py:122: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/errors.py:184: in __call__
+    raise exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/errors.py:162: in __call__
+    await self.app(scope, receive, _send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/cors.py:83: in __call__
+    await self.app(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/core/middleware.py:134: in dispatch
+    response = await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/main.py:451: in sentry_context_middleware
+    response = await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/main.py:382: in dispatch
+    response = await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/main.py:363: in dispatch
+    response = await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/slowapi/middleware.py:136: in dispatch
+    response = await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/prometheus_fastapi_instrumentator/middleware.py:169: in __call__
+    raise exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/prometheus_fastapi_instrumentator/middleware.py:167: in __call__
+    await self.app(scope, receive, send_wrapper)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/main.py:275: in dispatch
+    response = await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:108: in __call__
+    response = await self.dispatch_func(request, call_next)
+app/main.py:265: in add_diagnostic_header
+    response = await call_next(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:84: in call_next
+    raise app_exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py:70: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/gzip.py:24: in __call__
+    await responder(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/gzip.py:44: in __call__
+    await self.app(scope, receive, self.send_with_gzip)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/exceptions.py:79: in __call__
+    raise exc
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/exceptions.py:68: in __call__
+    await self.app(scope, receive, sender)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/middleware/asyncexitstack.py:20: in __call__
+    raise e
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/middleware/asyncexitstack.py:17: in __call__
+    await self.app(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/routing.py:718: in __call__
+    await route.handle(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/routing.py:276: in handle
+    await self.app(scope, receive, send)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/routing.py:66: in app
+    response = await func(request)
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/routing.py:274: in app
+    raw_response = await run_endpoint_function(
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/routing.py:191: in run_endpoint_function
+    return await dependant.call(**values)
+app/routers/student.py:718: in get_student_dashboard
+    "feed": [
+app/routers/student.py:720: in <listcomp>
+    "id": str(e["id"]),
+E   TypeError: 'LearningEventRecord' object is not subscriptable
+------------------------------ Captured log call -------------------------------
+ERROR    app.main:main.py:230 {"error": "'LearningEventRecord' object is not subscriptable", "path": "/api/student/dashboard", "event": "unhandled_exception", "level": "error", "exception": "Traceback (most recent call last):\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/anyio/streams/memory.py\", line 98, in receive\n    return self.receive_nowait()\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/anyio/streams/memory.py\", line 93, in receive_nowait\n    raise WouldBlock\nanyio.WouldBlock\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 78, in call_next\n    message = await recv_stream.receive()\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/anyio/streams/memory.py\", line 118, in receive\n    raise EndOfStream\nanyio.EndOfStream\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/errors.py\", line 162, in __call__\n    await self.app(scope, receive, _send)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/cors.py\", line 83, in __call__\n    await self.app(scope, receive, send)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/core/middleware.py\", line 134, in dispatch\n    response = await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py\", line 451, in sentry_context_middleware\n    response = await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py\", line 382, in dispatch\n    response = await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py\", line 363, in dispatch\n    response = await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/slowapi/middleware.py\", line 136, in dispatch\n    response = await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/prometheus_fastapi_instrumentator/middleware.py\", line 169, in __call__\n    raise exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/prometheus_fastapi_instrumentator/middleware.py\", line 167, in __call__\n    await self.app(scope, receive, send_wrapper)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py\", line 275, in dispatch\n    response = await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 108, in __call__\n    response = await self.dispatch_func(request, call_next)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/main.py\", line 265, in add_diagnostic_header\n    response = await call_next(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 84, in call_next\n    raise app_exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/base.py\", line 70, in coro\n    await self.app(scope, receive_or_disconnect, send_no_error)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/gzip.py\", line 24, in __call__\n    await responder(scope, receive, send)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/gzip.py\", line 44, in __call__\n    await self.app(scope, receive, self.send_with_gzip)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/exceptions.py\", line 79, in __call__\n    raise exc\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/middleware/exceptions.py\", line 68, in __call__\n    await self.app(scope, receive, sender)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/middleware/asyncexitstack.py\", line 20, in __call__\n    raise e\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/middleware/asyncexitstack.py\", line 17, in __call__\n    await self.app(scope, receive, send)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/routing.py\", line 718, in __call__\n    await route.handle(scope, receive, send)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/routing.py\", line 276, in handle\n    await self.app(scope, receive, send)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/starlette/routing.py\", line 66, in app\n    response = await func(request)\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/routing.py\", line 274, in app\n    raw_response = await run_endpoint_function(\n  File \"/Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/fastapi/routing.py\", line 191, in run_endpoint_function\n    return await dependant.call(**values)\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/routers/student.py\", line 718, in get_student_dashboard\n    \"feed\": [\n  File \"/Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/routers/student.py\", line 720, in <listcomp>\n    \"id\": str(e[\"id\"]),\nTypeError: 'LearningEventRecord' object is not subscriptable", "timestamp": "2026-04-03T03:08:01.274257Z", "func_name": "universal_exception_handler", "filename": "main.py", "lineno": 230}
+______________ test_student_subjects_include_enrollment_progress _______________
+tests/test_student_dashboard.py:192: in test_student_subjects_include_enrollment_progress
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+______________ test_student_grades_support_assignment_id_fallback ______________
+tests/test_student_dashboard.py:232: in test_student_grades_support_assignment_id_fallback
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+____________________________ test_update_user_role _____________________________
+tests/test_user_store.py:49: in test_update_user_role
+    assert fetched["role"] == "faculty"
+E   AssertionError: assert 'teacher' == 'faculty'
+E     - faculty
+E     + teacher
+______________ test_sanitize_user_normalizes_role_and_created_at _______________
+tests/test_user_store.py:62: in test_sanitize_user_normalizes_role_and_created_at
+    assert sanitized["role"] == "super_admin"
+E   AssertionError: assert 'college_admin' == 'super_admin'
+E     - super_admin
+E     + college_admin
+=============================== warnings summary ===============================
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/_pytest/config/__init__.py:1373
+  /Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/_pytest/config/__init__.py:1373: PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/google/api_core/_python_version_support.py:237
+  /Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/google/api_core/_python_version_support.py:237: FutureWarning: You are using a non-supported Python version (3.8.18). Google will not post any further updates to google.api_core supporting this Python version. Please upgrade to the latest Python version, or at least Python 3.10, and then update google.api_core.
+    warnings.warn(message, FutureWarning)
+
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:690
+../../../../.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:690
+  /Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/site-packages/httpx/_client.py:690: DeprecationWarning: The 'app' shortcut is now deprecated. Use the explicit style 'transport=WSGITransport(app=...)' instead.
+    warnings.warn(message, DeprecationWarning)
+
+tests/test_raoie_logic.py::TestRAOIELogic::test_ai_evaluate_response
+  /Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/unittest/case.py:633: RuntimeWarning: coroutine 'TestRAOIELogic.test_ai_evaluate_response' was never awaited
+    method()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_raoie_logic.py::TestRAOIELogic::test_build_knowledge_graph_with_ai_topics
+  /Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/unittest/case.py:633: RuntimeWarning: coroutine 'TestRAOIELogic.test_build_knowledge_graph_with_ai_topics' was never awaited
+    method()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_raoie_logic.py::TestRAOIELogic::test_calculate_result_with_ai
+  /Users/chepuriharikiran/.pyenv/versions/3.8.18/lib/python3.8/unittest/case.py:633: RuntimeWarning: coroutine 'TestRAOIELogic.test_calculate_result_with_ai' was never awaited
+    method()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_auth_routes.py::test_get_me - assert 429 == 200
+FAILED tests/test_auth_session_hardening.py::test_cookie_session_persists_after_json_login
+FAILED tests/test_auth_session_hardening.py::test_refresh_reissues_access_cookie_with_onboarding_claims
+FAILED tests/test_auth_session_hardening.py::test_student_token_cannot_access_admin_dashboard
+FAILED tests/test_auth_token_flow.py::test_json_login_token_can_access_onboarding_status
+FAILED tests/test_auth_token_flow.py::test_refresh_reissues_access_cookie - a...
+FAILED tests/test_course_routes.py::test_create_course - assert 403 == 200
+FAILED tests/test_course_routes.py::test_list_courses - TypeError: openssl_md...
+FAILED tests/test_course_routes.py::test_delete_course - assert 403 == 200
+FAILED tests/test_explanation_engine.py::test_explanation_reward_loop - Asser...
+FAILED tests/test_onboarding_flow.py::test_student_onboarding_complete_resolves_program_from_department
+FAILED tests/test_onboarding_flow.py::test_college_update_returns_single_object
+FAILED tests/test_student_dashboard.py::test_student_dashboard_returns_personalized_sections
+FAILED tests/test_student_dashboard.py::test_student_subjects_include_enrollment_progress
+FAILED tests/test_student_dashboard.py::test_student_grades_support_assignment_id_fallback
+FAILED tests/test_user_store.py::test_update_user_role - AssertionError: asse...
+FAILED tests/test_user_store.py::test_sanitize_user_normalizes_role_and_created_at
+17 failed, 68 passed, 7 warnings in 29.82s

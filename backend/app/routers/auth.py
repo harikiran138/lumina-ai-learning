@@ -515,7 +515,7 @@ async def forgot_password(
         expires_delta=timedelta(hours=1),
         extra_claims={"type": "reset", "userId": user.get("id")},
     )
-    print(f"[EMAIL STUB] Reset link: /reset-password?token={reset_token}")
+    print(f"[EMAIL STUB] Reset link: /auth/reset-password?token={reset_token}")
     return {"success": True}
 
 

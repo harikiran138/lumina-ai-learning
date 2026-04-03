@@ -7,6 +7,7 @@ from app.api.deps import get_current_faculty as get_current_user
 from app.database.supabase_manager import supabase_db
 from app.database.scoped_db import get_scoped_db
 from app.services.personalization_service import get_personalization_service
+from app.services.onboarding_service import OnboardingService
 from app.personalization.schemas import InterventionUpdateRequest, InterventionStatus, InterventionPriority
 
 router = APIRouter()
@@ -175,6 +176,7 @@ async def complete_faculty_onboarding(
     assignment_views = _build_assignment_views(confirmed_assignments, courses, classes, batches, programs)
     existing_user_data = await db.fetch_one("user_data", {"user_id": teacher_id})
     progress = (existing_user_data or {}).get("progress") or {}
+    step_1 = progress.get("step_1") or {}
     step_3 = progress.get("step_3") or {}
     step_4 = progress.get("step_4") or {}
 
@@ -195,36 +197,7 @@ async def complete_faculty_onboarding(
         for program in programs
         if program.get("program_name") or program.get("name") or program.get("code")
     ]
-    skills_summary = []
-    if specialization:
-        skills_summary.append(f"Specialization: {specialization}")
-    if payload.teaching_styles:
-        skills_summary.append(f"Teaching styles: {', '.join(payload.teaching_styles)}")
-
-    now = datetime.utcnow().isoformat()
-    teacher_profile = await db.upsert(
-        "teacher_profiles",
-        {
-            "employee_id": employee_id,
-            "username": (current_user.get("email") or "").split("@")[0] or employee_id,
-            "program": ", ".join(sorted(set(program_names))) or None,
-            "phone": current_user.get("phone"),
-            "email": current_user.get("email"),
-            "skills": " | ".join(skills_summary) or specialization or None,
-            "designation": "Faculty",
-            "subjects": subject_labels,
-            "bio": (
-                f"Engineering faculty setup complete. Goal: {payload.teaching_goal}. "
-                f"Assessment policy: {step_4.get('gradingScale') or 'default grading'}."
-            ),
-            "is_profile_complete": True,
-            "updated_at": now,
-        },
-        on_conflict="employee_id",
-    )
-    if not teacher_profile:
-        raise HTTPException(status_code=500, detail="Failed to initialize teacher profile")
-
+    
     primary_program_id = next(
         (
             row.get("program", {}).get("id")
@@ -233,83 +206,52 @@ async def complete_faculty_onboarding(
         ),
         None,
     )
-    if primary_program_id:
-        dashboard_payload = {
-            "user_id": teacher_id,
-            "program_id": primary_program_id,
-            "enabled_modules": [
-                "courses",
-                "students",
-                "attendance",
-                "verification_queue",
-                "interventions",
-                "analytics",
-            ],
-            "layout_order": [
-                "overview",
-                "courses",
-                "students",
-                "verification_queue",
-                "attendance",
-                "analytics",
-            ],
-            "updated_at": now,
+
+    # Prepare payload for centralized onboarding service
+    onboarding_payload = {
+        "full_name": current_user.get("full_name"),
+        "employee_id": employee_id,
+        "designation": "Faculty",
+        "specialization": specialization,
+        "experience_years": step_1.get("experienceYears") or step_1.get("experience_years"),
+        "subjects": subject_labels,
+        "teaching_goal": payload.teaching_goal,
+        "bio": (
+            f"Engineering faculty setup complete. Goal: {payload.teaching_goal}. "
+            f"Assessment policy: {step_4.get('gradingScale') or 'default grading'}."
+        ),
+        "preferences": {
+            "teaching_styles": payload.teaching_styles,
+            "teaching_goal": payload.teaching_goal,
+            "subject_confidence": subject_confidence,
+            "confirmed_assignments": payload.confirmed_assignment_ids,
+            "program_names": program_names,
+            "primary_program_id": primary_program_id,
+            "primary_device": payload.primary_device,
+            "internet_type": payload.internet_type,
+            "consents": payload.consents,
+            "subject_ids": course_ids,
+            "batch_ids": batch_ids
         }
-        existing_dashboard = await db.fetch_one("dashboard_preferences", {"user_id": teacher_id})
-        if existing_dashboard and existing_dashboard.get("id"):
-            updated_dashboard = await db.update(
-                "dashboard_preferences",
-                dashboard_payload,
-                {"id": existing_dashboard["id"]},
-            )
-            if updated_dashboard is None:
-                raise HTTPException(status_code=500, detail="Failed to initialize faculty dashboard preferences")
-        else:
-            created_dashboard = await db.insert("dashboard_preferences", dashboard_payload)
-            if created_dashboard is None:
-                raise HTTPException(status_code=500, detail="Failed to create faculty dashboard preferences")
-
-    updated_user = await db.update("users", {"onboarding_step": 5}, {"id": teacher_id})
-    if updated_user is None:
-        raise HTTPException(status_code=500, detail="Failed to update faculty onboarding state")
-
-    progress["step_5"] = {
-        "confirmedAssignmentIds": payload.confirmed_assignment_ids,
-        "teachingStyles": payload.teaching_styles,
-        "subjectConfidence": subject_confidence,
-        "goal": payload.teaching_goal,
-        "deviceType": payload.primary_device,
-        "internetType": payload.internet_type,
-        "consents": payload.consents,
-        "subjectIds": course_ids,
-        "assignmentCount": len(payload.confirmed_assignment_ids),
-        "batchIds": batch_ids,
     }
-    progress["onboarding_status"] = "COMPLETED"
-    progress["onboarding_step"] = 5
 
-    if existing_user_data:
-        updated_user_data = await db.update(
-            "user_data",
-            {"progress": progress, "updated_at": now},
-            {"user_id": teacher_id},
-        )
-        if updated_user_data is None:
-            raise HTTPException(status_code=500, detail="Failed to store faculty onboarding progress")
-    else:
-        created_user_data = await db.insert(
-            "user_data",
-            {"user_id": teacher_id, "progress": progress, "updated_at": now},
-        )
-        if created_user_data is None:
-            raise HTTPException(status_code=500, detail="Failed to create faculty onboarding progress")
+    onboarding_service = OnboardingService(db=db)
+    result = await onboarding_service.complete_onboarding(
+        user_id=teacher_id,
+        role="faculty",
+        current_user=current_user,
+        payload=onboarding_payload
+    )
+
+    if not result.get("success"):
+        raise HTTPException(status_code=500, detail="Failed to finalize faculty onboarding")
 
     return {
         "success": True,
-        "teacherId": teacher_id,
-        "assignmentCount": len(payload.confirmed_assignment_ids),
-        "subjectCount": len(course_ids),
-        "programCount": len(program_names),
+        "status": "success",
+        "teacher_id": teacher_id,
+        "assignments_confirmed": len(confirmed_assignments),
+        "profile_migrated": True
     }
 
 

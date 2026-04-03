@@ -14,6 +14,7 @@ from app.database.supabase_manager import supabase_db
 from app.database.scoped_db import get_scoped_db
 from app.services.storage import storage_service
 from app.services.adaptive_onboarding import AdaptiveOnboardingEngine
+from app.services.onboarding_service import OnboardingService
 from app.store.user_store import UserStore
 from app.core.rbac import normalize_role
 
@@ -895,42 +896,14 @@ async def get_onboarding_subjects(current_user: dict = Depends(get_current_user)
 @router.post("/complete")
 async def complete_onboarding(current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("id")
-    updated = await UserStore().update_user_fields(user_id, {"onboarding_step": 5})
-    if not updated:
-        raise HTTPException(status_code=500, detail="Failed to finalize onboarding")
     role = normalize_role(current_user.get("role"))
-
-    if role in {"college_admin", "super_admin"}:
-        college_id = current_user.get("college_id") or current_user.get("institution_id")
-        if college_id:
-            db = get_scoped_db(current_user)
-            await db.update(
-                "institutions",
-                {
-                    "onboarding_status": "ACTIVE",
-                    "is_active": True,
-                    "updated_at": datetime.utcnow().isoformat(),
-                },
-                {"id": college_id},
-            )
-
-    db = get_scoped_db(current_user)
-    existing = await db.fetch_one("user_data", {"user_id": user_id})
-    progress = (existing or {}).get("progress") or {}
-    progress["onboarding_status"] = "COMPLETED"
-    progress["onboarding_step"] = 5
-    if existing:
-        await db.update(
-            "user_data",
-            {"progress": progress, "updated_at": datetime.utcnow().isoformat()},
-            {"user_id": user_id},
-        )
-    else:
-        await db.insert(
-            "user_data",
-            {"user_id": user_id, "progress": progress, "updated_at": datetime.utcnow().isoformat()},
-        )
-    return {"step": 5, "complete": True}
+    
+    onboarding_service = OnboardingService(db=supabase_db)
+    return await onboarding_service.complete_onboarding(
+        user_id=user_id,
+        role=role,
+        current_user=current_user
+    )
 
 
 @router.post("/start")
