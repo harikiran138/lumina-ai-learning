@@ -9,7 +9,7 @@ interface RoleWorkflowProps {
 
 const RoleWorkflow = ({ steps }: RoleWorkflowProps) => {
   return (
-    <section className="py-32 bg-slate-900/20">
+    <section className="py-32 bg-black">
       <div className="container mx-auto px-6">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl font-black text-white font-display tracking-tight mb-12 text-center uppercase italic tracking-widest">
