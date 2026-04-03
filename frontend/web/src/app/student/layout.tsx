@@ -6,7 +6,7 @@ import { BGPattern } from "@/components/ui/BGPattern";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { useIsAuthLoading } from "@/store/useAuthStore";
 
 export default function StudentLayout({
   children,
@@ -15,7 +15,19 @@ export default function StudentLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const isAuthLoading = useIsAuthLoading();
   const isTutorRoute = pathname?.startsWith("/student/ai_tutor");
+
+  // Hold render until AuthProvider has confirmed the session.
+  // The middleware already gate-keeps the route, so this is purely to
+  // prevent a flash of un-authed UI on the client before hydration finishes.
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+      </div>
+    );
+  }
 
   if (isTutorRoute) {
     return <div className="min-h-screen bg-black text-white">{children}</div>;
@@ -49,9 +61,7 @@ export default function StudentLayout({
           />
         )}
 
-        <main
-          className="lg:ml-24 pt-20 min-h-screen transition-all duration-500"
-        >
+        <main className="lg:ml-24 pt-20 min-h-screen transition-all duration-500">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
             <Breadcrumb homeHref="/student/dashboard" />
             {children}

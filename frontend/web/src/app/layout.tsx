@@ -27,9 +27,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <GlobalErrorBoundary>
-            <OfflineBanner />
-            {children}
-            <Toaster theme="dark" richColors position="top-right" />
+            <AuthProvider>
+              <OfflineBanner />
+              {children}
+              <Toaster theme="dark" richColors position="top-right" />
+            </AuthProvider>
           </GlobalErrorBoundary>
         </ThemeProvider>
       </body>

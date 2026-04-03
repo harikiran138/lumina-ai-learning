@@ -90,14 +90,23 @@ function isValidEmail(value: string) {
 }
 
 function redirectAfterAuth(router: ReturnType<typeof useRouter>, user: AuthUser) {
+  // Derive the destination from the fields the backend explicitly sets:
+  //  - mustChangePassword → force password change first
+  //  - onboardingCompleted (from JWT claim) → mirrors exactly what middleware checks
+  //  - fallback to onboardingStep < 5 when onboardingCompleted is undefined (legacy)
+  const needsOnboarding =
+    user.role !== "super_admin" &&
+    (user.onboardingCompleted === false ||
+      (user.onboardingCompleted === undefined && typeof user.onboardingStep === "number" && user.onboardingStep < 5));
+
   const destination = user.mustChangePassword
     ? "/change-password"
-    : user.onboardingStep !== undefined && user.onboardingStep < 5 && user.role !== "super_admin"
+    : needsOnboarding
       ? "/onboarding"
       : getRoleHome(user.role);
 
-  // Force a full location reload to clear Next.js internal router state, 
-  // ensuring the middleware sees the NEW cookie and doesn't flicker 
+  // Force a full location reload to clear Next.js internal router state,
+  // ensuring the middleware sees the NEW cookie and doesn't flicker
   // with a cached version of the previous role's dashboard.
   window.location.href = destination;
 }
@@ -145,19 +154,24 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
   const clearAuth = useAuthStore((state) => state.clearAuth);
+  const isAuthHydrating = useAuthStore((state) => state.isLoading);
 
   useEffect(() => {
     if (reason === "session_expired" || reason === "unauthorized" || reason === "session_sync_required") {
-      // BREAK REDIRECT LOOP: If the middleware just sent us here for a reason,
-      // it means our session is likely invalid. Clear the store and stay here.
+      // BREAK REDIRECT LOOP: middleware sent us here because the session is invalid.
+      // Clear any stale store state and stay on the login page.
       clearAuth();
       return;
     }
 
+    // Wait until AuthProvider finishes its backend check before acting on
+    // the store's user value — prevents redirecting on stale localStorage data.
+    if (isAuthHydrating) return;
+
     if (user) {
       redirectAfterAuth(router, user as AuthUser);
     }
-  }, [router, user, reason, clearAuth]);
+  }, [router, user, reason, clearAuth, isAuthHydrating]);
 
   useEffect(() => {
     router.prefetch("/login");

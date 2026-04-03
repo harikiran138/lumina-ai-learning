@@ -65,7 +65,12 @@ rsync -avz --progress \
     "$PROJECT_DIR/" \
     "$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/"
 
-echo "✅ Files synced successfully"
+# Copy production environment file
+echo ""
+echo "📝 Configuring environment variables..."
+scp -i "$SSH_KEY" -o StrictHostKeyChecking=no "$PROJECT_DIR/deployment/aws/.env.production" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/.env"
+
+echo "✅ Files synced and environment configured"
 
 # Deploy using Docker Compose
 echo ""
@@ -78,11 +83,11 @@ echo "🛑 Stopping existing containers..."
 docker-compose down || true
 
 echo "🏗️  Building Docker images..."
-# Ensure environment variables are current
-docker-compose build
+# Explicitly use production config
+docker-compose -f docker-compose.prod.yml build
 
 echo "🚀 Starting containers..."
-docker-compose up -d
+docker-compose -f docker-compose.prod.yml up -d
 
 echo "⏳ Waiting for services to be healthy..."
 sleep 15

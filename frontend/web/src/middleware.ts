@@ -7,7 +7,8 @@ import {
 } from '@/lib/role-routing'
 
 /**
- * Decode JWT (no signature verification for Edge runtime)
+ * Decode JWT payload (no signature verification — Edge runtime only).
+ * Returns null when the token is malformed or expired.
  */
 function decodeToken(token: string): Record<string, unknown> | null {
   try {
@@ -28,7 +29,7 @@ function decodeToken(token: string): Record<string, unknown> | null {
 
     const exp = payload?.exp
     if (typeof exp === 'number' && Date.now() / 1000 > exp) {
-      return null
+      return null // expired
     }
 
     return payload
@@ -37,34 +38,31 @@ function decodeToken(token: string): Record<string, unknown> | null {
   }
 }
 
-// Map each path prefix to the role that is allowed to access it.
-// super_admin can access all paths.
+// Protected path prefixes → the canonical role required to access them.
+// super_admin can access every path (checked below).
 const PROTECTED_PATHS: Record<string, string> = {
-  '/admin': 'college_admin',
-  '/college': 'college_admin',
-  '/hod': 'hod',
-  '/faculty': 'faculty',
-  '/student': 'student',
-  '/parent': 'parent',
-  '/mentor': 'mentor',
-  '/peer_tutor': 'peer_tutor',
-  '/counselor': 'counselor',
+  '/admin':           'college_admin',
+  '/college':         'college_admin',
+  '/hod':             'hod',
+  '/faculty':         'faculty',
+  '/student':         'student',
+  '/parent':          'parent',
+  '/mentor':          'mentor',
+  '/peer_tutor':      'peer_tutor',
+  '/counselor':       'counselor',
   '/content_creator': 'content_creator',
-  '/researcher': 'researcher',
-  '/alumni': 'alumni',
+  '/researcher':      'researcher',
+  '/alumni':          'alumni',
 }
 
-export function middleware(request: NextRequest) {
-  const accessToken = request.cookies.get('access_token')?.value
-  const refreshToken = request.cookies.get('refresh_token')?.value
-  const token = accessToken || refreshToken // use whichever is available to decode payload
+// Roles that may access /admin/* in addition to super_admin.
+const ADMIN_ALLOWED = new Set(['super_admin', 'college_admin', 'institution_admin', 'admin'])
 
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Redirect legacy/alias paths to canonical routes before any auth check.
-  // Aliases handled: /teacher/* → /faculty/*, /peer-tutor/* → /peer_tutor/*,
-  //                  /creator/* → /content_creator/*, /researcher/portal/* → /researcher/dashboard/*,
-  //                  /content_creator/studio/* → /content_creator/dashboard/*
+  // ── 1. Canonical path redirect (aliases → canonical) ─────────────────────────
+  // Must happen before any auth check so legacy links always resolve.
   const canonical = getCanonicalPath(pathname)
   if (canonical) {
     const url = request.nextUrl.clone()
@@ -72,32 +70,36 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  const isPublic =
+  const accessToken  = request.cookies.get('access_token')?.value
+  const refreshToken = request.cookies.get('refresh_token')?.value
+  // Use whichever token is present to read the payload claims.
+  const token = accessToken || refreshToken
+
+  const isPublicPath =
+    pathname === '/' ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
+    pathname.startsWith('/auth/') ||
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/api/') ||
-    pathname === '/'
+    pathname.startsWith('/api/')
 
-  // 🚫 Not logged in
+  // ── 2. Unauthenticated visitor ────────────────────────────────────────────────
   if (!token) {
-    if (!isPublic) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
+    if (isPublicPath) return NextResponse.next()
 
-      const reason = refreshToken
-        ? 'session_expired'
-        : 'unauthorized'
-
-      url.searchParams.set('reason', reason)
-      return NextResponse.redirect(url)
-    }
-    return NextResponse.next()
+    // Protected route — redirect to login.
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('reason', 'unauthorized')
+    return NextResponse.redirect(url)
   }
 
-  // 🔍 Decode token
+  // ── 3. Decode and validate token ──────────────────────────────────────────────
   const payload = decodeToken(token)
   if (!payload) {
+    // Token is present but expired or malformed.
+    if (isPublicPath) return NextResponse.next()
+
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('reason', 'session_expired')
@@ -106,6 +108,9 @@ export function middleware(request: NextRequest) {
 
   const rawRole = typeof payload.role === 'string' ? payload.role : null
   if (!rawRole) {
+    // Malformed JWT — send back to login.
+    if (isPublicPath) return NextResponse.next()
+
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('reason', 'session_sync_required')
@@ -113,10 +118,24 @@ export function middleware(request: NextRequest) {
   }
 
   const role = normalizeRole(rawRole)
-  const onboardingCompleted = payload.onboardingCompleted === true || role === 'super_admin'
+  const onboardingCompleted =
+    payload.onboardingCompleted === true || role === 'super_admin'
 
-  // 🚧 Onboarding checks
-  if (!onboardingCompleted && !pathname.startsWith('/onboarding') && !isPublic) {
+  // ── 4. Authenticated user visiting a public page ──────────────────────────────
+  if (isPublicPath) {
+    // Redirect logged-in users away from /login and /register.
+    if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
+      const url = request.nextUrl.clone()
+      url.pathname = onboardingCompleted ? getRoleHome(role) : '/onboarding'
+      // Clear reason param so the destination doesn't see a stale reason.
+      url.searchParams.delete('reason')
+      return NextResponse.redirect(url)
+    }
+    return NextResponse.next()
+  }
+
+  // ── 5. Onboarding gate ────────────────────────────────────────────────────────
+  if (!onboardingCompleted && !pathname.startsWith('/onboarding')) {
     const url = request.nextUrl.clone()
     url.pathname = '/onboarding'
     return NextResponse.redirect(url)
@@ -128,15 +147,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // 🔐 Role-based access control
+  // ── 6. Role-based access control ─────────────────────────────────────────────
   for (const [pathPrefix, expectedRole] of Object.entries(PROTECTED_PATHS)) {
     if (pathname === pathPrefix || pathname.startsWith(`${pathPrefix}/`)) {
-      const allowedRoles =
+      const allowed =
         pathPrefix === '/admin'
-          ? new Set(['super_admin', 'college_admin', 'institution_admin', 'admin'])
-          : new Set(['super_admin', expectedRole])
+          ? ADMIN_ALLOWED.has(role)
+          : role === 'super_admin' || role === expectedRole
 
-      if (!allowedRoles.has(role)) {
+      if (!allowed) {
         const url = request.nextUrl.clone()
         url.pathname = getRoleHome(role)
         return NextResponse.redirect(url)
@@ -150,6 +169,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    // Protected role paths
     '/student/:path*',
     '/teacher/:path*',
     '/admin/:path*',
@@ -163,6 +183,11 @@ export const config = {
     '/content_creator/:path*',
     '/researcher/:path*',
     '/alumni/:path*',
+    // Onboarding gate
     '/onboarding',
+    '/onboarding/:path*',
+    // Redirect logged-in users away from auth pages
+    '/login',
+    '/register',
   ],
 }
