@@ -134,7 +134,7 @@ async def _persist_progress(
     next_step = 5 if completed else max(current_step, target_step)
 
     updates = {**(user_updates or {}), "onboarding_step": next_step}
-    updated = await UserStore().update_user_fields(user_id, updates)
+    updated = await UserStore(db=db).update_user_fields(user_id, updates)
     if not updated:
         raise HTTPException(status_code=500, detail="Failed to persist onboarding user fields")
 
@@ -696,9 +696,9 @@ async def get_onboarding_status(
         adaptive_completed = role != "student"
 
         if role == "student":
-            adaptive_profile = await db.fetch_one("onboarding_profiles", {"user_id": user_id})
+            adaptive_profile = await db.fetch_one("learner_profiles", {"user_id": user_id})
             adaptive_session = await db.fetch_one(
-                "onboarding_sessions",
+                "assessment_sessions",
                 {"user_id": user_id, "status": "in_progress"},
             )
             adaptive_completed = str((adaptive_profile or {}).get("status") or "").lower() == "completed"
