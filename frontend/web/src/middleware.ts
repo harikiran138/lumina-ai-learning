@@ -43,7 +43,7 @@ const PROTECTED_PATHS: Record<string, string> = {
   '/admin': 'college_admin',
   '/college': 'college_admin',
   '/hod': 'hod',
-  '/faculty': 'teacher',
+  '/faculty': 'faculty',
   '/student': 'student',
   '/parent': 'parent',
   '/mentor': 'mentor',
@@ -138,8 +138,7 @@ export function middleware(request: NextRequest) {
 
       if (!allowedRoles.has(role)) {
         const url = request.nextUrl.clone()
-        url.pathname = pathPrefix === '/admin' ? '/login' : getRoleHome(role)
-        url.searchParams.set('reason', 'unauthorized')
+        url.pathname = getRoleHome(role)
         return NextResponse.redirect(url)
       }
       break
