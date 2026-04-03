@@ -16,9 +16,9 @@ import Footer from "@/components/layout/Footer";
 
 export default function PricingPage() {
   return (
-    <div className="text-white min-h-screen bg-slate-950 selection:bg-lumina-highlight/30 selection:text-white">
+    <div className="text-white min-h-screen bg-neutral-950 selection:bg-lumina-highlight/30 selection:text-white">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl">
+      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-neutral-950/50 backdrop-blur-2xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <Link href="/" className="text-2xl font-black text-white flex items-center font-display tracking-tight">
@@ -27,8 +27,8 @@ export default function PricingPage() {
             </Link>
             
             <nav className="hidden md:flex items-center space-x-8">
-              <Link href="/platform" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors">Platform</Link>
-              <Link href="/technology" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors">Technology</Link>
+              <Link href="/platform" className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">Platform</Link>
+              <Link href="/technology" className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">Technology</Link>
               <Link href="/pricing" className="text-xs font-bold uppercase tracking-widest text-white">Pricing</Link>
             </nav>
 
@@ -161,7 +161,7 @@ function PricingCard({
 }) {
     return (
         <div className={`relative p-1 rounded-[40px] transition-all duration-500 ${highlight ? 'bg-gradient-to-b from-lumina-highlight to-transparent scale-[1.05] z-10 shadow-2xl' : 'glass-v2'}`}>
-            <div className="bg-slate-950 rounded-[38px] p-10 h-full flex flex-col">
+            <div className="bg-neutral-950 rounded-[38px] p-10 h-full flex flex-col">
                 <div className={`h-14 w-14 rounded-2xl flex items-center justify-center mb-8 ${highlight ? 'bg-lumina-highlight text-black' : 'bg-white/5 text-gray-400'}`}>
                     <Icon className="w-7 h-7" />
                 </div>

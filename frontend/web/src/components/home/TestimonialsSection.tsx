@@ -25,13 +25,13 @@ const testimonials = [
 
 export default function TestimonialsSection() {
   return (
-    <section id="testimonials" className="py-24 relative overflow-hidden bg-slate-950">
+    <section id="testimonials" className="py-24 relative overflow-hidden bg-neutral-950">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-20">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-6 font-display">
             Trusted by <span className="gradient-text">Educators</span>
           </h2>
-          <p className="text-lg text-slate-400 font-sans">
+          <p className="text-lg text-zinc-400 font-sans">
             Hear from the teachers and administrators who are leading the AI educational revolution with Lumina.
           </p>
         </div>
@@ -40,13 +40,13 @@ export default function TestimonialsSection() {
           {testimonials.map((t, i) => (
             <div key={i} className="glass-v2-primary p-10 flex flex-col group hover:-translate-y-2 transition-all duration-500">
               <Quote className="h-10 w-10 text-lumina-primary/20 mb-6 group-hover:text-lumina-primary transition-colors" />
-              <p className="text-lg text-slate-300 italic mb-8 font-sans leading-relaxed">
+              <p className="text-lg text-zinc-300 italic mb-8 font-sans leading-relaxed">
                 "{t.quote}"
               </p>
               <div className="mt-auto pt-6 border-t border-white/5">
                 <p className="text-white font-bold font-display">{t.author}</p>
                 <p className="text-xs text-lumina-primary font-bold uppercase tracking-widest">{t.role}</p>
-                <p className="text-xs text-slate-500 font-sans">{t.institution}</p>
+                <p className="text-xs text-zinc-500 font-sans">{t.institution}</p>
               </div>
             </div>
           ))}

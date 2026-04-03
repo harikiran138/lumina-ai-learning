@@ -18,9 +18,9 @@ import Footer from "@/components/layout/Footer";
 
 export default function TechnologyPage() {
   return (
-    <div className="text-white min-h-screen bg-slate-950 selection:bg-lumina-highlight/30 selection:text-white">
+    <div className="text-white min-h-screen bg-neutral-950 selection:bg-lumina-highlight/30 selection:text-white">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl">
+      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-neutral-950/50 backdrop-blur-2xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <Link href="/" className="text-2xl font-black text-white flex items-center font-display tracking-tight">
@@ -29,9 +29,9 @@ export default function TechnologyPage() {
             </Link>
             
             <nav className="hidden md:flex items-center space-x-8">
-              <Link href="/platform" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors">Platform</Link>
+              <Link href="/platform" className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">Platform</Link>
               <Link href="/technology" className="text-xs font-bold uppercase tracking-widest text-white">Technology</Link>
-              <Link href="/pricing" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors">Pricing</Link>
+              <Link href="/pricing" className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">Pricing</Link>
             </nav>
 
             <Link

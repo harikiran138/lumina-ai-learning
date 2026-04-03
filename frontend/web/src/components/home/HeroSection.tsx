@@ -67,7 +67,7 @@ export default function HeroSection() {
             <br />
             Teach Alone
           </h1>
-          <p className="text-lg sm:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-sans">
+          <p className="text-lg sm:text-xl text-zinc-400 max-w-3xl mx-auto leading-relaxed font-sans">
             Teacher-verified AI answers, PDF-to-course in 15 minutes, OCR-graded
             handwritten exams — built for engineering colleges that need more than a checkbox LMS.
           </p>
@@ -107,7 +107,7 @@ export default function HeroSection() {
                 <p className={`text-xs font-black ${card.color} uppercase tracking-wide mb-0.5`}>
                   {card.label}
                 </p>
-                <p className="text-[10px] text-slate-500 font-sans">{card.sub}</p>
+                <p className="text-[10px] text-zinc-500 font-sans">{card.sub}</p>
               </div>
             </div>
           ))}
@@ -120,7 +120,7 @@ export default function HeroSection() {
               <span className="text-2xl sm:text-3xl font-black text-lumina-highlight font-display group-hover:drop-shadow-[0_0_12px_rgba(255,215,0,0.6)] transition-all">
                 {stat.value}
               </span>
-              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">
+              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-[0.2em] mt-1">
                 {stat.label}
               </span>
             </div>

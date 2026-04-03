@@ -4,13 +4,13 @@ import { Cpu, Database, Network, Sparkles, Workflow } from "lucide-react";
 
 export default function AIEngineSection() {
   return (
-    <section id="ai-engine" className="py-24 relative overflow-hidden bg-slate-950">
+    <section id="ai-engine" className="py-24 relative overflow-hidden bg-neutral-950">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-20">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-6 font-display">
             The Neural <span className="gradient-text">Learning Engine</span>
           </h2>
-          <p className="text-lg text-slate-400 font-sans">
+          <p className="text-lg text-zinc-400 font-sans">
             Lumina's proprietary AI architecture combines deep knowledge tracing with semantic modeling to create a truly adaptive learning experience.
           </p>
         </div>
@@ -26,7 +26,7 @@ export default function AIEngineSection() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white mb-3 font-display">Knowledge Store</h3>
-                  <p className="text-sm text-slate-400 font-sans">Structured repository of curriculum material, verified answers, and research-backed pedagogical data.</p>
+                  <p className="text-sm text-zinc-400 font-sans">Structured repository of curriculum material, verified answers, and research-backed pedagogical data.</p>
                 </div>
               </div>
 
@@ -36,7 +36,7 @@ export default function AIEngineSection() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white mb-3 font-display">Neural Inference</h3>
-                  <p className="text-sm text-slate-400 font-sans">Real-time adaptive logic that calculates the "Zone of Proximal Development" for every learner.</p>
+                  <p className="text-sm text-zinc-400 font-sans">Real-time adaptive logic that calculates the "Zone of Proximal Development" for every learner.</p>
                 </div>
               </div>
 
@@ -46,7 +46,7 @@ export default function AIEngineSection() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white mb-3 font-display">Mastery Graph</h3>
-                  <p className="text-sm text-slate-400 font-sans">Dynamic visualization of student progress, identifying gaps and suggesting optimal growth trajectories.</p>
+                  <p className="text-sm text-zinc-400 font-sans">Dynamic visualization of student progress, identifying gaps and suggesting optimal growth trajectories.</p>
                 </div>
               </div>
             </div>
@@ -63,7 +63,7 @@ export default function AIEngineSection() {
               </div>
               <div>
                 <h4 className="text-white font-bold mb-1 font-display">Deep Knowledge Tracing</h4>
-                <p className="text-xs text-slate-500 font-sans">Advanced RNN-based models to predict student performance on future exercises.</p>
+                <p className="text-xs text-zinc-500 font-sans">Advanced RNN-based models to predict student performance on future exercises.</p>
               </div>
             </div>
             <div className="glass-v2 p-6 flex items-start space-x-4">
@@ -72,7 +72,7 @@ export default function AIEngineSection() {
               </div>
               <div>
                 <h4 className="text-white font-bold mb-1 font-display">Semantic Pathway Logic</h4>
-                <p className="text-xs text-slate-500 font-sans">Graphs that connect disparate concepts, enabling cross-disciplinary learning insights.</p>
+                <p className="text-xs text-zinc-500 font-sans">Graphs that connect disparate concepts, enabling cross-disciplinary learning insights.</p>
               </div>
             </div>
           </div>

@@ -32,7 +32,7 @@ export default function ParentSettingsPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8">
+    <div className="min-h-screen bg-neutral-950 text-white p-8">
       <div className="max-w-6xl mx-auto">
         <header className="mb-12">
           <h1 className="text-4xl font-black mb-2 tracking-tight">System Settings</h1>
@@ -81,9 +81,9 @@ export default function ParentSettingsPage() {
                     <div className="flex flex-col md:flex-row gap-10 items-start md:items-center">
                        <div className="relative group">
                           <div className="h-24 w-24 rounded-[2rem] bg-gradient-to-br from-yellow-500 to-amber-500 p-1 flex items-center justify-center">
-                             <div className="h-full w-full rounded-[1.8rem] bg-slate-900 flex items-center justify-center text-4xl font-black">P</div>
+                             <div className="h-full w-full rounded-[1.8rem] bg-neutral-900 flex items-center justify-center text-4xl font-black">P</div>
                           </div>
-                          <button className="absolute -bottom-2 -right-2 bg-white text-slate-900 p-2 rounded-xl shadow-lg hover:scale-110 transition-transform">
+                          <button className="absolute -bottom-2 -right-2 bg-white text-neutral-900 p-2 rounded-xl shadow-lg hover:scale-110 transition-transform">
                              <Monitor className="h-4 w-4" />
                           </button>
                        </div>

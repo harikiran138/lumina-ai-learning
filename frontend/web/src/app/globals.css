@@ -13,47 +13,47 @@
 }
 
 :root {
-  --background: 222 47% 11%;
+  --background: 0 0% 2%;
   --foreground: 210 40% 98%;
-  --card: 222 47% 13%;
+  --card: 0 0% 4%;
   --card-foreground: 210 40% 98%;
-  --popover: 222 47% 13%;
+  --popover: 0 0% 4%;
   --popover-foreground: 210 40% 98%;
   --primary: 38 92% 50%;
-  --primary-foreground: 222 47% 11%;
+  --primary-foreground: 0 0% 2%;
   --secondary: 220 20% 20%;
   --secondary-foreground: 210 40% 98%;
-  --muted: 223 18% 20%;
+  --muted: 0 0% 12%;
   --muted-foreground: 215 20% 68%;
   --accent: 24 95% 53%;
   --accent-foreground: 210 40% 98%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 210 40% 98%;
-  --border: 217 19% 26%;
-  --input: 217 19% 26%;
+  --border: 0 0% 12%;
+  --input: 0 0% 12%;
   --ring: 38 92% 50%;
   --radius: 1rem;
 }
 
 .dark {
-  --background: 222 47% 11%;
+  --background: 0 0% 2%;
   --foreground: 210 40% 98%;
-  --card: 222 47% 13%;
+  --card: 0 0% 4%;
   --card-foreground: 210 40% 98%;
-  --popover: 222 47% 13%;
+  --popover: 0 0% 4%;
   --popover-foreground: 210 40% 98%;
   --primary: 38 92% 50%;
-  --primary-foreground: 222 47% 11%;
+  --primary-foreground: 0 0% 2%;
   --secondary: 220 20% 20%;
   --secondary-foreground: 210 40% 98%;
-  --muted: 223 18% 20%;
+  --muted: 0 0% 12%;
   --muted-foreground: 215 20% 68%;
   --accent: 24 95% 53%;
   --accent-foreground: 210 40% 98%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 210 40% 98%;
-  --border: 217 19% 26%;
-  --input: 217 19% 26%;
+  --border: 0 0% 12%;
+  --input: 0 0% 12%;
   --ring: 38 92% 50%;
 }
 
@@ -130,26 +130,26 @@ select {
 
   .neural-mesh {
     background-image:
-      linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+      linear-gradient(rgba(115, 115, 115, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(115, 115, 115, 0.08) 1px, transparent 1px);
     background-size: 48px 48px;
     mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.95), transparent 80%);
     animation: mesh-shift 60s linear infinite;
   }
 
   .glass {
-    background: rgba(15, 23, 42, 0.55);
+    background: rgba(18, 18, 20, 0.65);
     border: 1px solid rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
   }
 
   .glass-panel {
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(2, 6, 23, 0.72));
+    background: linear-gradient(180deg, rgba(18, 18, 20, 0.82), rgba(10, 10, 12, 0.72));
     border: 1px solid rgba(255, 255, 255, 0.09);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    box-shadow: 0 24px 90px rgba(2, 6, 23, 0.45);
+    box-shadow: 0 24px 90px rgba(10, 10, 12, 0.45);
   }
 
   .glass-card,
@@ -158,25 +158,25 @@ select {
   .glass-card-premium {
     border-radius: 1.5rem;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(15, 23, 42, 0.56);
+    background: rgba(18, 18, 20, 0.65);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
-    box-shadow: 0 14px 40px rgba(2, 6, 23, 0.28);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
   }
 
   .glass-v2-primary {
     background:
-      linear-gradient(180deg, rgba(245, 158, 11, 0.08), rgba(15, 23, 42, 0.76)),
-      rgba(15, 23, 42, 0.62);
+      linear-gradient(180deg, rgba(245, 158, 11, 0.08), rgba(18, 18, 20, 0.85)),
+      rgba(18, 18, 20, 0.75);
   }
 
   .glass-v2-gold {
     border-radius: 1.5rem;
     border: 1px solid rgba(245, 158, 11, 0.12);
-    background: linear-gradient(180deg, rgba(245, 158, 11, 0.05), rgba(15, 23, 42, 0.62));
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.05), rgba(18, 18, 20, 0.62));
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
-    box-shadow: 0 14px 40px rgba(2, 6, 23, 0.28);
+    box-shadow: 0 14px 40px rgba(10, 10, 12, 0.28);
     position: relative;
     overflow: hidden;
   }
@@ -184,7 +184,7 @@ select {
   .glass-card-premium {
     background:
       linear-gradient(145deg, rgba(245, 158, 11, 0.12), rgba(249, 115, 22, 0.05)),
-      rgba(15, 23, 42, 0.72);
+      rgba(18, 18, 20, 0.72);
     border-color: rgba(245, 158, 11, 0.14);
   }
 
@@ -258,7 +258,7 @@ select {
   }
 
   .shadow-premium {
-    box-shadow: 0 18px 48px rgba(2, 6, 23, 0.42);
+    box-shadow: 0 18px 48px rgba(10, 10, 12, 0.42);
   }
 
   .animate-float {

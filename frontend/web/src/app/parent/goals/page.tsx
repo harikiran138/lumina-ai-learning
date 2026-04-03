@@ -59,7 +59,7 @@ export default function ParentGoalsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="h-12 w-12 border-4 border-lumina-highlight border-t-transparent rounded-full animate-spin"></div>
       </div>
     )
@@ -69,7 +69,7 @@ export default function ParentGoalsPage() {
   const children = data?.children || []
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8">
+    <div className="min-h-screen bg-neutral-950 text-white p-8">
       <div className="max-w-5xl mx-auto">
         <header className="flex justify-between items-center mb-10">
           <div>
@@ -173,7 +173,7 @@ export default function ParentGoalsPage() {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="relative w-full max-w-md bg-slate-900 border border-lumina-highlight/20 p-8 rounded-3xl shadow-2xl shadow-lumina-highlight/5"
+                className="relative w-full max-w-md bg-neutral-900 border border-lumina-highlight/20 p-8 rounded-3xl shadow-2xl shadow-lumina-highlight/5"
               >
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-2xl font-bold text-white tracking-tight">New Academic Goal</h3>
@@ -200,9 +200,9 @@ export default function ParentGoalsPage() {
                       value={newGoal.student_id}
                       onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewGoal({...newGoal, student_id: e.target.value})}
                     >
-                      <option value="" disabled className="bg-slate-900 text-gray-400">Select Child</option>
+                      <option value="" disabled className="bg-neutral-900 text-gray-400">Select Child</option>
                       {children.map((c: any) => (
-                        <option key={c.id} value={c.id} className="bg-slate-900 text-white">{c.name}</option>
+                        <option key={c.id} value={c.id} className="bg-neutral-900 text-white">{c.name}</option>
                       ))}
                     </select>
                   </div>

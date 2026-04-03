@@ -108,7 +108,7 @@ export default function ParentDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center text-white">
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 border-4 border-lumina-highlight border-t-transparent rounded-full animate-spin"></div>
           <p className="text-gray-400">Loading your dashboard...</p>
@@ -576,7 +576,7 @@ export default function ParentDashboard() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-slate-900 border-l border-white/10 z-50 flex flex-col"
+              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-neutral-900 border-l border-white/10 z-50 flex flex-col"
             >
               <div className="p-6 border-b border-white/10 flex items-center justify-between">
                 <h3 className="text-xl font-bold text-white">Inbox</h3>

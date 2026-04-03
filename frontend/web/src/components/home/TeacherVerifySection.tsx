@@ -56,7 +56,7 @@ export default function TeacherVerifySection() {
               <span className="gradient-text-gold">Until a Teacher Unlocks Them</span>
             </h2>
 
-            <p className="text-lg text-slate-400 font-sans leading-relaxed max-w-xl">
+            <p className="text-lg text-zinc-400 font-sans leading-relaxed max-w-xl">
               Lumina's Teacher Verification Queue is not optional and not bypassable.
               Every AI-generated response goes into a pending state. A faculty member
               must approve it before any student sees it.
@@ -64,7 +64,7 @@ export default function TeacherVerifySection() {
 
             <ul className="space-y-3">
               {benefits.map((b, i) => (
-                <li key={i} className="flex items-start gap-3 text-slate-300">
+                <li key={i} className="flex items-start gap-3 text-zinc-300">
                   <CheckCircle2 className="h-5 w-5 text-lumina-highlight flex-shrink-0 mt-0.5" />
                   <span className="font-sans leading-snug">{b}</span>
                 </li>
@@ -74,7 +74,7 @@ export default function TeacherVerifySection() {
             {/* Stat callout */}
             <div className="inline-flex items-center gap-4 px-6 py-4 rounded-2xl border border-lumina-highlight/20 bg-lumina-highlight/5">
               <span className="text-4xl font-black text-lumina-highlight font-display">100%</span>
-              <span className="text-sm font-bold text-slate-300 leading-tight">
+              <span className="text-sm font-bold text-zinc-300 leading-tight">
                 of AI answers verified by a<br />
                 <span className="text-lumina-highlight">real faculty member</span> before delivery
               </span>
@@ -93,8 +93,8 @@ export default function TeacherVerifySection() {
                   </h4>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-slate-500" />
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Live</span>
+                  <Clock className="h-3.5 w-3.5 text-zinc-500" />
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Live</span>
                 </div>
               </div>
 
@@ -115,20 +115,20 @@ export default function TeacherVerifySection() {
                       >
                         {item.status}
                       </span>
-                      <span className="text-[10px] text-slate-500">{item.time}</span>
+                      <span className="text-[10px] text-zinc-500">{item.time}</span>
                     </div>
 
-                    <p className="text-[11px] text-slate-400 font-bold mb-1.5 uppercase tracking-wide">
+                    <p className="text-[11px] text-zinc-400 font-bold mb-1.5 uppercase tracking-wide">
                       Student asked:
                     </p>
                     <p className="text-sm text-white font-sans mb-3 italic">"{item.question}"</p>
 
                     {item.active && (
                       <>
-                        <p className="text-[11px] text-slate-400 font-bold mb-1.5 uppercase tracking-wide">
+                        <p className="text-[11px] text-zinc-400 font-bold mb-1.5 uppercase tracking-wide">
                           AI Answer:
                         </p>
-                        <p className="text-xs text-slate-300 font-sans leading-relaxed mb-4 line-clamp-2">
+                        <p className="text-xs text-zinc-300 font-sans leading-relaxed mb-4 line-clamp-2">
                           {item.aiAnswer}
                         </p>
                         <div className="flex gap-2">
@@ -136,7 +136,7 @@ export default function TeacherVerifySection() {
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             Approve
                           </button>
-                          <button className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border border-white/10 text-slate-300 text-xs font-bold hover:bg-white/5 transition-colors">
+                          <button className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border border-white/10 text-zinc-300 text-xs font-bold hover:bg-white/5 transition-colors">
                             <Edit3 className="h-3.5 w-3.5" />
                             Edit
                           </button>

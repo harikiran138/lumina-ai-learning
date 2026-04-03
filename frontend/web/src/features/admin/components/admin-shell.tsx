@@ -20,7 +20,7 @@ export function AdminShell({
   const setSidebarOpen = useAdminShellStore((state) => state.setSidebarOpen);
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-white">
+    <div className="relative min-h-screen bg-neutral-950 text-white">
       <AdminStoreHydrator user={initialUser} />
       <BGPattern
         variant="grid"
@@ -34,7 +34,7 @@ export function AdminShell({
         {sidebarOpen ? (
           <button
             type="button"
-            className="fixed inset-0 z-30 bg-slate-950/70 lg:hidden"
+            className="fixed inset-0 z-30 bg-neutral-950/70 lg:hidden"
             aria-label="Close admin navigation"
             onClick={() => setSidebarOpen(false)}
           />

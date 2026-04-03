@@ -240,7 +240,8 @@ export class RealAPI {
       name: displayName,
       role: userData.role,
       onboardingStep,
-      onboardingCompleted: userData.onboardingCompleted ?? (onboardingStep >= 5 && adaptiveOnboardingCompleted),
+      onboardingCompleted: userData.onboardingCompleted ?? 
+        (onboardingStep >= (userData.role === "college_admin" ? 2 : 5) && adaptiveOnboardingCompleted),
       adaptiveOnboardingCompleted,
       mustChangePassword: userData.mustChangePassword,
       collegeId: userData.collegeId,
@@ -741,7 +742,36 @@ export class RealAPI {
   async completeOnboarding(): Promise<any> {
     const res = await this.fetchAuthorized("/api/onboarding/complete", { method: "POST" });
     if (!res.ok) return { success: false };
-    return await parseJsonSafe(res) ?? {};
+    const data = await parseJsonSafe(res) ?? {};
+
+    // Persist a fresh token if the completion endpoint returned one.
+    if (data.accessToken) {
+      this.persistToken(data.accessToken);
+    }
+
+    // The original login JWT still has onboardingCompleted: false.
+    // Force a token refresh so the middleware cookie is updated to
+    // onboardingCompleted: true before the next page navigation.
+    // Without this the middleware always redirects back to /onboarding.
+    try {
+      const refreshRes = await fetch(
+        this.buildUrl(requireAuthBase(), "/api/auth/refresh"),
+        { method: "POST", credentials: "include" },
+      );
+      if (refreshRes.ok) {
+        const refreshData = await parseJsonSafe(refreshRes);
+        if (refreshData?.accessToken) {
+          this.persistToken(refreshData.accessToken);
+        }
+      }
+    } catch { /* best-effort — navigation will still work via the DB flag */ }
+
+    // Update in-memory user so AuthGateway / redirectAfterAuth reads the right value.
+    if (this.currentUser) {
+      this.currentUser = { ...this.currentUser, onboardingCompleted: true };
+    }
+
+    return data;
   }
 
   // --- Dashboard ---

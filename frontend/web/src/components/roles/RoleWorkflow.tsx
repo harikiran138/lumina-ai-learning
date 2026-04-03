@@ -29,7 +29,7 @@ const RoleWorkflow = ({ steps }: RoleWorkflowProps) => {
                 <div className="w-10 h-10 rounded-full bg-lumina-highlight/10 flex items-center justify-center shrink-0 border border-lumina-highlight/20 group-hover:bg-lumina-highlight group-hover:text-black transition-all">
                   <span className="font-black text-sm">{i + 1}</span>
                 </div>
-                <p className="text-lg text-slate-300 font-sans leading-relaxed pt-1.5 italic">
+                <p className="text-lg text-zinc-300 font-sans leading-relaxed pt-1.5 italic">
                   {step}
                 </p>
               </motion.div>

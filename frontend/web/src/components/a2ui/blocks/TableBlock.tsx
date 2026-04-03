@@ -11,7 +11,7 @@ export const TableResult: React.FC<TableResultProps> = ({ block }) => {
   return (
     <div className="my-6">
       <div className="flex items-center gap-2 mb-3">
-        <Grid3X3 className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+        <Grid3X3 className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
         {block.title && (
           <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
             {block.title}

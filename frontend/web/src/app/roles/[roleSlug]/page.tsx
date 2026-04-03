@@ -45,7 +45,7 @@ export default async function RolePage({ params }: { params: Promise<{ roleSlug:
           
           <Link 
             href="/#roles" 
-            className="flex items-center space-x-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-lumina-highlight transition-colors"
+            className="flex items-center space-x-2 text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-lumina-highlight transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Roles</span>

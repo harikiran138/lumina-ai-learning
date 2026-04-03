@@ -39,7 +39,7 @@ export default function FinalCTASection() {
                 <span className="gradient-text-gold">Build the Real Thing.</span>
               </h2>
 
-              <p className="text-lg text-slate-400 font-sans max-w-xl mx-auto leading-relaxed">
+              <p className="text-lg text-zinc-400 font-sans max-w-xl mx-auto leading-relaxed">
                 Lumina is fully open, self-hostable, and production-ready. Your data
                 stays on your servers. Your teachers stay in control.
               </p>
@@ -52,7 +52,7 @@ export default function FinalCTASection() {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-lumina-highlight/15 bg-lumina-highlight/5"
                   >
                     <div className="w-1.5 h-1.5 rounded-full bg-lumina-highlight flex-shrink-0" />
-                    <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                    <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider">
                       {b}
                     </span>
                   </div>
@@ -70,7 +70,7 @@ export default function FinalCTASection() {
                 </Link>
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 text-slate-300 font-bold text-sm uppercase tracking-[0.15em] h-14 px-12 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/5 hover:border-white/20 transition-all"
+                  className="inline-flex items-center gap-2 text-zinc-300 font-bold text-sm uppercase tracking-[0.15em] h-14 px-12 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/5 hover:border-white/20 transition-all"
                 >
                   <Shield className="h-4 w-4" />
                   Sign In to Platform
@@ -78,7 +78,7 @@ export default function FinalCTASection() {
               </div>
 
               {/* Trust note */}
-              <p className="text-[11px] text-slate-600 font-sans uppercase tracking-wider">
+              <p className="text-[11px] text-zinc-600 font-sans uppercase tracking-wider">
                 No vendor lock-in · No cloud required · Open source compatible
               </p>
             </div>
