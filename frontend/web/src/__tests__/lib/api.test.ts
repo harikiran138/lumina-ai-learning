@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../mocks/server'
 
-const BASE = 'http://127.0.0.1:8000'
+const BASE = ''
 
 // ── fetchWithRetry behaviour (indirect via native fetch + MSW) ────────────────
 
