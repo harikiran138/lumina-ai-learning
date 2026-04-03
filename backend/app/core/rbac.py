@@ -79,10 +79,8 @@ def normalize_role(role: Any) -> str:
 
     raw = str(role).strip().lower()
 
-    if raw == "faculty":
-        return Role.TEACHER.value
-    if raw == "admin":
-        return "admin"
+    if raw == "admin" or raw == "administrator":
+        return Role.SUPER_ADMIN.value
 
     # Direct matches
     if raw in ALL_ROLES:

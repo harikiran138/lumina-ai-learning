@@ -59,6 +59,11 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // ignore network errors on logout
         } finally {
+          if (typeof window !== "undefined") {
+            sessionStorage.removeItem('lumina_user');
+            // Hard clear for sensitive sessions
+            sessionStorage.clear();
+          }
           set({ user: null, isAuthenticated: false });
         }
       },

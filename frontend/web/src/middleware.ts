@@ -139,6 +139,7 @@ export function middleware(request: NextRequest) {
       if (!allowedRoles.has(role)) {
         const url = request.nextUrl.clone()
         url.pathname = pathPrefix === '/admin' ? '/login' : getRoleHome(role)
+        url.searchParams.set('reason', 'unauthorized')
         return NextResponse.redirect(url)
       }
       break

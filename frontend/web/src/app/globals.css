@@ -112,6 +112,15 @@ select {
     color: transparent;
   }
 
+  .gradient-text-gold {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: text-shimmer 4s linear infinite;
+  }
+
   .gradient-text-orange {
     background: linear-gradient(135deg, #f59e0b 0%, #fb923c 45%, #f97316 100%);
     -webkit-background-clip: text;
@@ -125,6 +134,7 @@ select {
       linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
     background-size: 48px 48px;
     mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.95), transparent 80%);
+    animation: mesh-shift 60s linear infinite;
   }
 
   .glass {
@@ -160,11 +170,39 @@ select {
       rgba(15, 23, 42, 0.62);
   }
 
+  .glass-v2-gold {
+    border-radius: 1.5rem;
+    border: 1px solid rgba(245, 158, 11, 0.12);
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.05), rgba(15, 23, 42, 0.62));
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 14px 40px rgba(2, 6, 23, 0.28);
+    position: relative;
+    overflow: hidden;
+  }
+
   .glass-card-premium {
     background:
       linear-gradient(145deg, rgba(245, 158, 11, 0.12), rgba(249, 115, 22, 0.05)),
       rgba(15, 23, 42, 0.72);
     border-color: rgba(245, 158, 11, 0.14);
+  }
+
+  .glass-shimmer::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      transparent,
+      rgba(255, 255, 255, 0.05),
+      transparent
+    );
+    transform: rotate(35deg);
+    animation: glass-shimer-animation 8s infinite linear;
+    pointer-events: none;
   }
 
   .glass-button,
@@ -221,5 +259,36 @@ select {
 
   .shadow-premium {
     box-shadow: 0 18px 48px rgba(2, 6, 23, 0.42);
+  }
+
+  .animate-float {
+    animation: float-animation 6s ease-in-out infinite;
+  }
+
+  .animate-float-delay {
+    animation: float-animation 6s ease-in-out infinite 1s;
+  }
+
+  .animate-float-delay-2 {
+    animation: float-animation 6s ease-in-out infinite 2.5s;
+  }
+
+  @keyframes float-animation {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes glass-shimer-animation {
+    0% { transform: rotate(35deg) translate(-100%, -100%); }
+    100% { transform: rotate(35deg) translate(100%, 100%); }
+  }
+
+  @keyframes mesh-shift {
+    from { background-position: 0 0; }
+    to { background-position: 48px 48px; }
+  }
+
+  @keyframes text-shimmer {
+    to { background-position: 200% center; }
   }
 }
