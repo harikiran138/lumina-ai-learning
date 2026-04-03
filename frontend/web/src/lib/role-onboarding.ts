@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 export type SupportedRoleOnboardingRole =
   | "teacher"
   | "faculty"
@@ -10,475 +8,448 @@ export type SupportedRoleOnboardingRole =
 
 export type SupportedRoleStep = 1 | 2 | 3 | 4 | 5;
 
-type FieldType =
-  | "text"
-  | "number"
-  | "textarea"
-  | "select"
-  | "multiselect"
-  | "array"
-  | "boolean";
-
-interface StepField {
+export interface OnboardingField {
   key: string;
-  type: FieldType;
   label: string;
+  type: "text" | "number" | "textarea" | "select" | "multiselect" | "array" | "boolean";
   helper: string;
   placeholder?: string;
   options?: Array<{ label: string; value: string; helper?: string }>;
+  required?: boolean;
 }
 
-interface OnboardingStep {
+export interface RoleStep {
   id: SupportedRoleStep;
   title: string;
   description: string;
-  fields: StepField[];
-  schema: z.ZodTypeAny;
+  fields: OnboardingField[];
 }
 
-interface RoleOnboardingConfig {
+export interface RoleOnboardingConfig {
   label: string;
   intro: string;
   completionLabel: string;
-  steps: OnboardingStep[];
+  steps: RoleStep[];
 }
 
-// ─── Shared utilities ────────────────────────────────────────────────────────
+const CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
+  teacher: {
+    label: "Teacher Onboarding",
+    intro:
+      "Complete your educator profile so students and administrators can get the most from your teaching.",
+    completionLabel: "Finish setup",
+    steps: [
+      {
+        id: 1,
+        title: "Personal Details",
+        description: "Tell us a bit about yourself so we can personalise your workspace.",
+        fields: [
+          { key: "fullName", label: "Full name", type: "text", helper: "Your display name across the platform.", placeholder: "e.g. Dr. Jane Smith", required: true },
+          { key: "bio", label: "Short bio", type: "textarea", helper: "A brief description for your profile page.", placeholder: "What do you teach and what drives you?" },
+        ],
+      },
+      {
+        id: 2,
+        title: "Teaching Profile",
+        description: "Describe your subject areas and teaching style.",
+        fields: [
+          { key: "subjects", label: "Subjects / disciplines", type: "array", helper: "List the subjects you teach, one per line.", placeholder: "Mathematics\nPhysics" },
+          { key: "teachingStyle", label: "Teaching style", type: "select", helper: "How would you describe your primary teaching approach?", options: [
+            { label: "Lecture-based", value: "lecture" },
+            { label: "Project-based", value: "project" },
+            { label: "Inquiry / Socratic", value: "inquiry" },
+            { label: "Flipped classroom", value: "flipped" },
+            { label: "Mixed / Hybrid", value: "mixed" },
+          ]},
+        ],
+      },
+      {
+        id: 3,
+        title: "Experience & Qualifications",
+        description: "Share your academic background and years of experience.",
+        fields: [
+          { key: "yearsExperience", label: "Years of teaching experience", type: "number", helper: "Approximate number of years.", placeholder: "5" },
+          { key: "qualifications", label: "Qualifications", type: "array", helper: "List your degrees or certifications, one per line.", placeholder: "M.Ed. – University of Example\nCertified STEM Educator" },
+        ],
+      },
+      {
+        id: 4,
+        title: "Platform Preferences",
+        description: "Let us know how you prefer to use Lumina.",
+        fields: [
+          { key: "aiAssistEnabled", label: "Enable AI teaching assistant", type: "boolean", helper: "Allow Lumina AI to suggest content and flag learner risk." },
+          { key: "notifyOnSubmission", label: "Notify me on student submissions", type: "boolean", helper: "Receive an in-app notification whenever a student submits work." },
+        ],
+      },
+      {
+        id: 5,
+        title: "Final Review",
+        description: "Review and confirm your profile before finishing setup.",
+        fields: [
+          { key: "agreedToTerms", label: "I agree to the educator guidelines", type: "boolean", helper: "Confirm you have read and agree to the Lumina educator community guidelines.", required: true },
+        ],
+      },
+    ],
+  },
 
-export function parseListInput(value: string): string[] {
-  return value
+  faculty: {
+    label: "Faculty Onboarding",
+    intro:
+      "Complete your faculty profile to connect with students and manage your courses effectively.",
+    completionLabel: "Finish setup",
+    steps: [
+      {
+        id: 1,
+        title: "Personal Details",
+        description: "Set up your faculty identity on Lumina.",
+        fields: [
+          { key: "fullName", label: "Full name", type: "text", helper: "Your name as it appears in the institution directory.", placeholder: "Prof. Alex Johnson", required: true },
+          { key: "department", label: "Department", type: "text", helper: "Your primary department or school.", placeholder: "Department of Computer Science" },
+        ],
+      },
+      {
+        id: 2,
+        title: "Academic Background",
+        description: "Share your specialisation and research areas.",
+        fields: [
+          { key: "specialisation", label: "Specialisation", type: "text", helper: "Your primary academic or research specialisation.", placeholder: "Machine Learning & AI" },
+          { key: "researchAreas", label: "Research areas", type: "array", helper: "List your research topics, one per line.", placeholder: "Natural Language Processing\nComputer Vision" },
+        ],
+      },
+      {
+        id: 3,
+        title: "Courses & Load",
+        description: "Tell us about the courses you're responsible for.",
+        fields: [
+          { key: "currentCourses", label: "Current courses", type: "array", helper: "Courses you are teaching this semester, one per line.", placeholder: "CS401 – Deep Learning\nCS301 – Data Structures" },
+          { key: "maxStudents", label: "Max students per course", type: "number", helper: "Your preferred class size.", placeholder: "40" },
+        ],
+      },
+      {
+        id: 4,
+        title: "Platform Preferences",
+        description: "Configure how Lumina supports your faculty role.",
+        fields: [
+          { key: "aiAssistEnabled", label: "Enable AI grading assistant", type: "boolean", helper: "Allow AI to assist with rubric-based grading suggestions." },
+          { key: "officeHoursPublic", label: "Make office hours public", type: "boolean", helper: "Allow students to see your office hours on your profile." },
+        ],
+      },
+      {
+        id: 5,
+        title: "Final Review",
+        description: "Confirm your faculty profile.",
+        fields: [
+          { key: "agreedToTerms", label: "I agree to the faculty conduct policy", type: "boolean", helper: "Confirm that you accept the institution's faculty conduct and data policy.", required: true },
+        ],
+      },
+    ],
+  },
+
+  parent: {
+    label: "Parent / Guardian Onboarding",
+    intro:
+      "Set up your guardian profile so you can monitor your child's progress and stay informed.",
+    completionLabel: "Finish setup",
+    steps: [
+      {
+        id: 1,
+        title: "Your Details",
+        description: "Tell us about yourself as a guardian.",
+        fields: [
+          { key: "fullName", label: "Full name", type: "text", helper: "Your full name for account verification.", placeholder: "Jane Doe", required: true },
+          { key: "relationship", label: "Relationship to student", type: "select", helper: "Your relationship to the learner you are monitoring.", options: [
+            { label: "Parent", value: "parent" },
+            { label: "Guardian", value: "guardian" },
+            { label: "Sibling", value: "sibling" },
+            { label: "Other", value: "other" },
+          ]},
+        ],
+      },
+      {
+        id: 2,
+        title: "Contact Preferences",
+        description: "Choose how and when you want to be notified.",
+        fields: [
+          { key: "contactEmail", label: "Preferred contact email", type: "text", helper: "Email address for progress reports and alerts.", placeholder: "parent@example.com" },
+          { key: "notificationFrequency", label: "Notification frequency", type: "select", helper: "How often should we send you progress updates?", options: [
+            { label: "Daily digest", value: "daily" },
+            { label: "Weekly summary", value: "weekly" },
+            { label: "Important events only", value: "events_only" },
+          ]},
+        ],
+      },
+      {
+        id: 3,
+        title: "Monitoring Preferences",
+        description: "Tell us which areas you'd like to track.",
+        fields: [
+          { key: "trackAreas", label: "Areas to monitor", type: "multiselect", helper: "Select the aspects of your child's learning you want to follow.", options: [
+            { label: "Assignment submissions", value: "assignments", helper: "Know when work is submitted or overdue." },
+            { label: "Test & quiz results", value: "tests", helper: "Receive scores as soon as they are released." },
+            { label: "AI risk flags", value: "risk_flags", helper: "Be notified if the AI detects learning struggles." },
+            { label: "Attendance", value: "attendance", helper: "Track class attendance signals." },
+          ]},
+        ],
+      },
+      {
+        id: 4,
+        title: "Privacy & Consent",
+        description: "Review how your data is used.",
+        fields: [
+          { key: "dataConsent", label: "I consent to data processing as described in the privacy policy", type: "boolean", helper: "Lumina uses your contact details to send progress reports. You can opt out at any time.", required: true },
+        ],
+      },
+      {
+        id: 5,
+        title: "Final Review",
+        description: "Confirm your guardian profile.",
+        fields: [
+          { key: "agreedToTerms", label: "I agree to the guardian terms of service", type: "boolean", helper: "Confirm your acceptance of the Lumina guardian terms.", required: true },
+        ],
+      },
+    ],
+  },
+
+  mentor: {
+    label: "Mentor Onboarding",
+    intro:
+      "Complete your mentor profile to start guiding learners through their academic and career journeys.",
+    completionLabel: "Finish setup",
+    steps: [
+      {
+        id: 1,
+        title: "Personal Details",
+        description: "Introduce yourself to the Lumina community.",
+        fields: [
+          { key: "fullName", label: "Full name", type: "text", helper: "Your display name on the platform.", placeholder: "Alex Rivera", required: true },
+          { key: "bio", label: "Mentor bio", type: "textarea", helper: "A short paragraph about your background and mentoring philosophy.", placeholder: "I mentor students on..." },
+        ],
+      },
+      {
+        id: 2,
+        title: "Expertise & Focus",
+        description: "Tell us what you specialise in as a mentor.",
+        fields: [
+          { key: "expertiseAreas", label: "Areas of expertise", type: "array", helper: "List the topics you can mentor on, one per line.", placeholder: "Software Engineering\nCareer Planning" },
+          { key: "mentorFocus", label: "Mentoring focus", type: "multiselect", helper: "Select the types of support you offer.", options: [
+            { label: "Academic support", value: "academic", helper: "Help with coursework and study strategies." },
+            { label: "Career guidance", value: "career", helper: "Resume reviews, interview prep, and job search." },
+            { label: "Skill development", value: "skills", helper: "Teaching specific technical or soft skills." },
+            { label: "Wellbeing & motivation", value: "wellbeing", helper: "Emotional support and motivation coaching." },
+          ]},
+        ],
+      },
+      {
+        id: 3,
+        title: "Availability",
+        description: "Set your mentoring availability.",
+        fields: [
+          { key: "hoursPerWeek", label: "Hours available per week", type: "number", helper: "How many hours per week can you dedicate to mentoring?", placeholder: "3" },
+          { key: "preferredDays", label: "Preferred days / times", type: "textarea", helper: "Describe your typical availability window.", placeholder: "Weekday evenings, weekends" },
+        ],
+      },
+      {
+        id: 4,
+        title: "Platform Settings",
+        description: "Configure your mentor experience.",
+        fields: [
+          { key: "openToNewMentees", label: "Open to new mentees", type: "boolean", helper: "Let students know you are currently accepting new mentees." },
+          { key: "aiSuggestionsEnabled", label: "Enable AI mentoring suggestions", type: "boolean", helper: "Allow AI to surface learner progress data relevant to your mentees." },
+        ],
+      },
+      {
+        id: 5,
+        title: "Final Review",
+        description: "Confirm your mentor profile.",
+        fields: [
+          { key: "agreedToTerms", label: "I agree to the mentor code of conduct", type: "boolean", helper: "Confirm that you accept the Lumina mentor conduct standards.", required: true },
+        ],
+      },
+    ],
+  },
+
+  peer_tutor: {
+    label: "Peer Tutor Onboarding",
+    intro:
+      "Set up your peer tutor profile so other students can find and book sessions with you.",
+    completionLabel: "Finish setup",
+    steps: [
+      {
+        id: 1,
+        title: "About You",
+        description: "Help fellow students get to know you.",
+        fields: [
+          { key: "fullName", label: "Full name", type: "text", helper: "Your name as it will appear on the peer tutor directory.", placeholder: "Jordan Lee", required: true },
+          { key: "studyYear", label: "Current year of study", type: "number", helper: "Which year of your programme are you in?", placeholder: "3" },
+        ],
+      },
+      {
+        id: 2,
+        title: "Subjects You Tutor",
+        description: "Tell us which subjects you can help with.",
+        fields: [
+          { key: "tutoringSubjects", label: "Subjects", type: "array", helper: "List the subjects you can tutor, one per line.", placeholder: "Calculus\nLinear Algebra\nPython" },
+          { key: "tutoringLevel", label: "Level you tutor", type: "select", helper: "What academic level do you primarily support?", options: [
+            { label: "Introductory / Year 1–2", value: "introductory" },
+            { label: "Intermediate / Year 2–3", value: "intermediate" },
+            { label: "Advanced / Year 3+", value: "advanced" },
+            { label: "All levels", value: "all" },
+          ]},
+        ],
+      },
+      {
+        id: 3,
+        title: "Session Format",
+        description: "How do you prefer to run your tutoring sessions?",
+        fields: [
+          { key: "sessionFormat", label: "Session format", type: "multiselect", helper: "Select all formats you are comfortable with.", options: [
+            { label: "One-on-one", value: "one_on_one", helper: "Individual tutoring sessions." },
+            { label: "Small group (2–5)", value: "small_group", helper: "Group study or tutoring." },
+            { label: "Online / video call", value: "online", helper: "Remote sessions via video platform." },
+            { label: "In-person", value: "in_person", helper: "Face-to-face on campus." },
+          ]},
+          { key: "hoursPerWeek", label: "Hours available per week", type: "number", helper: "How many hours can you commit to tutoring?", placeholder: "4" },
+        ],
+      },
+      {
+        id: 4,
+        title: "Platform Settings",
+        description: "Configure your tutor listing.",
+        fields: [
+          { key: "listingPublic", label: "Make my profile public", type: "boolean", helper: "Allow other students to find and book you as a peer tutor." },
+          { key: "aiInsightsEnabled", label: "Enable AI session insights", type: "boolean", helper: "Allow AI to provide feedback on tutoring session quality." },
+        ],
+      },
+      {
+        id: 5,
+        title: "Final Review",
+        description: "Confirm your peer tutor profile.",
+        fields: [
+          { key: "agreedToTerms", label: "I agree to the peer tutor guidelines", type: "boolean", helper: "Confirm you accept the Lumina peer tutor conduct guidelines.", required: true },
+        ],
+      },
+    ],
+  },
+
+  researcher: {
+    label: "Researcher Onboarding",
+    intro:
+      "Set up your researcher profile to collaborate, publish, and access the Lumina research ecosystem.",
+    completionLabel: "Finish setup",
+    steps: [
+      {
+        id: 1,
+        title: "Researcher Identity",
+        description: "Tell us about your research background.",
+        fields: [
+          { key: "fullName", label: "Full name", type: "text", helper: "Your name as it will appear on publications and collaboration requests.", placeholder: "Dr. Morgan Chen", required: true },
+          { key: "institution", label: "Institution / Organisation", type: "text", helper: "Your primary affiliated institution or organisation.", placeholder: "University of Example" },
+        ],
+      },
+      {
+        id: 2,
+        title: "Research Focus",
+        description: "Define your areas of research.",
+        fields: [
+          { key: "researchAreas", label: "Research areas", type: "array", helper: "List your research topics, one per line.", placeholder: "Educational Technology\nLearning Analytics" },
+          { key: "researchMethods", label: "Primary research methods", type: "multiselect", helper: "Select the methods you primarily use.", options: [
+            { label: "Quantitative", value: "quantitative", helper: "Statistical and numerical analysis." },
+            { label: "Qualitative", value: "qualitative", helper: "Interviews, focus groups, observations." },
+            { label: "Mixed methods", value: "mixed", helper: "Combination of quantitative and qualitative." },
+            { label: "Computational / AI", value: "computational", helper: "Machine learning and data-driven research." },
+          ]},
+        ],
+      },
+      {
+        id: 3,
+        title: "Publications & Experience",
+        description: "Share your academic output.",
+        fields: [
+          { key: "publicationCount", label: "Approximate publications", type: "number", helper: "Total number of peer-reviewed publications.", placeholder: "12" },
+          { key: "researchBio", label: "Research statement", type: "textarea", helper: "A short paragraph describing your current research agenda.", placeholder: "My research focuses on..." },
+        ],
+      },
+      {
+        id: 4,
+        title: "Collaboration Preferences",
+        description: "Tell us how you like to collaborate.",
+        fields: [
+          { key: "openToCollaboration", label: "Open to collaboration requests", type: "boolean", helper: "Allow other researchers and educators to send you collaboration invites." },
+          { key: "dataAccessRequest", label: "Request access to anonymised learning data", type: "boolean", helper: "I would like access to anonymised Lumina platform data for academic research purposes." },
+        ],
+      },
+      {
+        id: 5,
+        title: "Final Review",
+        description: "Confirm your researcher profile.",
+        fields: [
+          { key: "agreedToTerms", label: "I agree to the research ethics guidelines", type: "boolean", helper: "Confirm that you accept Lumina's research ethics and data handling policy.", required: true },
+        ],
+      },
+    ],
+  },
+};
+
+export function getRoleOnboardingConfig(role: SupportedRoleOnboardingRole): RoleOnboardingConfig {
+  return CONFIGS[role];
+}
+
+export function parseListInput(input: string): string[] {
+  return input
     .split(/[\n,]+/)
     .map((item) => item.trim())
     .filter(Boolean);
 }
 
-export function fieldErrors<T extends Record<string, unknown>>(
-  result: z.ZodSafeParseResult<T>,
-) {
-  if (result.success) {
-    return {} as Partial<Record<keyof T, string>>;
-  }
-
-  const next: Partial<Record<keyof T, string>> = {};
-  for (const issue of result.error.issues) {
-    const path = issue.path[0] as keyof T | undefined;
-    if (path && !next[path]) {
-      next[path] = issue.message;
-    }
-  }
-  return next;
-}
-
-// ─── Schemas ─────────────────────────────────────────────────────────────────
-
-const profileSchema = z.object({
-  fullName: z.string().trim().min(2, "Full name must be at least 2 characters"),
-  bio: z.string().trim().optional(),
-  phoneNumber: z.string().trim().optional(),
-});
-
-const qualificationsSchema = z.object({
-  highestDegree: z.string().trim().min(1, "Highest degree is required"),
-  institution: z.string().trim().min(1, "Institution is required"),
-  yearsOfExperience: z.string().trim().optional(),
-});
-
-const subjectsSchema = z.object({
-  subjects: z.array(z.string()).min(1, "Add at least one subject"),
-  teachingStyles: z.array(z.string()).optional(),
-});
-
-const preferencesSchema = z.object({
-  availability: z.string().trim().optional(),
-  preferredGradeLevels: z.array(z.string()).optional(),
-});
-
-const confirmationSchema = z.object({
-  agreeToTerms: z.boolean().refine((v) => v === true, "You must agree to the terms"),
-});
-
-const researchSchema = z.object({
-  researchAreas: z.array(z.string()).min(1, "Add at least one research area"),
-  publications: z.string().trim().optional(),
-});
-
-const parentProfileSchema = z.object({
-  fullName: z.string().trim().min(2, "Full name must be at least 2 characters"),
-  relationship: z.string().trim().min(1, "Relationship is required"),
-  phoneNumber: z.string().trim().min(1, "Phone number is required"),
-});
-
-const parentChildSchema = z.object({
-  childName: z.string().trim().min(2, "Child name must be at least 2 characters"),
-  childEnrollmentCode: z.string().trim().min(4, "Enrollment code is required"),
-});
-
-const mentorExpertiseSchema = z.object({
-  expertiseAreas: z.array(z.string()).min(1, "Add at least one area of expertise"),
-  mentorshipStyle: z.string().trim().optional(),
-});
-
-const peerTutorSkillsSchema = z.object({
-  tutorSubjects: z.array(z.string()).min(1, "Add at least one subject"),
-  gradeLevel: z.string().trim().optional(),
-});
-
-// ─── Step schemas per role and step ─────────────────────────────────────────
-
-type RoleStepSchemas = Record<number, z.ZodTypeAny>;
-
-const ROLE_STEP_SCHEMAS: Record<SupportedRoleOnboardingRole, RoleStepSchemas> = {
-  teacher: {
-    1: profileSchema,
-    2: qualificationsSchema,
-    3: subjectsSchema,
-    4: preferencesSchema,
-    5: confirmationSchema,
-  },
-  faculty: {
-    1: profileSchema,
-    2: qualificationsSchema,
-    3: subjectsSchema,
-    4: preferencesSchema,
-    5: confirmationSchema,
-  },
-  parent: {
-    1: parentProfileSchema,
-    2: parentChildSchema,
-    3: preferencesSchema,
-    4: confirmationSchema,
-  },
-  mentor: {
-    1: profileSchema,
-    2: mentorExpertiseSchema,
-    3: preferencesSchema,
-    4: confirmationSchema,
-  },
-  peer_tutor: {
-    1: profileSchema,
-    2: peerTutorSkillsSchema,
-    3: preferencesSchema,
-    4: confirmationSchema,
-  },
-  researcher: {
-    1: profileSchema,
-    2: qualificationsSchema,
-    3: researchSchema,
-    4: preferencesSchema,
-    5: confirmationSchema,
-  },
-};
-
-// ─── Config definitions ───────────────────────────────────────────────────────
-
-const TEACHER_STEPS: OnboardingStep[] = [
-  {
-    id: 1,
-    title: "Personal Profile",
-    description: "Set up your basic profile information so your institution can identify you.",
-    schema: profileSchema,
-    fields: [
-      { key: "fullName", type: "text", label: "Full Name", helper: "Your legal name as it appears on official documents", placeholder: "Dr. Jane Smith" },
-      { key: "bio", type: "textarea", label: "Short Bio", helper: "A brief introduction to display on your profile", placeholder: "Experienced educator passionate about…" },
-      { key: "phoneNumber", type: "text", label: "Phone Number", helper: "Your contact number for institution communications" },
-    ],
-  },
-  {
-    id: 2,
-    title: "Qualifications",
-    description: "Tell us about your educational background and years of experience.",
-    schema: qualificationsSchema,
-    fields: [
-      { key: "highestDegree", type: "select", label: "Highest Degree", helper: "Your highest academic qualification", options: [{ label: "Bachelor's", value: "bachelors" }, { label: "Master's", value: "masters" }, { label: "Doctorate (Ph.D.)", value: "phd" }, { label: "Other", value: "other" }] },
-      { key: "institution", type: "text", label: "Awarding Institution", helper: "Where you completed your highest degree", placeholder: "University of…" },
-      { key: "yearsOfExperience", type: "number", label: "Years of Teaching Experience", helper: "Total years in classroom or institutional settings", placeholder: "5" },
-    ],
-  },
-  {
-    id: 3,
-    title: "Subjects & Style",
-    description: "List the subjects you teach and your preferred teaching approaches.",
-    schema: subjectsSchema,
-    fields: [
-      { key: "subjects", type: "array", label: "Subjects You Teach", helper: "Enter one subject per line, e.g. Mathematics", placeholder: "Mathematics\nPhysics\nChemistry" },
-      {
-        key: "teachingStyles",
-        type: "multiselect",
-        label: "Teaching Styles",
-        helper: "Select all that apply to your instructional approach",
-        options: [
-          { label: "Lecture-based", value: "lecture", helper: "Structured presentations and demonstrations" },
-          { label: "Inquiry-based", value: "inquiry", helper: "Students explore questions and problems" },
-          { label: "Collaborative", value: "collaborative", helper: "Group work and peer learning" },
-          { label: "Project-based", value: "project", helper: "Extended real-world projects" },
-        ],
-      },
-    ],
-  },
-  {
-    id: 4,
-    title: "Availability & Preferences",
-    description: "Share your scheduling preferences and preferred grade levels.",
-    schema: preferencesSchema,
-    fields: [
-      { key: "availability", type: "select", label: "Availability", helper: "Your general availability for classes", options: [{ label: "Full-time", value: "full_time" }, { label: "Part-time", value: "part_time" }, { label: "Weekends only", value: "weekends" }] },
-      { key: "preferredGradeLevels", type: "multiselect", label: "Preferred Grade Levels", helper: "The grade ranges you are most comfortable teaching", options: [{ label: "Primary (1–5)", value: "primary" }, { label: "Middle School (6–8)", value: "middle" }, { label: "High School (9–12)", value: "high" }, { label: "Undergraduate", value: "undergrad" }, { label: "Postgraduate", value: "postgrad" }] },
-    ],
-  },
-  {
-    id: 5,
-    title: "Confirmation",
-    description: "Review your information and confirm you agree to the platform terms.",
-    schema: confirmationSchema,
-    fields: [
-      { key: "agreeToTerms", type: "boolean", label: "Terms Agreement", helper: "I agree to the Lumina platform terms and educator code of conduct." },
-    ],
-  },
-];
-
-const RESEARCHER_STEPS: OnboardingStep[] = [
-  {
-    id: 1,
-    title: "Personal Profile",
-    description: "Set up your researcher profile.",
-    schema: profileSchema,
-    fields: [
-      { key: "fullName", type: "text", label: "Full Name", helper: "Your name as it will appear in publications and profiles", placeholder: "Dr. Jane Smith" },
-      { key: "bio", type: "textarea", label: "Research Bio", helper: "Brief overview of your research background", placeholder: "Researcher specializing in…" },
-      { key: "phoneNumber", type: "text", label: "Phone Number", helper: "Contact number for institutional communications" },
-    ],
-  },
-  {
-    id: 2,
-    title: "Qualifications",
-    description: "Tell us about your academic background.",
-    schema: qualificationsSchema,
-    fields: [
-      { key: "highestDegree", type: "select", label: "Highest Degree", helper: "Your highest academic qualification", options: [{ label: "Master's", value: "masters" }, { label: "Doctorate (Ph.D.)", value: "phd" }, { label: "Post-Doctoral", value: "postdoc" }, { label: "Other", value: "other" }] },
-      { key: "institution", type: "text", label: "Awarding Institution", helper: "Where you completed your highest degree", placeholder: "University of…" },
-      { key: "yearsOfExperience", type: "number", label: "Years of Research Experience", helper: "Total years in active research roles", placeholder: "3" },
-    ],
-  },
-  {
-    id: 3,
-    title: "Research Areas",
-    description: "Describe your research focus and publication record.",
-    schema: researchSchema,
-    fields: [
-      { key: "researchAreas", type: "array", label: "Research Areas", helper: "Enter one area per line or comma-separated", placeholder: "Machine Learning\nNatural Language Processing" },
-      { key: "publications", type: "textarea", label: "Key Publications (optional)", helper: "List titles or DOIs for your most relevant publications", placeholder: "Title, Journal, Year…" },
-    ],
-  },
-  {
-    id: 4,
-    title: "Preferences",
-    description: "Share your collaboration and availability preferences.",
-    schema: preferencesSchema,
-    fields: [
-      { key: "availability", type: "select", label: "Availability", helper: "Your general availability for collaboration", options: [{ label: "Full-time", value: "full_time" }, { label: "Part-time", value: "part_time" }, { label: "Consulting only", value: "consulting" }] },
-    ],
-  },
-  {
-    id: 5,
-    title: "Confirmation",
-    description: "Review your profile and agree to platform terms.",
-    schema: confirmationSchema,
-    fields: [
-      { key: "agreeToTerms", type: "boolean", label: "Terms Agreement", helper: "I agree to the Lumina platform terms and researcher code of conduct." },
-    ],
-  },
-];
-
-const PARENT_STEPS: OnboardingStep[] = [
-  {
-    id: 1 as SupportedRoleStep,
-    title: "Guardian Profile",
-    description: "Enter your contact information and relationship to the student.",
-    schema: parentProfileSchema,
-    fields: [
-      { key: "fullName", type: "text", label: "Full Name", helper: "Your legal name", placeholder: "Jane Smith" },
-      { key: "relationship", type: "select", label: "Relationship to Student", helper: "Your relationship to the enrolled student", options: [{ label: "Parent", value: "parent" }, { label: "Guardian", value: "guardian" }, { label: "Grandparent", value: "grandparent" }, { label: "Other", value: "other" }] },
-      { key: "phoneNumber", type: "text", label: "Phone Number", helper: "Your primary contact number", placeholder: "+1 555 000 0000" },
-    ],
-  },
-  {
-    id: 2 as SupportedRoleStep,
-    title: "Student Linkage",
-    description: "Link your account to your child's student profile using their enrollment code.",
-    schema: parentChildSchema,
-    fields: [
-      { key: "childName", type: "text", label: "Child's Full Name", helper: "The student's name as registered in the system", placeholder: "Alex Smith" },
-      { key: "childEnrollmentCode", type: "text", label: "Enrollment Code", helper: "The 4-digit or longer code provided by the institution", placeholder: "STU-XXXX" },
-    ],
-  },
-  {
-    id: 3 as SupportedRoleStep,
-    title: "Communication Preferences",
-    description: "Tell us how you prefer to receive updates about your child's progress.",
-    schema: preferencesSchema,
-    fields: [
-      { key: "availability", type: "select", label: "Best Time to Contact", helper: "When you are generally available for calls or messages", options: [{ label: "Morning", value: "morning" }, { label: "Afternoon", value: "afternoon" }, { label: "Evening", value: "evening" }] },
-    ],
-  },
-  {
-    id: 4 as SupportedRoleStep,
-    title: "Confirmation",
-    description: "Review your information and agree to the platform terms.",
-    schema: confirmationSchema,
-    fields: [
-      { key: "agreeToTerms", type: "boolean", label: "Terms Agreement", helper: "I agree to the Lumina platform terms and guardian usage policy." },
-    ],
-  },
-];
-
-const MENTOR_STEPS: OnboardingStep[] = [
-  {
-    id: 1 as SupportedRoleStep,
-    title: "Mentor Profile",
-    description: "Set up your mentor profile so students can find and connect with you.",
-    schema: profileSchema,
-    fields: [
-      { key: "fullName", type: "text", label: "Full Name", helper: "Your name as it will appear to mentees", placeholder: "Jane Smith" },
-      { key: "bio", type: "textarea", label: "Mentor Bio", helper: "Describe your background and what you offer as a mentor", placeholder: "I am a professional with 10 years of experience in…" },
-      { key: "phoneNumber", type: "text", label: "Phone Number", helper: "Optional contact number" },
-    ],
-  },
-  {
-    id: 2 as SupportedRoleStep,
-    title: "Expertise & Style",
-    description: "Share your areas of expertise and mentorship approach.",
-    schema: mentorExpertiseSchema,
-    fields: [
-      { key: "expertiseAreas", type: "array", label: "Areas of Expertise", helper: "List the fields where you can guide students", placeholder: "Career planning\nResume writing\nInterview preparation" },
-      { key: "mentorshipStyle", type: "select", label: "Mentorship Style", helper: "Your preferred way of working with mentees", options: [{ label: "Goal-oriented", value: "goal_oriented" }, { label: "Advisory", value: "advisory" }, { label: "Coaching", value: "coaching" }, { label: "Peer-level", value: "peer" }] },
-    ],
-  },
-  {
-    id: 3 as SupportedRoleStep,
-    title: "Availability",
-    description: "Let students know when you are available for mentorship sessions.",
-    schema: preferencesSchema,
-    fields: [
-      { key: "availability", type: "select", label: "Weekly Availability", helper: "Estimated time per week available for mentoring", options: [{ label: "1–2 hours", value: "low" }, { label: "3–5 hours", value: "medium" }, { label: "5+ hours", value: "high" }] },
-    ],
-  },
-  {
-    id: 4 as SupportedRoleStep,
-    title: "Confirmation",
-    description: "Review your mentor profile and agree to the platform terms.",
-    schema: confirmationSchema,
-    fields: [
-      { key: "agreeToTerms", type: "boolean", label: "Terms Agreement", helper: "I agree to the Lumina platform terms and mentor code of conduct." },
-    ],
-  },
-];
-
-const PEER_TUTOR_STEPS: OnboardingStep[] = [
-  {
-    id: 1 as SupportedRoleStep,
-    title: "Tutor Profile",
-    description: "Set up your peer tutor profile.",
-    schema: profileSchema,
-    fields: [
-      { key: "fullName", type: "text", label: "Full Name", helper: "Your name as it will appear to students", placeholder: "Alex Smith" },
-      { key: "bio", type: "textarea", label: "Tutor Bio", helper: "Brief description of your academic strengths and tutoring style", placeholder: "Strong in STEM subjects, enjoy explaining concepts clearly…" },
-      { key: "phoneNumber", type: "text", label: "Phone Number", helper: "Optional contact number" },
-    ],
-  },
-  {
-    id: 2 as SupportedRoleStep,
-    title: "Tutor Subjects",
-    description: "Tell us which subjects you can tutor and your current grade level.",
-    schema: peerTutorSkillsSchema,
-    fields: [
-      { key: "tutorSubjects", type: "array", label: "Subjects You Can Tutor", helper: "List each subject on a new line", placeholder: "Mathematics\nPhysics\nEnglish" },
-      { key: "gradeLevel", type: "select", label: "Your Current Grade / Year", helper: "Your current year of study", options: [{ label: "Year 9–10", value: "year_9_10" }, { label: "Year 11–12", value: "year_11_12" }, { label: "1st Year University", value: "uni_1" }, { label: "2nd Year University", value: "uni_2" }, { label: "3rd Year+ University", value: "uni_3" }] },
-    ],
-  },
-  {
-    id: 3 as SupportedRoleStep,
-    title: "Availability",
-    description: "Tell us when you are available for tutoring sessions.",
-    schema: preferencesSchema,
-    fields: [
-      { key: "availability", type: "select", label: "Weekly Availability", helper: "How many hours per week can you tutor?", options: [{ label: "1–2 hours", value: "low" }, { label: "3–5 hours", value: "medium" }, { label: "5+ hours", value: "high" }] },
-    ],
-  },
-  {
-    id: 4 as SupportedRoleStep,
-    title: "Confirmation",
-    description: "Review your tutor profile and agree to platform terms.",
-    schema: confirmationSchema,
-    fields: [
-      { key: "agreeToTerms", type: "boolean", label: "Terms Agreement", helper: "I agree to the Lumina platform terms and peer tutor code of conduct." },
-    ],
-  },
-];
-
-// ─── Config map ───────────────────────────────────────────────────────────────
-
-const ROLE_CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
-  teacher: {
-    label: "Teacher Onboarding",
-    intro:
-      "Complete these steps to activate your teacher profile. Your institution needs accurate subject and qualification data to assign you courses and students.",
-    completionLabel: "Finish Teacher Setup",
-    steps: TEACHER_STEPS,
-  },
-  faculty: {
-    label: "Faculty Onboarding",
-    intro:
-      "Set up your faculty profile to unlock course creation, student management, and AI-assisted grading tools.",
-    completionLabel: "Finish Faculty Setup",
-    steps: TEACHER_STEPS,
-  },
-  parent: {
-    label: "Guardian Onboarding",
-    intro:
-      "Link your account to your child's learning journey and configure your communication preferences.",
-    completionLabel: "Finish Guardian Setup",
-    steps: PARENT_STEPS,
-  },
-  mentor: {
-    label: "Mentor Onboarding",
-    intro:
-      "Share your expertise and availability so students can request mentorship sessions tailored to their goals.",
-    completionLabel: "Finish Mentor Setup",
-    steps: MENTOR_STEPS,
-  },
-  peer_tutor: {
-    label: "Peer Tutor Onboarding",
-    intro:
-      "Set up your peer tutor profile to start helping fellow students with the subjects you excel at.",
-    completionLabel: "Finish Tutor Setup",
-    steps: PEER_TUTOR_STEPS,
-  },
-  researcher: {
-    label: "Researcher Onboarding",
-    intro:
-      "Configure your researcher profile to collaborate on institutional research projects and AI-powered studies.",
-    completionLabel: "Finish Researcher Setup",
-    steps: RESEARCHER_STEPS,
-  },
-};
-
-// ─── Public API ───────────────────────────────────────────────────────────────
-
-export function getRoleOnboardingConfig(
-  role: SupportedRoleOnboardingRole,
-): RoleOnboardingConfig {
-  return ROLE_CONFIGS[role];
-}
-
 export function validateRoleStep(
   role: SupportedRoleOnboardingRole,
-  step: number,
-  values: Record<string, unknown>,
-): z.ZodSafeParseResult<Record<string, unknown>> {
-  const schemas = ROLE_STEP_SCHEMAS[role];
-  const schema = schemas?.[step];
-  if (!schema) {
-    return { success: true, data: values } as z.ZodSafeParseResult<Record<string, unknown>>;
+  step: SupportedRoleStep,
+  values: Record<string, any>,
+): { success: boolean; data?: Record<string, any>; errors?: Record<string, string> } {
+  const config = CONFIGS[role];
+  if (!config) {
+    return { success: false, errors: { _form: "Unknown role" } };
   }
-  return schema.safeParse(values) as z.ZodSafeParseResult<Record<string, unknown>>;
+
+  const stepConfig = config.steps.find((s) => s.id === step);
+  if (!stepConfig) {
+    return { success: false, errors: { _form: "Unknown step" } };
+  }
+
+  const errors: Record<string, string> = {};
+  const data: Record<string, any> = {};
+
+  for (const field of stepConfig.fields) {
+    const value = values[field.key];
+
+    if (field.required) {
+      if (field.type === "boolean" && !value) {
+        errors[field.key] = `${field.label} is required.`;
+        continue;
+      }
+      if (
+        field.type !== "boolean" &&
+        (value === undefined || value === null || value === "" ||
+          (Array.isArray(value) && value.length === 0))
+      ) {
+        errors[field.key] = `${field.label} is required.`;
+        continue;
+      }
+    }
+
+    data[field.key] = value ?? (field.type === "boolean" ? false : field.type === "array" || field.type === "multiselect" ? [] : "");
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return { success: false, errors };
+  }
+
+  return { success: true, data };
+}
+
+export function fieldErrors(result: {
+  success: boolean;
+  errors?: Record<string, string>;
+}): Record<string, string> {
+  return result.errors ?? {};
 }

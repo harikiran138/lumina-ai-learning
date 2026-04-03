@@ -2,70 +2,75 @@ import { cookies } from "next/headers";
 
 import type { AdminDashboardResponse, AdminUser } from "@/features/admin/types";
 
-function getApiBase(): string {
-  return (
-    process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ||
-    process.env.NEXT_PUBLIC_API_BASE?.replace(/\/+$/, "") ||
-    ""
-  );
-}
+async function serverFetch(path: string): Promise<Response> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("access_token")?.value;
 
-async function serverFetch(path: string): Promise<Response | null> {
-  const base = getApiBase();
-  if (!base) return null;
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "") ||
+    process.env.NEXT_PUBLIC_API_BASE?.trim().replace(/\/+$/, "") ||
+    "";
 
-  try {
-    const cookieStore = await cookies();
-    const allCookies = cookieStore
-      .getAll()
-      .map((c) => `${c.name}=${c.value}`)
-      .join("; ");
+  const url = apiBase
+    ? `${apiBase}${path}`
+    : `http://localhost:8000${path}`;
 
-    return await fetch(`${base}${path}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(allCookies ? { Cookie: allCookies } : {}),
-      },
-      cache: "no-store",
-    });
-  } catch {
-    return null;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+    headers["Cookie"] = `access_token=${token}`;
   }
+
+  return fetch(url, { headers, cache: "no-store" });
 }
 
-async function fetchJson<T>(path: string, fallback: T): Promise<T> {
+async function fetchJson<T>(path: string, defaultValue: T): Promise<T> {
   try {
     const res = await serverFetch(path);
-    if (!res || !res.ok) return fallback;
-    return (await res.json()) as T;
+    if (!res.ok) return defaultValue;
+    const text = await res.text();
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      return defaultValue;
+    }
   } catch {
-    return fallback;
+    return defaultValue;
   }
 }
 
 type RawUserResponse = {
   id?: string;
   name?: string;
+  fullName?: string;
   full_name?: string;
   email?: string;
   role?: string;
   avatar?: string | null;
+  profilePhotoUrl?: string | null;
   status?: string;
   college_id?: string | null;
+  collegeId?: string | null;
   dept_id?: string | null;
+  deptId?: string | null;
 } | null;
 
 export async function getAdminViewer(): Promise<AdminUser> {
   const user = await fetchJson<RawUserResponse>("/api/auth/me", null);
+  if (!user?.id) {
+    return { id: "", name: "Admin", email: "", role: "admin" };
+  }
   return {
-    id: user?.id || "",
-    name: user?.name || user?.full_name || "Admin",
-    email: user?.email || "",
-    role: user?.role || "admin",
-    avatar: user?.avatar ?? null,
-    status: user?.status,
-    collegeId: user?.college_id ?? null,
-    deptId: user?.dept_id ?? null,
+    id: String(user.id),
+    name: user.fullName || user.name || user.full_name || user.email || "Admin",
+    email: user.email || "",
+    role: user.role || "admin",
+    avatar: user.profilePhotoUrl ?? user.avatar ?? null,
+    status: user.status || "active",
+    collegeId: user.collegeId ?? user.college_id ?? null,
+    deptId: user.deptId ?? user.dept_id ?? null,
   };
 }
 
@@ -129,6 +134,25 @@ export async function getAdminComplianceData(): Promise<ComplianceData> {
   return fetchJson<ComplianceData>("/api/admin/compliance", {});
 }
 
+type CourseRow = {
+  id: string;
+  title?: string;
+  name?: string;
+  code?: string;
+  course_code?: string;
+  teacher_id?: string;
+  is_published?: boolean;
+  status?: string;
+  review_status?: string;
+  modules?: unknown[];
+  updated_at?: string;
+  created_at?: string;
+};
+
+export async function getAdminCoursesData(): Promise<CourseRow[]> {
+  return fetchJson<CourseRow[]>("/api/admin/courses", []);
+}
+
 type TeacherRow = {
   teacher_id: string;
   name: string;
@@ -158,6 +182,27 @@ type StudentRow = {
 
 export async function getAdminStudentsData(): Promise<StudentRow[]> {
   return fetchJson<StudentRow[]>("/api/admin/students", []);
+}
+
+type AdminConfig = {
+  guardian_mode?: string;
+  api_rate_limit?: number;
+};
+
+type RoleMatrix = {
+  roles?: string[];
+  permissions?: Record<string, string[]>;
+};
+
+export async function getAdminSettingsData(): Promise<{
+  config: AdminConfig;
+  roleMatrix: RoleMatrix;
+}> {
+  const [config, roleMatrix] = await Promise.all([
+    fetchJson<AdminConfig>("/api/admin/settings", {}),
+    fetchJson<RoleMatrix>("/api/admin/roles/matrix", { roles: [], permissions: {} }),
+  ]);
+  return { config, roleMatrix };
 }
 
 type ReportsData = {
@@ -191,46 +236,6 @@ type ReportsData = {
 
 export async function getAdminReportsData(): Promise<ReportsData> {
   return fetchJson<ReportsData>("/api/admin/reports", {});
-}
-
-type AdminConfig = {
-  guardian_mode?: string;
-  api_rate_limit?: number;
-};
-
-type RoleMatrix = {
-  roles?: string[];
-  permissions?: Record<string, string[]>;
-};
-
-export async function getAdminSettingsData(): Promise<{
-  config: AdminConfig;
-  roleMatrix: RoleMatrix;
-}> {
-  const [config, roleMatrix] = await Promise.all([
-    fetchJson<AdminConfig>("/api/admin/config", {}),
-    fetchJson<RoleMatrix>("/api/admin/roles/matrix", {}),
-  ]);
-  return { config, roleMatrix };
-}
-
-type CourseRow = {
-  id: string;
-  title?: string;
-  name?: string;
-  code?: string;
-  course_code?: string;
-  teacher_id?: string;
-  is_published?: boolean;
-  status?: string;
-  review_status?: string;
-  modules?: unknown[];
-  updated_at?: string;
-  created_at?: string;
-};
-
-export async function getAdminCoursesData(): Promise<CourseRow[]> {
-  return fetchJson<CourseRow[]>("/api/admin/courses", []);
 }
 
 type GuardianLogEntry = {
