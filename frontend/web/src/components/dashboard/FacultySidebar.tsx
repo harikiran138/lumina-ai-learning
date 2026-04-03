@@ -14,6 +14,7 @@ import {
   X,
   PlusCircle,
   BarChart3,
+  Calendar,
   GraduationCap,
   ClipboardCheck,
   CheckCircle,
@@ -34,9 +35,11 @@ const navItems = [
   { name: "My Courses",          href: "/faculty/courses",               icon: BookOpen },
   { name: "Students",            href: "/faculty/students",              icon: Users },
   { name: "Assignments",         href: "/faculty/assignments",           icon: ClipboardCheck },
-  { name: "Attendance",          href: "/faculty/attendance",            icon: CheckCircle },
   { name: "Create Assignment",   href: "/faculty/assignments/create",    icon: PlusCircle },
+  { name: "Grading",             href: "/faculty/grading",               icon: FileText },
   { name: "Gradebook",           href: "/faculty/gradebook",             icon: GraduationCap },
+  { name: "Calendar",            href: "/faculty/calendar",              icon: Calendar },
+  { name: "Attendance",          href: "/faculty/attendance",            icon: CheckCircle },
   { name: "Question Bank",       href: "/faculty/question-bank",         icon: Database },
   { name: "Knowledge Graph",     href: "/faculty/knowledge-graph",       icon: GitBranch },
   { name: "Live Class",          href: "/faculty/live-class",            icon: Radio },
@@ -48,9 +51,9 @@ const navItems = [
 
 const courseDependentItems = new Set([
   "Analytics", "My Courses", "Students", "Gradebook",
-  "Assignments", "Create Assignment", "AI Verify Queue",
+  "Assignments", "Create Assignment", "Grading", "AI Verify Queue",
   "Question Bank", "Knowledge Graph", "Live Class",
-  "AI Course Creator", "Messages",
+  "AI Course Creator", "Messages", "Calendar",
 ]);
 
 export default function FacultySidebar({
@@ -178,7 +181,7 @@ export default function FacultySidebar({
         {/* User profile */}
         {user && (
           <Link
-            href="/faculty/settings"
+            href="/faculty/profile"
             className="sidebar-user-card flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer overflow-hidden"
           >
             <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">

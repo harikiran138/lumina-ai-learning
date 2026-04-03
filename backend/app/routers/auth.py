@@ -154,7 +154,7 @@ def _is_adaptive_onboarding_completed(user: dict) -> bool:
     return False
 
 
-def _is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
+def is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
     role = normalize_role(user.get("role", "guest"))
     if role == "super_admin":
         return True, True
@@ -164,10 +164,10 @@ def _is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
     return onboarding_step >= 5 and adaptive_completed, adaptive_completed
 
 
-def _build_claims(user: dict) -> dict:
+def build_claims(user: dict) -> dict:
     """Standardizes JWT claims as per platform architecture."""
     onboarding_step = int(user.get("onboarding_step") or 0)
-    onboarding_completed, adaptive_completed = _is_onboarding_complete(user)
+    onboarding_completed, adaptive_completed = is_onboarding_complete(user)
     return {
         "sub": str(user.get("id")),
         "id": str(user.get("id")),
@@ -463,7 +463,7 @@ def login_for_access_token(
     access_token = create_access_token(
         subject=str(user["id"]),
         expires_delta=access_token_expires,
-        extra_claims=_build_claims(user),
+        extra_claims=build_claims(user),
         secret_key=settings.JWT_SECRET,
     )
     return {"access_token": access_token, "token_type": "bearer"}
@@ -643,7 +643,7 @@ def login_json(
     access_token = create_access_token(
         subject=str(user["id"]),
         expires_delta=access_token_expires,
-        extra_claims=_build_claims(user),
+        extra_claims=build_claims(user),
         secret_key=settings.JWT_SECRET,
     )
 
@@ -651,7 +651,7 @@ def login_json(
     refresh_token = create_access_token(
         subject=str(user["id"]),
         expires_delta=refresh_token_expires,
-        extra_claims={"type": "refresh", **_build_claims(user)},
+        extra_claims={"type": "refresh", **build_claims(user)},
         secret_key=settings.JWT_REFRESH_SECRET,
     )
 
@@ -776,7 +776,7 @@ async def refresh_token(
     access_token = create_access_token(
         subject=str(user["id"]),
         expires_delta=access_token_expires,
-        extra_claims=_build_claims(user),
+        extra_claims=build_claims(user),
         secret_key=settings.JWT_SECRET,
     )
     
@@ -944,7 +944,7 @@ async def change_password(
 
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: dict = Depends(get_current_user)):
-    onboarding_completed, adaptive_completed = _is_onboarding_complete(current_user)
+    onboarding_completed, adaptive_completed = is_onboarding_complete(current_user)
     return UserResponse(
         id=str(current_user["id"]),
         fullName=current_user.get("full_name") or current_user.get("name", "Unknown"),

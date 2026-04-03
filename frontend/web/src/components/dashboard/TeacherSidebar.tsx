@@ -17,29 +17,35 @@ import {
   Calendar,
   GraduationCap,
   ClipboardCheck,
+  CheckCircle,
   MessageSquare,
   Bell,
+  ShieldCheck,
+  GitBranch,
+  Radio,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 
 const navItems = [
-  { name: "Dashboard", href: "/faculty/dashboard", icon: LayoutDashboard },
-  { name: "My Courses", href: "/faculty/courses", icon: BookOpen },
-  { name: "Students", href: "/faculty/students", icon: Users },
-  { name: "Assignments", href: "/faculty/assignments", icon: ClipboardCheck },
-  {
-    name: "Create Assignment",
-    href: "/faculty/assignments/create",
-    icon: PlusCircle,
-  },
-  { name: "Gradebook", href: "/faculty/gradebook", icon: GraduationCap },
-  { name: "Grading", href: "/faculty/grading", icon: FileText },
-  { name: "Calendar", href: "/faculty/calendar", icon: Calendar },
-  { name: "Analytics", href: "/faculty/analytics", icon: BarChart3 },
-  { name: "AI Course Creator", href: "/faculty/ai-generator", icon: Sparkles },
-  { name: "Resources", href: "/faculty/resources", icon: FileText },
-  { name: "Settings", href: "/faculty/settings", icon: Settings },
+  { name: "Dashboard",          href: "/faculty/dashboard",            icon: LayoutDashboard },
+  { name: "AI Verify Queue",    href: "/faculty/verification-queue",   icon: ShieldCheck },
+  { name: "My Courses",         href: "/faculty/courses",              icon: BookOpen },
+  { name: "Students",           href: "/faculty/students",             icon: Users },
+  { name: "Assignments",        href: "/faculty/assignments",          icon: ClipboardCheck },
+  { name: "Create Assignment",  href: "/faculty/assignments/create",   icon: PlusCircle },
+  { name: "Grading",            href: "/faculty/grading",              icon: FileText },
+  { name: "Gradebook",          href: "/faculty/gradebook",            icon: GraduationCap },
+  { name: "Calendar",           href: "/faculty/calendar",             icon: Calendar },
+  { name: "Attendance",         href: "/faculty/attendance",           icon: CheckCircle },
+  { name: "Question Bank",      href: "/faculty/question-bank",        icon: Database },
+  { name: "Knowledge Graph",    href: "/faculty/knowledge-graph",      icon: GitBranch },
+  { name: "Live Class",         href: "/faculty/live-class",           icon: Radio },
+  { name: "Analytics",          href: "/faculty/analytics",            icon: BarChart3 },
+  { name: "AI Course Creator",  href: "/faculty/ai-generator",         icon: Sparkles },
+  { name: "Messages",           href: "/faculty/messages",             icon: MessageSquare },
+  { name: "Settings",           href: "/faculty/settings",             icon: Settings },
 ];
 
 export default function TeacherSidebar({
@@ -86,15 +92,10 @@ export default function TeacherSidebar({
   };
 
   const courseDependentItems = new Set([
-    "Analytics",
-    "My Courses",
-    "Students",
-    "Gradebook",
-    "Assignments",
-    "Create Assignment",
-    "Grading",
-    "AI Course Creator",
-    "Resources",
+    "Analytics", "My Courses", "Students", "Gradebook",
+    "Assignments", "Create Assignment", "Grading", "AI Verify Queue",
+    "Question Bank", "Knowledge Graph", "Live Class",
+    "AI Course Creator", "Messages", "Calendar",
   ]);
 
   const filteredNavItems =
@@ -226,7 +227,7 @@ export default function TeacherSidebar({
         {/* User Profile Snippet */}
         {user && (
           <Link
-            href="/faculty/settings"
+            href="/faculty/profile"
             className={cn(
               "flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-500 cursor-pointer overflow-hidden",
               !isHovered ? "justify-center p-2" : "p-3",

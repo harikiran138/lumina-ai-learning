@@ -18,6 +18,7 @@ import {
   fieldErrors,
   getRoleOnboardingConfig,
   parseListInput,
+  type OnboardingField,
   type SupportedRoleOnboardingRole,
   type SupportedRoleStep,
   validateRoleStep,
@@ -244,10 +245,24 @@ export default function RoleOnboardingFlow({ role }: RoleOnboardingFlowProps) {
 
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             {activeStep.fields.map((field) => (
-              <div key={field.key} className={field.type === "textarea" || field.type === "array" || field.type === "multiselect" ? "md:col-span-2" : ""}>
-                <Field label={field.label} helper={field.helper} error={errors[field.key]}>
-                  {renderField(field, values[field.key], setField)}
-                </Field>
+              <div
+                key={field.key}
+                className={
+                  field.type === "textarea" || field.type === "array" || field.type === "multiselect"
+                    ? "md:col-span-2"
+                    : ""
+                }
+              >
+                {field.type === "boolean" ? (
+                  <div>
+                    {renderField(field, values[field.key], setField)}
+                    {errors[field.key] ? <p className="mt-2 text-sm text-red-300">{errors[field.key]}</p> : null}
+                  </div>
+                ) : (
+                  <Field label={field.label} helper={field.helper} error={errors[field.key]}>
+                    {renderField(field, values[field.key], setField)}
+                  </Field>
+                )}
               </div>
             ))}
           </div>
@@ -281,12 +296,7 @@ export default function RoleOnboardingFlow({ role }: RoleOnboardingFlowProps) {
 }
 
 function renderField(
-  field: {
-    key: string;
-    type: "text" | "number" | "textarea" | "select" | "multiselect" | "array" | "boolean";
-    placeholder?: string;
-    options?: Array<{ label: string; value: string; helper?: string }>;
-  },
+  field: OnboardingField,
   value: any,
   setField: (key: string, value: any) => void,
 ) {
@@ -368,14 +378,17 @@ function renderField(
 
   if (field.type === "boolean") {
     return (
-      <label className="flex items-start gap-3 rounded-[28px] border border-white/8 bg-black/30 p-5">
+      <label className="flex cursor-pointer items-start gap-3 rounded-[28px] border border-white/8 bg-black/30 p-5 transition hover:border-white/15">
         <input
           type="checkbox"
-          className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent"
+          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-white/20 bg-transparent accent-amber-300"
           checked={Boolean(value)}
           onChange={(event) => setField(field.key, event.target.checked)}
         />
-        <span className="text-sm leading-6 text-zinc-300">I confirm this statement.</span>
+        <div>
+          <p className="text-sm font-semibold text-white">{field.label}</p>
+          {field.helper ? <p className="mt-1 text-xs leading-5 text-zinc-500">{field.helper}</p> : null}
+        </div>
       </label>
     );
   }
@@ -386,7 +399,7 @@ function renderField(
       type={field.type === "number" ? "number" : "text"}
       value={value ?? ""}
       placeholder={field.placeholder}
-      onChange={(event) => setField(field.key, field.type === "number" ? event.target.value : event.target.value)}
+      onChange={(event) => setField(field.key, field.type === "number" ? (event.target.value === "" ? "" : Number(event.target.value)) : event.target.value)}
     />
   );
 }
