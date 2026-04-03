@@ -1271,7 +1271,7 @@ class AnalyticsStore:
         system_status = "healthy" if system_health_score >= 85 else "watch" if system_health_score >= 65 else "degraded"
 
         total_students = role_distribution.get("student", 0)
-        total_faculty = sum(role_distribution.get(role, 0) for role in ("teacher", "hod"))
+        total_faculty = sum(role_distribution.get(role, 0) for role in ("teacher", "hod", "faculty"))
         active_users = status_distribution.get("active", 0)
 
         summary = {

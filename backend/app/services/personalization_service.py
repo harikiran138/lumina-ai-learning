@@ -180,6 +180,9 @@ class PersonalizationService:
         """
         Updates the effectiveness of the last used explanation mode based on current success.
         """
+        if not profile or not profile.explanation_profile:
+            return
+
         exp_profile = profile.explanation_profile
         if not exp_profile.last_plan:
             return
@@ -526,10 +529,13 @@ class PersonalizationService:
             if "explanation_plan" in payload:
                 from app.personalization.schemas import ExplanationPlan
                 plan_data = payload["explanation_plan"]
-                if isinstance(plan_data, dict):
-                    profile.explanation_profile.last_plan = ExplanationPlan(**plan_data)
-                elif isinstance(plan_data, ExplanationPlan):
-                    profile.explanation_profile.last_plan = plan_data
+                try:
+                    if isinstance(plan_data, dict):
+                        profile.explanation_profile.last_plan = ExplanationPlan(**plan_data)
+                    elif isinstance(plan_data, ExplanationPlan):
+                        profile.explanation_profile.last_plan = plan_data
+                except Exception as e:
+                    log.warning("failed_to_parse_explanation_plan", error=str(e))
 
         elif event_type == LearningEventType.NOTE_ADDED:
             notes = profile.metadata.get("notes", [])
@@ -821,9 +827,7 @@ class PersonalizationService:
 _scoped_services: Dict[str, PersonalizationService] = {}
 
 def get_personalization_service(db=Depends(get_scoped_db)) -> PersonalizationService:
-    """
-    FastAPI dependency that returns a PersonalizationService scoped to the current user's organization.
-    """
-    # We could cache by db object id or handle it simply as a new instance per request
-    # Since PersonalizationService is lightweight, a new instance is generally fine.
+    from fastapi.params import Depends
+    if isinstance(db, Depends):
+        db = None
     return PersonalizationService(db=db)

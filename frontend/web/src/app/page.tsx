@@ -39,25 +39,29 @@ export default function Home() {
   });
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const sectionId = entry.target.id;
-            const stateKey = sectionId.replace(/-([a-z])/g, (g) => g[1].toUpperCase()) as keyof typeof sectionsVisible;
-            setSectionsVisible((prev) => ({ ...prev, [stateKey]: true }));
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { rootMargin: "400px" },
-    );
-
     const sections = [
       "problem", "solution", "how-it-works", "roles",
       "ai-engine", "verification", "privacy", "product-screens",
       "benefits", "research", "testimonials", "cta",
     ];
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.target.id) {
+            const sectionId = entry.target.id;
+            const stateKey = sectionId.replace(/-([a-z])/g, (g) => g[1].toUpperCase()) as keyof typeof sectionsVisible;
+            
+            // Check if stateKey is valid before updating state
+            if (stateKey in sectionsVisible && !sectionsVisible[stateKey]) {
+              setSectionsVisible((prev) => ({ ...prev, [stateKey]: true }));
+              observer.unobserve(entry.target);
+            }
+          }
+        });
+      },
+      { rootMargin: "400px" },
+    );
 
     sections.forEach((id) => {
       const element = document.getElementById(id);

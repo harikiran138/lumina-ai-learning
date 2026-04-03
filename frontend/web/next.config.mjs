@@ -6,6 +6,7 @@ const nextConfig = {
   outputFileTracingRoot: path.join(process.cwd(), "../.."),
   images: {
     unoptimized: true,
+    qualities: [70],
   },
   eslint: {
     ignoreDuringBuilds: true,
