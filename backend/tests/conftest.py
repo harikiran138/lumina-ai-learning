@@ -9,3 +9,4 @@ if BACKEND_ROOT not in sys.path:
 
 # Disable secure cookies for tests on http://localhost
 os.environ["SECURE_COOKIES"] = "false"
+os.environ["TESTING"] = "true"
