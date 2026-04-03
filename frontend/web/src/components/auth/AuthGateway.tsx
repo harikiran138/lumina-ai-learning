@@ -96,9 +96,10 @@ function redirectAfterAuth(router: ReturnType<typeof useRouter>, user: AuthUser)
       ? "/onboarding"
       : getRoleHome(user.role);
 
-  startTransition(() => {
-    router.replace(destination);
-  });
+  // Force a full location reload to clear Next.js internal router state, 
+  // ensuring the middleware sees the NEW cookie and doesn't flicker 
+  // with a cached version of the previous role's dashboard.
+  window.location.href = destination;
 }
 
 export default function AuthGateway({ mode }: { mode: AuthMode }) {
