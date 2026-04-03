@@ -24,7 +24,7 @@ vi.mock('next-themes', () => ({
 
 import LoginPage from '@/app/login/page'
 
-const BASE = 'http://127.0.0.1:8000'
+const BASE = ''
 
 describe('Auth flow integration', () => {
   beforeEach(() => {
