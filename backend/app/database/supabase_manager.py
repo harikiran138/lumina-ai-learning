@@ -26,14 +26,31 @@ def _patched_httpx_init(self, *args, **kwargs):
 httpx.Client.__init__ = _patched_httpx_init          # type: ignore[method-assign]
 
 
+# --- GLOBAL MOCK BACKEND ---
+# Using a module-level dictionary ensures data persists across re-imports and fixture resets
+_GLOBAL_MOCK_TABLES: Dict[str, List[Dict[str, Any]]] = {}
+
+def get_global_mock_tables():
+    return _GLOBAL_MOCK_TABLES
+
+def clear_global_mock_tables():
+    global _GLOBAL_MOCK_TABLES
+    _GLOBAL_MOCK_TABLES = {}
+
+
 class _LocalQueryResult:
-    def __init__(self, data):
+    def __init__(self, data: Any):
         self.data = data
+
+    def __await__(self):
+        # Allow Result to be used in 'await' expressions
+        async def _self():
+            return self
+        return _self().__await__()
 
 
 class _LocalTableQuery:
-    def __init__(self, backend: "_LocalSupabaseClient", table_name: str):
-        self.backend = backend
+    def __init__(self, table_name: str):
         self.table_name = table_name
         self._operation = "select"
         self._payload = None
@@ -70,16 +87,17 @@ class _LocalTableQuery:
         return self
 
     def eq(self, key: str, value: Any):
-        self._filters.append(lambda row, k=key, v=value: row.get(k) == v)
+        # String normalization for robust matching
+        self._filters.append(lambda row, k=key, v=value: str(row.get(k)) == str(v))
         return self
 
     def neq(self, key: str, value: Any):
-        self._filters.append(lambda row, k=key, v=value: row.get(k) != v)
+        self._filters.append(lambda row, k=key, v=value: str(row.get(k)) != str(v))
         return self
 
     def in_(self, key: str, values: List[Any]):
-        value_set = set(values or [])
-        self._filters.append(lambda row, k=key, vals=value_set: row.get(k) in vals)
+        value_set = {str(v) for v in (values or [])}
+        self._filters.append(lambda row, k=key, vals=value_set: str(row.get(k)) in vals)
         return self
 
     def or_(self, expression: str):
@@ -87,11 +105,10 @@ class _LocalTableQuery:
         parsed = []
         for clause in clauses:
             parts = clause.split(".", 2)
-            if len(parts) != 3:
-                continue
+            if len(parts) != 3: continue
             field, operator, raw_value = parts
             if operator == "eq":
-                parsed.append(lambda row, f=field, v=raw_value: str(row.get(f)) == v)
+                parsed.append(lambda row, f=field, v=raw_value: str(row.get(f)) == str(v))
         if parsed:
             self._or_filters.append(parsed)
         return self
@@ -112,14 +129,6 @@ class _LocalTableQuery:
         self._single = True
         return self
 
-    def _project_row(self, row: Dict[str, Any]) -> Dict[str, Any]:
-        if self._columns in (None, "*"):
-            return deepcopy(row)
-        if "(" in self._columns or ")" in self._columns:
-            return deepcopy(row)
-        fields = [field.strip() for field in self._columns.split(",") if field.strip()]
-        return {field: deepcopy(row.get(field)) for field in fields}
-
     def _matches(self, row: Dict[str, Any]) -> bool:
         if any(not predicate(row) for predicate in self._filters):
             return False
@@ -129,27 +138,22 @@ class _LocalTableQuery:
                     return False
         return True
 
-    def _selected_rows(self) -> List[Dict[str, Any]]:
-        rows = self.backend._tables.setdefault(self.table_name, [])
-        matched = [row for row in rows if self._matches(row)]
-        if self._order:
-            key, desc = self._order
-            matched.sort(key=lambda row: row.get(key) or "", reverse=desc)
-        if self._limit is not None:
-            matched = matched[: self._limit]
-        return matched
+    def _project_row(self, row: Dict[str, Any]) -> Dict[str, Any]:
+        if self._columns in (None, "*"):
+            return deepcopy(row)
+        fields = [field.strip() for field in self._columns.split(",") if field.strip()]
+        return {field: deepcopy(row.get(field)) for field in fields}
 
     def execute(self):
-        table_rows = self.backend._tables.setdefault(self.table_name, [])
+        global _GLOBAL_MOCK_TABLES
+        table_rows = _GLOBAL_MOCK_TABLES.setdefault(self.table_name, [])
 
         if self._operation == "insert":
-            # For insert, self._payload is the data passed to .insert()
             payloads = self._payload if isinstance(self._payload, list) else [self._payload]
             inserted = []
             for p in payloads:
                 row = deepcopy(p or {})
-                if "id" not in row:
-                    row["id"] = str(uuid.uuid4())
+                if "id" not in row: row["id"] = str(uuid.uuid4())
                 now = datetime.utcnow().isoformat()
                 row.setdefault("created_at", now)
                 row.setdefault("updated_at", now)
@@ -160,18 +164,15 @@ class _LocalTableQuery:
         if self._operation == "upsert":
             payload, on_conflict = self._payload
             payloads = payload if isinstance(payload, list) else [payload]
-            conflict_fields = [field.strip() for field in (on_conflict or "id").split(",") if field.strip()]
+            conflict_fields = [f.strip() for f in (on_conflict or "id").split(",") if f.strip()]
             upserted = []
-            for payload_item in payloads:
-                item = deepcopy(payload_item or {})
+            for p_item in payloads:
+                item = deepcopy(p_item or {})
                 existing = None
-                if conflict_fields:
-                    for row in table_rows:
-                        if all(str(row.get(field)) == str(item.get(field)) for field in conflict_fields):
-                            existing = row
-                            break
-                if existing is None and item.get("id"):
-                    existing = next((row for row in table_rows if row.get("id") == item["id"]), None)
+                for row in table_rows:
+                    if all(str(row.get(f)) == str(item.get(f)) for f in conflict_fields):
+                        existing = row
+                        break
                 if existing is None:
                     item.setdefault("id", str(uuid.uuid4()))
                     item.setdefault("created_at", datetime.utcnow().isoformat())
@@ -185,36 +186,39 @@ class _LocalTableQuery:
             return _LocalQueryResult(upserted)
 
         if self._operation == "update":
-            updated = []
-            for row in self._selected_rows():
+            matched = [row for row in table_rows if self._matches(row)]
+            for row in matched:
                 row.update(deepcopy(self._payload or {}))
                 row["updated_at"] = datetime.utcnow().isoformat()
-                updated.append(deepcopy(row))
-            return _LocalQueryResult(updated)
+            return _LocalQueryResult([deepcopy(r) for r in matched])
 
         if self._operation == "delete":
-            remaining = []
+            rem = []
             deleted = []
             for row in table_rows:
-                if self._matches(row):
-                    deleted.append(deepcopy(row))
-                else:
-                    remaining.append(row)
-            self.backend._tables[self.table_name] = remaining
+                if self._matches(row): deleted.append(deepcopy(row))
+                else: rem.append(row)
+            _GLOBAL_MOCK_TABLES[self.table_name] = rem
             return _LocalQueryResult(deleted)
 
-        projected = [self._project_row(row) for row in self._selected_rows()]
+        # Select logic
+        matched = [row for row in table_rows if self._matches(row)]
+
+        if self._order:
+            k, d = self._order
+            matched.sort(key=lambda r: str(r.get(k) or ""), reverse=d)
+        if self._limit is not None:
+            matched = matched[:self._limit]
+        
+        projected = [self._project_row(r) for r in matched]
         if self._single:
             return _LocalQueryResult(projected[0] if projected else None)
         return _LocalQueryResult(projected)
 
 
 class _LocalSupabaseClient:
-    def __init__(self):
-        self._tables: Dict[str, List[Dict[str, Any]]] = {}
-
     def table(self, table_name: str) -> _LocalTableQuery:
-        return _LocalTableQuery(self, table_name)
+        return _LocalTableQuery(table_name)
 
 
 class SupabaseManager:
@@ -234,6 +238,8 @@ class SupabaseManager:
 
     @classmethod
     def _use_local_backend(cls) -> bool:
+        if os.getenv("LUMINA_FORCE_REAL_DB") == "1":
+            return False
         return os.getenv("LUMINA_FORCE_LOCAL_DB") == "1" or "pytest" in sys.modules
 
     @classmethod
@@ -244,7 +250,6 @@ class SupabaseManager:
         if cls._use_local_backend():
             if cls._local_client is None or force_new:
                 cls._local_client = _LocalSupabaseClient()
-                log.info("supabase_local_client_initialized")
             return cls._local_client  # type: ignore[return-value]
 
         if cls._client is not None and not force_new:
@@ -256,7 +261,6 @@ class SupabaseManager:
         if not supabase_url or not supabase_key:
             error_msg = "Supabase configuration (URL or Key) is missing"
             cls._last_error = error_msg
-            log.error("supabase_config_missing", error=error_msg)
             raise ValueError(error_msg)
 
         # Retry logic for initialization
@@ -272,15 +276,12 @@ class SupabaseManager:
                 )
                 cls._client = create_client(supabase_url, supabase_key, options=options)
                 cls._last_error = None
-                log.info("supabase_client_initialized", attempt=attempt + 1)
                 return cls._client
             except Exception as exc:
                 last_exception = exc
-                log.warning("supabase_init_attempt_failed", attempt=attempt + 1, error=str(exc))
                 time.sleep(1) # Wait before retry
 
         cls._last_error = str(last_exception)
-        log.error("supabase_initialization_failed", error=str(last_exception))
         raise last_exception
 
     @property
@@ -294,7 +295,6 @@ class SupabaseManager:
         """Compatibility method for lifespan startup."""
         try:
             self.get_client()
-            log.info("supabase_connected_successfully")
         except Exception as e:
             log.error("supabase_connection_failed", error=str(e))
             raise
@@ -303,7 +303,7 @@ class SupabaseManager:
         """Compatibility method for lifespan shutdown."""
         # Supabase client doesn't need explicit close usually, 
         # but we add it for lifespan consistency.
-        log.info("supabase_connection_closed")
+        pass
 
     @property
     def last_error(self) -> Optional[str]:
@@ -311,32 +311,30 @@ class SupabaseManager:
 
     # --- Query Helpers ---
 
-    def table(self, table_name: str):
-        """Returns the table object for queries."""
+    def table(self, table_name: str) -> Any:
+        """Get a table query builder."""
         return self.client.table(table_name)
 
     async def fetch_one(self, table: str, query_filter: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Helper to fetch a single record."""
+        """Fetch a single record matching the query filter."""
         try:
             query = self.client.table(table).select("*")
             for key, value in query_filter.items():
                 query = query.eq(key, value)
-            
-            response = query.limit(1).execute()
+            response = await query.limit(1).execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("fetch_one_failed", table=table, error=str(e))
             return None
 
-    async def fetch_all(self, table: str, query_filter: Optional[Dict[str, Any]] = None, limit: int = 1000) -> List[Dict[str, Any]]:
-        """Helper to fetch multiple records."""
+    async def fetch_all(self, table: str, query_filter: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """Fetch all records matching the query filter."""
         try:
             query = self.client.table(table).select("*")
             if query_filter:
                 for key, value in query_filter.items():
                     query = query.eq(key, value)
-            
-            response = query.limit(limit).execute()
+            response = await query.execute()
             return response.data or []
         except Exception as e:
             log.error("fetch_all_failed", table=table, error=str(e))
@@ -345,7 +343,7 @@ class SupabaseManager:
     async def upsert(self, table: str, data: Dict[str, Any], on_conflict: str = 'id') -> Optional[Dict[str, Any]]:
         """Helper to upsert records."""
         try:
-            response = self.client.table(table).upsert(data, on_conflict=on_conflict).execute()
+            response = await self.client.table(table).upsert(data, on_conflict=on_conflict).execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("upsert_failed", table=table, error=str(e))
@@ -354,7 +352,7 @@ class SupabaseManager:
     async def insert(self, table: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Helper to insert records."""
         try:
-            response = self.client.table(table).insert(data).execute()
+            response = await self.client.table(table).insert(data).execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("insert_failed", table=table, error=str(e))
@@ -366,7 +364,7 @@ class SupabaseManager:
             query = self.client.table(table).update(data)
             for key, value in query_filter.items():
                 query = query.eq(key, value)
-            response = query.execute()
+            response = await query.execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("update_failed", table=table, error=str(e))
@@ -379,7 +377,7 @@ class SupabaseManager:
             for key, value in query_filter.items():
                 query = query.eq(key, value)
             
-            response = query.execute()
+            response = await query.execute()
             return len(response.data) > 0
         except Exception as e:
             log.error("delete_failed", table=table, error=str(e))
