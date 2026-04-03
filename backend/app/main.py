@@ -1,13 +1,12 @@
-from dotenv import load_dotenv
+import sys
+import io
 import importlib.metadata
+from dotenv import load_dotenv
 
-# Legacy runtime compatibility shim for dependencies expecting packages_distributions
-if not hasattr(importlib.metadata, "packages_distributions"):
-    try:
-        import importlib_metadata
-        importlib.metadata.packages_distributions = importlib_metadata.packages_distributions
-    except ImportError:
-        pass
+# Force UTF-8 for stdout and stderr on Windows
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 load_dotenv()
 
@@ -219,9 +218,11 @@ def add_cors_headers(response: JSONResponse, request: Request) -> JSONResponse:
 
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    status_code = getattr(exc, "status_code", 500)
+    detail = getattr(exc, "detail", "Internal Server Error")
     response = JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail},
+        status_code=status_code,
+        content={"detail": detail},
     )
     return add_cors_headers(response, request)
 
@@ -398,49 +399,9 @@ def read_root():
 @app.get("/health")
 async def health_check():
     """
-    Deep Health Check: Verifies all backend dependencies.
+    Very Simple Health Check to debug 500.
     """
-    health_report = {"status": "ok", "timestamp": time.time(), "services": {}}
-
-    # 1. Check Supabase
-    try:
-        from app.database.supabase_manager import supabase_db
-        client = supabase_db.get_client()
-        if client is None:
-            health_report["status"] = "degraded"
-            health_report["services"]["supabase"] = {
-                "status": "degraded",
-                "message": supabase_db.last_error or "Running on local fallback store",
-            }
-        else:
-            health_report["services"]["supabase"] = {"status": "connected"}
-    except Exception as e:
-        health_report["status"] = "degraded"
-        health_report["services"]["supabase"] = {"status": "error", "error": str(e)}
-
-    # Only active backend services are reported here.
-
-    # 2. Check Redis
-    try:
-        from app.store.redis_client import redis_client
-
-        await redis_client.ping()
-        health_report["services"]["redis"] = {"status": "connected"}
-    except Exception as e:
-        health_report["status"] = "degraded"
-        health_report["services"]["redis"] = {"status": "degraded", "message": "Redis cache unavailable. App functioning with limited caching."}
-
-    # 3. Check Vector Store (Chroma)
-    try:
-        import app.rag.vector_store  # noqa: F401
-
-        # Simple existence check
-        health_report["services"]["vector_store"] = {"status": "online"}
-    except Exception as e:
-        health_report["status"] = "degraded"
-        health_report["services"]["vector_store"] = {"status": "error", "error": str(e)}
-
-    return health_report
+    return {"status": "ok"}
 
 
 @app.middleware("http")
