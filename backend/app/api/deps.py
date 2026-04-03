@@ -106,7 +106,7 @@ async def get_current_super_admin(current_user: dict = Depends(get_current_activ
 
 async def get_current_college_admin(current_user: dict = Depends(get_current_active_user)) -> dict:
     role = _ensure_valid_role(current_user)
-    if role not in {"college_admin", "super_admin"}:
+    if role not in {"admin", "college_admin", "super_admin"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="College Admin privileges required")
     
     inst_id = current_user.get("college_id") or current_user.get("institution_id")

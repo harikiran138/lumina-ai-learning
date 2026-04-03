@@ -40,7 +40,7 @@ function decodeToken(token: string): Record<string, unknown> | null {
 // Map each path prefix to the role that is allowed to access it.
 // super_admin can access all paths.
 const PROTECTED_PATHS: Record<string, string> = {
-  '/admin': 'super_admin',
+  '/admin': 'college_admin',
   '/college': 'college_admin',
   '/hod': 'hod',
   '/faculty': 'teacher',
@@ -113,7 +113,7 @@ export function middleware(request: NextRequest) {
   }
 
   const role = normalizeRole(rawRole)
-  const onboardingCompleted = payload.onboardingCompleted === true
+  const onboardingCompleted = payload.onboardingCompleted === true || role === 'super_admin'
 
   // 🚧 Onboarding checks
   if (!onboardingCompleted && !pathname.startsWith('/onboarding') && !isPublic) {
@@ -131,9 +131,14 @@ export function middleware(request: NextRequest) {
   // 🔐 Role-based access control
   for (const [pathPrefix, expectedRole] of Object.entries(PROTECTED_PATHS)) {
     if (pathname === pathPrefix || pathname.startsWith(`${pathPrefix}/`)) {
-      if (role !== 'super_admin' && role !== expectedRole) {
+      const allowedRoles =
+        pathPrefix === '/admin'
+          ? new Set(['super_admin', 'college_admin', 'institution_admin', 'admin'])
+          : new Set(['super_admin', expectedRole])
+
+      if (!allowedRoles.has(role)) {
         const url = request.nextUrl.clone()
-        url.pathname = getRoleHome(role)
+        url.pathname = pathPrefix === '/admin' ? '/login' : getRoleHome(role)
         return NextResponse.redirect(url)
       }
       break

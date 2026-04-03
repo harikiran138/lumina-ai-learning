@@ -27,14 +27,15 @@ PHONE_DIGIT_REGEX = re.compile(r"\D")
 
 def default_onboarding_state(role: str = "student") -> Dict[str, Any]:
     normalized_role = normalize_role(role)
+    is_super_admin = normalized_role == "super_admin"
     return {
-        "status": "not_started",
-        "step": 0,
-        "isComplete": False,
+        "status": "completed" if is_super_admin else "not_started",
+        "step": 5 if is_super_admin else 0,
+        "isComplete": is_super_admin,
         "progress": {},
         "role": normalized_role,
         "adaptiveOnboardingCompleted": normalized_role != "student",
-        "adaptiveOnboardingStatus": "pending",
+        "adaptiveOnboardingStatus": "completed" if is_super_admin else "pending",
         "adaptiveSessionId": None,
     }
 
@@ -711,6 +712,18 @@ async def get_onboarding_status(
         adaptive_session = None
         adaptive_completed = role != "student"
 
+        if role == "super_admin":
+            return {
+                "step": 5,
+                "role": role,
+                "isComplete": True,
+                "progress": (existing or {}).get("progress") or {},
+                "status": "completed",
+                "adaptiveOnboardingCompleted": True,
+                "adaptiveOnboardingStatus": "completed",
+                "adaptiveSessionId": None,
+            }
+
         if role == "student":
             adaptive_profile = await db.fetch_one("learner_profiles", {"user_id": user_id})
             adaptive_session = await db.fetch_one(
@@ -902,7 +915,7 @@ async def get_onboarding_subjects(current_user: dict = Depends(get_current_user)
 @router.post("/complete")
 async def complete_onboarding(current_user: dict = Depends(get_current_user)):
     user_id = current_user.get("id")
-    role = normalize_role(current_user.get("role"))
+    role = current_user.get("role")
     
     onboarding_service = OnboardingService(db=supabase_db)
     return await onboarding_service.complete_onboarding(

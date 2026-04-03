@@ -92,7 +92,7 @@ function isValidEmail(value: string) {
 function redirectAfterAuth(router: ReturnType<typeof useRouter>, user: AuthUser) {
   const destination = user.mustChangePassword
     ? "/change-password"
-    : user.onboardingStep !== undefined && user.onboardingStep < 5
+    : user.onboardingStep !== undefined && user.onboardingStep < 5 && user.role !== "super_admin"
       ? "/onboarding"
       : getRoleHome(user.role);
 

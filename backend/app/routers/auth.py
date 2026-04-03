@@ -155,8 +155,11 @@ def _is_adaptive_onboarding_completed(user: dict) -> bool:
 
 
 def _is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
-    onboarding_step = int(user.get("onboarding_step") or 0)
     role = normalize_role(user.get("role", "guest"))
+    if role == "super_admin":
+        return True, True
+        
+    onboarding_step = int(user.get("onboarding_step") or 0)
     adaptive_completed = role != "student" or _is_adaptive_onboarding_completed(user)
     return onboarding_step >= 5 and adaptive_completed, adaptive_completed
 

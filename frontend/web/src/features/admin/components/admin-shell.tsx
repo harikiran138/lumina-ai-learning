@@ -1,0 +1,53 @@
+"use client";
+
+import type { ReactNode } from "react";
+
+import { BGPattern } from "@/components/ui/BGPattern";
+import { AdminStoreHydrator } from "@/features/admin/components/admin-store-hydrator";
+import { AdminTopbar } from "@/features/admin/components/admin-topbar";
+import type { AdminUser } from "@/features/admin/types";
+import { useAdminShellStore } from "@/features/admin/store/use-admin-shell-store";
+import Sidebar from "@/app/admin/sidebar";
+
+export function AdminShell({
+  children,
+  initialUser,
+}: {
+  children: ReactNode;
+  initialUser: AdminUser;
+}) {
+  const sidebarOpen = useAdminShellStore((state) => state.sidebarOpen);
+  const setSidebarOpen = useAdminShellStore((state) => state.setSidebarOpen);
+
+  return (
+    <div className="relative min-h-screen bg-slate-950 text-white">
+      <AdminStoreHydrator user={initialUser} />
+      <BGPattern
+        variant="grid"
+        size={36}
+        fill="rgba(245, 158, 11, 0.06)"
+        className="pointer-events-none fixed inset-0"
+      />
+
+      <div className="relative flex min-h-screen">
+        <Sidebar />
+        {sidebarOpen ? (
+          <button
+            type="button"
+            className="fixed inset-0 z-30 bg-slate-950/70 lg:hidden"
+            aria-label="Close admin navigation"
+            onClick={() => setSidebarOpen(false)}
+          />
+        ) : null}
+
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-80">
+          <AdminTopbar />
+          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-[1600px]">{children}</div>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+
