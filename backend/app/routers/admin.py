@@ -22,7 +22,7 @@ from app.services.compliance_service import get_compliance_service
 from app.database.models import Institution, Department, Stakeholder
 from app.store.academic_store import AcademicStore
 from pydantic import BaseModel
-from app.store.config_store import config_store
+from app.store.config_store import ConfigStore, config_store
 from app.core.rbac import normalize_role, Role
 
 class CreateDeptRequest(BaseModel):
@@ -369,6 +369,23 @@ async def get_all_courses(admin: dict = Depends(is_admin)):
     return all_courses
 
 
+@router.get("/teachers")
+async def get_all_teachers(admin: dict = Depends(is_admin)):
+    """List teacher and HOD performance statistics for the admin workspace."""
+    db = get_scoped_db(admin)
+    analytics = AnalyticsStore(db=db)
+    institution_id = admin.get("resolved_institution_id")
+    return await analytics.get_all_teacher_stats(institution_id)
+
+
+@router.get("/students")
+async def get_all_students(admin: dict = Depends(is_admin)):
+    """List student progress and risk signals for the admin workspace."""
+    db = get_scoped_db(admin)
+    analytics = AnalyticsStore(db=db)
+    return await analytics.get_admin_student_progress_snapshot()
+
+
 @router.get("/logs/ai")
 async def get_ai_logs(admin: dict = Depends(is_admin)):
     """Fetch AI interaction logs."""
@@ -673,6 +690,7 @@ async def link_stakeholder(data: dict, admin: dict = Depends(is_admin)):
 async def get_connections(inst_id: Optional[str] = None, program_id: Optional[str] = None, admin: dict = Depends(is_admin)):
     """List stakeholder connections (scoped to primary institution)."""
     store = InstitutionStore()
+    db = get_scoped_db(admin)
     
     # Enforce single-institution scope if no inst_id provided
     if not inst_id:
@@ -711,6 +729,8 @@ async def get_connections(inst_id: Optional[str] = None, program_id: Optional[st
         )
 
     return enriched
+
+
 @router.get("/compliance/deletions")
 async def get_deletion_requests(admin: dict = Depends(is_admin)):
     """List pending and completed data deletion requests."""
@@ -753,6 +773,88 @@ async def get_compliance_audit_logs(admin: dict = Depends(is_admin)):
         return response.data
     except Exception:
         return []
+
+
+@router.get("/compliance")
+async def get_compliance_summary(admin: dict = Depends(is_admin)):
+    """Return deletion and audit-log summary for the admin compliance dashboard."""
+    db = get_scoped_db(admin)
+
+    try:
+        deletions = (
+            db.table("deletion_requests")
+            .select("*")
+            .order("created_at", desc=True)
+            .limit(50)
+            .execute()
+            .data
+            or []
+        )
+    except Exception:
+        deletions = []
+
+    try:
+        audit_logs = (
+            db.table("audit_logs")
+            .select("*")
+            .order("created_at", desc=True)
+            .limit(100)
+            .execute()
+            .data
+            or []
+        )
+    except Exception:
+        audit_logs = []
+
+    open_deletions = sum(1 for item in deletions if str(item.get("status", "")).lower() in {"pending", "queued", "requested"})
+    completed_deletions = sum(1 for item in deletions if str(item.get("status", "")).lower() in {"completed", "done", "processed"})
+    high_severity_events = sum(
+        1
+        for item in audit_logs
+        if str(item.get("severity") or item.get("level") or "").lower() in {"high", "critical", "error"}
+    )
+
+    return {
+        "summary": {
+            "open_deletions": open_deletions,
+            "completed_deletions": completed_deletions,
+            "audit_events": len(audit_logs),
+            "high_severity_events": high_severity_events,
+        },
+        "deletion_requests": deletions,
+        "audit_logs": audit_logs,
+    }
+
+
+@router.get("/guardian-log")
+async def get_guardian_log(admin: dict = Depends(is_admin)):
+    """Return Guardian moderation and intervention signals for the admin dashboard."""
+    db = get_scoped_db(admin)
+    analytics = AnalyticsStore(db=db)
+    return await analytics.get_guardian_signals()
+
+
+@router.get("/reports")
+async def get_admin_reports(admin: dict = Depends(is_admin)):
+    """Aggregate report-ready operational metrics for the admin dashboard."""
+    db = get_scoped_db(admin)
+    analytics = AnalyticsStore(db=db)
+
+    dashboard = await analytics.get_admin_dashboard_stats()
+    queue = await analytics.get_verification_queue_stats()
+    ai_usage = await analytics.get_ai_cost_analysis()
+    guardian = await analytics.get_guardian_signals()
+
+    return {
+        "generated_at": datetime.utcnow().isoformat(),
+        "summary": dashboard.get("summary", dashboard),
+        "activity_feed": dashboard.get("activityFeed", []),
+        "attention_queue": dashboard.get("attentionQueue", []),
+        "system_services": dashboard.get("systemServices", []),
+        "queue": queue,
+        "ai_usage": ai_usage,
+        "guardian_events": guardian[:10],
+    }
 
 # --- Academic Management ---
 
@@ -978,10 +1080,6 @@ async def get_ai_models(admin: dict = Depends(is_admin)):
 @router.get("/ai/costs")
 async def get_ai_costs(admin: dict = Depends(is_admin)):
     """Fetch AI usage cost summary."""
-    try:
-        response = supabase_db.client.table("ai_usage_costs").select("*").order("period_start", desc=True).limit(12).execute()
-        rows = response.data or []
-        total = sum(float(r.get("total_cost", 0)) for r in rows)
-        return {"total_cost": total, "currency": "USD", "periods": rows}
-    except Exception:
-        return {"total_cost": 0.0, "currency": "USD", "periods": []}
+    db = get_scoped_db(admin)
+    analytics = AnalyticsStore(db=db)
+    return await analytics.get_ai_cost_analysis()

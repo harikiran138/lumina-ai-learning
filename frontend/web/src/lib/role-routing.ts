@@ -1,7 +1,8 @@
 export const ROLE_HOME_ROUTES: Record<string, string> = {
   super_admin: "/admin/dashboard",
   admin: "/admin/dashboard",
-  college_admin: "/college",
+  college_admin: "/admin/dashboard",
+  institution_admin: "/admin/dashboard",
   hod: "/hod/dashboard",
   faculty: "/faculty/dashboard",
   teacher: "/faculty/dashboard",
@@ -18,7 +19,8 @@ export const ROLE_HOME_ROUTES: Record<string, string> = {
 
 const ROLE_PATH_PREFIXES: Record<string, string[]> = {
   super_admin: ["/admin"],
-  college_admin: ["/college"],
+  college_admin: ["/admin", "/college"],
+  institution_admin: ["/admin", "/college"],
   hod: ["/hod"],
   teacher: ["/teacher"],
   faculty: ["/faculty"],
@@ -35,6 +37,8 @@ const ROLE_PATH_PREFIXES: Record<string, string[]> = {
 export function normalizeRole(role?: string | null): string {
   if (role === "faculty") return "teacher"
   if (role === "peer-tutor") return "peer_tutor"
+  if (role === "institution_admin") return "college_admin"
+  if (role === "inst_admin") return "college_admin"
   return role || ""
 }
 

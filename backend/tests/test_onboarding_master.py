@@ -85,6 +85,96 @@ async def test_service_faculty_migration(db_manager):
     assert profile is not None
     assert "Advanced Math" in profile["subjects"]
 
+@pytest.mark.asyncio
+async def test_service_institution_faculty_migration(db_manager):
+    user = get_mock_user_base("faculty")
+    user["college_id"] = "college_001"
+    user_id = user["id"]
+    db_manager.client.table("users").insert(user).execute()
+
+    onboarding_data = {
+        "user_id": user_id,
+        "progress": {
+            "step_1": {
+                "fullName": "Dr. Faculty",
+                "employeeId": "FAC-101",
+                "collegeId": "college_001",
+                "department": "Computer Science",
+                "designation": "Associate Professor",
+            },
+            "step_2": {
+                "subjects": ["Operating Systems"],
+                "experienceYears": 9,
+                "verificationDocs": ["https://example.com/faculty-proof"],
+                "confirmedAssignments": True,
+            },
+            "step_3": {
+                "officeHours": "Mon 2 PM - 4 PM",
+                "teachingModes": ["lecture", "lab"],
+                "facultyNotes": "Teacher verification should stay enabled.",
+            },
+            "step_4": {
+                "gradingScale": "A-F",
+                "analyticsFocus": ["concept_mastery", "risk_alerts"],
+            },
+        },
+    }
+    db_manager.client.table("user_data").insert(onboarding_data).execute()
+
+    service = OnboardingService(db_manager)
+    result = await service.complete_onboarding(user_id, "faculty", user, {})
+
+    assert result["success"] is True
+    profile = await db_manager.fetch_one("faculty_profiles", {"user_id": user_id})
+    assert profile is not None
+    assert profile["institution_id"] == "college_001"
+    assert "Operating Systems" in profile["subjects"]
+
+@pytest.mark.asyncio
+async def test_service_parent_migration_creates_relationships(db_manager):
+    user = get_mock_user_base("parent")
+    user_id = user["id"]
+    db_manager.client.table("users").insert(user).execute()
+
+    onboarding_data = {
+        "user_id": user_id,
+        "progress": {
+            "step_1": {
+                "fullName": "Parent User",
+                "relation": "guardian",
+                "contactPhone": "9876543210",
+                "parentEmail": "parent@example.com",
+            },
+            "step_2": {
+                "studentIds": ["student_1", "student_2"],
+                "monitoringGoals": ["attendance", "assignments"],
+                "checkInFrequency": "Weekly",
+            },
+            "step_3": {
+                "alertPreferences": ["low_attendance"],
+                "supportNotes": "Call if attendance dips below threshold.",
+                "preferredLanguage": "English",
+            },
+            "step_4": {
+                "communicationMode": "both",
+                "dashboardIntent": "Surface progress trends and alerts.",
+                "relationshipConfirmation": True,
+            },
+        },
+    }
+    db_manager.client.table("user_data").insert(onboarding_data).execute()
+
+    service = OnboardingService(db_manager)
+    result = await service.complete_onboarding(user_id, "parent", user, {})
+
+    assert result["success"] is True
+    profile = await db_manager.fetch_one("parent_profiles", {"user_id": user_id})
+    assert profile is not None
+    assert profile["relation"] == "guardian"
+    relationship = await db_manager.fetch_one("parent_student_map", {"parent_id": user_id, "student_id": "student_1"})
+    assert relationship is not None
+    assert relationship["relationship_type"] == "guardian"
+
 # --- Layer 2: API (Integration) Tests ---
 
 @pytest.mark.asyncio

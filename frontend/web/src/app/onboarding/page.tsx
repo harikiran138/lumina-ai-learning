@@ -20,8 +20,30 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import StudentOnboardingFlow from "@/components/onboarding/StudentOnboardingFlow";
+import RoleOnboardingFlow from "@/components/onboarding/RoleOnboardingFlow";
+import { getRoleHome } from "@/lib/role-routing";
+import type { SupportedRoleOnboardingRole } from "@/lib/role-onboarding";
 
-type Role = "super_admin" | "college_admin" | "hod" | "teacher" | "student";
+type Role =
+  | "super_admin"
+  | "college_admin"
+  | "hod"
+  | "teacher"
+  | "faculty"
+  | "student"
+  | "parent"
+  | "mentor"
+  | "peer_tutor"
+  | "researcher";
+
+const structuredRoleFlows: SupportedRoleOnboardingRole[] = [
+  "teacher",
+  "faculty",
+  "parent",
+  "mentor",
+  "peer_tutor",
+  "researcher",
+];
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -52,7 +74,12 @@ export default function OnboardingPage() {
           return;
         }
         const status = await api.getOnboardingStatus();
-        setRole((status.role || user.role) as Role);
+        const currentRole = (status.role || user.role) as Role;
+        if (currentRole === "super_admin") {
+          routeByRole(currentRole);
+          return;
+        }
+        setRole(currentRole);
         setCollegeId(status.collegeId || user.collegeId || null);
         setCurrentStep(status.step || 1);
       } catch (err: any) {
@@ -65,14 +92,19 @@ export default function OnboardingPage() {
   }, [router]);
 
   const routeByRole = (r: Role) => {
-    const routes: Record<Role, string> = {
-      super_admin: "/admin",
-      college_admin: "/college",
-      hod: "/hod",
-      teacher: "/faculty",
-      student: "/student/dashboard",
-    };
-    router.push(routes[r] || "/");
+    if (r === "super_admin") {
+      router.push("/admin");
+      return;
+    }
+    if (r === "college_admin") {
+      router.push("/college");
+      return;
+    }
+    if (r === "hod") {
+      router.push("/hod");
+      return;
+    }
+    router.push(getRoleHome(r));
   };
 
   const nextStep = async () => {
@@ -174,6 +206,10 @@ export default function OnboardingPage() {
 
   if (role === "student") {
     return <StudentOnboardingFlow />;
+  }
+
+  if (role && structuredRoleFlows.includes(role as SupportedRoleOnboardingRole)) {
+    return <RoleOnboardingFlow role={role as SupportedRoleOnboardingRole} />;
   }
 
   return (

@@ -1155,7 +1155,7 @@ class AnalyticsStore:
 
         ungraded_submissions = sum(1 for item in submissions if item["needs_grading"] and item.get("student_id") in relevant_user_ids)
         suspended_users = status_distribution.get("suspended", 0)
-        staff_roles = {"faculty", "hod"}
+        staff_roles = {"teacher", "hod"}
         privileged_roles = {"super_admin", "college_admin"}
         inactive_staff = sum(
             1
@@ -1271,7 +1271,7 @@ class AnalyticsStore:
         system_status = "healthy" if system_health_score >= 85 else "watch" if system_health_score >= 65 else "degraded"
 
         total_students = role_distribution.get("student", 0)
-        total_faculty = sum(role_distribution.get(role, 0) for role in ("faculty", "hod"))
+        total_faculty = sum(role_distribution.get(role, 0) for role in ("teacher", "hod"))
         active_users = status_distribution.get("active", 0)
 
         summary = {
@@ -1538,8 +1538,8 @@ class AnalyticsStore:
 
         # Filter teachers for this institution
         teachers = [
-            u for u in all_users 
-            if u.get("role") in ("faculty", "hod")
+            u for u in all_users
+            if u.get("role") in ("teacher", "hod")
         ]
         
         if institution_id:
