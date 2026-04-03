@@ -56,7 +56,7 @@ class UserDataStore:
                 "quiz_history": history,
                 "progress": progress,
                 "updated_at": datetime.utcnow().isoformat()
-            }).eq("user_id", user_id).execute()
+            }).eq("user_id", user_id).async_execute()
                 
         except Exception as e:
             log.error("quiz_attempt_update_failed", error=str(e), user_id=user_id)
@@ -64,7 +64,7 @@ class UserDataStore:
     async def get_recent_quiz_stats(self, user_id: str, limit: int = 5) -> Dict:
         try:
             client = self.db.get_client()
-            response = client.table("user_data").select("quiz_history").eq("user_id", user_id).execute()
+            response = await client.table("user_data").select("quiz_history").eq("user_id", user_id).async_execute()
             
             if not response.data or not response.data[0].get("quiz_history"):
                 return {"attempt_count": 0, "recent_average": 0, "weak_topics": [], "recent_history": []}
@@ -104,7 +104,7 @@ class UserDataStore:
             client.table("user_data").update({
                 "notes": notes,
                 "updated_at": datetime.utcnow().isoformat()
-            }).eq("user_id", user_id).execute()
+            }).eq("user_id", user_id).async_execute()
             return note
         except Exception as e:
             log.error("add_note_failed", error=str(e), user_id=user_id)
@@ -113,7 +113,7 @@ class UserDataStore:
     async def get_notes(self, user_id: str) -> List[Dict]:
         try:
             client = self.db.get_client()
-            response = client.table("user_data").select("notes").eq("user_id", user_id).execute()
+            response = await client.table("user_data").select("notes").eq("user_id", user_id).async_execute()
             if response.data and response.data[0].get("notes"):
                 return response.data[0]["notes"]
             return []
@@ -139,7 +139,7 @@ class UserDataStore:
                 client.table("user_data").update({
                     "notes": notes,
                     "updated_at": datetime.utcnow().isoformat()
-                }).eq("user_id", user_id).execute()
+                }).eq("user_id", user_id).async_execute()
             return found
         except Exception as e:
             log.error("update_note_failed", error=str(e), user_id=user_id)
@@ -156,7 +156,7 @@ class UserDataStore:
                 client.table("user_data").update({
                     "notes": notes,
                     "updated_at": datetime.utcnow().isoformat()
-                }).eq("user_id", user_id).execute()
+                }).eq("user_id", user_id).async_execute()
                 return True
             return False
         except Exception as e:
@@ -175,7 +175,7 @@ class UserDataStore:
             client.table("user_data").update({
                 "progress": progress,
                 "updated_at": datetime.utcnow().isoformat()
-            }).eq("user_id", user_id).execute()
+            }).eq("user_id", user_id).async_execute()
         except Exception as e:
             log.error("update_progress_failed", error=str(e), user_id=user_id)
 
@@ -197,7 +197,7 @@ class UserDataStore:
             client.table("user_data").update({
                 "progress": progress,
                 "updated_at": datetime.utcnow().isoformat(),
-            }).eq("user_id", user_id).execute()
+            }).eq("user_id", user_id).async_execute()
             return settings
         except Exception as e:
             log.error("update_profile_settings_failed", error=str(e), user_id=user_id)

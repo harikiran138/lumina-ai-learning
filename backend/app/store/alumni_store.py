@@ -12,7 +12,7 @@ class AlumniStore:
     async def get_portfolio(self, alumni_id: str) -> Optional[Dict[str, Any]]:
         try:
             client = self.db.get_client()
-            res = client.table("alumni_portfolio").select("*").eq("alumni_id", alumni_id).execute()
+            res = await client.table("alumni_portfolio").select("*").eq("alumni_id", alumni_id).async_execute()
             return res.data[0] if res.data else None
         except Exception as e:
             log.error("get_alumni_portfolio_failed", alumni_id=alumni_id, error=str(e))
@@ -21,7 +21,7 @@ class AlumniStore:
     async def update_mentorship_status(self, alumni_id: str, is_available: bool) -> bool:
         try:
             client = self.db.get_client()
-            client.table("alumni_mentorship").upsert({"alumni_id": alumni_id, "is_available": is_available}).execute()
+            await client.table("alumni_mentorship").upsert({"alumni_id": alumni_id, "is_available": is_available}).async_execute()
             return True
         except Exception as e:
             log.error("update_alumni_mentorship_failed", alumni_id=alumni_id, error=str(e))

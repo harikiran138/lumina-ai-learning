@@ -144,17 +144,17 @@ export default function StudentOnboardingFlow() {
         const draftStudent = draft.student || {};
         const user = await api.getCurrentUser();
         if (!user) {
-          router.push("/login");
+          window.location.href = "/login";
           return;
         }
         if (user.role !== "student") {
-          router.push("/student/dashboard");
+          window.location.href = "/student/dashboard";
           return;
         }
 
         const status = await api.getOnboardingStatus();
         if (status.role !== "student") {
-          router.push("/student/dashboard");
+          window.location.href = "/student/dashboard";
           return;
         }
 
@@ -164,7 +164,7 @@ export default function StudentOnboardingFlow() {
         if (nextCompleted >= 5 && adaptiveDone) {
           clearSnapshot("student");
           await api.getCurrentUser().catch(() => undefined);
-          router.push("/student/dashboard");
+          window.location.href = "/student/dashboard";
           return;
         }
 
@@ -533,7 +533,7 @@ export default function StudentOnboardingFlow() {
     setAdaptiveStatus("completed");
     clearSnapshot("student");
     await api.getCurrentUser().catch(() => undefined);
-    router.push("/student/dashboard");
+    window.location.href = "/student/dashboard";
   };
 
   return (

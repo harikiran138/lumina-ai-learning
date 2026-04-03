@@ -97,7 +97,7 @@ class AnalyticsStore:
                 query = query.order(order_by, desc=desc)
             if limit:
                 query = query.limit(limit)
-            response = query.execute()
+            response = query.async_execute()
             return response.data or []
         except Exception as e:
             log.warning("analytics_table_read_failed", table=name, error=str(e))
@@ -935,7 +935,7 @@ class AnalyticsStore:
         """Aggregate AI token costs across institutions."""
         try:
             client = self.db.get_client()
-            res = client.table("ai_usage_tracking").select("*").execute()
+            res = await client.table("ai_usage_tracking").select("*").async_execute()
             data = res.data or []
             
             total_tokens = sum(item.get("tokens_used", 0) for item in data)
@@ -962,7 +962,7 @@ class AnalyticsStore:
         try:
             client = self.db.get_client()
             # Simple metadata check to verify connectivity
-            client.table("users").select("id").limit(1).execute()
+            await client.table("users").select("id").limit(1).async_execute()
             services.append({"name": "PostgreSQL (Supabase)", "status": "operational", "uptime": "100%"})
         except Exception as e:
             log.error("health_check_supabase_failed", error=str(e))
@@ -996,7 +996,7 @@ class AnalyticsStore:
         """Stats for the AI answer verification queue."""
         try:
             client = self.db.get_client()
-            res = client.table("ai_answer_queue").select("*").execute()
+            res = await client.table("ai_answer_queue").select("*").async_execute()
             data = res.data or []
             return {
                 "total_pending": sum(1 for item in data if item.get("status") == "pending"),
@@ -1012,7 +1012,7 @@ class AnalyticsStore:
         """Fetch active signals from the Guardian agent."""
         try:
             client = self.db.get_client()
-            res = client.table("guardian_log").select("*").order("created_at", desc=True).limit(50).execute()
+            res = await client.table("guardian_log").select("*").order("created_at", desc=True).limit(50).async_execute()
             return res.data or []
         except Exception:
             return []
@@ -1315,7 +1315,7 @@ class AnalyticsStore:
 
     async def get_student_dashboard_stats(self, student_id: str) -> Dict:
         try:
-            response = self.sessions_collection.select("current_difficulty, topic, timestamp").eq("student_id", student_id).execute()
+            response = await self.sessions_collection.select("current_difficulty, topic, timestamp").eq("student_id", student_id).async_execute()
             data = response.data
 
             if not data:
@@ -1345,7 +1345,7 @@ class AnalyticsStore:
             client = self.db.get_client()
 
             # Fetch enrollments for this student (our real schema)
-            enrollment_response = client.table("enrollments").select("*").eq("student_id", student_id).execute()
+            enrollment_response = await client.table("enrollments").select("*").eq("student_id", student_id).async_execute()
             enrollments = enrollment_response.data or []
 
             if not enrollments:
@@ -1354,7 +1354,7 @@ class AnalyticsStore:
                         client.table("student_progress")
                         .select("*")
                         .eq("student_id", student_id)
-                        .execute()
+                        .async_execute()
                     )
                     progress_rows = progress_response.data or []
                     enrollments = [
@@ -1383,7 +1383,7 @@ class AnalyticsStore:
                         client.table("student_subjects")
                         .select("subject_id")
                         .eq("student_id", student_id)
-                        .execute()
+                        .async_execute()
                     )
                     subject_ids = [
                         str(row.get("subject_id"))
@@ -1428,7 +1428,7 @@ class AnalyticsStore:
             # Batch fetch courses
             courses_map = {}
             if course_ids:
-                courses_response = client.table("courses").select("*").in_("id", course_ids).execute()
+                courses_response = await client.table("courses").select("*").in_("id", course_ids).async_execute()
                 for c in courses_response.data:
                     courses_map[str(c.get("id"))] = c
 
@@ -1477,10 +1477,10 @@ class AnalyticsStore:
             total_hours = round(sum([c.get("hoursSpent", 0) for c in enrolled_courses]), 2)
 
             # Fetch Class/Section details for this student
-            enrollment_record = client.table("student_enrollments").select("class_id").eq("student_id", student_id).maybe_single().execute()
+            enrollment_record = await client.table("student_enrollments").select("class_id").eq("student_id", student_id).maybe_single().async_execute()
             class_info = {"name": None, "batch": None}
             if enrollment_record.data and enrollment_record.data.get("class_id"):
-                c_res = client.table("classes").select("class_name, batch, section_name, batch_name").eq("id", enrollment_record.data["class_id"]).maybe_single().execute()
+                c_res = await client.table("classes").select("class_name, batch, section_name, batch_name").eq("id", enrollment_record.data["class_id"]).maybe_single().async_execute()
                 if c_res.data:
                     class_info["name"] = c_res.data.get("class_name") or c_res.data.get("section_name")
                     class_info["batch"] = c_res.data.get("batch") or c_res.data.get("batch_name")
@@ -1500,7 +1500,7 @@ class AnalyticsStore:
 
     async def get_top_performing_topics(self, limit: int = 5) -> List[Dict]:
         try:
-            response = self.sessions_collection.select("topic, current_difficulty").execute()
+            response = await self.sessions_collection.select("topic, current_difficulty").async_execute()
             data = response.data
 
             if not data:

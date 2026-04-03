@@ -12,7 +12,7 @@ class ResearcherStore:
     async def get_snapshots(self) -> List[Dict[str, Any]]:
         try:
             client = self.db.get_client()
-            return client.table("anonymised_snapshots").select("*").execute().data
+            return await client.table("anonymised_snapshots").select("*").async_execute().data
         except Exception as e:
             log.error("get_snapshots_failed", error=str(e))
             return []

@@ -69,7 +69,7 @@ class GenerationStore:
             for k, v in filters.items():
                 query = query.eq(k, v)
             
-            response = query.execute()
+            response = query.async_execute()
             return response.data or []
         except Exception as exc:
             log.warning("generation_asset_list_failed", error=str(exc))
@@ -79,7 +79,7 @@ class GenerationStore:
         updates = {**updates, "updated_at": datetime.utcnow().isoformat()}
         try:
             client = self.db.get_client()
-            response = client.table("generation_assets").update(updates).eq("id", asset_id).execute()
+            response = await client.table("generation_assets").update(updates).eq("id", asset_id).async_execute()
             if response.data:
                 return response.data[0]
         except Exception as exc:

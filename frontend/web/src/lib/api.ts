@@ -736,7 +736,11 @@ export class RealAPI {
       body: JSON.stringify({ step, data }),
     });
     if (!res.ok) return { success: false };
-    return await parseJsonSafe(res) ?? {};
+    const result = await parseJsonSafe(res) ?? {};
+    if (result.accessToken) {
+      this.persistToken(result.accessToken);
+    }
+    return result;
   }
 
   async completeOnboarding(): Promise<any> {

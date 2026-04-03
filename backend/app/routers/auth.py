@@ -688,7 +688,7 @@ def login_json(
         },
     )
 
-    onboarding_completed, adaptive_completed = _is_onboarding_complete(user)
+    onboarding_completed, adaptive_completed = is_onboarding_complete(user)
 
     return {
         "accessToken": access_token,

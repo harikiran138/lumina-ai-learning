@@ -13,7 +13,7 @@ class CounselorStore:
         try:
             client = self.db.get_client()
             # Returns anonymised IDs through assignment table
-            return client.table("counselor_assignments").select("student_id").eq("counselor_id", counselor_id).execute().data
+            return await client.table("counselor_assignments").select("student_id").eq("counselor_id", counselor_id).async_execute().data
         except Exception as e:
             log.error("get_assigned_students_failed", counselor_id=counselor_id, error=str(e))
             return []
@@ -21,7 +21,7 @@ class CounselorStore:
     async def get_crisis_cases(self) -> List[Dict[str, Any]]:
         try:
             client = self.db.get_client()
-            return client.table("crisis_cases").select("*").eq("status", "active").execute().data
+            return await client.table("crisis_cases").select("*").eq("status", "active").async_execute().data
         except Exception as e:
             log.error("get_crisis_cases_failed", error=str(e))
             return []

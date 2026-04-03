@@ -199,7 +199,7 @@ class ParentStore:
         """Removes a link between parent and child."""
         try:
             client = self.db.get_client()
-            client.table("parent_child_links").delete().eq("parent_id", parent_id).eq("child_id", child_id).execute()
+            await client.table("parent_child_links").delete().eq("parent_id", parent_id).eq("child_id", child_id).async_execute()
             return True
         except Exception as e:
             log.error("delete_link_failed", parent_id=parent_id, child_id=child_id, error=str(e))
