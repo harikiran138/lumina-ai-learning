@@ -4,20 +4,24 @@ import CollegeSidebar from "@/components/dashboard/CollegeSidebar";
 import TopNav from "@/components/dashboard/TopNav";
 import { BGPattern } from "@/components/ui/BGPattern";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
-import { useState, useEffect } from "react";
-import { api } from "@/lib/api";
+import { useState } from "react";
+import { useAuthStore, useIsAuthLoading } from "@/store/useAuthStore";
 
 export default function CollegeLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  // Use the global store — AuthProvider already hydrates this from the backend.
+  // This replaces the previous local api.getCurrentUser() useEffect which
+  // was creating a redundant, racy second API call.
+  const { user } = useAuthStore();
+  const isAuthLoading = useIsAuthLoading();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const userData = await api.getCurrentUser();
-      setUser(userData);
-    };
-    fetchUser();
-  }, []);
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-black text-gray-100">
