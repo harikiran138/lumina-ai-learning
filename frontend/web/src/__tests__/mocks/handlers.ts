@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
 
 type JsonObject = Record<string, unknown>
 
@@ -16,7 +16,7 @@ export const handlers = [
     const body = await request.json() as { email: string; password: string }
     if (body.email === 'student@lumina.test' && body.password === 'Password1') {
       return HttpResponse.json({
-        token: 'mock-jwt-token-student',
+        accessToken: 'mock-jwt-token-student',
         user: {
           id: 'u1',
           name: 'Test Student',
@@ -27,7 +27,7 @@ export const handlers = [
     }
     if (body.email === 'teacher@lumina.test' && body.password === 'Password1') {
       return HttpResponse.json({
-        token: 'mock-jwt-token-teacher',
+        accessToken: 'mock-jwt-token-teacher',
         user: {
           id: 'u2',
           name: 'Test Teacher',
@@ -38,7 +38,7 @@ export const handlers = [
     }
     if (body.email === 'admin@lumina.test' && body.password === 'Password1') {
       return HttpResponse.json({
-        token: 'mock-jwt-token-admin',
+        accessToken: 'mock-jwt-token-admin',
         user: {
           id: 'u3',
           name: 'Test Admin',
@@ -54,7 +54,7 @@ export const handlers = [
   http.post(`${BASE_URL}/auth/register`, async ({ request }) => {
     const body = await request.json() as { email: string; name: string; role?: string }
     return HttpResponse.json({
-      token: 'mock-jwt-token-new',
+      accessToken: 'mock-jwt-token-new',
       user: {
         id: 'u-new',
         name: body.name,
@@ -66,7 +66,7 @@ export const handlers = [
 
   // Auth — refresh
   http.post(`${BASE_URL}/auth/refresh`, () => {
-    return HttpResponse.json({ token: 'mock-refreshed-token' })
+    return HttpResponse.json({ accessToken: 'mock-refreshed-token' })
   }),
 
   // Current user

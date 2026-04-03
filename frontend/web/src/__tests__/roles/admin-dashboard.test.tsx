@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '../mocks/server'
 
-const BASE_URL = 'http://localhost:3001/api'
+const BASE_URL = 'http://127.0.0.1:8000/api'
 
 type JsonObject = Record<string, unknown>
 

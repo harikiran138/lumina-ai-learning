@@ -12,7 +12,7 @@ import { server } from '../mocks/server'
 // Note: We use React Testing Library with MSW for integration-style tests
 // Some tests are adapted for jsdom environment
 
-const BASE_URL = 'http://localhost:3001/api'
+const BASE_URL = 'http://127.0.0.1:8000/api'
 
 type JsonObject = Record<string, unknown>
 
