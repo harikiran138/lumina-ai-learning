@@ -43,8 +43,20 @@ async function fetchJson<T>(path: string, fallback: T): Promise<T> {
   }
 }
 
+type RawUserResponse = {
+  id?: string;
+  name?: string;
+  full_name?: string;
+  email?: string;
+  role?: string;
+  avatar?: string | null;
+  status?: string;
+  college_id?: string | null;
+  dept_id?: string | null;
+} | null;
+
 export async function getAdminViewer(): Promise<AdminUser> {
-  const user = await fetchJson<any>("/api/auth/me", null);
+  const user = await fetchJson<RawUserResponse>("/api/auth/me", null);
   return {
     id: user?.id || "",
     name: user?.name || user?.full_name || "Admin",
@@ -61,29 +73,33 @@ export async function getAdminDashboardData(): Promise<AdminDashboardResponse> {
   return fetchJson<AdminDashboardResponse>("/api/admin/dashboard", {});
 }
 
+type AiCostsData = {
+  breakdown_by_model?: Array<{ model: string; tokens: string; cost: string }>;
+  total_tokens?: number;
+  total_cost?: string;
+  monthly_budget?: string;
+  usage_percentage?: string;
+};
+
+type QueueHealthData = {
+  total_pending?: number;
+  total_verified?: number;
+  avg_verification_time?: string;
+  backlog_trend?: string;
+};
+
 export async function getAdminAiUsageData(): Promise<{
-  costs: {
-    breakdown_by_model?: Array<{ model: string; tokens: string; cost: string }>;
-    total_tokens?: number;
-    total_cost?: string;
-    monthly_budget?: string;
-    usage_percentage?: string;
-  };
-  queue: {
-    total_pending?: number;
-    total_verified?: number;
-    avg_verification_time?: string;
-    backlog_trend?: string;
-  };
+  costs: AiCostsData;
+  queue: QueueHealthData;
 }> {
   const [costs, queue] = await Promise.all([
-    fetchJson<any>("/api/admin/ai/costs", {}),
-    fetchJson<any>("/api/admin/queue-health", {}),
+    fetchJson<AiCostsData>("/api/admin/ai/costs", {}),
+    fetchJson<QueueHealthData>("/api/admin/queue-health", {}),
   ]);
   return { costs, queue };
 }
 
-export async function getAdminComplianceData(): Promise<{
+type ComplianceData = {
   summary?: {
     open_deletions?: number;
     completed_deletions?: number;
@@ -107,42 +123,44 @@ export async function getAdminComplianceData(): Promise<{
     level?: string;
     created_at?: string;
   }>;
-}> {
-  return fetchJson<any>("/api/admin/compliance", {});
+};
+
+export async function getAdminComplianceData(): Promise<ComplianceData> {
+  return fetchJson<ComplianceData>("/api/admin/compliance", {});
 }
 
-export async function getAdminTeachersData(): Promise<
-  Array<{
-    teacher_id: string;
-    name: string;
-    email: string;
-    courses_count?: number;
-    students_count?: number;
-    avg_mastery?: number;
-    risk_score?: number;
-    utilization?: number;
-    last_active?: string;
-  }>
-> {
-  return fetchJson<any[]>("/api/admin/teachers", []);
+type TeacherRow = {
+  teacher_id: string;
+  name: string;
+  email: string;
+  courses_count?: number;
+  students_count?: number;
+  avg_mastery?: number;
+  risk_score?: number;
+  utilization?: number;
+  last_active?: string;
+};
+
+export async function getAdminTeachersData(): Promise<TeacherRow[]> {
+  return fetchJson<TeacherRow[]>("/api/admin/teachers", []);
 }
 
-export async function getAdminStudentsData(): Promise<
-  Array<{
-    id: string;
-    name: string;
-    email: string;
-    coursesEnrolled?: number;
-    avgProgress?: number;
-    avgMastery?: number;
-    status?: string;
-    lastActive?: string;
-  }>
-> {
-  return fetchJson<any[]>("/api/admin/students", []);
+type StudentRow = {
+  id: string;
+  name: string;
+  email: string;
+  coursesEnrolled?: number;
+  avgProgress?: number;
+  avgMastery?: number;
+  status?: string;
+  lastActive?: string;
+};
+
+export async function getAdminStudentsData(): Promise<StudentRow[]> {
+  return fetchJson<StudentRow[]>("/api/admin/students", []);
 }
 
-export async function getAdminReportsData(): Promise<{
+type ReportsData = {
   summary?: {
     totalUsers?: number;
     totalInstitutions?: number;
@@ -169,58 +187,64 @@ export async function getAdminReportsData(): Promise<{
   }>;
   ai_usage?: { total_cost?: string; usage_percentage?: string };
   generated_at?: string;
-}> {
-  return fetchJson<any>("/api/admin/reports", {});
+};
+
+export async function getAdminReportsData(): Promise<ReportsData> {
+  return fetchJson<ReportsData>("/api/admin/reports", {});
 }
 
+type AdminConfig = {
+  guardian_mode?: string;
+  api_rate_limit?: number;
+};
+
+type RoleMatrix = {
+  roles?: string[];
+  permissions?: Record<string, string[]>;
+};
+
 export async function getAdminSettingsData(): Promise<{
-  config: {
-    guardian_mode?: string;
-    api_rate_limit?: number;
-  };
-  roleMatrix: {
-    roles?: string[];
-    permissions?: Record<string, string[]>;
-  };
+  config: AdminConfig;
+  roleMatrix: RoleMatrix;
 }> {
   const [config, roleMatrix] = await Promise.all([
-    fetchJson<any>("/api/admin/config", {}),
-    fetchJson<any>("/api/admin/roles/matrix", {}),
+    fetchJson<AdminConfig>("/api/admin/config", {}),
+    fetchJson<RoleMatrix>("/api/admin/roles/matrix", {}),
   ]);
   return { config, roleMatrix };
 }
 
-export async function getAdminCoursesData(): Promise<
-  Array<{
-    id: string;
-    title?: string;
-    name?: string;
-    code?: string;
-    course_code?: string;
-    teacher_id?: string;
-    is_published?: boolean;
-    status?: string;
-    review_status?: string;
-    modules?: any[];
-    updated_at?: string;
-    created_at?: string;
-  }>
-> {
-  return fetchJson<any[]>("/api/admin/courses", []);
+type CourseRow = {
+  id: string;
+  title?: string;
+  name?: string;
+  code?: string;
+  course_code?: string;
+  teacher_id?: string;
+  is_published?: boolean;
+  status?: string;
+  review_status?: string;
+  modules?: unknown[];
+  updated_at?: string;
+  created_at?: string;
+};
+
+export async function getAdminCoursesData(): Promise<CourseRow[]> {
+  return fetchJson<CourseRow[]>("/api/admin/courses", []);
 }
 
-export async function getGuardianLogData(): Promise<
-  Array<{
-    id: string;
-    message?: string;
-    signal_type?: string;
-    type?: string;
-    source?: string;
-    status?: string;
-    severity?: string;
-    timestamp?: string;
-    created_at?: string;
-  }>
-> {
-  return fetchJson<any[]>("/api/admin/guardian", []);
+type GuardianLogEntry = {
+  id: string;
+  message?: string;
+  signal_type?: string;
+  type?: string;
+  source?: string;
+  status?: string;
+  severity?: string;
+  timestamp?: string;
+  created_at?: string;
+};
+
+export async function getGuardianLogData(): Promise<GuardianLogEntry[]> {
+  return fetchJson<GuardianLogEntry[]>("/api/admin/guardian", []);
 }
