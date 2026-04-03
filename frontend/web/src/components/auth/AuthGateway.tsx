@@ -78,7 +78,7 @@ const featurePillars = [
 function fieldClass(hasError: boolean) {
   return [
     "w-full rounded-2xl border bg-stone-900/50 text-white outline-none transition-all font-medium",
-    "py-4 pl-14 pr-14 placeholder:text-slate-600",
+    "py-4 pl-14 pr-14 placeholder:text-zinc-600",
     hasError
       ? "border-red-500/40 focus:border-red-400 focus:ring-2 focus:ring-red-500/20"
       : "border-white/8 focus:border-lumina-highlight focus:ring-2 focus:ring-lumina-highlight/20",
@@ -90,14 +90,21 @@ function isValidEmail(value: string) {
 }
 
 function redirectAfterAuth(router: ReturnType<typeof useRouter>, user: AuthUser) {
-  // Derive the destination from the fields the backend explicitly sets:
-  //  - mustChangePassword → force password change first
-  //  - onboardingCompleted (from JWT claim) → mirrors exactly what middleware checks
-  //  - fallback to onboardingStep < 5 when onboardingCompleted is undefined (legacy)
-  const needsOnboarding =
-    user.role !== "super_admin" &&
-    (user.onboardingCompleted === false ||
-      (user.onboardingCompleted === undefined && typeof user.onboardingStep === "number" && user.onboardingStep < 5));
+  // Only redirect to /onboarding when the backend explicitly says onboarding
+  // is not complete (onboardingCompleted === false).
+  // We intentionally do NOT fall back on onboardingStep < 5 — that value is
+  // unreliable for roles that complete in fewer than 5 steps (college_admin
+  // finishes at step 2, etc.) and causes repeated redirect loops for users
+  // who have already finished onboarding but have a stale step counter.
+  const bypassOnboarding = ["super_admin", "admin", "hod", "system_admin", "institution_admin"].includes(user.role);
+  const requiredSteps = user.role === "college_admin" ? 2 : 5;
+
+  let isComplete = user.onboardingCompleted;
+  if (isComplete === undefined) {
+    isComplete = (user.onboardingStep ?? 0) >= requiredSteps;
+  }
+
+  const needsOnboarding = !bypassOnboarding && isComplete === false;
 
   const destination = user.mustChangePassword
     ? "/change-password"
@@ -105,9 +112,8 @@ function redirectAfterAuth(router: ReturnType<typeof useRouter>, user: AuthUser)
       ? "/onboarding"
       : getRoleHome(user.role);
 
-  // Force a full location reload to clear Next.js internal router state,
-  // ensuring the middleware sees the NEW cookie and doesn't flicker
-  // with a cached version of the previous role's dashboard.
+  // Force a full location reload so the middleware sees the updated cookie
+  // rather than a cached version of the previous navigation state.
   window.location.href = destination;
 }
 
@@ -261,7 +267,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#060606] text-slate-100 flex overflow-hidden">
+    <div className="min-h-screen bg-[#060606] text-zinc-100 flex overflow-hidden">
       <div className="hidden lg:flex lg:w-[44%] relative overflow-hidden border-r border-white/6 bg-[#0b0b0b]">
         <Image
           src="/images/hero-yellow.png"
@@ -290,7 +296,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
               <h1 className="font-display text-5xl font-black leading-tight tracking-tight text-white">
                 {isSignup ? "Create your Lumina account." : "Log in without the friction."}
               </h1>
-              <p className="max-w-md text-base leading-7 text-slate-400">
+              <p className="max-w-md text-base leading-7 text-zinc-400">
                 {isSignup
                   ? "Start with a clean account setup, then move directly into role-based onboarding and your assigned workspace."
                   : "Use your email, roll number, or employee ID. Lumina will route you to the right dashboard and restore your session cleanly."}
@@ -302,7 +308,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
             {featurePillars.map((item) => (
               <div key={item} className="flex items-start gap-3 rounded-2xl border border-white/6 bg-white/[0.03] px-4 py-4">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-lumina-highlight" />
-                <p className="text-sm leading-6 text-slate-300">{item}</p>
+                <p className="text-sm leading-6 text-zinc-300">{item}</p>
               </div>
             ))}
           </div>
@@ -318,7 +324,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
             <button
               type="button"
               onClick={handleBack}
-              className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-slate-300 transition-colors hover:border-lumina-highlight/35 hover:text-white"
+              className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-zinc-300 transition-colors hover:border-lumina-highlight/35 hover:text-white"
             >
               <ArrowLeft size={16} />
               Back
@@ -336,7 +342,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
               <h2 className="font-display text-4xl font-black tracking-tight text-white">
                 {isSignup ? "Create account" : "Login to Lumina"}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-400">
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
                 {isSignup
                   ? "Choose your role once, set a password, and continue to guided onboarding."
                   : "Your account type can be detected automatically. Add a role hint only if you want to narrow the sign-in path."}
@@ -347,7 +353,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
               <Link
                 href="/login"
                 className={`rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
-                  !isSignup ? "bg-lumina-highlight text-black" : "text-slate-400 hover:text-white"
+                  !isSignup ? "bg-lumina-highlight text-black" : "text-zinc-400 hover:text-white"
                 }`}
               >
                 Login
@@ -355,7 +361,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
               <Link
                 href="/register"
                 className={`rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
-                  isSignup ? "bg-lumina-highlight text-black" : "text-slate-400 hover:text-white"
+                  isSignup ? "bg-lumina-highlight text-black" : "text-zinc-400 hover:text-white"
                 }`}
               >
                 Sign Up
@@ -368,20 +374,20 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-white">Account</p>
-                  <span className="text-xs uppercase tracking-[0.24em] text-slate-500">Primary action</span>
+                  <span className="text-xs uppercase tracking-[0.24em] text-zinc-500">Primary action</span>
                 </div>
-                <p className="text-sm leading-6 text-slate-400">
+                <p className="text-sm leading-6 text-zinc-400">
                   Enter your email, roll number, or employee ID. Lumina will handle the routing after authentication.
                 </p>
               </div>
 
               <div className="space-y-4">
                 <label className="block">
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">
                     Email, Roll Number, or Employee ID
                   </span>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-500">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-zinc-500">
                       {activeRole === "faculty" ? <Building2 size={18} /> : activeRole === "student" ? <User size={18} /> : <Mail size={18} />}
                     </div>
                     <input
@@ -397,11 +403,11 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">
                     Password
                   </span>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-500">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-zinc-500">
                       <Lock size={18} />
                     </div>
                     <input
@@ -416,7 +422,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                     <button
                       type="button"
                       onClick={() => setShowPassword((value) => !value)}
-                      className="absolute inset-y-0 right-0 pr-5 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 transition-colors hover:text-lumina-highlight"
+                      className="absolute inset-y-0 right-0 pr-5 text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-lumina-highlight"
                     >
                       {showPassword ? "Hide" : "Show"}
                     </button>
@@ -426,7 +432,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
 
                <div className="space-y-4">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">Routing Mode</span>
+                  <span className="text-xs font-bold uppercase tracking-[0.22em] text-zinc-500">Routing Mode</span>
                   <button
                     type="button"
                     onClick={() => setShowRoleHints(!showRoleHints)}
@@ -438,7 +444,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
 
                 {showRoleHints ? (
                   <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <p className="text-xs leading-5 text-slate-400">
+                    <p className="text-xs leading-5 text-zinc-400">
                       Selecting a role narrows the sign-in path and speeds up workspace routing.
                     </p>
                     <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
@@ -450,7 +456,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                           className={`flex flex-col items-center justify-center rounded-2xl border px-3 py-4 text-center transition-all ${
                             activeRole === role.id
                               ? "border-lumina-highlight/40 bg-lumina-highlight/10 text-white shadow-[0_0_20px_rgba(250,204,21,0.1)]"
-                              : "border-white/6 bg-black/40 text-slate-500 hover:border-white/12 hover:text-slate-300"
+                              : "border-white/6 bg-black/40 text-zinc-500 hover:border-white/12 hover:text-zinc-300"
                           }`}
                         >
                           <role.icon className={`mb-2 h-5 w-5 ${activeRole === role.id ? "text-lumina-highlight" : ""}`} />
@@ -518,7 +524,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
               ) : null}
 
               <div className="flex items-center justify-between gap-3 text-sm">
-                <p className="text-slate-500">Secure session cookies are enabled automatically.</p>
+                <p className="text-zinc-500">Secure session cookies are enabled automatically.</p>
                 <Link
                   href="/auth/reset-password"
                   className="font-semibold text-lumina-highlight transition-colors hover:text-amber-400"
@@ -549,16 +555,16 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
             <form onSubmit={handleSignup} className="space-y-6 rounded-[2rem] border border-white/8 bg-white/[0.03] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.35)] sm:p-8">
               <div className="space-y-3">
                 <p className="text-sm font-semibold text-white">Account setup</p>
-                <p className="text-sm leading-6 text-slate-400">
+                <p className="text-sm leading-6 text-zinc-400">
                   Create your credentials first. Role-based onboarding continues immediately after account creation.
                 </p>
               </div>
 
               <div className="space-y-4">
                 <label className="block">
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Full name</span>
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">Full name</span>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-500">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-zinc-500">
                       <User size={18} />
                     </div>
                     <input
@@ -573,9 +579,9 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Email</span>
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">Email</span>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-500">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-zinc-500">
                       <Mail size={18} />
                     </div>
                     <input
@@ -590,7 +596,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                 </label>
 
                 <div className="space-y-2">
-                  <span className="block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Select your role</span>
+                  <span className="block text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">Select your role</span>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 rounded-2xl border border-white/8 bg-black/20 p-2">
                   {signupRoleOptions.map((role) => (
                     <button
@@ -598,7 +604,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                       type="button"
                       onClick={() => setSignupForm((prev) => ({ ...prev, role: role.id }))}
                       className={`flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-3 text-center transition-all ${
-                        signupForm.role === role.id ? "bg-lumina-highlight text-black shadow-[0_0_16px_rgba(250,204,21,0.15)]" : "text-slate-400 hover:bg-white/5 hover:text-white"
+                        signupForm.role === role.id ? "bg-lumina-highlight text-black shadow-[0_0_16px_rgba(250,204,21,0.15)]" : "text-zinc-400 hover:bg-white/5 hover:text-white"
                       }`}
                     >
                       <role.icon size={18} />
@@ -607,16 +613,16 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                   ))}
                   </div>
                   {signupForm.role && (
-                    <p className="text-xs text-slate-500 pl-1">
+                    <p className="text-xs text-zinc-500 pl-1">
                       {signupRoleOptions.find(r => r.id === signupForm.role)?.desc}
                     </p>
                   )}
                 </div>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Password</span>
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">Password</span>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-500">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-zinc-500">
                       <Lock size={18} />
                     </div>
                     <input
@@ -630,7 +636,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                     <button
                       type="button"
                       onClick={() => setShowSignupPassword((value) => !value)}
-                      className="absolute inset-y-0 right-0 pr-5 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 transition-colors hover:text-lumina-highlight"
+                      className="absolute inset-y-0 right-0 pr-5 text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-lumina-highlight"
                     >
                       {showSignupPassword ? "Hide" : "Show"}
                     </button>
@@ -638,9 +644,9 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Confirm password</span>
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">Confirm password</span>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-500">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-5 text-zinc-500">
                       <Lock size={18} />
                     </div>
                     <input
@@ -654,7 +660,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword((value) => !value)}
-                      className="absolute inset-y-0 right-0 pr-5 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 transition-colors hover:text-lumina-highlight"
+                      className="absolute inset-y-0 right-0 pr-5 text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-lumina-highlight"
                     >
                       {showConfirmPassword ? "Hide" : "Show"}
                     </button>
@@ -678,11 +684,11 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
               ) : null}
 
               <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-4">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">What happens next</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">What happens next</p>
                 <ul className="mt-3 space-y-2">
-                  <li className="text-sm text-slate-300">You create credentials and keep a secure session.</li>
-                  <li className="text-sm text-slate-300">Lumina routes you into onboarding for your role.</li>
-                  <li className="text-sm text-slate-300">Your dashboard opens after onboarding is complete.</li>
+                  <li className="text-sm text-zinc-300">You create credentials and keep a secure session.</li>
+                  <li className="text-sm text-zinc-300">Lumina routes you into onboarding for your role.</li>
+                  <li className="text-sm text-zinc-300">Your dashboard opens after onboarding is complete.</li>
                 </ul>
               </div>
 
@@ -707,7 +713,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
           )}
 
           <div className="mt-10 border-t border-white/6 pt-8 text-center">
-            <p className="text-sm font-medium text-slate-500">
+            <p className="text-sm font-medium text-zinc-500">
               {isSignup ? "Already have credentials?" : "Need an account first?"}{" "}
               <Link
                 href={isSignup ? "/login" : "/register"}

@@ -47,7 +47,7 @@ export default function ParentProgressPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="h-12 w-12 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     )
@@ -56,7 +56,7 @@ export default function ParentProgressPage() {
   const activeChild = data?.children?.find((c: any) => c.id === selectedChild) || data?.children?.[0]
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8">
+    <div className="min-h-screen bg-neutral-950 text-white p-8">
       <div className="max-w-7xl mx-auto">
         <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
@@ -219,7 +219,7 @@ export default function ParentProgressPage() {
                       transition={{ delay: i * 0.05 }}
                       className="flex-1 bg-gradient-to-t from-yellow-600/40 to-amber-500/60 rounded-t-sm relative group cursor-pointer"
                     >
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-[10px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-neutral-900 text-[10px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                         {val}%
                       </div>
                     </motion.div>

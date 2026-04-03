@@ -50,7 +50,7 @@ export default function ParentMessagesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="h-12 w-12 border-4 border-lumina-highlight border-t-transparent rounded-full animate-spin"></div>
       </div>
     )
@@ -60,7 +60,7 @@ export default function ParentMessagesPage() {
   const activeChat = messages.find((m: any) => m.id === selectedChat) || messages[0]
 
   return (
-    <div className="h-screen bg-slate-950 text-white flex flex-col pt-4">
+    <div className="h-screen bg-neutral-950 text-white flex flex-col pt-4">
       <div className="mx-auto w-full max-w-[1600px] h-full flex overflow-hidden border border-white/5 rounded-t-[2.5rem] bg-white/[0.02] backdrop-blur-3xl">
         {/* Sidebar */}
         <div className="w-full max-w-[400px] border-r border-white/5 flex flex-col">
@@ -91,7 +91,7 @@ export default function ParentMessagesPage() {
                     {chat.from[0]}
                   </div>
                   {chat.unread && (
-                    <div className="absolute -top-1 -right-1 h-4 w-4 bg-amber-500 rounded-full border-4 border-slate-900 shadow-lg"></div>
+                    <div className="absolute -top-1 -right-1 h-4 w-4 bg-amber-500 rounded-full border-4 border-neutral-900 shadow-lg"></div>
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -109,11 +109,11 @@ export default function ParentMessagesPage() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col relative bg-slate-950/20">
+        <div className="flex-1 flex flex-col relative bg-neutral-950/20">
           {activeChat ? (
             <>
               {/* Top Bar */}
-              <div className="p-6 border-b border-white/5 flex items-center justify-between backdrop-blur-xl bg-slate-900/40 sticky top-0 z-10">
+              <div className="p-6 border-b border-white/5 flex items-center justify-between backdrop-blur-xl bg-neutral-900/40 sticky top-0 z-10">
                 <div className="flex items-center gap-4">
                    <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center font-bold text-lg border border-white/10">
                      {activeChat.from[0]}
@@ -164,7 +164,7 @@ export default function ParentMessagesPage() {
               </div>
 
               {/* Input Area */}
-              <div className="p-8 border-t border-white/5 bg-slate-900/40 backdrop-blur-xl">
+              <div className="p-8 border-t border-white/5 bg-neutral-900/40 backdrop-blur-xl">
                  <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-[2rem] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
                     <div className="relative flex items-end gap-3 bg-white/5 border border-white/10 p-3 rounded-[2rem] focus-within:border-yellow-500/40 transition-all">

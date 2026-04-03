@@ -21,7 +21,7 @@ const RoleFeatures = ({ features }: RoleFeaturesProps) => {
           <h2 className="text-4xl font-black text-white font-display tracking-tight mb-4">
             Key <span className="gradient-text-gold">Functionalities</span>
           </h2>
-          <p className="text-slate-500 max-w-xl">
+          <p className="text-zinc-500 max-w-xl">
             Deeply integrated features powered by the Lumina Agentic AI Engine.
           </p>
         </div>
@@ -37,10 +37,10 @@ const RoleFeatures = ({ features }: RoleFeaturesProps) => {
               className="p-8 rounded-3xl bg-white/[0.03] border border-white/[0.08] hover:border-lumina-highlight/30 transition-all duration-500 group"
             >
               <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-6 group-hover:bg-lumina-highlight/10 transition-colors">
-                <Cpu className="w-6 h-6 text-slate-400 group-hover:text-lumina-highlight" />
+                <Cpu className="w-6 h-6 text-zinc-400 group-hover:text-lumina-highlight" />
               </div>
               <h3 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">{feature.name}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed mb-6">
+              <p className="text-zinc-400 text-sm leading-relaxed mb-6">
                 {feature.explanation}
               </p>
             </motion.div>

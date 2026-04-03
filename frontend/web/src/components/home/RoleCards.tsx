@@ -114,7 +114,7 @@ export default function RoleCards() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="text-lg text-slate-400 font-sans leading-relaxed max-w-2xl mx-auto"
+            className="text-lg text-zinc-400 font-sans leading-relaxed max-w-2xl mx-auto"
           >
             Every user in the educational ecosystem has a distinct interface, data boundary, 
             and permission scope — perfectly synchronized for mission-critical operations.
@@ -139,10 +139,10 @@ export default function RoleCards() {
               >
                 {/* Minimal Icon Container */}
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center mb-3 group-hover:bg-lumina-highlight/10 group-hover:border-lumina-highlight/30 group-hover:shadow-[0_0_20px_rgba(255,215,0,0.15)] transition-all duration-300">
-                  <role.icon className="h-6 w-6 sm:h-7 sm:w-7 text-slate-400 group-hover:text-lumina-highlight transition-colors duration-300" />
+                  <role.icon className="h-6 w-6 sm:h-7 sm:w-7 text-zinc-400 group-hover:text-lumina-highlight transition-colors duration-300" />
                 </div>
                 
-                <span className="text-[11px] sm:text-xs font-black text-slate-400 group-hover:text-white uppercase tracking-[0.12em] text-center transition-colors duration-300">
+                <span className="text-[11px] sm:text-xs font-black text-zinc-400 group-hover:text-white uppercase tracking-[0.12em] text-center transition-colors duration-300">
                   {role.title}
                 </span>
 

@@ -36,7 +36,7 @@ const RoleHero = ({ title, tagline, purpose, iconName }: RoleHeroProps) => {
             {title}
           </h1>
           
-          <p className="text-lg text-slate-400 font-sans leading-relaxed max-w-2xl mx-auto">
+          <p className="text-lg text-zinc-400 font-sans leading-relaxed max-w-2xl mx-auto">
             {purpose}
           </p>
         </motion.div>

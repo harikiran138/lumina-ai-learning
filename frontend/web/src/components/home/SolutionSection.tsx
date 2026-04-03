@@ -72,7 +72,7 @@ export default function SolutionSection() {
             Six Pillars of the{" "}
             <span className="gradient-text-gold">Lumina Architecture</span>
           </h2>
-          <p className="text-lg text-slate-400 font-sans leading-relaxed max-w-2xl mx-auto">
+          <p className="text-lg text-zinc-400 font-sans leading-relaxed max-w-2xl mx-auto">
             Not a chatbot wrapper — a full engineering-grade LMS with real AI pipelines,
             human oversight baked in, and performance-optimized for scale.
           </p>
@@ -103,7 +103,7 @@ export default function SolutionSection() {
               <h3 className="text-xl font-black text-white mb-3 font-display tracking-tight group-hover:text-lumina-highlight transition-colors duration-300">
                 {s.title}
               </h3>
-              <p className="text-slate-400 font-sans leading-relaxed text-[15px] flex-1">
+              <p className="text-zinc-400 font-sans leading-relaxed text-[15px] flex-1">
                 {s.description}
               </p>
 

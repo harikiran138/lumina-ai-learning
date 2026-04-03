@@ -19,7 +19,7 @@ const RoleAccess = ({ see, do: actions }: RoleAccessProps) => {
         
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl">
           <div className="p-10 rounded-[40px] bg-white/[0.03] border border-white/[0.08] shadow-2xl relative overflow-hidden transition-colors hover:bg-white/[0.05]">
-            <h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.25em] mb-8 flex items-center gap-2">
+            <h4 className="text-xs font-black text-zinc-500 uppercase tracking-[0.25em] mb-8 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               What you can see
             </h4>
@@ -37,7 +37,7 @@ const RoleAccess = ({ see, do: actions }: RoleAccessProps) => {
           </div>
           
           <div className="p-10 rounded-[40px] bg-white/[0.03] border border-white/[0.08] shadow-2xl relative overflow-hidden transition-colors hover:bg-white/[0.05]">
-            <h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.25em] mb-8 flex items-center gap-2">
+            <h4 className="text-xs font-black text-zinc-500 uppercase tracking-[0.25em] mb-8 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
               What you can do
             </h4>

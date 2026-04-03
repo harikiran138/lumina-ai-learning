@@ -19,7 +19,7 @@ const RoleInteractions = ({ interactions }: RoleInteractionsProps) => {
       <div className="container mx-auto px-6">
         <div className="mb-12">
           <h2 className="text-3xl font-black text-white font-display tracking-tight mb-2 uppercase italic tracking-widest opacity-50">Architectural Dependencies</h2>
-          <h3 className="text-xl font-bold text-slate-400 italic">This role is connected to:</h3>
+          <h3 className="text-xl font-bold text-zinc-400 italic">This role is connected to:</h3>
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -28,7 +28,7 @@ const RoleInteractions = ({ interactions }: RoleInteractionsProps) => {
               <Link2 className="w-5 h-5 text-lumina-highlight shrink-0 mt-1 opacity-40 group-hover:opacity-100 transition-opacity" />
               <div>
                 <h4 className="text-white font-black text-sm uppercase tracking-widest mb-4">{conn.role}</h4>
-                <p className="text-sm text-slate-500 leading-relaxed font-sans italic">{conn.explanation}</p>
+                <p className="text-sm text-zinc-500 leading-relaxed font-sans italic">{conn.explanation}</p>
               </div>
             </div>
           ))}

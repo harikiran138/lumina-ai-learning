@@ -17,7 +17,7 @@ export function AdminTopbar() {
   const initials = user?.name?.trim().charAt(0).toUpperCase() || "A";
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/5 bg-slate-950/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b border-white/5 bg-neutral-950/70 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <button
@@ -49,7 +49,7 @@ export function AdminTopbar() {
                 {getAdminRoleLabel(user?.role)}
               </p>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 font-semibold text-slate-950">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 font-semibold text-neutral-950">
               {initials}
             </div>
             <ShieldCheck className="hidden h-4 w-4 text-emerald-300 sm:block" />

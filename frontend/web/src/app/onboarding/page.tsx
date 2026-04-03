@@ -15,8 +15,6 @@ import {
   Mail, 
   Users, 
   Trash2, 
-  GraduationCap, 
-  UserCircle 
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import StudentOnboardingFlow from "@/components/onboarding/StudentOnboardingFlow";
@@ -50,7 +48,6 @@ export default function OnboardingPage() {
   const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
-  const [totalSteps] = useState(5);
   const [saving, setSaving] = useState(false);
   const [collegeId, setCollegeId] = useState<string | null>(null);
 
@@ -75,10 +72,19 @@ export default function OnboardingPage() {
         }
         const status = await api.getOnboardingStatus();
         const currentRole = (status.role || user.role) as Role;
-        if (currentRole === "super_admin") {
+
+        // Roles with no defined onboarding flow get sent straight to their dashboard.
+        const hasDefinedFlow =
+          currentRole === "college_admin" ||
+          currentRole === "student" ||
+          structuredRoleFlows.includes(currentRole as SupportedRoleOnboardingRole);
+
+        if (!hasDefinedFlow) {
+          await api.completeOnboarding().catch(() => {});
           routeByRole(currentRole);
           return;
         }
+
         setRole(currentRole);
         setCollegeId(status.collegeId || user.collegeId || null);
         setCurrentStep(status.step || 1);
@@ -105,11 +111,6 @@ export default function OnboardingPage() {
       return;
     }
     router.push(getRoleHome(r));
-  };
-
-  const nextStep = async () => {
-    if (currentStep >= totalSteps) return;
-    setCurrentStep(prev => prev + 1);
   };
 
   const handleSaveStep = async (handler: () => Promise<void>) => {
@@ -141,7 +142,7 @@ export default function OnboardingPage() {
         academic_year: collegeProfile.academicYear,
       });
       await api.updateOnboardingStep(1, collegeProfile);
-      await nextStep();
+      setCurrentStep(2);
   });
 
   const saveCollegeStep2 = () => handleSaveStep(async () => {
@@ -175,22 +176,9 @@ export default function OnboardingPage() {
         }
       }
       await api.updateOnboardingStep(2, { departments: created });
-      await nextStep();
-  });
-
-  const saveGenericStep = () => handleSaveStep(async () => {
-    await api.updateOnboardingStep(currentStep, {});
-    if (currentStep + 1 >= totalSteps) {
       await api.completeOnboarding();
-      if (role) routeByRole(role);
-    } else {
-      setCurrentStep(prev => prev + 1);
-    }
+      routeByRole("college_admin");
   });
-
-  const StepIcon = currentStep === 1 ? UserCircle : 
-                   currentStep === 2 ? Building2 : 
-                   currentStep === 3 ? Settings : Users;
 
   if (loading) {
     return (
@@ -305,11 +293,20 @@ export default function OnboardingPage() {
                     {currentStep === 2 && (
                         <div className="space-y-8">
                             <div className="flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-2xl font-bold">Departments</h2>
-                                    <p className="text-gray-400 text-sm">Add branches and invite their respective HODs.</p>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        className="p-2 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all"
+                                        onClick={() => setCurrentStep(1)}
+                                        title="Back to institution details"
+                                    >
+                                        <ArrowRight className="w-4 h-4 rotate-180" />
+                                    </button>
+                                    <div>
+                                        <h2 className="text-2xl font-bold">Departments</h2>
+                                        <p className="text-gray-400 text-sm">Add branches and invite their respective HODs.</p>
+                                    </div>
                                 </div>
-                                <button 
+                                <button
                                     className="p-3 bg-lumina-primary/10 border border-lumina-primary/20 rounded-xl text-lumina-primary hover:bg-lumina-primary hover:text-black transition-all"
                                     onClick={() => setDepartments([...departments, { name: "", abbreviation: "", hodEmail: "", intakeStrength: "" }])}
                                 >
@@ -380,54 +377,22 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
-                    {currentStep > 2 && (
-                        <div className="text-center py-20">
-                            <h2 className="text-3xl font-black mb-4">Step {currentStep} of {totalSteps}</h2>
-                            <p className="text-gray-400 mb-8">
-                              {currentStep + 1 >= totalSteps
-                                ? "Your institution is configured. Click below to enter your dashboard."
-                                : `Continuing setup for ${role?.replace("_", " ")}`}
-                            </p>
-                            <button
-                              className="px-12 py-4 bg-lumina-primary text-black font-bold rounded-2xl disabled:opacity-50"
-                              onClick={saveGenericStep}
-                              disabled={saving}
-                            >
-                              {saving ? "SAVING..." : currentStep + 1 >= totalSteps ? "ENTER DASHBOARD" : "CONTINUE"}
-                            </button>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {role !== "college_admin" && (
-                <div className="space-y-6">
-                    <h2 className="text-2xl font-bold flex items-center gap-3">
-                        <StepIcon className="w-6 h-6 text-lumina-primary" />
-                        Step {currentStep} of {totalSteps}: {role?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())} Setup
-                    </h2>
-                    <p className="text-gray-400">
-                      {currentStep + 1 >= totalSteps
-                        ? "Your profile is ready. Click below to enter your dashboard."
-                        : `Please complete the setup for your ${role?.replace("_", " ")} profile to access the dashboard.`}
-                    </p>
-                    <div className="p-8 border border-white/10 bg-white/5 rounded-3xl text-center">
-                        <GraduationCap className="w-12 h-12 text-lumina-primary/50 mx-auto mb-4" />
-                        <p className="text-gray-400 font-medium">Profile configuration for {role?.replace(/_/g, " ")}</p>
-                        <p className="text-gray-600 text-sm mt-2">Step {currentStep} of {totalSteps}</p>
-                    </div>
-                    <button
-                      className="w-full py-5 bg-white text-black font-black rounded-2xl disabled:opacity-50"
-                      onClick={saveGenericStep}
-                      disabled={saving}
-                    >
-                      {saving ? "SAVING..." : currentStep + 1 >= totalSteps ? "ENTER DASHBOARD" : "PROCEED TO NEXT"}
-                    </button>
                 </div>
             )}
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Escape hatch — always visible so users are never fully stuck */}
+      <p className="mt-6 text-xs text-gray-600">
+        Having trouble?{" "}
+        <button
+          className="text-gray-400 underline underline-offset-2 hover:text-white transition-colors"
+          onClick={() => role && routeByRole(role)}
+        >
+          Go to dashboard
+        </button>
+      </p>
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {

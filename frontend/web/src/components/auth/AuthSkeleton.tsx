@@ -10,7 +10,7 @@ import React from "react";
  */
 export default function AuthSkeleton() {
   return (
-    <div className="min-h-screen bg-[#060606] text-slate-100 flex overflow-hidden">
+    <div className="min-h-screen bg-[#060606] text-zinc-100 flex overflow-hidden">
       {/* Left Panel Skeleton (Desktop) */}
       <div className="hidden lg:flex lg:w-[44%] relative overflow-hidden border-r border-white/6 bg-[#0b0b0b] p-14 flex-col justify-between">
         <div className="space-y-10">

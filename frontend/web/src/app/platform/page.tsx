@@ -15,9 +15,9 @@ import Footer from "@/components/layout/Footer";
 
 export default function PlatformPage() {
   return (
-    <div className="text-white min-h-screen bg-slate-950 selection:bg-lumina-highlight/30 selection:text-white">
+    <div className="text-white min-h-screen bg-neutral-950 selection:bg-lumina-highlight/30 selection:text-white">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl">
+      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-neutral-950/50 backdrop-blur-2xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <Link href="/" className="text-2xl font-black text-white flex items-center font-display tracking-tight">
@@ -27,8 +27,8 @@ export default function PlatformPage() {
             
             <nav className="hidden md:flex items-center space-x-8">
               <Link href="/platform" className="text-xs font-bold uppercase tracking-widest text-white">Platform</Link>
-              <Link href="/technology" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors">Technology</Link>
-              <Link href="/pricing" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors">Pricing</Link>
+              <Link href="/technology" className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">Technology</Link>
+              <Link href="/pricing" className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">Pricing</Link>
             </nav>
 
             <Link
@@ -121,7 +121,7 @@ export default function PlatformPage() {
             
             <div className="glass-v2 rounded-[40px] border border-white/10 p-2 overflow-hidden aspect-video relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-lumina-highlight/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-              <div className="w-full h-full rounded-[32px] bg-slate-900 flex items-center justify-center border border-white/5 relative z-10">
+              <div className="w-full h-full rounded-[32px] bg-neutral-900 flex items-center justify-center border border-white/5 relative z-10">
                 <p className="text-gray-500 font-display italic">Interactive Platform Diagram Rendering...</p>
               </div>
             </div>

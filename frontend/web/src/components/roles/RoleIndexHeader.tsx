@@ -26,7 +26,7 @@ const RoleIndexHeader = () => (
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.2 }}
-      className="text-slate-400 max-w-2xl mx-auto text-lg leading-relaxed"
+      className="text-zinc-400 max-w-2xl mx-auto text-lg leading-relaxed"
     >
       Lumina is built on a foundation of clearly defined boundaries and synergistic relationships. 
       Select a role below to explore its specific capabilities, data access, and system-wide impact.

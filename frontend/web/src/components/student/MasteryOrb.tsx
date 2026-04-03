@@ -74,7 +74,7 @@ export function MasteryOrb({
             </span>
             <Sparkles className="absolute -top-6 -right-6 w-5 h-5 text-lumina-highlight animate-float opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-2">
+          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] mt-2">
             {label}
           </span>
         </div>
@@ -83,12 +83,12 @@ export function MasteryOrb({
       {/* Stats Below (Optional/Context Dependent) */}
       <div className="mt-8 flex gap-6">
         <div className="text-center">
-            <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Knowledge</p>
+            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Knowledge</p>
             <p className="text-white font-black">Stable</p>
         </div>
         <div className="w-px h-8 bg-white/5" />
         <div className="text-center">
-            <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">DKT Engine</p>
+            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">DKT Engine</p>
             <p className="text-lumina-highlight font-black">Active</p>
         </div>
       </div>

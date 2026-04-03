@@ -49,7 +49,7 @@ export default function ProblemSection() {
             Every LMS Is <br />
             <span className="gradient-text-gold">Broken the Same Way</span>
           </h2>
-          <p className="text-lg text-slate-400 font-sans leading-relaxed">
+          <p className="text-lg text-zinc-400 font-sans leading-relaxed">
             The engineering college classroom deserves better than a file-upload portal
             slapped with a chatbot and called "AI-powered."
           </p>
@@ -80,7 +80,7 @@ export default function ProblemSection() {
                       {p.tag}
                     </span>
                   </div>
-                  <p className="text-slate-400 font-sans leading-relaxed text-[15px]">
+                  <p className="text-zinc-400 font-sans leading-relaxed text-[15px]">
                     {p.description}
                   </p>
                 </div>

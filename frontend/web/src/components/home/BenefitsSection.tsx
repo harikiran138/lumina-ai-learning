@@ -34,13 +34,13 @@ const groups = [
 
 export default function BenefitsSection() {
   return (
-    <section id="benefits" className="py-24 relative overflow-hidden bg-slate-950">
+    <section id="benefits" className="py-24 relative overflow-hidden bg-neutral-950">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-20">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-6 font-display">
             The Impact of <span className="gradient-text">Lumina</span>
           </h2>
-          <p className="text-lg text-slate-400 font-sans">
+          <p className="text-lg text-zinc-400 font-sans">
             Personalized education isn't just a goal — it's a measurable improvement across every role in the ecosystem.
           </p>
         </div>
@@ -57,7 +57,7 @@ export default function BenefitsSection() {
                 {group.benefits.map((benefit, i) => (
                   <li key={i} className="flex items-start space-x-4">
                     <CheckCircle2 className="h-6 w-6 text-lumina-accent flex-shrink-0 mt-0.5" />
-                    <span className="text-slate-300 font-sans leading-relaxed">{benefit}</span>
+                    <span className="text-zinc-300 font-sans leading-relaxed">{benefit}</span>
                   </li>
                 ))}
               </ul>

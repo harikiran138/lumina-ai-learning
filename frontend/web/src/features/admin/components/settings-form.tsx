@@ -61,7 +61,7 @@ export function SettingsForm({ initialConfig }: SettingsFormProps) {
           type="button"
           onClick={saveConfig}
           disabled={isPending}
-          className="inline-flex items-center gap-2 rounded-2xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-300 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-2xl bg-amber-400 px-4 py-2 text-sm font-semibold text-neutral-950 transition hover:bg-amber-300 disabled:opacity-60"
         >
           <Save className="h-4 w-4" />
           {isPending ? "Saving..." : "Save settings"}
@@ -105,7 +105,7 @@ export function SettingsForm({ initialConfig }: SettingsFormProps) {
                 guardian_mode: event.target.value,
               }))
             }
-            className="mt-4 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+            className="mt-4 w-full rounded-xl border border-white/10 bg-neutral-950 px-3 py-2 text-sm text-white"
           >
             <option value="active">Active</option>
             <option value="monitor">Monitor</option>
@@ -129,7 +129,7 @@ export function SettingsForm({ initialConfig }: SettingsFormProps) {
                 api_rate_limit: Number(event.target.value),
               }))
             }
-            className="mt-4 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+            className="mt-4 w-full rounded-xl border border-white/10 bg-neutral-950 px-3 py-2 text-sm text-white"
           />
         </label>
       </div>

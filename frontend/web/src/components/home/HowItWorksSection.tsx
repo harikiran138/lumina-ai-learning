@@ -64,7 +64,7 @@ export default function HowItWorksSection() {
             Upload a PDF.{" "}
             <span className="gradient-text-gold">Get a Full Course.</span>
           </h2>
-          <p className="text-lg text-slate-400 font-sans leading-relaxed max-w-2xl mx-auto">
+          <p className="text-lg text-zinc-400 font-sans leading-relaxed max-w-2xl mx-auto">
             The Lumina pipeline turns raw academic material into a live, AI-assisted,
             teacher-verified learning experience in six steps.
           </p>
@@ -96,7 +96,7 @@ export default function HowItWorksSection() {
                 <h3 className="text-sm font-black text-white mb-2 font-display group-hover:text-lumina-highlight transition-colors min-h-[40px] flex items-center justify-center leading-tight">
                   {step.title}
                 </h3>
-                <p className="text-[12px] text-slate-500 leading-relaxed font-sans px-1">
+                <p className="text-[12px] text-zinc-500 leading-relaxed font-sans px-1">
                   {step.description}
                 </p>
 

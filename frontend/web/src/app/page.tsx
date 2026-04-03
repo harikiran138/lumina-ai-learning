@@ -72,8 +72,8 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="text-white min-h-screen bg-slate-950 selection:bg-lumina-highlight/30 selection:text-white">
-      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl">
+    <div className="text-white min-h-screen bg-neutral-950 selection:bg-lumina-highlight/30 selection:text-white">
+      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-neutral-950/50 backdrop-blur-2xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex-shrink-0">
@@ -94,7 +94,7 @@ export default function Home() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-lumina-highlight transition-all duration-300"
+                  className="text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-lumina-highlight transition-all duration-300"
                 >
                   {item.label}
                 </Link>
@@ -104,7 +104,7 @@ export default function Home() {
             <div className="flex items-center space-x-6">
               <Link
                 href="/login"
-                className="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors hidden sm:block"
+                className="text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors hidden sm:block"
               >
                 Sign In
               </Link>
