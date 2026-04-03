@@ -151,6 +151,7 @@ export interface User {
   avatar: string;
   createdAt: string;
   onboardingCompleted?: boolean;
+  adaptiveOnboardingCompleted?: boolean;
   onboardingStep?: number;
   collegeId?: string | null;
   deptId?: string | null;
@@ -207,6 +208,31 @@ export class RealAPI {
             document.cookie = `auth_token=; path=/; SameSite=Lax; max-age=0`;
           }
       }
+  }
+
+  private toUser(userData: any, fallbackName?: string): User {
+    const displayName = userData.fullName || userData.name || userData.email || fallbackName || "Lumina User";
+    const onboardingStep = userData.onboardingStep ?? 0;
+    const adaptiveOnboardingCompleted = userData.adaptiveOnboardingCompleted ?? userData.role !== "student";
+    return {
+      id: userData.id,
+      email: userData.email,
+      name: displayName,
+      role: userData.role,
+      onboardingStep,
+      onboardingCompleted: userData.onboardingCompleted ?? (onboardingStep >= 5 && adaptiveOnboardingCompleted),
+      adaptiveOnboardingCompleted,
+      mustChangePassword: userData.mustChangePassword,
+      collegeId: userData.collegeId,
+      deptId: userData.deptId,
+      batchId: userData.batchId,
+      avatar:
+        userData.profilePhotoUrl ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`,
+      status: userData.status || "active",
+      createdAt: userData.created_at || new Date().toISOString(),
+      preferences: userData.preferences || {},
+    };
   }
 
   private async handleUnauthorized(): Promise<boolean> {
@@ -368,23 +394,7 @@ export class RealAPI {
       this.persistToken(tokenData.accessToken);
     }
 
-    const displayName = userData.fullName || userData.name || identifier;
-    this.currentUser = {
-      id: userData.id,
-      email: userData.email,
-      name: displayName,
-      role: userData.role,
-      onboardingStep: userData.onboardingStep,
-      onboardingCompleted: userData.onboardingStep >= 5,
-      mustChangePassword: userData.mustChangePassword,
-      collegeId: userData.collegeId,
-      deptId: userData.deptId,
-      batchId: userData.batchId,
-      avatar: userData.profilePhotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`,
-      status: userData.status || "active",
-      createdAt: userData.created_at || new Date().toISOString(),
-      preferences: userData.preferences || {},
-    };
+    this.currentUser = this.toUser(userData, identifier);
 
     return this.currentUser;
   }
@@ -398,25 +408,7 @@ export class RealAPI {
       if (res.ok) {
         const userData = await parseJsonSafe(res);
         if (userData?.id) {
-          const displayName = userData.fullName || userData.name || userData.email;
-          this.currentUser = {
-            id: userData.id,
-            email: userData.email,
-            name: displayName,
-            role: userData.role,
-            onboardingStep: userData.onboardingStep ?? 0,
-            onboardingCompleted: (userData.onboardingStep ?? 0) >= 5,
-            mustChangePassword: userData.mustChangePassword ?? false,
-            collegeId: userData.collegeId ?? null,
-            deptId: userData.deptId ?? null,
-            batchId: userData.batchId ?? null,
-            avatar:
-              userData.profilePhotoUrl ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`,
-            status: userData.status || "active",
-            createdAt: userData.created_at || new Date().toISOString(),
-            preferences: userData.preferences || {},
-          };
+          this.currentUser = this.toUser(userData);
           return this.currentUser;
         }
       }
@@ -619,6 +611,58 @@ export class RealAPI {
     if (!res.ok) {
       const error = await parseJsonSafe(res);
       throw new Error(error?.detail || "Failed to save learning preferences");
+    }
+    return await parseJsonSafe(res) ?? {};
+  }
+
+  async startAdaptiveOnboarding(payload: {
+    role?: string;
+    forceRestart?: boolean;
+  } = {}): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/start", {
+      method: "POST",
+      body: JSON.stringify({
+        role: payload.role,
+        force_restart: payload.forceRestart ?? false,
+      }),
+    });
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to start adaptive onboarding");
+    }
+    return await parseJsonSafe(res) ?? {};
+  }
+
+  async answerAdaptiveOnboarding(payload: {
+    sessionId: string;
+    questionId: string;
+    answer: any;
+    confidence?: number;
+    timeTakenSeconds?: number;
+  }): Promise<any> {
+    const res = await this.fetchAuthorized("/api/onboarding/answer", {
+      method: "POST",
+      body: JSON.stringify({
+        session_id: payload.sessionId,
+        question_id: payload.questionId,
+        answer: payload.answer,
+        confidence: payload.confidence,
+        time_taken_seconds: payload.timeTakenSeconds,
+      }),
+    });
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to submit adaptive onboarding answer");
+    }
+    return await parseJsonSafe(res) ?? {};
+  }
+
+  async getAdaptiveOnboardingResult(sessionId?: string): Promise<any> {
+    const suffix = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : "";
+    const res = await this.fetchAuthorized(`/api/onboarding/result${suffix}`);
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to load adaptive onboarding result");
     }
     return await parseJsonSafe(res) ?? {};
   }

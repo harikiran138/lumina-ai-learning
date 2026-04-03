@@ -17,6 +17,8 @@ import {
 import { toast } from "sonner";
 
 import { api } from "@/lib/api";
+import AdaptiveOnboardingPanel from "@/components/onboarding/AdaptiveOnboardingPanel";
+import { useOnboardingStore } from "@/store/useOnboardingStore";
 import {
   fieldErrors,
   studentEnrollmentSchema,
@@ -97,12 +99,17 @@ const cardClass =
 
 export default function StudentOnboardingFlow() {
   const router = useRouter();
+  const saveSnapshot = useOnboardingStore((state) => state.saveSnapshot);
+  const clearSnapshot = useOnboardingStore((state) => state.clearSnapshot);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showAdaptiveCalibration, setShowAdaptiveCalibration] = useState(false);
+  const [adaptiveCompleted, setAdaptiveCompleted] = useState(false);
+  const [adaptiveStatus, setAdaptiveStatus] = useState<"pending" | "in_progress" | "completed">("pending");
   const [completedStep, setCompletedStep] = useState(0);
   const [currentStep, setCurrentStep] = useState(1);
   const [subjectOptions, setSubjectOptions] = useState<SubjectOption[]>([]);
@@ -133,6 +140,8 @@ export default function StudentOnboardingFlow() {
   useEffect(() => {
     const init = async () => {
       try {
+        const draft = useOnboardingStore.getState().snapshots.student || {};
+        const draftStudent = draft.student || {};
         const user = await api.getCurrentUser();
         if (!user) {
           router.push("/login");
@@ -148,7 +157,12 @@ export default function StudentOnboardingFlow() {
           router.push("/student/dashboard");
           return;
         }
-        if (Number(status.step || 0) >= 5) {
+
+        const nextCompleted = Number(status.step || 0);
+        const adaptiveDone = Boolean(status.adaptiveOnboardingCompleted);
+        const adaptiveStage = nextCompleted >= 5 && !adaptiveDone;
+        if (nextCompleted >= 5 && adaptiveDone) {
+          clearSnapshot("student");
           await api.getCurrentUser().catch(() => undefined);
           router.push("/student/dashboard");
           return;
@@ -160,30 +174,32 @@ export default function StudentOnboardingFlow() {
         const step3 = progress.step_3 || {};
         const step4 = progress.step_4 || {};
         const step5 = progress.step_5 || {};
-        const nextCompleted = Number(status.step || 0);
 
         setCompletedStep(nextCompleted);
-        setCurrentStep(Math.min(5, Math.max(1, nextCompleted + 1)));
+        setCurrentStep(Math.min(5, Math.max(1, adaptiveStage ? 5 : nextCompleted + 1)));
+        setShowAdaptiveCalibration(adaptiveStage || Boolean(draft.showAdaptiveCalibration && !adaptiveDone));
+        setAdaptiveCompleted(adaptiveDone);
+        setAdaptiveStatus(adaptiveDone ? "completed" : status.adaptiveOnboardingStatus || "pending");
         setStudent((prev) => ({
           ...prev,
-          firstName: step1.firstName || user.name?.split(" ")[0] || "",
-          lastName: step1.lastName || user.name?.split(" ").slice(1).join(" ") || "",
-          dateOfBirth: step1.dob || "",
-          gender: step1.gender || "",
-          phoneNumber: step1.phone || "",
+          firstName: step1.firstName || draftStudent.firstName || user.name?.split(" ")[0] || "",
+          lastName: step1.lastName || draftStudent.lastName || user.name?.split(" ").slice(1).join(" ") || "",
+          dateOfBirth: step1.dob || draftStudent.dateOfBirth || "",
+          gender: step1.gender || draftStudent.gender || "",
+          phoneNumber: step1.phone || draftStudent.phoneNumber || "",
           email: user.email || "",
-          enrollmentCode: step2.enrollmentCode || "",
+          enrollmentCode: step2.enrollmentCode || draftStudent.enrollmentCode || "",
           batchId: step2.batchId || status.batchId || "",
-          batchLabel: step2.batchLabel || "",
-          section: step2.section || "",
-          semester: step2.semester ? String(step2.semester) : "",
-          departmentName: step2.departmentName || "",
-          selectedSubjectIds: step3.subjectIds || [],
-          emergencyContact: step4.emergencyContact || "",
-          parentEmail: step4.parentEmail || "",
-          existingProfilePhotoUrl: step4.profilePhotoUrl || user.avatar || "",
-          learningStyles: step5.learningStyles || [],
-          selfAssessment: step5.selfAssessment || "beginner",
+          batchLabel: step2.batchLabel || draftStudent.batchLabel || "",
+          section: step2.section || draftStudent.section || "",
+          semester: step2.semester ? String(step2.semester) : draftStudent.semester || "",
+          departmentName: step2.departmentName || draftStudent.departmentName || "",
+          selectedSubjectIds: (step3.subjectIds && step3.subjectIds.length ? step3.subjectIds : draftStudent.selectedSubjectIds) || [],
+          emergencyContact: step4.emergencyContact || draftStudent.emergencyContact || "",
+          parentEmail: step4.parentEmail || draftStudent.parentEmail || "",
+          existingProfilePhotoUrl: step4.profilePhotoUrl || draftStudent.existingProfilePhotoUrl || user.avatar || "",
+          learningStyles: (step5.learningStyles && step5.learningStyles.length ? step5.learningStyles : draftStudent.learningStyles) || [],
+          selfAssessment: step5.selfAssessment || draftStudent.selfAssessment || "beginner",
         }));
 
         if (step2.batchId && step2.departmentName) {
@@ -199,6 +215,8 @@ export default function StudentOnboardingFlow() {
             semester: step2.semester || "",
             section: step2.section || "",
           });
+        } else if (draft.enrollmentPreview) {
+          setEnrollmentPreview(draft.enrollmentPreview);
         }
       } catch (error: any) {
         const message = error?.message || "Failed to load onboarding";
@@ -210,7 +228,36 @@ export default function StudentOnboardingFlow() {
     };
 
     init();
-  }, [router]);
+  }, [clearSnapshot, router]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    saveSnapshot("student", {
+      currentStep,
+      completedStep,
+      showAdaptiveCalibration,
+      adaptiveCompleted,
+      adaptiveStatus,
+      enrollmentPreview,
+      student: {
+        ...student,
+        profilePhotoFile: null,
+      },
+    });
+  }, [
+    adaptiveCompleted,
+    adaptiveStatus,
+    completedStep,
+    currentStep,
+    enrollmentPreview,
+    isLoading,
+    saveSnapshot,
+    showAdaptiveCalibration,
+    student,
+  ]);
 
   useEffect(() => {
     const loadSubjects = async () => {
@@ -235,8 +282,17 @@ export default function StudentOnboardingFlow() {
     loadSubjects();
   }, [student.batchId]);
 
-  const progressWidth = `${Math.max(20, completedStep * 20)}%`;
-  const activeMeta = STEP_META[currentStep - 1];
+  const adaptivePhaseActive = showAdaptiveCalibration && !adaptiveCompleted;
+  const completedMilestones = adaptiveCompleted ? 6 : completedStep + (adaptivePhaseActive ? 0.5 : 0);
+  const progressWidth = `${Math.max(16, (completedMilestones / 6) * 100)}%`;
+  const activeMeta = adaptivePhaseActive
+    ? {
+        id: 6,
+        title: "Adaptive Calibration",
+        description: "Finish the short diagnostic so Lumina can personalize pacing, difficulty, and tutor behavior from day one.",
+        icon: ShieldCheck,
+      }
+    : STEP_META[currentStep - 1];
 
   const setField = (field: keyof typeof student, value: string | string[] | File | null) => {
     setStudent((prev) => ({ ...prev, [field]: value }));
@@ -443,9 +499,12 @@ export default function StudentOnboardingFlow() {
         await api.saveStudentPreferences(result.data);
         await api.getCurrentUser().catch(() => undefined);
         setCompletedStep(5);
-        setSuccessMessage("Onboarding completed successfully.");
-        toast.success("Student onboarding completed");
-        router.push("/student/dashboard");
+        setAdaptiveStatus("in_progress");
+        setAdaptiveCompleted(false);
+        setShowAdaptiveCalibration(true);
+        setSuccessMessage("Core onboarding completed. Running adaptive calibration.");
+        toast.success("Core onboarding completed");
+        return;
       }
     } catch (error: any) {
       const message = error?.message || "Something went wrong";
@@ -469,22 +528,34 @@ export default function StudentOnboardingFlow() {
     );
   }
 
+  const handleAdaptiveComplete = async () => {
+    setAdaptiveCompleted(true);
+    setAdaptiveStatus("completed");
+    clearSnapshot("student");
+    await api.getCurrentUser().catch(() => undefined);
+    router.push("/student/dashboard");
+  };
+
   return (
     <div className="min-h-screen bg-[#090909] px-4 py-8 text-white sm:px-6 lg:px-10">
       <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
         <aside className={`${cardClass} h-fit p-6`}>
           <div className="rounded-3xl border border-amber-300/15 bg-amber-300/10 p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200/70">Student Onboarding</p>
-            <h1 className="mt-3 text-2xl font-semibold text-white">Turn this into a reliable, data-backed setup.</h1>
+            <h1 className="mt-3 text-2xl font-semibold text-white">
+              {adaptivePhaseActive ? "Finish calibration before your dashboard unlocks." : "Turn this into a reliable, data-backed setup."}
+            </h1>
             <p className="mt-3 text-sm leading-6 text-zinc-300">
-              Each step saves immediately. Progress only unlocks when the backend accepts valid data.
+              {adaptivePhaseActive
+                ? "Your profile is saved. The final diagnostic tunes difficulty, learning style, and the tutor baseline."
+                : "Each step saves immediately. Progress only unlocks when the backend accepts valid data."}
             </p>
           </div>
 
           <div className="mt-6 rounded-3xl border border-white/8 bg-black/40 p-5">
             <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-zinc-500">
               <span>Completion</span>
-              <span>{completedStep}/5</span>
+              <span>{adaptiveCompleted ? "6/6" : adaptivePhaseActive ? "5/6" : `${completedStep}/5`}</span>
             </div>
             <div className="mt-3 h-3 rounded-full bg-white/5">
               <div
@@ -492,6 +563,13 @@ export default function StudentOnboardingFlow() {
                 style={{ width: progressWidth }}
               />
             </div>
+            <p className="mt-3 text-xs leading-5 text-zinc-500">
+              {adaptivePhaseActive
+                ? "Core onboarding is done. One adaptive checkpoint remains."
+                : adaptiveCompleted
+                  ? "All onboarding milestones are complete."
+                  : "Save each step to move forward."}
+            </p>
           </div>
 
           <div className="mt-6 space-y-3">
@@ -507,7 +585,7 @@ export default function StudentOnboardingFlow() {
                   onClick={() => isUnlocked && setCurrentStep(step.id)}
                   disabled={!isUnlocked || isSubmitting}
                   className={`w-full rounded-3xl border p-4 text-left transition ${
-                    isActive
+                    isActive && !adaptivePhaseActive
                       ? "border-amber-300/40 bg-amber-300/10"
                       : "border-white/8 bg-white/[0.03] hover:border-white/15 hover:bg-white/[0.06]"
                   } ${!isUnlocked ? "cursor-not-allowed opacity-45" : ""}`}
@@ -529,12 +607,26 @@ export default function StudentOnboardingFlow() {
               );
             })}
           </div>
+
+          <div className="mt-6 rounded-3xl border border-white/8 bg-black/30 p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Final checkpoint</p>
+            <p className="mt-3 text-sm font-semibold text-white">Adaptive calibration</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">
+              {adaptiveCompleted
+                ? "Completed. Your personalization profile is ready."
+                : adaptivePhaseActive
+                  ? "In progress. Finish this short diagnostic to unlock the dashboard."
+                  : "Starts automatically after Step 5."}
+            </p>
+          </div>
         </aside>
 
         <main className={`${cardClass} p-6 sm:p-8`}>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200/70">Step {currentStep}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200/70">
+                {adaptivePhaseActive ? "Final checkpoint" : `Step ${currentStep}`}
+              </p>
               <h2 className="mt-2 text-3xl font-semibold text-white">{activeMeta.title}</h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-300">{activeMeta.description}</p>
             </div>
@@ -559,6 +651,10 @@ export default function StudentOnboardingFlow() {
           ) : null}
 
           <div className="mt-8">
+            {showAdaptiveCalibration ? (
+              <AdaptiveOnboardingPanel onComplete={handleAdaptiveComplete} />
+            ) : null}
+
             {currentStep === 1 ? (
               <div className="grid gap-5 md:grid-cols-2">
                 <Field
@@ -802,7 +898,7 @@ export default function StudentOnboardingFlow() {
               </div>
             ) : null}
 
-            {currentStep === 5 ? (
+            {!showAdaptiveCalibration && currentStep === 5 ? (
               <div className="space-y-8">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-200/70">Learning style</p>
@@ -866,28 +962,30 @@ export default function StudentOnboardingFlow() {
             ) : null}
           </div>
 
-          <div className="mt-10 flex flex-col gap-3 border-t border-white/8 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              type="button"
-              onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
-              disabled={currentStep === 1 || isSubmitting}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/5 disabled:opacity-45"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Back
-            </button>
+          {!showAdaptiveCalibration ? (
+            <div className="mt-10 flex flex-col gap-3 border-t border-white/8 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="button"
+                onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
+                disabled={currentStep === 1 || isSubmitting}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/5 disabled:opacity-45"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Back
+              </button>
 
-            <button
-              type="button"
-              onClick={submitCurrentStep}
-              disabled={isSubmitting || (currentStep === 3 && !subjectOptions.length)}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(90deg,#facc15,#fde68a)] px-6 py-3 text-sm font-semibold text-black transition hover:brightness-105 disabled:opacity-45"
-            >
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {currentStep === 5 ? "Complete onboarding" : "Save and continue"}
-              {isSubmitting ? null : <ChevronRight className="h-4 w-4" />}
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={submitCurrentStep}
+                disabled={isSubmitting || (currentStep === 3 && !subjectOptions.length)}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(90deg,#facc15,#fde68a)] px-6 py-3 text-sm font-semibold text-black transition hover:brightness-105 disabled:opacity-45"
+              >
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {currentStep === 5 ? "Complete onboarding" : "Save and continue"}
+                {isSubmitting ? null : <ChevronRight className="h-4 w-4" />}
+              </button>
+            </div>
+          ) : null}
         </main>
       </div>
     </div>

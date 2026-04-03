@@ -2,7 +2,7 @@ import os
 from typing import Any, Dict, Optional, List, Set
 from supabase import ClientOptions
 from app.core.config import settings
-from .supabase_manager import supabase_db
+from .supabase_manager import supabase_db, SupabaseManager
 
 
 def _load_soft_delete_tables() -> Set[str]:
@@ -155,7 +155,7 @@ class ScopedSupabase:
         self.jwt = user.get("access_token")
         
         self._scoped_client = None
-        if self.jwt and not self.is_super_admin:
+        if self.jwt and not self.is_super_admin and not SupabaseManager._use_local_backend():
             try:
                 # Use a lightweight client with the user's JWT for RLS
                 from supabase import create_client, ClientOptions

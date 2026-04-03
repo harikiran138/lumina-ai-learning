@@ -351,6 +351,7 @@ async def validate_enrollment_code(payload: Dict[str, Any], current_user: dict =
     role = normalize_role(current_user.get("role"))
     if role != "student":
         raise HTTPException(status_code=403, detail="Student access required")
+    db = get_scoped_db(current_user)
 
     code = (payload.get("enrollmentCode") or payload.get("code") or "").strip().upper()
     if not code:

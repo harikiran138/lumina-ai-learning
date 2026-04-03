@@ -27,12 +27,10 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
-  const [ready, setReady] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [totalSteps] = useState(5);
   const [saving, setSaving] = useState(false);
   const [collegeId, setCollegeId] = useState<string | null>(null);
-  const [deptId, setDeptId] = useState<string | null>(null);
 
   const [collegeProfile, setCollegeProfile] = useState({
     collegeName: "",
@@ -44,8 +42,6 @@ export default function OnboardingPage() {
   });
 
   const [departments, setDepartments] = useState<any[]>([]);
-  const [subjectsList, setSubjectsList] = useState<any[]>([]);
-  const [batchesList, setBatchesList] = useState<any[]>([]);
 
   useEffect(() => {
     const init = async () => {
@@ -56,11 +52,9 @@ export default function OnboardingPage() {
           return;
         }
         const status = await api.getOnboardingStatus();
-        setRole(status.role as Role);
+        setRole((status.role || user.role) as Role);
         setCollegeId(status.collegeId || user.collegeId || null);
-        setDeptId(status.deptId || user.deptId || null);
         setCurrentStep(status.step || 1);
-        setReady(true);
       } catch (err: any) {
         toast.error("Failed to load onboarding status");
       } finally {
@@ -69,23 +63,6 @@ export default function OnboardingPage() {
     };
     init();
   }, [router]);
-
-  useEffect(() => {
-    const loadDeptResources = async () => {
-      if (!deptId) return;
-      try {
-        const [subjectsData, batchesData] = await Promise.all([
-          role === "student" ? api.getOnboardingSubjects() : api.listSubjects(deptId),
-          api.listBatches(deptId),
-        ]);
-        setSubjectsList(subjectsData || []);
-        setBatchesList(batchesData || []);
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to load department resources");
-      }
-    };
-    if (ready) loadDeptResources();
-  }, [deptId, role, ready]);
 
   const routeByRole = (r: Role) => {
     const routes: Record<Role, string> = {
