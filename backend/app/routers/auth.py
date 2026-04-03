@@ -658,7 +658,7 @@ def login_json(
     response.set_cookie(
         key="access_token",
         value=access_token,
-        httponly=True,
+        httponly=False,
         secure=settings.SECURE_COOKIES,
         samesite="Lax" if not settings.SECURE_COOKIES else "None",
         max_age=int(access_token_expires.total_seconds()),
@@ -668,7 +668,7 @@ def login_json(
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
-        httponly=True,
+        httponly=False,
         secure=settings.SECURE_COOKIES,
         samesite="Lax" if not settings.SECURE_COOKIES else "None",
         max_age=int(refresh_token_expires.total_seconds()),
@@ -783,7 +783,7 @@ async def refresh_token(
     response.set_cookie(
         key="access_token",
         value=access_token,
-        httponly=True,
+        httponly=False,
         secure=settings.SECURE_COOKIES,
         samesite="Lax" if not settings.SECURE_COOKIES else "None",
         max_age=int(access_token_expires.total_seconds()),
