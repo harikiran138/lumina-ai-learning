@@ -33,8 +33,7 @@ const ROLE_PATH_PREFIXES: Record<string, string[]> = {
 }
 
 export function normalizeRole(role?: string | null): string {
-  if (role === "admin") return "super_admin"
-  if (role === "teacher") return "faculty"
+  if (role === "faculty") return "teacher"
   if (role === "peer-tutor") return "peer_tutor"
   return role || ""
 }

@@ -87,7 +87,7 @@ describe('Middleware session and role guards', () => {
 
   it('allows matching role access to continue without redirect', () => {
     const token = createToken({
-      role: 'faculty',
+      role: 'teacher',
       onboardingCompleted: true,
       adaptiveOnboardingCompleted: true,
       exp: Math.floor(Date.now() / 1000) + 3600,

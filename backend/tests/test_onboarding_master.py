@@ -1,15 +1,11 @@
 import pytest
 import uuid
-import json
 import logging
-from datetime import datetime
-from httpx import AsyncClient
-from fastapi import FastAPI
-from app.main import app
 from app.database.supabase_manager import supabase_db
 from app.services.onboarding_service import OnboardingService
 from app.routers.auth import get_current_user
 from app.api.deps import get_current_faculty
+from app.main import app
 
 # Disable uvicorn logging during tests if it's too noisy
 logging.getLogger("uvicorn.error").setLevel(logging.ERROR)
@@ -26,7 +22,7 @@ def get_mock_user_base(role="student"):
         "onboarding_status": "in_progress",
         "full_name": "Test User",
         "name": "Test User",
-        "employee_id": "EMP_001" if role == "faculty" else None
+        "employee_id": "EMP_001" if role == "teacher" else None
     }
 
 @pytest.fixture
@@ -36,9 +32,8 @@ def db_manager():
     return supabase_db
 
 @pytest.fixture
-async def ac():
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        yield client
+async def ac(async_client):
+    yield async_client
 
 # --- Layer 1: Service (Unit) Tests ---
 
@@ -69,7 +64,7 @@ async def test_service_student_migration(db_manager):
 
 @pytest.mark.asyncio
 async def test_service_faculty_migration(db_manager):
-    user = get_mock_user_base("faculty")
+    user = get_mock_user_base("teacher")
     user_id = user["id"]
     db_manager.client.table("users").insert(user).execute()
     
@@ -83,7 +78,7 @@ async def test_service_faculty_migration(db_manager):
     db_manager.client.table("user_data").insert(onboarding_data).execute()
     
     service = OnboardingService(db_manager)
-    result = await service.complete_onboarding(user_id, "faculty", user, {"teaching_goal": "Innovation"})
+    result = await service.complete_onboarding(user_id, "teacher", user, {"teaching_goal": "Innovation"})
     
     assert result["success"] is True
     profile = await db_manager.fetch_one("teacher_profiles", {"user_id": user_id})

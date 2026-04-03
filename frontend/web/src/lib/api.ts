@@ -1,6 +1,5 @@
 // API client for the Lumina FastAPI backend
 
-const LOCAL_API_BASE = "http://127.0.0.1:8000";
 const HOSTED_API_BASE = "/api";
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
 
@@ -12,7 +11,7 @@ export function getConfiguredApiBase(): string | null {
   if (typeof window !== "undefined") {
     const isLocalHost = LOCAL_HOSTNAMES.has(window.location.hostname);
     if (isLocalHost) {
-      return explicitBase ? explicitBase.replace(/\/+$/, "") : LOCAL_API_BASE;
+      return explicitBase ? explicitBase.replace(/\/+$/, "") : HOSTED_API_BASE;
     }
 
     if (!explicitBase) {

@@ -34,14 +34,14 @@ LEARNING_STYLE_MARKERS = {
 }
 
 ROLE_ALIASES = {
-    "teacher": "faculty",
+    "faculty": "teacher",
     "college_admin": "admin",
     "super_admin": "admin",
 }
 
 ROLE_FLOW_TOTALS = {
     "student": 4,
-    "faculty": 4,
+    "teacher": 4,
     "admin": 4,
     "parent": 4,
     "counselor": 4,
@@ -367,7 +367,7 @@ class AdaptiveOnboardingEngine:
     ) -> Dict[str, Any]:
         builders = {
             "student": self._student_question,
-            "faculty": self._faculty_question,
+            "teacher": self._faculty_question,
             "admin": self._admin_question,
             "parent": self._parent_question,
             "counselor": self._counselor_question,
@@ -947,7 +947,7 @@ class AdaptiveOnboardingEngine:
                 f"Prefer {mode_text or 'examples'} when explaining new concepts.",
                 "Keep teacher verification enabled on high-impact tutor recommendations.",
             ]
-        if role == "faculty":
+        if role == "teacher":
             return [
                 f"Begin with a {level.lower()} rollout profile for teacher-verified AI support.",
                 "Mirror your selected teaching styles in adaptive explanation defaults.",

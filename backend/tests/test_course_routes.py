@@ -1,18 +1,15 @@
 import pytest
-from httpx import AsyncClient, ASGITransport
 import uuid
 import sys
 import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from app.main import app
 from app.store.user_store import UserStore
 from app.store.course_store import CourseStore
 
 @pytest.fixture
-async def ac():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:  # nosec B113
-        yield client
+async def ac(async_client):
+    yield async_client
 
 def gen_user_data():
     uid = str(uuid.uuid4())[:8]
@@ -23,7 +20,7 @@ def gen_user_data():
 async def teacher_user():
     user_store = UserStore()
     email, pwd, name, role, phone = gen_user_data()
-    user = await user_store.create_user(email, pwd, name, "student", phone)
+    user = await user_store.create_user(email, pwd, name, "teacher", phone)
     yield user, pwd
     await user_store.delete_user(user["id"])
 

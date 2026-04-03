@@ -1,14 +1,10 @@
 import pytest
-from httpx import ASGITransport, AsyncClient
-
-from app.main import app
 from app.store.user_store import UserStore
 
 
 @pytest.fixture
-async def ac():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:  # nosec B113
-        yield client
+async def ac(async_client):
+    yield async_client
 
 
 @pytest.mark.asyncio
@@ -29,7 +25,7 @@ async def test_json_login_token_can_access_onboarding_status(ac):
         )
         assert login_response.status_code == 200
         payload = login_response.json()
-        assert payload["user"]["role"] == "super_admin"
+        assert payload["user"]["role"] == "admin"
         assert "accessToken" in payload
         assert "access_token" in login_response.headers.get("set-cookie", "")
 
@@ -39,7 +35,7 @@ async def test_json_login_token_can_access_onboarding_status(ac):
         )
         assert status_response.status_code == 200
         status_payload = status_response.json()
-        assert status_payload["role"] == "super_admin"
+        assert status_payload["role"] == "admin"
     finally:
         await user_store.delete_user(user["id"])
 

@@ -73,13 +73,13 @@ class PersonalizationStore:
     async def list_events(self, user_id: str, limit: int = 100) -> List[LearningEventRecord]:
         try:
             client = self.db.get_client()
-            response = (
+            response = await (
                 client.table("learning_events")
                 .select("*")
                 .eq("user_id", user_id)
                 .order("created_at", desc=True)
                 .limit(limit)
-                .execute()
+                .async_execute()
             )
             return [LearningEventRecord(**item) for item in response.data]
         except Exception as exc:
@@ -108,7 +108,7 @@ class PersonalizationStore:
             query = client.table("intervention_recommendations").select("*").order("created_at", desc=True).limit(limit)
             if user_id:
                 query = query.eq("user_id", user_id)
-            response = query.execute()
+            response = await query.async_execute()
             return [InterventionRecommendation(**item) for item in response.data]
         except Exception as exc:
             log.warning("interventions_list_failed", user_id=user_id, error=str(exc))

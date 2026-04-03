@@ -33,6 +33,12 @@ class UserStore:
             return {}
         
         safe_user = user.copy()
+        
+        # Ensure ID is always present (critical for mocks and RLS fallbacks)
+        if not safe_user.get("id"):
+            safe_user["id"] = str(uuid.uuid4())
+            log.debug("user_id_generated_fallback", email=safe_user.get("email"))
+
         password_hash = safe_user.get("password_hash") or safe_user.get("hashed_password")
         if not include_sensitive:
             safe_user.pop("password_hash", None)
@@ -55,14 +61,24 @@ class UserStore:
         safe_user["profile_photo_url"] = avatar
         safe_user["status"] = safe_user.get("status", "active")
         
+        # Role Resolution
         roles_data = safe_user.get("user_roles")
         primary_role = None
         if roles_data and isinstance(roles_data, list) and len(roles_data) > 0:
-            if isinstance(roles_data[0].get("roles"), dict):
-                primary_role = roles_data[0]["roles"].get("name")
-        
-        safe_user["role"] = self.normalize_role(primary_role or safe_user.get("role"))
+            role_entry = roles_data[0]
+            if isinstance(role_entry, dict):
+                # Handle both direct "roles" dict and flat "role_name" structure
+                nested_roles = role_entry.get("roles")
+                if isinstance(nested_roles, dict):
+                    primary_role = nested_roles.get("name")
+                elif "role_name" in role_entry:
+                    primary_role = role_entry["role_name"]
+
+        # Final role mapping fallback
+        canonical_role = self.normalize_role(primary_role or safe_user.get("role"))
+        safe_user["role"] = canonical_role
         safe_user["created_at"] = created_at
+        safe_user["createdAt"] = created_at
         
         # Ensure institutional fields are present
         safe_user["college_id"] = safe_user.get("college_id")
@@ -70,6 +86,7 @@ class UserStore:
         safe_user["batch_id"] = safe_user.get("batch_id")
         safe_user["onboarding_step"] = safe_user.get("onboarding_step", 0)
         safe_user["must_change_password"] = safe_user.get("must_change_password", False)
+        
         if include_sensitive and password_hash:
             safe_user["password_hash"] = password_hash
         
@@ -87,6 +104,7 @@ class UserStore:
         hashed_password = self.get_password_hash(password)
 
         user_data = {
+            "id": str(uuid.uuid4()),
             "email": email,
             "password_hash": hashed_password,
             "name": full_name,
@@ -103,7 +121,7 @@ class UserStore:
         }
 
         try:
-            insert_result = self.db.table("users").insert(user_data).execute()
+            insert_result = await self.db.table("users").insert(user_data).async_execute()
             
             # Fallback: If RLS prevents returning the row on insert, fetch it explicitly
             result = insert_result.data[0] if insert_result.data else await self.get_user_by_email(email)
@@ -125,7 +143,7 @@ class UserStore:
 
     async def get_user_by_email(self, email: str, include_sensitive: bool = False) -> Optional[dict]:
         try:
-            response = self.db.table("users").select("*, user_roles(roles(name))").eq("email", email).execute()
+            response = await self.db.table("users").select("*, user_roles(roles(name))").eq("email", email).async_execute()
             if response.data:
                 return self._sanitize_user(response.data[0], include_sensitive=include_sensitive)
         except Exception as e:
@@ -142,7 +160,7 @@ class UserStore:
         return None
 
     async def get_user_by_id(self, user_id: str, include_sensitive: bool = False) -> Optional[dict]:
-        response = self.db.table("users").select("*, user_roles(roles(name))").eq("id", user_id).execute()
+        response = await self.db.table("users").select("*, user_roles(roles(name))").eq("id", user_id).async_execute()
         if response.data:
             return self._sanitize_user(response.data[0], include_sensitive=include_sensitive)
         return None
@@ -163,22 +181,22 @@ class UserStore:
             client = self.db.get_client() if hasattr(self.db, "get_client") else self.db
             
             # 1. Clean up user_data
-            client.table("user_data").delete().eq("id", user_id).execute()
-            client.table("user_data").delete().eq("user_id", user_id).execute()
+            await client.table("user_data").delete().eq("id", user_id).async_execute()
+            await client.table("user_data").delete().eq("user_id", user_id).async_execute()
 
             # 2. Clean up enrollments / progress
-            client.table("enrollments").delete().eq("student_id", user_id).execute()
-            client.table("student_enrollments").delete().eq("student_id", user_id).execute()
-            client.table("student_progress").delete().eq("student_id", user_id).execute()
+            await client.table("enrollments").delete().eq("student_id", user_id).async_execute()
+            await client.table("student_enrollments").delete().eq("student_id", user_id).async_execute()
+            await client.table("student_progress").delete().eq("student_id", user_id).async_execute()
 
             # 3. Clean up sessions
-            client.table("assessment_sessions").delete().eq("student_id", user_id).execute()
+            await client.table("assessment_sessions").delete().eq("student_id", user_id).async_execute()
 
             # 4. Clean up stakeholders/connections
-            client.table("stakeholders").delete().eq("user_id", user_id).execute()
+            await client.table("stakeholders").delete().eq("user_id", user_id).async_execute()
 
             # 5. Final user deletion
-            result = client.table("users").delete().eq("id", user_id).execute()
+            result = await client.table("users").delete().eq("id", user_id).async_execute()
             return len(result.data) > 0
         except Exception as e:
             log.error("delete_user_cascade_failed", error=str(e), user_id=user_id)
@@ -190,7 +208,7 @@ class UserStore:
 
     async def update_user_role(self, user_id: str, role: str) -> bool:
         try:
-            response = self.db.table("users").update({"role": self.normalize_role(role)}).eq("id", user_id).execute()
+            response = await self.db.table("users").update({"role": self.normalize_role(role)}).eq("id", user_id).async_execute()
             return len(response.data) > 0
         except Exception as e:
             log.error("update_user_role_failed", error=str(e), user_id=user_id)
@@ -207,7 +225,7 @@ class UserStore:
         }
 
         try:
-            response = self.db.table("users").update(updates).eq("id", user_id).execute()
+            response = await self.db.table("users").update(updates).eq("id", user_id).async_execute()
             return len(response.data) > 0
         except Exception as e:
             log.error("update_user_status_failed", error=str(e), user_id=user_id)
@@ -217,17 +235,38 @@ class UserStore:
         from datetime import datetime
         restricted = {"id", "password", "password_hash", "email"}
         valid_columns = {
-            "name", "full_name", "role", "phone", "is_active", "status", 
-            "college_id", "dept_id", "department_id", "batch_id", 
-            "roll_number", "employee_id", "onboarding_step", 
-            "must_change_password", "updated_at", "created_at", 
-            "profile_photo_url", "avatar_url"
+            "name",
+            "full_name",
+            "first_name",
+            "last_name",
+            "role",
+            "phone",
+            "is_active",
+            "status",
+            "college_id",
+            "dept_id",
+            "department_id",
+            "batch_id",
+            "section",
+            "roll_number",
+            "student_roll",
+            "employee_id",
+            "onboarding_step",
+            "must_change_password",
+            "updated_at",
+            "created_at",
+            "profile_photo_url",
+            "avatar_url",
+            "dob",
+            "gender",
+            "emergency_contact",
+            "parent_email",
         }
         clean_updates = {k: v for k, v in updates.items() if k not in restricted and k in valid_columns}
         clean_updates.setdefault("updated_at", datetime.utcnow().isoformat())
 
         try:
-            response = self.db.table("users").update(clean_updates).eq("id", user_id).execute()
+            response = await self.db.table("users").update(clean_updates).eq("id", user_id).async_execute()
             return len(response.data) > 0
         except Exception as e:
             err_str = str(e)
@@ -241,11 +280,32 @@ class UserStore:
         from datetime import datetime
         restricted = {"id", "password", "password_hash", "email"}
         valid_columns = {
-            "name", "full_name", "role", "phone", "is_active", "status", 
-            "college_id", "dept_id", "department_id", "batch_id", 
-            "roll_number", "employee_id", "onboarding_step", 
-            "must_change_password", "updated_at", "created_at", 
-            "profile_photo_url", "avatar_url"
+            "name",
+            "full_name",
+            "first_name",
+            "last_name",
+            "role",
+            "phone",
+            "is_active",
+            "status",
+            "college_id",
+            "dept_id",
+            "department_id",
+            "batch_id",
+            "section",
+            "roll_number",
+            "student_roll",
+            "employee_id",
+            "onboarding_step",
+            "must_change_password",
+            "updated_at",
+            "created_at",
+            "profile_photo_url",
+            "avatar_url",
+            "dob",
+            "gender",
+            "emergency_contact",
+            "parent_email",
         }
         clean_updates = {k: v for k, v in updates.items() if k not in restricted and k in valid_columns}
         clean_updates.setdefault("updated_at", datetime.utcnow().isoformat())

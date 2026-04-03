@@ -6,6 +6,9 @@ from app.store.parent_store import ParentStore
 from app.dependencies import get_parent_store
 
 from app.store.redis_client import redis_client
+from app.core.logging import structlog
+
+log = structlog.get_logger()
 
 router = APIRouter()
 
@@ -21,7 +24,7 @@ async def get_parent_dashboard(
     current_user: dict = Depends(get_current_user),
     store: ParentStore = Depends(get_parent_store)
 ):
-    return await store.get_messages(current_user["id"])
+    return await store.get_parent_dashboard(current_user["id"])
 
 @router.post("/goals")
 async def set_child_goal(

@@ -11,6 +11,17 @@ if not DATABASE_URL:
     exit(1)
 
 SQL_MIGRATION = """
+-- Add missing columns to courses if they don't exist
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='courses' AND column_name='review_status') THEN
+        ALTER TABLE courses ADD COLUMN review_status TEXT DEFAULT 'draft';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='courses' AND column_name='designer_notes') THEN
+        ALTER TABLE courses ADD COLUMN designer_notes TEXT DEFAULT '';
+    END IF;
+END $$;
+
 -- 1. Question Bank
 CREATE TABLE IF NOT EXISTS question_bank (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

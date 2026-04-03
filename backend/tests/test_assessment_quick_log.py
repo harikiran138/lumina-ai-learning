@@ -4,20 +4,13 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from app.main import app
-
-
 @pytest.fixture
-async def ac():
-    async with AsyncClient(  # nosec B113
-        transport=ASGITransport(app=app),
-        base_url="http://localhost",
-    ) as client:
-        yield client
+async def ac(async_client):
+    yield async_client
 
 
 @pytest.mark.asyncio

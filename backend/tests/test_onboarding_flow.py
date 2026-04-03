@@ -1,9 +1,7 @@
 import pytest
-from httpx import ASGITransport, AsyncClient
-
-from app.main import app
 from app.database.supabase_manager import supabase_db
 from app.routers.auth import get_current_user
+from app.api.deps import get_current_active_user, get_current_student, get_current_college_admin
 
 
 @pytest.fixture
@@ -12,20 +10,27 @@ def local_db():
 
 
 @pytest.fixture
-async def ac():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:  # nosec B113
-        yield client
+async def ac(async_client):
+    yield async_client
 
 
 def _override_user(user: dict):
     async def _get_user():
         return user
 
+    from app.main import app
     app.dependency_overrides[get_current_user] = _get_user
+    app.dependency_overrides[get_current_active_user] = _get_user
+    app.dependency_overrides[get_current_student] = _get_user
+    app.dependency_overrides[get_current_college_admin] = _get_user
 
 
 def _clear_overrides():
+    from app.main import app
     app.dependency_overrides.pop(get_current_user, None)
+    app.dependency_overrides.pop(get_current_active_user, None)
+    app.dependency_overrides.pop(get_current_student, None)
+    app.dependency_overrides.pop(get_current_college_admin, None)
 
 
 @pytest.mark.asyncio
@@ -471,12 +476,12 @@ async def test_student_adaptive_onboarding_creates_profile_and_mastery(ac, local
 
 
 @pytest.mark.asyncio
-async def test_faculty_adaptive_onboarding_returns_role_specific_prompt(ac, local_db):
+async def test_teacher_adaptive_onboarding_returns_role_specific_prompt(ac, local_db):
     local_db.table("users").insert(
         {
             "id": "faculty-adaptive-1",
             "email": "faculty.adaptive@example.com",
-            "role": "faculty",
+            "role": "teacher",
             "college_id": "college-1",
             "dept_id": "dept-1",
             "onboarding_step": 5,
@@ -487,19 +492,19 @@ async def test_faculty_adaptive_onboarding_returns_role_specific_prompt(ac, loca
         {
             "id": "faculty-adaptive-1",
             "email": "faculty.adaptive@example.com",
-            "role": "faculty",
+            "role": "teacher",
             "college_id": "college-1",
             "dept_id": "dept-1",
         }
     )
     try:
-        response = await ac.post("/api/onboarding/start", json={"role": "faculty"})
+        response = await ac.post("/api/onboarding/start", json={"role": "teacher"})
     finally:
         _clear_overrides()
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["role"] == "faculty"
+    assert payload["role"] == "teacher"
     assert payload["question"]["dimension"] == "expertise"
     assert any(keyword in payload["question"]["prompt"].lower() for keyword in ["teach", "student", "feedback"])
 

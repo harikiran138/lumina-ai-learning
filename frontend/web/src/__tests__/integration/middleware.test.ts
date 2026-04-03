@@ -9,8 +9,9 @@ import {
 
 describe('Role routing helpers', () => {
   it('normalizes legacy roles to their active app roles', () => {
-    expect(normalizeRole('teacher')).toBe('faculty')
-    expect(normalizeRole('admin')).toBe('super_admin')
+    expect(normalizeRole('teacher')).toBe('teacher')
+    expect(normalizeRole('faculty')).toBe('teacher')
+    expect(normalizeRole('admin')).toBe('admin')
     expect(normalizeRole('student')).toBe('student')
   })
 
@@ -23,8 +24,8 @@ describe('Role routing helpers', () => {
   })
 
   it('detects role ownership for canonical and alias paths', () => {
-    expect(getExpectedRoleForPath('/faculty/dashboard')).toBe('faculty')
-    expect(getExpectedRoleForPath('/teacher/courses')).toBe('faculty')
+    expect(getExpectedRoleForPath('/faculty/dashboard')).toBe('teacher')
+    expect(getExpectedRoleForPath('/teacher/courses')).toBe('teacher')
     expect(getExpectedRoleForPath('/peer-tutor/dashboard')).toBe('peer_tutor')
     expect(getExpectedRoleForPath('/content_creator/studio')).toBe('content_creator')
     expect(getExpectedRoleForPath('/researcher/dashboard')).toBe('researcher')

@@ -51,6 +51,20 @@ from app.core.logging import configure_logging  # noqa: E402
 from app.core.limiter import limiter  # noqa: E402
 from app.core.middleware import SentinelMiddleware # noqa: E402
 
+# 1. Configure JSON Logging
+configure_logging()
+
+logger = structlog.get_logger(__name__)
+log = logger # Alias for compatibility
+
+# 2. Configure Sentry (with Profiling)
+if settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,  # Enable profiling
+    )
+
 from app.routers import (  # noqa: E402
     ai,
     handwriting_simple as handwriting,
@@ -105,20 +119,6 @@ if not hasattr(asyncio, "to_thread"):
         return await loop.run_in_executor(None, func_call)
 
     asyncio.to_thread = to_thread
-
-# 1. Configure JSON Logging
-configure_logging()
-
-# 2. Configure Sentry (with Profiling)
-if settings.SENTRY_DSN:
-    sentry_sdk.init(
-        dsn=settings.SENTRY_DSN,
-        traces_sample_rate=1.0,
-        profiles_sample_rate=1.0,  # Enable profiling
-    )
-
-logger = structlog.get_logger(__name__)
-log = logger # Alias for compatibility
 
 if os.getenv("ENVIRONMENT") == "production" and not settings.SECURE_COOKIES:
     raise RuntimeError("SECURE_COOKIES must be True in production")
@@ -242,8 +242,8 @@ async def universal_exception_handler(request: Request, exc: Exception):
 
 # Serverless environments (Vercel) have a read-only filesystem except /tmp.
 _IS_SERVERLESS = bool(os.getenv("VERCEL"))
-_upload_dir = "/tmp/uploads" if _IS_SERVERLESS else "data/uploads"
-_ppt_dir = "/tmp/presentations" if _IS_SERVERLESS else "static/presentations"
+_upload_dir = "/tmp/uploads" if _IS_SERVERLESS else "data/uploads"  # nosec B108
+_ppt_dir = "/tmp/presentations" if _IS_SERVERLESS else "static/presentations"  # nosec B108
 
 os.makedirs(_upload_dir, exist_ok=True)
 os.makedirs(_ppt_dir, exist_ok=True)

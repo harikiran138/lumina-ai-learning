@@ -43,7 +43,7 @@ const PROTECTED_PATHS: Record<string, string> = {
   '/admin': 'super_admin',
   '/college': 'college_admin',
   '/hod': 'hod',
-  '/faculty': 'faculty',
+  '/faculty': 'teacher',
   '/student': 'student',
   '/parent': 'parent',
   '/mentor': 'mentor',

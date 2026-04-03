@@ -2,7 +2,7 @@ import httpx
 import os
 import sys
 import time
-from typing import Optional, Any, Dict, List
+from typing import Optional, Any, Dict, List, Tuple
 from datetime import datetime
 from copy import deepcopy
 import uuid
@@ -28,14 +28,36 @@ httpx.Client.__init__ = _patched_httpx_init          # type: ignore[method-assig
 
 # --- GLOBAL MOCK BACKEND ---
 # Using a module-level dictionary ensures data persists across re-imports and fixture resets
-_GLOBAL_MOCK_TABLES: Dict[str, List[Dict[str, Any]]] = {}
+_DEFAULT_LOCAL_TABLES = {
+    "users",
+    "user_data",
+    "student_subjects",
+    "learner_profiles",
+    "intervention_recommendations",
+    "automation_job_logs",
+    "assessment_sessions",
+    "login_attempts",
+    "login_history",
+    "assignments",
+    "assignment_submissions",
+    "courses",
+    "enrollments",
+    "student_enrollments",
+    "student_progress",
+    "parent_child_links",
+    "parent_messages",
+    "parent_goals",
+    "guardian_log",
+    "inactivity_alerts",
+}
+_GLOBAL_MOCK_TABLES: Dict[str, List[Dict[str, Any]]] = {table_name: [] for table_name in _DEFAULT_LOCAL_TABLES}
 
 def get_global_mock_tables():
     return _GLOBAL_MOCK_TABLES
 
 def clear_global_mock_tables():
     global _GLOBAL_MOCK_TABLES
-    _GLOBAL_MOCK_TABLES = {}
+    _GLOBAL_MOCK_TABLES = {table_name: [] for table_name in _DEFAULT_LOCAL_TABLES}
 
 
 class _LocalQueryResult:
@@ -54,8 +76,8 @@ class _LocalTableQuery:
         self.table_name = table_name
         self._operation = "select"
         self._payload = None
-        self._filters = []
-        self._or_filters = []
+        self._filters: List[Tuple[str, str, Any]] = []
+        self._or_filters: List[List[Tuple[str, str, Any]]] = []
         self._limit = None
         self._order = None
         self._columns = "*"
@@ -87,17 +109,15 @@ class _LocalTableQuery:
         return self
 
     def eq(self, key: str, value: Any):
-        # String normalization for robust matching
-        self._filters.append(lambda row, k=key, v=value: str(row.get(k)) == str(v))
+        self._filters.append((key, "eq", value))
         return self
 
     def neq(self, key: str, value: Any):
-        self._filters.append(lambda row, k=key, v=value: str(row.get(k)) != str(v))
+        self._filters.append((key, "neq", value))
         return self
 
     def in_(self, key: str, values: List[Any]):
-        value_set = {str(v) for v in (values or [])}
-        self._filters.append(lambda row, k=key, vals=value_set: str(row.get(k)) in vals)
+        self._filters.append((key, "in", list(values or [])))
         return self
 
     def or_(self, expression: str):
@@ -105,10 +125,11 @@ class _LocalTableQuery:
         parsed = []
         for clause in clauses:
             parts = clause.split(".", 2)
-            if len(parts) != 3: continue
+            if len(parts) != 3:
+                continue
             field, operator, raw_value = parts
             if operator == "eq":
-                parsed.append(lambda row, f=field, v=raw_value: str(row.get(f)) == str(v))
+                parsed.append((field, "eq", raw_value))
         if parsed:
             self._or_filters.append(parsed)
         return self
@@ -129,20 +150,45 @@ class _LocalTableQuery:
         self._single = True
         return self
 
+    def _matches_condition(self, row: Dict[str, Any], column: str, operator: str, value: Any) -> bool:
+        row_value = row.get(column)
+        if operator == "eq":
+            return str(row_value) == str(value)
+        if operator == "neq":
+            return str(row_value) != str(value)
+        if operator == "in":
+            return str(row_value) in {str(item) for item in (value or [])}
+        return False
+
     def _matches(self, row: Dict[str, Any]) -> bool:
-        if any(not predicate(row) for predicate in self._filters):
+        if any(not self._matches_condition(row, column, operator, value) for column, operator, value in self._filters):
             return False
         if self._or_filters:
             for group in self._or_filters:
-                if not any(predicate(row) for predicate in group):
+                if not any(self._matches_condition(row, column, operator, value) for column, operator, value in group):
                     return False
         return True
 
     def _project_row(self, row: Dict[str, Any]) -> Dict[str, Any]:
-        if self._columns in (None, "*"):
-            return deepcopy(row)
-        fields = [field.strip() for field in self._columns.split(",") if field.strip()]
-        return {field: deepcopy(row.get(field)) for field in fields}
+        columns = self._columns or "*"
+        fields = [field.strip() for field in columns.split(",") if field.strip()]
+        include_all = columns in (None, "*") or "*" in fields
+        projected = deepcopy(row) if include_all else {}
+
+        if not include_all:
+            for field in fields:
+                if "(" in field:
+                    continue
+                projected[field] = deepcopy(row.get(field))
+
+        if "user_roles(roles(name))" in columns:
+            projected["user_roles"] = [{"roles": {"name": row.get("role")}}]
+
+        return projected
+
+    async def async_execute(self):
+        """Asynchronous alias for execute to match ScopedQueryBuilder."""
+        return self.execute()
 
     def execute(self):
         global _GLOBAL_MOCK_TABLES
@@ -249,6 +295,8 @@ class SupabaseManager:
         """
         if cls._use_local_backend():
             if cls._local_client is None or force_new:
+                if force_new:
+                    clear_global_mock_tables()
                 cls._local_client = _LocalSupabaseClient()
             return cls._local_client  # type: ignore[return-value]
 
@@ -321,20 +369,27 @@ class SupabaseManager:
             query = self.client.table(table).select("*")
             for key, value in query_filter.items():
                 query = query.eq(key, value)
-            response = await query.limit(1).execute()
+            response = await query.limit(1).async_execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("fetch_one_failed", table=table, error=str(e))
             return None
 
-    async def fetch_all(self, table: str, query_filter: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    async def fetch_all(
+        self,
+        table: str,
+        query_filter: Dict[str, Any] = None,
+        limit: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
         """Fetch all records matching the query filter."""
         try:
             query = self.client.table(table).select("*")
             if query_filter:
                 for key, value in query_filter.items():
                     query = query.eq(key, value)
-            response = await query.execute()
+            if limit is not None:
+                query = query.limit(limit)
+            response = await query.async_execute()
             return response.data or []
         except Exception as e:
             log.error("fetch_all_failed", table=table, error=str(e))
@@ -343,7 +398,7 @@ class SupabaseManager:
     async def upsert(self, table: str, data: Dict[str, Any], on_conflict: str = 'id') -> Optional[Dict[str, Any]]:
         """Helper to upsert records."""
         try:
-            response = await self.client.table(table).upsert(data, on_conflict=on_conflict).execute()
+            response = await self.client.table(table).upsert(data, on_conflict=on_conflict).async_execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("upsert_failed", table=table, error=str(e))
@@ -352,7 +407,7 @@ class SupabaseManager:
     async def insert(self, table: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Helper to insert records."""
         try:
-            response = await self.client.table(table).insert(data).execute()
+            response = await self.client.table(table).insert(data).async_execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("insert_failed", table=table, error=str(e))
@@ -364,7 +419,7 @@ class SupabaseManager:
             query = self.client.table(table).update(data)
             for key, value in query_filter.items():
                 query = query.eq(key, value)
-            response = await query.execute()
+            response = await query.async_execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("update_failed", table=table, error=str(e))
@@ -377,7 +432,7 @@ class SupabaseManager:
             for key, value in query_filter.items():
                 query = query.eq(key, value)
             
-            response = await query.execute()
+            response = await query.async_execute()
             return len(response.data) > 0
         except Exception as e:
             log.error("delete_failed", table=table, error=str(e))

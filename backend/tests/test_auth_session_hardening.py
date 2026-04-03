@@ -1,20 +1,17 @@
 import uuid
 
 import pytest
-from httpx import ASGITransport, AsyncClient
 from jose import jwt
 
 from app.core.config import settings
 from app.core.security import create_access_token
-from app.main import app
 from app.routers.auth import _build_claims
 from app.store.user_store import UserStore
 
 
 @pytest.fixture
-async def ac():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:  # nosec B113
-        yield client
+async def ac(async_client):
+    yield async_client
 
 
 def _seed_user(role: str = "student"):
@@ -91,7 +88,7 @@ async def test_cookie_session_persists_after_json_login(ac):
 @pytest.mark.asyncio
 async def test_refresh_reissues_access_cookie_with_onboarding_claims(ac):
     user_store = UserStore()
-    user = await user_store.create_user(**_seed_user(role="faculty"))
+    user = await user_store.create_user(**_seed_user(role="teacher"))
     await user_store.update_user_fields(user["id"], {"onboarding_step": 5})
 
     try:

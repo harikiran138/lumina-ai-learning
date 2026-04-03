@@ -1,17 +1,14 @@
 import pytest
-from httpx import AsyncClient, ASGITransport
 import uuid
 import sys
 import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from app.main import app
 from app.store.user_store import UserStore
 
 @pytest.fixture
-async def ac():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:  # nosec B113
-        yield client
+async def ac(async_client):
+    yield async_client
 
 def gen_user_data():
     uid = str(uuid.uuid4())[:8]
@@ -38,14 +35,14 @@ async def test_register_student_tc_signup_001(ac):
     await user_store.delete_user(user["id"])
 
 @pytest.mark.asyncio
-async def test_register_faculty_tc_signup_002(ac):
-    """TC-SIGNUP-002: Faculty registration."""
+async def test_register_teacher_tc_signup_002(ac):
+    """TC-SIGNUP-002: Teacher registration."""
     email, pwd, name, _, phone = gen_user_data()
     res = await ac.post("/api/auth/register", json={
         "email": email,
         "password": pwd,
         "full_name": name,
-        "role": "faculty",
+        "role": "teacher",
         "phone": phone
     })
     assert res.status_code == 201
@@ -53,7 +50,7 @@ async def test_register_faculty_tc_signup_002(ac):
     user_store = UserStore()
     user = await user_store.get_user_by_email(email)
     assert user is not None
-    assert user["role"] == "faculty"
+    assert user["role"] == "teacher"
     await user_store.delete_user(user["id"])
 
 @pytest.mark.asyncio

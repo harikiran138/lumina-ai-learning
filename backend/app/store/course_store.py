@@ -131,7 +131,7 @@ class CourseStore:
         try:
             client = self.db.get_client()
             # Try matching both legacy and new column names
-            response = client.table("courses").select("*").or_(f"code.eq.{code},course_code.eq.{code}").execute()
+            response = await client.table("courses").select("*").or_(f"code.eq.{code},course_code.eq.{code}").async_execute()
             if response.data:
                 return self._normalize_course(response.data[0])
         except Exception as e:
@@ -165,7 +165,7 @@ class CourseStore:
             
         try:
             client = self.db.get_client()
-            response = client.table("courses").update(clean_updates).eq("id", course_id).execute()
+            response = await client.table("courses").update(clean_updates).eq("id", course_id).async_execute()
             return len(response.data) > 0
         except Exception as e:
             log.error("update_course_failed", error=str(e), course_id=course_id)
@@ -177,7 +177,7 @@ class CourseStore:
     async def get_courses_by_teacher(self, teacher_id: str) -> List[dict]:
         try:
             client = self.db.get_client()
-            response = client.table("courses").select("*").eq("teacher_id", teacher_id).execute()
+            response = await client.table("courses").select("*").eq("teacher_id", teacher_id).async_execute()
             return [self._normalize_course(course) for course in response.data]
         except Exception as e:
             log.error("get_courses_by_teacher_failed", error=str(e), teacher_id=teacher_id)
@@ -198,7 +198,7 @@ class CourseStore:
     async def update_modules(self, course_id: str, modules: list) -> bool:
         try:
             client = self.db.get_client()
-            response = client.table("courses").update({"modules": modules}).eq("id", course_id).execute()
+            response = await client.table("courses").update({"modules": modules}).eq("id", course_id).async_execute()
             return len(response.data) > 0
         except Exception as e:
             log.error("update_modules_failed", error=str(e), course_id=course_id)
@@ -207,9 +207,9 @@ class CourseStore:
     async def submit_for_review(self, course_id: str) -> bool:
         client = self.db.get_client()
         try:
-            response = client.table("courses").update({
+            response = await client.table("courses").update({
                 "review_status": "in_review",
-            }).eq("id", course_id).execute()
+            }).eq("id", course_id).async_execute()
             return len(response.data) > 0
         except Exception as e:
             log.error("submit_for_review_failed", error=str(e), course_id=course_id)
@@ -218,11 +218,11 @@ class CourseStore:
     async def reject_course(self, course_id: str, feedback: str) -> bool:
         client = self.db.get_client()
         try:
-            response = client.table("courses").update({
+            response = await client.table("courses").update({
                 "review_status": "rejected",
                 "designer_notes": feedback,
                 "is_published": False
-            }).eq("id", course_id).execute()
+            }).eq("id", course_id).async_execute()
             return len(response.data) > 0
         except Exception as e:
             log.error("reject_course_failed", error=str(e), course_id=course_id)
@@ -236,18 +236,18 @@ class CourseStore:
         client = self.db.get_client()
         try:
             # 1. Update the course table
-            response = client.table("courses").update({
+            response = await client.table("courses").update({
                 "review_status": "published",
                 "is_published": True,
                 "designer_notes": ""
-            }).eq("id", course_id).execute()
+            }).eq("id", course_id).async_execute()
             
             if not getattr(response, 'data', None):
                 return False
 
             # 2. Add version snapshot
             # Count existing versions to determine new version_number
-            versions_resp = client.table("course_versions").select("version_number").eq("course_id", course_id).order("version_number", desc=True).limit(1).execute()
+            versions_resp = await client.table("course_versions").select("version_number").eq("course_id", course_id).order("version_number", desc=True).limit(1).async_execute()
             latest_version = 0
             if getattr(versions_resp, 'data', None):
                 latest_version = versions_resp.data[0]["version_number"]
@@ -257,12 +257,12 @@ class CourseStore:
             # Remove mutable or huge UI-only fields from snapshot if needed, or just insert as-is.
             snapshot_data = course
             
-            client.table("course_versions").insert({
+            await client.table("course_versions").insert({
                 "course_id": course_id,
                 "version_number": new_version,
                 "snapshot_data": snapshot_data,
                 "published_by": admin_id
-            }).execute()
+            }).async_execute()
 
             return True
         except Exception as e:
@@ -272,7 +272,7 @@ class CourseStore:
     async def get_course_versions(self, course_id: str) -> List[dict]:
         client = self.db.get_client()
         try:
-            response = client.table("course_versions").select("*").eq("course_id", course_id).order("version_number", desc=True).execute()
+            response = await client.table("course_versions").select("*").eq("course_id", course_id).order("version_number", desc=True).async_execute()
             return getattr(response, 'data', [])
         except Exception as e:
             log.error("get_course_versions_failed", error=str(e), course_id=course_id)

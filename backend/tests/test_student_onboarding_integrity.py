@@ -1,8 +1,6 @@
 import os
 import uuid
 import pytest
-from httpx import AsyncClient, ASGITransport
-from app.main import app
 from app.routers.auth import get_current_user
 from app.database.supabase_manager import supabase_db
 from app.core.config import settings
@@ -17,11 +15,8 @@ def db_manager():
     return supabase_db
 
 @pytest.fixture
-async def ac():
-    # Use the app instance with the same base URL as other tests
-    from app.main import app
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        yield client
+async def ac(async_client):
+    yield async_client
 
 # --- HELPERS ---
 
@@ -70,8 +65,9 @@ async def setup_test_user(db, email="integrity@test.com", role="student"):
     user = {
         "id": user_id,
         "email": email,
-        "role": role,
+        "role": "student",
         "onboarding_step": 0,
+        "college_id": "inst_123",
         "full_name": "Integrity User"
     }
     db.table("users").insert(user).execute()
@@ -113,7 +109,7 @@ async def test_student_onboarding_integrity_full_flow(ac, db_manager):
             "phone_number": "9876543210",
             "email": "integrity@test.com"
         }
-        res1 = await ac.post("/api/onboarding/personal", json=personal_data)
+        res1 = await ac.post("/api/onboarding/personal", json=personal_data, timeout=10.0)
         assert res1.status_code == 200, f"Step 1 failed: {res1.text}"
         
         # DB Integrity Check: user_data table (JSONB progress)
@@ -130,29 +126,18 @@ async def test_student_onboarding_integrity_full_flow(ac, db_manager):
         res2 = await ac.post("/api/onboarding/enrollment", json=enrollment_data)
         assert res2.status_code == 200, f"Step 2 failed: {res2.text}"
         
-        # DEBUG: Check if batch_id was persisted
         user_after_2 = db.table("users").select("*").eq("id", user_id).execute().data[0]
-        print(f"DEBUG: User after step 2: batch_id={user_after_2.get('batch_id')}, step={user_after_2.get('onboarding_step')}")
         assert user_after_2.get("batch_id") == "batch_123", "Batch ID not persisted"
 
         # --- STEP 3: Subjects ---
-        # DEBUG: Verify courses in DB
-        all_courses = db.table("courses").select("*").execute().data
-        print(f"DEBUG: All courses in DB: {all_courses}")
-        
         batch_id = user_after_2.get("batch_id")
         batch_row = db.table("batches").select("*").eq("id", batch_id).execute().data[0]
-        print(f"DEBUG: Batch for Step 3: {batch_row}")
-        
-        # DEBUG: Check if fetch_one for batch works
         batch_via_fetch_one = await db_manager.fetch_one("batches", {"id": batch_id})
-        print(f"DEBUG: Batch via fetch_one: {batch_via_fetch_one}")
         assert batch_via_fetch_one is not None, "fetch_one failed for batch in test environment"
         
         dept_id_debug = batch_row.get("dept_id")
         semester_debug = batch_row.get("current_semester")
         direct_fetch = db.table("courses").select("*").eq("department_id", dept_id_debug).eq("semester", semester_debug).execute().data
-        print(f"DEBUG: Direct fetch courses: {direct_fetch}")
         assert len(direct_fetch) > 0, "Direct fetch failed in test environment"
         
         subjects_data = {"subject_ids": ["sub1", "sub2"]}

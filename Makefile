@@ -43,9 +43,9 @@ ui-fix:
 report:
 	@echo "📊 Project Integrity Report"
 	@echo "-------------------------"
-	@echo "Tests: passing (100%)"
-	@echo "Security: Audited (v2.0)"
-	@echo "AI Pipeline: Evaluated"
+	@echo "Tests: run \`make test\` or targeted pytest suites for current status"
+	@echo "Security: review migrations + bandit/semgrep output for current status"
+	@echo "AI Pipeline: teacher-verified flow required for student-facing outputs"
 
 monitor:
 	@echo "🌸 Starting Flower Monitoring..."

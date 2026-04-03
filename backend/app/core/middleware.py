@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from jose import jwt, JWTError
 from app.core.config import settings
+from app.core.rbac import normalize_role
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -35,9 +36,9 @@ RBAC_RULES = {
     "/api/super-admin": ["super_admin"],
     "/api/college-admin": ["college_admin", "super_admin"],
     "/api/hod": ["hod", "admin", "super_admin", "college_admin"],
-    "/api/faculty": ["faculty", "hod", "admin", "super_admin"],
-    "/api/teacher": ["teacher", "faculty", "hod", "admin", "super_admin"],
-    "/api/student": ["student", "teacher", "faculty", "hod", "admin", "super_admin"],
+    "/api/faculty": ["teacher", "hod", "admin", "super_admin"],
+    "/api/teacher": ["teacher", "hod", "admin", "super_admin"],
+    "/api/student": ["student", "teacher", "hod", "admin", "super_admin"],
     "/api/parent": ["parent", "admin", "super_admin"],
     "/api/mentor": ["mentor", "admin", "super_admin"],
     "/api/counselor": ["counselor", "admin", "super_admin"],
@@ -94,8 +95,10 @@ class SentinelMiddleware(BaseHTTPMiddleware):
             
             # Consolidate into a list for RBAC check
             all_user_roles = []
-            if user_role: all_user_roles.append(user_role)
-            if isinstance(user_roles, list): all_user_roles.extend(user_roles)
+            if user_role:
+                all_user_roles.append(normalize_role(user_role))
+            if isinstance(user_roles, list):
+                all_user_roles.extend(normalize_role(role) for role in user_roles)
             # Unique roles only
             all_user_roles = list(set(all_user_roles))
             

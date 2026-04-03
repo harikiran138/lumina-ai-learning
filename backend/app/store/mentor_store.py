@@ -16,7 +16,7 @@ class MentorStore:
     async def get_matches(self, mentor_id: str) -> List[Dict[str, Any]]:
         try:
             client = self.db.get_client()
-            response = client.table("mentor_matches").select("*").eq("mentor_id", mentor_id).execute()
+            response = await client.table("mentor_matches").select("*").eq("mentor_id", mentor_id).async_execute()
             return response.data
         except Exception as e:
             log.error("get_mentor_matches_failed", mentor_id=mentor_id, error=str(e))
@@ -29,7 +29,7 @@ class MentorStore:
         try:
             client = self.db.get_client()
             # Note: RLS already filters, but we specify columns for clarity
-            response = client.table("learner_profiles").select("goals, preferences, strengths, weaknesses, metadata").eq("user_id", mentee_id).execute()
+            response = await client.table("learner_profiles").select("goals, preferences, strengths, weaknesses, metadata").eq("user_id", mentee_id).async_execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("get_mentee_profile_failed", mentee_id=mentee_id, error=str(e))
@@ -65,7 +65,7 @@ class MentorStore:
     async def get_sessions(self, mentor_id: str) -> List[Dict[str, Any]]:
         try:
             client = self.db.get_client()
-            response = client.table("mentor_sessions").select("*").eq("mentor_id", mentor_id).order("scheduled_at").execute()
+            response = await client.table("mentor_sessions").select("*").eq("mentor_id", mentor_id).order("scheduled_at").async_execute()
             return response.data
         except Exception as e:
             log.error("get_mentor_sessions_failed", mentor_id=mentor_id, error=str(e))
