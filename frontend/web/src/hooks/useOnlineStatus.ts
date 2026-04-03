@@ -1,6 +1,4 @@
-'use client';
-
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 /**
  * Returns `true` when the browser has a working network connection,
@@ -8,25 +6,23 @@ import { useEffect, useState } from 'react';
  *
  * Special Handling for Local Development:
  * If the application is being accessed via 'localhost' or '127.0.0.1', 
- * this hook will always return `true` to prevent distracting "Offline" 
- * banners when global internet connectivity is missing but the local 
- * dev server is clearly reachable.
+ * this hook will always return `true` to avoid "Offline" banners 
+ * during local development when internet/VPN might be disconnected.
  */
 export function useOnlineStatus(): boolean {
   const [isOnline, setIsOnline] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    
-    // Check if we are on localhost
     const hostname = window.location.hostname;
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-    
-    if (isLocalhost) return true;
-    if (typeof navigator === 'undefined') return true;
-    return navigator.onLine;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+    return typeof navigator !== 'undefined' ? navigator.onLine : true;
   });
 
+  // Track the last stable state to avoid rapid flickering
+  const lastStableRef = useRef(isOnline);
+
   useEffect(() => {
-    // Re-check for localhost in the effect as well
+    if (typeof window === 'undefined') return;
+
     const hostname = window.location.hostname;
     const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
     
@@ -35,20 +31,57 @@ export function useOnlineStatus(): boolean {
       return;
     }
 
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    const updateStatus = (status: boolean) => {
+      if (lastStableRef.current !== status) {
+        lastStableRef.current = status;
+        setIsOnline(status);
+      }
+    };
+
+    const verifyBackend = async () => {
+      try {
+        // Use a relative path to the health endpoint
+        // This ensures it works regardless of which proxy/base path is used
+        const response = await fetch('/api/health', { 
+          method: 'HEAD', // Lightest possible check
+          cache: 'no-store'
+        });
+
+        // ✅ Server reachable → ONLINE (even if 500, we have network connectivity)
+        if (response.status >= 200 && response.status < 600) {
+          updateStatus(true);
+        }
+      } catch (error) {
+        // ❌ Only here it's truly offline (network error or timeout)
+        // We only set offline if the browser also reports offline to be safe
+        if (navigator.onLine === false) {
+          updateStatus(false);
+        }
+      }
+    };
+
+    const handleOnline = () => {
+      updateStatus(true);
+      verifyBackend();
+    };
+    
+    const handleOffline = () => {
+      updateStatus(false);
+    };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Sync with actual state only if not on localhost
-    if (!isLocalhost) {
-      setIsOnline(navigator.onLine);
-    }
+    // Initial check
+    verifyBackend();
+
+    // Periodically re-verify every 30s
+    const checkInterval = setInterval(verifyBackend, 30000);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      clearInterval(checkInterval);
     };
   }, []);
 

@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
+import logging
 
 from .auth import get_current_user
 from app.database.supabase_manager import supabase_db
@@ -16,6 +17,7 @@ from app.store.user_store import UserStore
 from app.core.rbac import normalize_role
 
 router = APIRouter()
+logger = logging.getLogger("uvicorn.error")
 
 EMAIL_REGEX = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 PHONE_DIGIT_REGEX = re.compile(r"\D")
@@ -665,22 +667,42 @@ async def save_student_preferences(
 
 
 @router.get("/status")
-async def get_onboarding_status(current_user: dict = Depends(get_current_user)):
-    user_id = current_user.get("id")
-    step = current_user.get("onboarding_step", 0) or 0
-    db = get_scoped_db(current_user)
-    existing = await db.fetch_one("user_data", {"user_id": user_id})
-    progress = (existing or {}).get("progress") or {}
+async def get_onboarding_status(
+    current_user: dict = Depends(get_current_user),
+):
+    try:
+        user_id = current_user.get("id")
+        db = get_scoped_db(current_user)
+        # Check if they have existing data
+        existing = await db.fetch_one("user_data", {"user_id": user_id})
+        
+        step = current_user.get("onboarding_step", 0) or 0
+        status = "not_started"
+        if step > 0:
+            status = "in_progress"
+        if step >= 5:
+            status = "completed"
 
-    return {
-        "step": step,
-        "role": normalize_role(current_user.get("role")),
-        "isComplete": step >= 5,
-        "collegeId": current_user.get("college_id") or current_user.get("institution_id"),
-        "deptId": current_user.get("dept_id") or current_user.get("department_id"),
-        "batchId": current_user.get("batch_id"),
-        "progress": progress,
-    }
+        progress = {}
+        if existing and "progress" in existing:
+            progress = existing["progress"]
+
+        return {
+            "step": step,
+            "role": normalize_role(current_user.get("role")),
+            "isComplete": step >= 5,
+            "progress": progress,
+            "status": status,
+        }
+    except Exception as e:
+        logger.error(f"error_fetching_onboarding_status: {e}", exc_info=True)
+        # Fail-safe: Never return 500
+        return {
+            "status": "not_started",
+            "step": 0,
+            "isComplete": False,
+            "progress": {}
+        }
 
 
 @router.patch("/step")
