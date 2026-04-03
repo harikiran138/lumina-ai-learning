@@ -62,6 +62,7 @@ def _set_session_cookies(response: Response, user: dict):
         max_age=int(refresh_token_expires.total_seconds()),
         path="/",
     )
+    return access_token, refresh_token
 
 
 def default_onboarding_state(role: str = "student") -> Dict[str, Any]:
@@ -728,8 +729,10 @@ async def save_student_preferences(
     )
     # Refresh session cookies to update onboarding status in JWT
     updated_user = await UserStore(db=db).get_user_by_id(user_id)
+    access_token = None
+    refresh_token = None
     if updated_user:
-        _set_session_cookies(response, updated_user)
+        access_token, refresh_token = _set_session_cookies(response, updated_user)
 
     return {
         "step": 5,
@@ -737,6 +740,8 @@ async def save_student_preferences(
         "complete": True,
         "programLinked": bool(program_id),
         "subjectCount": len(subject_ids),
+        "accessToken": access_token,
+        "refreshToken": refresh_token,
     }
 
 
@@ -977,7 +982,9 @@ async def complete_onboarding(
         db = get_scoped_db(current_user)
         updated_user = await UserStore(db=db).get_user_by_id(user_id)
         if updated_user:
-            _set_session_cookies(response, updated_user)
+            access_token, refresh_token = _set_session_cookies(response, updated_user)
+            result["accessToken"] = access_token
+            result["refreshToken"] = refresh_token
             
     return result
 

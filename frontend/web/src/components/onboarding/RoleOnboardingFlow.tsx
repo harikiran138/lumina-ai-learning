@@ -138,7 +138,7 @@ export default function RoleOnboardingFlow({ role }: RoleOnboardingFlowProps) {
         await api.completeOnboarding();
         clearSnapshot(role);
         toast.success(`${config.label} completed`);
-        router.push(getRoleHome(role));
+        window.location.href = getRoleHome(role);
         return;
       }
 

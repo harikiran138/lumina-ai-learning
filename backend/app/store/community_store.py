@@ -17,7 +17,7 @@ class CommunityStore:
         try:
             client = self.db.get_client()
             # Try community_messages table, fallback to empty list if not exists
-            response = client.table("community_messages").select("*, users(name, full_name, avatar_url)").order("created_at", desc=True).limit(limit).execute()
+            response = await client.table("community_messages").select("*, users(name, full_name, avatar_url)").order("created_at", desc=True).limit(limit).async_execute()
             return response.data or []
         except Exception as e:
             log.warning("community_fetch_failed", error=str(e))

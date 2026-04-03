@@ -64,7 +64,7 @@ class InstitutionStore:
             response = self.db.table("institutions").update({
                 "onboarding_status": status,
                 "updated_at": datetime.utcnow().isoformat()
-            }).eq("id", inst_id).execute()
+            }).eq("id", inst_id).async_execute()
             
             if response.data:
                 log.info("institution_status_updated", id=inst_id, status=status)
@@ -157,14 +157,14 @@ class InstitutionStore:
             if data.get("program_id"):
                 query = query.eq("program_id", data["program_id"])
 
-            existing = query.limit(1).execute()
+            existing = query.limit(1).async_execute()
             if existing.data:
                 sid = existing.data[0]["id"]
                 data["updated_at"] = datetime.utcnow().isoformat()
-                res = self.db.table("stakeholders").update(data).eq("id", sid).execute()
+                res = await self.db.table("stakeholders").update(data).eq("id", sid).async_execute()
                 return res.data[0] if res.data else existing.data[0]
 
-            res = self.db.table("stakeholders").insert(data).execute()
+            res = await self.db.table("stakeholders").insert(data).async_execute()
             
             # Logic Update: If an institution is linked for the first time, progress its onboarding status
             if data.get("institution_id"):

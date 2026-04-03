@@ -99,18 +99,18 @@ export default function OnboardingPage() {
 
   const routeByRole = (r: Role) => {
     if (r === "super_admin") {
-      router.push("/admin");
+      window.location.href = "/admin";
       return;
     }
     if (r === "college_admin") {
-      router.push("/college");
+      window.location.href = "/college";
       return;
     }
     if (r === "hod") {
-      router.push("/hod");
+      window.location.href = "/hod";
       return;
     }
-    router.push(getRoleHome(r));
+    window.location.href = getRoleHome(r);
   };
 
   const handleSaveStep = async (handler: () => Promise<void>) => {

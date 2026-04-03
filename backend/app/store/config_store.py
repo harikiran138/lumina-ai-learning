@@ -25,7 +25,7 @@ class ConfigStore:
         try:
             client = self.db.get_client()
             # Try to fetch from table. Each row is a key-value pair.
-            response = client.table(self.config_table).select("*").execute()
+            response = await client.table(self.config_table).select("*").async_execute()
             
             config_dict = {}
             if response.data:
@@ -58,7 +58,7 @@ class ConfigStore:
                 self._cache[k] = v
             
             # Bulk upsert
-            client.table(self.config_table).upsert(rows, on_conflict="key").execute()
+            await client.table(self.config_table).upsert(rows, on_conflict="key").async_execute()
             return True
         except Exception as e:
             log.error("update_bulk_config_failed", error=str(e))

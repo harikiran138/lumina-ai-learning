@@ -36,7 +36,7 @@ class ContentCreatorStore:
     async def get_blueprints(self, creator_id: str) -> List[Dict[str, Any]]:
         try:
             client = self.db.get_client()
-            response = client.table("course_blueprints").select("*").eq("creator_id", creator_id).execute()
+            response = await client.table("course_blueprints").select("*").eq("creator_id", creator_id).async_execute()
             return response.data
         except Exception as e:
             log.error("get_blueprints_failed", creator_id=creator_id, error=str(e))

@@ -56,7 +56,7 @@ class UnitStore:
                 .select("*")
                 .eq("teacher_id", teacher_id)
                 .order("created_at", desc=True)
-                .execute()
+                .async_execute()
             )
             return response.data or []
         except Exception as exc:
@@ -105,7 +105,7 @@ class UnitStore:
                 .select("*")
                 .eq("unit_id", unit_id)
                 .order("created_at", desc=False)
-                .execute()
+                .async_execute()
             )
             return response.data or []
         except Exception as exc:
@@ -116,10 +116,10 @@ class UnitStore:
         client = self.db.get_client()
         now = datetime.utcnow().isoformat()
 
-        client.table("topic_assets").delete().eq("unit_id", unit_id).execute()
-        client.table("unit_processing_jobs").delete().eq("unit_id", unit_id).eq("job_type", "topic_enrichment").execute()
-        client.table("unit_topics").delete().eq("unit_id", unit_id).execute()
-        client.table("unit_modules").delete().eq("unit_id", unit_id).execute()
+        await client.table("topic_assets").delete().eq("unit_id", unit_id).async_execute()
+        await client.table("unit_processing_jobs").delete().eq("unit_id", unit_id).eq("job_type", "topic_enrichment").async_execute()
+        await client.table("unit_topics").delete().eq("unit_id", unit_id).async_execute()
+        await client.table("unit_modules").delete().eq("unit_id", unit_id).async_execute()
 
         module_rows: List[dict] = []
         topic_rows: List[dict] = []
@@ -137,7 +137,7 @@ class UnitStore:
                         "updated_at": now,
                     }
                 )
-                .execute()
+                .async_execute()
             )
             if not module_response.data:
                 continue
@@ -162,7 +162,7 @@ class UnitStore:
                             "updated_at": now,
                         }
                     )
-                    .execute()
+                    .async_execute()
                 )
                 if topic_response.data:
                     topic_rows.append(topic_response.data[0])
@@ -180,7 +180,7 @@ class UnitStore:
                 .select("*")
                 .eq("unit_id", unit_id)
                 .order("sort_order", desc=False)
-                .execute()
+                .async_execute()
             )
             return response.data or []
         except Exception as exc:
@@ -195,7 +195,7 @@ class UnitStore:
     async def replace_generated_assets(self, unit_id: str, topic_id: str, assets: List[Dict[str, Any]]) -> List[dict]:
         client = self.db.get_client()
         now = datetime.utcnow().isoformat()
-        client.table("topic_assets").delete().eq("topic_id", topic_id).eq("is_generated", True).execute()
+        await client.table("topic_assets").delete().eq("topic_id", topic_id).eq("is_generated", True).async_execute()
 
         inserted: List[dict] = []
         for asset in assets:
@@ -217,7 +217,7 @@ class UnitStore:
                         "updated_at": now,
                     }
                 )
-                .execute()
+                .async_execute()
             )
             if response.data:
                 inserted.append(response.data[0])
@@ -231,7 +231,7 @@ class UnitStore:
                 .select("*")
                 .eq("unit_id", unit_id)
                 .order("created_at", desc=False)
-                .execute()
+                .async_execute()
             )
             return response.data or []
         except Exception as exc:
@@ -309,7 +309,7 @@ class UnitStore:
                 .select("*")
                 .eq("unit_id", unit_id)
                 .order("sort_order", desc=False)
-                .execute()
+                .async_execute()
             )
             return response.data or []
         except Exception as exc:

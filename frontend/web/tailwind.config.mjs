@@ -43,9 +43,9 @@ export default {
           foreground: "hsl(var(--popover-foreground) / <alpha-value>)",
         },
         surface: {
-          800: "#172033",
-          900: "#0f172a",
-          950: "#020617",
+          800: "#18181b",
+          900: "#121214",
+          950: "#08080a",
         },
         lumina: {
           primary: "#f59e0b",
@@ -53,7 +53,7 @@ export default {
           highlight: "#f59e0b",
           accent: "#f97316",
           "accent-dark": "#ea580c",
-          dark: "#020617",
+          dark: "#050505",
           light: "#f8fafc",
           gray: "#94a3b8",
         },
