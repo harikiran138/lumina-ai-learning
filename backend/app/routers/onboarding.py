@@ -202,9 +202,6 @@ async def _persist_progress(
         "onboarding_step": next_step,
         "updated_at": datetime.utcnow().isoformat(),
     }
-    if completed:
-        critical["onboarding_completed"] = True
-
     step_result = await db.update("users", critical, {"id": user_id})
     if step_result is None:
         # PostgREST may return no rows when Prefer: return=representation is
@@ -765,6 +762,10 @@ async def save_student_preferences(
 ):
     user_id = _require_student(current_user)
     db = get_scoped_db(current_user)
+    
+    # 1. Add debug logs to print incoming request data
+    logger.debug(f"save_student_preferences_start | user_id={user_id} payload={payload.dict()}")
+
     try:
         user_record = await _require_step_access(user_id, 5, db)
     except HTTPException:
@@ -773,13 +774,22 @@ async def save_student_preferences(
         logger.error(f"save_student_preferences_step_access_error | user_id={user_id} error={str(e)}")
         raise HTTPException(status_code=500, detail="Failed to load onboarding state. Please try again.")
 
+    # 2. Extract and Validate
     learning_styles = [str(item).strip() for item in (payload.learning_styles or []) if str(item).strip()]
-    if len(learning_styles) < 1:
+    if not learning_styles:
         raise HTTPException(status_code=400, detail="Select at least one learning preference")
 
     self_assessment = (payload.self_assessment or "").strip().lower()
     if self_assessment not in {"beginner", "intermediate", "advanced"}:
         raise HTTPException(status_code=400, detail="Self assessment must be Beginner, Intermediate, or Advanced")
+
+    # 3. Normalize values
+    # learning_style: lowercase, replace "-" with "_"
+    normalized_styles = [s.lower().replace("-", "_") for s in learning_styles]
+    primary_style = normalized_styles[0]
+    
+    # level: lowercase
+    level = self_assessment
 
     progress = await _get_progress_record(user_id, db)
     step_three = progress.get("step_3") or {}
@@ -845,9 +855,10 @@ async def save_student_preferences(
     year_of_study = max(1, ((int(batch.get("current_semester") or 1) + 1) // 2))
     now = datetime.utcnow().isoformat()
 
+    # 4. Global Try/Catch for DB updates
     try:
         if program_id:
-            enrollment_upsert = await db.upsert(
+            await db.upsert(
                 "student_enrollments",
                 {
                     "student_id": user_id,
@@ -856,14 +867,11 @@ async def save_student_preferences(
                     "class_id": (selected_class or {}).get("id") or (enrollment_record or {}).get("class_id"),
                     "year_of_study": year_of_study,
                     "status": "active",
-                    "updated_at": now,
                 },
                 on_conflict="student_id, program_id",
             )
-            if not enrollment_upsert:
-                raise HTTPException(status_code=500, detail="Failed to update student enrollment")
 
-        score = _self_assessment_score(self_assessment)
+        score = _self_assessment_score(level)
         await db.delete("student_subjects", {"student_id": user_id}, permanent=True)
         for subject_id in subject_ids:
             await db.insert("student_subjects", {"student_id": user_id, "subject_id": subject_id})
@@ -886,6 +894,8 @@ async def save_student_preferences(
                     "updated_at": now,
                 },
             )
+            
+            # Safe upsert for enrollments (removed updated_at to prevent PGRST204)
             await db.upsert(
                 "enrollments",
                 {
@@ -897,14 +907,12 @@ async def save_student_preferences(
                         "percentage": 0,
                         "mastery": round(score * 100, 2),
                         "onboardingSource": "student_onboarding_v2",
-                    },
-                    "updated_at": now,
+                    }
                 },
                 on_conflict="student_id, course_id",
             )
-    except HTTPException:
-        raise
     except Exception as e:
+        # 5. Print actual error and avoid keyword args in logger
         logger.error(f"save_student_preferences_db_error | user_id={user_id} error={str(e)}")
         raise HTTPException(status_code=500, detail="Failed to save preferences. Please try again.")
 
@@ -914,28 +922,30 @@ async def save_student_preferences(
             "user_id": user_id,
             "role": "student",
             "goals": ["complete_onboarding"],
-            "learning_style": learning_styles[0],
+            "learning_style": primary_style,
             "preferences": {
-                "learning_styles": learning_styles,
-                "self_assessment": self_assessment,
+                "learning_styles": normalized_styles,
+                "self_assessment": level,
             },
-            "status": "active",
             "metadata": {
                 "onboarding_version": "student_v2",
                 "selected_subject_ids": subject_ids,
             },
-            "updated_at": now,
         },
         on_conflict="user_id",
     )
     if not learner_profile:
+        logger.error(f"learner_profile_init_failed | user_id={user_id}")
         raise HTTPException(status_code=500, detail="Failed to initialize learner profile")
 
     step_data = {
-        "learningStyles": learning_styles,
-        "selfAssessment": self_assessment,
+        "learningStyles": normalized_styles,
+        "selfAssessment": level,
         "selectedSubjectIds": subject_ids,
+        "learning_style": primary_style, # For users table update in _persist_progress
+        "level": level                   # For users table update in _persist_progress
     }
+    
     await _persist_progress(
         user_id,
         5,
@@ -948,6 +958,7 @@ async def save_student_preferences(
         },
         completed=True,
     )
+
     # Refresh session cookies to update onboarding status in JWT
     updated_user = await UserStore(db=db).get_user_by_id(user_id)
     access_token = None
@@ -955,9 +966,10 @@ async def save_student_preferences(
     if updated_user:
         access_token, refresh_token = _set_session_cookies(response, updated_user)
 
+    # 6. Ensure JSON response with success: True
     return {
-        "step": 5,
         "success": True,
+        "step": 5,
         "complete": True,
         "programLinked": bool(program_id),
         "subjectCount": len(subject_ids),

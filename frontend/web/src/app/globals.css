@@ -302,22 +302,14 @@ select {
     top: 0;
     left: 0;
     bottom: 0;
-    width: 5rem;
     z-index: 50;
-    transition: width 260ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     background-color: var(--lumina-sidebar);
     border-right: 1px solid rgba(255, 255, 255, 0.05);
     box-shadow: 1px 0 3px rgba(0, 0, 0, 0.3);
     overflow: hidden;
-  }
-
-  /* Expanded on hover (desktop only) */
-  @media (min-width: 1024px) {
-    .lumina-sidebar:hover {
-      width: 16rem;
-    }
   }
 
   /* Mobile overlay: fill full width when open */
@@ -345,18 +337,10 @@ select {
 
   .sidebar-logo-full,
   .sidebar-header .text-lumina-highlight {
-    /* Hide "umina" text and "AI" badge when collapsed */
-    opacity: 0;
-    max-width: 0;
+    /* Visibility controlled by React, CSS provides baseline transitions */
     overflow: hidden;
     transition: opacity 200ms ease, max-width 260ms ease;
     white-space: nowrap;
-  }
-
-  .lumina-sidebar:hover .sidebar-logo-full,
-  .lumina-sidebar:hover .sidebar-header .text-lumina-highlight {
-    opacity: 1;
-    max-width: 8rem;
   }
 
   /* ── Nav items ── */
@@ -382,18 +366,11 @@ select {
 
   /* Label text — hidden when sidebar is collapsed */
   .sidebar-text {
-    opacity: 0;
-    max-width: 0;
     overflow: hidden;
     transition: opacity 200ms ease, max-width 260ms ease;
     white-space: nowrap;
     flex: 1;
     min-width: 0;
-  }
-
-  .lumina-sidebar:hover .sidebar-text {
-    opacity: 1;
-    max-width: 10rem;
   }
 
   /* Tooltip — shown only in collapsed state on hover */
@@ -418,15 +395,7 @@ select {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   }
 
-  /* Show tooltip only when sidebar is NOT expanded */
-  .lumina-sidebar:not(:hover) .sidebar-nav-item:hover .sidebar-tooltip {
-    opacity: 1;
-  }
-
-  /* Hide tooltip when sidebar is expanded (label is already visible) */
-  .lumina-sidebar:hover .sidebar-tooltip {
-    display: none;
-  }
+  /* Tooltip logic removed from CSS as it's now handled by React classes */
 
   /* ── Bottom section ── */
   .sidebar-bottom {

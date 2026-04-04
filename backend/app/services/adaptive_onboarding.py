@@ -1086,7 +1086,7 @@ class AdaptiveOnboardingEngine:
         # 2. Update master user flag
         await self.db.update(
             "users",
-            {"onboarding_completed": True, "onboarding_step": 5},
+            {"onboarding_step": 5},
             {"id": user_id}
         )
 

@@ -200,6 +200,8 @@ _ALLOWED_CORS_ORIGINS = {
     "https://lumina-ai-blond.vercel.app",
     "https://lumina-r14oxh9hj-chepuri-hari-kirans-projects.vercel.app",
     "https://lumina-ai-learning.vercel.app",
+    "http://10.49.71.79:3000",
+    "http://10.49.71.79:8000",
 }
 _ALLOWED_CORS_ORIGIN_REGEX = r"^https://lumina-[a-z0-9-]+\.vercel\.app$"
 
@@ -432,7 +434,8 @@ app.add_middleware(SentinelMiddleware)
 # SECURITY: TrustedHostMiddleware
 allowed_hosts = [
     "localhost", "127.0.0.1", "::1", "0.0.0.1", "testserver", "*.vercel.app",
-    "lumina-backend.onrender.com", "localhost:8000", "127.0.0.1:8000", "[::1]:8000"
+    "lumina-backend.onrender.com", "localhost:8000", "127.0.0.1:8000", "[::1]:8000",
+    "10.49.71.79", "10.49.71.79:8000"
 ]
 if os.getenv("ENVIRONMENT") == "production":
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)

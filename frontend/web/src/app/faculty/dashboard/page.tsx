@@ -214,6 +214,83 @@ function Panel({
   );
 }
 
+function GradingSection({ assignments }: { assignments: TeacherAssignmentCard[] }) {
+  const needsGrading = assignments.filter((a) => a.pendingGrading > 0);
+
+  if (needsGrading.length === 0) return null;
+
+  return (
+    <Panel
+      title="Grading & Feedback"
+      subtitle="Quickly review and grade pending student submissions."
+    >
+      <div className="space-y-4">
+        {needsGrading.slice(0, 4).map((assignment) => (
+          <div
+            key={assignment.id}
+            className="flex items-center justify-between p-5 rounded-3xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition-all duration-300 group"
+          >
+            <div className="flex items-center gap-5">
+              <div
+                className={cn(
+                  "p-3 rounded-2xl",
+                  assignment.status === "overdue"
+                    ? "bg-red-500/10 text-red-400"
+                    : "bg-lumina-highlight/10 text-lumina-highlight",
+                )}
+              >
+                <FileText className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-white flex items-center gap-2 text-lg">
+                  {assignment.title}
+                  {assignment.status === "overdue" && (
+                    <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold uppercase tracking-widest">
+                      Overdue
+                    </span>
+                  )}
+                </h4>
+                <p className="text-sm text-gray-400 flex items-center gap-1.5 mt-0.5">
+                  <BookOpen className="w-4 h-4" />
+                  {assignment.courseName}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-8">
+              <div className="text-right">
+                <p className="text-2xl font-bold text-white tracking-tight">
+                  {assignment.pendingGrading}
+                </p>
+                <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">
+                  Submissions
+                </p>
+              </div>
+              <Link
+                href={assignment.href}
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-lumina-highlight text-black text-sm font-bold hover:brightness-110 transition-all shadow-lg shadow-lumina-highlight/20 group-hover:translate-x-1"
+              >
+                Grade Now
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        ))}
+
+        {needsGrading.length > 4 && (
+          <Link
+            href="/faculty/gradebook"
+            className="flex items-center justify-center gap-2 w-full py-4 rounded-3xl border border-dashed border-white/20 text-gray-400 text-sm hover:bg-white/5 hover:text-white transition-all font-semibold"
+          >
+            View all {needsGrading.length} grading tasks
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        )}
+      </div>
+    </Panel>
+  );
+}
+
 function QuickAction({
   href,
   icon: Icon,
@@ -468,6 +545,9 @@ export default function TeacherDashboard() {
           color="gold"
         />
       </div>
+
+      {/* Dedicated Section: Grading & Feedback */}
+      <GradingSection assignments={assignments} />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
         <Panel

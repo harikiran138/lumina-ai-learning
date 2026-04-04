@@ -300,6 +300,8 @@ class UserStore:
             "gender",
             "emergency_contact",
             "parent_email",
+            "learning_style",
+            "level",
         }
         clean_updates = {k: v for k, v in updates.items() if k not in restricted and k in valid_columns}
         clean_updates.setdefault("updated_at", datetime.utcnow().isoformat())
@@ -362,6 +364,8 @@ class UserStore:
             "gender",
             "emergency_contact",
             "parent_email",
+            "learning_style",
+            "level",
         }
         clean_updates = {k: v for k, v in updates.items() if k not in restricted and k in valid_columns}
         clean_updates.setdefault("updated_at", datetime.utcnow().isoformat())

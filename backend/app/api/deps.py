@@ -130,19 +130,19 @@ async def get_current_hod(current_user: dict = Depends(get_current_active_user))
 
 async def get_current_faculty(current_user: dict = Depends(get_current_active_user)) -> dict:
     role = _ensure_valid_role(current_user)
-    if role not in {"teacher", "hod", "college_admin", "super_admin"}:
+    if role not in {"faculty", "teacher", "hod", "college_admin", "super_admin"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Faculty privileges required")
-    
+
     dept_id = current_user.get("dept_id") or current_user.get("department_id")
-    if not dept_id and role != "super_admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No department_id associated with this user")
-        
+    if not dept_id and role not in {"super_admin", "hod", "college_admin"}:
+        logger.warning(f"faculty_no_dept_id: user_id={current_user.get('id')}")
+
     current_user["resolved_department_id"] = dept_id
     return current_user
 
 async def get_current_teacher(current_user: dict = Depends(get_current_active_user)) -> dict:
     role = _ensure_valid_role(current_user)
-    if role not in {"teacher", "hod", "college_admin", "super_admin"}:
+    if role not in {"faculty", "teacher", "hod", "college_admin", "super_admin"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Teacher privileges required")
     return current_user
 
