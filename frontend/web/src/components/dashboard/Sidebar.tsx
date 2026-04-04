@@ -214,35 +214,37 @@ export default function Sidebar({
               href={item.href}
               onClick={onClose}
               className={cn(
-                "flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group relative",
+                "flex items-center p-3 rounded-xl transition-all duration-300 group relative min-w-0",
+                isHovered ? "gap-3 px-4" : "justify-center px-0",
                 isActive
                   ? "bg-highlight-gold/20 text-highlight-gold border border-highlight-gold/30 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                   : "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200"
               )}
             >
-              <item.icon className={cn("w-6 h-6 flex-shrink-0", isActive ? "text-highlight-gold" : "text-gray-500 group-hover:text-gray-300")} />
+              <item.icon className={cn(
+                "w-5 h-5 shrink-0 transition-all duration-300", 
+                isActive ? "text-highlight-gold" : "text-gray-500 group-hover:text-gray-300"
+              )} />
               <span className={cn(
-                "font-semibold text-sm transition-all duration-300 overflow-hidden whitespace-nowrap",
+                "font-semibold text-sm transition-all duration-300 overflow-hidden whitespace-nowrap truncate",
                 isHovered ? "opacity-100 max-w-[200px]" : "opacity-0 max-w-0"
               )}>
                 {item.name}
               </span>
-              {!isHovered && (
-                <span className="absolute left-16 bg-black/90 border border-white/10 px-2 py-1 rounded text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap shadow-xl">
-                  {item.name}
-                </span>
-              )}
             </Link>
           );
         })}
       </nav>
 
       {/* USER & LOGOUT */}
-      <div className="border-t border-white/5 p-4 space-y-2">
+      <div className="border-t border-white/5 p-4 space-y-2 shrink-0">
         {user && (
           <Link
             href={profileHref}
-            className="flex items-center gap-3 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all overflow-hidden"
+            className={cn(
+              "flex items-center rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-300 overflow-hidden",
+              isHovered ? "p-3 gap-3" : "p-2 justify-center"
+            )}
           >
             <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
               <img
@@ -256,7 +258,7 @@ export default function Sidebar({
               isHovered ? "opacity-100 max-w-[150px]" : "opacity-0 max-w-0"
             )}>
               <p className="text-xs font-bold text-white truncate">{user.name}</p>
-              <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
+              <p className="text-[10px] text-gray-400 truncate tracking-tight">{user.email}</p>
             </div>
           </Link>
         )}
@@ -264,22 +266,17 @@ export default function Sidebar({
         <button
           onClick={handleLogout}
           className={cn(
-            "flex items-center gap-4 w-full py-3 px-3 rounded-xl text-xs font-bold text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition-colors group relative",
-            !isHovered && "justify-center"
+            "flex items-center w-full py-3 rounded-xl text-xs font-bold text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 group relative",
+            isHovered ? "px-4 gap-4" : "justify-center px-0"
           )}
         >
-          <LogOut className="w-5 h-5 shrink-0" />
+          <LogOut className="w-4 h-4 shrink-0 transition-all duration-300" />
           <span className={cn(
             "transition-all duration-300 overflow-hidden whitespace-nowrap",
-            isHovered ? "opacity-100 max-w-[150px]" : "opacity-0 max-w-0"
+            isHovered ? "opacity-100 max-w-[100px]" : "opacity-0 max-w-0"
           )}>
             Sign Out
           </span>
-          {!isHovered && (
-            <span className="absolute left-16 bg-black/90 border border-white/10 px-2 py-1 rounded text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap shadow-xl">
-              Sign Out
-            </span>
-          )}
         </button>
       </div>
     </aside>

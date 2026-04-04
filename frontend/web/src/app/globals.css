@@ -1,9 +1,55 @@
 @import "tailwindcss";
-@config "../../tailwind.config.mjs";
 
-@source "../../**/*.{js,ts,jsx,tsx,mdx,html}";
-@source "../../../components/**/*.{js,ts,jsx,tsx,mdx,html}";
-@source "../../../lib/**/*.{js,ts,jsx,tsx,mdx,html}";
+@theme {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-lumina-primary: #f59e0b;
+  --color-lumina-secondary: #fbbf24;
+  --color-lumina-highlight: #f59e0b;
+  --color-lumina-accent: #f97316;
+  --color-lumina-accent-dark: #ea580c;
+  --color-lumina-dark: #050505;
+  --color-lumina-light: #f8fafc;
+  --color-lumina-gray: #94a3b8;
+
+  --radius-xl: calc(var(--radius) + 0.25rem);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 0.125rem);
+
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-display), var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+}
+
 
 /* Font stack: Inter and Space Grotesk are loaded from Google Fonts in production.
    System fonts below serve as fallbacks when the CDN is unreachable. */

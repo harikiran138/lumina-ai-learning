@@ -1,3 +1,4 @@
+"use client";
 import { useState, type ReactNode } from "react";
 
 import { BGPattern } from "@/components/ui/BGPattern";

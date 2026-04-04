@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "AI-powered learning management system",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
+    "turbopack": "next dev --turbo",
     "clean": "rm -rf .next node_modules/.cache",
     "build": "next build",
     "build:analyze": "ANALYZE=true next build",
