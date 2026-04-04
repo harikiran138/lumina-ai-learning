@@ -1157,13 +1157,13 @@ export class RealAPI {
     const res = await this.fetchAuthorized(path);
     if (!res.ok) return { stats: [], alerts: [], feed: [], meta: {} };
     const data = await res.json();
-    return {
+    const normalized = {
       stats: Array.isArray(data?.stats) ? data.stats : [],
       alerts: Array.isArray(data?.alerts) ? data.alerts : [],
       feed: Array.isArray(data?.feed) ? data.feed : [],
       meta: data?.meta || {},
-      ...data
     };
+    return { ...data, ...normalized };
   }
 
   async getAdminQueueHealth(): Promise<any> {

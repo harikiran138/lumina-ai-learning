@@ -6,12 +6,12 @@ import { BGPattern } from "@/components/ui/BGPattern";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { useState } from "react";
 import { useAuthStore, useIsAuthLoading } from "@/store/useAuthStore";
+import { cn } from "@/lib/utils";
 
 export default function CollegeLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  // Use the global store — AuthProvider already hydrates this from the backend.
-  // This replaces the previous local api.getCurrentUser() useEffect which
-  // was creating a redundant, racy second API call.
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+  
   const { user } = useAuthStore();
   const isAuthLoading = useIsAuthLoading();
 
@@ -24,7 +24,7 @@ export default function CollegeLayout({ children }: { children: React.ReactNode 
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-black text-gray-100">
+    <div className="min-h-screen relative overflow-hidden bg-black text-gray-100 uppercase-sidebar-logic">
       <BGPattern
         variant="grid"
         size={32}
@@ -32,10 +32,17 @@ export default function CollegeLayout({ children }: { children: React.ReactNode 
         className="fixed inset-0 z-0 pointer-events-none"
       />
 
-      <CollegeSidebar />
+      <CollegeSidebar 
+        isHovering={isSidebarHovered}
+        onHoverChange={setIsSidebarHovered}
+      />
+      
       <TopNav
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:left-24 transition-all duration-500"
+        className={cn(
+          "transition-all duration-300 ease-in-out",
+          isSidebarHovered ? "lg:left-72" : "lg:left-24"
+        )}
         user={
           user
             ? {
@@ -55,7 +62,10 @@ export default function CollegeLayout({ children }: { children: React.ReactNode 
         />
       )}
 
-      <main className="lg:ml-24 pt-20 min-h-screen transition-all duration-500">
+      <main className={cn(
+        "pt-20 min-h-screen transition-all duration-300 ease-in-out",
+        isSidebarHovered ? "lg:ml-72" : "lg:ml-24"
+      )}>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Breadcrumb />
           {children}

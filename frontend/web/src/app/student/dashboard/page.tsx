@@ -90,28 +90,46 @@ export default function StudentDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<any>(null);
 
+  const loadDashboard = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await api.getDashboardData("student");
+      setDashboardData(data);
+    } catch (loadError: any) {
+      console.error("student_dashboard_load_failed", loadError);
+      setError(loadError?.message || "An error occurred while loading the dashboard.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        const data = await api.getDashboardData("student");
-        console.log("Dashboard data:", data);
-        setDashboardData(data);
-      } catch (loadError: any) {
-        console.error("student_dashboard_load_failed", loadError);
-        setError(loadError?.message || "An error occurred while loading the dashboard.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadDashboard();
   }, []);
 
+  const getStatValue = (label: string, fallback = "0") => {
+    if (!Array.isArray(dashboardData?.stats)) return fallback;
+    return dashboardData.stats.find((s: any) => s.label === label)?.value || fallback;
+  };
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="relative">
-          <div className="absolute inset-0 bg-lumina-highlight/20 rounded-full blur-2xl animate-pulse" />
-          <div className="relative animate-spin rounded-full h-16 w-16 border-b-2 border-lumina-highlight" />
+      <div className="flex flex-col items-center justify-center min-h-[70vh] font-mono">
+        <div className="relative w-24 h-24 mb-12">
+          <div className="absolute inset-0 bg-lumina-highlight/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute inset-0 border-2 border-lumina-highlight/30 rounded-full animate-[ping_3s_infinite]" />
+          <div className="relative h-full w-full rounded-full border-t-2 border-lumina-highlight animate-spin flex items-center justify-center">
+             <Bot className="w-8 h-8 text-lumina-highlight animate-pulse" />
+          </div>
+        </div>
+        <div className="space-y-3 text-center">
+            <p className="text-lumina-highlight text-sm font-black uppercase tracking-[0.3em] animate-pulse">Initializing Terminal...</p>
+            <div className="flex flex-col gap-1 text-[10px] text-gray-500 uppercase tracking-widest font-black opacity-40">
+                <p className="animate-[fade-in_1s_ease-out_forwards]">Establishing neural link...</p>
+                <p className="animate-[fade-in_1s_ease-out_0.2s_forwards] opacity-0">Decrypting learner profile...</p>
+                <p className="animate-[fade-in_1s_ease-out_0.4s_forwards] opacity-0">Optimizing cognitive path...</p>
+            </div>
         </div>
       </div>
     );
@@ -127,9 +145,10 @@ export default function StudentDashboard() {
           <h2 className="text-2xl font-display font-bold text-white mb-2">Sync Interrupted</h2>
           <p className="text-gray-400 mb-8">{error || "The terminal could not establish a secure link to your learner profile."}</p>
           <button 
-            onClick={() => window.location.reload()} 
-            className="w-full py-4 bg-white/[0.04] border border-white/10 text-white font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-white/10 transition-all active:scale-95"
+            onClick={() => loadDashboard()} 
+            className="w-full h-14 bg-white/[0.04] border border-white/10 text-white font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-white/10 transition-all active:scale-95 flex items-center justify-center gap-3"
           >
+            <RefreshCw className="w-4 h-4" />
             Retry Connection
           </button>
         </div>
@@ -137,7 +156,7 @@ export default function StudentDashboard() {
     );
   }
 
-  const { stats = [], meta = {} } = dashboardData || {};
+  const { meta = {} } = dashboardData || {};
   const nextAction = meta?.nextAction;
   const coachInsight = meta?.coachInsight;
   const resumeCourse = meta?.resumeCourse;
@@ -146,7 +165,7 @@ export default function StudentDashboard() {
     <StandardDashboard 
       data={dashboardData}
       title={`Greetings, ${meta?.studentName?.split(' ')[0] || "Scholar"}`}
-      subtitle={`Welcome back to your Lumina terminal. You're maintaining a ${stats?.find((s: any) => s.label === 'Current Streak')?.value || "0 day"} streak.`}
+      subtitle={`Welcome back to your Lumina terminal. You're maintaining a ${getStatValue('Current Streak', '0 day')} streak.`}
       headerAction={
         <div className="flex flex-wrap gap-4 mt-4">
           <Link
@@ -212,7 +231,7 @@ export default function StudentDashboard() {
           icon={Target}
         >
           <div className="flex flex-col items-center justify-center p-6 text-center">
-            <MasteryOrb progress={parseInt(stats?.find((s: any) => s.label === 'Overall Mastery')?.value || "0") || 0} size="lg" />
+            <MasteryOrb progress={parseInt(getStatValue('Overall Mastery')) || 0} size="lg" />
             <div className="mt-8 grid grid-cols-2 gap-8 w-full border-t border-white/5 pt-8">
                <MiniMetric label="Risk Level" value={normalizeLabel(meta?.riskLevel || "Low")} />
                <MiniMetric label="Engagement" value="High" />
@@ -238,7 +257,7 @@ export default function StudentDashboard() {
               </div>
               <div className="space-y-2">
                 <MetricRow label="Course Progress" value={`${resumeCourse.progress}%`} />
-                <ProgressBar value={resumeCourse.progress} />
+                <ProgressBar value={resumeCourse.progress || 0} />
               </div>
               <Link
                 href={resumeCourse.href}
@@ -270,10 +289,10 @@ export default function StudentDashboard() {
                 {coachInsight.summary}
               </p>
               <Link
-                href={coachInsight.href}
+                href={coachInsight.href || "#"}
                 className="inline-flex items-center gap-2 text-lumina-highlight font-black uppercase tracking-widest text-xs group"
               >
-                {coachInsight.actionLabel}
+                {coachInsight.actionLabel || "View Action"}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
@@ -301,8 +320,8 @@ export default function StudentDashboard() {
         >
           <div className="space-y-5">
             <div className="grid grid-cols-3 gap-4">
-              <MiniMetric label="Due Today" value={String(stats?.find((s: any) => s.label === "Due Reviews")?.value ?? "5")} />
-              <MiniMetric label="Streak" value={`${stats?.find((s: any) => s.label === "Current Streak")?.value ?? "0 day"}`} />
+              <MiniMetric label="Due Today" value={String(getStatValue("Due Reviews", "5"))} />
+              <MiniMetric label="Streak" value={getStatValue("Current Streak", "0 day")} />
               <MiniMetric label="Algorithm" value="SM-2" />
             </div>
             <p className="text-sm text-gray-400 leading-relaxed">
@@ -338,7 +357,7 @@ export default function StudentDashboard() {
             <div className="grid grid-cols-3 gap-4">
               <MiniMetric
                 label="Predicted"
-                value={`${stats?.find((s: any) => s.label === "Overall Mastery")?.value ?? "—"}`}
+                value={getStatValue("Overall Mastery", "—")}
               />
               <MiniMetric label="Risk" value={normalizeLabel(meta?.riskLevel || "Low")} />
               <MiniMetric label="Status" value="On Track" />

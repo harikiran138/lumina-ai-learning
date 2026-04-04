@@ -7,6 +7,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useIsAuthLoading } from "@/store/useAuthStore";
+import { cn } from "@/lib/utils";
 
 export default function StudentLayout({
   children,
@@ -14,13 +15,19 @@ export default function StudentLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const pathname = usePathname();
   const isAuthLoading = useIsAuthLoading();
   const isTutorRoute = pathname?.startsWith("/student/ai_tutor");
 
+  // Dynamic layout offset based on sidebar state
+  // Collapsed: left-4 (16px) + w-20 (80px) = 96px (24 units)
+  // Expanded: left-4 (16px) + w-64 (256px) = 272px (17rem)
+  const offsetClass = isSidebarHovered 
+    ? "lg:left-[17rem] lg:ml-[17rem]" 
+    : "lg:left-24 lg:ml-24";
+
   // Hold render until AuthProvider has confirmed the session.
-  // The middleware already gate-keeps the route, so this is purely to
-  // prevent a flash of un-authed UI on the client before hydration finishes.
   if (isAuthLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -45,12 +52,14 @@ export default function StudentLayout({
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        isHovering={isSidebarHovered}
+        onHoverChange={setIsSidebarHovered}
       />
 
       <div className="relative z-10">
         <TopNav
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          className="lg:left-24 transition-all duration-500"
+          className={cn("transition-all duration-300", offsetClass)}
         />
 
         {/* Mobile Sidebar Overlay */}
@@ -61,7 +70,7 @@ export default function StudentLayout({
           />
         )}
 
-        <main className="lg:ml-24 pt-20 min-h-screen transition-all duration-500">
+        <main className={cn("pt-20 min-h-screen transition-all duration-300", offsetClass)}>
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
             <Breadcrumb homeHref="/student/dashboard" />
             {children}

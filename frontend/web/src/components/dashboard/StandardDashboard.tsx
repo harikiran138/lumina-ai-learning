@@ -20,8 +20,8 @@ import {
   AlertCircle,
   FileCheck
 } from "lucide-react";
-import { DashboardGrid } from "./DashboardGrid";
-import { StatCard } from "./StatCard";
+import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
+import { StatCard } from "@/components/dashboard/StatCard";
 import { cn } from "@/lib/utils";
 
 // Mapping icons from string labels from backend
@@ -116,7 +116,7 @@ export function StandardDashboard({
 
       {/* Stats Grid */}
       <DashboardGrid columns={4}>
-        {stats.map((stat, idx) => {
+        {stats?.map((stat, idx) => {
           const Icon = ICON_MAP[stat.icon] || Target;
           return (
             <StatCard
@@ -143,11 +143,11 @@ export function StandardDashboard({
                 </div>
                 <h2 className="text-xl font-display font-bold text-white">Priority Alerts</h2>
               </div>
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{alerts.length} Active</span>
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{(alerts?.length || 0)} Active</span>
             </div>
             <div className="p-6 space-y-4">
-              {alerts.length > 0 ? (
-                alerts.map((alert) => (
+              {(alerts?.length || 0) > 0 ? (
+                alerts?.map((alert) => (
                   <div 
                     key={alert.id}
                     className="group relative flex items-start gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300"
@@ -205,8 +205,8 @@ export function StandardDashboard({
             </div>
             <div className="flex-1 p-6 space-y-6 relative ml-4">
               <div className="absolute left-0 top-6 bottom-6 w-px bg-white/5" />
-              {feed.length > 0 ? (
-                feed.map((item) => (
+              {(feed?.length || 0) > 0 ? (
+                feed?.map((item) => (
                   <div key={item.id} className="relative pl-8 group">
                     <div className="absolute left-[-4px] top-1.5 w-2 h-2 rounded-full bg-lumina-highlight border border-lumina-highlight group-hover:scale-150 transition-transform duration-300 shadow-[0_0_8px_rgba(252,196,25,0.4)]" />
                     <div className="flex flex-col gap-1">
