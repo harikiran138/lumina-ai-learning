@@ -30,7 +30,6 @@ async def seed_roles():
     roles_to_seed = [
         {"email": "student@lumina.ai", "name": "Sam Student", "role": "student"},
         {"email": "teacher@lumina.ai", "name": "Terry Teacher", "role": "teacher"},
-        {"email": "faculty@lumina.ai", "name": "Fiona Faculty", "role": "faculty"},
         {"email": "hod@lumina.ai", "name": "Harry HOD", "role": "hod"},
         {"email": "admin@lumina.ai", "name": "Alex Admin", "role": "college_admin"},
         {"email": "parent@lumina.ai", "name": "Pat Parent", "role": "parent"},
@@ -65,10 +64,9 @@ async def seed_roles():
 
     student_id = created_users.get("student", {}).get("id")
     teacher_id = created_users.get("teacher", {}).get("id")
-    faculty_id = created_users.get("faculty", {}).get("id")
     hod_id = created_users.get("hod", {}).get("id")
     
-    # 1. Setup Institutional Data (Department for HOD/Faculty)
+    # 1. Setup Institutional Data (Department for HOD/Teacher)
     print("\n--- Seeding Institutional Data ---")
     dept_id = "dept_stem_001"
     try:

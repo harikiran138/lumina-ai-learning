@@ -29,23 +29,23 @@ import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 
 const navItems = [
-  { name: "Dashboard",          href: "/faculty/dashboard",            icon: LayoutDashboard },
-  { name: "AI Verify Queue",    href: "/faculty/verification-queue",   icon: ShieldCheck },
-  { name: "My Courses",         href: "/faculty/courses",              icon: BookOpen },
-  { name: "Students",           href: "/faculty/students",             icon: Users },
-  { name: "Assignments",        href: "/faculty/assignments",          icon: ClipboardCheck },
-  { name: "Create Assignment",  href: "/faculty/assignments/create",   icon: PlusCircle },
-  { name: "Grading",            href: "/faculty/grading",              icon: FileText },
-  { name: "Gradebook",          href: "/faculty/gradebook",            icon: GraduationCap },
-  { name: "Calendar",           href: "/faculty/calendar",             icon: Calendar },
-  { name: "Attendance",         href: "/faculty/attendance",           icon: CheckCircle },
-  { name: "Question Bank",      href: "/faculty/question-bank",        icon: Database },
-  { name: "Knowledge Graph",    href: "/faculty/knowledge-graph",      icon: GitBranch },
-  { name: "Live Class",         href: "/faculty/live-class",           icon: Radio },
-  { name: "Analytics",          href: "/faculty/analytics",            icon: BarChart3 },
-  { name: "AI Course Creator",  href: "/faculty/ai-generator",         icon: Sparkles },
-  { name: "Messages",           href: "/faculty/messages",             icon: MessageSquare },
-  { name: "Settings",           href: "/faculty/settings",             icon: Settings },
+  { name: "Dashboard",          href: "/teacher/dashboard",            icon: LayoutDashboard },
+  { name: "AI Verify Queue",    href: "/teacher/verification-queue",   icon: ShieldCheck },
+  { name: "My Courses",         href: "/teacher/courses",              icon: BookOpen },
+  { name: "Students",           href: "/teacher/students",             icon: Users },
+  { name: "Assignments",        href: "/teacher/assignments",          icon: ClipboardCheck },
+  { name: "Create Assignment",  href: "/teacher/assignments/create",   icon: PlusCircle },
+  { name: "Grading",            href: "/teacher/grading",              icon: FileText },
+  { name: "Gradebook",          href: "/teacher/gradebook",            icon: GraduationCap },
+  { name: "Calendar",           href: "/teacher/calendar",             icon: Calendar },
+  { name: "Attendance",         href: "/teacher/attendance",           icon: CheckCircle },
+  { name: "Question Bank",      href: "/teacher/question-bank",        icon: Database },
+  { name: "Knowledge Graph",    href: "/teacher/knowledge-graph",      icon: GitBranch },
+  { name: "Live Class",         href: "/teacher/live-class",           icon: Radio },
+  { name: "Analytics",          href: "/teacher/analytics",            icon: BarChart3 },
+  { name: "AI Course Creator",  href: "/teacher/ai-generator",         icon: Sparkles },
+  { name: "Messages",           href: "/teacher/messages",             icon: MessageSquare },
+  { name: "Settings",           href: "/teacher/settings",             icon: Settings },
 ];
 
 export default function TeacherSidebar({
@@ -184,7 +184,7 @@ export default function TeacherSidebar({
         )}
       >
         <Link
-          href="/faculty/alerts"
+          href="/teacher/alerts"
           className={cn(
             "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
             isHovering ? "px-4" : "justify-center px-0",
@@ -220,7 +220,7 @@ export default function TeacherSidebar({
 
         {user && (
           <Link
-            href="/faculty/profile"
+            href="/teacher/profile"
             className={cn(
               "flex items-center rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer overflow-hidden",
               isHovering ? "p-3 gap-3" : "p-2 justify-center",

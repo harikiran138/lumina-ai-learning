@@ -268,23 +268,36 @@ function normalizeLegacyBlock(block: Record<string, unknown>): A2UIBlock | null 
             : [],
         },
       };
-    case "steps":
+    case "steps": {
+      const rawSteps: Array<{ body: string; title?: string; hint?: string }> =
+        Array.isArray(block.steps)
+          ? block.steps.map((item) => {
+              if (typeof item === "string") return { body: item };
+              if (item && typeof item === "object") {
+                const s = item as Record<string, unknown>;
+                return {
+                  body: typeof s.body === "string" ? s.body : typeof s.step === "string" ? s.step : String(s),
+                  title: typeof s.title === "string" ? s.title : undefined,
+                  hint: typeof s.hint === "string" ? s.hint : undefined,
+                };
+              }
+              return { body: String(item) };
+            })
+          : [{ body: "No steps available." }];
+      const hasHints = rawSteps.some((s) => Boolean(s.hint));
       return {
         type: "steps",
         content: {
-          title:
-            typeof block.title === "string" ? block.title : "Steps",
-          steps: Array.isArray(block.steps)
-            ? block.steps
-                .filter((item): item is string => typeof item === "string")
-                .map((body) => ({ body }))
-            : [{ body: "No steps available." }],
+          title: typeof block.title === "string" ? block.title : "Steps",
+          steps: rawSteps,
         },
         ui: {
-          interactive: false,
-          reveal: "all",
+          interactive: rawSteps.length > 1,
+          reveal: rawSteps.length > 1 ? "stepwise" : "all",
+          allowHints: hasHints,
         },
       };
+    }
     case "quiz":
       return {
         type: "quiz",
@@ -354,49 +367,62 @@ function normalizeLegacyBlock(block: Record<string, unknown>): A2UIBlock | null 
             typeof block.caption === "string" ? block.caption : undefined,
         },
       };
-    case "graph":
-      return {
-        type: "graph",
-        content: {
-          title: typeof block.title === "string" ? block.title : undefined,
-          chartType:
-            block.chartType === "bar" ||
-            block.chartType === "line" ||
-            block.chartType === "pie" ||
-            block.chartType === "doughnut"
-              ? block.chartType
-              : block.graph_type === "bar" ||
-                  block.graph_type === "line" ||
-                  block.graph_type === "pie" ||
-                  block.graph_type === "doughnut"
-                ? block.graph_type
-                : "line",
-          labels: Array.isArray(block.labels)
-            ? block.labels.filter((item): item is string => typeof item === "string")
-            : [],
-          datasets: [
+    case "graph": {
+      const validChartTypes = ["bar", "line", "pie", "doughnut"] as const;
+      type ChartType = (typeof validChartTypes)[number];
+      const rawChartType = block.chartType ?? block.graph_type;
+      const chartType: ChartType = validChartTypes.includes(rawChartType as ChartType)
+        ? (rawChartType as ChartType)
+        : "line";
+
+      // Handle multi-dataset format: [{label, data, color?}]
+      const rawDatasets = Array.isArray(block.datasets) ? block.datasets : [];
+      const isMultiDataset =
+        rawDatasets.length > 0 &&
+        typeof rawDatasets[0] === "object" &&
+        rawDatasets[0] !== null &&
+        "data" in (rawDatasets[0] as object);
+
+      const normalizedDatasets = isMultiDataset
+        ? (rawDatasets as Record<string, unknown>[]).map((ds, i) => ({
+            label: typeof ds.label === "string" ? ds.label : `Series ${i + 1}`,
+            data: Array.isArray(ds.data)
+              ? ds.data.filter((v): v is number => typeof v === "number")
+              : [],
+            color: typeof ds.color === "string" ? ds.color : undefined,
+            backgroundColor: typeof ds.backgroundColor !== "undefined"
+              ? (ds.backgroundColor as string | string[])
+              : undefined,
+          }))
+        : [
             {
               label:
                 typeof block.dataset_label === "string"
                   ? block.dataset_label
                   : "Series 1",
-              data: Array.isArray(block.datasets)
-                ? []
-                : Array.isArray(block.values)
-                  ? block.values.filter((item): item is number => typeof item === "number")
-                  : Array.isArray(block.data)
-                    ? block.data.filter((item): item is number => typeof item === "number")
-                    : [],
+              data: Array.isArray(block.values)
+                ? block.values.filter((v): v is number => typeof v === "number")
+                : Array.isArray(block.data)
+                  ? block.data.filter((v): v is number => typeof v === "number")
+                  : [],
             },
-          ],
-          xLabel:
-            typeof block.x_label === "string" ? block.x_label : undefined,
-          yLabel:
-            typeof block.y_label === "string" ? block.y_label : undefined,
-          summary:
-            typeof block.summary === "string" ? block.summary : undefined,
+          ];
+
+      return {
+        type: "graph",
+        content: {
+          title: typeof block.title === "string" ? block.title : undefined,
+          chartType,
+          labels: Array.isArray(block.labels)
+            ? block.labels.filter((item): item is string => typeof item === "string")
+            : [],
+          datasets: normalizedDatasets,
+          xLabel: typeof block.x_label === "string" ? block.x_label : undefined,
+          yLabel: typeof block.y_label === "string" ? block.y_label : undefined,
+          summary: typeof block.summary === "string" ? block.summary : undefined,
         },
       };
+    }
     case "code":
       return {
         type: "code",
@@ -513,25 +539,27 @@ function safeParseJson(candidate: string): unknown | null {
   }
 }
 
-export function parseA2UIContent(raw: string): A2UIRenderable | null {
+export function parseA2UIContent(raw: string): A2UIRenderable {
   const direct = normalizeA2UIResponse(safeParseJson(raw));
   if (direct) {
     return direct;
   }
 
   const fencedMatch = raw.match(/```json\s*([\s\S]*?)\s*```/i);
-  if (!fencedMatch?.[1]) {
-    return null;
+  if (fencedMatch?.[1]) {
+    const fromFenced = normalizeA2UIResponse(safeParseJson(fencedMatch[1]));
+    if (fromFenced) return fromFenced;
   }
 
-  return normalizeA2UIResponse(safeParseJson(fencedMatch[1]));
+  // Final fallback: wrap plain text/markdown in a TextBlock so the user always sees a response
+  return {
+    type: "text",
+    content: { markdown: raw },
+  };
 }
 
 export function extractA2UITopic(raw: string): string | null {
   const parsed = parseA2UIContent(raw);
-  if (!parsed) {
-    return null;
-  }
 
   if (parsed.meta?.topic) {
     return parsed.meta.topic;

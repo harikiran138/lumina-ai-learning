@@ -44,7 +44,7 @@ const PROTECTED_PATHS: Record<string, string> = {
   '/admin':           'college_admin',
   '/college':         'college_admin',
   '/hod':             'hod',
-  '/faculty':         'faculty',
+  '/teacher':         'teacher',
   '/student':         'student',
   '/parent':          'parent',
   '/mentor':          'mentor',
@@ -91,7 +91,9 @@ export function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('reason', 'unauthorized')
-    return NextResponse.redirect(url)
+    const response = NextResponse.redirect(url)
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate')
+    return response
   }
 
   // ── 3. Decode and validate token ──────────────────────────────────────────────
@@ -103,7 +105,9 @@ export function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('reason', 'session_expired')
-    return NextResponse.redirect(url)
+    const response = NextResponse.redirect(url)
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate')
+    return response
   }
 
   const rawRole = typeof payload.role === 'string' ? payload.role : null
@@ -114,7 +118,9 @@ export function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('reason', 'session_sync_required')
-    return NextResponse.redirect(url)
+    const response = NextResponse.redirect(url)
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate')
+    return response
   }
 
   const role = normalizeRole(rawRole)
@@ -123,7 +129,7 @@ export function middleware(request: NextRequest) {
   // If a role is NOT in this set, and onboardingCompleted is false, they go to /onboarding.
   const ONBOARDING_BYPASS_ROLES = new Set([
     'super_admin', 'admin', 'system_admin', 'institution_admin', 'hod',
-    'faculty', 'teacher', 'content_creator', 'alumni'
+    'teacher', 'content_creator', 'alumni'
   ])
   const onboardingCompleted =
     payload.onboardingCompleted === true || ONBOARDING_BYPASS_ROLES.has(role)
@@ -136,7 +142,9 @@ export function middleware(request: NextRequest) {
       url.pathname = onboardingCompleted ? getRoleHome(role) : '/onboarding'
       // Clear reason param so the destination doesn't see a stale reason.
       url.searchParams.delete('reason')
-      return NextResponse.redirect(url)
+      const response = NextResponse.redirect(url)
+      response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate')
+      return response
     }
     return NextResponse.next()
   }
@@ -182,7 +190,6 @@ export const config = {
     '/admin/:path*',
     '/hod/:path*',
     '/college/:path*',
-    '/faculty/:path*',
     '/parent/:path*',
     '/mentor/:path*',
     '/peer_tutor/:path*',

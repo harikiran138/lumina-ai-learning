@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function CurriculumMapPage() {
   const [subjects, setSubjects] = useState<any[]>([]);
-  const [faculty, setFaculty] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddSubject, setShowAddSubject] = useState(false);
@@ -44,13 +44,13 @@ export default function CurriculumMapPage() {
     try {
       const user = await api.getCurrentUser();
       if (user?.deptId) {
-        const [subjData, facData, batchData] = await Promise.all([
+        const [subjData, teachData, batchData] = await Promise.all([
           api.listSubjects(user.deptId),
-          api.listFacultyByDept(user.deptId),
+          api.listTeachersByDept(user.deptId),
           api.listBatches(user.deptId)
         ]);
         setSubjects(subjData || []);
-        setFaculty(facData || []);
+        setTeachers(teachData || []);
         setBatches(batchData || []);
       }
     } catch (error: any) {
@@ -167,9 +167,9 @@ export default function CurriculumMapPage() {
                                                     <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/10 overflow-hidden">
                                                         {subject.faculty_id ? (
                                                             <img 
-                                                                src={`https://ui-avatars.com/api/?name=${faculty.find(f => f.id === subject.faculty_id)?.full_name || 'F'}&background=random`}
+                                                                src={`https://ui-avatars.com/api/?name=${teachers.find(f => f.id === subject.faculty_id)?.full_name || 'T'}&background=random`}
                                                                 className="w-full h-full object-cover"
-                                                                alt="Faculty"
+                                                                alt="Teacher"
                                                             />
                                                         ) : (
                                                             <User className="w-4 h-4 text-gray-600" />
@@ -178,7 +178,7 @@ export default function CurriculumMapPage() {
                                                     <div>
                                                         <p className="text-[10px] text-gray-500 font-black uppercase">Assignee</p>
                                                         <p className="text-sm font-bold text-white">
-                                                            {faculty.find(f => f.id === subject.faculty_id)?.full_name || "Unassigned"}
+                                                            {teachers.find(f => f.id === subject.faculty_id)?.full_name || "Unassigned"}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -275,14 +275,14 @@ export default function CurriculumMapPage() {
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Assign Faculty (Optional)</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Assign Teacher (Optional)</label>
                             <select 
                                 className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:border-lumina-primary transition-all text-white font-medium appearance-none"
                                 value={newSubject.faculty_id}
                                 onChange={e => setNewSubject({...newSubject, faculty_id: e.target.value})}
                             >
                                 <option value="" className="bg-black text-gray-500">Unassigned</option>
-                                {faculty.map(f => (
+                                {teachers.map(f => (
                                     <option key={f.id} value={f.id} className="bg-black">{f.full_name}</option>
                                 ))}
                             </select>

@@ -64,12 +64,13 @@ const inferMode = (question: string): "explain" | "quiz" | "code" | "interactive
 };
 
 const extractAnswerText = (payload: any): string => {
+  // Check every path the backend might put the answer — ordered by specificity
   const candidates = [
-    payload?.answer?.content,
-    payload?.answer?.response,
-    payload?.response,
-    payload?.content,
-    payload?.data?.response,
+    payload?.answer?.content,    // GET /tutor/answer: answer.content
+    payload?.content,            // GET /tutor/answer: content (alias added by fix)
+    payload?.response,           // GET /tutor/answer: response field
+    payload?.answer?.response,   // legacy shape
+    payload?.data?.response,     // deep legacy shape
   ];
 
   for (const candidate of candidates) {
@@ -219,10 +220,14 @@ export const processMessage = async (
       }
 
       if (!answerText.trim()) {
-        throw new Error(
+        // Polling exhausted — the answer isn't ready yet (teacher review queue or slow model).
+        // Return the waiting message directly; do NOT retry the ask — it would create a duplicate.
+        const latency = Math.round(performance.now() - startTime);
+        const waitingText =
           answerPayload?.message ||
-            `${STUDENT_TUTOR_WAITING_MESSAGE}. The reply is taking longer than usual.`,
-        );
+          `${STUDENT_TUTOR_WAITING_MESSAGE}. Check back shortly for the full answer.`;
+        sendTelemetry("ai_response_time", latency, { source: "waiting" });
+        return { text: waitingText, source: "fallback", latency };
       }
 
       // Success

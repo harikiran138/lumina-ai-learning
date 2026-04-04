@@ -139,13 +139,28 @@ def _infer_concept(prompt: str, context: Dict[str, Any]) -> str:
             return value.strip()
 
     lowered = _normalize_whitespace(prompt)
-    match = re.search(
-        r"(?:about|on|explain|quiz me on|help me with|teach me|show me)\s+([A-Za-z0-9][A-Za-z0-9\s\-/]{1,80})",
-        lowered,
-        re.IGNORECASE,
-    )
-    if match:
-        return match.group(1).strip(" ?.!,:;")
+
+    # Extended pattern set for concept extraction
+    patterns = [
+        r"(?:explain|describe|define|what is|what are|tell me about|teach me|show me|help me understand)\s+([A-Za-z0-9][A-Za-z0-9\s\-+#/]{1,80}?)(?:\s*[?.]|$)",
+        r"(?:quiz me on|test me on|practice|questions? on|mcq on)\s+([A-Za-z0-9][A-Za-z0-9\s\-+#/]{1,80}?)(?:\s*[?.]|$)",
+        r"(?:code|write|implement|debug|program)\s+(?:a |an |the )?([A-Za-z0-9][A-Za-z0-9\s\-+#/]{1,80}?)(?:\s*(?:in|using|with)\s+\w+)?(?:\s*[?.]|$)",
+        r"(?:how (?:does|do|to))\s+([A-Za-z0-9][A-Za-z0-9\s\-+#/]{1,80}?)\s+(?:work|function|operate|run)",
+        r"(?:difference between|compare)\s+([A-Za-z0-9][A-Za-z0-9\s\-+#/]{1,80}?)(?:\s+and\s+|\s*[?.]|$)",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, lowered, re.IGNORECASE)
+        if match:
+            concept = match.group(1).strip(" ?.!,:;")
+            if len(concept) >= 2:
+                return concept
+
+    # Fallback: take the first meaningful noun phrase (3–60 chars)
+    words = lowered.split()
+    if len(words) >= 2:
+        candidate = " ".join(words[:4]).strip(" ?.!,:;")
+        if 3 <= len(candidate) <= 60:
+            return candidate
     return "General concept"
 
 
@@ -222,7 +237,28 @@ class AITutorStore:
 
         safe_context = context or {}
         normalized_mode = _infer_mode(prompt, mode)
-        system_prompt = self._build_system_prompt(safe_context, normalized_mode)
+
+        # Fetch personalization profile for adaptive prompting
+        legacy_profile: Dict[str, Any] = {}
+        if student_id:
+            try:
+                profile_service = get_personalization_service()
+                legacy_profile = await profile_service.get_legacy_state(student_id) or {}
+            except Exception as exc:
+                log.warning("ai_tutor_profile_fetch_failed", student_id=student_id, error=str(exc))
+
+        # Fetch RAG context to ground the response in course material
+        course_context_light = {
+            "course_id": safe_context.get("course_id"),
+            "teacher_id": safe_context.get("teacher_id"),
+        }
+        rag_context: List[str] = []
+        try:
+            rag_context = await self._fetch_rag_context(prompt, course_context_light)
+        except Exception as exc:
+            log.warning("ai_tutor_rag_fetch_failed", error=str(exc))
+
+        system_prompt = self._build_system_prompt(safe_context, normalized_mode, legacy_profile, rag_context)
         messages = self._build_messages(system_prompt, history or [], prompt)
         route_models = resolve_openrouter_models(
             "code" if normalized_mode == "code" else "assessment" if normalized_mode == "quiz" else "tutor",
@@ -230,10 +266,11 @@ class AITutorStore:
             system_prompt=system_prompt,
         )
 
+        # Lower temperature for educational accuracy (0.65 → 0.45)
         payload = {
             "model": route_models[0],
             "messages": messages,
-            "temperature": 0.65,
+            "temperature": 0.45,
             "response_format": {"type": "json_object"},
         }
         if len(route_models) > 1:
@@ -325,25 +362,47 @@ class AITutorStore:
         rag_context = await self._fetch_rag_context(prompt, course_context)
         prior_answers = await self._fetch_recent_verified_answers(student_id, course_context.get("course_id"))
 
-        draft_payload = await self._generate_teacher_review_draft(
-            prompt=prompt,
-            history=history,
-            context=context,
-            classification=classification,
-            legacy_profile=legacy_profile,
-            course_context=course_context,
-            rag_context=rag_context,
-            prior_answers=prior_answers,
-        )
+        try:
+            draft_payload = await self._generate_teacher_review_draft(
+                prompt=prompt,
+                history=history,
+                context=context,
+                classification=classification,
+                legacy_profile=legacy_profile,
+                course_context=course_context,
+                rag_context=rag_context,
+                prior_answers=prior_answers,
+            )
+        except Exception as exc:
+            log.warning(
+                "ai_tutor_draft_generation_failed_using_placeholder",
+                error=str(exc),
+                student_id=student_id,
+            )
+            draft_payload = {
+                "draft_answer": (
+                    f"[Auto-draft unavailable — model error: {type(exc).__name__}] "
+                    f"Student asked: {prompt[:200]}"
+                ),
+                "response_payload": None,
+            }
 
-        queue_item = await self.content_store.create_verification_item(
-            student_id=student_id,
-            teacher_id=course_context["teacher_id"],
-            student_question=prompt,
-            ai_generated_answer=draft_payload["draft_answer"],
-            course_id=course_context.get("course_id"),
-        )
-        queue_id = queue_item.get("id") if queue_item else None
+        try:
+            queue_item = await self.content_store.create_verification_item(
+                student_id=student_id,
+                teacher_id=course_context["teacher_id"],
+                student_question=prompt,
+                ai_generated_answer=draft_payload["draft_answer"],
+                course_id=course_context.get("course_id"),
+            )
+            queue_id = queue_item.get("id") if queue_item else None
+        except Exception as exc:
+            log.warning(
+                "ai_tutor_queue_persist_failed",
+                error=str(exc),
+                student_id=student_id,
+            )
+            queue_id = None
 
         log.info(
             "ai_tutor_queued_for_teacher_review",
@@ -488,20 +547,40 @@ class AITutorStore:
         mastery_map = legacy_profile.get("mastery_scores") or {}
         weak_topics = legacy_profile.get("weak_topics") or []
         history_snippet = history[-6:] if history else []
+
+        mode = classification.get("mode", "explain")
+        response_type = classification.get("response_type", "explanation")
+        mode_instruction = _MODE_INSTRUCTIONS.get(mode, _MODE_INSTRUCTIONS["explain"])
+
         user_prompt = {
             "student_question": prompt,
             "classification": classification,
+            # Explicit reminder so the model knows which format to use
+            "mode_instruction": (
+                f"The requested mode is '{mode}' (response_type='{response_type}'). "
+                f"Follow this instruction exactly: {mode_instruction}"
+            ),
             "course_context": course_context,
             "student_profile": {
                 "mastery_scores": mastery_map,
                 "weak_topics": weak_topics,
                 "cognitive_load": legacy_profile.get("cognitive_load", 50),
                 "risk_summary": legacy_profile.get("risk_summary", {}),
+                "mastery_summary": legacy_profile.get("mastery_summary", ""),
             },
             "recent_history": history_snippet,
             "retrieved_course_content": rag_context,
             "previous_verified_answers": prior_answers,
             "frontend_context": context,
+            # Explicit reminders for the draft generator
+            "draft_instructions": {
+                "target_student_level": classification.get("student_level", "intermediate"),
+                "target_difficulty": classification.get("difficulty", "medium"),
+                "grounding_required": len(rag_context) > 0,
+                "confidence_note": (
+                    "Set confidence >= 0.7 only if retrieved_course_content directly answers the question."
+                ),
+            },
         }
 
         payload = {
@@ -573,16 +652,33 @@ class AITutorStore:
 
     # ── Internal helpers for direct responses ──────────────────────────────────
 
-    def _build_system_prompt(self, context: Dict, mode: str) -> str:
+    def _build_system_prompt(
+        self,
+        context: Dict,
+        mode: str,
+        profile: Optional[Dict[str, Any]] = None,
+        rag_context: Optional[List[str]] = None,
+    ) -> str:
+        profile = profile or {}
         semester = context.get("semester") or context.get("current_semester") or "Not specified"
         allowed_courses = context.get("allowed_courses") or context.get("course_name") or "All courses"
         allowed_concepts = context.get("allowed_concepts") or context.get("topic") or "All concepts"
+
+        # Resolve student_level and difficulty from context first, then fall back to profile inference
+        student_level = (
+            context.get("student_level")
+            or context.get("grade_level")
+            or _infer_student_level(profile, context)
+        )
+        difficulty = context.get("difficulty") or _infer_difficulty(profile, context)
 
         base_prompt = (
             A2UI_SYSTEM_PROMPT
             .replace("{current_semester}", str(semester))
             .replace("{allowed_courses}", str(allowed_courses))
             .replace("{allowed_concepts}", str(allowed_concepts))
+            .replace("{student_level}", str(student_level))
+            .replace("{difficulty}", str(difficulty))
         )
 
         student_context_lines = []
@@ -600,10 +696,21 @@ class AITutorStore:
             if isinstance(assign, dict):
                 assign = assign.get("title") or str(assign)
             student_context_lines.append(f"Assignment Context: {assign}")
-        if context.get("student_level"):
-            student_context_lines.append(f"Student Level: {context['student_level']}")
-        if context.get("difficulty"):
-            student_context_lines.append(f"Preferred Difficulty: {context['difficulty']}")
+
+        # Inject mastery and weak topics from profile
+        weak_topics = profile.get("weak_topics") or []
+        if weak_topics:
+            student_context_lines.append(
+                f"Weak Topics (address these if related): {', '.join(str(t) for t in weak_topics[:5])}"
+            )
+        mastery_summary = profile.get("mastery_summary") or ""
+        if mastery_summary:
+            student_context_lines.append(f"Mastery Summary: {_truncate(mastery_summary, 300)}")
+
+        # Inject retrieved course content as grounding material
+        if rag_context:
+            rag_lines = "\n".join(f"  - {_truncate(chunk, 200)}" for chunk in rag_context[:4])
+            student_context_lines.append(f"\n## RELEVANT COURSE MATERIAL (ground your answer here)\n{rag_lines}")
 
         if student_context_lines:
             base_prompt += "\n" + "\n".join(student_context_lines)

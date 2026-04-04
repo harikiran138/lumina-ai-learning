@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { type QuizBlock } from "@/lib/a2ui-schema";
-import { BrainCircuit, CheckCircle2, HelpCircle, XCircle } from "lucide-react";
+import { BrainCircuit, CheckCircle2, HelpCircle, RotateCcw, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -15,7 +15,9 @@ export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
   const [submitted, setSubmitted] = useState<Record<number, boolean>>({});
   const [hintOpen, setHintOpen] = useState<Record<number, boolean>>({});
 
+  const totalQuestions = block.content.questions.length;
   const answeredCount = Object.keys(submitted).length;
+  const allSubmitted = totalQuestions > 0 && answeredCount === totalQuestions;
   const correctCount = useMemo(
     () =>
       block.content.questions.reduce((count, question, index) => {
@@ -24,6 +26,12 @@ export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
       }, 0),
     [block.content.questions, selections, submitted],
   );
+
+  const handleReset = () => {
+    setSelections({});
+    setSubmitted({});
+    setHintOpen({});
+  };
 
   return (
     <div className="my-6 space-y-4">
@@ -166,6 +174,38 @@ export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
           </div>
         );
       })}
+
+      {allSubmitted && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-5 py-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-300">Final score:</span>
+            <span
+              className={cn(
+                "text-lg font-bold",
+                correctCount === totalQuestions
+                  ? "text-emerald-300"
+                  : correctCount >= totalQuestions / 2
+                    ? "text-amber-300"
+                    : "text-red-300",
+              )}
+            >
+              {correctCount}/{totalQuestions}
+            </span>
+            {correctCount === totalQuestions && (
+              <span className="text-sm text-emerald-300">Perfect!</span>
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="border-white/10 bg-transparent text-slate-300 hover:border-amber-300/30 hover:text-amber-100"
+            onClick={handleReset}
+          >
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Try again
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

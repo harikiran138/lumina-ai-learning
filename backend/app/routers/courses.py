@@ -125,7 +125,7 @@ async def teacher_dashboard(
     analytics: AnalyticsStore = Depends(get_analytics_store),
 ):
     """Teacher dashboard stats with role check"""
-    if current_user.get("role") not in ["teacher", "faculty", "admin", "hod"]:
+    if current_user.get("role") not in ["teacher", "admin", "hod"]:
         raise HTTPException(status_code=403, detail="Teacher access required")
     overview = await analytics.get_teacher_dashboard_overview(current_user["id"])
     stats = await analytics.get_teacher_dashboard_stats(current_user["id"])
@@ -258,7 +258,7 @@ async def teacher_courses(
     store: CourseStore = Depends(get_course_store),
 ):
     """List courses created by the authenticated teacher."""
-    if current_user["role"] not in ("teacher", "faculty", "admin", "hod"):
+    if current_user["role"] not in ("teacher", "admin", "hod"):
         raise HTTPException(status_code=403, detail="Teacher access required")
     return await store.get_courses_by_teacher(current_user["id"])
 
@@ -304,8 +304,8 @@ async def create_course_form(
     store: CourseStore = Depends(get_course_store),
 ):
     """Create a course (form-data variant)."""
-    if current_user["role"] not in ("super_admin", "hod", "teacher", "faculty"):
-        raise HTTPException(status_code=403, detail="Only Faculty, HOD or Admin can create courses")
+    if current_user["role"] not in ("super_admin", "hod", "teacher"):
+        raise HTTPException(status_code=403, detail="Only Teacher, HOD or Admin can create courses")
     if await store.get_course_by_code(code):
         raise HTTPException(status_code=400, detail="Course code already exists")
     course = await store.create_course(
@@ -326,8 +326,8 @@ async def create_course_json(
     store: CourseStore = Depends(get_course_store),
 ):
     """Create a course (JSON body)."""
-    if current_user["role"] not in ("super_admin", "faculty", "hod"):
-        raise HTTPException(status_code=403, detail="Only Faculty, HOD or Admin can create courses")
+    if current_user["role"] not in ("super_admin", "hod", "teacher"):
+        raise HTTPException(status_code=403, detail="Only Teacher, HOD or Admin can create courses")
     if await store.get_course_by_code(body.code):
         raise HTTPException(status_code=400, detail="Course code already exists")
     course_name = body.name or body.title

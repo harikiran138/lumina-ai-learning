@@ -19,8 +19,8 @@ import {
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function FacultyManagementPage() {
-  const [faculty, setFaculty] = useState<any[]>([]);
+export default function TeacherManagementPage() {
+  const [teachers, setTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -28,18 +28,18 @@ export default function FacultyManagementPage() {
   const [isInviting, setIsInviting] = useState(false);
 
   useEffect(() => {
-    fetchFaculty();
+    fetchTeachers();
   }, []);
 
-  const fetchFaculty = async () => {
+  const fetchTeachers = async () => {
     try {
       const user = await api.getCurrentUser();
       if (user?.deptId) {
-        const data = await api.listFacultyByDept(user.deptId);
-        setFaculty(data || []);
+        const data = await api.listTeachersByDept(user.deptId);
+        setTeachers(data || []);
       }
     } catch (error: any) {
-      toast.error("Failed to fetch faculty list");
+      toast.error("Failed to fetch teacher list");
     } finally {
       setLoading(false);
     }
@@ -54,13 +54,13 @@ export default function FacultyManagementPage() {
       const user = await api.getCurrentUser();
       await api.inviteUser(user.collegeId, {
         email: inviteEmail,
-        role: "faculty",
+        role: "teacher",
         deptId: user.deptId
       });
       toast.success(`Invitation sent to ${inviteEmail}`);
       setShowInviteModal(false);
       setInviteEmail("");
-      fetchFaculty(); // Refresh list to show pending
+      fetchTeachers(); // Refresh list to show pending
     } catch (error: any) {
       toast.error(error.message || "Failed to send invitation");
     } finally {
@@ -68,7 +68,7 @@ export default function FacultyManagementPage() {
     }
   };
 
-  const filteredFaculty = faculty.filter(f => 
+  const filteredTeachers = teachers.filter(f => 
     f.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     f.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -80,7 +80,7 @@ export default function FacultyManagementPage() {
         <div>
           <h1 className="text-3xl font-black tracking-tight flex items-center gap-3">
             <Users className="w-8 h-8 text-lumina-primary" />
-            Faculty Directory
+            Teacher Directory
           </h1>
           <p className="text-gray-400 mt-1 font-medium">Manage departmental staff, workloads, and system access.</p>
         </div>
@@ -89,16 +89,16 @@ export default function FacultyManagementPage() {
           className="bg-lumina-primary text-black px-6 py-4 rounded-2xl font-black flex items-center justify-center gap-2 hover:scale-[1.02] transition-all shadow-lg shadow-lumina-primary/20 active:scale-95"
         >
           <UserPlus className="w-5 h-5" />
-          INVITE FACULTY
+          INVITE TEACHER
         </button>
       </div>
 
       {/* Stats Quick Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { label: "Active Faculty", val: faculty.filter(f => f.is_active).length, icon: CheckCircle2, color: "text-green-400" },
-          { label: "Pending Invites", val: faculty.filter(f => !f.is_active).length, icon: Clock, color: "text-amber-400" },
-          { label: "Total Strength", val: faculty.length, icon: Shield, color: "text-lumina-primary" }
+          { label: "Active Teachers", val: teachers.filter(f => f.is_active).length, icon: CheckCircle2, color: "text-green-400" },
+          { label: "Pending Invites", val: teachers.filter(f => !f.is_active).length, icon: Clock, color: "text-amber-400" },
+          { label: "Total Strength", val: teachers.length, icon: Shield, color: "text-lumina-primary" }
         ].map((stat, i) => (
           <div key={i} className="bg-white/5 border border-white/10 rounded-3xl p-6 flex items-center gap-5">
             <div className={`w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center ${stat.color}`}>
@@ -139,7 +139,7 @@ export default function FacultyManagementPage() {
             <table className="w-full text-left">
                 <thead>
                     <tr className="bg-white/5 border-b border-white/10">
-                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Faculty Member</th>
+                        <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Teacher Member</th>
                         <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Specialization</th>
                         <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Status</th>
                         <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Load</th>
@@ -151,12 +151,12 @@ export default function FacultyManagementPage() {
                         <tr>
                             <td colSpan={5} className="px-6 py-12 text-center text-gray-500 animate-pulse">Loading directory...</td>
                         </tr>
-                    ) : filteredFaculty.length === 0 ? (
+                    ) : filteredTeachers.length === 0 ? (
                         <tr>
-                            <td colSpan={5} className="px-6 py-12 text-center text-gray-500">No faculty members found.</td>
+                            <td colSpan={5} className="px-6 py-12 text-center text-gray-500">No teachers found.</td>
                         </tr>
                     ) : (
-                        filteredFaculty.map((item) => (
+                        filteredTeachers.map((item) => (
                             <tr key={item.id} className="hover:bg-white/[0.02] transition-colors group">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
@@ -233,9 +233,9 @@ export default function FacultyManagementPage() {
                     <div className="w-20 h-20 bg-lumina-primary/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border border-lumina-primary/20">
                         <Mail className="w-10 h-10 text-lumina-primary" />
                     </div>
-                    <h2 className="text-3xl font-black text-white">Invite Faculty</h2>
+                    <h2 className="text-3xl font-black text-white">Invite Teacher</h2>
                     <p className="text-gray-400 mt-2 font-medium leading-relaxed">
-                        Send a secure access token to a faculty member. They will be prompted to set up their profile.
+                        Send a secure access token to a teacher. They will be prompted to set up their profile.
                     </p>
                 </div>
 

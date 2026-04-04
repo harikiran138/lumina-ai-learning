@@ -112,8 +112,11 @@ async def _run_student_tutor_answer(
 
     try:
         result = await build_tutor_response_payload(payload, current_user)
-        response_text = result["response"]
-        answer_type = _infer_tutor_answer_type(response_text)
+        # "content" is the canonical key (Agent 1); fall back to "response" for compatibility
+        response_text = result.get("content") or result.get("response") or ""
+        # Prefer the type already resolved by the router; fall back to parsing
+        answer_type = result.get("type") or _infer_tutor_answer_type(response_text)
+        answer_meta = result.get("meta") or {}
 
         job.update(
             {
@@ -122,11 +125,14 @@ async def _run_student_tutor_answer(
                 "response": response_text,
                 "mode": result.get("mode"),
                 "type": answer_type,
+                "meta": answer_meta,
+                "queued": result.get("queued", False),
                 "answer": {
                     "id": answer_id,
                     "type": answer_type,
                     "content": response_text,
                     "mode": result.get("mode"),
+                    "meta": answer_meta,
                 },
                 "updated_at": _student_tutor_timestamp(),
                 "completed_at": _student_tutor_timestamp(),
@@ -764,9 +770,12 @@ async def get_tutor_answer(
         "status": job.get("status", "pending"),
         "message": job.get("message") or WAITING_MESSAGE,
         "response": job.get("response"),
+        "content": job.get("response"),   # alias so extractAnswerText finds it either way
         "answer": job.get("answer"),
         "type": job.get("type"),
         "mode": job.get("mode"),
+        "meta": job.get("meta") or {},
+        "queued": job.get("queued", False),
         "created_at": job.get("created_at"),
         "updated_at": job.get("updated_at"),
         "completed_at": job.get("completed_at"),

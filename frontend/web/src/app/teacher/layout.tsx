@@ -1,6 +1,6 @@
 "use client";
 
-import FacultySidebar from "@/components/dashboard/FacultySidebar";
+import TeacherSidebar from "@/components/dashboard/TeacherSidebar";
 import TopNav from "@/components/dashboard/TopNav";
 import { BGPattern } from "@/components/ui/BGPattern";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -9,7 +9,7 @@ import { useAuthStore, useIsAuthLoading } from "@/store/useAuthStore";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
-export default function FacultyLayout({ children }: { children: React.ReactNode }) {
+export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore();
   const isAuthLoading = useIsAuthLoading();
 
@@ -22,11 +22,11 @@ export default function FacultyLayout({ children }: { children: React.ReactNode 
   }
 
   const mappedUser = user
-  ? { name: user.name ?? "Faculty", role: "Faculty", initial: (user.name ?? "F").charAt(0), avatar: user.avatar }
-  : { name: "Faculty", role: "Faculty", initial: "F" };
+  ? { name: user.name ?? "Teacher", role: "Teacher", initial: (user.name ?? "T").charAt(0), avatar: user.avatar }
+  : { name: "Teacher", role: "Teacher", initial: "T" };
 
   return (
-    <DashboardLayout SidebarComponent={FacultySidebar} user={mappedUser}>
+    <DashboardLayout SidebarComponent={TeacherSidebar} user={mappedUser}>
       <BGPattern
         variant="grid"
         size={32}

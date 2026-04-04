@@ -225,12 +225,12 @@ export default function AITutorPage() {
       try {
         const [user, dashboard, profile, notes, history, allCourses, questions] =
           await Promise.all([
-            api.getCurrentUser(),
-            api.getDashboardData("student"),
-            api.getStudentProfile(),
-            api.getNotes(),
-            api.getChatHistory(),
-            api.getAllCourses(),
+            api.getCurrentUser().catch(() => null),
+            api.getDashboardData("student").catch(() => null),
+            api.getStudentProfile().catch(() => null),
+            api.getNotes().catch(() => [] as any[]),
+            api.getChatHistory().catch(() => [] as any[]),
+            api.getAllCourses().catch(() => [] as any[]),
             api.getStudentQuestions().catch(() => [] as any[]),
           ]);
 

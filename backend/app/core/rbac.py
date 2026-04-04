@@ -5,7 +5,7 @@ from typing import Any, Set
 class Role(str, Enum):
     """
     Standard institutional roles in the Lumina platform.
-    Self-signup:   student, teacher, faculty, parent, mentor, peer_tutor, researcher
+    Self-signup:   student, teacher, parent, mentor, peer_tutor, researcher
     Invite-only:   hod, college_admin, super_admin, counselor, content_creator
     """
     SUPER_ADMIN = "super_admin"
@@ -13,7 +13,6 @@ class Role(str, Enum):
     COLLEGE_ADMIN = "college_admin"
     INSTITUTION_ADMIN = "institution_admin"
     HOD = "hod"
-    FACULTY = "faculty"
     TEACHER = "teacher"
     STUDENT = "student"
     PARENT = "parent"
@@ -63,7 +62,6 @@ PLATFORM_ROLES: Set[str] = {
 SELF_SIGNUP_ROLES = {
     Role.STUDENT.value,
     Role.TEACHER.value,
-    Role.FACULTY.value,
     Role.PARENT.value,
     Role.MENTOR.value,
     Role.PEER_TUTOR.value,
@@ -71,14 +69,14 @@ SELF_SIGNUP_ROLES = {
 }
 
 # All valid role strings, including legacy aliases that are normalized later.
-ALL_ROLES = VALID_ROLES | PLATFORM_ROLES | {"faculty"}
+ALL_ROLES = VALID_ROLES | PLATFORM_ROLES
 
 
 def normalize_role(role: Any) -> str:
     """Normalize a raw role string to a standard role string.
 
     Maps common aliases to canonical role names.
-    Canonical teaching role is `teacher`; `faculty` remains a legacy alias only.
+    Canonical teaching role is `teacher`.
     """
     if not role:
         return Role.STUDENT.value
@@ -145,3 +143,4 @@ def to_db_role(role: Any) -> str:
     # Based on research, the database enum 'user_role' might be case-sensitive.
     # Defaulting to lowercase as per most common Postgres conventions if uppercase fails.
     return normalized.lower()
+

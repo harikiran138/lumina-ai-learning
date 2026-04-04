@@ -36,7 +36,6 @@ RBAC_RULES = {
     "/api/super-admin": ["super_admin"],
     "/api/college-admin": ["college_admin", "super_admin"],
     "/api/hod": ["hod", "admin", "super_admin", "college_admin"],
-    "/api/faculty": ["teacher", "hod", "admin", "super_admin"],
     "/api/teacher": ["teacher", "hod", "admin", "super_admin"],
     "/api/student": ["student", "teacher", "hod", "admin", "super_admin"],
     "/api/parent": ["parent", "admin", "super_admin"],

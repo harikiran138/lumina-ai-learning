@@ -92,6 +92,25 @@ def _ensure_serialized_response(response_text: Any, mode: str) -> str:
     return AITutorStore._error_fallback(mode)
 
 
+def _extract_meta(response_str: str) -> Dict[str, Any]:
+    """Extract meta block from A2UI JSON for top-level response envelope."""
+    try:
+        parsed = json.loads(response_str)
+        if isinstance(parsed, dict) and isinstance(parsed.get("meta"), dict):
+            return parsed["meta"]
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return {}
+
+
+_MODE_TO_TYPE = {
+    "quiz": "quiz",
+    "code": "code",
+    "interactive": "text",
+    "explain": "text",
+}
+
+
 async def build_tutor_response_payload(
     payload: Dict[str, Any],
     current_user: Dict[str, Any],
@@ -117,14 +136,18 @@ async def build_tutor_response_payload(
             student_id=str(current_user.get("id")),
             requested_mode=mode,
         )
+        resolved_mode = queued.get("classification", {}).get("mode", mode)
+        response_str = _ensure_serialized_response(queued.get("response"), resolved_mode)
         return {
             "success": True,
             "queued": True,
             "queue_id": queued.get("queue_id"),
             "delivery_status": queued.get("delivery_status"),
-            "response": _ensure_serialized_response(queued.get("response"), mode),
+            "type": _MODE_TO_TYPE.get(resolved_mode, "text"),
+            "content": response_str,
+            "meta": _extract_meta(response_str),
             "role": "assistant",
-            "mode": queued.get("classification", {}).get("mode", mode),
+            "mode": resolved_mode,
             "classification": queued.get("classification"),
         }
 
@@ -135,11 +158,14 @@ async def build_tutor_response_payload(
         mode=mode,
         student_id=current_user.get("id"),
     )
+    response_str = _ensure_serialized_response(response_text, mode)
 
     return {
         "success": True,
         "queued": False,
-        "response": _ensure_serialized_response(response_text, mode),
+        "type": _MODE_TO_TYPE.get(mode, "text"),
+        "content": response_str,
+        "meta": _extract_meta(response_str),
         "role": "assistant",
         "mode": mode,
     }

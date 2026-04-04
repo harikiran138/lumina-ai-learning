@@ -40,10 +40,8 @@ class OnboardingService:
         try:
             if effective_role == "student":
                 migration_results = await self._migrate_student(user_id, progress, current_user, payload)
-            elif effective_role == "teacher":
+            elif effective_role in {"teacher", "faculty", "hod"}:
                 migration_results = await self._migrate_teacher(user_id, progress, current_user, payload)
-            elif effective_role in {"faculty", "hod"}:
-                migration_results = await self._migrate_faculty(user_id, progress, current_user, payload)
             elif effective_role == "parent":
                 migration_results = await self._migrate_parent(user_id, progress, current_user, payload)
             elif effective_role == "mentor":
@@ -181,39 +179,7 @@ class OnboardingService:
         return {"status": "success", "profile": "learner_profiles", "enrollment_synced": bool(batch_id)}
 
     async def _migrate_teacher(self, user_id: str, progress: Dict[str, Any], current_user: Dict[str, Any], payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Migrates independent teacher data to teacher_profiles."""
-        payload = payload or {}
-        step_1 = progress.get("step_1") or {}
-        step_2 = progress.get("step_2") or {}
-        step_3 = progress.get("step_3") or {}
-        step_4 = progress.get("step_4") or {}
-
-        now = datetime.utcnow().isoformat()
-
-        profile_payload = {
-            "user_id": user_id,
-            "full_name": payload.get("full_name") or step_1.get("fullName") or current_user.get("full_name") or current_user.get("name"),
-            "qualification": payload.get("qualification") or step_1.get("qualification"),
-            "contact_phone": payload.get("contact_phone") or step_1.get("contactPhone"),
-            "subjects": payload.get("subjects") or step_2.get("subjects") or [],
-            "experience_years": payload.get("experience_years") or step_2.get("experienceYears") or 0,
-            "teaching_mode": payload.get("teaching_mode") or step_2.get("teachingMode"),
-            "hourly_rate": payload.get("hourly_rate") or step_2.get("hourlyRate") or 0,
-            "availability": payload.get("availability") or step_3.get("availability"),
-            "portfolio_links": payload.get("portfolio_links") or step_3.get("portfolioLinks") or [],
-            "teaching_focus": payload.get("teaching_focus") or step_3.get("teachingFocus"),
-            "response_time": payload.get("response_time") or step_4.get("responseTime"),
-            "learner_levels": payload.get("learner_levels") or step_4.get("learnerLevels") or [],
-            "is_activated": True,
-            "updated_at": now,
-        }
-
-        await self.db.upsert("teacher_profiles", profile_payload, on_conflict="user_id")
-
-        return {"status": "success", "profile": "teacher_profiles"}
-
-    async def _migrate_faculty(self, user_id: str, progress: Dict[str, Any], current_user: Dict[str, Any], payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Migrates institution-linked faculty data to faculty_profiles."""
+        """Migrates teacher/faculty data to teacher_profiles."""
         payload = payload or {}
         step_1 = progress.get("step_1") or {}
         step_2 = progress.get("step_2") or {}
@@ -228,21 +194,30 @@ class OnboardingService:
             "employee_id": payload.get("employee_id") or step_1.get("employeeId") or current_user.get("employee_id"),
             "institution_id": payload.get("institution_id") or step_1.get("collegeId") or current_user.get("college_id") or current_user.get("institution_id"),
             "department": payload.get("department") or step_1.get("department"),
-            "designation": payload.get("designation") or step_1.get("designation") or "Faculty",
+            "designation": payload.get("designation") or step_1.get("designation") or "Teacher",
+            "qualification": payload.get("qualification") or step_1.get("qualification"),
+            "contact_phone": payload.get("contact_phone") or step_1.get("contactPhone"),
             "subjects": payload.get("subjects") or step_2.get("subjects") or [],
             "experience_years": payload.get("experience_years") or step_2.get("experienceYears") or 0,
-            "verification_docs": payload.get("verification_docs") or step_2.get("verificationDocs") or [],
+            "teaching_mode": payload.get("teaching_mode") or step_2.get("teachingMode"),
+            "hourly_rate": payload.get("hourly_rate") or step_2.get("hourlyRate") or 0,
+            "availability": payload.get("availability") or step_3.get("availability"),
             "office_hours": payload.get("office_hours") or step_3.get("officeHours"),
-            "teaching_modes": payload.get("teaching_modes") or step_3.get("teachingModes") or [],
-            "faculty_notes": payload.get("faculty_notes") or step_3.get("facultyNotes"),
+            "portfolio_links": payload.get("portfolio_links") or step_3.get("portfolioLinks") or [],
+            "teaching_focus": payload.get("teaching_focus") or step_3.get("teachingFocus"),
+            "response_time": payload.get("response_time") or step_4.get("responseTime"),
+            "learner_levels": payload.get("learner_levels") or step_4.get("learnerLevels") or [],
             "grading_scale": payload.get("grading_scale") or step_4.get("gradingScale"),
-            "analytics_focus": payload.get("analytics_focus") or step_4.get("analyticsFocus") or [],
+            "is_activated": True,
             "is_verified": bool(payload.get("is_verified")) or bool(step_2.get("confirmedAssignments")),
             "updated_at": now,
         }
 
-        await self.db.upsert("faculty_profiles", profile_payload, on_conflict="user_id")
-        return {"status": "success", "profile": "faculty_profiles"}
+        await self.db.upsert("teacher_profiles", profile_payload, on_conflict="user_id")
+
+        return {"status": "success", "profile": "teacher_profiles"}
+
+
 
     async def _migrate_parent(self, user_id: str, progress: Dict[str, Any], current_user: Dict[str, Any], payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Migrates parent data to parent_profiles."""
