@@ -95,12 +95,12 @@ router.push("/login");
 
 return (
 <aside
-onMouseEnter={() => setIsHovered(true)}
-onMouseLeave={() => setIsHovered(false)}
-className={cn(
-"fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 transition-all duration-500 hidden lg:flex flex-col overflow-hidden",
-!isHovered ? "w-20" : "w-64",
-)}
+  onMouseEnter={() => setIsHovered(true)}
+  onMouseLeave={() => setIsHovered(false)}
+  className={cn(
+    "fixed left-0 top-0 bottom-0 border-r border-white/5 bg-black/40 backdrop-blur-xl z-40 flex flex-col transition-all duration-300 ease-in-out overflow-hidden shadow-2xl",
+    isHovered ? "w-64" : "w-20",
+  )}
 >
 {/* LOGO */}
 <div className={cn("flex items-center border-b border-white/5", !isHovered ? "justify-center h-16" : "px-6 h-20")}> <Link href="/" className="text-2xl font-bold flex gap-1"> <span>{!isHovered ? "L" : "Lumina"}</span> <span className="text-yellow-400">AI</span> </Link> </div>

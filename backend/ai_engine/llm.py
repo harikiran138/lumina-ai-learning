@@ -1,8 +1,12 @@
-import requests
 import os
+import time
+from typing import List, Optional
+
+import requests
 import structlog
 from starlette.concurrency import run_in_threadpool
-from typing import List, Optional
+
+from app.core.config import settings
 
 logger = structlog.get_logger()
 
@@ -29,11 +33,114 @@ def is_provider_error(text: str) -> bool:
             "failed to establish a new connection",
             "max retries exceeded",
             "read timed out",
+            "timed out",
             "not found",
             "api key not valid",
+            "invalid openrouter api key",
+            "rate limit exceeded",
             "permission denied",
         ]
     )
+
+
+def _truncate_for_log(value: str, limit: int = 300) -> str:
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if len(text) <= limit:
+        return text
+    return text[:limit] + "...[truncated]"
+
+
+def _extract_openrouter_content(payload: dict) -> str:
+    choices = payload.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return ""
+
+    message = choices[0].get("message") or {}
+    content = message.get("content")
+
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "text":
+                parts.append(str(item.get("text", "")))
+            elif isinstance(item, str):
+                parts.append(item)
+        return "".join(parts).strip()
+
+    return ""
+
+
+def infer_openrouter_complexity(prompt: str, system_prompt: str = "") -> str:
+    combined = f"{system_prompt}\n{prompt}".lower()
+    complex_markers = [
+        "step-by-step",
+        "step by step",
+        "multi-step",
+        "multi step",
+        "compare",
+        "why",
+        "how does",
+        "analyze",
+        "derive",
+        "prove",
+        "debug",
+        "algorithm",
+        "code",
+        "implement",
+        "socratic",
+        "history:",
+        "persistent memory",
+        "lesson context",
+        "assignment context",
+        "a2ui",
+        "json format",
+    ]
+    if len(prompt) > 500 or len(system_prompt) > 1200:
+        return "complex"
+    if any(marker in combined for marker in complex_markers):
+        return "complex"
+    return "simple"
+
+
+def resolve_openrouter_models(
+    feature: str | None,
+    prompt: str,
+    system_prompt: str = "",
+    explicit_model: str | None = None,
+    fallback_models: Optional[List[str]] = None,
+) -> List[str]:
+    models: list[str] = []
+
+    if explicit_model:
+        models.append(explicit_model)
+    elif feature == "tutor":
+        if infer_openrouter_complexity(prompt, system_prompt) == "complex":
+            models.append(settings.OPENROUTER_COMPLEX_MODEL)
+            models.append(settings.OPENROUTER_SIMPLE_MODEL)
+        else:
+            models.append(settings.OPENROUTER_SIMPLE_MODEL)
+            models.append(settings.OPENROUTER_COMPLEX_MODEL)
+    elif feature in {"assessment", "code", "validation", "presentation"}:
+        models.append(settings.OPENROUTER_COMPLEX_MODEL)
+    else:
+        models.append(settings.OPENROUTER_MODEL)
+
+    models.extend(fallback_models or [])
+    models.append(settings.OPENROUTER_FALLBACK_MODEL)
+
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for model in models:
+        if not model or model in seen:
+            continue
+        seen.add(model)
+        deduped.append(model)
+    return deduped or ["openrouter/auto"]
 
 
 class LLMProvider:
@@ -170,21 +277,45 @@ class GeminiRestProvider(LLMProvider):
 
 
 class OpenRouterProvider(LLMProvider):
-    def __init__(self, api_key: str, model: str = "openrouter/auto"):
+    RETRYABLE_STATUS_CODES = {408, 409, 429, 500, 502, 503, 504}
+
+class OpenRouterProvider(LLMProvider):
+    RETRYABLE_STATUS_CODES = {408, 409, 429, 500, 502, 503, 504}
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str | None = None,
+        feature: str | None = None,
+        fallback_models: Optional[List[str]] = None,
+    ):
         self.api_key = api_key
         self.model = model
+        self.feature = feature
+        self.fallback_models = fallback_models or []
         self.session = requests.Session()
-        self.connect_timeout = float(os.getenv("OPENROUTER_CONNECT_TIMEOUT", "5"))
-        self.read_timeout = float(os.getenv("OPENROUTER_READ_TIMEOUT", "45"))
+        self.connect_timeout = settings.OPENROUTER_CONNECT_TIMEOUT
+        self.read_timeout = settings.OPENROUTER_READ_TIMEOUT
+        self.max_retries = settings.OPENROUTER_MAX_RETRIES
+        self.site_url = os.getenv("OPENROUTER_SITE_URL", "https://lumina-ai-learning.vercel.app")
+        self.site_name = os.getenv("OPENROUTER_SITE_NAME", "Lumina AI Learning Platform")
 
-    def generate(self, prompt: str, system_prompt: str = "") -> str:
-        url = "https://openrouter.ai/api/v1/chat/completions"
-        headers = {
+    def _build_headers(self) -> dict:
+        return {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://lumina-ai.learning",
-            "X-Title": "Lumina AI Learning"
+            "HTTP-Referer": self.site_url,
+            "X-Title": self.site_name,
         }
+
+    def generate(self, prompt: str, system_prompt: str = "") -> str:
+        route_models = resolve_openrouter_models(
+            self.feature,
+            prompt,
+            system_prompt=system_prompt,
+            explicit_model=self.model,
+            fallback_models=self.fallback_models,
+        )
 
         messages = []
         if system_prompt:
@@ -192,40 +323,92 @@ class OpenRouterProvider(LLMProvider):
         messages.append({"role": "user", "content": prompt})
 
         payload = {
-            "model": self.model,
+            "model": route_models[0],
             "messages": messages,
-            "temperature": 0.7
+            "temperature": 0.4 if self.feature == "tutor" else 0.7,
         }
+        if len(route_models) > 1:
+            payload["models"] = route_models
 
-        try:
-            response = self.session.post(
-                url,
-                json=payload,
-                headers=headers,
-                timeout=(self.connect_timeout, self.read_timeout)
-            )
-            if response.status_code == 429:
-                return "Error (429): Rate Limit Exceeded"
-            response.raise_for_status()
-            data = response.json()
-            if "choices" in data and data["choices"]:
-                content = data["choices"][0]["message"]["content"]
-                if content:
-                    return content
-            return "Error: Empty response from provider"
-        except Exception as e:
-            return f"Error: {str(e)}"
+        headers = self._build_headers()
+        last_error = "Unknown OpenRouter error"
+        started_at = time.perf_counter()
+
+        logger.info(
+            "openrouter_request",
+            feature=self.feature or "generic",
+            model=payload["model"],
+            models=route_models,
+            url=settings.OPENROUTER_API_URL,
+            prompt_preview=_truncate_for_log(prompt, 180),
+            system_prompt_preview=_truncate_for_log(system_prompt, 180),
+        )
+
+        for attempt in range(self.max_retries + 1):
+            try:
+                response = self.session.post(
+                    settings.OPENROUTER_API_URL,
+                    json=payload,
+                    headers=headers,
+                    timeout=(self.connect_timeout, self.read_timeout),
+                )
+
+                if response.status_code == 401:
+                    logger.error("openrouter_auth_error", feature=self.feature or "generic", status=401)
+                    return "Error generating content: Invalid OpenRouter API key (401)."
+
+                if response.status_code in self.RETRYABLE_STATUS_CODES:
+                    last_error = f"OpenRouter returned {response.status_code}: {_truncate_for_log(response.text, 180)}"
+                    logger.warning("openrouter_retryable_error", attempt=attempt + 1, feature=self.feature or "generic", status=response.status_code, error=last_error)
+                    if attempt < self.max_retries:
+                        time.sleep(0.5 * (attempt + 1))
+                        continue
+                    break
+
+                response.raise_for_status()
+                data = response.json()
+                content = _extract_openrouter_content(data)
+                if not content:
+                    last_error = "OpenRouter returned an empty completion."
+                    break
+
+                logger.info(
+                    "openrouter_response",
+                    feature=self.feature or "generic",
+                    resolved_model=data.get("model") or payload["model"],
+                    latency_ms=round((time.perf_counter() - started_at) * 1000, 2),
+                    response_preview=_truncate_for_log(content, 220),
+                )
+                return content
+
+            except requests.exceptions.Timeout:
+                last_error = "OpenRouter request timed out."
+                if attempt < self.max_retries:
+                    continue
+                break
+            except Exception as exc:
+                last_error = str(exc)
+                if attempt < self.max_retries:
+                    continue
+                break
+
+        return f"Error generating content: {last_error}"
+
+    async def agenerate(self, prompt: str, system_prompt: str = "") -> str:
+        return await run_in_threadpool(self.generate, prompt, system_prompt)
 
 
 # Robust Multi-Model Feature Map
 FEATURE_MODEL_MAP = {
-    "onboarding": ["arcee-ai/trinity-large-preview:free", "openrouter/auto"],
-    "dashboard":  ["arcee-ai/trinity-large-preview:free", "openrouter/auto"],
-    "code":       ["qwen/qwen3-coder-480b:free", "deepseek/deepseek-r1:free", "openrouter/auto"],
-    "validation": ["deepseek/deepseek-r1:free", "mistralai/mistral-small-3:free", "openrouter/auto"],
-    "fast":       ["nvidia/nemotron-3-nano-30b-a3b:free", "openrouter/auto"],
-    "rag":        ["mistralai/mistral-small-3:free", "openrouter/auto"],
-    "vision":     ["qwen/qwen-vl:free", "openrouter/auto"],
+    "onboarding": [settings.OPENROUTER_SIMPLE_MODEL, settings.OPENROUTER_FALLBACK_MODEL],
+    "dashboard": [settings.OPENROUTER_SIMPLE_MODEL, settings.OPENROUTER_FALLBACK_MODEL],
+    "code": [settings.OPENROUTER_COMPLEX_MODEL, settings.OPENROUTER_FALLBACK_MODEL],
+    "validation": [settings.OPENROUTER_COMPLEX_MODEL, settings.OPENROUTER_FALLBACK_MODEL],
+    "fast": [settings.OPENROUTER_SIMPLE_MODEL, settings.OPENROUTER_FALLBACK_MODEL],
+    "rag": [settings.OPENROUTER_COMPLEX_MODEL, settings.OPENROUTER_FALLBACK_MODEL],
+    "vision": [settings.OPENROUTER_COMPLEX_MODEL, settings.OPENROUTER_FALLBACK_MODEL],
+    "assessment": [settings.OPENROUTER_COMPLEX_MODEL, settings.OPENROUTER_FALLBACK_MODEL],
+    "presentation": [settings.OPENROUTER_COMPLEX_MODEL, settings.OPENROUTER_FALLBACK_MODEL],
 }
 
 
@@ -236,27 +419,18 @@ class ResilientOpenRouterProvider(LLMProvider):
         self.models = models
 
     def generate(self, prompt: str, system_prompt: str = "") -> str:
-        last_error = "All models failed."
-        
-        for model in self.models:
-            provider = OpenRouterProvider(self.api_key, model=model)
-            logger.info("llm_attempt", feature=self.feature, model=model)
-            
-            # Internal retry for transient errors (max 2 attempts per model)
-            for attempt in range(2):
-                try:
-                    response = provider.generate(prompt, system_prompt)
-                    if response and not is_provider_error(response):
-                        logger.info("llm_success", feature=self.feature, model=model, attempt=attempt+1)
-                        return response
-                    
-                    last_error = response
-                    logger.warning("llm_retry", feature=self.feature, model=model, attempt=attempt+1, error=response)
-                except Exception as e:
-                    last_error = str(e)
-                    logger.error("llm_exception", feature=self.feature, model=model, attempt=attempt+1, error=str(e))
-        
-        return f"Error generating content: {last_error}"
+        provider = OpenRouterProvider(
+            self.api_key,
+            model=self.models[0] if self.models else settings.OPENROUTER_MODEL,
+            feature=self.feature,
+            fallback_models=self.models[1:],
+        )
+        response = provider.generate(prompt, system_prompt)
+        if response and not is_provider_error(response):
+            logger.info("llm_success", feature=self.feature, models=self.models)
+            return response
+        logger.warning("llm_failed", feature=self.feature, models=self.models, error=response)
+        return response
 
 
 class CompositeLLMProvider(LLMProvider):
@@ -298,12 +472,14 @@ def get_llm_provider(feature: str = None, provider: str = "auto") -> LLMProvider
 
     # 1. OpenRouter (Primary Strategy: Resilient Feature-based)
     if openrouter_key and provider in {"auto", "openrouter"}:
-        if feature and feature in FEATURE_MODEL_MAP:
+        if feature == "tutor":
+            providers.append(OpenRouterProvider(openrouter_key, feature=feature))
+        elif feature and feature in FEATURE_MODEL_MAP:
             models = FEATURE_MODEL_MAP[feature]
             providers.append(ResilientOpenRouterProvider(openrouter_key, feature, models))
         else:
             # Fallback for generic calls
-            providers.append(OpenRouterProvider(openrouter_key, model="openrouter/auto"))
+            providers.append(OpenRouterProvider(openrouter_key, feature=feature))
 
     # 2. Gemini (Secondary Fallback Chain)
     if gemini_keys and provider in {"auto", "gemini"}:

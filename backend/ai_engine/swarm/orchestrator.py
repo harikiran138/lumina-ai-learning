@@ -112,6 +112,19 @@ class Orchestrator:
         elif intent == "PATHWAY":
             return await self._get_pathway_agent().process_input(user_input, context)
 
+        elif intent == "GENERAL":
+            # Requirement 5: Return structured output: { type, content, meta }
+            simple_response = await self._get_tutor_agent().generate_simple_response(user_input, history=context.get("history", []))
+            return {
+                "type": "text",
+                "content": simple_response,
+                "meta": {
+                    "topic": context.get("topic", "General"),
+                    "intent": "GENERAL",
+                    "status": "success"
+                }
+            }
+
         # Default to Tutor Agent for most interactions
         filters = context.get("filters") or {}
         subject_mode = infer_subject_mode(user_input, context.get("topic", ""), filters)

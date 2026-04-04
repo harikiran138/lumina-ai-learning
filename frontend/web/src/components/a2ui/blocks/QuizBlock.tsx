@@ -1,130 +1,167 @@
-import React, { useState } from "react";
-import { QuizBlock } from "@/lib/a2ui-schema";
-import { CheckCircle2, XCircle, BrainCircuit } from "lucide-react";
+"use client";
+
+import React, { useMemo, useState } from "react";
+import { type QuizBlock } from "@/lib/a2ui-schema";
+import { BrainCircuit, CheckCircle2, HelpCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface QuizResultProps {
   block: QuizBlock;
 }
 
 export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
-  // Track selected answers: { [questionIndex]: selectedOptionIndex }
   const [selections, setSelections] = useState<Record<number, number>>({});
-  // Track submitted status per question: { [questionIndex]: true }
   const [submitted, setSubmitted] = useState<Record<number, boolean>>({});
+  const [hintOpen, setHintOpen] = useState<Record<number, boolean>>({});
 
-  const handleSelect = (qIdx: number, oIdx: number) => {
-    if (submitted[qIdx]) return;
-    setSelections((prev) => ({ ...prev, [qIdx]: oIdx }));
-  };
-
-  const handleSubmit = (qIdx: number) => {
-    if (selections[qIdx] === undefined) return;
-    setSubmitted((prev) => ({ ...prev, [qIdx]: true }));
-  };
+  const answeredCount = Object.keys(submitted).length;
+  const correctCount = useMemo(
+    () =>
+      block.content.questions.reduce((count, question, index) => {
+        if (!submitted[index]) return count;
+        return selections[index] === question.correctIndex ? count + 1 : count;
+      }, 0),
+    [block.content.questions, selections, submitted],
+  );
 
   return (
     <div className="my-6 space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <BrainCircuit className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-        <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
-          Knowledge Check
+      <div className="flex flex-wrap items-center gap-2">
+        <BrainCircuit className="h-5 w-5 text-amber-300" />
+        <h3 className="font-semibold text-white">
+          {block.content.title || "Knowledge check"}
         </h3>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 uppercase tracking-wider font-medium">
-          {block.difficulty}
-        </span>
+        {block.content.difficulty && (
+          <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-amber-100">
+            {block.content.difficulty}
+          </span>
+        )}
+        {answeredCount > 0 && (
+          <span className="text-xs text-slate-400">
+            Score: {correctCount}/{answeredCount}
+          </span>
+        )}
       </div>
 
-      {block.questions.map((q, qIdx) => {
-        const isSubmitted = submitted[qIdx];
-        const isCorrect = isSubmitted && selections[qIdx] === q.answer;
-        const width = block.questions.length > 1 ? "w-full" : "w-full"; // Keeping layout consistent
+      {block.content.questions.map((question, questionIndex) => {
+        const isSubmitted = Boolean(submitted[questionIndex]);
+        const selectedOption = selections[questionIndex];
+        const isCorrect =
+          isSubmitted && selectedOption === question.correctIndex;
 
         return (
           <div
-            key={qIdx}
+            key={`${question.prompt}-${questionIndex}`}
             className={cn(
-              "p-5 rounded-lg border bg-white dark:bg-zinc-900 shadow-sm transition-all",
+              "rounded-2xl border p-5 shadow-sm",
               isSubmitted
                 ? isCorrect
-                  ? "border-green-200 dark:border-green-900/50"
-                  : "border-red-200 dark:border-red-900/50"
-                : "border-zinc-200 dark:border-zinc-800",
+                  ? "border-emerald-400/20 bg-emerald-400/10"
+                  : "border-red-400/20 bg-red-400/10"
+                : "border-white/8 bg-white/[0.03]",
             )}
           >
-            <p className="font-medium text-zinc-800 dark:text-zinc-200 mb-4">
-              {q.question}
+            <p className="mb-4 text-sm font-medium leading-relaxed text-white">
+              {question.prompt}
             </p>
 
             <div className="space-y-2">
-              {q.options.map((opt, oIdx) => {
-                const isSelected = selections[qIdx] === oIdx;
-                const isAnswer = oIdx === q.answer;
-
-                let optionClass =
-                  "w-full text-left p-3 rounded-md text-sm transition-all border ";
-
-                if (isSubmitted) {
-                  if (isSelected && isCorrect) {
-                    optionClass +=
-                      "bg-green-50 dark:bg-green-900/20 border-green-500 text-green-700 dark:text-green-300 font-medium";
-                  } else if (isSelected && !isCorrect) {
-                    optionClass +=
-                      "bg-red-50 dark:bg-red-900/20 border-red-500 text-red-700 dark:text-red-300";
-                  } else if (isAnswer && !isCorrect) {
-                    optionClass +=
-                      "bg-green-50 dark:bg-green-900/20 border-green-500 text-green-700 dark:text-green-300 opacity-75"; // Show correct answer
-                  } else {
-                    optionClass += "border-transparent opacity-50";
-                  }
-                } else {
-                  if (isSelected) {
-                    optionClass +=
-                      "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-500 text-yellow-700 dark:text-yellow-300";
-                  } else {
-                    optionClass +=
-                      "border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400";
-                  }
-                }
+              {question.options.map((option, optionIndex) => {
+                const isSelected = selectedOption === optionIndex;
+                const isAnswer = optionIndex === question.correctIndex;
 
                 return (
                   <button
-                    key={oIdx}
-                    onClick={() => handleSelect(qIdx, oIdx)}
+                    key={`${option}-${optionIndex}`}
+                    type="button"
+                    onClick={() => {
+                      if (!isSubmitted) {
+                        setSelections((current) => ({
+                          ...current,
+                          [questionIndex]: optionIndex,
+                        }));
+                      }
+                    }}
                     disabled={isSubmitted}
-                    className={optionClass}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>{opt}</span>
-                      {isSubmitted &&
+                    className={cn(
+                      "w-full rounded-xl border px-4 py-3 text-left text-sm transition-all",
+                      !isSubmitted &&
+                        "border-white/8 bg-black/10 text-slate-200 hover:border-amber-300/30 hover:bg-amber-300/10",
+                      !isSubmitted &&
                         isSelected &&
-                        (isCorrect ? (
-                          <CheckCircle2 className="w-4 h-4 ml-2" />
-                        ) : (
-                          <XCircle className="w-4 h-4 ml-2" />
-                        ))}
+                        "border-amber-300/40 bg-amber-300/10 text-white",
+                      isSubmitted &&
+                        isSelected &&
+                        isCorrect &&
+                        "border-emerald-400/40 bg-emerald-400/10 text-emerald-100",
+                      isSubmitted &&
+                        isSelected &&
+                        !isCorrect &&
+                        "border-red-400/40 bg-red-400/10 text-red-100",
+                      isSubmitted &&
+                        isAnswer &&
+                        !isSelected &&
+                        "border-emerald-400/30 bg-emerald-400/5 text-emerald-100",
+                      isSubmitted &&
+                        !isSelected &&
+                        !isAnswer &&
+                        "border-white/5 bg-white/[0.02] text-slate-400",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <span>{option}</span>
+                      {isSubmitted && isSelected && isCorrect && (
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-200" />
+                      )}
+                      {isSubmitted && isSelected && !isCorrect && (
+                        <XCircle className="h-4 w-4 shrink-0 text-red-200" />
+                      )}
                     </div>
                   </button>
                 );
               })}
             </div>
 
-            {!isSubmitted ? (
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={() => handleSubmit(qIdx)}
-                  disabled={selections[qIdx] === undefined}
-                  className="px-4 py-1.5 text-sm bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+            <div className="mt-4 flex flex-wrap gap-3">
+              {question.hint && block.ui?.interactive && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-amber-300/20 bg-transparent text-amber-100 hover:bg-amber-300/10"
+                  onClick={() =>
+                    setHintOpen((current) => ({
+                      ...current,
+                      [questionIndex]: !current[questionIndex],
+                    }))
+                  }
                 >
-                  Check Answer
-                </button>
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  Show hint
+                </Button>
+              )}
+              <Button
+                type="button"
+                className="bg-amber-300 text-black hover:bg-amber-200"
+                onClick={() =>
+                  setSubmitted((current) => ({ ...current, [questionIndex]: true }))
+                }
+                disabled={selectedOption === undefined || isSubmitted}
+              >
+                Check answer
+              </Button>
+            </div>
+
+            {question.hint && hintOpen[questionIndex] && (
+              <div className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-sm text-amber-100">
+                {question.hint}
               </div>
-            ) : (
-              q.explanation && (
-                <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-sm text-zinc-500 dark:text-zinc-400 italic">
-                  {q.explanation}
-                </div>
-              )
+            )}
+
+            {isSubmitted && question.explanation && (
+              <div className="mt-3 rounded-xl border border-white/6 bg-black/10 px-3 py-2 text-sm text-slate-200">
+                {question.explanation}
+              </div>
             )}
           </div>
         );

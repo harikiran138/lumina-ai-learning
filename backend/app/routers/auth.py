@@ -208,6 +208,12 @@ def build_claims(user: dict) -> dict:
     }
 
 
+# Backward-compatible alias for older tests and utility scripts that still import
+# the original private helper name.
+def _build_claims(user: dict) -> dict:
+    return build_claims(user)
+
+
 def _get_identifier_type(identifier: str) -> str:
     if _ROLL_RE.match(identifier):
         return "roll_number"

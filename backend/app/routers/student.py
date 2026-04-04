@@ -4,7 +4,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 import structlog
 logger = structlog.get_logger()
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Body
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 from app.store.redis_client import redis_client
@@ -29,8 +29,11 @@ from app.services.student_analytics import compute_student_analytics
 from app.core.audit import audit_logger
 import uuid
 import secrets
+from app.routers.ai_tutor import build_tutor_response_payload, WAITING_MESSAGE
 
 router = APIRouter()
+_student_tutor_answers: Dict[str, Dict[str, Any]] = {}
+_student_tutor_tasks: Dict[str, asyncio.Task] = {}
 
 
 class QuizResultRequest(BaseModel):
@@ -75,6 +78,81 @@ class StudentOnboardingCompleteRequest(BaseModel):
     consents: Dict[str, bool]
     batch_confirmed: bool = False
     batch_confirmation_note: Optional[str] = None
+
+
+def _student_tutor_timestamp() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _infer_tutor_answer_type(response_text: str) -> str:
+    try:
+        parsed = json.loads(response_text)
+    except (TypeError, json.JSONDecodeError):
+        return "text"
+
+    flow = parsed.get("flow")
+    if isinstance(flow, list) and flow:
+        first_type = flow[0].get("type")
+        if isinstance(first_type, str) and first_type.strip():
+            return first_type
+    return "text"
+
+
+async def _run_student_tutor_answer(
+    answer_id: str,
+    payload: Dict[str, Any],
+    current_user: Dict[str, Any],
+) -> None:
+    job = _student_tutor_answers.get(answer_id)
+    if not job:
+        return
+
+    job["status"] = "processing"
+    job["updated_at"] = _student_tutor_timestamp()
+
+    try:
+        result = await build_tutor_response_payload(payload, current_user)
+        response_text = result["response"]
+        answer_type = _infer_tutor_answer_type(response_text)
+
+        job.update(
+            {
+                "status": "completed",
+                "message": "Answer ready",
+                "response": response_text,
+                "mode": result.get("mode"),
+                "type": answer_type,
+                "answer": {
+                    "id": answer_id,
+                    "type": answer_type,
+                    "content": response_text,
+                    "mode": result.get("mode"),
+                },
+                "updated_at": _student_tutor_timestamp(),
+                "completed_at": _student_tutor_timestamp(),
+            }
+        )
+    except HTTPException as exc:
+        job.update(
+            {
+                "status": "failed",
+                "message": exc.detail if isinstance(exc.detail, str) else "Tutor request failed",
+                "error": exc.detail,
+                "updated_at": _student_tutor_timestamp(),
+            }
+        )
+    except Exception as exc:
+        logger.exception("student_tutor_answer_failed", answer_id=answer_id, error=str(exc))
+        job.update(
+            {
+                "status": "failed",
+                "message": "I hit a problem while preparing your answer.",
+                "error": str(exc),
+                "updated_at": _student_tutor_timestamp(),
+            }
+        )
+    finally:
+        _student_tutor_tasks.pop(answer_id, None)
 
 
 def _parse_datetime(value: Any) -> Optional[datetime]:
@@ -622,6 +700,78 @@ async def delete_note(
         raise HTTPException(status_code=404, detail="Note not found")
     
     return {"status": "success", "message": "Note deleted"}
+
+
+@router.post("/tutor/ask")
+async def ask_tutor(
+    payload: Dict[str, Any] = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    prompt = (
+        payload.get("prompt")
+        or payload.get("question")
+        or payload.get("message")
+        or ""
+    )
+    if not str(prompt).strip():
+        raise HTTPException(status_code=400, detail="Prompt is required")
+
+    answer_id = uuid.uuid4().hex
+    now = _student_tutor_timestamp()
+    poll_path = f"/api/student/tutor/answer/{answer_id}"
+
+    _student_tutor_answers[answer_id] = {
+        "id": answer_id,
+        "student_id": str(current_user.get("id") or ""),
+        "status": "pending",
+        "message": WAITING_MESSAGE,
+        "response": None,
+        "answer": None,
+        "type": None,
+        "mode": payload.get("mode"),
+        "created_at": now,
+        "updated_at": now,
+        "poll_url": poll_path,
+    }
+    _student_tutor_tasks[answer_id] = asyncio.create_task(
+        _run_student_tutor_answer(answer_id, dict(payload), dict(current_user))
+    )
+
+    return {
+        "success": True,
+        "id": answer_id,
+        "status": "pending",
+        "message": WAITING_MESSAGE,
+        "poll_url": poll_path,
+    }
+
+
+@router.get("/tutor/answer/{answer_id}")
+async def get_tutor_answer(
+    answer_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    job = _student_tutor_answers.get(answer_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Tutor answer not found")
+
+    if str(job.get("student_id") or "") != str(current_user.get("id") or ""):
+        raise HTTPException(status_code=403, detail="Not your tutor answer")
+
+    return {
+        "success": True,
+        "id": answer_id,
+        "status": job.get("status", "pending"),
+        "message": job.get("message") or WAITING_MESSAGE,
+        "response": job.get("response"),
+        "answer": job.get("answer"),
+        "type": job.get("type"),
+        "mode": job.get("mode"),
+        "created_at": job.get("created_at"),
+        "updated_at": job.get("updated_at"),
+        "completed_at": job.get("completed_at"),
+        "poll_url": job.get("poll_url"),
+    }
 
 
 @router.get("/dashboard")

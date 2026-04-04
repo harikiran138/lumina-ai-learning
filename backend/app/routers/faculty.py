@@ -24,7 +24,8 @@ class FacultyOnboardingCompleteRequest(BaseModel):
 
 
 def _require_faculty(user: dict):
-    pass
+    if user.get("role") not in {"teacher", "faculty"}:
+        raise HTTPException(status_code=403, detail="Teacher onboarding access required")
 
 
 def _clamp_unit_interval(value: Any, default: float = 0.7) -> float:
@@ -68,10 +69,9 @@ def _build_assignment_views(
 
 
 @router.get("/onboarding/options")
+@router.get("/faculty/onboarding/options")
 async def get_faculty_onboarding_options(current_user: dict = Depends(get_current_user)):
     _require_faculty(current_user)
-    if current_user.get("role") not in {"teacher", "faculty"}:
-        raise HTTPException(status_code=403, detail="Teacher onboarding access required")
 
     teacher_id = str(current_user.get("id"))
     db = get_scoped_db(current_user)
@@ -116,13 +116,12 @@ async def get_faculty_onboarding_options(current_user: dict = Depends(get_curren
 
 
 @router.post("/onboarding/complete")
+@router.post("/faculty/onboarding/complete")
 async def complete_faculty_onboarding(
     payload: FacultyOnboardingCompleteRequest,
     current_user: dict = Depends(get_current_user),
 ):
     _require_faculty(current_user)
-    if current_user.get("role") not in {"teacher", "faculty"}:
-        raise HTTPException(status_code=403, detail="Teacher onboarding access required")
 
     required_consents = ("teacherVerifiedAi", "academicIntegrity", "dataPolicy")
     if not all(payload.consents.get(key) is True for key in required_consents):

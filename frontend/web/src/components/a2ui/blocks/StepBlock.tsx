@@ -1,34 +1,103 @@
-import React from "react";
-import { StepBlock } from "@/lib/a2ui-schema";
-import { ListOrdered } from "lucide-react";
+"use client";
+
+import React, { useMemo, useState } from "react";
+import { type StepsBlock } from "@/lib/a2ui-schema";
+import { Lightbulb, ListOrdered } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface StepResultProps {
-  block: StepBlock;
+  block: StepsBlock;
 }
 
 export const StepResult: React.FC<StepResultProps> = ({ block }) => {
+  const totalSteps = block.content.steps.length;
+  const interactive =
+    block.ui?.interactive ||
+    block.ui?.reveal === "stepwise" ||
+    block.content.steps.some((step) => Boolean(step.hint));
+
+  const [visibleCount, setVisibleCount] = useState(interactive ? 1 : totalSteps);
+  const [shownHints, setShownHints] = useState<Record<number, boolean>>({});
+
+  const visibleSteps = useMemo(
+    () => block.content.steps.slice(0, visibleCount),
+    [block.content.steps, visibleCount],
+  );
+
+  const activeHintIndex = visibleSteps.findIndex(
+    (step, index) => step.hint && !shownHints[index],
+  );
+  const canRevealHint =
+    block.ui?.allowHints !== false && activeHintIndex !== -1;
+
   return (
-    <div className="my-4 p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-sm">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="p-1.5 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
-          <ListOrdered className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+    <div className="my-4 rounded-2xl border border-white/8 bg-white/[0.03] p-5 shadow-sm">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="rounded-xl bg-amber-400/10 p-2">
+          <ListOrdered className="h-5 w-5 text-amber-300" />
         </div>
-        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          {block.title}
-        </h3>
+        <div>
+          <h3 className="text-lg font-semibold text-white">
+            {block.content.title}
+          </h3>
+          {block.content.summary && (
+            <p className="mt-1 text-sm text-slate-300">{block.content.summary}</p>
+          )}
+        </div>
       </div>
-      <div className="space-y-3">
-        {block.steps.map((step, idx) => (
-          <div key={idx} className="flex gap-3">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 flex items-center justify-center text-xs font-bold font-mono border border-yellow-200 dark:border-yellow-800">
-              {idx + 1}
+
+      <div className="space-y-4">
+        {visibleSteps.map((step, index) => (
+          <div
+            key={`${step.title || "step"}-${index}`}
+            className="rounded-xl border border-white/6 bg-black/10 p-4"
+          >
+            <div className="flex gap-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-amber-300/30 bg-amber-300/10 text-xs font-semibold text-amber-100">
+                {index + 1}
+              </div>
+              <div className="min-w-0 flex-1">
+                {step.title && (
+                  <h4 className="text-sm font-semibold text-white">{step.title}</h4>
+                )}
+                <p className="text-sm leading-relaxed text-slate-200">{step.body}</p>
+                {step.hint && shownHints[index] && (
+                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-100">
+                    <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{step.hint}</span>
+                  </div>
+                )}
+              </div>
             </div>
-            <p className="text-zinc-700 dark:text-zinc-300 text-sm pt-0.5 leading-relaxed">
-              {step}
-            </p>
           </div>
         ))}
       </div>
+
+      {interactive && (
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="border-amber-300/20 bg-transparent text-amber-100 hover:bg-amber-300/10"
+            onClick={() => {
+              if (activeHintIndex !== -1) {
+                setShownHints((current) => ({ ...current, [activeHintIndex]: true }));
+              }
+            }}
+            disabled={!canRevealHint}
+          >
+            Show hint
+          </Button>
+          <Button
+            type="button"
+            className="bg-amber-300 text-black hover:bg-amber-200"
+            onClick={() => setVisibleCount((count) => Math.min(count + 1, totalSteps))}
+            disabled={visibleCount >= totalSteps}
+          >
+            Next step
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

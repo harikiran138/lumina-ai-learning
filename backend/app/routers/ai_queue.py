@@ -1,60 +1,66 @@
 """
-AI Queue Router — Faculty verification of AI-generated answers.
+Teacher-verified AI Tutor queue.
 
-DB schema (actual):
-  ai_answer_queue:
-    id UUID PK
-    student_id UUID NOT NULL  → submitting student
-    teacher_id UUID NOT NULL  → course teacher
-    course_id  UUID           → course reference
-    student_question TEXT     → student's original question
-    ai_generated_answer TEXT  → AI draft answer
-    teacher_edited_answer TEXT → approved / edited answer
-    status TEXT DEFAULT 'pending'
-    created_at TIMESTAMPTZ
-    verified_at TIMESTAMPTZ
+Core rule:
+No AI-generated tutor answer is released to a student until a teacher approves it.
 """
 
-import asyncio
-import httpx
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from pydantic import BaseModel
-from typing import Optional, List, Any
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
-from .auth import get_current_user
-from app.api.deps import get_current_teacher
-from app.database.supabase_manager import supabase_db
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
+
+from app.api.deps import (
+    get_current_active_user,
+    get_current_student,
+    get_current_teacher,
+)
 from app.core.audit import audit_logger
-from app.core.config import settings
+from app.core.limiter import limiter
 from app.core.logging import structlog
+from app.database.supabase_manager import supabase_db
+from app.services.ai_tutor_service import AITutorService, TutorGenerationRequest
 
 log = structlog.get_logger()
-
 router = APIRouter()
+tutor_service = AITutorService()
 
+_EXISTING_QUEUE_COLUMNS = {
+    "student_id",
+    "teacher_id",
+    "course_id",
+    "student_question",
+    "ai_generated_answer",
+    "teacher_edited_answer",
+    "status",
+    "created_at",
+    "verified_at",
+}
 
-# ── Request models ─────────────────────────────────────────────────────────────
 
 class AskQuestionRequest(BaseModel):
-    question_text: str
+    question_text: str = Field(min_length=3, max_length=2000)
+    course_id: Optional[str] = None
+    mode: Optional[str] = None
+    topic: Optional[str] = None
+    subject: Optional[str] = None
     context_lecture_id: Optional[str] = None
+    history: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class EditApproveRequest(BaseModel):
-    final_answer: str
+    final_answer: str = Field(min_length=1)
     faculty_note: Optional[str] = None
 
 
 class RejectRequest(BaseModel):
-    faculty_note: str
+    faculty_note: str = Field(min_length=1)
 
 
 class EscalateRequest(BaseModel):
     reason: Optional[str] = None
 
-
-# ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _client():
     return supabase_db.get_client()
@@ -64,524 +70,764 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-async def _generate_ai_answer(queue_id: str, question: str, course_name: str) -> None:
-    """
-    Background task: call OpenRouter to generate an AI draft answer for the queue item,
-    then update the record. Teachers will see the draft when they open the queue.
-    """
-    api_key = settings.OPENROUTER_API_KEY
-    model = settings.OPENROUTER_MODEL
-
-    if not api_key:
-        log.warning("ai_queue_no_api_key", queue_id=queue_id)
-        return
-
-    system_prompt = (
-        "You are an expert academic tutor. A student has submitted a question to their teacher "
-        "for review. Generate a concise, accurate, and educationally sound draft answer that the "
-        "teacher can review, edit if needed, and then release to the student. "
-        f"The question is from the course: {course_name}. "
-        "Be factually precise. Use markdown formatting. Limit to 400 words."
+def _course_name(course: Dict[str, Any]) -> str:
+    return (
+        course.get("course_name")
+        or course.get("name")
+        or course.get("title")
+        or f"Course {course.get('id', '')}"
     )
 
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": question},
-        ],
-        "temperature": 0.5,
-    }
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://lumina.learning",
-        "X-Title": "Lumina Learning Platform",
-    }
 
-    try:
-        async with httpx.AsyncClient(timeout=45.0) as client:
-            response = await client.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers=headers,
-                json=payload,
-            )
-            response.raise_for_status()
-            data = response.json()
-            ai_answer = data["choices"][0]["message"]["content"]
-
-        # Update the queue record with the generated answer
-        supabase_db.get_client().table("ai_answer_queue").update(
-            {"ai_generated_answer": ai_answer}
-        ).eq("id", queue_id).execute()
-
-        log.info("ai_queue_answer_generated", queue_id=queue_id, answer_len=len(ai_answer))
-
-    except Exception as exc:
-        log.error("ai_queue_generation_failed", queue_id=queue_id, error=str(exc))
-        # Leave as "Processing..." — teacher can still manually write an answer
+def _course_subject(course: Dict[str, Any]) -> str:
+    return course.get("subject") or _course_name(course)
 
 
-def _get_course_teacher(client: Any, course_id: str, fallback_id: str) -> str:
-    """Look up the teacher_id for a course; fall back to fallback_id if not found."""
-    try:
-        res = client.table("courses").select("teacher_id").eq("id", course_id).limit(1).execute()
-        if res.data:
-            return res.data[0].get("teacher_id") or fallback_id
-    except Exception:
-        pass
-    return fallback_id
+def _normalize_question(question_text: str) -> str:
+    return " ".join((question_text or "").split()).strip()
 
 
-def _ensure_verified_answer_entry(
-    client: Any,
-    queue_id: str,
-    question_text: str,
-    answer: str,
-    course_id: Optional[str],
-    reviewer_id: str,
-):
-    try:
-        existing = (
-            client.table("verified_answers_bank")
-            .select("id")
-            .eq("source_queue_id", queue_id)
-            .limit(1)
-            .execute()
+def _question_signature(question_text: str) -> str:
+    normalized = _normalize_question(question_text).lower()
+    return tutor_service._preview(normalized, limit=2000)  # noqa: SLF001
+
+
+def _normalize_history(history_raw: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+    normalized: List[Dict[str, str]] = []
+    for item in history_raw[-8:]:
+        role = str(item.get("role") or "").strip().lower()
+        sender = str(item.get("sender") or "").strip().lower()
+        if role not in {"user", "assistant"}:
+            role = "assistant" if sender in {"ai", "assistant"} else "user"
+        content = str(item.get("content") or item.get("text") or "").strip()
+        if content:
+            normalized.append({"role": role, "content": content[:1200]})
+    return normalized
+
+
+def _extract_concepts_from_knowledge_graph(knowledge_graph: Any) -> List[str]:
+    concepts: List[str] = []
+    if isinstance(knowledge_graph, dict):
+        for key in ("nodes", "concepts", "topics"):
+            value = knowledge_graph.get(key)
+            if isinstance(value, list):
+                for item in value[:8]:
+                    if isinstance(item, dict):
+                        label = item.get("label") or item.get("name") or item.get("id")
+                    else:
+                        label = item
+                    if label:
+                        concepts.append(str(label))
+        if not concepts:
+            concepts.extend(str(key) for key in list(knowledge_graph.keys())[:8])
+    elif isinstance(knowledge_graph, list):
+        for item in knowledge_graph[:8]:
+            if isinstance(item, dict):
+                label = item.get("label") or item.get("name") or item.get("id")
+            else:
+                label = item
+            if label:
+                concepts.append(str(label))
+    return concepts[:8]
+
+
+def _knowledge_graph_summary(course: Dict[str, Any]) -> str:
+    concepts = _extract_concepts_from_knowledge_graph(course.get("knowledge_graph"))
+    return ", ".join(concepts[:8])
+
+
+def _student_level(profile: Dict[str, Any], mastery_rows: List[Dict[str, Any]]) -> str:
+    scores: List[float] = []
+    for row in mastery_rows:
+        try:
+            scores.append(float(row.get("mastery_score") or 0))
+        except (TypeError, ValueError):
+            continue
+    mastery_state = profile.get("mastery_state") or {}
+    for item in mastery_state.values():
+        if isinstance(item, dict):
+            try:
+                scores.append(float(item.get("score") or 0))
+            except (TypeError, ValueError):
+                continue
+    if not scores:
+        return "intermediate"
+    average = sum(scores) / len(scores)
+    if average < 0.4:
+        return "beginner"
+    if average < 0.75:
+        return "intermediate"
+    return "advanced"
+
+
+def _mastery_summary(profile: Dict[str, Any], mastery_rows: List[Dict[str, Any]], course_id: Optional[str]) -> str:
+    relevant = [row for row in mastery_rows if not course_id or str(row.get("course_id")) == str(course_id)]
+    labels = []
+    for row in relevant[:5]:
+        labels.append(
+            f"{row.get('skill_name') or 'skill'}={round(float(row.get('mastery_score') or 0) * 100)}%"
         )
-        if existing.data:
-            return existing.data[0]
+    if labels:
+        return "; ".join(labels)
+    mastery_state = profile.get("mastery_state") or {}
+    labels = []
+    for key, item in list(mastery_state.items())[:5]:
+        if not isinstance(item, dict):
+            continue
+        labels.append(f"{key}={round(float(item.get('score') or 0) * 100)}%")
+    return "; ".join(labels)
 
-        result = client.table("verified_answers_bank").insert({
-            "question":       question_text,
-            "answer":         answer,
-            "course_id":      course_id,
-            "source_queue_id": queue_id,
-            "created_by":     reviewer_id,
-            "verified_by":    reviewer_id,
-            "answer_type":    "text",
-            "is_active":      True,
-            "difficulty":     "medium",
-        }).execute()
-        return (result.data or [None])[0]
-    except Exception:
-        # verified_answers_bank may not exist; silently skip
+
+def _pick_course_for_question(question_text: str, courses: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if not courses:
         return None
 
+    lowered = question_text.lower()
 
-# ── Student endpoint: ask a question ──────────────────────────────────────────
+    def score(course: Dict[str, Any]) -> Tuple[int, int]:
+        tokens = [
+            str(course.get("subject") or "").lower(),
+            _course_name(course).lower(),
+            str(course.get("description") or "").lower(),
+        ]
+        direct_match = sum(1 for token in tokens if token and token in lowered)
+        progress = int(float((course.get("progress") or 0)))
+        return direct_match, progress
+
+    return sorted(courses, key=score, reverse=True)[0]
+
+
+def _lookup_course(client: Any, student_id: str, course_id: Optional[str], question_text: str) -> Tuple[Optional[Dict[str, Any]], List[Dict[str, Any]]]:
+    if course_id:
+        course_res = client.table("courses").select("*").eq("id", course_id).limit(1).execute()
+        return ((course_res.data or [None])[0], [course_res.data[0]] if course_res.data else [])
+
+    enrollments = client.table("enrollments").select("course_id, progress").eq("student_id", student_id).execute().data or []
+    subject_rows = client.table("student_subjects").select("subject_id").eq("student_id", student_id).execute().data or []
+    course_ids = {
+        str(row.get("course_id"))
+        for row in enrollments
+        if row.get("course_id")
+    } | {
+        str(row.get("subject_id"))
+        for row in subject_rows
+        if row.get("subject_id")
+    }
+    if not course_ids:
+        return None, []
+
+    courses = client.table("courses").select("*").in_("id", list(course_ids)).execute().data or []
+    progress_by_course = {
+        str(row.get("course_id")): (row.get("progress") or {})
+        for row in enrollments
+        if row.get("course_id")
+    }
+    for course in courses:
+        course["progress"] = (progress_by_course.get(str(course.get("id"))) or {}).get("mastery") or 0
+    return _pick_course_for_question(question_text, courses), courses
+
+
+def _lookup_teacher_id(client: Any, course: Optional[Dict[str, Any]]) -> Optional[str]:
+    if not course:
+        return None
+    if course.get("teacher_id"):
+        return str(course["teacher_id"])
+    assignment_res = (
+        client.table("teacher_assignments")
+        .select("teacher_id")
+        .eq("course_id", course.get("id"))
+        .limit(1)
+        .execute()
+    )
+    if assignment_res.data:
+        teacher_id = assignment_res.data[0].get("teacher_id")
+        if teacher_id:
+            return str(teacher_id)
+    return None
+
+
+def _lookup_cached_draft(client: Any, course_id: Optional[str], question_signature: str) -> Optional[Dict[str, Any]]:
+    if not course_id:
+        return None
+    result = (
+        client.table("ai_answer_queue")
+        .select("*")
+        .eq("course_id", course_id)
+        .eq("question_signature", question_signature)
+        .limit(5)
+        .execute()
+    )
+    rows = result.data or []
+    for row in rows:
+        status = row.get("status")
+        if status in {"approved", "edited_approved"}:
+            return row
+    return None
+
+
+def _safe_insert_queue_item(client: Any, payload: Dict[str, Any]):
+    try:
+        return client.table("ai_answer_queue").insert(payload).execute()
+    except Exception as exc:
+        log.warning("ai_queue_insert_retrying_with_legacy_columns", error=str(exc))
+        legacy_payload = {key: value for key, value in payload.items() if key in _EXISTING_QUEUE_COLUMNS}
+        return client.table("ai_answer_queue").insert(legacy_payload).execute()
+
+
+def _safe_update_queue_item(client: Any, queue_id: str, updates: Dict[str, Any]):
+    try:
+        return client.table("ai_answer_queue").update(updates).eq("id", queue_id).execute()
+    except Exception as exc:
+        log.warning("ai_queue_update_retrying_with_legacy_columns", queue_id=queue_id, error=str(exc))
+        legacy_updates = {key: value for key, value in updates.items() if key in _EXISTING_QUEUE_COLUMNS}
+        return client.table("ai_answer_queue").update(legacy_updates).eq("id", queue_id).execute()
+
+
+def _queue_status_message(row: Dict[str, Any]) -> str:
+    status = row.get("status", "pending")
+    if status in {"approved", "edited_approved"} and row.get("released_to_student", True):
+        return "Your teacher approved the answer."
+    if status == "rejected":
+        return "Your teacher rejected this answer and may provide feedback separately."
+    if status == "escalated_to_faculty":
+        return "Your answer is waiting for faculty review."
+    if status == "escalated_to_hod":
+        return "Your answer has been escalated for senior academic review."
+    return "Your teacher is reviewing the answer."
+
+
+def _build_tutor_request(
+    client: Any,
+    current_user: Dict[str, Any],
+    body: AskQuestionRequest,
+    forced_course_id: Optional[str] = None,
+) -> Tuple[TutorGenerationRequest, Optional[Dict[str, Any]], Optional[str], List[Dict[str, Any]]]:
+    student_id = str(current_user["id"])
+    clean_question = _normalize_question(body.question_text)
+    course, all_courses = _lookup_course(client, student_id, forced_course_id or body.course_id, clean_question)
+    if not course:
+        raise HTTPException(status_code=400, detail="No enrolled course could be resolved for this tutor request.")
+
+    teacher_id = _lookup_teacher_id(client, course)
+    if not teacher_id:
+        raise HTTPException(status_code=400, detail="No teacher is assigned to this course yet.")
+
+    learner_profile = (
+        client.table("learner_profiles")
+        .select("*")
+        .eq("user_id", student_id)
+        .maybe_single()
+        .execute()
+        .data
+        or {}
+    )
+    mastery_rows = (
+        client.table("skill_mastery")
+        .select("course_id, skill_name, mastery_score")
+        .eq("user_id", student_id)
+        .execute()
+        .data
+        or []
+    )
+    enrollment = (
+        client.table("student_enrollments")
+        .select("*")
+        .eq("student_id", student_id)
+        .maybe_single()
+        .execute()
+        .data
+        or {}
+    )
+    semester_label = "Not specified"
+    semester_id = enrollment.get("current_semester_id")
+    if semester_id:
+        semester = client.table("semesters").select("*").eq("id", semester_id).limit(1).execute().data or []
+        if semester:
+            semester_label = semester[0].get("title") or f"Semester {semester[0].get('semester_number')}"
+    elif learner_profile.get("grade_level"):
+        semester_label = str(learner_profile.get("grade_level"))
+
+    assignments = (
+        client.table("assignments")
+        .select("title, due_date")
+        .eq("course_id", course.get("id"))
+        .limit(3)
+        .execute()
+        .data
+        or []
+    )
+    recent_assignments = [
+        f"{item.get('title') or 'Assignment'}"
+        + (f" (due {item.get('due_date')})" if item.get("due_date") else "")
+        for item in assignments
+    ]
+
+    mode = tutor_service.infer_mode(clean_question, body.mode)
+    weak_topics = [str(item) for item in (learner_profile.get("weak_topics") or []) if item][:6]
+    allowed_courses = [_course_name(item) for item in all_courses[:8]] or [_course_name(course)]
+    allowed_concepts = list(
+        dict.fromkeys(
+            weak_topics
+            + _extract_concepts_from_knowledge_graph(course.get("knowledge_graph"))
+            + ([body.topic] if body.topic else [])
+            + ([body.subject] if body.subject else [])
+        )
+    )[:10]
+
+    context_notes: List[str] = []
+    if body.context_lecture_id:
+        context_notes.append(f"Lecture Context ID: {body.context_lecture_id}")
+    if learner_profile.get("preferences"):
+        styles = learner_profile["preferences"].get("learning_styles") or []
+        if styles:
+            context_notes.append(f"Preferred Learning Styles: {', '.join(map(str, styles[:3]))}")
+    if learner_profile.get("goals"):
+        context_notes.append(f"Goal Focus: {', '.join(map(str, learner_profile.get('goals', [])[:2]))}")
+
+    request = TutorGenerationRequest(
+        question=clean_question,
+        mode=mode,
+        student_id=student_id,
+        history=_normalize_history(body.history),
+        course_id=str(course.get("id")),
+        course_name=_course_name(course),
+        course_description=str(course.get("description") or ""),
+        subject=body.subject or _course_subject(course),
+        current_semester=semester_label,
+        allowed_courses=allowed_courses,
+        allowed_concepts=allowed_concepts,
+        student_level=_student_level(learner_profile, mastery_rows),
+        mastery_summary=_mastery_summary(learner_profile, mastery_rows, course.get("id")),
+        weak_topics=weak_topics,
+        knowledge_graph_summary=_knowledge_graph_summary(course),
+        recent_assignments=recent_assignments,
+        visual_requested=tutor_service.wants_visual(clean_question),
+        assignment_related=tutor_service.is_assignment_related(clean_question),
+        context_notes=context_notes,
+    )
+    return request, course, teacher_id, all_courses
+
+
+async def _generate_ai_answer(queue_id: str, request_payload: Dict[str, Any]) -> None:
+    request = TutorGenerationRequest(**request_payload, queue_id=queue_id)
+    client = _client()
+    try:
+        result = await tutor_service.generate_answer(request)
+        _safe_update_queue_item(
+            client,
+            queue_id,
+            {
+                "ai_generated_answer": result.content,
+                "ai_model": result.model,
+                "generation_error": None,
+                "ai_request_log": result.request_log,
+                "ai_response_log": result.response_log,
+                "prompt_signature": result.prompt_signature,
+            },
+        )
+        log.info("ai_queue_answer_generated", queue_id=queue_id, model=result.model)
+    except Exception as exc:
+        fallback_content = tutor_service._fallback_response(  # noqa: SLF001
+            request,
+            "The AI draft could not be generated automatically. A teacher can still answer manually.",
+        )
+        _safe_update_queue_item(
+            client,
+            queue_id,
+            {
+                "ai_generated_answer": fallback_content,
+                "generation_error": str(exc),
+            },
+        )
+        log.error("ai_queue_generation_failed", queue_id=queue_id, error=str(exc))
+
+
+async def _submit_question(
+    body: AskQuestionRequest,
+    current_user: Dict[str, Any],
+    background_tasks: BackgroundTasks,
+    forced_course_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    student_id = str(current_user["id"])
+    client = _client()
+    request, course, teacher_id, _all_courses = _build_tutor_request(client, current_user, body, forced_course_id)
+    cached_row = _lookup_cached_draft(client, request.course_id, request.question_signature)
+
+    insert_payload = {
+        "student_id": student_id,
+        "teacher_id": teacher_id,
+        "course_id": request.course_id,
+        "student_question": request.question,
+        "ai_generated_answer": (
+            (cached_row.get("teacher_edited_answer") or cached_row.get("ai_generated_answer"))
+            if cached_row
+            else "Generating AI draft answer for teacher review..."
+        ),
+        "status": "pending",
+        "created_at": _now_iso(),
+        "released_to_student": False,
+        "question_signature": request.question_signature,
+        "request_mode": request.mode,
+        "question_topic": body.topic or request.subject,
+        "reviewed_by": None,
+        "faculty_note": None,
+        "ai_model": cached_row.get("ai_model") if cached_row else None,
+        "generation_error": None,
+    }
+    insert_res = _safe_insert_queue_item(client, insert_payload)
+    if not insert_res.data:
+        raise HTTPException(status_code=500, detail="Failed to create tutor queue item")
+
+    queue_item = insert_res.data[0]
+    queue_id = str(queue_item["id"])
+
+    if not cached_row:
+        request.queue_id = queue_id
+        background_tasks.add_task(_generate_ai_answer, queue_id, request.__dict__)
+    else:
+        _safe_update_queue_item(
+            client,
+            queue_id,
+            {
+                "generation_error": None,
+                "ai_request_log": {"cache_hit": True, "source_queue_id": cached_row.get("id")},
+                "ai_response_log": {"cache_hit": True},
+            },
+        )
+
+    log.info(
+        "ai_queue_question_submitted",
+        queue_id=queue_id,
+        student_id=student_id,
+        teacher_id=teacher_id,
+        course_id=request.course_id,
+        mode=request.mode,
+        cache_hit=bool(cached_row),
+    )
+
+    return {
+        "question_id": queue_id,
+        "status": "pending_review",
+        "queue_status": "pending",
+        "course_id": request.course_id,
+        "course_name": _course_name(course or {}),
+        "mode": request.mode,
+        "message": "Your teacher is reviewing the answer.",
+    }
+
+
+@router.post("/student/tutor/ask")
+@limiter.limit("12/minute")
+async def student_tutor_ask(
+    request: Request,
+    body: AskQuestionRequest,
+    background_tasks: BackgroundTasks,
+    current_user: Dict[str, Any] = Depends(get_current_student),
+):
+    return await _submit_question(body, current_user, background_tasks)
+
+
+@router.get("/student/tutor/questions")
+async def list_student_tutor_questions(
+    current_user: Dict[str, Any] = Depends(get_current_student),
+):
+    client = _client()
+    rows = (
+        client.table("ai_answer_queue")
+        .select("*")
+        .eq("student_id", current_user.get("id"))
+        .order("created_at", desc=True)
+        .execute()
+        .data
+        or []
+    )
+    return [
+        {
+            "question_id": row.get("id"),
+            "question_text": row.get("student_question", ""),
+            "created_at": row.get("created_at"),
+            "queue_status": row.get("status", "pending"),
+            "released_to_student": bool(row.get("released_to_student", False)),
+            "message": _queue_status_message(row),
+        }
+        for row in rows
+    ]
+
+
+@router.get("/student/tutor/answer/{question_id}")
+@limiter.limit("120/minute")
+async def get_student_tutor_answer(
+    request: Request,
+    question_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_student),
+):
+    client = _client()
+    res = client.table("ai_answer_queue").select("*").eq("id", question_id).limit(1).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    row = res.data[0]
+    if str(row.get("student_id")) != str(current_user.get("id")):
+        raise HTTPException(status_code=403, detail="Not your tutor question")
+
+    released = bool(row.get("released_to_student", False))
+    final_answer = None
+    if released and row.get("status") in {"approved", "edited_approved"}:
+        final_answer = row.get("teacher_edited_answer") or row.get("ai_generated_answer")
+
+    return {
+        "question_id": question_id,
+        "status": row.get("status", "pending"),
+        "released_to_student": released,
+        "final_answer": final_answer,
+        "message": _queue_status_message(row),
+        "answered_at": row.get("verified_at"),
+        "course_id": row.get("course_id"),
+    }
+
 
 @router.post("/courses/{course_id}/questions")
-async def ask_question(
+async def ask_course_question(
     course_id: str,
     body: AskQuestionRequest,
     background_tasks: BackgroundTasks,
-    current_user: dict = Depends(get_current_user),
+    current_user: Dict[str, Any] = Depends(get_current_student),
 ):
-    """
-    Student submits a question for a course.
-    - Saves the question immediately (status=pending)
-    - Triggers an async background task to generate an AI draft answer via OpenRouter
-    - Teacher reviews the draft and approves/edits before it reaches the student
-    """
-    student_id = current_user.get("id")
-    if not student_id:
-        raise HTTPException(status_code=401, detail="Could not identify student")
+    return await _submit_question(body, current_user, background_tasks, forced_course_id=course_id)
 
-    if not body.question_text or not body.question_text.strip():
-        raise HTTPException(status_code=400, detail="question_text cannot be empty")
-
-    try:
-        client = _client()
-
-        # Resolve course teacher for teacher_id (required NOT NULL)
-        teacher_id = _get_course_teacher(client, course_id, student_id)
-
-        # Fetch course name for AI context (best-effort)
-        course_name = f"Course {course_id}"
-        try:
-            course_res = (
-                client.table("courses")
-                .select("name, title")
-                .eq("id", course_id)
-                .limit(1)
-                .execute()
-            )
-            if course_res.data:
-                course_name = (
-                    course_res.data[0].get("name")
-                    or course_res.data[0].get("title")
-                    or course_name
-                )
-        except Exception:
-            pass
-
-        # Insert into ai_answer_queue with status=pending
-        # ai_generated_answer starts as "Generating AI draft..." — updated by background task
-        res = client.table("ai_answer_queue").insert({
-            "student_id":          student_id,
-            "teacher_id":          teacher_id,
-            "course_id":           course_id,
-            "student_question":    body.question_text.strip(),
-            "ai_generated_answer": "Generating AI draft answer...",
-            "status":              "pending",
-            "created_at":          _now_iso(),
-        }).execute()
-
-        if not res.data:
-            raise HTTPException(status_code=500, detail="Failed to save question")
-
-        queue_id = res.data[0]["id"]
-
-        # Kick off AI answer generation in background (non-blocking)
-        background_tasks.add_task(
-            _generate_ai_answer,
-            queue_id=queue_id,
-            question=body.question_text.strip(),
-            course_name=course_name,
-        )
-
-        log.info(
-            "ai_queue_question_submitted",
-            queue_id=queue_id,
-            student_id=student_id,
-            course_id=course_id,
-        )
-
-        return {
-            "question_id": queue_id,
-            "status":      "pending_review",
-            "message":     "Your question has been submitted. Your teacher will review the AI-generated answer before it reaches you.",
-        }
-    except HTTPException:
-        raise
-    except Exception as exc:
-        log.error("ai_queue_submit_failed", error=str(exc))
-        raise HTTPException(status_code=500, detail=str(exc))
-
-
-# ── List questions for a course ────────────────────────────────────────────────
 
 @router.get("/courses/{course_id}/questions")
 async def list_course_questions(
     course_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: Dict[str, Any] = Depends(get_current_active_user),
 ):
-    """List Q&As for a course. Students see only approved answers; faculty see all."""
-    is_faculty = current_user.get("role") in {
-        "teacher", "faculty", "hod", "college_admin", "admin", "super_admin"
-    }
-    try:
-        client = _client()
+    role = current_user.get("role")
+    is_faculty = role in {"teacher", "faculty", "hod", "college_admin", "admin", "super_admin"}
+    client = _client()
+    rows = (
+        client.table("ai_answer_queue")
+        .select("*")
+        .eq("course_id", course_id)
+        .order("created_at", desc=True)
+        .execute()
+        .data
+        or []
+    )
 
-        aq_res = (
-            client.table("ai_answer_queue")
-            .select("*")
-            .eq("course_id", course_id)
-            .order("created_at", desc=True)
-            .execute()
-        )
-
-        results = []
-        for row in aq_res.data or []:
-            q_status = row.get("status", "pending")
-
-            # Students only see approved answers
-            if not is_faculty and q_status not in ("approved", "edited_approved"):
+    results = []
+    for row in rows:
+        status = row.get("status", "pending")
+        released = bool(row.get("released_to_student", False))
+        if not is_faculty:
+            if str(row.get("student_id")) != str(current_user.get("id")):
+                continue
+            if not released or status not in {"approved", "edited_approved"}:
                 continue
 
-            answer = None
-            if q_status in ("approved", "edited_approved"):
-                answer = {
-                    "final_answer": (
-                        row.get("teacher_edited_answer") or row.get("ai_generated_answer")
-                    ),
-                    "verified_at": row.get("verified_at"),
-                    "status": q_status,
-                }
+        answer = None
+        if released and status in {"approved", "edited_approved"}:
+            answer = {
+                "final_answer": row.get("teacher_edited_answer") or row.get("ai_generated_answer"),
+                "verified_at": row.get("verified_at"),
+                "status": status,
+            }
 
-            results.append({
-                "question_id":   row["id"],
+        results.append(
+            {
+                "question_id": row.get("id"),
                 "question_text": row.get("student_question", ""),
-                "created_at":    row.get("created_at"),
-                "answer":        answer,
-                "queue_status":  q_status,
-            })
+                "created_at": row.get("created_at"),
+                "answer": answer,
+                "queue_status": status,
+                "released_to_student": released,
+            }
+        )
+    return results
 
-        return results
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-
-
-# ── Student: poll question status ─────────────────────────────────────────────
 
 @router.get("/student/questions/{question_id}/status")
 async def question_status(
     question_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: Dict[str, Any] = Depends(get_current_student),
 ):
-    """Student polls their own question's review status."""
-    try:
-        client = _client()
+    return await get_student_tutor_answer(Request, question_id, current_user)  # type: ignore[arg-type]
 
-        res = (
-            client.table("ai_answer_queue")
-            .select("*")
-            .eq("id", question_id)
-            .limit(1)
-            .execute()
-        )
-        if not res.data:
-            raise HTTPException(status_code=404, detail="Question not found")
-
-        row = res.data[0]
-        student_id = current_user.get("id")
-        if student_id and str(row.get("student_id")) != str(student_id):
-            raise HTTPException(status_code=403, detail="Not your question")
-
-        approved_answer = None
-        if row.get("status") in ("approved", "edited_approved"):
-            approved_answer = (
-                row.get("teacher_edited_answer") or row.get("ai_generated_answer")
-            )
-
-        return {
-            "status":      row.get("status", "pending"),
-            "final_answer": approved_answer,
-            "answered_at": row.get("verified_at"),
-        }
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-
-
-# ── Faculty: list pending queue items ─────────────────────────────────────────
 
 @router.get("/faculty/ai-queue")
-async def faculty_queue(current_user: dict = Depends(get_current_teacher)):
-    """Return all pending queue items."""
-    try:
-        client = _client()
+async def faculty_queue(current_user: Dict[str, Any] = Depends(get_current_teacher)):
+    client = _client()
+    query = client.table("ai_answer_queue").select("*")
+    role = current_user.get("role")
+    if role == "teacher":
+        query = query.eq("status", "pending")
+    elif role == "faculty":
+        query = query.eq("status", "escalated_to_faculty")
+    elif role == "hod":
+        query = query.eq("status", "escalated_to_hod")
 
-        aq_query = (
-            client.table("ai_answer_queue")
-            .select("*")
+    rows = query.order("created_at", desc=True).execute().data or []
+    student_ids = [row.get("student_id") for row in rows if row.get("student_id")]
+    students = (
+        client.table("users").select("id, full_name, email").in_("id", student_ids).execute().data
+        if student_ids
+        else []
+    )
+    student_lookup = {str(item.get("id")): item for item in students or []}
+
+    items: List[Dict[str, Any]] = []
+    for row in rows:
+        student = student_lookup.get(str(row.get("student_id")), {})
+        items.append(
+            {
+                "id": row.get("id"),
+                "question_id": row.get("id"),
+                "question_text": row.get("student_question", ""),
+                "student_name": student.get("full_name") or student.get("email") or "Student",
+                "student_identifier": student.get("email") or "",
+                "course_name": f"Course {row.get('course_id', '')}",
+                "lecture_context": "",
+                "ai_draft": row.get("ai_generated_answer", ""),
+                "ai_confidence": None,
+                "ai_sources": [],
+                "status": row.get("status", "pending"),
+                "created_at": row.get("created_at"),
+                "released_to_student": bool(row.get("released_to_student", False)),
+                "request_mode": row.get("request_mode"),
+            }
         )
-        role = current_user.get("role")
-        if role == "teacher":
-            aq_query = aq_query.eq("status", "pending")
-        elif role == "faculty":
-            aq_query = aq_query.eq("status", "escalated_to_faculty")
-        elif role == "hod":
-            aq_query = aq_query.eq("status", "escalated_to_hod")
 
-        aq_res = aq_query.order("created_at", desc=True).execute()
+    total_pending = sum(
+        1
+        for item in items
+        if item["status"] in {"pending", "escalated_to_faculty", "escalated_to_hod"}
+    )
+    return {"items": items, "total_pending": total_pending}
 
-        items: List[Any] = []
-        for row in aq_res.data or []:
-            items.append({
-                "id":                row["id"],
-                "question_id":       row["id"],      # same row — no separate table
-                "question_text":     row.get("student_question", ""),
-                "student_name":      row.get("student_name", "Student"),
-                "student_identifier": "",
-                "course_name":       f"Course {row.get('course_id', '')}",
-                "lecture_context":   "",
-                "ai_draft":          row.get("ai_generated_answer", ""),
-                "ai_confidence":     None,
-                "ai_sources":        [],
-                "status":            row.get("status", "pending"),
-                "created_at":        row.get("created_at"),
-            })
-
-        total_pending = sum(
-            1 for i in items
-            if i["status"] in ("pending", "escalated_to_faculty", "escalated_to_hod")
-        )
-        return {"items": items, "total_pending": total_pending}
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-
-
-# ── Faculty: approve ──────────────────────────────────────────────────────────
 
 @router.post("/faculty/ai-queue/{queue_id}/approve")
 async def approve_queue_item(
     queue_id: str,
-    current_user: dict = Depends(get_current_teacher),
+    current_user: Dict[str, Any] = Depends(get_current_teacher),
 ):
-    try:
-        client = _client()
+    client = _client()
+    existing = client.table("ai_answer_queue").select("*").eq("id", queue_id).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Queue item not found")
 
-        existing = (
-            client.table("ai_answer_queue")
-            .select("id, ai_generated_answer, course_id, student_question")
-            .eq("id", queue_id)
-            .execute()
-        )
-        if not existing.data:
-            raise HTTPException(status_code=404, detail="Queue item not found")
+    item = existing.data[0]
+    approved_answer = item.get("ai_generated_answer") or item.get("teacher_edited_answer")
+    if not approved_answer:
+        raise HTTPException(status_code=400, detail="No AI draft available to approve")
 
-        q_item     = existing.data[0]
-        ai_draft   = q_item.get("ai_generated_answer", "")
-        question   = q_item.get("student_question", "Unknown Question")
+    _safe_update_queue_item(
+        client,
+        queue_id,
+        {
+            "status": "approved",
+            "teacher_edited_answer": approved_answer,
+            "verified_at": _now_iso(),
+            "released_to_student": True,
+            "reviewed_by": current_user.get("id"),
+            "faculty_note": None,
+        },
+    )
 
-        if not ai_draft or ai_draft.lower().startswith("processing"):
-            # Allow approval anyway; teacher can edit the answer field
-            ai_draft = ai_draft or "(No AI answer available)"
+    audit_logger.log(
+        action="ai_answer_approved",
+        user_id=str(current_user["id"]),
+        resource_id=str(queue_id),
+        metadata={"course_id": item.get("course_id"), "approval_type": "direct"},
+    )
+    return {"success": True, "status": "approved"}
 
-        client.table("ai_answer_queue").update({
-            "status":                "approved",
-            "teacher_edited_answer": ai_draft,
-            "verified_at":           _now_iso(),
-        }).eq("id", queue_id).execute()
-
-        _ensure_verified_answer_entry(
-            client=client,
-            queue_id=queue_id,
-            question_text=question,
-            answer=ai_draft,
-            course_id=q_item.get("course_id"),
-            reviewer_id=current_user["id"],
-        )
-
-        audit_logger.log(
-            action="ai_answer_approved",
-            user_id=str(current_user["id"]),
-            resource_id=str(queue_id),
-            metadata={"course_id": q_item.get("course_id"), "approval_type": "direct"},
-        )
-
-        return {"success": True, "status": "approved"}
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-
-
-# ── Faculty: edit + approve ───────────────────────────────────────────────────
 
 @router.post("/faculty/ai-queue/{queue_id}/edit-approve")
 async def edit_approve_queue_item(
     queue_id: str,
     body: EditApproveRequest,
-    current_user: dict = Depends(get_current_teacher),
+    current_user: Dict[str, Any] = Depends(get_current_teacher),
 ):
-    try:
-        client = _client()
+    client = _client()
+    existing = client.table("ai_answer_queue").select("*").eq("id", queue_id).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Queue item not found")
 
-        existing = (
-            client.table("ai_answer_queue")
-            .select("id, course_id, student_question")
-            .eq("id", queue_id)
-            .execute()
-        )
-        if not existing.data:
-            raise HTTPException(status_code=404, detail="Queue item not found")
-
-        q_item = existing.data[0]
-
-        client.table("ai_answer_queue").update({
-            "status":                "edited_approved",
+    item = existing.data[0]
+    _safe_update_queue_item(
+        client,
+        queue_id,
+        {
+            "status": "edited_approved",
             "teacher_edited_answer": body.final_answer,
-            "verified_at":           _now_iso(),
-        }).eq("id", queue_id).execute()
+            "verified_at": _now_iso(),
+            "released_to_student": True,
+            "reviewed_by": current_user.get("id"),
+            "faculty_note": body.faculty_note,
+        },
+    )
 
-        _ensure_verified_answer_entry(
-            client=client,
-            queue_id=queue_id,
-            question_text=q_item.get("student_question", ""),
-            answer=body.final_answer,
-            course_id=q_item.get("course_id"),
-            reviewer_id=current_user["id"],
-        )
+    audit_logger.log(
+        action="ai_answer_approved",
+        user_id=str(current_user["id"]),
+        resource_id=str(queue_id),
+        metadata={"course_id": item.get("course_id"), "approval_type": "edited"},
+    )
+    return {"success": True, "status": "edited_approved"}
 
-        audit_logger.log(
-            action="ai_answer_approved",
-            user_id=str(current_user["id"]),
-            resource_id=str(queue_id),
-            metadata={"course_id": q_item.get("course_id"), "approval_type": "edited"},
-        )
-
-        return {"success": True, "status": "edited_approved"}
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-
-
-# ── Faculty: reject ───────────────────────────────────────────────────────────
 
 @router.post("/faculty/ai-queue/{queue_id}/reject")
 async def reject_queue_item(
     queue_id: str,
     body: RejectRequest,
-    current_user: dict = Depends(get_current_teacher),
+    current_user: Dict[str, Any] = Depends(get_current_teacher),
 ):
-    try:
-        client = _client()
+    client = _client()
+    existing = client.table("ai_answer_queue").select("id").eq("id", queue_id).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Queue item not found")
 
-        existing = (
-            client.table("ai_answer_queue").select("id").eq("id", queue_id).execute()
-        )
-        if not existing.data:
-            raise HTTPException(status_code=404, detail="Queue item not found")
-
-        client.table("ai_answer_queue").update({
-            "status":     "rejected",
+    _safe_update_queue_item(
+        client,
+        queue_id,
+        {
+            "status": "rejected",
             "verified_at": _now_iso(),
-        }).eq("id", queue_id).execute()
+            "released_to_student": False,
+            "reviewed_by": current_user.get("id"),
+            "faculty_note": body.faculty_note,
+        },
+    )
 
-        audit_logger.log(
-            action="ai_answer_rejected",
-            user_id=str(current_user["id"]),
-            resource_id=str(queue_id),
-            metadata={"reason": body.faculty_note},
-        )
+    audit_logger.log(
+        action="ai_answer_rejected",
+        user_id=str(current_user["id"]),
+        resource_id=str(queue_id),
+        metadata={"reason": body.faculty_note},
+    )
+    return {"success": True, "status": "rejected"}
 
-        return {"success": True, "status": "rejected"}
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-
-
-# ── Faculty: escalate ─────────────────────────────────────────────────────────
 
 @router.post("/faculty/ai-queue/{queue_id}/escalate")
 async def escalate_queue_item(
     queue_id: str,
     body: EscalateRequest,
-    current_user: dict = Depends(get_current_teacher),
+    current_user: Dict[str, Any] = Depends(get_current_teacher),
 ):
-    try:
-        client = _client()
-        existing = (
-            client.table("ai_answer_queue")
-            .select("id, status")
-            .eq("id", queue_id)
-            .execute()
-        )
-        if not existing.data:
-            raise HTTPException(status_code=404, detail="Queue item not found")
+    client = _client()
+    existing = client.table("ai_answer_queue").select("id").eq("id", queue_id).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Queue item not found")
 
-        role = current_user.get("role", "teacher")
-        new_status = (
-            "escalated_to_faculty" if role == "teacher"
-            else "escalated_to_hod"
-        )
-
-        client.table("ai_answer_queue").update({
+    role = current_user.get("role", "teacher")
+    new_status = "escalated_to_faculty" if role == "teacher" else "escalated_to_hod"
+    _safe_update_queue_item(
+        client,
+        queue_id,
+        {
             "status": new_status,
-        }).eq("id", queue_id).execute()
-
-        return {"success": True, "status": new_status}
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+            "released_to_student": False,
+            "reviewed_by": current_user.get("id"),
+            "faculty_note": body.reason,
+        },
+    )
+    return {"success": True, "status": new_status}

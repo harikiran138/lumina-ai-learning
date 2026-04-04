@@ -31,6 +31,7 @@ describe('Auth flow integration', () => {
     vi.clearAllMocks()
     document.cookie = 'access_token=; path=/; max-age=0'
     sessionStorage.clear()
+    localStorage.clear()
   })
 
   it('shows inline validation error when required login fields are missing', async () => {
@@ -66,7 +67,8 @@ describe('Auth flow integration', () => {
 
     await waitFor(() => {
       expect(sessionStorage.getItem('lumina_token')).toBeNull()
-      expect(sessionStorage.getItem('lumina_user')).toContain('alice@lumina.test')
+      expect(sessionStorage.getItem('lumina_user')).toBeNull()
+      expect(localStorage.getItem('lumina_user')).toContain('alice@lumina.test')
     }, { timeout: 5000 })
   })
 

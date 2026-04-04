@@ -52,7 +52,7 @@ class UserDataStore:
             progress["current_score"] = round(avg, 2)
 
             client = self.db.get_client()
-            client.table("user_data").update({
+            await client.table("user_data").update({
                 "quiz_history": history,
                 "progress": progress,
                 "updated_at": datetime.utcnow().isoformat()
@@ -101,7 +101,7 @@ class UserDataStore:
             notes.append(note)
             
             client = self.db.get_client()
-            client.table("user_data").update({
+            await client.table("user_data").update({
                 "notes": notes,
                 "updated_at": datetime.utcnow().isoformat()
             }).eq("user_id", user_id).async_execute()
@@ -136,7 +136,7 @@ class UserDataStore:
                     break
             if found:
                 client = self.db.get_client()
-                client.table("user_data").update({
+                await client.table("user_data").update({
                     "notes": notes,
                     "updated_at": datetime.utcnow().isoformat()
                 }).eq("user_id", user_id).async_execute()
@@ -153,7 +153,7 @@ class UserDataStore:
             notes = [n for n in notes if n.get("id") != note_id]
             if len(notes) < original_len:
                 client = self.db.get_client()
-                client.table("user_data").update({
+                await client.table("user_data").update({
                     "notes": notes,
                     "updated_at": datetime.utcnow().isoformat()
                 }).eq("user_id", user_id).async_execute()
@@ -172,7 +172,7 @@ class UserDataStore:
             progress[metric] = value
             
             client = self.db.get_client()
-            client.table("user_data").update({
+            await client.table("user_data").update({
                 "progress": progress,
                 "updated_at": datetime.utcnow().isoformat()
             }).eq("user_id", user_id).async_execute()
@@ -194,7 +194,7 @@ class UserDataStore:
             progress["profile_settings"] = settings
 
             client = self.db.get_client()
-            client.table("user_data").update({
+            await client.table("user_data").update({
                 "progress": progress,
                 "updated_at": datetime.utcnow().isoformat(),
             }).eq("user_id", user_id).async_execute()

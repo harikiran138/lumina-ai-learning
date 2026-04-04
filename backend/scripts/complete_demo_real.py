@@ -15,9 +15,9 @@ async def complete_demo():
         # Phase 2: Login
         print("\n--- Phase 2: Authentication ---")
         users = {
-            "admin": {"email": "superadmin@lumina.com", "password": "Lumina@138800"},
-            "teacher": {"email": "teacher@lumina.com", "password": "Lumina@138800"},
-            "student": {"email": "student_22nu1a0519@lumina.com", "password": "Lumina@138800"},
+            "admin": {"email": "superadmin@lumina.com", "password": "password"},
+            "teacher": {"email": "teacher@lumina.com", "password": "password"},
+            "student": {"email": "student_22nu1a0519@lumina.com", "password": "password"},
         }
         tokens = {}
         for role, creds in users.items():
@@ -41,27 +41,39 @@ async def complete_demo():
         college_data = {
             "name": "Lumina University",
             "email": "contact@lumina.edu",
-            "code": f"LUM-{uuid.uuid4().hex[:4].upper()}",
-            "city": "Cyber City",
-            "state": "Digital State"
+            "code": "LUM",
+            "city": "San Francisco",
+            "state": "CA",
+            "login_policy": "email_only"
         }
-        resp = await client.post(f"{BASE_URL}/api/college_architecture/colleges", json=college_data, headers=headers_admin)
+        resp = await client.post(f"{BASE_URL}/api/colleges", json=college_data, headers=headers_admin)
         if resp.status_code != 200:
             # Maybe already exists, list them
-            resp = await client.get(f"{BASE_URL}/api/college_architecture/colleges", headers=headers_admin)
+            resp = await client.get(f"{BASE_URL}/api/colleges", headers=headers_admin)
             print(f"DEBUG: College list response: {resp.json()}")
-            college = resp.json()[0]
+            json_resp = resp.json()
+            if isinstance(json_resp, list) and len(json_resp) > 0:
+                college = json_resp[0]
+            else:
+                print(f"✗ Failed to create or list colleges: {json_resp}")
+                return
         else:
             college = resp.json()
         college_id = college["id"]
-        print(f"✓ College settled: {college['institution_name']} ({college_id})")
+        print(f"✓ College settled: {college.get('institution_name', college.get('name', 'Unknown'))} ({college_id})")
 
         # Create Department
         dept_data = {"name": "Artificial Intelligence", "abbreviation": "AI", "description": "Leading AI research"}
-        resp = await client.post(f"{BASE_URL}/api/college_architecture/colleges/{college_id}/departments", json=dept_data, headers=headers_admin)
+        resp = await client.post(f"{BASE_URL}/api/colleges/{college_id}/departments", json=dept_data, headers=headers_admin)
         if resp.status_code != 200:
-            resp = await client.get(f"{BASE_URL}/api/college_architecture/colleges/{college_id}/departments", headers=headers_admin)
-            dept = resp.json()[0]
+            resp = await client.get(f"{BASE_URL}/api/colleges/{college_id}/departments", headers=headers_admin)
+            print(f"DEBUG: Dept list response: {resp.json()}")
+            json_resp = resp.json()
+            if isinstance(json_resp, list) and len(json_resp) > 0:
+                dept = json_resp[0]
+            else:
+                print(f"✗ Failed to create or list departments: {json_resp}")
+                return
         else:
             dept = resp.json()
         dept_id = dept["id"]
@@ -73,20 +85,45 @@ async def complete_demo():
         
         # Create Batch
         batch_data = {"year": 2026, "label": "Swarm-Alpha", "sections": ["A", "B"]}
-        resp = await client.post(f"{BASE_URL}/api/college_architecture/departments/{dept_id}/batches", json=batch_data, headers=headers_teacher)
-        batch = resp.json()
+        resp = await client.post(f"{BASE_URL}/api/departments/{dept_id}/batches", json=batch_data, headers=headers_teacher)
+        if resp.status_code != 200:
+            print(f"DEBUG: Batch create resp: {resp.json()}")
+            resp = await client.get(f"{BASE_URL}/api/departments/{dept_id}/batches", headers=headers_teacher)
+            json_resp = resp.json()
+            if isinstance(json_resp, list) and len(json_resp) > 0:
+                batch = json_resp[0]
+            else:
+                print(f"✗ Failed to create or list batches: {json_resp}")
+                return
+        else:
+            batch = resp.json()
+            
         batch_id = batch["id"]
-        print(f"✓ Batch created: {batch['label']} ({batch_id})")
+        print(f"✓ Batch settled: {batch['label']} ({batch_id})")
 
         # Create Subject
         subject_data = {"name": "Agentic Workflows", "code": "AI-404", "credits": 4, "semester": 8}
-        resp = await client.post(f"{BASE_URL}/api/college_architecture/departments/{dept_id}/subjects", json=subject_data, headers=headers_teacher)
-        subject = resp.json()
+        resp = await client.post(f"{BASE_URL}/api/departments/{dept_id}/subjects", json=subject_data, headers=headers_teacher)
+        if resp.status_code != 200:
+            print(f"DEBUG: Subject create resp: {resp.json()}")
+            resp = await client.get(f"{BASE_URL}/api/departments/{dept_id}/subjects", headers=headers_teacher)
+            json_resp = resp.json()
+            if isinstance(json_resp, list) and len(json_resp) > 0:
+                subject = json_resp[0]
+            else:
+                print(f"✗ Failed to create or list subjects: {json_resp}")
+                return
+        else:
+            subject = resp.json()
+            
         subject_id = subject["id"]
-        print(f"✓ Subject created: {subject['course_name']} ({subject_id})")
+        print(f"✓ Subject settled: {subject.get('course_name', 'Unknown')} ({subject_id})")
 
         # Get Enrollment Code
-        resp = await client.post(f"{BASE_URL}/api/college_architecture/batches/{batch_id}/enrollment-code", json={"section": "A"}, headers=headers_teacher)
+        resp = await client.post(f"{BASE_URL}/api/batches/{batch_id}/enrollment-code", json={"section": "A"}, headers=headers_teacher)
+        if resp.status_code != 200:
+            print(f"✗ Failed to generate enrollment code: {resp.json()}")
+            return
         code = resp.json()["code"]
         print(f"✓ Enrollment Code generated: {code}")
 
@@ -96,37 +133,36 @@ async def complete_demo():
             "enrollmentCode": code,
             "rollNumber": f"RS-{uuid.uuid4().hex[:4].upper()}",
             "fullName": "Student Demo",
-            "email": f"student_{uuid.uuid4().hex[:4]}@demo.com",
-            "password": "Lumina@138800"
+            "email": f"demo_student_{uuid.uuid4().hex[:4]}@lumina.com",
+            "password": "Password123!"
         }
-        resp = await client.post(f"{BASE_URL}/api/college_architecture/enroll", json=student_data)
-        if resp.status_code == 200:
-            student_id = resp.json()["userId"]
-            print(f"✓ Student enrolled successfully: {student_id}")
+        resp = await client.post(f"{BASE_URL}/api/enroll", json=student_data)
+        if resp.status_code != 200:
+             print(f"✗ Failed to enroll student or update info: {resp.status_code} {resp.text}")
         else:
-            print(f"✗ Student enrollment failed: {resp.text}")
-            return
+             print(f"✓ Student enrolled successfully via enrollment code.")
+             
+        # Ask AI Tutor
+        print("\n--- Asking AI Tutor ---")
+        headers_student = {"Authorization": f"Bearer {tokens['student']}"}
+        ai_resp = await client.post(f"{BASE_URL}/api/ai/ask", json={
+            "query": "Explain what an abstract class is.",
+            "subject_id": subject_id
+        }, headers=headers_student)
+        if ai_resp.status_code == 200:
+            print(f"✓ AI Tutor response length: {len(ai_resp.json().get('text', ''))}")
+        else:
+            print(f"✗ Failed AI Tutor query: {ai_resp.text}")
 
-        # Login as new student
-        resp = await client.post(f"{BASE_URL}/api/auth/login", json={"identifier": student_data["email"], "password": student_data["password"]})
-        student_token = resp.json().get("accessToken") or resp.json().get("access_token")
-        headers_student = {"Authorization": f"Bearer {student_token}"}
+        # Dashboard Test
+        print("\n--- Validating Dashboards ---")
+        student_dash = await client.get(f"{BASE_URL}/api/student/dashboard", headers=headers_student)
+        print(f"✓ Student Dashboard: {'OK' if student_dash.status_code == 200 else 'FAIL'} {student_dash.status_code}")
 
-        # Ask AI Question
-        print("Asking AI Question...")
-        question_data = {
-            "message": "What is Lumina platform?",
-            "user_id": student_id,
-            "session_id": "demo-session-1",
-            "provider": "google"
-        }
-        # In demo mode, this might be mocked or use GEMINI_API_KEY if present
-        resp = await client.post(f"{BASE_URL}/api/ai/tutor/chat", json=question_data, headers=headers_student)
-        print(f"✓ AI Response received (Pending Teacher Approval if applicable).")
+        teacher_dash = await client.get(f"{BASE_URL}/api/teacher/dashboard", headers=headers_teacher)
+        print(f"✓ Teacher Dashboard: {'OK' if teacher_dash.status_code == 200 else 'FAIL'} {teacher_dash.status_code}")
 
-        print("\n--- Demo Execution Successful! ---")
-        print(f"Final Student: {student_data['email']}")
-        print(f"Subject: {subject['course_name']}")
+        print("\n✅ End-to-End Demo Complete!")
 
 if __name__ == "__main__":
     asyncio.run(complete_demo())

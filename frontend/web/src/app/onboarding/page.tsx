@@ -86,7 +86,11 @@ export default function OnboardingPage() {
         if (!hasDefinedFlow) {
           // Sync with the backend and then move the user to their respective home.
           // This prevents the middleware from catching them in a redirect loop.
-          api.completeOnboarding().catch(() => {});
+          try {
+            await api.completeOnboarding();
+          } catch (e) {
+            console.error("completeOnboarding failed", e);
+          }
           routeByRole(currentRole);
           return;
         }
