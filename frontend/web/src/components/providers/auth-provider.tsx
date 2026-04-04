@@ -27,6 +27,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAttempted.current = true;
 
     const hydrateAuth = async () => {
+      const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+      const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+      const hasClientSession =
+        typeof document !== 'undefined' &&
+        (document.cookie.includes('access_token=') || document.cookie.includes('refresh_token='));
+
+      if (isAuthPage && !hasClientSession) {
+        clearAuth();
+        return;
+      }
+
       // isLoading is already true (set by onRehydrateStorage + initial value).
       // Explicitly set it so the promise start is synchronous.
       setLoading(true);

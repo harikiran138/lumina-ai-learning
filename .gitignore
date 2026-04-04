@@ -45,3 +45,5 @@ include/
 share/
 
 .env*.local
+deployment/aws/.env.production
+!deployment/aws/.env.production.example
