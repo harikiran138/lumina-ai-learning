@@ -17,6 +17,8 @@ from app.assessment.llm.gemini_generator import gemini_generator as question_gen
 from app.assessment.engine.adaptive_logic import adaptive_logic
 from app.assessment.engine.irt import irt_model
 from app.assessment.engine.remediation import build_remediation_plan
+from app.assessment.engine.knowledge_tracing import knowledge_tracing_engine
+from app.assessment.engine.policy_engine import policy_engine, AssessmentAction
 from app.assessment.question.selector import QuestionSelector
 from app.database.supabase_manager import supabase_db
 from datetime import datetime
@@ -112,8 +114,26 @@ class SessionManager:
     async def get_next_question(self, session_id: str) -> Optional[Question]:
         """Generates the next question for the session and persists it."""
         session = await self.get_session(session_id)
-        if not session or session.is_completed:
+        # Use PolicyEngine to decide next step
+        # Recent history is needed for behavioral signals
+        recent_history = session.responses[-3:] if session.responses else []
+        decision = policy_engine.decide_next_action(
+            session.mastery_state, 
+            recent_history, 
+            session.topic
+        )
+
+        if decision.action == AssessmentAction.STOP:
+            session.is_completed = True
+            await self.save_session(session)
             return None
+        
+        # If policy switches concept, update session topic
+        if decision.target_concepts and decision.target_concepts[0] != session.topic:
+            session.topic = decision.target_concepts[0]
+            # Reset difficulty for new concept if needed, or follow policy
+        
+        session.current_difficulty = decision.target_difficulty
 
         # Diversity: Select format based on history
         history_formats = [q.format for q in session.question_history]
@@ -225,10 +245,11 @@ class SessionManager:
                 session.current_difficulty, is_correct
             )
 
-        # Update MasteryState
-        for concept in target_concepts:
-            current = session.mastery_state.concept_mastery.get(concept, session.current_difficulty)
-            session.mastery_state.concept_mastery[concept] = round((current + score) / 2.0, 3)
+        # Update MasteryState using BKT
+        if session.mastery_state:
+            session.mastery_state = knowledge_tracing_engine.update_mastery(
+                session.mastery_state, target_concepts, is_correct
+            )
 
         # Record response
         response = StudentResponse(
