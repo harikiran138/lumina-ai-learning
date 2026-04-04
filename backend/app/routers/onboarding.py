@@ -334,7 +334,14 @@ async def _get_subject_rows_for_batch(batch_id: str, db: Any) -> List[Dict[str, 
             logger.warning("get_subject_rows_batch_id_empty")
             return []
 
-        batch = await db.fetch_one("batches", {"id": batch_id})
+        # Use fetch_one safely - if batch_id is not a valid UUID but the column is a UUID,
+        # Postgres will throw a 22P02 error. We wrap this to return [] instead of 500.
+        try:
+            batch = await db.fetch_one("batches", {"id": batch_id})
+        except Exception as db_err:
+            logger.error(f"get_subject_rows_batch_query_failed | batch_id={batch_id} error={db_err}")
+            return []
+
         if not batch:
             logger.error(f"get_subject_rows_batch_not_found | batch_id={batch_id}")
             return []
@@ -468,6 +475,42 @@ async def save_student_personal_details(
     return {"step": 1, "success": True, "profile": step_data}
 
 
+@router.post("/enrollment/validate")
+async def validate_enrollment_code_endpoint(
+    payload: StudentEnrollmentRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Any = Depends(get_db),
+):
+    """
+    Validates an enrollment code and returns batch/department details for preview.
+    Does NOT use/consume the code.
+    """
+    user_id = _require_student(current_user)
+    
+    # We use the existing helper which already performs all checks
+    # (existence, expiry, already used by another user, etc.)
+    validation_data = await _validate_enrollment_code_for_user(
+        payload.enrollment_code, user_id, db
+    )
+    
+    batch = validation_data["batch"]
+    department = validation_data["department"]
+    
+    # Format according to frontend expectations in StudentOnboardingFlow.tsx
+    return {
+        "batch": {
+            "id": str(batch.get("id")),
+            "label": batch.get("name") or batch.get("batch_label") or "Current Batch",
+        },
+        "department": {
+            "id": str(department.get("id")),
+            "name": department.get("name") or "Department",
+        },
+        "semester": validation_data.get("semester") or "",
+        "section": validation_data.get("section") or "",
+    }
+
+
 @router.post("/enrollment")
 async def save_student_enrollment(
     payload: StudentEnrollmentRequest,
@@ -567,7 +610,9 @@ async def list_student_onboarding_subjects(
     try:
         user_id = _require_student(current_user)
         db = get_scoped_db(current_user)
-        await _require_step_access(user_id, 3, db)
+        # Allow access if user is at Step 2 (completing enrollment) OR Step 3 (selecting subjects).
+        # This facilitates pre-fetching in the UI.
+        await _require_step_access(user_id, 2, db) 
 
         resolved_batch_id = batch_id or current_user.get("batch_id")
         if not resolved_batch_id:
@@ -632,9 +677,13 @@ async def save_student_subjects(
     if invalid_ids:
         raise HTTPException(status_code=400, detail="One or more selected subjects are not available for your batch")
 
-    await db.delete("student_subjects", {"student_id": user_id})
-    for subject_id in selected_subject_ids:
-        await db.insert("student_subjects", {"student_id": user_id, "subject_id": subject_id})
+    try:
+        await db.delete("student_subjects", {"student_id": user_id}, permanent=True)
+        for subject_id in selected_subject_ids:
+            await db.insert("student_subjects", {"student_id": user_id, "subject_id": subject_id})
+    except Exception as e:
+        logger.error(f"save_student_subjects_db_error | user_id={user_id} error={str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save subject selections. Please try again.")
 
     selected_subjects = [
         {
@@ -716,7 +765,13 @@ async def save_student_preferences(
 ):
     user_id = _require_student(current_user)
     db = get_scoped_db(current_user)
-    user_record = await _require_step_access(user_id, 5, db)
+    try:
+        user_record = await _require_step_access(user_id, 5, db)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"save_student_preferences_step_access_error | user_id={user_id} error={str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to load onboarding state. Please try again.")
 
     learning_styles = [str(item).strip() for item in (payload.learning_styles or []) if str(item).strip()]
     if len(learning_styles) < 1:
@@ -790,61 +845,68 @@ async def save_student_preferences(
     year_of_study = max(1, ((int(batch.get("current_semester") or 1) + 1) // 2))
     now = datetime.utcnow().isoformat()
 
-    if program_id:
-        enrollment_upsert = await db.upsert(
-            "student_enrollments",
-            {
-                "student_id": user_id,
-                "program_id": program_id,
-                "current_semester_id": current_semester_id,
-                "class_id": (selected_class or {}).get("id") or (enrollment_record or {}).get("class_id"),
-                "year_of_study": year_of_study,
-                "status": "active",
-                "updated_at": now,
-            },
-            on_conflict="student_id, program_id",
-        )
-        if not enrollment_upsert:
-            raise HTTPException(status_code=500, detail="Failed to update student enrollment")
-
-    score = _self_assessment_score(self_assessment)
-    await db.delete("student_subjects", {"student_id": user_id})
-    for subject_id in subject_ids:
-        await db.insert("student_subjects", {"student_id": user_id, "subject_id": subject_id})
-        await db.delete(
-            "skill_mastery",
-            {"user_id": user_id, "course_id": subject_id, "skill_name": "initial_self_assessment"},
-        )
-        await db.insert(
-            "skill_mastery",
-            {
-                "user_id": user_id,
-                "course_id": subject_id,
-                "skill_name": "initial_self_assessment",
-                "mastery_score": score,
-                "confidence": 0.65,
-                "bkt_p_l0": score,
-                "assessment_count": 1,
-                "last_assessed": now,
-                "updated_at": now,
-            },
-        )
-        await db.upsert(
-            "enrollments",
-            {
-                "student_id": user_id,
-                "course_id": subject_id,
-                "status": "active",
-                "enrolled_at": now,
-                "progress": {
-                    "percentage": 0,
-                    "mastery": round(score * 100, 2),
-                    "onboardingSource": "student_onboarding_v2",
+    try:
+        if program_id:
+            enrollment_upsert = await db.upsert(
+                "student_enrollments",
+                {
+                    "student_id": user_id,
+                    "program_id": program_id,
+                    "current_semester_id": current_semester_id,
+                    "class_id": (selected_class or {}).get("id") or (enrollment_record or {}).get("class_id"),
+                    "year_of_study": year_of_study,
+                    "status": "active",
+                    "updated_at": now,
                 },
-                "updated_at": now,
-            },
-            on_conflict="student_id, course_id",
-        )
+                on_conflict="student_id, program_id",
+            )
+            if not enrollment_upsert:
+                raise HTTPException(status_code=500, detail="Failed to update student enrollment")
+
+        score = _self_assessment_score(self_assessment)
+        await db.delete("student_subjects", {"student_id": user_id}, permanent=True)
+        for subject_id in subject_ids:
+            await db.insert("student_subjects", {"student_id": user_id, "subject_id": subject_id})
+            await db.delete(
+                "skill_mastery",
+                {"user_id": user_id, "course_id": subject_id, "skill_name": "initial_self_assessment"},
+                permanent=True,
+            )
+            await db.insert(
+                "skill_mastery",
+                {
+                    "user_id": user_id,
+                    "course_id": subject_id,
+                    "skill_name": "initial_self_assessment",
+                    "mastery_score": score,
+                    "confidence": 0.65,
+                    "bkt_p_l0": score,
+                    "assessment_count": 1,
+                    "last_assessed": now,
+                    "updated_at": now,
+                },
+            )
+            await db.upsert(
+                "enrollments",
+                {
+                    "student_id": user_id,
+                    "course_id": subject_id,
+                    "status": "active",
+                    "enrolled_at": now,
+                    "progress": {
+                        "percentage": 0,
+                        "mastery": round(score * 100, 2),
+                        "onboardingSource": "student_onboarding_v2",
+                    },
+                    "updated_at": now,
+                },
+                on_conflict="student_id, course_id",
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"save_student_preferences_db_error | user_id={user_id} error={str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save preferences. Please try again.")
 
     learner_profile = await db.upsert(
         "learner_profiles",
@@ -1115,7 +1177,7 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
     # Optional: handle elective selections for students
     if step_data.get("selectedElectives"):
         electives = step_data.get("selectedElectives") or []
-        await db.delete("student_subjects", {"student_id": user_id})
+        await db.delete("student_subjects", {"student_id": user_id}, permanent=True)
         for subject_id in electives:
             await db.insert(
                 "student_subjects",

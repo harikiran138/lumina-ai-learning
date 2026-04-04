@@ -363,7 +363,7 @@ export default function TeacherDashboard() {
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-lumina-highlight">
               Teacher Command Center
             </p>
-            <h1 className="max-w-3xl text-4xl font-display font-bold tracking-tight text-white md:text-6xl">
+            <h1 className="max-w-3xl text-3xl font-display font-bold tracking-tight text-white md:text-5xl lg:leading-tight">
               Run your classroom from one <span className="text-lumina-highlight border-b-4 border-lumina-highlight/30">live operating view.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg text-gray-400 leading-relaxed">
@@ -371,7 +371,7 @@ export default function TeacherDashboard() {
               so you can move from insight to action without jumping between pages.
             </p>
 
-            <div className="mt-8 grid gap-4 md:grid-cols-4">
+            <div className="mt-10 grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <QuickAction
                 href="/faculty/create-course"
                 icon={PlusCircle}
@@ -403,9 +403,9 @@ export default function TeacherDashboard() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <p className="text-sm font-semibold text-white">This week</p>
-            <div className="mt-5 grid grid-cols-2 gap-4">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 flex flex-col justify-center">
+            <p className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-6">Weekly Performance</p>
+            <div className="grid grid-cols-2 gap-5">
               <SnapshotTile
                 icon={BookOpen}
                 label="Published"
@@ -963,14 +963,14 @@ function SnapshotTile({
   value: number;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/10 p-4 hover:border-white/20 transition-colors">
-      <div className="flex items-center gap-3">
-        <div className="rounded-xl bg-white/5 p-2 text-lumina-highlight">
-          <Icon className="h-4 w-4" />
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-5 hover:border-white/20 transition-all duration-300 hover:bg-black/30 group">
+      <div className="flex flex-col gap-3">
+        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lumina-highlight group-hover:scale-110 transition-transform">
+          <Icon className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-gray-500">{label}</p>
-          <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
+          <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-gray-500">{label}</p>
+          <p className="mt-1 text-2xl sm:text-3xl font-display font-bold text-white leading-none">{value}</p>
         </div>
       </div>
     </div>

@@ -17,7 +17,7 @@ export default function TopNav({
     <header
       className={cn(
         /* transition only `left`, not every property — eliminates full-compositor invalidation */
-        "fixed top-4 right-4 left-4 lg:left-24 h-16 glass-v2-gold z-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between transition-[left] duration-[180ms] ease-out",
+        "fixed top-4 right-4 left-4 lg:left-20 h-16 glass-v2-gold z-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between transition-[left] duration-[180ms] ease-out",
         className,
       )}
     >
@@ -36,9 +36,9 @@ export default function TopNav({
             placeholder="Search..."
             suppressHydrationWarning
             aria-label="Search"
-            className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-xl bg-white/5 focus-visible:ring-2 focus-visible:ring-lumina-highlight/50 focus-visible:border-lumina-highlight/50 text-sm text-white placeholder-gray-500 transition-all duration-300 backdrop-blur-sm outline-none"
+            className="w-full pl-10 pr-4 py-2 border border-white/5 rounded-xl bg-white/[0.03] focus-visible:ring-2 focus-visible:ring-lumina-highlight/30 focus-visible:border-lumina-highlight/30 text-sm text-white placeholder-gray-500 transition-all duration-300 backdrop-blur-sm outline-none"
           />
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" aria-hidden="true" />
+          <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" aria-hidden="true" />
         </div>
       </div>
       <div className="flex items-center space-x-4">
@@ -58,7 +58,7 @@ export default function TopNav({
               {user.role}
             </p>
           </div>
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-lumina-highlight to-amber-600 flex items-center justify-center text-black font-bold shadow-lg shadow-lumina-highlight/20">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-lumina-highlight to-amber-600 flex items-center justify-center text-black font-bold shadow-lg shadow-lumina-highlight/20 border border-white/10">
             {user.initial}
           </div>
         </div>
