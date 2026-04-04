@@ -1,0 +1,30 @@
+{
+  "student": {
+    "error": "{'message': 'invalid input value for enum user_role: \"student\"', 'code': '22P02', 'hint': None, 'det",
+    "code": "22P02"
+  },
+  "teacher": {
+    "error": "{'message': 'invalid input value for enum user_role: \"teacher\"', 'code': '22P02', 'hint': None, 'det",
+    "code": "22P02"
+  },
+  "admin": {
+    "error": "{'message': 'invalid input value for enum user_role: \"admin\"', 'code': '22P02', 'hint': None, 'detai",
+    "code": "22P02"
+  },
+  "faculty": {
+    "error": "{'message': 'invalid input value for enum user_role: \"faculty\"', 'code': '22P02', 'hint': None, 'det",
+    "code": "22P02"
+  },
+  "hod": {
+    "error": "{'message': 'invalid input value for enum user_role: \"hod\"', 'code': '22P02', 'hint': None, 'details",
+    "code": "22P02"
+  },
+  "authenticated": {
+    "error": "{'message': 'invalid input value for enum user_role: \"authenticated\"', 'code': '22P02', 'hint': None",
+    "code": "22P02"
+  },
+  "anon": {
+    "error": "{'message': 'invalid input value for enum user_role: \"anon\"', 'code': '22P02', 'hint': None, 'detail",
+    "code": "22P02"
+  }
+}

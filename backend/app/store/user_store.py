@@ -27,6 +27,10 @@ class UserStore:
         from app.core.rbac import normalize_role as _normalize
         return _normalize(role)
 
+    def to_db_role(self, role: Optional[str]) -> str:
+        from app.core.rbac import to_db_role as _to_db
+        return _to_db(role)
+
     def _sanitize_user(self, user: dict, include_sensitive: bool = False) -> dict:
         """Normalizes a user object while only retaining secrets for internal auth flows."""
         if not user:
@@ -103,56 +107,120 @@ class UserStore:
 
         hashed_password = self.get_password_hash(password)
 
+        # Minimal schema for public.users table
         user_data = {
             "id": str(uuid.uuid4()),
-            "email": email,
+            "email": email.strip().lower(),
             "password_hash": hashed_password,
-            "name": full_name,
+            "role": self.to_db_role(role)
+        }
+
+        # Backup metadata for secondary profile tables
+        profile_metadata = {
             "full_name": full_name,
-            "role": self.normalize_role(role),
             "phone": phone or "N/A",
-            "is_active": True,
             "college_id": college_id,
             "dept_id": dept_id,
             "batch_id": batch_id,
             "roll_number": roll_number,
-            "employee_id": employee_id,
-            "onboarding_step": 0
+            "employee_id": employee_id
         }
 
-        try:
-            insert_result = await self.db.table("users").insert(user_data).async_execute()
-            
-            # Fallback: If RLS prevents returning the row on insert, fetch it explicitly
-            result = insert_result.data[0] if insert_result.data else await self.get_user_by_email(email)
-            
-            if not result:
-                log.warning("insert_result_empty_trying_retry", email=email)
-                result = await self.get_user_by_email(email)
+        # Discovery loop for Role Enum (if to_db_role fails)
+        role_fallbacks = [user_data["role"], "student", "STUDENT", "authenticated", "anon"]
+        last_error = None
+
+        for attempt_role in role_fallbacks:
+            user_data["role"] = attempt_role
+            try:
+                log.info("create_user_attempt", email=email, role=attempt_role)
+                insert_result = await self.db.table("users").insert(user_data).async_execute()
                 
-            if not result:
-                raise Exception("Failed to create or retrieve user record")
+                # If we reach here, the base user is created
+                result = insert_result.data[0] if insert_result.data else await self.get_user_by_email(email)
+                
+                if result:
+                    # STEP 2: Persist Profile Metadata in secondary tables
+                    await self._persist_user_profile(result["id"], role, profile_metadata)
+                    return self._sanitize_user(result)
+                
+            except Exception as e:
+                last_error = e
+                err_str = str(e)
+                # 22P02 is the Postgres code for Enum Mismatch
+                if "22P02" in err_str or "invalid input value for enum" in err_str:
+                    log.warning("create_user_enum_rejected", role=attempt_role, next_fallback=True)
+                    continue
+                
+                # PGRST204: Missing column error (e.g. name missing in DB)
+                if "PGRST204" in err_str or ("Could not find the" in err_str and "column" in err_str):
+                    import re as _re
+                    col_match = _re.search(r"Could not find the '([^']+)' column", err_str)
+                    if col_match:
+                        missing_col = col_match.group(1)
+                        if missing_col in user_data:
+                            log.warning("create_user_stripping_column", column=missing_col)
+                            del user_data[missing_col]
+                            # Retry this specific role attempt without the missing column
+                            # We reset the fallbacks loop to try the same role again
+                            # but simpler.
+                            try:
+                                insert_result = await self.db.table("users").insert(user_data).async_execute()
+                                result = insert_result.data[0] if insert_result.data else await self.get_user_by_email(email)
+                                if result:
+                                    await self._persist_user_profile(result["id"], role, profile_metadata)
+                                    return self._sanitize_user(result)
+                            except Exception as inner_e:
+                                last_error = inner_e
+                                log.error("create_user_nested_retry_failed", error=str(inner_e))
+                
+                # Duplicate Key
+                if "duplicate key" in err_str.lower():
+                    raise ValueError("Email already registered")
+                
+                # Other errors
+                log.error("create_user_attempt_failed", error=err_str, role=attempt_role)
+        
+        # If we exhausted all fallbacks
+        if last_error:
+            raise last_error
+        raise Exception("Failed to create user after all role fallbacks")
+
+    async def _persist_user_profile(self, user_id: str, role: str, metadata: dict):
+        """Helper to store user metadata in specialized profile tables."""
+        try:
+            # 1. Learner Profile (Primary fallback for all roles as it's the standard Lumina metadata sink)
+            learner_data = {
+                "user_id": user_id,
+                "role": role,
+                "full_name": metadata.get("full_name") or "Unnamed User",
+                "phone": metadata.get("phone"),
+                "preferences": {"onboarding_complete": False}
+            }
             
-            return self._sanitize_user(result)
+            # Check for batch/college alignment in learner_profiles
+            if metadata.get("college_id"): learner_data["college_id"] = metadata["college_id"]
+            if metadata.get("dept_id"): learner_data["dept_id"] = metadata["dept_id"]
+            
+            await self.db.table("learner_profiles").upsert(learner_data).async_execute()
+            log.info("profile_metadata_persisted", user_id=user_id, table="learner_profiles")
+
+            # 2. Onboarding Profile (Legacy alignment)
+            try:
+                await self.db.table("onboarding_profiles").upsert({
+                    "user_id": user_id,
+                    "role": role,
+                    "institution_id": metadata.get("college_id"),
+                    "onboarding_step": 1
+                }).async_execute()
+            except:
+                pass # Silently ignore if table doesn't exist
 
         except Exception as e:
-            err_str = str(e)
-            if "duplicate key" in err_str.lower():
-                raise ValueError("Email already registered")
-            
-            # PGRST204: Missing column error (e.g. batch_id missing in DB)
-            if "Could not find the" in err_str and "column" in err_str:
-                import re as _re
-                col_match = _re.search(r"Could not find the '([^']+)' column", err_str)
-                if col_match:
-                    missing_col = col_match.group(1)
-                    log.warning("create_user_column_missing_retrying", missing_column=missing_col, email=email)
-                    # Remove the missing column and retry once
-                    del user_data[missing_col]
-                    return await self.create_user_from_dict(user_data)
+            # We don't want to fail the whole registration if profile creation fails, 
+            # but we should log it heavily.
+            log.error("profile_metadata_persistence_failed", user_id=user_id, error=str(e))
 
-            log.error("create_user_failed", error=err_str, email=email)
-            raise e
 
     async def create_user_from_dict(self, user_data: dict) -> dict:
         """Internal helper for resilient user creation."""
@@ -247,7 +315,7 @@ class UserStore:
 
     async def update_user_role(self, user_id: str, role: str) -> bool:
         try:
-            response = await self.db.table("users").update({"role": self.normalize_role(role)}).eq("id", user_id).async_execute()
+            response = await self.db.table("users").update({"role": self.to_db_role(role)}).eq("id", user_id).async_execute()
             return len(response.data) > 0
         except Exception as e:
             log.error("update_user_role_failed", error=str(e), user_id=user_id)
@@ -301,7 +369,13 @@ class UserStore:
             "emergency_contact",
             "parent_email",
         }
-        clean_updates = {k: v for k, v in updates.items() if k not in restricted and k in valid_columns}
+        clean_updates = {}
+        for k, v in updates.items():
+            if k not in restricted and k in valid_columns:
+                if k == "role":
+                    clean_updates[k] = self.to_db_role(v)
+                else:
+                    clean_updates[k] = v
         clean_updates.setdefault("updated_at", datetime.utcnow().isoformat())
 
         try:
@@ -363,7 +437,13 @@ class UserStore:
             "emergency_contact",
             "parent_email",
         }
-        clean_updates = {k: v for k, v in updates.items() if k not in restricted and k in valid_columns}
+        clean_updates = {}
+        for k, v in updates.items():
+            if k not in restricted and k in valid_columns:
+                if k == "role":
+                    clean_updates[k] = self.to_db_role(v)
+                else:
+                    clean_updates[k] = v
         clean_updates.setdefault("updated_at", datetime.utcnow().isoformat())
 
         try:
