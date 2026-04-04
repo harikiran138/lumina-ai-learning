@@ -371,7 +371,7 @@ export default function TeacherDashboard() {
               so you can move from insight to action without jumping between pages.
             </p>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               <QuickAction
                 href="/faculty/create-course"
                 icon={PlusCircle}

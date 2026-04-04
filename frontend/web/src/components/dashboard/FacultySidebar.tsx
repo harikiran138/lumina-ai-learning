@@ -107,6 +107,7 @@ export default function FacultySidebar({
         "transition-transform duration-300 ease-in-out",
         isOpen
           ? "translate-x-0"
+          /* shift left by full sidebar width (14rem) + the left-4 gap (1rem) + 1rem extra */
           : "-translate-x-[calc(100%+2rem)] lg:translate-x-0",
       )}
     >
