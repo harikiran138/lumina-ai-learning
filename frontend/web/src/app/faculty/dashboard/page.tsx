@@ -286,7 +286,7 @@ export default function TeacherDashboard() {
 
   if (error) {
     return (
-      <div className="glass-v2 border border-red-400/20 p-8 text-center">
+      <div className="glass-v2 border border-red-400/20 p-6 text-center">
         <AlertTriangle className="mx-auto mb-4 h-8 w-8 text-red-400" />
         <h1 className="text-xl font-semibold text-white">Teacher dashboard unavailable</h1>
         <p className="mt-2 text-sm text-gray-400">{error}</p>
@@ -303,7 +303,7 @@ export default function TeacherDashboard() {
   // Guard: data is null only if the API returned nothing and no error was thrown.
   if (!data) {
     return (
-      <div className="glass-v2 border border-white/5 p-8 text-center">
+      <div className="glass-v2 border border-white/5 p-6 text-center">
         <p className="text-sm text-gray-400">No dashboard data available yet.</p>
       </div>
     );
@@ -358,7 +358,7 @@ export default function TeacherDashboard() {
   return (
     <div className="space-y-8">
       <section className="glass-v2 border-white/5 overflow-hidden">
-        <div className="grid gap-6 p-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(340px,1fr)]">
+        <div className="grid gap-6 p-6 lg:p-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(340px,1fr)]">
           <div>
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-lumina-highlight">
               Teacher Command Center
@@ -403,7 +403,7 @@ export default function TeacherDashboard() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 flex flex-col justify-center">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 flex flex-col justify-center">
             <p className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-6">Weekly Performance</p>
             <div className="grid grid-cols-2 gap-5">
               <SnapshotTile
