@@ -9,7 +9,9 @@ class Role(str, Enum):
     Invite-only:   hod, college_admin, super_admin, counselor, content_creator
     """
     SUPER_ADMIN = "super_admin"
+    SYSTEM_ADMIN = "system_admin"
     COLLEGE_ADMIN = "college_admin"
+    INSTITUTION_ADMIN = "institution_admin"
     HOD = "hod"
     FACULTY = "faculty"
     TEACHER = "teacher"
@@ -38,6 +40,8 @@ INVITE_ONLY_ROLES = {
     Role.HOD.value,
     Role.COLLEGE_ADMIN.value,
     Role.SUPER_ADMIN.value,
+    Role.SYSTEM_ADMIN.value,
+    Role.INSTITUTION_ADMIN.value,
     Role.COUNSELOR.value,
     Role.CONTENT_CREATOR.value,
 }
@@ -46,6 +50,8 @@ PLATFORM_ROLES: Set[str] = {
     Role.HOD.value,
     Role.COLLEGE_ADMIN.value,
     Role.SUPER_ADMIN.value,
+    Role.SYSTEM_ADMIN.value,
+    Role.INSTITUTION_ADMIN.value,
     Role.COUNSELOR.value,
     Role.CONTENT_CREATOR.value,
     Role.RESEARCHER.value,
@@ -99,9 +105,15 @@ def normalize_role(role: Any) -> str:
         "college_admin": Role.COLLEGE_ADMIN.value,
         "superadmin": Role.SUPER_ADMIN.value,
         "super admin": Role.SUPER_ADMIN.value,
+        "system_admin": Role.SYSTEM_ADMIN.value,
+        "systemadmin": Role.SYSTEM_ADMIN.value,
+        "system admin": Role.SYSTEM_ADMIN.value,
+        "institution_admin": Role.INSTITUTION_ADMIN.value,
+        "institutionadmin": Role.INSTITUTION_ADMIN.value,
+        "institution admin": Role.INSTITUTION_ADMIN.value,
         "collegeadmin": Role.COLLEGE_ADMIN.value,
         "college admin": Role.COLLEGE_ADMIN.value,
-        "inst_admin": Role.COLLEGE_ADMIN.value,
+        "inst_admin": Role.INSTITUTION_ADMIN.value,
         "curriculum": Role.CONTENT_CREATOR.value,
         "peer tutor": Role.PEER_TUTOR.value,
         "peertutor": Role.PEER_TUTOR.value,

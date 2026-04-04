@@ -3,12 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import { Upload, X, Loader2 } from "lucide-react";
+import { Upload, X, Loader2, Wand2, FileText, Check, AlertCircle, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function CreateCoursePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [mode, setMode] = useState<"manual" | "ai">("manual");
+  const [aiFile, setAiFile] = useState<File | null>(null);
+  const [previewBlueprint, setPreviewBlueprint] = useState<any>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -53,6 +58,64 @@ export default function CreateCoursePage() {
     }
   };
 
+  const handleAIUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiFile) {
+      setError("Please select a PDF file first.");
+      return;
+    }
+
+    setIsGenerating(true);
+    setError("");
+    setPreviewBlueprint(null);
+
+    try {
+      const res = await api.generateBlueprintFromPdf(aiFile);
+      if (res.blueprint) {
+        setPreviewBlueprint(res.blueprint);
+        // Autofill title and description if available in blueprint metadata/root
+        setFormData((prev) => ({
+          ...prev,
+          title: res.blueprint.title || prev.title,
+          description: res.blueprint.description || prev.description,
+          id: res.blueprint.title ? res.blueprint.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : prev.id
+        }));
+      } else {
+        setError("AI was unable to extract a structure from this document.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Blueprint generation failed.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const confirmAndCreate = async () => {
+    setIsLoading(true);
+    try {
+      // Create course with the generated blueprint structure
+      const createData = {
+        ...formData,
+        name: formData.title, // Map title to name for backend consistency
+        thumbnail: formData.image,
+        modules: previewBlueprint.modules || [],
+        code: formData.code || formData.id || `c-${Math.random().toString(36).slice(2, 7)}`, // Ensure a code exists
+        status: "draft"
+      };
+
+      const res = await api.createCourse(createData);
+      if (res.success || res.id) {
+        router.push("/faculty/courses");
+      } else {
+        setError(res.error || "Failed to create course.");
+      }
+    } catch (err) {
+      setError("An error occurred during final creation.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -78,7 +141,159 @@ export default function CreateCoursePage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Mode Selector */}
+      <div className="flex p-1 bg-white/5 rounded-xl border border-white/10 w-fit">
+        <button
+          onClick={() => setMode("manual")}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
+            mode === "manual"
+              ? "bg-lumina-primary text-black font-bold"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          Manual Entry
+        </button>
+        <button
+          onClick={() => setMode("ai")}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
+            mode === "ai"
+              ? "bg-lumina-primary text-black font-bold shadow-lg shadow-lumina-primary/20"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          <Wand2 className="w-4 h-4" />
+          Magic Blueprint (AI)
+        </button>
+      </div>
+
+      {mode === "ai" && !previewBlueprint ? (
+        <div className="glass-card p-10 text-center space-y-6">
+          {/* Magic Progress State */}
+          {isGenerating && aiFile && !previewBlueprint && (
+            <div className="glass-v2-primary p-12 text-center space-y-6 animate-pulse border-amber-500/20 mb-8 shadow-2xl shadow-amber-500/10">
+              <div className="relative inline-block">
+                <Loader2 className="w-16 h-16 text-amber-500 animate-spin mx-auto" />
+                <Sparkles className="w-8 h-8 text-amber-400 absolute -top-2 -right-2 animate-bounce" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold gradient-text-gold">Analyzing Document...</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Lumina AI is architecting your course roadmap from <span className="text-foreground font-medium">{aiFile.name}</span>.
+                </p>
+              </div>
+            </div>
+          )}
+          <div className="w-20 h-20 bg-lumina-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-lumina-primary/20">
+            <Upload className="w-8 h-8 text-lumina-primary" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-2">Upload Syllabus or Textbook</h2>
+            <p className="text-gray-400 max-w-md mx-auto">
+              Our AI will analyze your PDF and generate a complete course structure including modules and topics instantly.
+            </p>
+          </div>
+          
+          <div className="max-w-md mx-auto">
+            <label className="block w-full cursor-pointer group">
+              <div className="border-2 border-dashed border-white/10 rounded-2xl p-8 group-hover:border-lumina-primary transition-colors bg-white/5">
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => setAiFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+                <span className="text-gray-300">
+                  {aiFile ? aiFile.name : "Select Syllabus (PDF)"}
+                </span>
+              </div>
+            </label>
+          </div>
+
+          <button
+            onClick={handleAIUpload}
+            disabled={!aiFile || isGenerating}
+            className="px-8 py-3 bg-lumina-primary text-black font-bold rounded-xl hover:bg-lumina-secondary transition-all flex items-center gap-2 mx-auto disabled:opacity-50"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Analyzing Document...
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-5 h-5" />
+                Generate Magic Blueprint
+              </>
+            )}
+          </button>
+        </div>
+      ) : previewBlueprint ? (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="glass-card-premium p-8 border-amber-500/10">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-amber-500/80">AI Blueprint Ready</span>
+                </div>
+                <h2 className="text-3xl font-bold tracking-tight mb-3">{previewBlueprint.title}</h2>
+                <p className="text-lg text-muted-foreground leading-relaxed">{previewBlueprint.description}</p>
+              </div>
+              <div className="px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-sm font-bold">
+                {previewBlueprint.level || "Beginner"}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {previewBlueprint.modules && previewBlueprint.modules.map((module: any, mIdx: number) => (
+                <div key={mIdx} className="glass rounded-2xl p-6 border-white/5 hover:border-amber-500/20 transition-colors group">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 font-bold group-hover:bg-amber-500 group-hover:text-black transition-all">
+                      {mIdx + 1}
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold">{module.title}</h4>
+                      <p className="text-sm text-muted-foreground">{module.description}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-14">
+                    {module.topics && module.topics.map((topic: any, tIdx: number) => (
+                      <div key={tIdx} className="p-3 rounded-xl bg-white/5 border border-white/5 flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-amber-500/40" />
+                        <div>
+                          <p className="font-semibold text-sm">{topic.title}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{topic.duration_minutes || 45} mins</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-white/5 flex justify-end gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => { setPreviewBlueprint(null); setAiFile(null); }}
+                className="glass-button-secondary py-6 px-8"
+              >
+                Discard and Reset
+              </Button>
+              <Button 
+                onClick={confirmAndCreate} 
+                disabled={isLoading}
+                className="glass-button-highlight py-6 px-10 text-lg"
+              >
+                {isLoading ? <Loader2 className="animate-spin mr-2" /> : <Sparkles className="mr-2 w-5 h-5" />}
+                Confirm Course Structure
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-6">
         {/* Course Details Card */}
         <div className="glass-card p-6 space-y-4">
           <h2 className="text-xl font-semibold text-white mb-4">
@@ -199,6 +414,7 @@ export default function CreateCoursePage() {
           </button>
         </div>
       </form>
+      )}
     </div>
   );
 }

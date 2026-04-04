@@ -10,7 +10,7 @@ from learner_profile.store.state import StateStore
 
 router = APIRouter()
 agent = HandwritingAgent()
-llm = get_llm_provider()
+llm = get_llm_provider(feature="ocr")
 state_store = StateStore()
 
 UPLOAD_DIR = "data/uploads"

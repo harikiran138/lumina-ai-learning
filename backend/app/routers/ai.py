@@ -343,7 +343,7 @@ async def generate_course(request: CourseGenerationRequest):
     Generate a course outline using local Ollama instance (default) or specified provider.
     """
     # For course generation, we default to auto (likely gemini if key exists)
-    llm_instance = get_llm_provider("auto")
+    llm_instance = get_llm_provider(feature="dashboard")
 
     system_prompt = """You are an expert curriculum designer. 
     You MUST follow the naming standard for all courses: 'Primary Concept + Subtopics + Engineering Context'.
@@ -416,7 +416,7 @@ async def generate_course_from_assignment(request: AssignmentCourseRequest):
     from app.store.assignment_store import AssignmentStore
 
     # Instantiate LLM (Default auto)
-    llm_instance = get_llm_provider("auto")
+    llm_instance = get_llm_provider(feature="dashboard")
 
     store = AssignmentStore()
     assignment = await store.get_assignment(request.assignment_id)
@@ -802,7 +802,7 @@ async def generate_ppt(request: PPTGenerationRequest):
 
         # Step 1: Generate content structure using Gemini API
         # Use GeminiRestProvider via get_llm_provider for Python 3.8 compatibility
-        llm = get_llm_provider("gemini")
+        llm = get_llm_provider(feature="presentation")
 
         # [OPTIMIZATION] Reduced verbosity in prompt to save output tokens and time
         prompt = f"""Topic: {request.topic}

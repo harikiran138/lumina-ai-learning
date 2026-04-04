@@ -537,7 +537,7 @@ class TutorAgent:
     """
 
     def __init__(self, provider: str = "auto"):
-        self.llm = get_llm_provider(provider)
+        self.llm = get_llm_provider(feature="tutor", provider=provider)
         self.retrieval = get_rag_engine(provider=provider)
         self.memory_store = TutorMemoryStore()
 

@@ -233,16 +233,18 @@ export class RealAPI {
   private toUser(userData: any, fallbackName?: string): User {
     const displayName = userData.fullName || userData.name || userData.email || fallbackName || "Lumina User";
     const onboardingStep = userData.onboardingStep ?? 0;
-    const adaptiveOnboardingCompleted = userData.adaptiveOnboardingCompleted ?? userData.role !== "student";
+    const adaptiveCompleted = userData.adaptiveOnboardingCompleted ?? (userData.role !== "student");
+
     return {
       id: userData.id,
       email: userData.email,
       name: displayName,
       role: userData.role,
       onboardingStep,
-      onboardingCompleted: userData.onboardingCompleted ?? 
-        (onboardingStep >= (userData.role === "college_admin" ? 2 : 5) && adaptiveOnboardingCompleted),
-      adaptiveOnboardingCompleted,
+      onboardingCompleted: userData.onboardingCompleted ?? (
+        onboardingStep >= 5 && adaptiveCompleted
+      ),
+      adaptiveOnboardingCompleted: adaptiveCompleted,
       mustChangePassword: userData.mustChangePassword,
       collegeId: userData.collegeId,
       deptId: userData.deptId,
@@ -420,8 +422,8 @@ export class RealAPI {
     return this.currentUser;
   }
 
-  async getCurrentUser(): Promise<User | null> {
-    if (this.currentUser) return this.currentUser;
+  async getCurrentUser(forceRefresh = false): Promise<User | null> {
+    if (this.currentUser && !forceRefresh) return this.currentUser;
     // After a page refresh the in-memory value is lost; re-hydrate from the
     // backend using the HTTP-only cookie that was already set during login.
     try {
@@ -743,39 +745,24 @@ export class RealAPI {
     return result;
   }
 
-  async completeOnboarding(): Promise<any> {
-    const res = await this.fetchAuthorized("/api/onboarding/complete", { method: "POST" });
-    if (!res.ok) return { success: false };
-    const data = await parseJsonSafe(res) ?? {};
-
-    // Persist a fresh token if the completion endpoint returned one.
-    if (data.accessToken) {
-      this.persistToken(data.accessToken);
-    }
-
-    // The original login JWT still has onboardingCompleted: false.
-    // Force a token refresh so the middleware cookie is updated to
-    // onboardingCompleted: true before the next page navigation.
-    // Without this the middleware always redirects back to /onboarding.
+  async completeOnboarding() {
     try {
-      const refreshRes = await fetch(
-        this.buildUrl(requireAuthBase(), "/api/auth/refresh"),
-        { method: "POST", credentials: "include" },
-      );
-      if (refreshRes.ok) {
-        const refreshData = await parseJsonSafe(refreshRes);
-        if (refreshData?.accessToken) {
-          this.persistToken(refreshData.accessToken);
-        }
+      const res = await this.fetchAuthorized("/api/onboarding/complete", {
+        method: "POST"
+      });
+      if (!res.ok) {
+        throw new Error("Failed to complete onboarding");
       }
-    } catch { /* best-effort — navigation will still work via the DB flag */ }
-
-    // Update in-memory user so AuthGateway / redirectAfterAuth reads the right value.
-    if (this.currentUser) {
-      this.currentUser = { ...this.currentUser, onboardingCompleted: true };
+      const data = await parseJsonSafe(res);
+      
+      // Refresh user so subsequent state checks see onboardingCompleted: true
+      await this.getCurrentUser(true);
+      
+      return data;
+    } catch (error) {
+      console.error("completeOnboarding failed:", error);
+      throw error;
     }
-
-    return data;
   }
 
   // --- Dashboard ---
@@ -969,7 +956,7 @@ export class RealAPI {
 
   // --- Faculty Specific ---
   async getFacultyCourse(courseId: string): Promise<any> {
-    const res = await this.fetchAuthorized(`/api/faculty/courses/${courseId}`);
+    const res = await this.fetchAuthorized(`/api/courses/${courseId}`);
     if (!res.ok) {
         const e = await parseJsonSafe(res);
         throw new Error(e?.detail || "Failed to load faculty course details");
@@ -1552,6 +1539,21 @@ export class RealAPI {
       throw new Error(e?.detail || "Failed to submit course for review");
     }
     return await parseJsonSafe(res);
+  }
+
+  /** POST /api/generation/blueprint-from-pdf — generate course blueprint from PDF */
+  async generateBlueprintFromPdf(file: File): Promise<any> {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await this.fetchAuthorized("/api/generation/blueprint-from-pdf", {
+      method: "POST",
+      body: form,
+    }, 180000); // 3-minute timeout for PDF parsing + LLM analysis
+    if (!res.ok) {
+      const e = await parseJsonSafe(res);
+      throw new Error(e?.detail || "Blueprint generation failed");
+    }
+    return await res.json();
   }
 }
 

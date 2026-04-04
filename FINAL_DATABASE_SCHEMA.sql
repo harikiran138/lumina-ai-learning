@@ -33,6 +33,7 @@ CREATE TABLE users (
     avatar TEXT,
     status TEXT DEFAULT 'active',
     is_active BOOLEAN DEFAULT TRUE,
+    onboarding_completed BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -88,6 +89,7 @@ CREATE TABLE learner_profiles (
     learning_style TEXT,
     strengths JSONB DEFAULT '[]',
     weaknesses JSONB DEFAULT '[]',
+    status TEXT DEFAULT 'active',
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()

@@ -9,21 +9,39 @@ const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #06080f; font-family: 'DM Sans', sans-serif; }
+    body { background: #06080f; font-family: 'DM Sans', sans-serif; color: #e2e8f0; overflow-x: hidden; }
     input, select, button { font-family: inherit; outline: none; }
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: #0b0f1e; }
-    ::-webkit-scrollbar-thumb { background: #1e3050; border-radius: 3px; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #06080f; }
+    ::-webkit-scrollbar-thumb { background: #1e3050; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a78bfa; }
     input::placeholder { color: #334155; }
+    ::selection { background: rgba(167,139,250,0.3); color: #fff; }
+    
+    .glass {
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(12px) saturate(180%);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
     @keyframes fadeSlideIn {
-      from { opacity: 0; transform: translateY(12px); }
+      from { opacity: 0; transform: translateY(20px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .page-enter { animation: fadeSlideIn 0.3s ease forwards; }
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(34,211,238,0.3); }
-      50%       { box-shadow: 0 0 0 8px rgba(34,211,238,0); }
+    .page-enter { animation: fadeSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
     }
+    .floating { animation: float 4s ease-in-out infinite; }
+    
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.3); }
+      50%       { box-shadow: 0 0 0 12px rgba(167, 139, 250, 0); }
+    }
+    .glow-btn:hover { animation: pulse-glow 2s infinite; }
   `}</style>
 );
 
@@ -137,25 +155,27 @@ function StatCard({ label, value, sub, accent = tc.cyan, icon }) {
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
+      role="region"
+      aria-label={`Statistic for ${label}`}
       style={{
         background: "linear-gradient(135deg, #0f1726 0%, #111f33 100%)",
-        border: `1px solid ${hov ? accent + "40" : tc.border}`,
-        borderRadius: 16, padding: "22px 24px", position: "relative",
-        overflow: "hidden", transition: "all 0.2s",
-        transform: hov ? "translateY(-2px)" : "none",
-        boxShadow: hov ? `0 8px 32px ${accent}18` : "none",
+        border: `1px solid ${hov ? accent + "60" : tc.border}`,
+        borderRadius: 20, padding: "26px", position: "relative",
+        overflow: "hidden", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        transform: hov ? "translateY(-5px) scale(1.02)" : "none",
+        boxShadow: hov ? `0 20px 40px ${accent}25` : "none",
         cursor: "default",
       }}
     >
       <div style={{
-        position: "absolute", top: 0, right: 0, width: 90, height: 90,
-        background: `radial-gradient(circle at top right, ${accent}18, transparent 70%)`,
-        pointerEvents: "none",
+        position: "absolute", top: -20, right: -20, width: 120, height: 120,
+        background: `radial-gradient(circle at center, ${accent}25, transparent 70%)`,
+        pointerEvents: "none", filter: "blur(20px)",
       }} />
-      <div style={{ fontSize: 26, marginBottom: 8 }}>{icon}</div>
-      <div style={{ fontSize: 30, fontWeight: 800, color: accent, fontFamily: "Sora, sans-serif", lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: 12, color: tc.muted, marginTop: 6, fontFamily: "DM Sans, sans-serif" }}>{label}</div>
-      {sub && <div style={{ fontSize: 11, color: tc.dim, marginTop: 3 }}>{sub}</div>}
+      <div style={{ fontSize: 32, marginBottom: 12, filter: hov ? "drop-shadow(0 0 8px "+accent+"40)" : "none", transition: "0.3s" }}>{icon}</div>
+      <div style={{ fontSize: 34, fontWeight: 800, color: hov ? "#fff" : accent, fontFamily: "Sora, sans-serif", lineHeight: 1, transition: "0.3s" }}>{value}</div>
+      <div style={{ fontSize: 13, color: hov ? tc.text : tc.muted, marginTop: 10, fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>{label}</div>
+      {sub && <div style={{ fontSize: 11, color: tc.dim, marginTop: 4, letterSpacing: "0.02em" }}>{sub}</div>}
     </div>
   );
 }
@@ -165,16 +185,33 @@ const chartTooltipStyle = {
   borderRadius: 8, color: "#e2e8f0", fontSize: 12,
 };
 
-function SectionBox({ title, subtitle, children, action }) {
+function SectionBox({ title, subtitle, children, action, icon }) {
   return (
-    <div style={{ background: tc.bg2, border: `1px solid ${tc.border}`, borderRadius: 16, padding: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: subtitle ? 4 : 20 }}>
-        <span style={{ fontSize: 15, fontWeight: 700, color: tc.text, fontFamily: "Sora, sans-serif" }}>{title}</span>
-        {action && <span style={{ fontSize: 12, color: tc.cyan, cursor: "pointer" }}>{action}</span>}
+    <section 
+      className="glass"
+      style={{ 
+        borderRadius: 24, padding: 28, transition: "0.3s ease",
+        boxShadow: "0 10px 30px -10px rgba(0,0,0,0.5)"
+      }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: subtitle ? 6 : 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {icon && <span style={{ fontSize: 20 }}>{icon}</span>}
+          <h3 style={{ fontSize: 17, fontWeight: 700, color: "#fff", fontFamily: "Sora, sans-serif", letterSpacing: "-0.01em" }}>{title}</h3>
+        </div>
+        {action && (
+          <button 
+            style={{ 
+              fontSize: 12, color: tc.cyan, cursor: "pointer", 
+              background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.2)",
+              borderRadius: 8, padding: "4px 12px", fontWeight: 700, textTransform: "uppercase"
+            }}>
+            {action}
+          </button>
+        )}
       </div>
-      {subtitle && <div style={{ fontSize: 12, color: tc.muted, marginBottom: 20 }}>{subtitle}</div>}
+      {subtitle && <div style={{ fontSize: 13, color: tc.muted, marginBottom: 24, lineHeight: 1.5 }}>{subtitle}</div>}
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -1061,6 +1098,153 @@ function SettingsPage() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+//  LANDING VIEW
+// ═══════════════════════════════════════════════════════════════════
+
+function LandingView({ onGetStarted }) {
+  const features = [
+    { icon: "✍️", title: "Smart OCR", desc: "Advanced handwriting recognition powered by Gemini 1.5 Flash." },
+    { icon: "⚖️", title: "AI Grading", desc: "Automated scoring with detailed feedback loops for students." },
+    { icon: "📈", title: "Analytics", desc: "Track progress across classes with real-time performance insights." },
+    { icon: "🛡️", title: "Secure", desc: "Enterprise-grade security with role-based access control." }
+  ];
+
+  return (
+    <div style={{ minHeight: "100vh", position: "relative", overflow: "hidden", background: tc.bg0 }}>
+      {/* Dynamic Background */}
+      <div style={{
+        position: "absolute", top: "-10%", left: "-10%", width: "50%", height: "50%",
+        background: "radial-gradient(circle, rgba(167, 139, 250, 0.08) 0%, transparent 70%)",
+        filter: "blur(80px)", zIndex: 0
+      }} />
+      <div style={{
+        position: "absolute", bottom: "-10%", right: "-10%", width: "50%", height: "50%",
+        background: "radial-gradient(circle, rgba(34, 211, 238, 0.08) 0%, transparent 70%)",
+        filter: "blur(80px)", zIndex: 0
+      }} />
+
+      {/* Header */}
+      <header className="glass" style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+        height: 80, display: "flex", alignItems: "center", justifyContent: "center",
+        borderTop: "none", borderLeft: "none", borderRight: "none"
+      }}>
+        <div style={{ width: "100%", maxWidth: 1200, padding: "0 40px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ 
+              width: 32, height: 32, borderRadius: 8, 
+              background: `linear-gradient(135deg, ${tc.violet}, ${tc.cyan})`,
+              display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900
+            }}>✦</div>
+            <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em", fontFamily: "Sora" }}>Lumina AI</span>
+          </div>
+          <button 
+            onClick={() => onGetStarted()}
+            className="glow-btn"
+            style={{
+              padding: "10px 24px", borderRadius: 100, border: "none",
+              background: `linear-gradient(135deg, ${tc.violet}, #7c3aed)`,
+              color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer",
+              transition: "0.3s"
+            }}>
+            Sign In
+          </button>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <main style={{ position: "relative", zIndex: 1, paddingTop: 160, paddingBottom: 100, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+        <div style={{ 
+          background: "rgba(167, 139, 250, 0.08)", border: "1px solid rgba(167, 139, 250, 0.2)",
+          borderRadius: 100, padding: "6px 18px", fontSize: 13, fontWeight: 700, color: tc.violet,
+          marginBottom: 32, display: "inline-block", letterSpacing: "0.05em"
+        }}>
+          ✨ THE FUTURE OF LEARNING IS HERE
+        </div>
+        <h1 style={{ 
+          fontSize: "clamp(48px, 8vw, 84px)", fontWeight: 800, letterSpacing: "-0.04em",
+          fontFamily: "Sora", lineHeight: 0.95, maxWidth: 900, marginBottom: 32,
+          background: "linear-gradient(to bottom, #fff 30%, #94a3b8)",
+          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"
+        }}>
+          Elevate Your Learning with Lumina AI
+        </h1>
+        <p style={{ fontSize: 20, color: "#94a3b8", maxWidth: 640, lineHeight: 1.6, marginBottom: 48, padding: "0 20px" }}>
+          Lumina AI transforms handwritten assignments into actionable data. 
+          Empowering teachers and students with instant, intelligent feedback.
+        </p>
+        <div style={{ display: "flex", gap: 16 }}>
+          <button 
+            onClick={() => onGetStarted()}
+            className="glow-btn"
+            style={{
+              padding: "18px 42px", borderRadius: 14, border: "none",
+              background: "#fff", color: "#000", fontWeight: 800, fontSize: 17, 
+              cursor: "pointer", transition: "0.3s"
+            }}>
+            Get Started Free
+          </button>
+          <button style={{
+            padding: "18px 42px", borderRadius: 14, border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(255,255,255,0.03)", color: "#fff", fontWeight: 700, fontSize: 17,
+            cursor: "pointer", transition: "0.3s"
+          }}>
+            Watch Demo
+          </button>
+        </div>
+
+        {/* Floating elements */}
+        <div className="floating" style={{ marginTop: 100, width: "100%", maxWidth: 1000, padding: "0 40px" }}>
+          <div className="glass" style={{ 
+            borderRadius: 24, padding: "40px", display: "grid", gridTemplateColumns: "repeat(2, 1fr)",
+            gap: 40, textAlign: "left", boxShadow: "0 30px 60px -12px rgba(0,0,0,0.5)"
+          }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: tc.cyan, textTransform: "uppercase", marginBottom: 12 }}>Handwriting Analysis</div>
+              <p style={{ fontSize: 15, color: "#fff", lineHeight: 1.5 }}>
+                "The AI picked up subtle spacing issues I hadn't noticed. It's like having a personal tutor reviewing every letter."
+              </p>
+              <div style={{ marginTop: 20, display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: tc.bg3 }} />
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Hari Kiran</div>
+              </div>
+            </div>
+            <div style={{ borderLeft: "1px solid rgba(255,255,255,0.05)", paddingLeft: 40 }}>
+              <div style={{ fontSize: 32, fontWeight: 800, color: tc.violet, fontFamily: "Sora" }}>98%</div>
+              <div style={{ fontSize: 13, color: tc.muted, marginTop: 4 }}>Analysis Accuracy</div>
+              <div style={{ marginTop: 24, width: "100%", height: 4, background: "rgba(255,255,255,0.05)", borderRadius: 2 }}>
+                <div style={{ width: "98%", height: "100%", background: tc.violet, borderRadius: 2 }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div style={{ marginTop: 120, width: "100%", maxWidth: 1200, padding: "0 40px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24 }}>
+          {features.map(f => (
+            <div key={f.title} className="glass" style={{ padding: 32, borderRadius: 24, textAlign: "left" }}>
+              <div style={{ fontSize: 32, marginBottom: 16 }}>{f.icon}</div>
+              <h4 style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 12, fontFamily: "Sora" }}>{f.title}</h4>
+              <p style={{ fontSize: 14, color: tc.muted, lineHeight: 1.6 }}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer style={{ padding: "80px 40px", borderTop: "1px solid rgba(255,255,255,0.05)", textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 32, marginBottom: 32 }}>
+          {["Features", "Pricing", "Research", "Privacy", "Support"].map(l => (
+            <a key={l} href="#" style={{ color: tc.muted, fontSize: 14, textDecoration: "none", fontWeight: 500 }}>{l}</a>
+          ))}
+        </div>
+        <div style={{ fontSize: 13, color: tc.dim }}>© 2026 Lumina AI Learning Systems. All rights reserved.</div>
+      </footer>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //  LOGIN SCREEN
 // ═══════════════════════════════════════════════════════════════════
 
@@ -1089,7 +1273,10 @@ function LoginScreen({ onLogin }) {
       backgroundImage: `radial-gradient(ellipse at 20% 50%, rgba(34,211,238,0.06) 0%, transparent 55%),
         radial-gradient(ellipse at 80% 20%, rgba(245,158,11,0.05) 0%, transparent 50%)`,
     }}>
-      <div style={{ width: "100%", maxWidth: 460, padding: 24 }}>
+      <div className="glass" style={{ 
+        width: "100%", maxWidth: 480, padding: 48, borderRadius: 32,
+        boxShadow: "0 40px 100px -20px rgba(0,0,0,0.7)"
+      }}>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 38 }}>
           <div style={{
@@ -1101,60 +1288,77 @@ function LoginScreen({ onLogin }) {
             <span style={{ fontSize: 12, color: tc.cyan, fontFamily: "Sora, sans-serif", letterSpacing: "0.12em", fontWeight: 700 }}>LUMINA AI LEARNING</span>
           </div>
           <h1 style={{ fontSize: 34, fontWeight: 800, color: tc.text, fontFamily: "Sora, sans-serif", lineHeight: 1.1, marginBottom: 8 }}>Welcome back</h1>
-          <p style={{ color: tc.muted, fontSize: 14 }}>Choose your role and sign in to continue</p>
+          <p style={{ color: tc.muted, fontSize: 15 }}>Choose your role and sign in to continue</p>
         </div>
 
         {/* Role selector */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 26 }}>
+        <div 
+          role="radiogroup" 
+          aria-label="Select User Role"
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 32 }}>
           {roles.map(r => {
             const rc = r.key === "teacher" ? tc.gold : r.key === "admin" ? tc.violet : tc.cyan;
+            const isSel = role === r.key;
             return (
-              <button key={r.key} onClick={() => setRole(r.key)} style={{
-                background: role === r.key ? `rgba(${r.key === "teacher" ? "245,158,11" : r.key === "admin" ? "167,139,250" : "34,211,238"},0.1)` : "rgba(255,255,255,0.03)",
-                border: `1px solid ${role === r.key ? rc + "50" : tc.border}`,
-                borderRadius: 12, padding: "14px 6px", cursor: "pointer",
-                textAlign: "center", transition: "all 0.15s",
-              }}>
-                <div style={{ fontSize: 22, marginBottom: 5 }}>{r.icon}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: role === r.key ? rc : "#5a7090", fontFamily: "Sora, sans-serif", marginBottom: 2 }}>{r.label}</div>
-                <div style={{ fontSize: 10, color: "#334155" }}>{r.desc}</div>
+              <button 
+                key={r.key} 
+                onClick={() => setRole(r.key)} 
+                role="radio"
+                aria-checked={isSel}
+                style={{
+                  background: isSel ? `rgba(${r.key === "teacher" ? "245,158,11" : r.key === "admin" ? "167,139,250" : "34,211,238"},0.1)` : "rgba(255,255,255,0.02)",
+                  border: `1px solid ${isSel ? rc + "70" : "rgba(255,255,255,0.05)"}`,
+                  borderRadius: 16, padding: "16px 8px", cursor: "pointer",
+                  textAlign: "center", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  transform: isSel ? "scale(1.05)" : "none",
+                  zIndex: isSel ? 1 : 0
+                }}>
+                <div style={{ fontSize: 26, marginBottom: 8, filter: !isSel ? "grayscale(100%)" : "none" }}>{r.icon}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: isSel ? rc : "#5a7090", fontFamily: "Sora, sans-serif", marginBottom: 2 }}>{r.label}</div>
               </button>
             );
           })}
         </div>
 
         {/* Inputs */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
           {[
-            { type: "email",    placeholder: "Email address", value: email, onChange: e => setEmail(e.target.value) },
-            { type: "password", placeholder: "Password",      value: pass,  onChange: e => setPass(e.target.value)  },
+            { type: "email",    placeholder: "Email address", value: email, ariaLabel: "Email", onChange: e => setEmail(e.target.value) },
+            { type: "password", placeholder: "Password",      value: pass,  ariaLabel: "Password", onChange: e => setPass(e.target.value)  },
           ].map(f => (
-            <input key={f.type} {...f} style={{
-              background: "rgba(255,255,255,0.04)", border: `1px solid ${tc.border}`,
-              borderRadius: 11, padding: "13px 17px", color: tc.text,
-              fontSize: 14.5, fontFamily: "DM Sans, sans-serif", width: "100%",
-            }} />
+            <input 
+              key={f.type} 
+              aria-label={f.ariaLabel}
+              {...f} 
+              style={{
+                background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.08)`,
+                borderRadius: 14, padding: "16px 20px", color: tc.text,
+                fontSize: 15, fontFamily: "DM Sans, sans-serif", width: "100%",
+                transition: "0.2s"
+              }} 
+            />
           ))}
         </div>
 
         <button
           onClick={handleLogin}
           disabled={loading}
+          className="glow-btn"
           style={{
-            width: "100%", padding: "14px", borderRadius: 11, border: "none",
+            width: "100%", padding: "16px", borderRadius: 14, border: "none",
             background: loading
               ? roleColor + "99"
               : `linear-gradient(135deg, ${roleColor}, ${role === "teacher" ? "#b45309" : role === "admin" ? "#7c3aed" : "#0ea5e9"})`,
-            color: "#06080f", fontSize: 15, fontWeight: 700, fontFamily: "Sora, sans-serif",
-            cursor: loading ? "default" : "pointer", transition: "all 0.2s",
-            boxShadow: `0 4px 22px ${roleColor}30`, letterSpacing: "0.04em",
+            color: "#06080f", fontSize: 16, fontWeight: 800, fontFamily: "Sora, sans-serif",
+            cursor: loading ? "default" : "pointer", transition: "0.3s",
+            boxShadow: `0 10px 30px ${roleColor}30`, letterSpacing: "0.02em",
           }}
         >
-          {loading ? "Signing in…" : `Sign in as ${role.charAt(0).toUpperCase() + role.slice(1)}`}
+          {loading ? "Authenticating…" : `Sign in as ${role.charAt(0).toUpperCase() + role.slice(1)}`}
         </button>
 
-        <p style={{ textAlign: "center", marginTop: 18, color: "#1e3050", fontSize: 12 }}>
-          Demo preview — click Sign in to explore · No real auth required
+        <p style={{ textAlign: "center", marginTop: 24, color: "#475569", fontSize: 13 }}>
+          Demo preview — No real auth required
         </p>
       </div>
     </div>
@@ -1775,15 +1979,16 @@ function AdminDashboard({ onLogout }) {
 //  ROOT APP
 // ═══════════════════════════════════════════════════════════════════
 export default function LuminaApp() {
-  const [screen, setScreen] = useState("login");
+  const [screen, setScreen] = useState("landing");
 
   return (
     <>
       <GlobalStyles />
+      {screen === "landing" && <LandingView     onGetStarted={() => setScreen("login")} />}
       {screen === "login"   && <LoginScreen    onLogin={role => setScreen(role)} />}
-      {screen === "student" && <StudentDashboard onLogout={() => setScreen("login")} />}
-      {screen === "teacher" && <TeacherDashboard onLogout={() => setScreen("login")} />}
-      {screen === "admin"   && <AdminDashboard   onLogout={() => setScreen("login")} />}
+      {screen === "student" && <StudentDashboard onLogout={() => setScreen("landing")} />}
+      {screen === "teacher" && <TeacherDashboard onLogout={() => setScreen("landing")} />}
+      {screen === "admin"   && <AdminDashboard   onLogout={() => setScreen("landing")} />}
     </>
   );
 }

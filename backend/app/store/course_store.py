@@ -64,6 +64,7 @@ class CourseStore:
         difficulty_level: Optional[str] = None,
         thumbnail_url: Optional[str] = None,
         program_id: Optional[str] = None,
+        modules: Optional[List[dict]] = None,
     ) -> dict:
         course_data = {
             "name": name,
@@ -72,7 +73,7 @@ class CourseStore:
             "description": description,
             "teacher_id": teacher_id,
             "subject": subject,
-            "modules": [],
+            "modules": modules or [],
             "is_published": False,
             "review_status": "draft",
         }

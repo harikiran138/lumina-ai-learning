@@ -65,6 +65,7 @@ class OnboardingService:
         now = datetime.utcnow().isoformat()
         updates = {
             "onboarding_step": 5,
+            "onboarding_completed": True,
             "updated_at": now
         }
         
@@ -98,6 +99,12 @@ class OnboardingService:
         progress["onboarding_step"] = 5
         progress["completed_at"] = now
         
+        # Ensure adaptive_onboarding nested object exists for auth checks
+        if "adaptive_onboarding" not in progress:
+            progress["adaptive_onboarding"] = {}
+        progress["adaptive_onboarding"]["status"] = "completed"
+        progress["adaptive_onboarding"]["completed_at"] = now
+        
         await self.db.update(
             "user_data",
             {"progress": progress, "updated_at": now},
@@ -126,22 +133,27 @@ class OnboardingService:
         learning_styles = payload.get("learning_styles") or step_5.get("learningStyles") or step_5.get("learning_styles") or []
         primary_style = learning_styles[0] if learning_styles else "visual"
         
-        await self.db.upsert(
-            "learner_profiles",
-            {
-                "user_id": user_id,
-                "role": "student",
-                "goals": payload.get("goals") or ["complete_curriculum"],
-                "learning_style": primary_style,
-                "preferences": {
-                    "learning_styles": learning_styles,
-                    "self_assessment": payload.get("self_assessment") or step_5.get("selfAssessment") or step_5.get("self_assessment"),
-                },
-                "status": "active",
-                "updated_at": now,
+        payload = {
+            "user_id": user_id,
+            "role": "student",
+            "goals": payload.get("goals") or ["complete_curriculum"],
+            "learning_style": primary_style,
+            "preferences": {
+                "learning_styles": learning_styles,
+                "self_assessment": payload.get("self_assessment") or step_5.get("selfAssessment") or step_5.get("self_assessment"),
             },
-            on_conflict="user_id"
-        )
+            "updated_at": now,
+        }
+        
+        # Fault-tolerant status update since column might be missing
+        try:
+            # First try with status
+            p_with_status = {**payload, "status": "active"}
+            await self.db.upsert("learner_profiles", p_with_status, on_conflict="user_id")
+        except Exception as e:
+            logger.warning(f"failed_to_upsert_with_status_column: {e}")
+            # Fallback without status
+            await self.db.upsert("learner_profiles", payload, on_conflict="user_id")
         
         # 2. Ensure Student Enrollment
         batch_id = step_2.get("batchId") or step_2.get("batch_id") or current_user.get("batch_id")

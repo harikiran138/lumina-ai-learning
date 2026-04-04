@@ -56,7 +56,7 @@ const PROTECTED_PATHS: Record<string, string> = {
 }
 
 // Roles that may access /admin/* in addition to super_admin.
-const ADMIN_ALLOWED = new Set(['super_admin', 'college_admin', 'institution_admin', 'admin'])
+const ADMIN_ALLOWED = new Set(['super_admin', 'college_admin', 'institution_admin', 'system_admin', 'admin', 'hod'])
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -118,8 +118,13 @@ export function middleware(request: NextRequest) {
   }
 
   const role = normalizeRole(rawRole)
+
+  // Roles that bypass the onboarding wizard entirely
+  const ONBOARDING_BYPASS_ROLES = new Set([
+    'super_admin', 'admin', 'system_admin', 'institution_admin', 'hod',
+  ])
   const onboardingCompleted =
-    payload.onboardingCompleted === true || role === 'super_admin'
+    payload.onboardingCompleted === true || ONBOARDING_BYPASS_ROLES.has(role)
 
   // ── 4. Authenticated user visiting a public page ──────────────────────────────
   if (isPublicPath) {

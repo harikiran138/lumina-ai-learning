@@ -291,4 +291,176 @@ select {
   @keyframes text-shimmer {
     to { background-position: 200% center; }
   }
+
+  /* ─── Sidebar system ─────────────────────────────────────────────────────── */
+  /* Collapsed width = 4.5rem (72px), expanded = 14rem (224px).                */
+  /* The sidebar only expands on hover (lg+); on mobile it slides in as an     */
+  /* overlay when `isOpen` is true (handled by Tailwind classes in the TSX).   */
+
+  .lumina-sidebar {
+    width: 4.5rem;
+    transition: width 260ms cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+
+  /* Expanded on hover (desktop only) */
+  @media (min-width: 1024px) {
+    .lumina-sidebar:hover {
+      width: 14rem;
+    }
+  }
+
+  /* Mobile overlay: fill full width when open */
+  @media (max-width: 1023px) {
+    .lumina-sidebar {
+      width: 14rem;
+    }
+  }
+
+  /* ── Sidebar header (logo row) ── */
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    height: 4rem;           /* same as TopNav/h-16 */
+    padding: 0 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    gap: 0.5rem;
+  }
+
+  /* Icon letter shown collapsed; full word hidden when collapsed */
+  .sidebar-logo-icon {
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo-full,
+  .sidebar-header .text-lumina-highlight {
+    /* Hide "umina" text and "AI" badge when collapsed */
+    opacity: 0;
+    max-width: 0;
+    overflow: hidden;
+    transition: opacity 200ms ease, max-width 260ms ease;
+    white-space: nowrap;
+  }
+
+  .lumina-sidebar:hover .sidebar-logo-full,
+  .lumina-sidebar:hover .sidebar-header .text-lumina-highlight {
+    opacity: 1;
+    max-width: 8rem;
+  }
+
+  /* ── Nav items ── */
+  .sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Icon — always visible, sized, never shrinks */
+  .sidebar-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Label text — hidden when sidebar is collapsed */
+  .sidebar-text {
+    opacity: 0;
+    max-width: 0;
+    overflow: hidden;
+    transition: opacity 200ms ease, max-width 260ms ease;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .lumina-sidebar:hover .sidebar-text {
+    opacity: 1;
+    max-width: 10rem;
+  }
+
+  /* Tooltip — shown only in collapsed state on hover */
+  .sidebar-tooltip {
+    position: absolute;
+    left: calc(4.5rem + 0.5rem);   /* just outside collapsed sidebar */
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(18, 18, 20, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.625rem;
+    border-radius: 0.5rem;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 150ms ease;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Show tooltip only when sidebar is NOT expanded */
+  .lumina-sidebar:not(:hover) .sidebar-nav-item:hover .sidebar-tooltip {
+    opacity: 1;
+  }
+
+  /* Hide tooltip when sidebar is expanded (label is already visible) */
+  .lumina-sidebar:hover .sidebar-tooltip {
+    display: none;
+  }
+
+  /* ── Bottom section ── */
+  .sidebar-bottom {
+    padding: 0.75rem 0.75rem 0.875rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .sidebar-bottom-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  /* ── User card (profile link at bottom) ── */
+  .sidebar-user-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  /* ── Hide scrollbar on nav ── */
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ── Page enter animation ── */
+  .page-enter {
+    animation: page-enter-anim 300ms ease both;
+  }
+
+  @keyframes page-enter-anim {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 }
