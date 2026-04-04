@@ -101,9 +101,12 @@ async function fetchWithRetry(
         signal: controller.signal,
       })
 
-      // Retry on 5xx Server Errors
+      // Retry on 5xx Server Errors - but include response body for better debugging
       if (!response.ok && response.status >= 500) {
-        throw new Error(`Server Error: ${response.status}`)
+        const clonedResponse = response.clone();
+        const errorBody = await clonedResponse.text().catch(() => "");
+        console.error(`[API] Server Error ${response.status}:`, errorBody.substring(0, 500));
+        throw new Error(`Server Error: ${response.status} - ${errorBody || 'Internal server error'}`)
       }
 
       return response
@@ -445,9 +448,15 @@ export class RealAPI {
     interventions: any[],
     aiQueue: any[],
   ): any {
-    const stats = dashboard?.stats || [];
+    // Support both the new {summary, courses, weeklySnapshot} shape (backend v2)
+    // and the legacy {stats: [...]} shape so the frontend is forward-compatible.
+    const stats           = dashboard?.stats           || [];
+    const backendSummary  = dashboard?.summary         ?? null;
+    const backendCourses  = dashboard?.courses         ?? null;
+    const backendSnapshot = dashboard?.weeklySnapshot  ?? null;
+
     const today = new Date();
-    const normalizedAiQueue = this.toArray(aiQueue);
+    const normalizedAiQueue       = this.toArray(aiQueue);
     const normalizedInterventions = this.toArray(interventions);
 
     const recentAssignments = (assignments || []).map((assignment: any) => {
@@ -482,15 +491,18 @@ export class RealAPI {
 
     const assignmentsByCourse = new Map<string, any[]>();
     for (const assignment of recentAssignments) {
-      const list = assignmentsByCourse.get(String((assignments || []).find((item: any) => item?.id === assignment.id)?.course_id || "")) || [];
-      list.push(assignment);
-      assignmentsByCourse.set(
-        String((assignments || []).find((item: any) => item?.id === assignment.id)?.course_id || ""),
-        list,
+      const courseId = String(
+        (assignments || []).find((item: any) => item?.id === assignment.id)?.course_id || "",
       );
+      const list = assignmentsByCourse.get(courseId) || [];
+      list.push(assignment);
+      assignmentsByCourse.set(courseId, list);
     }
 
-    const courseCards = (courses || []).map((course: any) => {
+    // Prefer course list from backend response; fall back to separately fetched courses.
+    const sourceCourses = backendCourses && backendCourses.length > 0 ? backendCourses : (courses || []);
+
+    const courseCards = sourceCourses.map((course: any) => {
       const courseAssignments = assignmentsByCourse.get(String(course?.id)) || [];
       const pendingGrading = courseAssignments.reduce(
         (sum: number, item: any) => sum + Number(item?.pendingGrading || 0),
@@ -499,20 +511,18 @@ export class RealAPI {
 
       return {
         id: course?.id,
-        title: course?.title || course?.name || "Untitled Course",
-        code: course?.code || "",
+        title: course?.title || course?.name || course?.course_name || "Untitled Course",
+        code: course?.code || course?.course_code || "",
         description: course?.description || "",
         status: course?.status || "active",
-        studentCount: Number(course?.students || 0),
+        studentCount: Number(course?.students || course?.studentCount || 0),
         assignmentCount: courseAssignments.length,
         pendingGrading,
         averageProgress: 0,
-        averageMastery: this.extractNumericStat(stats, "Avg. Performance"),
+        averageMastery: backendSummary?.avgMastery ?? this.extractNumericStat(stats, "Avg. Performance"),
         moduleCount: 0,
-        nextDeadline: courseAssignments
-          .map((item: any) => item?.dueDate)
-          .filter(Boolean)
-          .sort()[0] || null,
+        nextDeadline:
+          courseAssignments.map((item: any) => item?.dueDate).filter(Boolean).sort()[0] || null,
         lastActivity: null,
         image: course?.image || "",
         href: `/faculty/courses/${course?.id}`,
@@ -540,14 +550,14 @@ export class RealAPI {
           detail: `${item.pendingGrading} submission(s) waiting for review`,
           href: item.href,
         })),
-      ...(normalizedAiQueue.slice(0, 2).map((item: any, index: number) => ({
+      ...normalizedAiQueue.slice(0, 2).map((item: any, index: number) => ({
         id: item?.id || item?.queue_id || `ai-${index}`,
         kind: "deadline",
         tone: "urgent",
         title: item?.question_text || item?.title || "AI answer awaiting review",
         detail: item?.student_question || item?.detail || "Approve or edit before the student sees it.",
         href: "/faculty/verification-queue",
-      })) as any[]),
+      })) as any[],
     ];
 
     const interventionQueue = normalizedInterventions.map((item: any) => ({
@@ -567,29 +577,35 @@ export class RealAPI {
       weakTopics: item?.weak_topics || item?.weakTopics || [],
     }));
 
+    // ── Build summary — prefer backend values, fall back to computed/legacy ───
+    const summary = {
+      totalStudents:        backendSummary?.totalStudents        ?? this.extractNumericStat(stats, "Active Students"),
+      activeCourses:        backendSummary?.activeCourses        ?? courseCards.length,
+      avgMastery:           backendSummary?.avgMastery           ?? this.extractNumericStat(stats, "Avg. Performance"),
+      pendingGrading:       backendSummary?.pendingGrading       ?? pendingGrading,
+      atRiskStudents:       backendSummary?.atRiskStudents       ?? interventionQueue.length,
+      upcomingDeadlines:    backendSummary?.upcomingDeadlines    ?? upcomingDeadlines,
+      pendingAIVerifications: backendSummary?.pendingAIVerifications ?? normalizedAiQueue.length,
+    };
+
+    // ── Build weeklySnapshot — prefer backend values, fall back to computed ──
+    const weeklySnapshot = backendSnapshot ?? {
+      publishedCourses:    courseCards.filter((c: any) => c.status !== "draft").length,
+      draftCourses:        courseCards.filter((c: any) => c.status === "draft").length,
+      assignmentsCreated:  recentAssignments.length,
+      submissionsReceived: recentAssignments.reduce(
+        (sum: number, item: any) => sum + Number(item?.submissionCount || 0),
+        0,
+      ),
+    };
+
     return {
-      summary: {
-        totalStudents: this.extractNumericStat(stats, "Active Students"),
-        activeCourses: courseCards.length,
-        avgMastery: this.extractNumericStat(stats, "Avg. Performance"),
-        pendingGrading,
-        atRiskStudents: interventionQueue.length,
-        upcomingDeadlines,
-        pendingAIVerifications: normalizedAiQueue.length,
-      },
+      summary,
       courses: courseCards,
       recentAssignments,
       studentMomentum: [],
       priorityItems,
-      weeklySnapshot: {
-        publishedCourses: courseCards.filter((course: any) => course.status !== "draft").length,
-        draftCourses: courseCards.filter((course: any) => course.status === "draft").length,
-        assignmentsCreated: recentAssignments.length,
-        submissionsReceived: recentAssignments.reduce(
-          (sum: number, item: any) => sum + Number(item?.submissionCount || 0),
-          0,
-        ),
-      },
+      weeklySnapshot,
       interventionQueue,
       conceptHeatmap: [],
       supportClusters: [],
@@ -645,7 +661,8 @@ export class RealAPI {
       this.fetchJsonOrDefault("/api/faculty/ai-queue", { items: [], total_pending: 0 }),
     ]);
 
-    return this.normalizeTeacherDashboard(dashboard, courses, assignments, interventions, aiQueue);
+    const aiQueueItems = Array.isArray(aiQueue) ? aiQueue : (aiQueue as any)?.items ?? [];
+    return this.normalizeTeacherDashboard(dashboard, courses, assignments, interventions, aiQueueItems);
   }
 
   private async getHodDashboardData(): Promise<any> {
@@ -892,25 +909,54 @@ export class RealAPI {
   }
 
   async saveStudentEnrollment(enrollmentCode: string): Promise<any> {
-    const res = await this.fetchAuthorized("/api/onboarding/enrollment", {
-      method: "POST",
-      body: JSON.stringify({ enrollment_code: enrollmentCode }),
-    });
-    if (!res.ok) {
-      const error = await parseJsonSafe(res);
-      throw new Error(error?.detail || "Failed to link enrollment");
+    try {
+      const res = await this.fetchAuthorized("/api/onboarding/enrollment", {
+        method: "POST",
+        body: JSON.stringify({ enrollment_code: enrollmentCode }),
+      });
+      if (!res.ok) {
+        const error = await parseJsonSafe(res);
+        const message = error?.detail || error?.message || `Enrollment failed (${res.status})`;
+        console.error("Enrollment API error:", { status: res.status, error });
+        throw new Error(message);
+      }
+      return await parseJsonSafe(res) ?? {};
+    } catch (err: any) {
+      // Provide more helpful error messages
+      if (err.message?.includes("Server Error: 500")) {
+        console.error("Backend enrollment error:", err);
+        throw new Error("Unable to save enrollment. Please check that your enrollment code is valid and try again.");
+      }
+      throw err;
     }
-    return await parseJsonSafe(res) ?? {};
   }
 
   async getStudentOnboardingSubjects(batchId?: string): Promise<any[]> {
-    const suffix = batchId ? `?batch_id=${encodeURIComponent(batchId)}` : "";
-    const res = await this.fetchAuthorized(`/api/onboarding/student-subjects${suffix}`);
-    if (!res.ok) {
-      const error = await parseJsonSafe(res);
-      throw new Error(error?.detail || "Failed to load onboarding subjects");
+    // Guard: no batchId means no subjects possible
+    if (!batchId) {
+      return [];
     }
-    return (await parseJsonSafe(res)) ?? [];
+
+    const suffix = `?batch_id=${encodeURIComponent(batchId)}`;
+    try {
+      const res = await this.fetchAuthorized(`/api/onboarding/student-subjects${suffix}`);
+
+      // If response is not OK, log and return empty (backend will now return [] instead of 500)
+      if (!res.ok) {
+        const error = await parseJsonSafe(res);
+        console.error("Subjects API error:", error);
+        // Return empty array instead of throwing - let the UI handle the empty state
+        return [];
+      }
+
+      const data = await parseJsonSafe(res);
+      // Ensure we always return an array
+      return Array.isArray(data) ? data : [];
+    } catch (err) {
+      console.error("Failed to fetch subjects:", err);
+      // Return empty array on any error - prevents UI crash
+      return [];
+    }
   }
 
   async saveStudentSubjects(subjectIds: string[]): Promise<any> {
@@ -1629,15 +1675,15 @@ export class RealAPI {
     return res.ok ? await res.json() : null;
   }
 
-  /** GET /api/courses/teacher/students/{id}/analytics — student detail analytics */
+  /** GET /api/teacher/students/{id}/analytics — student detail analytics */
   async getPersonalizationProfile(studentId: string): Promise<any> {
-    const res = await this.fetchAuthorized(`/api/courses/teacher/students/${studentId}/analytics`);
+    const res = await this.fetchAuthorized(`/api/teacher/students/${studentId}/analytics`);
     return res.ok ? await res.json() : null;
   }
 
-  /** GET /api/courses/teacher/alerts — teacher at-risk alerts */
+  /** GET /api/teacher/alerts — teacher at-risk alerts */
   async getTeacherAlerts(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/courses/teacher/alerts");
+    const res = await this.fetchAuthorized("/api/teacher/alerts");
     return res.ok ? await res.json() : [];
   }
 
@@ -1671,8 +1717,49 @@ export class RealAPI {
 
   /** GET /api/student/tutor/questions — student's own question statuses */
   async getStudentQuestions(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/student/tutor/questions");
-    return res.ok ? res.json() : [];
+    const res = await this.fetchAuthorized("/api/student/questions");
+    if (res.ok) return res.json();
+    // fallback: try the faculty AI queue endpoint to check pending answers
+    const fallback = await this.fetchAuthorized("/api/faculty/ai-queue");
+    return fallback.ok ? fallback.json() : [];
+  }
+
+  /** Get chat history from localStorage */
+  async getChatHistory(): Promise<any[]> {
+    try {
+      if (typeof window === "undefined") return [];
+      const stored = localStorage.getItem("lumina_chat_history");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /** Persist a chat message to localStorage */
+  async saveChatMessage(message: any): Promise<void> {
+    try {
+      if (typeof window === "undefined") return;
+      const history = await this.getChatHistory();
+      history.push(message);
+      localStorage.setItem("lumina_chat_history", JSON.stringify(history.slice(-200)));
+    } catch {
+      // best-effort
+    }
+  }
+
+  /** Fire-and-forget AI interaction log */
+  async logAIInteraction(userMessage: string, aiResponse: string): Promise<void> {
+    try {
+      await this.fetchAuthorized("/api/student/log-activity", {
+        method: "POST",
+        body: JSON.stringify({
+          activity_type: "ai_interaction",
+          metadata: { userMessage: userMessage.slice(0, 500), aiResponse: aiResponse.slice(0, 500) },
+        }),
+      });
+    } catch {
+      // best-effort
+    }
   }
 
   // --- Legacy Compatibility ---
@@ -1852,7 +1939,7 @@ export class RealAPI {
     const form = new FormData();
     form.append("file", file);
     if (title) form.append("title", title);
-    const res = await this.fetchAuthorized("/api/teacher/units/upload", { method: "POST", body: form }, 180000);
+    const res = await this.fetchAuthorized("/api/teacher/content/upload", { method: "POST", body: form }, 180000);
     if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || "Upload failed"); }
     return res.json();
   }
