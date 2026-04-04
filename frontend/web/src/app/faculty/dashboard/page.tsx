@@ -363,7 +363,7 @@ export default function TeacherDashboard() {
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-lumina-highlight">
               Teacher Command Center
             </p>
-            <h1 className="max-w-3xl text-3xl font-display font-bold tracking-tight text-white md:text-5xl lg:leading-tight">
+            <h1 className="max-w-3xl text-3xl font-display font-bold tracking-tight text-white md:text-4xl lg:text-5xl xl:text-6xl lg:leading-tight">
               Run your classroom from one <span className="text-lumina-highlight border-b-4 border-lumina-highlight/30">live operating view.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg text-gray-400 leading-relaxed">
@@ -371,7 +371,7 @@ export default function TeacherDashboard() {
               so you can move from insight to action without jumping between pages.
             </p>
 
-            <div className="mt-10 grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-10 grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
               <QuickAction
                 href="/faculty/create-course"
                 icon={PlusCircle}
@@ -431,7 +431,7 @@ export default function TeacherDashboard() {
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-5">
+      <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 xl:grid-cols-5">
         <StatCard
           title="Students"
           value={summary.totalStudents}
