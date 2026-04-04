@@ -108,7 +108,9 @@ function AssignmentsContent() {
           {assignments.map((asm: any) => {
             const submission = asm.submission || asm.user_submission;
             const isSubmitted = !!submission;
-            const isGraded = submission?.score !== null && submission?.score !== undefined;
+            const normalizedScore =
+              submission?.score ?? submission?.marks ?? submission?.grade;
+            const isGraded = normalizedScore !== null && normalizedScore !== undefined;
 
             return (
               <div
@@ -137,7 +139,7 @@ function AssignmentsContent() {
 
                 <div className="mb-4">
                   <div className="bg-amber-500/10 text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-widest w-fit mb-3 border border-amber-500/10">
-                    {asm.course_name || "Coursework"}
+                    {asm.course_name || asm.courseName || "Coursework"}
                   </div>
                   <h3 className="text-xl font-bold text-white group-hover:text-amber-500 transition-colors mb-2">
                     {asm.title}
@@ -162,7 +164,7 @@ function AssignmentsContent() {
                     <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 p-4 rounded-2xl border border-green-500/20">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs text-green-400 font-bold uppercase tracking-wider">Your Score</span>
-                        <span className="text-2xl font-black text-white">{submission.score}<span className="text-sm text-green-500/50">/100</span></span>
+                        <span className="text-2xl font-black text-white">{normalizedScore}<span className="text-sm text-green-500/50">/100</span></span>
                       </div>
                       {submission.feedback && (
                         <div className="text-xs text-gray-400 italic">

@@ -25,7 +25,18 @@ GLOBAL_TABLES = {
     "institution_login_policies",
     "batches",
     "learner_profiles",
-    "assessment_sessions"
+    "assessment_sessions",
+    # These tables use their own foreign keys (course_id, batch_id, teacher_id)
+    # and do not have an institution_id column
+    "teacher_assignments",
+    "assignments",
+    "assignment_submissions",
+    "enrollment_codes",
+    "courses",
+    "ai_answer_queue",
+    "verified_answers_bank",
+    "attendance_sessions",
+    "attendance_records",
 }
 
 

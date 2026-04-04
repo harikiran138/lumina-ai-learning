@@ -1,0 +1,3 @@
+Newton's First Law: An object at rest stays at rest unless acted upon by a net force.
+Newton's Second Law: F = ma
+Newton's Third Law: For every action there is an equal and opposite reaction.

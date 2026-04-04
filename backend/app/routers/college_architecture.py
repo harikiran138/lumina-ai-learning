@@ -64,7 +64,14 @@ async def create_college(payload: Dict[str, Any], current_user: dict = Depends(g
     db = get_scoped_db(current_user)
     if not data.get("institution_name"):
         raise HTTPException(status_code=400, detail="Missing college name")
-    return await InstitutionStore(db=db).create_institution(data)
+    store = InstitutionStore(db=db)
+    existing = await store.list_institutions()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="Platform is configured for single institution only. Multiple colleges are not allowed.",
+        )
+    return await store.create_institution(data)
 
 
 @router.get("/colleges/{college_id}")

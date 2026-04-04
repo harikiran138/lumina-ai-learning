@@ -49,7 +49,7 @@ class InstitutionStore:
             # Upsert into institution_details if we have data
             if detail_data:
                 detail_data["institution_id"] = inst_id
-                await self.db.upsert("institution_details", detail_data)
+                await self.db.upsert("institution_details", detail_data, on_conflict="institution_id")
                 log.info("institution_details_created", id=inst_id)
 
             log.info("institution_created", id=inst_id, status=inst_data["onboarding_status"])
