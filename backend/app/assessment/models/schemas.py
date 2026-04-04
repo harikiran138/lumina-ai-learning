@@ -23,12 +23,12 @@ class QuestionMetadata(BaseModel):
     """Metadata used for adaptive selection and mastery tracking."""
 
     question_id: str
-    concepts: List[str] = Field(default_factory=list)
-    difficulty: float = 0.5
-    discrimination: Optional[float] = None
-    guessing: Optional[float] = None
-    blooms_level: Optional[str] = None
-    evidence_goal: Optional[str] = None  # e.g., "recognition", "recall", "transfer"
+    concepts: List[str] = Field(..., min_items=1, description="List of concepts this question assesses")
+    difficulty: float = Field(0.5, ge=0.0, le=1.0)
+    discrimination: float = Field(1.0, ge=0.1, le=4.0)
+    guessing: float = Field(0.0, ge=0.0, le=0.5)
+    blooms_level: str = Field("understand", description="e.g., remember, understand, apply, analyze, evaluate, create")
+    evidence_goal: Optional[str] = None
     expected_time_seconds: Optional[int] = None
 
 
@@ -43,8 +43,8 @@ class Question(BaseModel):
     explanation: Optional[str] = None
     difficulty: float = 0.5  # 0.0 to 1.0
     topic: str
-    metadata: Optional[QuestionMetadata] = None
-    rubric: Dict[str, Any] = Field(default_factory=dict)  # Scoring keys for open-ended
+    metadata: QuestionMetadata
+    rubric: Dict[str, Any] = Field(default_factory=dict)
 
 
 class MasteryState(BaseModel):
