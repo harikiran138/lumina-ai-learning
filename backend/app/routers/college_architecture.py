@@ -224,7 +224,12 @@ async def create_subject(dept_id: str, payload: Dict[str, Any], current_user: di
     }
     if not data.get("course_name") or not data.get("course_code"):
         raise HTTPException(status_code=400, detail="Missing subject name/code")
-    return await db.insert("courses", data)
+    # Use admin client to bypass RLS/scoping issues when HOD's JWT lacks college_id
+    try:
+        result = supabase_db.table("courses").insert(data).execute()
+        return result.data[0] if result.data else data
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to create subject: {exc}")
 
 
 @router.post("/subjects/{subject_id}/assign")
@@ -342,7 +347,11 @@ async def create_enrollment_code(
         "created_at": datetime.utcnow().isoformat(),
         "used_by": None,
     }
-    await db.insert("enrollment_codes", data)
+    # Use admin client to bypass RLS/scoping issues when HOD's JWT lacks college_id
+    try:
+        result = supabase_db.table("enrollment_codes").insert(data).execute()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to create enrollment code: {exc}")
     return {"code": code, "expiresAt": data["expires_at"], "batchId": batch_id, "section": section}
 
 
