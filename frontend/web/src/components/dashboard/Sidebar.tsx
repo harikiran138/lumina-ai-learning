@@ -116,123 +116,172 @@ admin: "/admin/platform/profile",
 
 /* ================= COMPONENT ================= */
 export default function Sidebar({
-isOpen,
-onClose,
+  isOpen,
+  onClose,
+  isHovering,
+  onHoverChange,
 }: {
-isOpen?: boolean;
-onClose?: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
+  isHovering?: boolean;
+  onHoverChange?: (hovered: boolean) => void;
 }) {
-const pathname = usePathname();
-const router = useRouter();
+  const pathname = usePathname();
+  const router = useRouter();
 
-const { user: storeUser, setUser, clearAuth } = useAuthStore();
-const [user, setLocalUser] = useState<any>(storeUser ?? null);
-const [isHovered, setIsHovered] = useState(false);
+  const { user: storeUser, setUser, clearAuth } = useAuthStore();
+  const [user, setLocalUser] = useState<any>(storeUser ?? null);
+  const [localHover, setLocalHover] = useState(false);
+  const isHovered = isHovering ?? localHover;
 
-useEffect(() => {
-if (storeUser) {
-setLocalUser(storeUser);
-return;
-}
-
-  api.getCurrentUser().then((data) => {
-    if (data) {
-      setLocalUser(data);
-      setUser(data as any);
+  useEffect(() => {
+    if (storeUser) {
+      setLocalUser(storeUser);
+      return;
     }
-  });
 
-}, [storeUser, setUser]);
+    api.getCurrentUser().then((data) => {
+      if (data) {
+        setLocalUser(data);
+        setUser(data as any);
+      }
+    });
+  }, [storeUser, setUser]);
 
-const handleLogout = useCallback(async () => {
-await api.logout();
-clearAuth();
-router.push("/login");
-}, [clearAuth, router]);
+  const handleLogout = useCallback(async () => {
+    await api.logout();
+    clearAuth();
+    router.push("/login");
+  }, [clearAuth, router]);
 
-const currentRole = (user?.role as string) || "student";
+  const currentRole = (user?.role as string) || "student";
 
-const navItems = useMemo(() => {
-return roleNavItems[currentRole] ?? roleNavItems.student;
-}, [currentRole]);
+  const navItems = useMemo(() => {
+    return roleNavItems[currentRole] ?? roleNavItems.student;
+  }, [currentRole]);
 
-const profileHref =
-profileHrefByRole[currentRole] ?? getRoleHome(currentRole);
+  const profileHref =
+    profileHrefByRole[currentRole] ?? getRoleHome(currentRole);
 
-return ( 
-<aside 
-  onMouseEnter={() => setIsHovered(true)}
-  onMouseLeave={() => setIsHovered(false)}
-  className={cn(
-    "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 transition-all duration-500 hidden lg:flex flex-col overflow-hidden",
-    !isHovered ? "w-20" : "w-64",
-    isOpen ? "!flex" : "hidden lg:flex"
-  )}
->
+  const handleHoverChange = (hovered: boolean) => {
+    setLocalHover(hovered);
+    onHoverChange?.(hovered);
+  };
 
-  {/* LOGO */}
-  <div className={cn("flex items-center border-b border-white/5", !isHovered ? "justify-center h-16" : "px-6 h-20")}> 
-    <Link href="/" className="text-2xl font-bold flex gap-1"> 
-      <span>{!isHovered ? "L" : "Lumina"}</span> 
-      <span className="text-yellow-400">AI</span> 
-    </Link>
-
-    <button onClick={onClose} className="lg:hidden ml-auto">
-      <X />
-    </button>
-  </div>
-
-  {/* NAV */}
-  <nav className="p-4 flex-1 overflow-y-auto">
-    {navItems.map((item) => {
-      const isActive = pathname === item.href;
-
-      return (
-        <Link
-          key={item.name}
-          href={item.href}
-          onClick={onClose}
-          className={cn(
-            "flex items-center gap-3 p-3 rounded-xl",
-            isActive ? "bg-yellow-500/20 text-yellow-400" : "text-gray-400"
-          )}
-        >
-          <item.icon className="w-5 h-5 flex-shrink-0" />
-          {isHovered && <span>{item.name}</span>}
-        </Link>
-      );
-    })}
-  </nav>
-
-  {/* USER */}
-  <div className="border-t p-3">
-    {user && (
-      <Link href={profileHref} className="flex items-center gap-2">
-        <img
-          src={`https://ui-avatars.com/api/?name=${user.name}`}
-          className="w-8 h-8 rounded-full flex-shrink-0"
-        />
-        {isHovered && (
-          <div className="overflow-hidden">
-            <p className="truncate">{user.name}</p>
-            <p className="text-xs truncate">{user.email}</p>
-          </div>
-        )}
-      </Link>
-    )}
-
-    <button 
-      onClick={handleLogout} 
+  return (
+    <aside
+      onMouseEnter={() => handleHoverChange(true)}
+      onMouseLeave={() => handleHoverChange(false)}
       className={cn(
-        "mt-3 text-red-400 flex items-center gap-3 w-full",
-        !isHovered ? "justify-center" : "px-3"
+        "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 flex flex-col transition-all duration-300 ease-in-out overflow-hidden rounded-2xl",
+        isHovered ? "w-64" : "w-20",
+        isOpen ? "translate-x-0 w-64 flex" : "-translate-x-full lg:translate-x-0 hidden lg:flex"
       )}
     >
-      <LogOut className="w-5 h-5" />
-      {isHovered && <span>Logout</span>}
-    </button>
-  </div>
-</aside>
+      {/* LOGO */}
+      <div className={cn("flex items-center border-b border-white/5 px-6 h-16 shrink-0")}>
+        <Link href="/" className="text-2xl font-display font-black flex items-center gap-1 select-none">
+          <span className="text-white shrink-0">L</span>
+          <span className={cn(
+            "text-white transition-all duration-300 overflow-hidden whitespace-nowrap",
+            isHovered ? "opacity-100 max-w-[120px]" : "opacity-0 max-w-0"
+          )}>
+            umina
+          </span>
+          <span className={cn(
+            "text-highlight-gold transition-all duration-300 overflow-hidden whitespace-nowrap",
+            isHovered ? "opacity-100 max-w-[60px]" : "opacity-0 max-w-0"
+          )}>
+            AI
+          </span>
+        </Link>
 
-);
+        {onClose && (
+          <button onClick={onClose} className="lg:hidden ml-auto text-gray-400 hover:text-white" aria-label="Close menu">
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+
+      {/* NAV */}
+      <nav className="p-4 flex-1 overflow-y-auto hide-scrollbar space-y-1">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              onClick={onClose}
+              className={cn(
+                "flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group relative",
+                isActive
+                  ? "bg-highlight-gold/20 text-highlight-gold border border-highlight-gold/30 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+                  : "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200"
+              )}
+            >
+              <item.icon className={cn("w-6 h-6 flex-shrink-0", isActive ? "text-highlight-gold" : "text-gray-500 group-hover:text-gray-300")} />
+              <span className={cn(
+                "font-semibold text-sm transition-all duration-300 overflow-hidden whitespace-nowrap",
+                isHovered ? "opacity-100 max-w-[200px]" : "opacity-0 max-w-0"
+              )}>
+                {item.name}
+              </span>
+              {!isHovered && (
+                <span className="absolute left-16 bg-black/90 border border-white/10 px-2 py-1 rounded text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap shadow-xl">
+                  {item.name}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* USER & LOGOUT */}
+      <div className="border-t border-white/5 p-4 space-y-2">
+        {user && (
+          <Link
+            href={profileHref}
+            className="flex items-center gap-3 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all overflow-hidden"
+          >
+            <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
+              <img
+                src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
+                alt="User avatar"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className={cn(
+              "transition-all duration-300 overflow-hidden whitespace-nowrap",
+              isHovered ? "opacity-100 max-w-[150px]" : "opacity-0 max-w-0"
+            )}>
+              <p className="text-xs font-bold text-white truncate">{user.name}</p>
+              <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
+            </div>
+          </Link>
+        )}
+
+        <button
+          onClick={handleLogout}
+          className={cn(
+            "flex items-center gap-4 w-full py-3 px-3 rounded-xl text-xs font-bold text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition-colors group relative",
+            !isHovered && "justify-center"
+          )}
+        >
+          <LogOut className="w-5 h-5 shrink-0" />
+          <span className={cn(
+            "transition-all duration-300 overflow-hidden whitespace-nowrap",
+            isHovered ? "opacity-100 max-w-[150px]" : "opacity-0 max-w-0"
+          )}>
+            Sign Out
+          </span>
+          {!isHovered && (
+            <span className="absolute left-16 bg-black/90 border border-white/10 px-2 py-1 rounded text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap shadow-xl">
+              Sign Out
+            </span>
+          )}
+        </button>
+      </div>
+    </aside>
+  );
 }

@@ -1,14 +1,12 @@
-"use client";
-
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { BGPattern } from "@/components/ui/BGPattern";
 import { AdminStoreHydrator } from "@/features/admin/components/admin-store-hydrator";
 import { AdminTopbar } from "@/features/admin/components/admin-topbar";
 import type { AdminUser } from "@/features/admin/types";
 import { useAdminShellStore } from "@/features/admin/store/use-admin-shell-store";
+import { cn } from "@/lib/utils";
 import Sidebar from "@/app/admin/sidebar";
-
 export function AdminShell({
   children,
   initialUser,
@@ -18,6 +16,7 @@ export function AdminShell({
 }) {
   const sidebarOpen = useAdminShellStore((state) => state.sidebarOpen);
   const setSidebarOpen = useAdminShellStore((state) => state.setSidebarOpen);
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
   return (
     <div className="relative min-h-screen bg-neutral-950 text-white">
@@ -30,7 +29,10 @@ export function AdminShell({
       />
 
       <div className="relative flex min-h-screen">
-        <Sidebar />
+        <Sidebar 
+          isHovering={isSidebarHovered}
+          onHoverChange={setIsSidebarHovered}
+        />
         {sidebarOpen ? (
           <button
             type="button"
@@ -40,7 +42,10 @@ export function AdminShell({
           />
         ) : null}
 
-        <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-80">
+        <div className={cn(
+          "flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-300 ease-in-out",
+          isSidebarHovered ? "lg:pl-72" : "lg:pl-20"
+        )}>
           <AdminTopbar />
           <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-[1600px]">{children}</div>

@@ -22,11 +22,16 @@ const navItems = [
   { name: "Settings", href: "/college/settings", icon: Settings },
 ];
 
-export default function CollegeSidebar() {
+export default function CollegeSidebar({
+  isHovering,
+  onHoverChange,
+}: {
+  isHovering?: boolean;
+  onHoverChange?: (hovered: boolean) => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -43,21 +48,25 @@ export default function CollegeSidebar() {
 
   return (
     <aside
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => onHoverChange?.(true)}
+      onMouseLeave={() => onHoverChange?.(false)}
       className={cn(
-        "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 transition-all duration-500 ease-in-out hidden lg:flex flex-col overflow-hidden",
-        !isHovered ? "w-20" : "w-64",
+        "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 transition-all duration-300 ease-in-out flex flex-col overflow-hidden",
+        isHovering ? "w-64" : "w-20",
       )}
     >
       <div
         className={cn(
-          "flex items-center justify-between border-b border-white/5 shrink-0 transition-all duration-500",
-          !isHovered ? "h-16 px-4 justify-center" : "h-20 px-6",
+          "flex items-center border-b border-white/5 shrink-0 transition-all duration-300",
+          isHovering ? "h-20 px-6" : "h-16 px-4 justify-center",
         )}
       >
-        <Link href="/" className="text-2xl font-display font-black flex items-center gap-2">
-          <span className="text-white">{!isHovered ? "L" : "Lumina"}</span>
+        <Link href="/" className="font-display font-black text-2xl flex items-center select-none truncate">
+          <span className="text-white shrink-0">L</span>
+          <span className={cn(
+            "text-white transition-all duration-300 overflow-hidden whitespace-nowrap",
+            isHovering ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0"
+          )}>umina</span>
           <span className="text-lumina-highlight">AI</span>
         </Link>
       </div>
@@ -72,7 +81,7 @@ export default function CollegeSidebar() {
               suppressHydrationWarning
               className={cn(
                 "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
-                !isHovered ? "justify-center px-0" : "px-4",
+                isHovering ? "px-4" : "justify-center px-0",
                 isActive
                   ? "bg-lumina-highlight/15 text-lumina-highlight border border-lumina-highlight/30 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                   : "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
@@ -80,8 +89,8 @@ export default function CollegeSidebar() {
             >
               <item.icon
                 className={cn(
-                  "h-5 w-5 transition-all duration-500 shrink-0",
-                  !isHovered ? "mr-0 scale-110" : "mr-3",
+                  "h-5 w-5 transition-all duration-300 shrink-0",
+                  isHovering ? "mr-3" : "mr-0",
                   isActive
                     ? "text-lumina-highlight"
                     : "text-gray-500 group-hover:text-gray-300",
@@ -89,18 +98,12 @@ export default function CollegeSidebar() {
               />
               <span
                 className={cn(
-                  "transition-all duration-500 whitespace-nowrap overflow-hidden truncate min-w-0",
-                  !isHovered ? "opacity-0 w-0" : "opacity-100 w-auto",
+                  "transition-all duration-300 whitespace-nowrap overflow-hidden truncate",
+                  isHovering ? "max-width-[200px] opacity-100" : "max-w-0 opacity-0",
                 )}
               >
                 {item.name}
               </span>
-
-              {!isHovered && (
-                <div className="absolute left-full ml-4 px-3 py-1.5 bg-surface-950 border border-white/10 rounded-lg text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 translate-x-1 group-hover:translate-x-0 z-[60] shadow-premium">
-                  {item.name}
-                </div>
-              )}
             </Link>
           );
         })}
@@ -108,16 +111,16 @@ export default function CollegeSidebar() {
 
       <div
         className={cn(
-          "p-4 border-t border-white/10 space-y-4 transition-all duration-500 shrink-0",
-          !isHovered && "px-3",
+          "p-4 border-t border-white/10 space-y-4 transition-all duration-300 shrink-0",
+          !isHovering && "px-3",
         )}
       >
         {user && (
           <Link
             href="/college/settings"
             className={cn(
-              "flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-500 cursor-pointer overflow-hidden",
-              !isHovered ? "justify-center p-2" : "p-3",
+              "flex items-center rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer overflow-hidden",
+              isHovering ? "p-3 gap-3" : "p-2 justify-center",
             )}
           >
             <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
@@ -132,8 +135,8 @@ export default function CollegeSidebar() {
             </div>
             <div
               className={cn(
-                "min-w-0 transition-all duration-500",
-                !isHovered ? "opacity-0 w-0" : "opacity-100 w-auto",
+                "min-w-0 transition-all duration-300",
+                isHovering ? "max-width-[150px] opacity-100" : "max-w-0 opacity-0",
               )}
             >
               <p className="text-xs font-bold text-white truncate">
@@ -151,19 +154,19 @@ export default function CollegeSidebar() {
           suppressHydrationWarning
           className={cn(
             "flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-300",
-            !isHovered ? "justify-center px-0" : "px-4",
+            isHovering ? "px-4" : "justify-center px-0",
           )}
         >
           <LogOut
             className={cn(
-              "h-4 w-4 transition-all duration-500",
-              !isHovered ? "mr-0" : "mr-3",
+              "h-4 w-4 transition-all duration-300",
+              isHovering ? "mr-3" : "mr-0",
             )}
           />
           <span
             className={cn(
-              "transition-all duration-500",
-              !isHovered ? "opacity-0 w-0" : "opacity-100 w-auto",
+              "transition-all duration-300 whitespace-nowrap overflow-hidden",
+              isHovering ? "max-width-[100px] opacity-100" : "max-w-0 opacity-0",
             )}
           >
             Sign Out

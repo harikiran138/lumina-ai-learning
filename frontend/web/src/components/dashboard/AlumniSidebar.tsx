@@ -36,15 +36,16 @@ const navItems = [
 export default function AlumniSidebar({
   isOpen,
   onClose,
-  onHoverChange: _onHoverChange,
+  isHovering,
+  onHoverChange,
 }: {
   isOpen?: boolean;
   onClose?: () => void;
+  isHovering?: boolean;
   onHoverChange?: (hovered: boolean) => void;
 }) {
   const pathname = usePathname();
   const router   = useRouter();
-  void _onHoverChange;
 
   const { user: storeUser, setUser: setStoreUser, clearAuth } = useAuthStore();
   const [user, setUser] = useState<any>(storeUser ?? null);
@@ -65,20 +66,27 @@ export default function AlumniSidebar({
 
   return (
     <aside
-      data-collapsed="true"
+      onMouseEnter={() => onHoverChange?.(true)}
+      onMouseLeave={() => onHoverChange?.(false)}
       className={cn(
-        "lumina-sidebar",
-        "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 flex flex-col",
+        "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 flex flex-col transition-all duration-300 ease-in-out",
+        isHovering ? "w-64" : "w-20",
         isOpen
-          ? "translate-x-0 bg-black/95"
+          ? "translate-x-0 bg-black/95 w-64 flex"
           : "-translate-x-[120%] lg:translate-x-0 hidden lg:flex",
       )}
     >
-      {/* Logo header */}
-      <div className="sidebar-header flex items-center border-b border-white/5 shrink-0">
-        <Link href="/" className="font-display font-black text-2xl flex items-center gap-1 select-none">
-          <span className="sidebar-logo-icon text-white">L</span>
-          <span className="sidebar-logo-full text-white">Lumina</span>
+      {/* ── Logo header ── */}
+      <div className={cn(
+        "flex items-center border-b border-white/5 shrink-0 transition-all duration-300",
+        isHovering ? "h-20 px-6" : "h-16 px-4 justify-center"
+      )}>
+        <Link href="/" className="font-display font-black text-2xl flex items-center select-none truncate">
+          <span className="text-white shrink-0">L</span>
+          <span className={cn(
+            "text-white transition-all duration-300 overflow-hidden whitespace-nowrap",
+            isHovering ? "max-width-[100px] opacity-100" : "max-w-0 opacity-0"
+          )}>umina</span>
           <span className="text-lumina-highlight">AI</span>
         </Link>
         <button
@@ -90,7 +98,7 @@ export default function AlumniSidebar({
         </button>
       </div>
 
-      {/* Nav */}
+      {/* ── Nav ── */}
       <nav className="p-4 space-y-1 flex-1 overflow-y-auto hide-scrollbar">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
@@ -102,51 +110,74 @@ export default function AlumniSidebar({
               onClick={onClose}
               aria-label={item.name}
               className={cn(
-                "sidebar-nav-item py-3 text-sm font-semibold rounded-xl relative group w-full",
+                "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
+                isHovering ? "px-4" : "justify-center px-0",
                 isActive
                   ? "bg-lumina-highlight/15 text-lumina-highlight border border-lumina-highlight/30 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                   : "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
               )}
             >
               <item.icon
-                aria-hidden="true"
                 className={cn(
-                  "sidebar-icon h-5 w-5",
+                  "h-5 w-5 transition-all duration-300 shrink-0",
+                  isHovering ? "mr-3" : "mr-0",
                   isActive ? "text-lumina-highlight" : "text-gray-500 group-hover:text-gray-300",
                 )}
               />
-              <span className="sidebar-text truncate">{item.name}</span>
-              <span className="sidebar-tooltip">{item.name}</span>
+              <span className={cn(
+                "transition-all duration-300 overflow-hidden whitespace-nowrap truncate",
+                isHovering ? "max-width-[200px] opacity-100" : "max-w-0 opacity-0"
+              )}>
+                {item.name}
+              </span>
             </Link>
           );
         })}
       </nav>
 
-      {/* Bottom section */}
-      <div className="sidebar-bottom border-t border-white/10 space-y-3 shrink-0">
-        {/* Notifications */}
+      {/* ── Bottom ── */}
+      <div className={cn(
+        "p-4 border-t border-white/10 space-y-3 shrink-0 transition-all duration-300",
+        !isHovering && "px-3"
+      )}>
         <Link
           href="/alumni/notifications"
-          aria-label="Notifications"
-          className="sidebar-bottom-item sidebar-nav-item flex items-center w-full py-3 text-sm font-semibold rounded-xl text-gray-400 hover:bg-white/[0.03] hover:text-gray-200 relative group"
+          className={cn(
+            "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
+            isHovering ? "px-4" : "justify-center px-0",
+            "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
+          )}
         >
-          <div className="sidebar-icon relative h-5 w-5">
-            <Bell className="h-5 w-5 text-gray-500 group-hover:text-gray-300" />
+          <div className="relative shrink-0">
+            <Bell className={cn(
+              "h-5 w-5 transition-all duration-300",
+              isHovering ? "mr-3" : "mr-0",
+              "text-gray-500 group-hover:text-gray-300"
+            )} />
             {notificationCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+              <span className={cn(
+                "absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center",
+                !isHovering && "right-[-4px]"
+              )}>
                 {notificationCount}
               </span>
             )}
           </div>
-          <span className="sidebar-text truncate">Notifications</span>
-          <span className="sidebar-tooltip">Notifications</span>
+          <span className={cn(
+            "transition-all duration-300 overflow-hidden whitespace-nowrap truncate",
+            isHovering ? "max-width-[200px] opacity-100" : "max-w-0 opacity-0"
+          )}>
+            Notifications
+          </span>
         </Link>
 
-        {/* User profile */}
         {user && (
           <Link
             href="/alumni/settings"
-            className="sidebar-user-card flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer overflow-hidden"
+            className={cn(
+              "flex items-center rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer overflow-hidden",
+              isHovering ? "p-3 gap-3" : "p-2 justify-center"
+            )}
           >
             <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
               <img
@@ -155,7 +186,10 @@ export default function AlumniSidebar({
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="sidebar-text min-w-0">
+            <div className={cn(
+              "transition-all duration-300 overflow-hidden min-w-0",
+              isHovering ? "max-width-[150px] opacity-100" : "max-w-0 opacity-0"
+            )}>
               <p className="text-xs font-bold text-white truncate">{user.name}</p>
               <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
             </div>
@@ -164,12 +198,21 @@ export default function AlumniSidebar({
 
         <button
           onClick={handleLogout}
-          suppressHydrationWarning
-          aria-label="Sign out"
-          className="sidebar-bottom-item flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-colors"
+          className={cn(
+            "flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-300",
+            isHovering ? "px-4" : "justify-center px-0"
+          )}
         >
-          <LogOut aria-hidden="true" className="sidebar-icon h-4 w-4" />
-          <span className="sidebar-text">Sign Out</span>
+          <LogOut className={cn(
+            "h-4 w-4 transition-all duration-300 shrink-0",
+            isHovering ? "mr-3" : "mr-0"
+          )} />
+          <span className={cn(
+            "transition-all duration-300 overflow-hidden whitespace-nowrap",
+            isHovering ? "max-width-[100px] opacity-100" : "max-w-0 opacity-0"
+          )}>
+            Sign Out
+          </span>
         </button>
       </div>
     </aside>
