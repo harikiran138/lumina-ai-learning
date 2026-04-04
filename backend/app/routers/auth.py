@@ -257,7 +257,7 @@ def _require_active_user(user: dict):
     if role not in ALL_ROLES and role not in VALID_ROLES:
         raise HTTPException(status_code=403, detail="Account role is not allowed")
 
-_LOCK_THRESHOLD = 5
+_LOCK_THRESHOLD = 12
 _LOCK_MINUTES = 15
 
 
@@ -583,7 +583,7 @@ async def reset_password(
 
 
 @router.post("/login", response_model=LoginResponse)
-@limiter.limit("5/minute")
+@limiter.limit("15/minute")
 def login_json(
     payload: LoginRequest,
     request: Request,
@@ -727,7 +727,7 @@ def login_json(
 
 
 @router.post("/refresh")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def refresh_token(
     request: Request,
     response: Response,

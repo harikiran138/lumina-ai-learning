@@ -2,7 +2,7 @@ import asyncio
 import httpx
 from app.core.config import settings
 from app.core.logging import structlog
-from app.ai_engine.prompts import A2UI_SYSTEM_PROMPT
+from ai_engine.prompts import A2UI_SYSTEM_PROMPT
 from typing import List, Dict, Any, Optional
 
 log = structlog.get_logger()
@@ -137,11 +137,13 @@ class AITutorStore:
         allowed_courses = context.get("allowed_courses") or context.get("course_name") or "All courses"
         allowed_concepts = context.get("allowed_concepts") or context.get("topic") or "All concepts"
 
-        # Fill in A2UI template placeholders
-        base_prompt = A2UI_SYSTEM_PROMPT.format(
-            current_semester=semester,
-            allowed_courses=allowed_courses,
-            allowed_concepts=allowed_concepts,
+        # Fill in A2UI template placeholders using str.replace to avoid
+        # conflicts with the many literal {/} characters in the JSON examples
+        base_prompt = (
+            A2UI_SYSTEM_PROMPT
+            .replace("{current_semester}", semester)
+            .replace("{allowed_courses}", allowed_courses)
+            .replace("{allowed_concepts}", allowed_concepts)
         )
 
         # Append rich student context if available

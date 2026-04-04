@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends
+import asyncio
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
 from pydantic import BaseModel
 from app.assessment.models.schemas import (
     Question,
@@ -19,6 +20,48 @@ from app.personalization.schemas import (
     AssessmentAnswerPayload,
 )
 from app.services.personalization_service import get_personalization_service
+from app.services.student_analytics import compute_student_analytics
+from app.core.logging import structlog
+
+log = structlog.get_logger()
+
+
+async def _refresh_analytics_after_assessment(student_id: str) -> None:
+    """
+    Background task: recompute student analytics after each assessment so that
+    tier, growth trend, and study pattern are always current.
+    Also invalidates the Redis caches for dashboard and analytics.
+    """
+    try:
+        from app.services.personalization_service import get_personalization_service as _get_ps
+        from app.store.redis_client import redis_client
+
+        ps = _get_ps()
+        profile, events = await asyncio.gather(
+            ps.get_profile(student_id, role="student"),
+            ps.store.list_events(student_id, limit=100),
+        )
+
+        analytics = compute_student_analytics(profile, events)
+
+        # Persist into profile metadata
+        profile.metadata["ai_analytics"] = analytics
+        await ps.store.upsert_profile(profile)
+
+        # Invalidate caches
+        await asyncio.gather(
+            redis_client.delete(f"analytics:student:{student_id}"),
+            redis_client.delete(f"dashboard:student:{student_id}"),
+        )
+
+        log.info(
+            "assessment_analytics_refreshed",
+            student_id=student_id,
+            tier=analytics.get("tier"),
+            trend=analytics.get("growth_trend"),
+        )
+    except Exception as exc:
+        log.error("assessment_analytics_refresh_failed", student_id=student_id, error=str(exc))
 
 router = APIRouter()
 
@@ -84,29 +127,39 @@ async def start_assessment(request: StartAssessmentRequest):
 
 
 @router.post("/complete/{session_id}", response_model=AssessmentSession)
-async def complete_assessment(session_id: str):
+async def complete_assessment(session_id: str, background_tasks: BackgroundTasks):
     """
     Manually completes an assessment session.
+    Records ASSESSMENT_COMPLETED event and triggers background analytics refresh
+    so tier classification and growth trend are updated immediately.
     """
     try:
         session = await session_manager.complete_session(session_id)
+        accuracy = (
+            sum(1 for r in session.responses if r.is_correct) / len(session.responses)
+            if session.responses
+            else 0
+        )
         await get_personalization_service().record_event(
             session.student_id,
             LearningEventType.ASSESSMENT_COMPLETED,
             payload=AssessmentCompletedPayload(
                 session_id=session.id,
                 topic=session.topic,
-                accuracy=(
-                    sum(1 for r in session.responses if r.is_correct) / len(session.responses)
-                    if session.responses
-                    else 0
-                ),
+                accuracy=accuracy,
                 total_questions=len(session.responses),
             ).model_dump(exclude_none=True),
             source="assessment_router",
             topic_id=session.topic,
             session_id=session.id,
         )
+
+        # Recompute analytics in background — non-blocking
+        background_tasks.add_task(
+            _refresh_analytics_after_assessment,
+            student_id=session.student_id,
+        )
+
         return session
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -140,10 +193,11 @@ async def get_next_question(session_id: str):
 
 
 @router.post("/submit", response_model=AssessmentSession)
-async def submit_answer(request: SubmitAnswerRequest):
+async def submit_answer(request: SubmitAnswerRequest, background_tasks: BackgroundTasks):
     """
     Submits an answer and updates the session difficulty.
-    Validity is checked against the session history on server side.
+    Records ASSESSMENT_ANSWER event and schedules analytics refresh on session
+    completion so growth trend and tier stay current.
     """
     try:
         session = await session_manager.submit_answer(
@@ -155,9 +209,9 @@ async def submit_answer(request: SubmitAnswerRequest):
             time_taken=request.time_taken,
         )
         response = session.responses[-1] if session.responses else None
-        
-        # Build enriched payload for PersonalizationService (WS4)
-        payload = AssessmentAnswerPayload(
+
+        # Build enriched payload for PersonalizationService
+        answer_payload = AssessmentAnswerPayload(
             session_id=session.id,
             topic=session.topic,
             question_id=request.question_id,
@@ -170,11 +224,19 @@ async def submit_answer(request: SubmitAnswerRequest):
         await get_personalization_service().record_event(
             session.student_id,
             LearningEventType.ASSESSMENT_ANSWER,
-            payload=payload.model_dump(exclude_none=True),
+            payload=answer_payload.model_dump(exclude_none=True),
             source="assessment_router",
             topic_id=session.topic,
             session_id=session.id,
         )
+
+        # If session just completed automatically, refresh analytics
+        if session.is_completed:
+            background_tasks.add_task(
+                _refresh_analytics_after_assessment,
+                student_id=session.student_id,
+            )
+
         return session
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

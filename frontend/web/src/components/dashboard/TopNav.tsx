@@ -17,7 +17,7 @@ export default function TopNav({
     <header
       className={cn(
         /* transition only `left`, not every property — eliminates full-compositor invalidation */
-        "fixed top-4 right-4 left-4 lg:left-20 h-16 glass-v2-gold z-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between transition-[left] duration-[180ms] ease-out",
+        "fixed top-0 right-0 left-0 lg:left-20 h-16 glass-v2 border-b border-white/5 z-20 px-4 sm:px-6 lg:px-8 flex items-center justify-between transition-[left] duration-[180ms] ease-out",
         className,
       )}
     >

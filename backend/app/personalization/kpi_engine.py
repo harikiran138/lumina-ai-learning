@@ -8,6 +8,13 @@ from app.personalization.schemas import (
     LearningEventType,
     KPISnapshot,
 )
+from app.services.student_analytics import (
+    compute_student_analytics,
+    _classify_tier,
+    _detect_study_pattern,
+    _compute_growth_trend,
+    _recommend_section,
+)
 
 class KPIEngine:
     """
@@ -38,6 +45,12 @@ class KPIEngine:
         persistence = cls._calculate_persistence(relevant_events)
         readiness = cls._calculate_readiness(profile)
 
+        # AI analytics fields — derived from student_analytics service
+        tier, _tier_score = _classify_tier(profile)
+        pattern, _pattern_detail = _detect_study_pattern(relevant_events)
+        trend, _trend_vel = _compute_growth_trend(profile)
+        section = _recommend_section(tier, trend)
+
         return KPISnapshot(
             growth_velocity=growth_vel,
             lag_zone_score=lag_zone,
@@ -46,7 +59,11 @@ class KPIEngine:
             engagement_score=engagement,
             persistence=persistence,
             readiness=readiness,
-            recorded_at=now
+            growth_trend=trend,
+            tier=tier,
+            study_pattern=pattern,
+            recommended_section=section,
+            recorded_at=now,
         )
 
     @staticmethod

@@ -215,7 +215,9 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
       // More descriptive error messages based on context
       let message = err.message || "Invalid credentials. Please try again.";
       
-      if (message.includes("401") || message.toLowerCase().includes("invalid") || message.toLowerCase().includes("credentials")) {
+      if (message.includes("429") || message.toLowerCase().includes("rate limit")) {
+        message = "Too many login attempts. Please wait a minute before trying again.";
+      } else if (message.includes("401") || message.toLowerCase().includes("invalid") || message.toLowerCase().includes("credentials")) {
         message = `Incorrect password for ${identifier}. Please try again.`;
       } else if (message.includes("404") || message.toLowerCase().includes("not found")) {
         message = `Account not found for ${identifier}. Check your email or sign up.`;

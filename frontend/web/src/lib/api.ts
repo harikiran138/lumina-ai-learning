@@ -101,6 +101,11 @@ async function fetchWithRetry(
         signal: controller.signal,
       })
 
+      // Stop retrying on 429 Too Many Requests
+      if (response.status === 429) {
+        throw new Error("Rate limit exceeded. Please wait a moment before trying again.");
+      }
+
       // Retry on 5xx Server Errors - but include response body for better debugging
       if (!response.ok && response.status >= 500) {
         const clonedResponse = response.clone();
