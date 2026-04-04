@@ -59,3 +59,6 @@ class KnowledgeTracingEngine:
             mastery_state.concept_mastery[concept] = new_p
 
         return mastery_state
+
+
+knowledge_tracing_engine = KnowledgeTracingEngine()

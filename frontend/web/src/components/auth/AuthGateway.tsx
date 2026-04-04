@@ -327,6 +327,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
             <button
               type="button"
               onClick={handleBack}
+              suppressHydrationWarning
               className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-zinc-300 transition-colors hover:border-lumina-highlight/35 hover:text-white"
             >
               <ArrowLeft size={16} />
@@ -399,6 +400,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                       placeholder={selectedHint?.helper || "name@college.edu or 22NU..."}
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
+                      suppressHydrationWarning
                       className={fieldClass(Boolean(error && !identifier.trim()))}
                       aria-invalid={Boolean(error && !identifier.trim())}
                     />
@@ -419,12 +421,14 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      suppressHydrationWarning
                       className={fieldClass(Boolean(error && !password))}
                       aria-invalid={Boolean(error && !password)}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((value) => !value)}
+                      suppressHydrationWarning
                       className="absolute inset-y-0 right-0 pr-5 text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-lumina-highlight"
                     >
                       {showPassword ? "Hide" : "Show"}
@@ -439,6 +443,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                   <button
                     type="button"
                     onClick={() => setShowRoleHints(!showRoleHints)}
+                    suppressHydrationWarning
                     className="text-xs font-bold text-lumina-highlight transition-colors hover:text-amber-400"
                   >
                     {showRoleHints ? "Auto-detect only" : "Specific role hint?"}
@@ -539,6 +544,7 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
               <button
                 type="submit"
                 disabled={isLoading}
+                suppressHydrationWarning
                 className="flex w-full items-center justify-center gap-3 rounded-2xl bg-lumina-highlight px-5 py-4 text-base font-black text-black transition-all hover:translate-y-[-1px] hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isLoading ? (

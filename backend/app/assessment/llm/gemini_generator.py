@@ -44,12 +44,12 @@ class GeminiGenerator:
         difficulty_str = "easy" if difficulty < 0.4 else "medium" if difficulty < 0.7 else "hard"
         
         format_instructions = {
-            QuestionFormat.MCQ: 'multiple-choice question. Return JSON: {"text": "...", "options": ["A", "B", "C", "D"], "correct_index": 0, "explanation": "..."}',
-            QuestionFormat.FILL_BLANK: 'fill-in-the-blank question. Use [___] for the blank. Return JSON: {"text": "...", "correct_answer": "...", "explanation": "..."}',
-            QuestionFormat.SHORT_ANSWER: 'short-answer question requiring a sentence or two. Return JSON: {"text": "...", "rubric": {"key_points": ["point1", "point2"]}, "explanation": "..."}',
-            QuestionFormat.LONG_EXPLANATION: 'deep reasoning question requiring a structured explanation. Return JSON: {"text": "...", "rubric": {"key_points": ["p1", "p2", "p3"]}, "explanation": "..."}',
-            QuestionFormat.TEACH_BACK: 'teach-back prompt where the student explains the concept to a beginner. Return JSON: {"text": "...", "rubric": {"simplicity": "high", "accuracy": "high"}, "explanation": "..."}',
-            QuestionFormat.TRY_ANSWER: 'open-ended challenge or experiment prompt. Return JSON: {"text": "...", "rubric": {"creativity": "high", "logic": "high"}, "explanation": "..."}'
+            QuestionFormat.MCQ: 'multiple-choice question. Return JSON: {"text": "...", "options": ["A", "B", "C", "D"], "correct_index": 0, "explanation": "...", "metadata": {"concepts": ["concept1"], "difficulty": 0.5, "discrimination": 1.0, "guessing": 0.2, "blooms_level": "understand"}}',
+            QuestionFormat.FILL_BLANK: 'fill-in-the-blank question. Use [___] for the blank. Return JSON: {"text": "...", "correct_answer": "...", "explanation": "...", "metadata": {"concepts": ["concept1"], "difficulty": 0.5, "discrimination": 1.0, "guessing": 0.0, "blooms_level": "remember"}}',
+            QuestionFormat.SHORT_ANSWER: 'short-answer question requiring a sentence or two. Return JSON: {"text": "...", "rubric": {"key_points": ["point1", "point2"]}, "explanation": "...", "metadata": {"concepts": ["concept1"], "difficulty": 0.6, "discrimination": 1.2, "guessing": 0.0, "blooms_level": "apply"}}',
+            QuestionFormat.LONG_EXPLANATION: 'deep reasoning question requiring a structured explanation. Return JSON: {"text": "...", "rubric": {"key_points": ["p1", "p2", "p3"]}, "explanation": "...", "metadata": {"concepts": ["concept1"], "difficulty": 0.8, "discrimination": 1.5, "guessing": 0.0, "blooms_level": "analyze"}}',
+            QuestionFormat.TEACH_BACK: 'teach-back prompt where the student explains the concept to a beginner. Return JSON: {"text": "...", "rubric": {"simplicity": "high", "accuracy": "high"}, "explanation": "...", "metadata": {"concepts": ["concept1"], "difficulty": 0.7, "discrimination": 1.3, "guessing": 0.0, "blooms_level": "create"}}',
+            QuestionFormat.TRY_ANSWER: 'open-ended challenge or experiment prompt. Return JSON: {"text": "...", "rubric": {"creativity": "high", "logic": "high"}, "explanation": "...", "metadata": {"concepts": ["concept1"], "difficulty": 0.9, "discrimination": 1.8, "guessing": 0.0, "blooms_level": "evaluate"}}'
         }
 
         base_prompt = f"You are an assessment expert. Generate a {difficulty_str} {format_instructions.get(format, 'question')} about '{topic}'."
@@ -107,6 +107,21 @@ class GeminiGenerator:
                 if 0 <= idx < len(options):
                     correct_option_id = options[idx].id
 
+            # Extract metadata from JSON or use defaults
+            meta_data = q_data.get("metadata", {})
+            question_id = str(uuid.uuid4())
+            concepts = meta_data.get("concepts", [topic])
+            if not concepts: concepts = [topic]
+            
+            metadata_obj = QuestionMetadata(
+                question_id=question_id,
+                concepts=concepts,
+                difficulty=float(meta_data.get("difficulty", difficulty)),
+                discrimination=float(meta_data.get("discrimination", 1.0)),
+                guessing=float(meta_data.get("guessing", 0.0 if format != QuestionFormat.MCQ else 0.2)),
+                blooms_level=str(meta_data.get("blooms_level", "understand"))
+            )
+
             return Question(
                 format=format,
                 text=q_data["text"],
@@ -117,11 +132,7 @@ class GeminiGenerator:
                 difficulty=difficulty,
                 topic=topic,
                 rubric=q_data.get("rubric", {}),
-                metadata=QuestionMetadata(
-                    question_id=str(uuid.uuid4()),
-                    concepts=[topic], 
-                    difficulty=difficulty
-                )
+                metadata=metadata_obj
             )
 
         except Exception as e:
@@ -198,6 +209,9 @@ class GeminiGenerator:
                     question_id=str(uuid.uuid4()),
                     concepts=[topic],
                     difficulty=difficulty,
+                    discrimination=1.0,
+                    guessing=0.5,
+                    blooms_level="remember"
                 ),
             )
         return Question(
@@ -210,6 +224,9 @@ class GeminiGenerator:
                 question_id=str(uuid.uuid4()),
                 concepts=[topic],
                 difficulty=difficulty,
+                discrimination=1.0,
+                guessing=0.0,
+                blooms_level="understand"
             ),
         )
 
