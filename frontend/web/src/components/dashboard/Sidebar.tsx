@@ -173,7 +173,7 @@ export default function Sidebar({
       onMouseEnter={() => handleHoverChange(true)}
       onMouseLeave={() => handleHoverChange(false)}
       className={cn(
-        "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 flex flex-col transition-all duration-300 ease-in-out overflow-hidden rounded-2xl",
+        "fixed left-0 top-0 bottom-0 border-r border-white/5 bg-black/40 backdrop-blur-xl z-40 flex flex-col transition-all duration-300 ease-in-out overflow-hidden shadow-2xl",
         isHovered ? "w-64" : "w-20",
         isOpen ? "translate-x-0 w-64 flex" : "-translate-x-full lg:translate-x-0 hidden lg:flex"
       )}

@@ -32,7 +32,10 @@ type Role =
   | "parent"
   | "mentor"
   | "peer_tutor"
-  | "researcher";
+  | "counselor"
+  | "researcher"
+  | "content_creator"
+  | "alumni";
 
 const structuredRoleFlows: SupportedRoleOnboardingRole[] = [
   "teacher",
@@ -40,6 +43,7 @@ const structuredRoleFlows: SupportedRoleOnboardingRole[] = [
   "parent",
   "mentor",
   "peer_tutor",
+  "counselor",
   "researcher",
 ];
 
@@ -80,7 +84,9 @@ export default function OnboardingPage() {
           structuredRoleFlows.includes(currentRole as SupportedRoleOnboardingRole);
 
         if (!hasDefinedFlow) {
-          await api.completeOnboarding().catch(() => {});
+          // Sync with the backend and then move the user to their respective home.
+          // This prevents the middleware from catching them in a redirect loop.
+          api.completeOnboarding().catch(() => {});
           routeByRole(currentRole);
           return;
         }

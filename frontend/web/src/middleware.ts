@@ -119,11 +119,11 @@ export function middleware(request: NextRequest) {
 
   const role = normalizeRole(rawRole)
 
-  // Roles that bypass the onboarding wizard entirely.
-  // 'teacher' is normalised → 'faculty' before this check, so only 'faculty' is needed.
+  // Roles that may require a wizard-style onboarding.
+  // If a role is NOT in this set, and onboardingCompleted is false, they go to /onboarding.
   const ONBOARDING_BYPASS_ROLES = new Set([
     'super_admin', 'admin', 'system_admin', 'institution_admin', 'hod',
-    'faculty', 'teacher',
+    'faculty', 'teacher', 'content_creator', 'alumni'
   ])
   const onboardingCompleted =
     payload.onboardingCompleted === true || ONBOARDING_BYPASS_ROLES.has(role)
