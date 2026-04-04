@@ -59,7 +59,6 @@ async def test_student_e2e_journey_positive(ac, db):
         "password_hash": get_password_hash(password),
         "role": "student",
         "full_name": "Validation Student",
-        "onboarding_completed": True,
         "onboarding_step": 5
     }
     user = db.table("users").insert(user_data).execute().data[0]

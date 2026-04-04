@@ -65,7 +65,6 @@ class OnboardingService:
         now = datetime.utcnow().isoformat()
         updates = {
             "onboarding_step": 5,
-            "onboarding_completed": True,
             "updated_at": now
         }
         

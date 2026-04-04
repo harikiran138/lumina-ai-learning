@@ -59,16 +59,16 @@ const courseDependentItems = new Set([
 export default function FacultySidebar({
   isOpen,
   onClose,
-  // onHoverChange kept for backward compat but no longer triggers layout re-renders
-  onHoverChange: _onHoverChange,
+  isHovered,
+  onHoverChange,
 }: {
   isOpen?: boolean;
   onClose?: () => void;
+  isHovered?: boolean;
   onHoverChange?: (hovered: boolean) => void;
 }) {
   const pathname = usePathname();
   const router   = useRouter();
-  void _onHoverChange;
 
   const { user: storeUser, setUser: setStoreUser, clearAuth } = useAuthStore();
   const [user, setUser] = useState<any>(storeUser ?? null);
@@ -101,21 +101,37 @@ export default function FacultySidebar({
 
   return (
     <aside
+      onMouseEnter={() => onHoverChange?.(true)}
+      onMouseLeave={() => onHoverChange?.(false)}
       className={cn(
         "lumina-sidebar",
         "fixed left-0 top-0 bottom-0 border-r border-white/5 shadow-premium z-50 flex flex-col",
-        "transition-transform duration-300 ease-in-out lg:w-20",
+        "transition-all duration-300 ease-in-out",
+        // Width synchronization: expand to 16rem (w-64) on hover, otherwise 5rem (w-20)
         isOpen
-          ? "translate-x-0 w-[14rem]"
-          : "-translate-x-full lg:translate-x-0",
+          ? "w-64 translate-x-0"
+          : cn(
+              "-translate-x-full lg:translate-x-0",
+              isHovered ? "lg:w-64" : "lg:w-20"
+            ),
       )}
     >
       {/* ── Logo header ── */}
-      <div className="sidebar-header flex items-center border-b border-white/5 shrink-0">
-        <Link href="/" className="font-display font-black text-2xl flex items-center gap-1 select-none">
-          <span className="sidebar-logo-icon text-white">L</span>
-          <span className="sidebar-logo-full text-white">Lumina</span>
-          <span className="text-lumina-highlight">AI</span>
+      <div className="sidebar-header flex items-center border-b border-white/5 shrink-0 px-4 h-16 overflow-hidden">
+        <Link href="/" className="font-display font-black text-2xl flex items-center gap-2 select-none">
+          <span className="sidebar-logo-icon text-white shrink-0">L</span>
+          <span className={cn(
+            "sidebar-logo-full text-white transition-all duration-300 overflow-hidden whitespace-nowrap",
+            isHovered || isOpen ? "opacity-100 max-w-[120px]" : "opacity-0 max-w-0"
+          )}>
+            umina
+          </span>
+          <span className={cn(
+            "text-lumina-highlight transition-all duration-300 overflow-hidden whitespace-nowrap",
+            isHovered || isOpen ? "opacity-100 max-w-[60px]" : "opacity-0 max-w-0"
+          )}>
+            AI
+          </span>
         </Link>
         <button
           onClick={onClose}
@@ -138,7 +154,7 @@ export default function FacultySidebar({
               onClick={onClose}
               aria-label={item.name}
               className={cn(
-                "sidebar-nav-item py-3 text-sm font-semibold rounded-xl relative group w-full",
+                "sidebar-nav-item py-3 text-sm font-semibold rounded-xl relative group w-full flex items-center transition-all duration-200",
                 isActive
                   ? "bg-lumina-highlight/15 text-lumina-highlight border border-lumina-highlight/30 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                   : "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
@@ -147,26 +163,35 @@ export default function FacultySidebar({
               <item.icon
                 aria-hidden="true"
                 className={cn(
-                  "sidebar-icon h-6 w-6",
+                  "sidebar-icon h-6 w-6 shrink-0 transition-colors",
                   isActive ? "text-lumina-highlight" : "text-gray-500 group-hover:text-gray-300",
                 )}
               />
-              <span className="sidebar-text truncate">{item.name}</span>
-              <span className="sidebar-tooltip">{item.name}</span>
+              <span className={cn(
+                "sidebar-text ml-3 transition-all duration-300 overflow-hidden whitespace-nowrap",
+                isHovered || isOpen ? "opacity-100 max-w-[200px]" : "opacity-0 max-w-0"
+              )}>
+                {item.name}
+              </span>
+              {!isHovered && !isOpen && (
+                <span className="sidebar-tooltip absolute left-16 bg-black border border-white/10 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap shadow-xl">
+                  {item.name}
+                </span>
+              )}
             </Link>
           );
         })}
       </nav>
 
       {/* ── Bottom section ── */}
-      <div className="sidebar-bottom border-t border-white/10 space-y-3 shrink-0">
+      <div className="sidebar-bottom border-t border-white/10 space-y-2 shrink-0 p-4">
         {/* Notifications */}
         <Link
           href="/faculty/alerts"
           aria-label="Notifications"
-          className="sidebar-bottom-item sidebar-nav-item flex items-center w-full py-3 text-sm font-semibold rounded-xl text-gray-400 hover:bg-white/[0.03] hover:text-gray-200 relative group"
+          className="sidebar-bottom-item sidebar-nav-item flex items-center w-full py-3 text-sm font-semibold rounded-xl text-gray-400 hover:bg-white/[0.03] hover:text-gray-200 relative group transition-all duration-200"
         >
-          <div className="sidebar-icon relative h-6 w-6">
+          <div className="sidebar-icon relative h-6 w-6 shrink-0">
             <Bell className="h-6 w-6 text-gray-500 group-hover:text-gray-300" />
             {notificationCount > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
@@ -174,15 +199,24 @@ export default function FacultySidebar({
               </span>
             )}
           </div>
-          <span className="sidebar-text truncate">Notifications</span>
-          <span className="sidebar-tooltip">Notifications</span>
+          <span className={cn(
+            "sidebar-text ml-3 transition-all duration-300 overflow-hidden whitespace-nowrap",
+            isHovered || isOpen ? "opacity-100 max-w-[200px]" : "opacity-0 max-w-0"
+          )}>
+            Notifications
+          </span>
+          {!isHovered && !isOpen && (
+            <span className="sidebar-tooltip absolute left-16 bg-black border border-white/10 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap shadow-xl">
+              Notifications
+            </span>
+          )}
         </Link>
 
         {/* User profile */}
         {user && (
           <Link
             href="/faculty/profile"
-            className="sidebar-user-card flex items-center gap-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer overflow-hidden"
+            className="sidebar-user-card flex items-center p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-pointer overflow-hidden min-h-[48px]"
           >
             <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
               <img
@@ -191,7 +225,10 @@ export default function FacultySidebar({
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="sidebar-text min-w-0">
+            <div className={cn(
+              "sidebar-text min-w-0 ml-3 transition-all duration-300 overflow-hidden whitespace-nowrap",
+              isHovered || isOpen ? "opacity-100 max-w-[150px]" : "opacity-0 max-w-0"
+            )}>
               <p className="text-xs font-bold text-white truncate">{user.name}</p>
               <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
             </div>
@@ -202,10 +239,20 @@ export default function FacultySidebar({
           onClick={handleLogout}
           suppressHydrationWarning
           aria-label="Sign out"
-          className="sidebar-bottom-item flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-colors"
+          className="sidebar-bottom-item flex items-center w-full py-3 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-colors"
         >
-          <LogOut aria-hidden="true" className="sidebar-icon h-5 w-5" />
-          <span className="sidebar-text">Sign Out</span>
+          <LogOut aria-hidden="true" className="sidebar-icon h-5 w-5 shrink-0" />
+          <span className={cn(
+            "sidebar-text ml-3 transition-all duration-300 overflow-hidden whitespace-nowrap",
+            isHovered || isOpen ? "opacity-100 max-w-[150px]" : "opacity-0 max-w-0"
+          )}>
+            Sign Out
+          </span>
+          {!isHovered && !isOpen && (
+            <span className="sidebar-tooltip absolute left-16 bg-black border border-white/10 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap shadow-xl">
+              Sign Out
+            </span>
+          )}
         </button>
       </div>
     </aside>

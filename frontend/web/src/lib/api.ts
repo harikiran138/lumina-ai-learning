@@ -1155,7 +1155,15 @@ export class RealAPI {
     };
     const path = roleMap[userRole] || `/api/${userRole}/dashboard`;
     const res = await this.fetchAuthorized(path);
-    return res.ok ? await res.json() : {};
+    if (!res.ok) return { stats: [], alerts: [], feed: [], meta: {} };
+    const data = await res.json();
+    return {
+      stats: Array.isArray(data?.stats) ? data.stats : [],
+      alerts: Array.isArray(data?.alerts) ? data.alerts : [],
+      feed: Array.isArray(data?.feed) ? data.feed : [],
+      meta: data?.meta || {},
+      ...data
+    };
   }
 
   async getAdminQueueHealth(): Promise<any> {

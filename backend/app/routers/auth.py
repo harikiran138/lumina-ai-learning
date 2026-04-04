@@ -116,8 +116,9 @@ def _is_adaptive_onboarding_completed(user: dict) -> bool:
     if not user_id:
         return False
 
-    # 1. Quick check: does the user object already have the flag?
-    if user.get("onboarding_completed") is True:
+    # 1. Quick check: Status from existing indicator instead of missing column
+    status = str(user.get("status") or "").lower()
+    if status in {"completed", "active"}:
         return True
 
     try:
@@ -164,13 +165,18 @@ def is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
     role = normalize_role(user.get("role", "guest"))
 
     # Roles that fully bypass onboarding wizard
-    BYPASS_ROLES = {"super_admin", "admin", "hod", "system_admin", "institution_admin"}
+    BYPASS_ROLES = {"super_admin", "admin", "hod", "system_admin", "institution_admin", "faculty", "teacher", "college_admin"}
     if role in BYPASS_ROLES:
         return True, True
 
-    # If DB already has onboarding_completed=True, trust it directly
-    db_flag = user.get("onboarding_completed")
-    if db_flag is True:
+    # 1. Quick check: use onboarding_step as primary source of truth
+    onboarding_step = int(user.get("onboarding_step") or 0)
+    required_steps = 2 if role == "college_admin" else 5
+    
+    if onboarding_step >= required_steps:
+        # For students, we still verify adaptive onboarding completion
+        if role == "student":
+            return _is_adaptive_onboarding_completed(user), True
         return True, True
 
     required_steps = 2 if role == "college_admin" else 5

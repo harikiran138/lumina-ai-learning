@@ -94,6 +94,7 @@ export default function StudentDashboard() {
     const loadDashboard = async () => {
       try {
         const data = await api.getDashboardData("student");
+        console.log("Dashboard data:", data);
         setDashboardData(data);
       } catch (loadError: any) {
         console.error("student_dashboard_load_failed", loadError);
@@ -136,7 +137,7 @@ export default function StudentDashboard() {
     );
   }
 
-  const { stats, meta } = dashboardData;
+  const { stats = [], meta = {} } = dashboardData || {};
   const nextAction = meta?.nextAction;
   const coachInsight = meta?.coachInsight;
   const resumeCourse = meta?.resumeCourse;
@@ -145,7 +146,7 @@ export default function StudentDashboard() {
     <StandardDashboard 
       data={dashboardData}
       title={`Greetings, ${meta?.studentName?.split(' ')[0] || "Scholar"}`}
-      subtitle={`Welcome back to your Lumina terminal. You're maintaining a ${stats.find((s: any) => s.label === 'Current Streak')?.value || "0 day"} streak.`}
+      subtitle={`Welcome back to your Lumina terminal. You're maintaining a ${stats?.find((s: any) => s.label === 'Current Streak')?.value || "0 day"} streak.`}
       headerAction={
         <div className="flex flex-wrap gap-4 mt-4">
           <Link
@@ -211,7 +212,7 @@ export default function StudentDashboard() {
           icon={Target}
         >
           <div className="flex flex-col items-center justify-center p-6 text-center">
-            <MasteryOrb progress={parseInt(stats.find((s: any) => s.label === 'Overall Mastery')?.value) || 0} size="lg" />
+            <MasteryOrb progress={parseInt(stats?.find((s: any) => s.label === 'Overall Mastery')?.value || "0") || 0} size="lg" />
             <div className="mt-8 grid grid-cols-2 gap-8 w-full border-t border-white/5 pt-8">
                <MiniMetric label="Risk Level" value={normalizeLabel(meta?.riskLevel || "Low")} />
                <MiniMetric label="Engagement" value="High" />
@@ -300,8 +301,8 @@ export default function StudentDashboard() {
         >
           <div className="space-y-5">
             <div className="grid grid-cols-3 gap-4">
-              <MiniMetric label="Due Today" value={String(stats.find((s: any) => s.label === "Due Reviews")?.value ?? "5")} />
-              <MiniMetric label="Streak" value={`${stats.find((s: any) => s.label === "Current Streak")?.value ?? "0 day"}`} />
+              <MiniMetric label="Due Today" value={String(stats?.find((s: any) => s.label === "Due Reviews")?.value ?? "5")} />
+              <MiniMetric label="Streak" value={`${stats?.find((s: any) => s.label === "Current Streak")?.value ?? "0 day"}`} />
               <MiniMetric label="Algorithm" value="SM-2" />
             </div>
             <p className="text-sm text-gray-400 leading-relaxed">
@@ -337,7 +338,7 @@ export default function StudentDashboard() {
             <div className="grid grid-cols-3 gap-4">
               <MiniMetric
                 label="Predicted"
-                value={`${stats.find((s: any) => s.label === "Overall Mastery")?.value ?? "—"}`}
+                value={`${stats?.find((s: any) => s.label === "Overall Mastery")?.value ?? "—"}`}
               />
               <MiniMetric label="Risk" value={normalizeLabel(meta?.riskLevel || "Low")} />
               <MiniMetric label="Status" value="On Track" />

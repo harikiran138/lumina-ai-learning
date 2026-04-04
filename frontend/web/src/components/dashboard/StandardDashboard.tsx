@@ -85,7 +85,7 @@ export function StandardDashboard({
   headerAction,
   children 
 }: StandardDashboardProps) {
-  const { stats, alerts, feed, meta } = data;
+  const { stats = [], alerts = [], feed = [], meta = {} } = data || {};
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
