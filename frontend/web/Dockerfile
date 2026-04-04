@@ -4,7 +4,7 @@ FROM node:20-alpine AS base
 FROM base AS deps
 WORKDIR /app
 COPY package.json yarn.lock* package-lock.json* ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Build stage
 FROM base AS builder
