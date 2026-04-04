@@ -28,39 +28,81 @@ async def get_teacher_dashboard(
 ):
     check_teacher_role(current_user)
     db = get_scoped_db(current_user)
-    service = get_personalization_service(db=db)
-    
-    # Simple summary for now, can be expanded
-    interventions = await service.get_interventions()
-    active_alerts = [
+    teacher_id = str(current_user.get("id"))
+
+    # ── Assignments / courses the teacher owns ────────────────────────────────
+    assignments = await db.fetch_all("teacher_assignments", {"teacher_id": teacher_id})
+    course_ids = list({item.get("course_id") for item in assignments if item.get("course_id")})
+    class_ids  = list({item.get("class_id")  for item in assignments if item.get("class_id")})
+
+    courses_data: List[Dict[str, Any]] = []
+    if course_ids:
+        courses_data = db.table("courses").select("*").in_("id", course_ids).execute().data or []
+
+    # ── Student headcount across all assigned classes ─────────────────────────
+    total_students = 0
+    for class_id in class_ids:
+        rows = await db.fetch_all("student_enrollments", {"class_id": class_id})
+        total_students += len(rows or [])
+
+    # ── Pending submissions to grade ──────────────────────────────────────────
+    pending_submissions = await db.fetch_all("assignment_submissions", {"status": "submitted"}) or []
+    pending_count = len(pending_submissions)
+
+    # ── At-risk interventions (best-effort) ───────────────────────────────────
+    active_alerts: List[Dict[str, Any]] = []
+    try:
+        service = get_personalization_service(db=db)
+        interventions = await service.get_interventions()
+        active_alerts = [
+            {
+                "id": str(i.id),
+                "type": "warning" if i.priority in ["high", "critical"] else "info",
+                "title": i.recommended_action,
+                "description": i.reason,
+                "priority": i.priority,
+            }
+            for i in interventions
+            if i.status in [InterventionStatus.OPEN, InterventionStatus.ACKNOWLEDGED]
+        ]
+    except Exception:
+        active_alerts = []
+
+    # ── Build course cards ────────────────────────────────────────────────────
+    published = sum(1 for c in courses_data if c.get("status") != "draft")
+    draft     = len(courses_data) - published
+
+    course_cards = [
         {
-            "id": str(i.id),
-            "type": "warning" if i.priority in ["high", "critical"] else "info",
-            "title": i.recommended_action,
-            "description": i.reason,
-            "priority": i.priority,
+            "id":          str(c.get("id")),
+            "title":       c.get("course_name") or c.get("name") or c.get("title") or "Untitled Course",
+            "code":        c.get("course_code") or c.get("code") or "",
+            "description": c.get("description") or "",
+            "status":      c.get("status") or "active",
+            "students":    0,
         }
-        for i in interventions 
-        if i.status in [InterventionStatus.OPEN, InterventionStatus.ACKNOWLEDGED]
+        for c in courses_data
     ]
 
     return {
-        "stats": [
-            {"label": "Active Students", "value": "24", "trend": "Stable", "icon": "Users"},
-            {"label": "Avg. Performance", "value": "78%", "trend": "+2.1%", "icon": "BarChart"},
-            {"label": "Interventions", "value": str(len(active_alerts)), "trend": "Active", "icon": "AlertCircle"},
-            {"label": "New Submissions", "value": "12", "trend": "Today", "icon": "FileText"},
-        ],
-        "alerts": active_alerts[:5],
-        "charts": {
-            "performance": [
-                {"name": "Week 1", "value": 70},
-                {"name": "Week 2", "value": 75},
-                {"name": "Week 3", "value": 78},
-            ]
+        "summary": {
+            "totalStudents":        total_students,
+            "activeCourses":        published,
+            "avgMastery":           0,
+            "pendingGrading":       pending_count,
+            "atRiskStudents":       len(active_alerts),
+            "upcomingDeadlines":    0,
+            "pendingAIVerifications": 0,
         },
-        "feed": [],
-        "meta": {"role": "teacher"}
+        "courses": course_cards,
+        "weeklySnapshot": {
+            "publishedCourses":    published,
+            "draftCourses":        draft,
+            "assignmentsCreated":  0,
+            "submissionsReceived": pending_count,
+        },
+        "alerts": active_alerts[:5],
+        "meta":   {"role": "teacher"},
     }
 
 @router.get("/interventions/queue")

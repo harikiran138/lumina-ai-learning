@@ -922,10 +922,11 @@ export class RealAPI {
       }
       return await parseJsonSafe(res) ?? {};
     } catch (err: any) {
-      // Provide more helpful error messages
-      if (err.message?.includes("Server Error: 500")) {
-        console.error("Backend enrollment error:", err);
-        throw new Error("Unable to save enrollment. Please check that your enrollment code is valid and try again.");
+      // Map generic 500s to a message that doesn't blame the enrollment code
+      // (the code was already validated — a 500 here is a server-side issue).
+      if (err.message?.includes("500") || err.message?.toLowerCase().includes("server error")) {
+        console.error("[enrollment] server error saving enrollment:", err);
+        throw new Error("A server error occurred while saving your enrollment. Please retry in a moment.");
       }
       throw err;
     }
@@ -1715,13 +1716,14 @@ export class RealAPI {
     });
   }
 
-  /** GET /api/student/tutor/questions — student's own question statuses */
+  /** GET student question statuses — best-effort, returns [] on any failure */
   async getStudentQuestions(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/student/questions");
-    if (res.ok) return res.json();
-    // fallback: try the faculty AI queue endpoint to check pending answers
-    const fallback = await this.fetchAuthorized("/api/faculty/ai-queue");
-    return fallback.ok ? fallback.json() : [];
+    try {
+      const res = await this.fetchAuthorized("/api/student/assignments");
+      return res.ok ? res.json() : [];
+    } catch {
+      return [];
+    }
   }
 
   /** Get chat history from localStorage */
@@ -1747,19 +1749,9 @@ export class RealAPI {
     }
   }
 
-  /** Fire-and-forget AI interaction log */
-  async logAIInteraction(userMessage: string, aiResponse: string): Promise<void> {
-    try {
-      await this.fetchAuthorized("/api/student/log-activity", {
-        method: "POST",
-        body: JSON.stringify({
-          activity_type: "ai_interaction",
-          metadata: { userMessage: userMessage.slice(0, 500), aiResponse: aiResponse.slice(0, 500) },
-        }),
-      });
-    } catch {
-      // best-effort
-    }
+  /** Fire-and-forget AI interaction log (persisted via saveChatMessage) */
+  async logAIInteraction(_userMessage: string, _aiResponse: string): Promise<void> {
+    // Chat messages are already saved via saveChatMessage; no separate backend call.
   }
 
   // --- Legacy Compatibility ---

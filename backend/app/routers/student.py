@@ -1931,5 +1931,5 @@ async def get_connection_token(
             "display_id": current_user["id"] # Optional: use for manual entry if needed
         }
     except Exception as e:
-        logger.error("get_connection_token_failed", user_id=current_user["id"], error=str(e))
+        logger.error(f"get_connection_token_failed | user_id={current_user['id']} error={e}")
         raise HTTPException(status_code=500, detail="Failed to generate connection token")

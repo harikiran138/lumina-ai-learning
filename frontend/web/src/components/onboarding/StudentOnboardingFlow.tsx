@@ -183,6 +183,10 @@ export default function StudentOnboardingFlow() {
         setShowAdaptiveCalibration(adaptiveStage || Boolean(draft.showAdaptiveCalibration && !adaptiveDone));
         setAdaptiveCompleted(adaptiveDone);
         setAdaptiveStatus(adaptiveDone ? "completed" : status.adaptiveOnboardingStatus || "pending");
+        // Prefer DB-sourced batchId (status.batchId is now read from DB after Fix 1).
+        // Fall back to progress.step_2 data, then draft snapshot.
+        const resolvedBatchId = step2.batchId || status.batchId || draftStudent.batchId || "";
+
         setStudent((prev) => ({
           ...prev,
           firstName: step1.firstName || draftStudent.firstName || user.name?.split(" ")[0] || "",
@@ -192,7 +196,7 @@ export default function StudentOnboardingFlow() {
           phoneNumber: step1.phone || draftStudent.phoneNumber || "",
           email: user.email || "",
           enrollmentCode: step2.enrollmentCode || draftStudent.enrollmentCode || "",
-          batchId: step2.batchId || status.batchId || "",
+          batchId: resolvedBatchId,
           batchLabel: step2.batchLabel || draftStudent.batchLabel || "",
           section: step2.section || draftStudent.section || "",
           semester: step2.semester ? String(step2.semester) : draftStudent.semester || "",
@@ -205,14 +209,17 @@ export default function StudentOnboardingFlow() {
           selfAssessment: step5.selfAssessment || draftStudent.selfAssessment || "beginner",
         }));
 
-        if (step2.batchId && step2.departmentName) {
+        const enrollBatchId  = step2.batchId  || status.batchId  || "";
+        const enrollDeptId   = step2.departmentId || status.deptId || "";
+        const enrollDeptName = step2.departmentName || "";
+        if (enrollBatchId && enrollDeptName) {
           setEnrollmentPreview({
             department: {
-              id: step2.departmentId || status.deptId || "",
-              name: step2.departmentName,
+              id: enrollDeptId,
+              name: enrollDeptName,
             },
             batch: {
-              id: step2.batchId,
+              id: enrollBatchId,
               label: step2.batchLabel || "Current batch",
             },
             semester: step2.semester || "",
@@ -270,13 +277,20 @@ export default function StudentOnboardingFlow() {
       }
 
       setIsLoadingSubjects(true);
+      setPageError(null);
       try {
         const rows = await api.getStudentOnboardingSubjects(student.batchId);
         setSubjectOptions(rows || []);
+        // Show a toast if no subjects were returned (but not an error)
+        if (!rows || rows.length === 0) {
+          console.warn("No subjects available for batch:", student.batchId);
+        }
       } catch (error: any) {
+        // This should rarely happen now since API returns [] on errors
         const message = error?.message || "Failed to load subjects";
         setPageError(message);
         toast.error(message);
+        setSubjectOptions([]);
       } finally {
         setIsLoadingSubjects(false);
       }
@@ -386,6 +400,7 @@ export default function StudentOnboardingFlow() {
         });
         if (!result.success) {
           setErrors(fieldErrors(result) as Record<string, string>);
+          setIsSubmitting(false);
           return;
         }
 
@@ -394,6 +409,7 @@ export default function StudentOnboardingFlow() {
         setCurrentStep(2);
         setSuccessMessage("Personal details saved successfully.");
         toast.success("Step 1 saved");
+        setIsSubmitting(false);
         return;
       }
 
@@ -403,25 +419,60 @@ export default function StudentOnboardingFlow() {
           preview = await validateEnrollmentCode();
         }
         if (!preview) {
+          setIsSubmitting(false);
           return;
         }
 
-        const response = await api.saveStudentEnrollment(student.enrollmentCode.trim().toUpperCase());
-        const enrollment = response.enrollment || {};
-        setEnrollmentPreview(enrollment);
-        setStudent((prev) => ({
-          ...prev,
-          batchId: enrollment.batch?.id || prev.batchId,
-          batchLabel: enrollment.batch?.label || prev.batchLabel,
-          section: enrollment.section || prev.section,
-          semester: enrollment.semester ? String(enrollment.semester) : prev.semester,
-          departmentName: enrollment.department?.name || prev.departmentName,
-          selectedSubjectIds: [],
-        }));
-        setCompletedStep(2);
-        setCurrentStep(3);
-        setSuccessMessage("Enrollment linked and batch mapping saved.");
-        toast.success("Step 2 saved");
+        try {
+          const response = await api.saveStudentEnrollment(student.enrollmentCode.trim().toUpperCase());
+          const enrollment = response.enrollment || {};
+
+          if (!enrollment.batch?.id) {
+            throw new Error("Enrollment response missing batch information. Please try again.");
+          }
+
+          // Re-verify DB state — the status endpoint now reads onboarding_step
+          // directly from the DB, so this confirms the write actually landed and
+          // gives us the authoritative batchId/deptId for step 3.
+          let confirmedBatchId = enrollment.batch?.id;
+          try {
+            const freshStatus = await api.getOnboardingStatus();
+            const freshBatchId =
+              (freshStatus.progress?.step_2?.batchId) ||
+              freshStatus.batchId ||
+              enrollment.batch?.id;
+            if (freshBatchId) confirmedBatchId = freshBatchId;
+            if (freshStatus.step < 2) {
+              console.warn("[onboarding] step 2 DB write not yet reflected — using response batchId", {
+                dbStep: freshStatus.step, batchId: confirmedBatchId,
+              });
+            }
+          } catch (verifyErr) {
+            console.warn("[onboarding] could not re-verify step 2 status:", verifyErr);
+          }
+
+          setEnrollmentPreview(enrollment);
+          setStudent((prev) => ({
+            ...prev,
+            batchId: confirmedBatchId || prev.batchId,
+            batchLabel: enrollment.batch?.label || prev.batchLabel,
+            section: enrollment.section || prev.section,
+            semester: enrollment.semester ? String(enrollment.semester) : prev.semester,
+            departmentName: enrollment.department?.name || prev.departmentName,
+            selectedSubjectIds: [],
+          }));
+          setCompletedStep(2);
+          setCurrentStep(3);
+          setSuccessMessage("Enrollment linked and batch mapping saved.");
+          toast.success("Step 2 saved");
+        } catch (error: any) {
+          const message = error?.message || "Failed to save enrollment";
+          setPageError(message);
+          toast.error(message);
+          console.error("[onboarding] enrollment save error:", error);
+        } finally {
+          setIsSubmitting(false);
+        }
         return;
       }
 
@@ -797,8 +848,19 @@ export default function StudentOnboardingFlow() {
                 ) : null}
 
                 {!isLoadingSubjects && !subjectOptions.length ? (
-                  <div className="rounded-[28px] border border-red-400/20 bg-red-500/10 p-5 text-sm leading-6 text-red-100">
-                    No subjects are mapped to this batch yet. This must be fixed in backend data before onboarding can continue.
+                  <div className="rounded-[28px] border border-amber-300/20 bg-amber-500/10 p-5 text-sm leading-6 text-amber-100">
+                    <p className="font-medium">No subjects available</p>
+                    <p className="mt-1 text-amber-200/70">
+                      We couldn&apos;t load subjects for your batch. This may be because:
+                    </p>
+                    <ul className="mt-2 list-disc list-inside text-amber-200/70 space-y-1">
+                      <li>Your batch is still being configured</li>
+                      <li>Subjects haven&apos;t been assigned to your department yet</li>
+                      <li>There may be a temporary connection issue</li>
+                    </ul>
+                    <p className="mt-3 text-amber-200/70">
+                      You can still continue onboarding and select subjects later, or contact your administrator if this persists.
+                    </p>
                   </div>
                 ) : null}
 

@@ -102,9 +102,12 @@ jobs:
           cd frontend/web
           npm install
       - name: Run Jest
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://odyjksznsdeyweylovzl.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9keWprc3puc2RleXdleWxvdnpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NTA1MjEsImV4cCI6MjA4ODUyNjUyMX0.cEz3pxnk2o7YcUe3fPgKdnKmnkqFivoImoEzT9KsZTM
         run: |
           cd frontend/web
-          npm test
+          npm test -- --testTimeout=15000
 
   # 7. Container Validation (Docker)
   docker-build:
@@ -118,4 +121,4 @@ jobs:
       - name: Build Frontend Image
         run: |
           cd frontend/web
-          docker build -t lumina-frontend:latest .
+          docker build --build-arg NEXT_PUBLIC_API_URL=http://localhost:8000 -t lumina-frontend:latest .

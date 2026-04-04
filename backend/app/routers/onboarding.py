@@ -2,7 +2,7 @@ import mimetypes
 import os
 import re
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Literal
 import logging
 
@@ -188,6 +188,11 @@ async def _persist_progress(
     user_record = await _get_user_record(user_id, db)
     current_step = int(user_record.get("onboarding_step") or 0)
     next_step = 5 if completed else max(current_step, target_step)
+    logger.info(
+        f"persist_progress_start | user_id={user_id} target_step={target_step} "
+        f"current_step={current_step} next_step={next_step} completed={completed} "
+        f"user_update_keys={list((user_updates or {}).keys())}"
+    )
 
     # ── Critical write: onboarding_step must ALWAYS be committed ──────────────
     # We keep this in its own dedicated update so it can never be silently
@@ -207,15 +212,12 @@ async def _persist_progress(
         verify = await _get_user_record(user_id, db)
         if int(verify.get("onboarding_step") or 0) < next_step:
             logger.error(
-                "onboarding_step_persist_failed",
-                user_id=user_id, target_step=target_step, next_step=next_step,
+                f"onboarding_step_persist_failed | user_id={user_id} "
+                f"target_step={target_step} next_step={next_step}"
             )
             raise HTTPException(status_code=500, detail="Failed to persist onboarding step")
 
-    logger.info(
-        "onboarding_step_persisted",
-        user_id=user_id, step=next_step, completed=completed,
-    )
+    logger.info(f"onboarding_step_persisted | user_id={user_id} step={next_step} completed={completed}")
 
     # ── Best-effort write: richer profile fields ───────────────────────────────
     # These may fail silently if a given column does not yet exist in this
@@ -241,14 +243,10 @@ async def _persist_progress(
 async def _require_step_access(user_id: str, target_step: int, db: Any) -> Dict[str, Any]:
     user_record = await _get_user_record(user_id, db)
     current_step = int(user_record.get("onboarding_step") or 0)
-    logger.debug(
-        "require_step_access_check",
-        user_id=user_id, db_step=current_step, target_step=target_step,
-    )
+    logger.debug(f"require_step_access_check | user_id={user_id} db_step={current_step} target_step={target_step}")
     if current_step < target_step - 1:
         logger.warning(
-            "require_step_access_denied",
-            user_id=user_id, db_step=current_step, target_step=target_step,
+            f"require_step_access_denied | user_id={user_id} db_step={current_step} target_step={target_step}"
         )
         raise HTTPException(
             status_code=409,
@@ -258,60 +256,135 @@ async def _require_step_access(user_id: str, target_step: int, db: Any) -> Dict[
 
 
 async def _validate_enrollment_code_for_user(code: str, user_id: str, db: Any) -> Dict[str, Any]:
-    normalized_code = (code or "").strip().upper()
-    if not normalized_code:
-        raise HTTPException(status_code=400, detail="Enrollment code is required")
+    """Validates enrollment code and returns enrollment data. Never crashes - always returns valid data or raises HTTPException with clear message."""
+    try:
+        normalized_code = (code or "").strip().upper()
+        if not normalized_code:
+            raise HTTPException(status_code=400, detail="Enrollment code is required")
 
-    record = await db.fetch_one("enrollment_codes", {"code": normalized_code})
-    if not record:
-        raise HTTPException(status_code=400, detail="Enrollment code is invalid")
+        record = await db.fetch_one("enrollment_codes", {"code": normalized_code})
+        if not record:
+            raise HTTPException(status_code=400, detail="Enrollment code is invalid")
 
-    used_by = record.get("used_by")
-    if used_by and str(used_by) != str(user_id):
-        raise HTTPException(status_code=400, detail="Enrollment code has already been used")
+        used_by = record.get("used_by")
+        if used_by and str(used_by) != str(user_id):
+            raise HTTPException(status_code=400, detail="Enrollment code has already been used")
 
-    expires_at = record.get("expires_at")
-    if expires_at:
-        expires = datetime.fromisoformat(str(expires_at).replace("Z", "+00:00"))
-        if expires < datetime.now(expires.tzinfo):
-            raise HTTPException(status_code=400, detail="Enrollment code has expired")
+        # Safely parse expires_at - handle various datetime formats
+        expires_at = record.get("expires_at")
+        if expires_at:
+            try:
+                expires_str = str(expires_at).replace("Z", "+00:00")
+                expires = datetime.fromisoformat(expires_str)
+                if expires.tzinfo is None:
+                    expires = expires.replace(tzinfo=timezone.utc)
+                if expires < datetime.now(expires.tzinfo):
+                    raise HTTPException(status_code=400, detail="Enrollment code has expired")
+            except ValueError as e:
+                logger.error(f"invalid_expires_at_format: code={normalized_code}, expires_at={expires_at}, error={str(e)}")
+                # Continue if we can't parse - assume not expired
+                pass
 
-    batch = await db.fetch_one("batches", {"id": record.get("batch_id")})
-    if not batch:
-        raise HTTPException(status_code=404, detail="Linked batch could not be found")
+        batch_id = record.get("batch_id")
+        if not batch_id:
+            raise HTTPException(status_code=400, detail="Enrollment code is not linked to a batch")
 
-    dept_id = batch.get("dept_id") or batch.get("department_id")
-    department = await db.fetch_one("departments", {"id": dept_id}) if dept_id else None
-    if not department:
-        raise HTTPException(status_code=404, detail="Linked department could not be found")
+        batch = await db.fetch_one("batches", {"id": batch_id})
+        if not batch:
+            raise HTTPException(status_code=404, detail="Linked batch could not be found")
 
-    semester = batch.get("current_semester")
-    return {
-        "code": normalized_code,
-        "record": record,
-        "batch": batch,
-        "department": department,
-        "semester": semester,
-        "section": record.get("section"),
-    }
+        dept_id = batch.get("dept_id") or batch.get("department_id")
+        if not dept_id:
+            raise HTTPException(status_code=400, detail="Batch is not linked to a department")
+
+        department = await db.fetch_one("departments", {"id": dept_id})
+        if not department:
+            raise HTTPException(status_code=404, detail="Linked department could not be found")
+
+        semester = batch.get("current_semester")
+        return {
+            "code": normalized_code,
+            "record": record,
+            "batch": batch,
+            "department": department,
+            "semester": semester,
+            "section": record.get("section"),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"unexpected_error_in_validate_enrollment_code: code={code}, user_id={user_id}, error={str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to validate enrollment code: {str(e)}")
 
 
 async def _get_subject_rows_for_batch(batch_id: str, db: Any) -> List[Dict[str, Any]]:
-    batch = await db.fetch_one("batches", {"id": batch_id})
-    if not batch:
-        logger.error(f"batch_not_found_for_subjects: {batch_id}")
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Enrollment details not found for batch ID {batch_id}. Please restart onboarding."
-        )
+    """
+    Fetch subjects/courses for a given batch.
 
-    dept_id = batch.get("dept_id") or batch.get("department_id")
-    semester = batch.get("current_semester")
-    if not dept_id or semester is None:
-        raise HTTPException(status_code=400, detail="Batch is missing department or semester mapping")
+    Uses the global admin client (supabase_db) for the courses query so RLS
+    policies that restrict unenrolled students from seeing available courses do
+    NOT produce an empty list.  The scoped user db is still used for the batch
+    and department lookups (they only need read access the student already has).
 
-    subjects = await db.fetch_all("courses", {"department_id": dept_id, "semester": semester})
-    return subjects or []
+    Returns an empty list on any error — never raises — so the frontend always
+    gets a valid response it can display gracefully.
+    """
+    try:
+        if not batch_id:
+            logger.warning("get_subject_rows_batch_id_empty")
+            return []
+
+        batch = await db.fetch_one("batches", {"id": batch_id})
+        if not batch:
+            logger.error(f"get_subject_rows_batch_not_found | batch_id={batch_id}")
+            return []
+
+        dept_id  = batch.get("dept_id") or batch.get("department_id")
+        semester = batch.get("current_semester")
+
+        if not dept_id:
+            logger.error(f"get_subject_rows_batch_missing_dept | batch_id={batch_id} batch_keys={list(batch.keys())}")
+            return []
+
+        if semester is None:
+            logger.error(f"get_subject_rows_batch_missing_semester | batch_id={batch_id}")
+            return []
+
+        # ── Use the admin client so RLS never blocks the course list ─────────
+        admin_db = supabase_db
+
+        # Try the two most common column-name conventions for the FK to department.
+        # Supabase/Postgres is strict about column names; a mismatch returns []
+        # without raising, so we try both and log which one produced results.
+        subjects: List[Dict[str, Any]] = []
+        for dept_col in ("department_id", "dept_id"):
+            try:
+                rows = await admin_db.fetch_all("courses", {dept_col: dept_id, "semester": semester})
+                if rows:
+                    logger.info(
+                        f"get_subject_rows_found | batch_id={batch_id} dept_col={dept_col} "
+                        f"dept_id={dept_id} semester={semester} count={len(rows)}"
+                    )
+                    subjects = rows
+                    break
+                logger.debug(
+                    f"get_subject_rows_empty_for_col | dept_col={dept_col} dept_id={dept_id} semester={semester}"
+                )
+            except Exception as col_err:
+                logger.warning(f"get_subject_rows_col_query_failed | dept_col={dept_col} error={col_err}")
+
+        if not subjects:
+            logger.warning(
+                f"get_subject_rows_no_results | batch_id={batch_id} dept_id={dept_id} semester={semester}"
+            )
+
+        return subjects
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"get_subject_rows_unexpected_error | batch_id={batch_id} error={e}")
+        return []
 
 
 def _self_assessment_score(level: str) -> float:
@@ -400,63 +473,86 @@ async def save_student_enrollment(
     payload: StudentEnrollmentRequest,
     current_user: dict = Depends(get_current_user),
 ):
-    user_id = _require_student(current_user)
-    db = get_scoped_db(current_user)
-    await _require_step_access(user_id, 2, db)
+    """
+    Saves student enrollment from enrollment code.
+    Returns enrollment data or raises HTTPException with clear error message.
+    """
+    try:
+        user_id = _require_student(current_user)
+        db = get_scoped_db(current_user)
+        await _require_step_access(user_id, 2, db)
 
-    enrollment = await _validate_enrollment_code_for_user(payload.enrollment_code, user_id, db)
-    batch = enrollment["batch"]
-    department = enrollment["department"]
-    section = enrollment["section"]
-    department_id = department.get("id")
-    institution_id = department.get("institution_id")
+        enrollment = await _validate_enrollment_code_for_user(payload.enrollment_code, user_id, db)
+        batch = enrollment["batch"]
+        department = enrollment["department"]
+        section = enrollment["section"]
+        department_id = department.get("id")
+        institution_id = department.get("institution_id")
 
-    await db.update(
-        "enrollment_codes",
-        {"used_by": user_id, "updated_at": datetime.utcnow().isoformat()},
-        {"id": enrollment["record"].get("id")},
-    )
+        # Mark enrollment code as used
+        try:
+            await db.update(
+                "enrollment_codes",
+                {"used_by": user_id, "updated_at": datetime.now(timezone.utc).isoformat()},
+                {"id": enrollment["record"].get("id")},
+            )
+        except Exception as e:
+            logger.warning(f"failed_to_update_enrollment_code_usage: code={payload.enrollment_code}, error={str(e)}")
+            # Non-fatal - continue even if this fails
 
-    step_data = {
-        "enrollmentCode": enrollment["code"],
-        "departmentId": department_id,
-        "departmentName": department.get("department_name") or department.get("name"),
-        "batchId": batch.get("id"),
-        "batchLabel": batch.get("label") or batch.get("name"),
-        "semester": batch.get("current_semester"),
-        "section": section,
-    }
-    await _persist_progress(
-        user_id,
-        2,
-        step_data,
-        db,
-        {
-            "college_id": institution_id,
-            "dept_id": department_id,
-            "batch_id": batch.get("id"),
-            "section": section,
-            "student_roll": current_user.get("student_roll"),
-        },
-    )
-
-    return {
-        "step": 2,
-        "success": True,
-        "enrollment": {
-            "department": {
-                "id": department_id,
-                "name": department.get("department_name") or department.get("name"),
-                "code": department.get("abbreviation") or department.get("code"),
-            },
-            "batch": {
-                "id": batch.get("id"),
-                "label": batch.get("label") or batch.get("name"),
-            },
+        step_data = {
+            "enrollmentCode": enrollment["code"],
+            "departmentId": department_id,
+            "departmentName": department.get("department_name") or department.get("name"),
+            "batchId": batch.get("id"),
+            "batchLabel": batch.get("label") or batch.get("name"),
             "semester": batch.get("current_semester"),
             "section": section,
-        },
-    }
+        }
+
+        # Persist user updates
+        try:
+            await _persist_progress(
+                user_id,
+                2,
+                step_data,
+                db,
+                {
+                    "college_id": institution_id,
+                    "dept_id": department_id,
+                    "batch_id": batch.get("id"),
+                    "section": section,
+                    "student_roll": current_user.get("student_roll"),
+                },
+            )
+        except Exception as e:
+            logger.error(f"failed_to_persist_enrollment_progress: user_id={user_id}, error={str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to save enrollment progress: {str(e)}")
+
+        logger.info(f"enrollment_saved: user_id={user_id}, batch_id={batch.get('id')}, dept_id={department_id}")
+
+        return {
+            "step": 2,
+            "success": True,
+            "enrollment": {
+                "department": {
+                    "id": department_id,
+                    "name": department.get("department_name") or department.get("name"),
+                    "code": department.get("abbreviation") or department.get("code"),
+                },
+                "batch": {
+                    "id": batch.get("id"),
+                    "label": batch.get("label") or batch.get("name"),
+                },
+                "semester": batch.get("current_semester"),
+                "section": section,
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"unexpected_error_in_save_student_enrollment: error={str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to save enrollment: {str(e)}")
 
 
 @router.get("/student-subjects")
@@ -464,27 +560,52 @@ async def list_student_onboarding_subjects(
     batch_id: Optional[str] = Query(default=None),
     current_user: dict = Depends(get_current_user),
 ):
-    user_id = _require_student(current_user)
-    db = get_scoped_db(current_user)
-    await _require_step_access(user_id, 3, db)
+    """
+    Returns available subjects for a student's batch.
+    Always returns a valid JSON array, even on errors (returns empty array).
+    """
+    try:
+        user_id = _require_student(current_user)
+        db = get_scoped_db(current_user)
+        await _require_step_access(user_id, 3, db)
 
-    resolved_batch_id = batch_id or current_user.get("batch_id")
-    if not resolved_batch_id:
-        raise HTTPException(status_code=400, detail="Batch must be linked before loading subjects")
+        resolved_batch_id = batch_id or current_user.get("batch_id")
+        if not resolved_batch_id:
+            logger.warning(f"student_subjects_batch_missing: user_id={user_id}")
+            # Return empty array instead of 400 error
+            return []
 
-    subjects = await _get_subject_rows_for_batch(str(resolved_batch_id), db)
-    return [
-        {
-            "id": row.get("id"),
-            "name": row.get("course_name") or row.get("name") or row.get("title"),
-            "code": row.get("course_code") or row.get("code"),
-            "description": row.get("description"),
-            "credits": row.get("credits"),
-            "semester": row.get("semester"),
-            "type": row.get("type") or row.get("category"),
-        }
-        for row in subjects
-    ]
+        subjects = await _get_subject_rows_for_batch(str(resolved_batch_id), db)
+
+        # Map to frontend-friendly format
+        result = []
+        for row in subjects:
+            try:
+                mapped = {
+                    "id": str(row.get("id")) if row.get("id") else None,
+                    "name": row.get("course_name") or row.get("name") or row.get("title") or "Unnamed Subject",
+                    "code": row.get("course_code") or row.get("code") or "",
+                    "description": row.get("description") or "",
+                    "credits": row.get("credits"),
+                    "semester": row.get("semester"),
+                    "type": row.get("type") or row.get("category") or "",
+                }
+                # Only include subjects with valid IDs
+                if mapped["id"]:
+                    result.append(mapped)
+            except Exception as e:
+                logger.error(f"error_mapping_subject_row: row={row}, error={str(e)}")
+                continue
+
+        logger.info(f"student_subjects_loaded: user_id={user_id}, batch_id={resolved_batch_id}, count={len(result)}")
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"unexpected_error_in_list_student_onboarding_subjects: error={str(e)}")
+        # Return empty array instead of 500 error
+        return []
 
 
 @router.post("/subjects")
@@ -790,12 +911,24 @@ async def get_onboarding_status(
     try:
         user_id = current_user.get("id")
         db = get_scoped_db(current_user)
-        # Check if they have existing data
-        existing = await db.fetch_one("user_data", {"user_id": user_id})
         role = normalize_role(current_user.get("role"))
-        step = current_user.get("onboarding_step", 0) or 0
+
+        # ── Read onboarding_step from DB — JWT may be stale between steps ──────
+        # The JWT is only refreshed after step 5. Reading from the DB means the
+        # frontend always sees the true persisted step, even on mid-flow refresh.
+        user_db_record = await db.fetch_one("users", {"id": user_id})
+        if not user_db_record:
+            logger.warning(f"onboarding_status_user_not_found | user_id={user_id}")
+            return default_onboarding_state(role)
+
+        step = int(user_db_record.get("onboarding_step") or current_user.get("onboarding_step") or 0)
+        logger.debug(f"onboarding_status_db_step | user_id={user_id} db_step={step}")
+
+        # Check if they have existing progress data
+        existing = await db.fetch_one("user_data", {"user_id": user_id})
         if not existing and not step:
             return default_onboarding_state(role)
+
         adaptive_profile = None
         adaptive_session = None
         adaptive_completed = role != "student"
@@ -830,12 +963,24 @@ async def get_onboarding_status(
         if existing and "progress" in existing:
             progress = existing["progress"]
 
+        # ── Surface batch/dept for the frontend's batchId fallback ───────────
+        # The frontend reads `status.batchId` as a fallback when progress.step_2
+        # hasn't been loaded yet. Provide it directly from the DB record.
+        batch_id = user_db_record.get("batch_id") or (progress.get("step_2") or {}).get("batchId")
+        dept_id  = (
+            user_db_record.get("dept_id")
+            or user_db_record.get("department_id")
+            or (progress.get("step_2") or {}).get("departmentId")
+        )
+
         return {
             "step": step,
             "role": role,
             "isComplete": step >= 5 and adaptive_completed,
             "progress": progress,
             "status": status,
+            "batchId": batch_id,
+            "deptId":  dept_id,
             "adaptiveOnboardingCompleted": adaptive_completed,
             "adaptiveOnboardingStatus": (
                 "completed"
@@ -846,7 +991,6 @@ async def get_onboarding_status(
         }
     except Exception as e:
         logger.error(f"error_fetching_onboarding_status: {e}", exc_info=True)
-        # Fail-safe: Always include the role even in errors to prevent 'undefined' UI states
         role = normalize_role(current_user.get("role")) if current_user else "student"
         return default_onboarding_state(role)
 

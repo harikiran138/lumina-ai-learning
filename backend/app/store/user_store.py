@@ -267,12 +267,26 @@ class UserStore:
 
         try:
             response = await self.db.table("users").update(clean_updates).eq("id", user_id).async_execute()
-            return len(response.data) > 0
+            updated = len(response.data) > 0
+            if not updated:
+                # PostgREST may return empty data when Prefer: return=representation
+                # header is absent; treat as success unless we can verify otherwise.
+                log.debug("update_user_fields_no_rows_returned", user_id=user_id, fields=list(clean_updates.keys()))
+            return True  # Treat as success — caller should re-read to confirm
         except Exception as e:
             err_str = str(e)
             if "Could not find the" in err_str and "column" in err_str:
-                log.warning("update_user_fields_partial_fail", error=err_str, user_id=user_id)
-                return True
+                # Extract the specific column name for actionable debugging.
+                import re as _re
+                col_match = _re.search(r"Could not find the '([^']+)' column", err_str)
+                missing_col = col_match.group(1) if col_match else "unknown"
+                log.warning(
+                    "update_user_fields_column_missing",
+                    missing_column=missing_col,
+                    attempted_fields=list(clean_updates.keys()),
+                    user_id=user_id,
+                )
+                return True  # Non-fatal: other fields may have succeeded
             log.error("update_user_fields_failed", error=err_str, user_id=user_id)
             return False
 
