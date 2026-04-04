@@ -298,6 +298,7 @@ select {
   /* overlay when `isOpen` is true (handled by Tailwind classes in the TSX).   */
 
   .lumina-sidebar {
+    position: fixed; /* always override glass-v2-gold's position: relative */
     width: 4.5rem;
     transition: width 260ms cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;

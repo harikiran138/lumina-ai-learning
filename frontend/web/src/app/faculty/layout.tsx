@@ -47,7 +47,6 @@ export default function FacultyLayout({ children }: { children: React.ReactNode 
       {/* TopNav: fixed, offset by collapsed sidebar width (6rem on lg+) */}
       <TopNav
         onMenuClick={() => setSidebarOpen((v) => !v)}
-        className="lg:left-24 transition-all duration-300"
         user={
           user
             ? { name: user.name ?? "Faculty", role: "Faculty", initial: (user.name ?? "F").charAt(0), avatar: user.avatar }
