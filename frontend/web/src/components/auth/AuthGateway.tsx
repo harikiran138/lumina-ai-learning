@@ -137,6 +137,11 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showRoleHints, setShowRoleHints] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const setUser = useAuthStore((state) => state.setUser);
   const user = useAuthStore((state) => state.user);
@@ -267,6 +272,18 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
       return;
     }
     router.push("/");
+  }
+
+  if (!hasMounted) {
+    return (
+      <div className="min-h-screen bg-[#060606] text-zinc-100 flex overflow-hidden">
+        {/* Static Placeholder to prevent hydration flicker while maintaining layout structure */}
+        <div className="hidden lg:flex lg:w-[44%] relative overflow-hidden border-r border-white/6 bg-[#0b0b0b]">
+          <div className="absolute inset-0 bg-[#060606]" />
+        </div>
+        <div className="relative flex w-full items-center justify-center bg-[#060606] px-6 py-12 lg:w-[56%]" />
+      </div>
+    );
   }
 
   return (

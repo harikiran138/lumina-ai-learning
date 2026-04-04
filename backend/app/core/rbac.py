@@ -128,4 +128,20 @@ def normalize_role(role: Any) -> str:
     if raw in alias_map:
         return alias_map[raw]
 
+    # Handle common prefixes
+    if "admin" in raw: return Role.SUPER_ADMIN.value
+    if "student" in raw: return Role.STUDENT.value
+    if "teacher" in raw or "prof" in raw: return Role.TEACHER.value
+
     return Role.STUDENT.value  # Default safe fallback
+
+
+def to_db_role(role: Any) -> str:
+    """
+    Normalizes a role string to the database enum format.
+    Standard Supabase/Postgres enums in Lumina usually expect lowercase or uppercase.
+    """
+    normalized = normalize_role(role)
+    # Based on research, the database enum 'user_role' might be case-sensitive.
+    # Defaulting to lowercase as per most common Postgres conventions if uppercase fails.
+    return normalized.lower()

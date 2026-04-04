@@ -1,0 +1,26 @@
+{
+  "1": {
+    "error": "{'message': 'invalid input value for enum user_role: \"1\"', 'code': '22P02', 'hint': None, 'details':",
+    "code": "22P02"
+  },
+  "2": {
+    "error": "{'message': 'invalid input value for enum user_role: \"2\"', 'code': '22P02', 'hint': None, 'details':",
+    "code": "22P02"
+  },
+  "3": {
+    "error": "{'message': 'invalid input value for enum user_role: \"3\"', 'code': '22P02', 'hint': None, 'details':",
+    "code": "22P02"
+  },
+  "4": {
+    "error": "{'message': 'invalid input value for enum user_role: \"4\"', 'code': '22P02', 'hint': None, 'details':",
+    "code": "22P02"
+  },
+  "5": {
+    "error": "{'message': 'invalid input value for enum user_role: \"5\"', 'code': '22P02', 'hint': None, 'details':",
+    "code": "22P02"
+  },
+  "0": {
+    "error": "{'message': 'invalid input value for enum user_role: \"0\"', 'code': '22P02', 'hint': None, 'details':",
+    "code": "22P02"
+  }
+}
