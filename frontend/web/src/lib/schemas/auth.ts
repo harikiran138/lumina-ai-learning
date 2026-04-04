@@ -16,7 +16,7 @@ export const registerSchema = z
       .regex(/[0-9]/, 'Must contain at least one number'),
     confirmPassword: z.string(),
     role: z
-      .enum(['student', 'teacher', 'admin', 'parent', 'mentor', 'counselor', 'researcher', 'content_creator'])
+      .enum(['student', 'teacher', 'faculty', 'parent', 'mentor', 'peer_tutor', 'researcher'])
       .optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {

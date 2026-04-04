@@ -156,6 +156,46 @@ async function parseJsonSafe(res: Response): Promise<any> {
     }
 }
 
+function formatApiIssue(issue: any): string | null {
+  if (!issue) return null;
+  if (typeof issue === "string") return issue;
+
+  const rawMessage = issue?.msg || issue?.message || issue?.detail;
+  if (typeof rawMessage !== "string" || !rawMessage.trim()) return null;
+
+  return rawMessage.replace(/^Value error,\s*/i, "").trim();
+}
+
+function extractApiErrorMessage(payload: any, fallback: string): string {
+  if (!payload) return fallback;
+  if (typeof payload === "string" && payload.trim()) return payload;
+
+  const directMessage =
+    (typeof payload?.detail === "string" && payload.detail) ||
+    (typeof payload?.message === "string" && payload.message) ||
+    (typeof payload?.error === "string" && payload.error);
+
+  if (directMessage?.trim()) {
+    return directMessage.trim();
+  }
+
+  const issues = Array.isArray(payload?.detail)
+    ? payload.detail
+    : Array.isArray(payload?.errors)
+      ? payload.errors
+      : [];
+
+  const formattedIssues = issues
+    .map((issue: any) => formatApiIssue(issue))
+    .filter((message: string | null): message is string => Boolean(message));
+
+  if (formattedIssues.length > 0) {
+    return formattedIssues.join(" ");
+  }
+
+  return fallback;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -658,7 +698,7 @@ export class RealAPI {
 
     if (!res.ok) {
       const error = await parseJsonSafe(res);
-      throw new Error(error?.detail || `Authentication failed (${res.status})`);
+      throw new Error(extractApiErrorMessage(error, `Authentication failed (${res.status})`));
     }
     const tokenData = await parseJsonSafe(res);
     if (tokenData.forcePasswordChange) {
@@ -729,7 +769,10 @@ export class RealAPI {
         role: userData.role || "student",
       }),
     });
-    if (!res.ok) { const e = await parseJsonSafe(res); throw new Error(e?.detail || "Registration failed"); }
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(extractApiErrorMessage(error, "Registration failed"));
+    }
     return this.login(userData.email!, userData.password);
   }
 
