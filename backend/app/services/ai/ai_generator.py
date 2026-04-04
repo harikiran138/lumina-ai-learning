@@ -1,6 +1,7 @@
 import json
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
@@ -42,13 +43,12 @@ Ensure the tone is professional, engaging, and clear.
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             print("WARNING: GEMINI_API_KEY not found. Blueprint generator will use mock data.")
-            self.model = None
+            self.client = None
         else:
-            genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.client = genai.Client(api_key=api_key)
 
     async def generate(self, raw_text: str) -> dict:
-        if not self.model:
+        if not self.client:
             return self._generate_mock(raw_text)
         
         prompt = f"""{self.SYSTEM_PROMPT}
@@ -76,7 +76,13 @@ IMPORTANT: You MUST return a valid JSON object following this schema:
 }}
 """
         try:
-            response = self.model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+            response = self.client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type='application/json'
+                )
+            )
             return json.loads(response.text)
         except Exception as e:
             print(f"Gemini Blueprint Error: {str(e)}")

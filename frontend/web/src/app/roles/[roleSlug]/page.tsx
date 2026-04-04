@@ -11,7 +11,13 @@ import Footer from "@/components/layout/Footer";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-export async function generateMetadata({ params }: { params: Promise<{ roleSlug: string }> }) {
+export async function generateMetadata({ 
+  params, 
+  searchParams 
+}: { 
+  params: Promise<{ roleSlug: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const { roleSlug } = await params;
   const role = roleRegistry[roleSlug];
   if (!role) return { title: "Role Not Found | Lumina AI" };
@@ -22,7 +28,13 @@ export async function generateMetadata({ params }: { params: Promise<{ roleSlug:
   };
 }
 
-export default async function RolePage({ params }: { params: Promise<{ roleSlug: string }> }) {
+export default async function RolePage({ 
+  params, 
+  searchParams 
+}: { 
+  params: Promise<{ roleSlug: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const { roleSlug } = await params;
   const role = roleRegistry[roleSlug];
 

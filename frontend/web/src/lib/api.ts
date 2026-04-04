@@ -723,6 +723,10 @@ export class RealAPI {
       throw new Error(extractApiErrorMessage(error, `Authentication failed (${res.status})`));
     }
     const tokenData = await parseJsonSafe(res);
+    if (!tokenData) {
+      throw new Error(`Authentication server returned an invalid response (${res.status}). Please try again later.`);
+    }
+
     if (tokenData.forcePasswordChange) {
       if (typeof window !== "undefined") {
         sessionStorage.setItem("temp_token", tokenData.tempToken);
