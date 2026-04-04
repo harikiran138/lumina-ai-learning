@@ -357,6 +357,236 @@ export class RealAPI {
     }
   }
 
+  private extractNumericStat(stats: any[], label: string): number {
+    const match = (stats || []).find((item) => item?.label === label);
+    const rawValue = match?.value;
+    if (typeof rawValue === "number") return rawValue;
+    if (typeof rawValue === "string") {
+      const parsed = Number.parseFloat(rawValue.replace(/[^\d.-]/g, ""));
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  }
+
+  private normalizeTeacherDashboard(
+    dashboard: any,
+    courses: any[],
+    assignments: any[],
+    interventions: any[],
+    aiQueue: any[],
+  ): any {
+    const stats = dashboard?.stats || [];
+    const today = new Date();
+
+    const recentAssignments = (assignments || []).map((assignment: any) => {
+      const dueDate = assignment?.due_date || null;
+      const parsedDue = dueDate ? new Date(dueDate) : null;
+      const daysUntilDue =
+        parsedDue && !Number.isNaN(parsedDue.getTime())
+          ? Math.ceil((parsedDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+          : null;
+      const pendingGrading = Number(assignment?.submission_count || 0);
+
+      return {
+        id: assignment?.id,
+        title: assignment?.title || "Untitled Assignment",
+        courseName: assignment?.course_name || "Course",
+        description: assignment?.description || "",
+        dueDate,
+        daysUntilDue,
+        submissionCount: Number(assignment?.submission_count || 0),
+        pendingGrading,
+        status:
+          daysUntilDue == null
+            ? "scheduled"
+            : daysUntilDue < 0
+              ? "overdue"
+              : daysUntilDue <= 2
+                ? "due-soon"
+                : "scheduled",
+        href: `/faculty/assignments/${assignment?.id}/submissions`,
+      };
+    });
+
+    const assignmentsByCourse = new Map<string, any[]>();
+    for (const assignment of recentAssignments) {
+      const list = assignmentsByCourse.get(String((assignments || []).find((item: any) => item?.id === assignment.id)?.course_id || "")) || [];
+      list.push(assignment);
+      assignmentsByCourse.set(
+        String((assignments || []).find((item: any) => item?.id === assignment.id)?.course_id || ""),
+        list,
+      );
+    }
+
+    const courseCards = (courses || []).map((course: any) => {
+      const courseAssignments = assignmentsByCourse.get(String(course?.id)) || [];
+      const pendingGrading = courseAssignments.reduce(
+        (sum: number, item: any) => sum + Number(item?.pendingGrading || 0),
+        0,
+      );
+
+      return {
+        id: course?.id,
+        title: course?.title || course?.name || "Untitled Course",
+        code: course?.code || "",
+        description: course?.description || "",
+        status: course?.status || "active",
+        studentCount: Number(course?.students || 0),
+        assignmentCount: courseAssignments.length,
+        pendingGrading,
+        averageProgress: 0,
+        averageMastery: this.extractNumericStat(stats, "Avg. Performance"),
+        moduleCount: 0,
+        nextDeadline: courseAssignments
+          .map((item: any) => item?.dueDate)
+          .filter(Boolean)
+          .sort()[0] || null,
+        lastActivity: null,
+        image: course?.image || "",
+        href: `/faculty/courses/${course?.id}`,
+        attention: pendingGrading > 0 ? "watch" : "healthy",
+      };
+    });
+
+    const pendingGrading = recentAssignments.reduce(
+      (sum: number, item: any) => sum + Number(item?.pendingGrading || 0),
+      0,
+    );
+    const upcomingDeadlines = recentAssignments.filter(
+      (item: any) => item?.daysUntilDue != null && item.daysUntilDue >= 0 && item.daysUntilDue <= 7,
+    ).length;
+
+    const priorityItems = [
+      ...recentAssignments
+        .filter((item: any) => Number(item?.pendingGrading || 0) > 0)
+        .slice(0, 3)
+        .map((item: any) => ({
+          id: `grading-${item.id}`,
+          kind: "grading",
+          tone: "watch",
+          title: item.title,
+          detail: `${item.pendingGrading} submission(s) waiting for review`,
+          href: item.href,
+        })),
+      ...((aiQueue || []).slice(0, 2).map((item: any, index: number) => ({
+        id: item?.id || item?.queue_id || `ai-${index}`,
+        kind: "deadline",
+        tone: "urgent",
+        title: item?.question_text || item?.title || "AI answer awaiting review",
+        detail: item?.student_question || item?.detail || "Approve or edit before the student sees it.",
+        href: "/faculty/verification-queue",
+      })) as any[]),
+    ];
+
+    const interventionQueue = (interventions || []).map((item: any) => ({
+      id: item?.id,
+      studentId: item?.user_id || item?.student_id || "",
+      studentName: item?.student_name || item?.studentName || "Student",
+      riskLevel: item?.risk_level || item?.riskLevel || "medium",
+      topicId: item?.topic_id || item?.topicId || null,
+      priority: item?.priority || "medium",
+      status: item?.status || "open",
+      recommendedAction: item?.recommended_action || item?.recommendedAction || "Review learner progress",
+      reason: item?.reason || "Intervention recommended",
+      confidence: Number(item?.confidence || 0),
+      evidence: item?.evidence || {},
+      suggestedMessage: item?.suggested_message || item?.suggestedMessage,
+      misconceptions: item?.misconceptions || [],
+      weakTopics: item?.weak_topics || item?.weakTopics || [],
+    }));
+
+    return {
+      summary: {
+        totalStudents: this.extractNumericStat(stats, "Active Students"),
+        activeCourses: courseCards.length,
+        avgMastery: this.extractNumericStat(stats, "Avg. Performance"),
+        pendingGrading,
+        atRiskStudents: interventionQueue.length,
+        upcomingDeadlines,
+        pendingAIVerifications: (aiQueue || []).length,
+      },
+      courses: courseCards,
+      recentAssignments,
+      studentMomentum: [],
+      priorityItems,
+      weeklySnapshot: {
+        publishedCourses: courseCards.filter((course: any) => course.status !== "draft").length,
+        draftCourses: courseCards.filter((course: any) => course.status === "draft").length,
+        assignmentsCreated: recentAssignments.length,
+        submissionsReceived: recentAssignments.reduce(
+          (sum: number, item: any) => sum + Number(item?.submissionCount || 0),
+          0,
+        ),
+      },
+      interventionQueue,
+      conceptHeatmap: [],
+      supportClusters: [],
+      raw: dashboard,
+    };
+  }
+
+  private normalizeHodDashboard(
+    dashboard: any,
+    teachers: any[],
+    programs: any[],
+    requests: any[],
+  ): any {
+    const stats = dashboard?.stats || [];
+    return {
+      department: dashboard?.meta?.department || { id: "", department_name: "Department", code: "" },
+      summary: {
+        totalTeachers: this.extractNumericStat(stats, "Dep. Faculty"),
+        totalStudents: this.extractNumericStat(stats, "Total Students"),
+        totalPrograms: this.extractNumericStat(stats, "Programs"),
+        pendingRequests: this.extractNumericStat(stats, "Pending Requests"),
+      },
+      teachers: (teachers || []).map((teacher: any) => ({
+        id: teacher?.id,
+        name: teacher?.full_name || teacher?.name || teacher?.email || "Faculty",
+        email: teacher?.email || "",
+        status: teacher?.status || "active",
+      })),
+      programs: (programs || []).map((program: any) => ({
+        id: program?.id,
+        name: program?.program_name || program?.name || "Program",
+        code: program?.code || program?.program_code || "",
+        level: program?.level || program?.degree || "",
+      })),
+      requests: (requests || []).map((request: any) => ({
+        id: request?.id,
+        teacher_name: request?.teacher_name || request?.teacherName || "Faculty",
+        program_name: request?.program_name || request?.programName || "Program",
+        semester_number: request?.semester_number || request?.semesterNumber || 0,
+        course_name: request?.course_name || request?.courseName || "Course",
+        status: request?.status || "PENDING_HOD",
+      })),
+      raw: dashboard,
+    };
+  }
+
+  private async getTeacherDashboardData(): Promise<any> {
+    const [dashboard, courses, assignments, interventions, aiQueue] = await Promise.all([
+      this.fetchJsonOrDefault("/api/teacher/dashboard", {}),
+      this.getTeacherCourses().catch(() => []),
+      this.getAssignments().catch(() => []),
+      this.fetchJsonOrDefault("/api/teacher/interventions/queue", []),
+      this.fetchJsonOrDefault("/api/faculty/ai-queue", []),
+    ]);
+
+    return this.normalizeTeacherDashboard(dashboard, courses, assignments, interventions, aiQueue);
+  }
+
+  private async getHodDashboardData(): Promise<any> {
+    const [dashboard, teachers, programs, requests] = await Promise.all([
+      this.fetchJsonOrDefault("/api/hod/dashboard", {}),
+      this.fetchJsonOrDefault("/api/hod/teachers", []),
+      this.fetchJsonOrDefault("/api/hod/programs", []),
+      this.fetchJsonOrDefault("/api/hod/requests", []),
+    ]);
+
+    return this.normalizeHodDashboard(dashboard, teachers, programs, requests);
+  }
+
   // --- Auth APIs ---
   async login(
     paramsOrIdentifier: {
@@ -767,6 +997,12 @@ export class RealAPI {
 
   // --- Dashboard ---
   async getDashboardData(userRole: string): Promise<any> {
+    if (userRole === "teacher" || userRole === "faculty") {
+      return this.getTeacherDashboardData();
+    }
+    if (userRole === "hod") {
+      return this.getHodDashboardData();
+    }
     const roleMap: Record<string, string> = {
       student: "/api/student/dashboard",
       teacher: "/api/teacher/dashboard",
@@ -1440,7 +1676,30 @@ export class RealAPI {
   async getPeerTutorTraining(..._args: any[]): Promise<any> { return []; }
   async getCounselorCases(..._args: any[]): Promise<any> { return []; }
   async logSafeguardingEvent(..._args: any[]): Promise<any> { return { success: true }; }
-  async updateIntervention(..._args: any[]): Promise<any> { return { success: true }; }
+  async updateIntervention(interventionId: string, data: any): Promise<any> {
+    const tryPaths = [
+      `/api/teacher/interventions/${interventionId}`,
+      `/api/faculty/interventions/${interventionId}`,
+    ];
+
+    let lastError = "Failed to update intervention";
+    for (const path of tryPaths) {
+      const res = await this.fetchAuthorized(path, {
+        method: "PATCH",
+        body: JSON.stringify(data || {}),
+      });
+      if (res.ok) {
+        return await parseJsonSafe(res) ?? {};
+      }
+      const parsed = await parseJsonSafe(res);
+      lastError = parsed?.detail || lastError;
+      if (res.status !== 404) {
+        throw new Error(lastError);
+      }
+    }
+
+    throw new Error(lastError);
+  }
   async getRiskAlerts(..._args: any[]): Promise<any> { return []; }
   async getMisconceptionClusters(..._args: any[]): Promise<any> { return []; }
   async getABTestPerformance(..._args: any[]): Promise<any> { return {}; }

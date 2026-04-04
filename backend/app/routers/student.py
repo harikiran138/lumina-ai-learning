@@ -1270,33 +1270,35 @@ async def get_student_onboarding_options(current_user: dict = Depends(get_curren
     )
     selected_subject_ids = [row["subject_id"] for row in selected_subjects if row.get("subject_id")]
 
-    enrollment = (
+    _enroll_res = (
         client.table("student_enrollments")
         .select("*")
         .eq("student_id", student_id)
         .maybe_single()
         .execute()
-        .data
     )
+    enrollment = _enroll_res.data if _enroll_res is not None else None
 
-    learner_profile = (
+    _profile_res = (
         client.table("learner_profiles")
         .select("*")
         .eq("user_id", student_id)
         .maybe_single()
         .execute()
-        .data
     )
+    learner_profile = _profile_res.data if _profile_res is not None else None
 
-    mastery_rows = (
-        client.table("skill_mastery")
-        .select("course_id, mastery_score, skill_name")
-        .eq("user_id", student_id)
-        .eq("skill_name", "initial_self_assessment")
-        .execute()
-        .data
-        or []
-    )
+    try:
+        _mastery_res = (
+            client.table("skill_mastery")
+            .select("course_id, mastery_score, skill_name")
+            .eq("user_id", student_id)
+            .eq("skill_name", "initial_self_assessment")
+            .execute()
+        )
+        mastery_rows = (_mastery_res.data if _mastery_res is not None else None) or []
+    except Exception:
+        mastery_rows = []
     skill_levels = {
         str(row["course_id"]): float(row.get("mastery_score") or 0)
         for row in mastery_rows
@@ -1690,35 +1692,73 @@ async def list_student_assignments(current_user: dict = Depends(get_current_user
     section = current_user.get("section")
 
     db = get_scoped_db(current_user)
-    courses_res = db.table("courses").select("id,title,course_name,name").eq("department_id", dept_id).execute() if dept_id else None
-    course_ids = [c["id"] for c in (courses_res.data or [])] if courses_res else []
-    if not course_ids:
-        return []
 
-    assignments_res = db.table("assignments").select("*").in_("course_id", course_ids).execute()
-    assignments = assignments_res.data or []
+    courses = []
+    course_ids = set()
+    if dept_id:
+        courses_res = db.table("courses").select("id,title,course_name,name").eq("department_id", dept_id).execute()
+        courses = courses_res.data or []
+        course_ids.update(str(course["id"]) for course in courses if course.get("id"))
 
     submissions_res = db.table("assignment_submissions").select("*").eq("student_id", current_user.get("id")).execute()
     submissions = submissions_res.data or []
 
     submission_map = {}
+    submitted_assignment_ids = set()
     for s in submissions:
         key = s.get("assignment_id")
         if key:
-            submission_map[key] = s
+            normalized_score = s.get("marks")
+            if normalized_score is None:
+                normalized_score = s.get("grade")
+            if normalized_score is None:
+                normalized_score = s.get("score")
+            submission_map[key] = {
+                **s,
+                "content_url": s.get("content_url") or s.get("file_path"),
+                "score": normalized_score,
+            }
+            submitted_assignment_ids.add(str(key))
 
-    course_lookup = {c["id"]: c for c in (courses_res.data or [])}
+    assignments = []
+    if course_ids:
+        assignments_res = db.table("assignments").select("*").in_("course_id", list(course_ids)).execute()
+        assignments.extend(assignments_res.data or [])
+
+    existing_assignment_ids = {str(assignment.get("id")) for assignment in assignments if assignment.get("id")}
+    missing_assignment_ids = list(submitted_assignment_ids - existing_assignment_ids)
+    if missing_assignment_ids:
+        submitted_assignments_res = db.table("assignments").select("*").in_("id", missing_assignment_ids).execute()
+        assignments.extend(submitted_assignments_res.data or [])
+
+    assignment_course_ids = {
+        str(assignment.get("course_id"))
+        for assignment in assignments
+        if assignment.get("course_id")
+    }
+    missing_course_ids = list(assignment_course_ids - course_ids)
+    if missing_course_ids:
+        extra_courses_res = db.table("courses").select("id,title,course_name,name").in_("id", missing_course_ids).execute()
+        extra_courses = extra_courses_res.data or []
+        courses.extend(extra_courses)
+        course_ids.update(str(course["id"]) for course in extra_courses if course.get("id"))
+
+    if not assignments:
+        return []
+
+    course_lookup = {str(c["id"]): c for c in courses if c.get("id")}
     results = []
     for assignment in assignments:
         if assignment.get("batch_id") and batch_id and assignment.get("batch_id") != batch_id:
             continue
         if assignment.get("section") and section and assignment.get("section") != section:
             continue
-        course = course_lookup.get(assignment.get("course_id"), {})
+        course = course_lookup.get(str(assignment.get("course_id")), {})
         submission = submission_map.get(assignment.get("id"))
         status_value = "pending"
+        normalized_score = submission.get("score") if submission else None
         if submission:
-            status_value = "graded" if submission.get("marks") or submission.get("score") else "submitted"
+            status_value = "graded" if normalized_score is not None else "submitted"
         elif assignment.get("due_date") and assignment.get("due_date") < datetime.now(timezone.utc).isoformat():
             status_value = "overdue"
 
@@ -1728,6 +1768,7 @@ async def list_student_assignments(current_user: dict = Depends(get_current_user
         results.append({
             **assignment,
             "courseName": course.get("title") or course.get("course_name") or course.get("name"),
+            "course_name": course.get("title") or course.get("course_name") or course.get("name"),
             "submitted": bool(submission),
             "submission": submission,
             "status": status_value,

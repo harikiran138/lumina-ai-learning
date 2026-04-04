@@ -3,6 +3,7 @@ from typing import Optional
 from app.store.assignment_store import AssignmentStore
 from app.store.course_store import CourseStore
 from app.store.personalization_store import PersonalizationStore
+from app.store.user_store import UserStore
 from pydantic import BaseModel
 import os
 import uuid
@@ -194,7 +195,38 @@ async def get_assignment_submissions(
     """
     Get all submissions for a specific assignment.
     """
-    return await store.get_submissions(assignment_id)
+    submissions = await store.get_submissions(assignment_id)
+    if not submissions:
+        return []
+
+    user_store = UserStore()
+    student_lookup = {}
+
+    for submission in submissions:
+        student_id = submission.get("student_id")
+        if not student_id or student_id in student_lookup:
+            continue
+        student_lookup[student_id] = await user_store.get_user_by_id(student_id)
+
+    normalized = []
+    for submission in submissions:
+        student = student_lookup.get(submission.get("student_id")) or {}
+        score = submission.get("marks")
+        if score is None:
+            score = submission.get("grade")
+        if score is None:
+            score = submission.get("score")
+
+        normalized.append(
+            {
+                **submission,
+                "content_url": submission.get("content_url") or submission.get("file_path"),
+                "score": score,
+                "student_name": student.get("full_name") or student.get("name") or student.get("email") or "Student",
+            }
+        )
+
+    return normalized
 
 
 @router.get("/{assignment_id}/analytics")

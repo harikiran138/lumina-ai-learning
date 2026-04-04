@@ -122,7 +122,7 @@ function SubmissionsContent({ assignmentId }: { assignmentId: string }) {
                 key={sub.id}
                 onClick={() => {
                   setGradingId(sub.id);
-                  setGradeValue(sub.score || 0);
+                  setGradeValue(sub.score ?? sub.marks ?? sub.grade ?? 0);
                   setFeedback(sub.feedback || "");
                 }}
                 className={`w-full text-left p-4 rounded-2xl border transition-all ${
@@ -133,20 +133,20 @@ function SubmissionsContent({ assignmentId }: { assignmentId: string }) {
               >
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-black font-bold">
-                    {sub.student_name?.charAt(0) || "S"}
+                    {(sub.student_name || sub.studentName || "Student").charAt(0)}
                   </div>
                   <div>
-                    <div className="text-white font-semibold">{sub.student_name}</div>
+                    <div className="text-white font-semibold">{sub.student_name || sub.studentName || "Student"}</div>
                     <div className="text-xs text-gray-400 flex items-center gap-1">
                       <Clock size={12} />
                       {new Date(sub.submitted_at).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
-                {sub.score !== null ? (
+                {(sub.score ?? sub.marks ?? sub.grade) !== null && (sub.score ?? sub.marks ?? sub.grade) !== undefined ? (
                   <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
                     <Trophy size={14} />
-                    Graded: {sub.score}/100
+                    Graded: {sub.score ?? sub.marks ?? sub.grade}/100
                   </div>
                 ) : (
                   <div className="text-amber-500 text-sm font-medium flex items-center gap-2">
@@ -171,7 +171,7 @@ function SubmissionsContent({ assignmentId }: { assignmentId: string }) {
                           <h2 className="text-2xl font-bold text-white mb-1">
                             Review Submission
                           </h2>
-                          <p className="text-gray-400">Student: {sub.student_name}</p>
+                          <p className="text-gray-400">Student: {sub.student_name || sub.studentName || "Student"}</p>
                         </div>
                         <a
                           href={sub.content_url}
