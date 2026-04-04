@@ -16,7 +16,7 @@ export default function TopNav({
   return (
     <header
       className={cn(
-        "fixed top-0 right-0 left-0 h-16 glass-v2 border-b border-white/5 z-30 px-4 sm:px-6 lg:px-6 flex items-center justify-between transition-all duration-300 ease-in-out",
+        "fixed top-0 right-0 left-20 h-16 border-b border-white/5 bg-black/40 backdrop-blur-xl z-30 px-6 flex items-center justify-between transition-all duration-300",
         className,
       )}
     >

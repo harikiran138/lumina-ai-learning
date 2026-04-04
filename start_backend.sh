@@ -8,19 +8,42 @@ echo "🐍 Starting Lumina Backend..."
 # Navigate to backend directory
 cd "$(dirname "$0")/backend"
 
-# Activate virtual environment if it exists
-if [ -d ".venv" ]; then
-    source .venv/bin/activate
-elif [ -d "../.venv" ]; then
-    source ../.venv/bin/activate
+# Ensure we use the correct Python version (3.11+)
+PYTHON_311="/opt/homebrew/bin/python3.11"
+if [ -f "$PYTHON_311" ]; then
+    PYTHON_CMD="$PYTHON_311"
 else
-    echo "⚠️  No virtual environment found. Using system Python."
+    PYTHON_CMD="python3"
+fi
+
+# Activate virtual environment if it exists, or create if Python version mismatch
+if [ -d ".venv" ]; then
+    VENV_PYTHON_VERSION=$($PYTHON_CMD -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+    ACTUAL_VENV_VERSION=$(.venv/bin/python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || echo "0.0")
+    
+    if [ "$VENV_PYTHON_VERSION" != "$ACTUAL_VENV_VERSION" ]; then
+        echo "⚠️  Virtual environment Python mismatch. Recreating..."
+        rm -rf .venv
+        $PYTHON_CMD -m venv .venv
+        source .venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+    else
+        source .venv/bin/activate
+    fi
+else
+    echo "⚠️  No virtual environment found. Creating one with $PYTHON_CMD..."
+    $PYTHON_CMD -m venv .venv
+    source .venv/bin/activate
+    pip install --upgrade pip
+    pip install -r requirements.txt
 fi
 
 # Load environment variables
 if [ -f "../.env" ]; then
     export $(grep -v '^#' ../.env | xargs)
 fi
+
 
 # Set development mode
 export ENVIRONMENT=development

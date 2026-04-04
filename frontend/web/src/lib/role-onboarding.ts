@@ -4,6 +4,7 @@ export type SupportedRoleOnboardingRole =
   | "parent"
   | "mentor"
   | "peer_tutor"
+  | "counselor"
   | "researcher";
 
 export type SupportedRoleStep = 1 | 2 | 3 | 4 | 5;
@@ -332,6 +333,7 @@ const CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
   },
 
   researcher: {
+    // ... (existing researcher config)
     label: "Researcher Onboarding",
     intro:
       "Set up your researcher profile to collaborate, publish, and access the Lumina research ecosystem.",
@@ -384,6 +386,54 @@ const CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
         description: "Confirm your researcher profile.",
         fields: [
           { key: "agreedToTerms", label: "I agree to the research ethics guidelines", type: "boolean", helper: "Confirm that you accept Lumina's research ethics and data handling policy.", required: true },
+        ],
+      },
+    ],
+  },
+  counselor: {
+    label: "Counselor Onboarding",
+    intro: "Complete your counselor profile to assist students with their wellbeing and academic journey.",
+    completionLabel: "Finish setup",
+    steps: [
+      {
+        id: 1,
+        title: "Personal Details",
+        description: "Tell us about your background and counseling experience.",
+        fields: [
+          { key: "fullName", label: "Full name", type: "text", helper: "Your professional name.", placeholder: "Dr. Sam Wilson", required: true },
+          { key: "specialisations", label: "Specialisations", type: "array", helper: "List your areas of expertise, one per line.", placeholder: "Academic Counseling\nMental Health" },
+        ],
+      },
+      {
+        id: 2,
+        title: "Bio & Approach",
+        description: "Describe your counseling philosophy.",
+        fields: [
+          { key: "bio", label: "Counselor bio", type: "textarea", helper: "A brief description of your approach.", placeholder: "I help students navigate..." },
+        ],
+      },
+      {
+        id: 3,
+        title: "Availability",
+        description: "Set your typical counseling hours.",
+        fields: [
+          { key: "hoursPerWeek", label: "Hours available per week", type: "number", helper: "Approximate hours for student sessions.", placeholder: "20" },
+        ],
+      },
+      {
+        id: 4,
+        title: "Platform Preferences",
+        description: "Configure how you work within Lumina.",
+        fields: [
+          { key: "notifyOnDirectMessage", label: "Notify on student messages", type: "boolean", helper: "Get an alert when a student reaches out to you." },
+        ],
+      },
+      {
+        id: 5,
+        title: "Final Review",
+        description: "Review and confirm your profile.",
+        fields: [
+          { key: "agreedToTerms", label: "I agree to the professional conduct policy", type: "boolean", helper: "Confirm you accept the institutional counseling guidelines.", required: true },
         ],
       },
     ],

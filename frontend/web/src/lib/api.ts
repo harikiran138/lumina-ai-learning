@@ -1132,6 +1132,11 @@ export class RealAPI {
       }
       const data = await parseJsonSafe(res);
       
+      // Update session token if provided so middleware/JWT checks reflect status
+      if (data?.accessToken) {
+        this.persistToken(data.accessToken);
+      }
+      
       // Refresh user so subsequent state checks see onboardingCompleted: true
       await this.getCurrentUser(true);
       

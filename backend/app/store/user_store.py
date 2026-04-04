@@ -340,8 +340,9 @@ class UserStore:
 
     async def update_user_fields(self, user_id: str, updates: dict) -> bool:
         from datetime import datetime
-        restricted = {"id", "password", "password_hash", "email"}
+        restricted = {"id", "password", "email"}
         valid_columns = {
+            "password_hash",
             "name",
             "full_name",
             "first_name",
@@ -410,8 +411,9 @@ class UserStore:
 
     def update_user_fields_sync(self, user_id: str, updates: dict) -> bool:
         from datetime import datetime
-        restricted = {"id", "password", "password_hash", "email"}
+        restricted = {"id", "password", "email"}
         valid_columns = {
+            "password_hash",
             "name",
             "full_name",
             "first_name",

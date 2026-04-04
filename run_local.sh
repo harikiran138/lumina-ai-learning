@@ -14,12 +14,15 @@ NC='\033[0m' # No Color
 
 PYTHON_BIN="${PYTHON_BIN:-}"
 if [ -z "$PYTHON_BIN" ]; then
-    if command -v python3.11 >/dev/null 2>&1; then
+    if [ -f "/opt/homebrew/bin/python3.11" ]; then
+        PYTHON_BIN="/opt/homebrew/bin/python3.11"
+    elif command -v python3.11 >/dev/null 2>&1; then
         PYTHON_BIN="python3.11"
     elif command -v python3 >/dev/null 2>&1; then
         PYTHON_BIN="python3"
     fi
 fi
+
 
 # Check if .env exists
 if [ ! -f .env ]; then

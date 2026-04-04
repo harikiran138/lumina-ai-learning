@@ -15,9 +15,9 @@ async def complete_demo():
         # Phase 2: Login
         print("\n--- Phase 2: Authentication ---")
         users = {
-            "admin": {"email": "admin@lumina.com", "password": "Lumina@138800"},
+            "admin": {"email": "superadmin@lumina.com", "password": "Lumina@138800"},
             "teacher": {"email": "teacher@lumina.com", "password": "Lumina@138800"},
-            "student": {"email": "student@lumina.com", "password": "Lumina@138800"},
+            "student": {"email": "student_22nu1a0519@lumina.com", "password": "Lumina@138800"},
         }
         tokens = {}
         for role, creds in users.items():
