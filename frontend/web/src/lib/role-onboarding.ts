@@ -405,15 +405,29 @@ export function validateRoleStep(
   role: SupportedRoleOnboardingRole,
   step: SupportedRoleStep,
   values: Record<string, any>,
-): { success: boolean; data?: Record<string, any>; errors?: Record<string, string> } {
+): { success: boolean; data?: Record<string, any>; errors?: Record<string, string>; error?: { flatten: () => { fieldErrors: Record<string, string[]> } } } {
   const config = CONFIGS[role];
   if (!config) {
-    return { success: false, errors: { _form: "Unknown role" } };
+    const errors = { _form: "Unknown role" };
+    return {
+      success: false,
+      errors,
+      error: {
+        flatten: () => ({ fieldErrors: Object.fromEntries(Object.entries(errors).map(([key, value]) => [key, [value]])) }),
+      },
+    };
   }
 
   const stepConfig = config.steps.find((s) => s.id === step);
   if (!stepConfig) {
-    return { success: false, errors: { _form: "Unknown step" } };
+    const errors = { _form: "Unknown step" };
+    return {
+      success: false,
+      errors,
+      error: {
+        flatten: () => ({ fieldErrors: Object.fromEntries(Object.entries(errors).map(([key, value]) => [key, [value]])) }),
+      },
+    };
   }
 
   const errors: Record<string, string> = {};
@@ -440,8 +454,30 @@ export function validateRoleStep(
     data[field.key] = value ?? (field.type === "boolean" ? false : field.type === "array" || field.type === "multiselect" ? [] : "");
   }
 
+  if (role === "faculty" && step === 1 && !String(values.collegeId ?? "").trim()) {
+    errors.collegeId = "Institution ID is required.";
+  }
+
+  if (role === "parent" && step === 2 && (!Array.isArray(values.studentIds) || values.studentIds.length === 0)) {
+    errors.studentIds = "At least one linked student is required.";
+  }
+
+  if (role === "peer_tutor" && step === 1 && !String(values.studentId ?? "").trim()) {
+    errors.studentId = "Student ID is required.";
+  }
+
+  if (role === "researcher" && step === 2 && values.dataAccessLevel === "full" && values.ethicsApproval !== true) {
+    errors.ethicsApproval = "Ethics approval is required for full data access.";
+  }
+
   if (Object.keys(errors).length > 0) {
-    return { success: false, errors };
+    return {
+      success: false,
+      errors,
+      error: {
+        flatten: () => ({ fieldErrors: Object.fromEntries(Object.entries(errors).map(([key, value]) => [key, [value]])) }),
+      },
+    };
   }
 
   return { success: true, data };

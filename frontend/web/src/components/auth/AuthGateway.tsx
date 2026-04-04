@@ -27,6 +27,7 @@ import {
   Crown,
 } from "lucide-react";
 import { api, type User as AuthUser } from "@/lib/api";
+import { registerSchema } from "@/lib/schemas/auth";
 import { getRoleHome, ROLE_HOME_ROUTES } from "@/lib/role-routing";
 import { useAuthStore } from "@/store/useAuthStore";
 
@@ -150,10 +151,10 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
   }, [identifier, password]);
 
   const signupValidationError = useMemo(() => {
-    if (!signupForm.name.trim()) return "Enter your full name.";
-    if (!isValidEmail(signupForm.email)) return "Enter a valid email address.";
-    if (signupForm.password.length < 8) return "Password must be at least 8 characters.";
-    if (signupForm.password !== signupForm.confirmPassword) return "Passwords do not match.";
+    const result = registerSchema.safeParse(signupForm);
+    if (!result.success) {
+      return result.error.issues[0]?.message || "Check the information and try again.";
+    }
     return null;
   }, [signupForm]);
 

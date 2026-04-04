@@ -189,16 +189,39 @@ async def _persist_progress(
     current_step = int(user_record.get("onboarding_step") or 0)
     next_step = 5 if completed else max(current_step, target_step)
 
-    updates = {
-        **(user_updates or {}),
+    # ── Critical write: onboarding_step must ALWAYS be committed ──────────────
+    # We keep this in its own dedicated update so it can never be silently
+    # swallowed by a "column not found" error that might occur when profile
+    # columns (first_name, dob, gender …) are missing from the DB schema.
+    critical: Dict[str, Any] = {
         "onboarding_step": next_step,
+        "updated_at": datetime.utcnow().isoformat(),
     }
     if completed:
-        updates["onboarding_completed"] = True
+        critical["onboarding_completed"] = True
 
-    updated = await UserStore(db=db).update_user_fields(user_id, updates)
-    if not updated:
-        raise HTTPException(status_code=500, detail="Failed to persist onboarding user fields")
+    step_result = await db.update("users", critical, {"id": user_id})
+    if step_result is None:
+        # PostgREST may return no rows when Prefer: return=representation is
+        # absent. Verify the write actually landed by re-reading the record.
+        verify = await _get_user_record(user_id, db)
+        if int(verify.get("onboarding_step") or 0) < next_step:
+            logger.error(
+                "onboarding_step_persist_failed",
+                user_id=user_id, target_step=target_step, next_step=next_step,
+            )
+            raise HTTPException(status_code=500, detail="Failed to persist onboarding step")
+
+    logger.info(
+        "onboarding_step_persisted",
+        user_id=user_id, step=next_step, completed=completed,
+    )
+
+    # ── Best-effort write: richer profile fields ───────────────────────────────
+    # These may fail silently if a given column does not yet exist in this
+    # deployment's schema – that is acceptable because they are not gating.
+    if user_updates:
+        await UserStore(db=db).update_user_fields(user_id, user_updates)
 
     existing_record = await db.fetch_one("user_data", {"user_id": user_id})
     progress = (existing_record or {}).get("progress") or {}
@@ -218,7 +241,15 @@ async def _persist_progress(
 async def _require_step_access(user_id: str, target_step: int, db: Any) -> Dict[str, Any]:
     user_record = await _get_user_record(user_id, db)
     current_step = int(user_record.get("onboarding_step") or 0)
+    logger.debug(
+        "require_step_access_check",
+        user_id=user_id, db_step=current_step, target_step=target_step,
+    )
     if current_step < target_step - 1:
+        logger.warning(
+            "require_step_access_denied",
+            user_id=user_id, db_step=current_step, target_step=target_step,
+        )
         raise HTTPException(
             status_code=409,
             detail=f"Complete step {target_step - 1} before continuing to step {target_step}",
