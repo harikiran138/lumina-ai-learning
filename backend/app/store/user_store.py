@@ -136,14 +136,53 @@ class UserStore:
             return self._sanitize_user(result)
 
         except Exception as e:
-            if "duplicate key" in str(e).lower():
+            err_str = str(e)
+            if "duplicate key" in err_str.lower():
                 raise ValueError("Email already registered")
-            log.error("create_user_failed", error=str(e), email=email)
+            
+            # PGRST204: Missing column error (e.g. batch_id missing in DB)
+            if "Could not find the" in err_str and "column" in err_str:
+                import re as _re
+                col_match = _re.search(r"Could not find the '([^']+)' column", err_str)
+                if col_match:
+                    missing_col = col_match.group(1)
+                    log.warning("create_user_column_missing_retrying", missing_column=missing_col, email=email)
+                    # Remove the missing column and retry once
+                    del user_data[missing_col]
+                    return await self.create_user_from_dict(user_data)
+
+            log.error("create_user_failed", error=err_str, email=email)
+            raise e
+
+    async def create_user_from_dict(self, user_data: dict) -> dict:
+        """Internal helper for resilient user creation."""
+        try:
+            insert_result = await self.db.table("users").insert(user_data).async_execute()
+            result = insert_result.data[0] if insert_result.data else await self.get_user_by_email(user_data["email"])
+            if not result:
+                result = await self.get_user_by_email(user_data["email"])
+            if not result:
+                raise Exception("Failed to create user record on retry")
+            return self._sanitize_user(result)
+        except Exception as e:
+            err_str = str(e)
+            # Second failure: maybe another column is missing? Apply same logic once more.
+            if "Could not find the" in err_str and "column" in err_str:
+                import re as _re
+                col_match = _re.search(r"Could not find the '([^']+)' column", err_str)
+                if col_match:
+                    missing_col = col_match.group(1)
+                    log.warning("create_user_second_column_missing", missing_column=missing_col)
+                    data_copy = user_data.copy()
+                    if missing_col in data_copy:
+                        del data_copy[missing_col]
+                        # Final recursive attempt
+                        return await self.create_user_from_dict(data_copy)
             raise e
 
     async def get_user_by_email(self, email: str, include_sensitive: bool = False) -> Optional[dict]:
         try:
-            response = await self.db.table("users").select("*, user_roles(roles(name))").eq("email", email).async_execute()
+            response = await self.db.table("users").select("*").eq("email", email).async_execute()
             if response.data:
                 return self._sanitize_user(response.data[0], include_sensitive=include_sensitive)
         except Exception as e:
@@ -152,7 +191,7 @@ class UserStore:
 
     def get_user_by_email_sync(self, email: str, include_sensitive: bool = False) -> Optional[dict]:
         try:
-            response = self.db.table("users").select("*, user_roles(roles(name))").eq("email", email).execute()
+            response = self.db.table("users").select("*").eq("email", email).execute()
             if response.data:
                 return self._sanitize_user(response.data[0], include_sensitive=include_sensitive)
         except Exception as e:
@@ -160,7 +199,7 @@ class UserStore:
         return None
 
     async def get_user_by_id(self, user_id: str, include_sensitive: bool = False) -> Optional[dict]:
-        response = await self.db.table("users").select("*, user_roles(roles(name))").eq("id", user_id).async_execute()
+        response = await self.db.table("users").select("*").eq("id", user_id).async_execute()
         if response.data:
             return self._sanitize_user(response.data[0], include_sensitive=include_sensitive)
         return None
@@ -272,21 +311,24 @@ class UserStore:
                 # PostgREST may return empty data when Prefer: return=representation
                 # header is absent; treat as success unless we can verify otherwise.
                 log.debug("update_user_fields_no_rows_returned", user_id=user_id, fields=list(clean_updates.keys()))
-            return True  # Treat as success — caller should re-read to confirm
+            return True
         except Exception as e:
             err_str = str(e)
             if "Could not find the" in err_str and "column" in err_str:
-                # Extract the specific column name for actionable debugging.
                 import re as _re
                 col_match = _re.search(r"Could not find the '([^']+)' column", err_str)
-                missing_col = col_match.group(1) if col_match else "unknown"
-                log.warning(
-                    "update_user_fields_column_missing",
-                    missing_column=missing_col,
-                    attempted_fields=list(clean_updates.keys()),
-                    user_id=user_id,
-                )
-                return True  # Non-fatal: other fields may have succeeded
+                if col_match:
+                    missing_col = col_match.group(1)
+                    log.warning("update_user_fields_column_missing_retrying", missing_column=missing_col, user_id=user_id)
+                    # Create a copy and remove problematic field
+                    safe_updates = clean_updates.copy()
+                    if missing_col in safe_updates:
+                        del safe_updates[missing_col]
+                        # Retry once without the missing column
+                        if safe_updates:
+                            return await self.update_user_fields(user_id, safe_updates)
+                        return True # Nothing left to update, but we didn't crash
+            
             log.error("update_user_fields_failed", error=err_str, user_id=user_id)
             return False
 
@@ -326,11 +368,20 @@ class UserStore:
 
         try:
             response = self.db.table("users").update(clean_updates).eq("id", user_id).execute()
-            return len(response.data) > 0
+            return True
         except Exception as e:
             err_str = str(e)
             if "Could not find the" in err_str and "column" in err_str:
-                log.warning("update_user_fields_partial_fail", error=err_str, user_id=user_id)
-                return True
+                import re as _re
+                col_match = _re.search(r"Could not find the '([^']+)' column", err_str)
+                if col_match:
+                    missing_col = col_match.group(1)
+                    log.warning("update_user_fields_sync_column_missing_retrying", missing_column=missing_col, user_id=user_id)
+                    safe_updates = clean_updates.copy()
+                    if missing_col in safe_updates:
+                        del safe_updates[missing_col]
+                        if safe_updates:
+                            return self.update_user_fields_sync(user_id, safe_updates)
+                        return True
             log.error("update_user_fields_failed_sync", error=err_str, user_id=user_id)
             return False
