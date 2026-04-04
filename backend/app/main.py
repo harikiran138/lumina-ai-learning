@@ -98,6 +98,7 @@ from app.routers import (  # noqa: E402
     ai_queue,
     unit_pipeline,
     handwritten,
+    paper_info,
     ai_tutor,
     flashcards,
     core_extensions,
@@ -298,8 +299,9 @@ Instrumentator().instrument(app).expose(app)
 
 app.include_router(ai.router, prefix="/api", tags=["AI"])
 app.include_router(generation.router, prefix="/api/generation", tags=["Generation"])
-app.include_router(handwriting.router, prefix="/api/handwriting", tags=["Handwriting"])
-app.include_router(handwritten.router, prefix="/api/handwritten", tags=["Handwritten Assignments"])
+app.include_router(unit_pipeline.router, prefix="/api/v1/unit-pipeline", tags=["Knowledge Pipeline"])
+app.include_router(handwritten.router, prefix="/api/v1/handwritten", tags=["Handwriting & OCR"])
+app.include_router(paper_info.router, prefix="/api/v1/paper-info", tags=["Research & Papers"])
 app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignments"])
 
 

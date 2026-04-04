@@ -1318,10 +1318,38 @@ export class RealAPI {
     return res.ok ? await res.json() : [];
   }
 
-  /** GET /api/courses/teacher/verification/queue — teacher verification queue */
-  async getTeacherVerificationQueue(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/courses/teacher/verification/queue");
-    return res.ok ? await res.json() : [];
+  /** GET /api/faculty/ai-queue — teacher verification queue (real AI answer queue) */
+  async getTeacherVerificationQueue(): Promise<{ items: any[]; total_pending: number }> {
+    const res = await this.fetchAuthorized("/api/faculty/ai-queue");
+    if (res.ok) return res.json();
+    return { items: [], total_pending: 0 };
+  }
+
+  /** POST /api/faculty/ai-queue/{id}/approve */
+  async approveQueueItem(queueId: string): Promise<any> {
+    return this.fetchJsonOrDefault(`/api/faculty/ai-queue/${queueId}/approve`, { success: false }, { method: "POST" });
+  }
+
+  /** POST /api/faculty/ai-queue/{id}/edit-approve */
+  async editApproveQueueItem(queueId: string, finalAnswer: string, facultyNote?: string): Promise<any> {
+    return this.fetchJsonOrDefault(`/api/faculty/ai-queue/${queueId}/edit-approve`, { success: false }, {
+      method: "POST",
+      body: JSON.stringify({ final_answer: finalAnswer, faculty_note: facultyNote }),
+    });
+  }
+
+  /** POST /api/faculty/ai-queue/{id}/reject */
+  async rejectQueueItem(queueId: string, note: string): Promise<any> {
+    return this.fetchJsonOrDefault(`/api/faculty/ai-queue/${queueId}/reject`, { success: false }, {
+      method: "POST",
+      body: JSON.stringify({ faculty_note: note }),
+    });
+  }
+
+  /** GET /api/student/tutor/questions — student's own question statuses */
+  async getStudentQuestions(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/student/tutor/questions");
+    return res.ok ? res.json() : [];
   }
 
   // --- Legacy Compatibility ---

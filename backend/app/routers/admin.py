@@ -1066,15 +1066,10 @@ async def get_ai_prompts(admin: dict = Depends(is_admin)):
 
 @router.get("/ai/models")
 async def get_ai_models(admin: dict = Depends(is_admin)):
-    """List available AI model configurations."""
-    try:
-        response = supabase_db.client.table("ai_model_configs").select("*").order("created_at", desc=True).execute()
-        return response.data or []
-    except Exception:
-        return [
-            {"id": "gemini-1.5-flash", "name": "Gemini 1.5 Flash", "provider": "Google", "status": "active", "cost_per_1k_tokens": 0.002},
-            {"id": "gemini-1.5-pro", "name": "Gemini 1.5 Pro", "provider": "Google", "status": "active", "cost_per_1k_tokens": 0.007},
-        ]
+    """List available AI model configurations with live metrics."""
+    db = get_scoped_db(admin)
+    analytics = AnalyticsStore(db=db)
+    return await analytics.get_ai_model_metrics()
 
 
 @router.get("/ai/costs")
