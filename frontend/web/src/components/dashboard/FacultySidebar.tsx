@@ -103,12 +103,11 @@ export default function FacultySidebar({
     <aside
       className={cn(
         "lumina-sidebar",
-        "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 flex flex-col",
-        "transition-transform duration-300 ease-in-out",
+        "fixed left-0 top-0 bottom-0 border-r border-white/5 shadow-premium z-50 flex flex-col",
+        "transition-transform duration-300 ease-in-out lg:w-20",
         isOpen
-          ? "translate-x-0"
-          /* shift left by full sidebar width (14rem) + the left-4 gap (1rem) + 1rem extra */
-          : "-translate-x-[calc(100%+2rem)] lg:translate-x-0",
+          ? "translate-x-0 w-[14rem]"
+          : "-translate-x-full lg:translate-x-0",
       )}
     >
       {/* ── Logo header ── */}

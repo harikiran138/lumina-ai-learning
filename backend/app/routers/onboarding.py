@@ -479,12 +479,12 @@ async def save_student_personal_details(
 async def validate_enrollment_code_endpoint(
     payload: StudentEnrollmentRequest,
     current_user: dict = Depends(get_current_user),
-    db: Any = Depends(get_db),
 ):
     """
     Validates an enrollment code and returns batch/department details for preview.
     Does NOT use/consume the code.
     """
+    db = get_scoped_db(current_user)
     user_id = _require_student(current_user)
     
     # We use the existing helper which already performs all checks

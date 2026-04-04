@@ -130,6 +130,11 @@ class KPISnapshot(BaseModel):
     engagement_score: float = 0.0
     persistence: float = 0.0
     readiness: float = 0.0
+    # Extended by student_analytics service
+    growth_trend: str = "plateauing"        # improving | plateauing | declining
+    tier: str = "developing"               # struggling | developing | proficient | advanced
+    study_pattern: str = "inactive"        # consistent | cramming | bursty | declining | inactive
+    recommended_section: str = "C"         # A | B | C | D
     recorded_at: datetime = Field(default_factory=datetime.utcnow)
 
 
