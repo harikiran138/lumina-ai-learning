@@ -354,36 +354,50 @@ async def get_faculty_dashboard_summary(current_user: dict = Depends(get_current
     except Exception:
         active_alerts = []
 
+    published = sum(1 for c in courses_data if c.get("status") != "draft")
+    draft     = len(courses_data) - published
+
+    course_cards = [
+        {
+            "id":          str(c.get("id")),
+            "title":       c.get("course_name") or c.get("name") or c.get("title") or "Untitled Course",
+            "code":        c.get("course_code") or c.get("code") or "",
+            "description": c.get("description") or "",
+            "status":      c.get("status") or "active",
+            "students":    0,
+        }
+        for c in courses_data
+    ]
+
     return {
-        "stats": [
-            {"label": "Total Students", "value": str(total_students), "trend": "Stable", "icon": "Users"},
-            {"label": "Avg. Mastery", "value": "72%", "trend": "+3.2%", "icon": "Target"},
-            {"label": "Active Interventions", "value": str(len(active_alerts)), "trend": "Needs Attention", "icon": "AlertTriangle"},
-            {"label": "Pending Grades", "value": str(len(pending_submissions or [])), "trend": "Due Soon", "icon": "FileCheck"},
-        ],
-        "alerts": active_alerts[:5],
-        "charts": {
-            "masteryDistribution": [
-                {"category": "90-100%", "count": 12},
-                {"category": "75-89%", "count": 25},
-                {"category": "60-74%", "count": 18},
-                {"category": "Below 60%", "count": total_students - 55 if total_students > 55 else 5},
-            ]
+        "summary": {
+            "totalStudents":        total_students,
+            "activeCourses":        published,
+            "avgMastery":           0,
+            "pendingGrading":       len(pending_submissions or []),
+            "atRiskStudents":       len(active_alerts),
+            "upcomingDeadlines":    0,
+            "pendingAIVerifications": 0,
         },
+        "courses": course_cards,
+        "weeklySnapshot": {
+            "publishedCourses":    published,
+            "draftCourses":        draft,
+            "assignmentsCreated":  0,
+            "submissionsReceived": len(pending_submissions or []),
+        },
+        "alerts": active_alerts[:5],
         "feed": [
             {
-                "id": f"sub-{s.get('id')}",
-                "type": "submission",
-                "title": f"New Submission: {s.get('id')[:8]}",
-                "time": s.get("submitted_at") or s.get("created_at"),
-                "meta": {"student_id": s.get("student_id")}
+                "id":    f"sub-{s.get('id')}",
+                "type":  "submission",
+                "title": f"New Submission: {str(s.get('id', ''))[:8]}",
+                "time":  s.get("submitted_at") or s.get("created_at"),
+                "meta":  {"student_id": s.get("student_id")},
             }
-            for s in pending_submissions[:10]
+            for s in (pending_submissions or [])[:10]
         ],
-        "meta": {
-            "courses": courses_data,
-            "role": "faculty"
-        }
+        "meta": {"role": "faculty"},
     }
 
 

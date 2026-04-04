@@ -402,7 +402,7 @@ async def generate_course(request: CourseGenerationRequest):
         )
     except Exception as e:
         AI_REQUESTS.labels(provider="auto", model="course_gen", status="error").inc()
-        logger.error("course_generation_failed", topic=request.topic, error=str(e))
+        logger.error(f"course_generation_failed | topic={request.topic} error={e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -641,7 +641,7 @@ async def tutor_chat(request: TutorChatRequest):
 
     except Exception as e:
         AI_REQUESTS.labels(provider=request.provider, model="tutor_chat", status="error").inc()
-        logger.error("tutor_chat_failed", user_id=request.user_id, error=str(e))
+        logger.error(f"tutor_chat_failed | user_id={request.user_id} error={e}")
         personalization = get_personalization_service()
         profile = await personalization.get_legacy_state(request.user_id)
         topic = _infer_tutor_topic(request.message, profile, request.context_filters)
@@ -797,7 +797,7 @@ async def generate_ppt(request: PPTGenerationRequest):
                     print(f"Serving cached PPT for {request.topic}")
                     return PPTGenerationResponse(**cached_data["response"])
         except Exception as e:
-            logger.warning("ppt_cache_read_failed", topic=request.topic, error=str(e))
+            logger.warning(f"ppt_cache_read_failed | topic={request.topic} error={e}")
             cache = {}
 
         # Step 1: Generate content structure using Gemini API
@@ -833,7 +833,7 @@ Strict JSON only."""
         try:
             content_structure = json.loads(content_text)
         except json.JSONDecodeError as e:
-            logger.error("ppt_json_parse_failed", error=str(e), response_sample=content_text[:500])
+            logger.error(f"ppt_json_parse_failed | error={e} response_sample={content_text[:500]}")
             raise HTTPException(
                 status_code=500, detail="Failed to parse AI response. Please try again."
             )
@@ -877,7 +877,7 @@ Strict JSON only."""
         return PPTGenerationResponse(**response_data)
 
     except Exception as e:
-        logger.error("ppt_generation_failed", topic=request.topic, error=str(e))
+        logger.error(f"ppt_generation_failed | topic={request.topic} error={e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate presentation: {str(e)}")
 
 

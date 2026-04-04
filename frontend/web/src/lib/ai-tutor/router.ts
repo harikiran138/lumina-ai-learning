@@ -90,10 +90,10 @@ export const processMessage = async (
   while (attempts < maxAttempts) {
     try {
       const api = RealAPI.getInstance();
-      const response = await api.fetchAuthorized("/api/tutor/chat", {
+      const response = await api.fetchAuthorized("/api/ai-tutor/chat", {
         method: "POST",
         body: JSON.stringify({
-          message: question,
+          prompt: question,
           user_id: userId || "guest",
           session_id: sessionId || "default-session",
           provider,

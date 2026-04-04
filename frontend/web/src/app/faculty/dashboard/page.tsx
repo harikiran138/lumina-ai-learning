@@ -17,11 +17,7 @@ import {
   Sparkles,
   TrendingUp,
   Users,
-  Zap,
-  CheckCircle,
-  AlertCircle,
   ShieldCheck,
-  Database,
 } from "lucide-react";
 
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -294,6 +290,21 @@ export default function TeacherDashboard() {
         <AlertTriangle className="mx-auto mb-4 h-8 w-8 text-red-400" />
         <h1 className="text-xl font-semibold text-white">Teacher dashboard unavailable</h1>
         <p className="mt-2 text-sm text-gray-400">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white hover:border-white/20"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // Guard: data is null only if the API returned nothing and no error was thrown.
+  if (!data) {
+    return (
+      <div className="glass-v2 border border-white/5 p-8 text-center">
+        <p className="text-sm text-gray-400">No dashboard data available yet.</p>
       </div>
     );
   }
