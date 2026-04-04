@@ -897,9 +897,9 @@ export class RealAPI {
   }
 
   async validateEnrollmentCode(enrollmentCode: string): Promise<any> {
-    const res = await this.fetchAuthorized("/api/enrollment/validate", {
+    const res = await this.fetchAuthorized("/api/onboarding/enrollment/validate", {
       method: "POST",
-      body: JSON.stringify({ enrollmentCode }),
+      body: JSON.stringify({ enrollment_code: enrollmentCode }),
     });
     if (!res.ok) {
       const error = await parseJsonSafe(res);
@@ -942,20 +942,24 @@ export class RealAPI {
     try {
       const res = await this.fetchAuthorized(`/api/onboarding/student-subjects${suffix}`);
 
-      // If response is not OK, log and return empty (backend will now return [] instead of 500)
+      // If response is not OK, log and return empty
       if (!res.ok) {
+        // Lower log level for pre-fetch errors which might be expected (e.g. 409)
         const error = await parseJsonSafe(res);
-        console.error("Subjects API error:", error);
-        // Return empty array instead of throwing - let the UI handle the empty state
+        if (res.status === 409 || res.status === 403) {
+          console.debug("[onboarding] subject pre-fetch skipped (access restricted):", error);
+        } else {
+          console.warn("[onboarding] subject fetch returned error:", { status: res.status, error });
+        }
         return [];
       }
 
       const data = await parseJsonSafe(res);
-      // Ensure we always return an array
       return Array.isArray(data) ? data : [];
     } catch (err) {
-      console.error("Failed to fetch subjects:", err);
-      // Return empty array on any error - prevents UI crash
+      // Swallowing error - getStudentOnboardingSubjects is often a pre-fetch
+      // and shouldn't crash the onboarding flow if it fails.
+      console.warn("[onboarding] subjects pre-fetch failed silently:", err);
       return [];
     }
   }
@@ -1716,11 +1720,31 @@ export class RealAPI {
     });
   }
 
-  /** GET student question statuses — best-effort, returns [] on any failure */
+  /** GET student question statuses from the AI answer queue — best-effort, returns [] on any failure */
   async getStudentQuestions(): Promise<any[]> {
     try {
-      const res = await this.fetchAuthorized("/api/student/assignments");
-      return res.ok ? res.json() : [];
+      // Pull all courses the student is enrolled in, then aggregate questions across them.
+      // If that fails, fall back to an empty list so the UI degrades gracefully.
+      const coursesRes = await this.fetchAuthorized("/api/student/courses");
+      if (!coursesRes.ok) return [];
+      const courses: any[] = await coursesRes.json();
+      const questions: any[] = [];
+      await Promise.allSettled(
+        (courses || []).slice(0, 10).map(async (course: any) => {
+          const courseId = course.id || course.course_id;
+          if (!courseId) return;
+          try {
+            const qRes = await this.fetchAuthorized(`/api/courses/${courseId}/questions`);
+            if (qRes.ok) {
+              const items: any[] = await qRes.json();
+              questions.push(...(items || []));
+            }
+          } catch {
+            // best-effort per course
+          }
+        }),
+      );
+      return questions;
     } catch {
       return [];
     }
@@ -1875,13 +1899,8 @@ export class RealAPI {
   async getAnonymizedSnapshots(..._args: any[]): Promise<any> { return []; }
   async getCommunityData(..._args: any[]): Promise<any> { return { channels: [], messages: [] }; }
   async getAllChatRooms(..._args: any[]): Promise<any> { return []; }
-  async getChatMessages(..._args: any[]): Promise<any> { return []; }
-  async getChatHistory(..._args: any[]): Promise<any> { return []; }
-  async sendChatMessage(..._args: any[]): Promise<any> { return { success: false }; }
-  async saveChatMessage(..._args: any[]): Promise<any> { return { success: false }; }
   async sendCommunityMessage(..._args: any[]): Promise<any> { return { success: false }; }
   async chatWithAI(..._args: any[]): Promise<any> { return { response: "" }; }
-  async logAIInteraction(..._args: any[]): Promise<any> { return { success: true }; }
   async logActivity(..._args: any[]): Promise<any> { return { success: true }; }
   async exportData(..._args: any[]): Promise<any> { return { success: false }; }
   async importData(..._args: any[]): Promise<any> { return { success: false }; }

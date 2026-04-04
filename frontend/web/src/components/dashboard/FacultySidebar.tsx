@@ -147,7 +147,7 @@ export default function FacultySidebar({
               <item.icon
                 aria-hidden="true"
                 className={cn(
-                  "sidebar-icon h-5 w-5",
+                  "sidebar-icon h-6 w-6",
                   isActive ? "text-lumina-highlight" : "text-gray-500 group-hover:text-gray-300",
                 )}
               />
@@ -166,8 +166,8 @@ export default function FacultySidebar({
           aria-label="Notifications"
           className="sidebar-bottom-item sidebar-nav-item flex items-center w-full py-3 text-sm font-semibold rounded-xl text-gray-400 hover:bg-white/[0.03] hover:text-gray-200 relative group"
         >
-          <div className="sidebar-icon relative h-5 w-5">
-            <Bell className="h-5 w-5 text-gray-500 group-hover:text-gray-300" />
+          <div className="sidebar-icon relative h-6 w-6">
+            <Bell className="h-6 w-6 text-gray-500 group-hover:text-gray-300" />
             {notificationCount > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                 {notificationCount}
@@ -204,7 +204,7 @@ export default function FacultySidebar({
           aria-label="Sign out"
           className="sidebar-bottom-item flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-colors"
         >
-          <LogOut aria-hidden="true" className="sidebar-icon h-4 w-4" />
+          <LogOut aria-hidden="true" className="sidebar-icon h-5 w-5" />
           <span className="sidebar-text">Sign Out</span>
         </button>
       </div>

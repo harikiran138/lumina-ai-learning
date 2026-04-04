@@ -15,7 +15,9 @@ DB schema (actual):
     verified_at TIMESTAMPTZ
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+import asyncio
+import httpx
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Any
 from datetime import datetime, timezone
@@ -24,6 +26,10 @@ from .auth import get_current_user
 from app.api.deps import get_current_teacher
 from app.database.supabase_manager import supabase_db
 from app.core.audit import audit_logger
+from app.core.config import settings
+from app.core.logging import structlog
+
+log = structlog.get_logger()
 
 router = APIRouter()
 
@@ -56,6 +62,64 @@ def _client():
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+async def _generate_ai_answer(queue_id: str, question: str, course_name: str) -> None:
+    """
+    Background task: call OpenRouter to generate an AI draft answer for the queue item,
+    then update the record. Teachers will see the draft when they open the queue.
+    """
+    api_key = settings.OPENROUTER_API_KEY
+    model = settings.OPENROUTER_MODEL
+
+    if not api_key:
+        log.warning("ai_queue_no_api_key", queue_id=queue_id)
+        return
+
+    system_prompt = (
+        "You are an expert academic tutor. A student has submitted a question to their teacher "
+        "for review. Generate a concise, accurate, and educationally sound draft answer that the "
+        "teacher can review, edit if needed, and then release to the student. "
+        f"The question is from the course: {course_name}. "
+        "Be factually precise. Use markdown formatting. Limit to 400 words."
+    )
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": question},
+        ],
+        "temperature": 0.5,
+    }
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://lumina.learning",
+        "X-Title": "Lumina Learning Platform",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            response = await client.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+            response.raise_for_status()
+            data = response.json()
+            ai_answer = data["choices"][0]["message"]["content"]
+
+        # Update the queue record with the generated answer
+        supabase_db.get_client().table("ai_answer_queue").update(
+            {"ai_generated_answer": ai_answer}
+        ).eq("id", queue_id).execute()
+
+        log.info("ai_queue_answer_generated", queue_id=queue_id, answer_len=len(ai_answer))
+
+    except Exception as exc:
+        log.error("ai_queue_generation_failed", queue_id=queue_id, error=str(exc))
+        # Leave as "Processing..." — teacher can still manually write an answer
 
 
 def _get_course_teacher(client: Any, course_id: str, fallback_id: str) -> str:
@@ -111,12 +175,21 @@ def _ensure_verified_answer_entry(
 async def ask_question(
     course_id: str,
     body: AskQuestionRequest,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user),
 ):
-    """Student submits a question for a course."""
+    """
+    Student submits a question for a course.
+    - Saves the question immediately (status=pending)
+    - Triggers an async background task to generate an AI draft answer via OpenRouter
+    - Teacher reviews the draft and approves/edits before it reaches the student
+    """
     student_id = current_user.get("id")
     if not student_id:
         raise HTTPException(status_code=401, detail="Could not identify student")
+
+    if not body.question_text or not body.question_text.strip():
+        raise HTTPException(status_code=400, detail="question_text cannot be empty")
 
     try:
         client = _client()
@@ -124,13 +197,33 @@ async def ask_question(
         # Resolve course teacher for teacher_id (required NOT NULL)
         teacher_id = _get_course_teacher(client, course_id, student_id)
 
-        # Insert directly into ai_answer_queue (the real schema)
+        # Fetch course name for AI context (best-effort)
+        course_name = f"Course {course_id}"
+        try:
+            course_res = (
+                client.table("courses")
+                .select("name, title")
+                .eq("id", course_id)
+                .limit(1)
+                .execute()
+            )
+            if course_res.data:
+                course_name = (
+                    course_res.data[0].get("name")
+                    or course_res.data[0].get("title")
+                    or course_name
+                )
+        except Exception:
+            pass
+
+        # Insert into ai_answer_queue with status=pending
+        # ai_generated_answer starts as "Generating AI draft..." — updated by background task
         res = client.table("ai_answer_queue").insert({
             "student_id":          student_id,
             "teacher_id":          teacher_id,
             "course_id":           course_id,
-            "student_question":    body.question_text,
-            "ai_generated_answer": "Processing...",
+            "student_question":    body.question_text.strip(),
+            "ai_generated_answer": "Generating AI draft answer...",
             "status":              "pending",
             "created_at":          _now_iso(),
         }).execute()
@@ -139,14 +232,31 @@ async def ask_question(
             raise HTTPException(status_code=500, detail="Failed to save question")
 
         queue_id = res.data[0]["id"]
+
+        # Kick off AI answer generation in background (non-blocking)
+        background_tasks.add_task(
+            _generate_ai_answer,
+            queue_id=queue_id,
+            question=body.question_text.strip(),
+            course_name=course_name,
+        )
+
+        log.info(
+            "ai_queue_question_submitted",
+            queue_id=queue_id,
+            student_id=student_id,
+            course_id=course_id,
+        )
+
         return {
             "question_id": queue_id,
             "status":      "pending_review",
-            "message":     "Your question has been submitted for teacher review",
+            "message":     "Your question has been submitted. Your teacher will review the AI-generated answer before it reaches you.",
         }
     except HTTPException:
         raise
     except Exception as exc:
+        log.error("ai_queue_submit_failed", error=str(exc))
         raise HTTPException(status_code=500, detail=str(exc))
 
 
