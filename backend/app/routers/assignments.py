@@ -24,6 +24,12 @@ class AssignmentCreate(BaseModel):
     created_by: str = "teacher"
 
 
+class GradeSubmissionRequest(BaseModel):
+    grade: Optional[float] = None
+    score: Optional[float] = None
+    feedback: Optional[str] = None
+
+
 @router.post("/create")
 async def create_assignment(
     title: str = Form(...),
@@ -86,12 +92,21 @@ async def submit_assignment(
 async def grade_submission(
     assignment_id: str, 
     submission_id: str,
+    data: Optional[GradeSubmissionRequest] = None,
+    current_user: dict = Depends(get_current_user),
     store: AssignmentStore = Depends(get_assignment_store),
     personalization_store: PersonalizationStore = Depends(get_personalization_store),
 ):
     """
-    Grade a submission using AI.
+    Grade a submission.
+
+    Supports two modes:
+    - Manual grading when `grade` or `score` is provided in the JSON body.
+    - AI grading fallback when no manual score is supplied.
     """
+    if current_user["role"] not in {"teacher", "faculty", "admin", "hod"}:
+        raise HTTPException(status_code=403, detail="Only teachers can grade submissions")
+
     # 1. Get Submission
     submissions = await store.get_submissions(assignment_id)
     submission = next((s for s in submissions if s["id"] == submission_id), None)
@@ -106,10 +121,27 @@ async def grade_submission(
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
+    manual_score = None
+    if data is not None:
+        manual_score = data.score if data.score is not None else data.grade
+
+    if manual_score is not None:
+        feedback = data.feedback or "Graded by faculty"
+        success = await store.update_submission_grade(submission_id, manual_score, feedback)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to save submission grade")
+        return {
+            "status": "graded",
+            "submission_id": submission_id,
+            "score": manual_score,
+            "feedback": feedback,
+        }
+
     description = assignment.get("description", "")
 
     # 3. Dispatch Async Task
-    # We no longer wait for OCR/Grading here. We return "Accepted" immediately.
+    # We prefer async grading, but fall back to synchronous execution if the
+    # worker broker is unavailable in local/demo environments.
     from app.worker import task_grade_submission
 
     rubric = await personalization_store.get_rubric(assignment_id)
@@ -119,16 +151,29 @@ async def grade_submission(
     # The worker will handle downloading.
     print(f"Dispatching grading task for {submission['id']}")
 
-    task = task_grade_submission.delay(
-        assignment_id, submission_id, description, submission["file_path"], rubric_payload
-    )
+    try:
+        task = task_grade_submission.delay(
+            assignment_id, submission_id, description, submission["file_path"], rubric_payload
+        )
 
-    return {
-        "status": "accepted",
-        "message": "Grading queued",
-        "task_id": task.id,
-        "submission_id": submission_id,
-    }
+        return {
+            "status": "accepted",
+            "message": "Grading queued",
+            "task_id": task.id,
+            "submission_id": submission_id,
+        }
+    except Exception:
+        result = task_grade_submission.run(
+            assignment_id, submission_id, description, submission["file_path"], rubric_payload
+        )
+        if result.get("status") != "success":
+            raise HTTPException(status_code=500, detail=result.get("error") or "Grading failed")
+        return {
+            "status": "graded",
+            "submission_id": submission_id,
+            "score": result.get("score"),
+            "message": "Graded synchronously",
+        }
 
 
 @router.put("/{assignment_id}/submissions/{submission_id}/score")

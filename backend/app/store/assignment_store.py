@@ -89,8 +89,14 @@ class AssignmentStore:
     async def update_submission_grade(
         self, submission_id: str, grade: float, feedback: str, extracted_text: Optional[str] = None
     ) -> bool:
+        try:
+            numeric_grade = int(round(float(grade)))
+        except (TypeError, ValueError):
+            log.error("update_submission_grade_invalid_input", submission_id=submission_id, grade=grade)
+            return False
+
         updates = {
-            "marks": grade,
+            "marks": numeric_grade,
             "feedback": feedback,
             "status": "graded",
             "graded_at": datetime.utcnow().isoformat(),

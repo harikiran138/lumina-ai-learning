@@ -71,6 +71,12 @@ function setAuthCookie(token: string): void {
   document.cookie = `access_token=${token}; path=/; SameSite=Lax; max-age=86400`
 }
 
+function hasCookie(name: string): boolean {
+  if (typeof document === "undefined") return false;
+  const prefix = `${name}=`;
+  return document.cookie.split(";").some((part) => part.trim().startsWith(prefix));
+}
+
 // ── Fetch with retry + timeout ────────────────────────────────────────────────
 async function fetchWithRetry(
   url: string,
@@ -259,6 +265,19 @@ export class RealAPI {
   }
 
   private async handleUnauthorized(): Promise<boolean> {
+    const isAuthPage =
+      typeof window !== "undefined" &&
+      (window.location.pathname.startsWith("/login") || window.location.pathname.startsWith("/register"));
+
+    // Avoid a /me -> /refresh -> /login redirect storm on public auth pages
+    // when the browser simply has no session cookies yet.
+    if (!this.token && !hasCookie("refresh_token") && !hasCookie("access_token")) {
+      if (!isAuthPage) {
+        this.logout();
+      }
+      return false;
+    }
+
     try {
       const url = this.buildUrl(requireAuthBase(), "/api/auth/refresh");
       const res = await fetch(url, {
@@ -273,8 +292,12 @@ export class RealAPI {
         return true
       }
     } catch { }
-    this.logout()
-    if (typeof window !== 'undefined') {
+
+    if (!isAuthPage) {
+      this.logout()
+    }
+
+    if (typeof window !== 'undefined' && !isAuthPage) {
       window.location.href = '/login?reason=session_expired'
     }
     return false
@@ -368,6 +391,13 @@ export class RealAPI {
     return 0;
   }
 
+  private toArray(payload: any): any[] {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.items)) return payload.items;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+  }
+
   private normalizeTeacherDashboard(
     dashboard: any,
     courses: any[],
@@ -377,6 +407,8 @@ export class RealAPI {
   ): any {
     const stats = dashboard?.stats || [];
     const today = new Date();
+    const normalizedAiQueue = this.toArray(aiQueue);
+    const normalizedInterventions = this.toArray(interventions);
 
     const recentAssignments = (assignments || []).map((assignment: any) => {
       const dueDate = assignment?.due_date || null;
@@ -468,7 +500,7 @@ export class RealAPI {
           detail: `${item.pendingGrading} submission(s) waiting for review`,
           href: item.href,
         })),
-      ...((aiQueue || []).slice(0, 2).map((item: any, index: number) => ({
+      ...(normalizedAiQueue.slice(0, 2).map((item: any, index: number) => ({
         id: item?.id || item?.queue_id || `ai-${index}`,
         kind: "deadline",
         tone: "urgent",
@@ -478,7 +510,7 @@ export class RealAPI {
       })) as any[]),
     ];
 
-    const interventionQueue = (interventions || []).map((item: any) => ({
+    const interventionQueue = normalizedInterventions.map((item: any) => ({
       id: item?.id,
       studentId: item?.user_id || item?.student_id || "",
       studentName: item?.student_name || item?.studentName || "Student",
@@ -503,7 +535,7 @@ export class RealAPI {
         pendingGrading,
         atRiskStudents: interventionQueue.length,
         upcomingDeadlines,
-        pendingAIVerifications: (aiQueue || []).length,
+        pendingAIVerifications: normalizedAiQueue.length,
       },
       courses: courseCards,
       recentAssignments,
@@ -570,19 +602,31 @@ export class RealAPI {
       this.getTeacherCourses().catch(() => []),
       this.getAssignments().catch(() => []),
       this.fetchJsonOrDefault("/api/teacher/interventions/queue", []),
-      this.fetchJsonOrDefault("/api/faculty/ai-queue", []),
+      this.fetchJsonOrDefault("/api/faculty/ai-queue", { items: [], total_pending: 0 }),
     ]);
 
     return this.normalizeTeacherDashboard(dashboard, courses, assignments, interventions, aiQueue);
   }
 
   private async getHodDashboardData(): Promise<any> {
-    const [dashboard, teachers, programs, requests] = await Promise.all([
-      this.fetchJsonOrDefault("/api/hod/dashboard", {}),
+    const [department, teachers, programs, requests] = await Promise.all([
+      this.fetchJsonOrDefault("/api/hod/department", null),
       this.fetchJsonOrDefault("/api/hod/teachers", []),
       this.fetchJsonOrDefault("/api/hod/programs", []),
       this.fetchJsonOrDefault("/api/hod/requests", []),
     ]);
+
+    const dashboard = {
+      stats: [
+        { label: "Dep. Faculty", value: String(this.toArray(teachers).length) },
+        { label: "Total Students", value: "0" },
+        { label: "Programs", value: String(this.toArray(programs).length) },
+        { label: "Pending Requests", value: String(this.toArray(requests).length) },
+      ],
+      meta: {
+        department: department || { id: "", department_name: "Department", code: "" },
+      },
+    };
 
     return this.normalizeHodDashboard(dashboard, teachers, programs, requests);
   }

@@ -1,0 +1,183 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: aws-production-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_EC2_INSTANCE_ID: ${{ secrets.AWS_EC2_INSTANCE_ID }}
+      BACKEND_IMAGE: ghcr.io/harikiran138/lumina-ai-learning-backend:${{ github.sha }}
+      BACKEND_IMAGE_LATEST: ghcr.io/harikiran138/lumina-ai-learning-backend:latest
+      FRONTEND_IMAGE: ghcr.io/harikiran138/lumina-ai-learning-frontend:${{ github.sha }}
+      FRONTEND_IMAGE_LATEST: ghcr.io/harikiran138/lumina-ai-learning-frontend:latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Resolve instance public IP
+        id: instance
+        run: |
+          PUBLIC_IP=$(aws ec2 describe-instances \
+            --instance-ids "$AWS_EC2_INSTANCE_ID" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" = "None" ]; then
+            echo "Unable to resolve EC2 public IP" >&2
+            exit 1
+          fi
+          echo "public_ip=$PUBLIC_IP" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}
+            ${{ env.BACKEND_IMAGE_LATEST }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend/web
+          file: ./frontend/web/Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=http://${{ steps.instance.outputs.public_ip }}:8000
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}
+            ${{ env.FRONTEND_IMAGE_LATEST }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Wait for SSM connectivity
+        run: |
+          for attempt in $(seq 1 30); do
+            STATUS=$(aws ssm describe-instance-information \
+              --filters "Key=InstanceIds,Values=$AWS_EC2_INSTANCE_ID" \
+              --query 'InstanceInformationList[0].PingStatus' \
+              --output text 2>/dev/null || true)
+            if [ "$STATUS" = "Online" ]; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "EC2 instance is not online in AWS Systems Manager" >&2
+          exit 1
+
+      - name: Deploy on EC2 via SSM
+        env:
+          AWS_PROD_ENV_FILE: ${{ secrets.AWS_PROD_ENV_FILE }}
+        run: |
+          ENV_B64=$(printf '%s' "$AWS_PROD_ENV_FILE" | base64 -w 0)
+          GHCR_USER_B64=$(printf '%s' "${{ github.actor }}" | base64 -w 0)
+          GHCR_TOKEN_B64=$(printf '%s' "${{ github.token }}" | base64 -w 0)
+          RAW_BASE="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}"
+          cat > ssm-commands.json <<EOF
+          {
+            "commands": [
+              "set -euo pipefail",
+              "export APP_DIR=/opt/lumina",
+              "export BACKEND_IMAGE=${BACKEND_IMAGE}",
+              "export FRONTEND_IMAGE=${FRONTEND_IMAGE}",
+              "export GHCR_USER=\$(printf '%s' '${GHCR_USER_B64}' | base64 -d)",
+              "export GHCR_TOKEN=\$(printf '%s' '${GHCR_TOKEN_B64}' | base64 -d)",
+              "mkdir -p /opt/lumina",
+              "curl -fsSL ${RAW_BASE}/deployment/aws/bootstrap-ec2.sh -o /tmp/bootstrap-ec2.sh",
+              "curl -fsSL ${RAW_BASE}/deployment/aws/deploy-on-ec2.sh -o /tmp/deploy-on-ec2.sh",
+              "curl -fsSL ${RAW_BASE}/deployment/aws/docker-compose.ec2.yml -o /opt/lumina/docker-compose.yml",
+              "printf '%s' '${ENV_B64}' | base64 -d > /opt/lumina/.env",
+              "bash /tmp/bootstrap-ec2.sh",
+              "bash /tmp/deploy-on-ec2.sh"
+            ]
+          }
+          EOF
+
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$AWS_EC2_INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy Lumina commit ${GITHUB_SHA}" \
+            --parameters file://ssm-commands.json \
+            --query 'Command.CommandId' \
+            --output text)
+
+          echo "SSM command: $COMMAND_ID"
+
+          for attempt in $(seq 1 60); do
+            STATUS=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query 'CommandInvocations[0].Status' \
+              --output text 2>/dev/null || true)
+            case "$STATUS" in
+              Success)
+                aws ssm list-command-invocations \
+                  --command-id "$COMMAND_ID" \
+                  --details \
+                  --query 'CommandInvocations[0].CommandPlugins[*].Output' \
+                  --output text
+                exit 0
+                ;;
+              Failed|Cancelled|TimedOut)
+                aws ssm list-command-invocations \
+                  --command-id "$COMMAND_ID" \
+                  --details \
+                  --query 'CommandInvocations[0].CommandPlugins[*].Output' \
+                  --output text
+                exit 1
+                ;;
+            esac
+            sleep 10
+          done
+
+          echo "Timed out waiting for SSM deployment command" >&2
+          exit 1
+
+      - name: Verify live endpoints
+        run: |
+          FRONTEND_URL="http://${{ steps.instance.outputs.public_ip }}"
+          BACKEND_URL="http://${{ steps.instance.outputs.public_ip }}:8000/health"
+
+          for attempt in $(seq 1 20); do
+            if curl -fsS "$FRONTEND_URL" >/dev/null && curl -fsS "$BACKEND_URL" >/dev/null; then
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "Live deployment verification failed" >&2
+          exit 1
