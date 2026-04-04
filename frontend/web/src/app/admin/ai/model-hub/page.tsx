@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  Cpu, 
-  Zap, 
-  Settings, 
-  BarChart3, 
+import {
+  Cpu,
+  Zap,
+  Settings,
+  BarChart3,
   Layers,
   Activity,
   CheckCircle2,
   DollarSign,
-  ArrowUpRight
+  ArrowUpRight,
+  RefreshCw,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -31,7 +32,32 @@ interface AICosts {
   total_cost: string;
   monthly_budget: string;
   usage_percentage: string;
-  breakdown_by_model: any[];
+  breakdown_by_model: { model: string; tokens: string; cost: string }[];
+}
+
+const PALETTE = ["bg-amber-500", "bg-yellow-400", "bg-orange-500", "bg-yellow-600", "bg-amber-300"];
+
+function parseLatencyMs(latency: string): number {
+  const match = latency?.match(/([\d.]+)/);
+  return match ? parseFloat(match[1]) : 0;
+}
+
+function computeAggregateLatency(models: AIModel[]): string {
+  if (!models.length) return "—";
+  const avg = models.reduce((sum, m) => sum + parseLatencyMs(m.avg_latency), 0) / models.length;
+  return `${avg.toFixed(2)}s`;
+}
+
+function computeBreakdownWidths(breakdown: AICosts["breakdown_by_model"]): { model: string; width: string; cost: string }[] {
+  if (!breakdown?.length) return [];
+  const parseCost = (c: string) => parseFloat(c.replace(/[$,]/g, "")) || 0;
+  const total = breakdown.reduce((sum, b) => sum + parseCost(b.cost), 0);
+  if (total === 0) return breakdown.map((b) => ({ model: b.model, width: "0%", cost: b.cost }));
+  return breakdown.map((b) => ({
+    model: b.model,
+    width: `${((parseCost(b.cost) / total) * 100).toFixed(1)}%`,
+    cost: b.cost,
+  }));
 }
 
 export default function AIModelHub() {
@@ -39,29 +65,33 @@ export default function AIModelHub() {
   const [costs, setCosts] = useState<AICosts | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [models, costs] = await Promise.all([
-          api.getAiModels(),
-          api.getAiCosts(),
-        ]);
-        setModels(models || []);
-        setCosts(costs || {});
-      } catch (err) {
-        console.error("failed_to_load_ai_data", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [fetchedModels, fetchedCosts] = await Promise.all([
+        api.getAiModels(),
+        api.getAiCosts(),
+      ]);
+      setModels(fetchedModels || []);
+      setCosts(fetchedCosts || null);
+    } catch (err) {
+      console.error("failed_to_load_ai_data", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
 
   if (loading) return (
     <div className="flex min-h-[400px] items-center justify-center">
       <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-amber-400" />
     </div>
   );
+
+  const activeCount = models.filter((m) => m.active !== false && m.status !== "down").length;
+  const aggregateLatency = computeAggregateLatency(models);
+  const breakdown = computeBreakdownWidths(costs?.breakdown_by_model || []);
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -74,6 +104,14 @@ export default function AIModelHub() {
           <p className="mt-1 text-gray-400">Manage LLM providers, benchmarks, and inference infrastructure.</p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={load}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-50 transition-all"
+          >
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            Refresh
+          </button>
           <button className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">
             <Settings className="h-4 w-4" />
             Provider Settings
@@ -87,10 +125,10 @@ export default function AIModelHub() {
             <Zap className="h-16 w-16 text-amber-400" />
           </div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Aggregate Inference</p>
-          <p className="mt-2 text-3xl font-display font-bold text-white">0.82s</p>
+          <p className="mt-2 text-3xl font-display font-bold text-white">{aggregateLatency}</p>
           <div className="mt-4 flex items-center gap-2 text-xs font-bold text-yellow-400">
             <Activity className="h-3 w-3" />
-            Optimal Latency
+            Avg across {models.length} model{models.length !== 1 ? "s" : ""}
           </div>
         </div>
 
@@ -102,7 +140,7 @@ export default function AIModelHub() {
           <p className="mt-2 text-3xl font-display font-bold text-white font-mono">{costs?.total_cost || "$0.00"}</p>
           <div className="mt-4 flex items-center gap-2 text-xs font-bold text-amber-400">
             <ArrowUpRight className="h-3 w-3" />
-            {costs?.usage_percentage} of budget
+            {costs?.usage_percentage || "0%"} of budget
           </div>
         </div>
 
@@ -111,10 +149,12 @@ export default function AIModelHub() {
             <Layers className="h-16 w-16 text-yellow-400" />
           </div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Active Providers</p>
-          <p className="mt-2 text-3xl font-display font-bold text-white">3 / 5</p>
+          <p className="mt-2 text-3xl font-display font-bold text-white">
+            {activeCount} / {models.length}
+          </p>
           <div className="mt-4 flex items-center gap-2 text-xs font-bold text-yellow-400">
             <CheckCircle2 className="h-3 w-3" />
-            High Reliability
+            {activeCount === models.length && models.length > 0 ? "All systems operational" : "Check provider status"}
           </div>
         </div>
       </div>
@@ -126,6 +166,9 @@ export default function AIModelHub() {
             Live Model Performance
           </h2>
           <div className="grid gap-4">
+            {models.length === 0 && (
+              <p className="text-sm text-gray-600 italic py-4">No model configurations loaded.</p>
+            )}
             {models.map((model) => (
               <div key={model.id} className="glass-v2 border-white/5 p-5 hover:bg-white/[0.02] transition-all group border-l-2 border-l-amber-500">
                 <div className="flex items-center justify-between mb-4">
@@ -169,26 +212,32 @@ export default function AIModelHub() {
           </h2>
           <div className="glass-v2 border-white/5 p-6 space-y-6">
             <div className="space-y-4">
-              <p className="text-sm text-gray-400">Usage by token volume</p>
-              <div className="h-4 w-full bg-white/5 rounded-full flex overflow-hidden">
-                <div className="h-full bg-amber-500" style={{ width: '65%' }} />
-                <div className="h-full bg-yellow-500" style={{ width: '25%' }} />
-                <div className="h-full bg-yellow-500" style={{ width: '10%' }} />
-              </div>
-              <div className="flex flex-wrap gap-4 pt-2">
-                <LegendItem label="GPT-4o" color="bg-amber-500" value="65%" />
-                <LegendItem label="Claude 3.5" color="bg-yellow-500" value="25%" />
-                <LegendItem label="Llama 3" color="bg-yellow-500" value="10%" />
-              </div>
+              <p className="text-sm text-gray-400">Cost by model</p>
+              {breakdown.length > 0 ? (
+                <>
+                  <div className="h-4 w-full bg-white/5 rounded-full flex overflow-hidden">
+                    {breakdown.map((b, i) => (
+                      <div key={b.model} className={cn("h-full", PALETTE[i % PALETTE.length])} style={{ width: b.width }} />
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-4 pt-2">
+                    {breakdown.map((b, i) => (
+                      <LegendItem key={b.model} label={b.model} color={PALETTE[i % PALETTE.length]} value={b.cost} />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-gray-600 italic">No cost breakdown available yet.</p>
+              )}
             </div>
 
             <div className="border-t border-white/5 pt-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-white uppercase tracking-wider">Budget Utilization</span>
-                <span className="text-xs font-bold text-gray-400">{costs?.usage_percentage}</span>
+                <span className="text-xs font-bold text-gray-400">{costs?.usage_percentage || "0%"}</span>
               </div>
               <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-amber-500 to-yellow-500" style={{ width: costs?.usage_percentage || '0%' }} />
+                <div className="h-full bg-gradient-to-r from-amber-500 to-yellow-500" style={{ width: costs?.usage_percentage || "0%" }} />
               </div>
             </div>
           </div>

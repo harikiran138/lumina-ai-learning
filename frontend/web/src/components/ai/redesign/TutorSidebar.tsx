@@ -1,6 +1,6 @@
 "use client";
 
-import { History, BookOpen, Plus } from "lucide-react";
+import { History, BookOpen, Plus, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TutorSidebarProps {
@@ -10,6 +10,7 @@ interface TutorSidebarProps {
   onNewChat: () => void;
   studentName?: string;
   subtitle?: string;
+  pendingAnswerCount?: number;
 }
 
 export function TutorSidebar({
@@ -19,6 +20,7 @@ export function TutorSidebar({
   onNewChat,
   studentName = "Student",
   subtitle = "Personal learning mode",
+  pendingAnswerCount = 0,
 }: TutorSidebarProps) {
   const sessionList = Object.keys(sessions).map((sessionId) => {
     const msgs = sessions[sessionId];
@@ -66,6 +68,21 @@ export function TutorSidebar({
           <span>Saved Courses</span>
         </button>
       </div>
+
+      {/* Pending answers badge */}
+      {pendingAnswerCount > 0 && (
+        <div className="mx-2 mt-2 rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-2.5 flex items-center gap-2">
+          <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-amber-300">
+              {pendingAnswerCount} answer{pendingAnswerCount > 1 ? "s" : ""} pending review
+            </p>
+            <p className="text-[10px] text-gray-500 mt-0.5">
+              Teacher is reviewing your questions
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="px-4 py-2 text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-4">
         History

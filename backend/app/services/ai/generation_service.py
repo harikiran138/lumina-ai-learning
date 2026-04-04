@@ -1,4 +1,4 @@
-import PyPDF2
+import pypdf
 import os
 from .ai_generator import LuminaCourseBlueprintGenerator
 
@@ -12,7 +12,7 @@ class PDFProcessor:
         text = ""
         try:
             with open(file_path, "rb") as f:
-                reader = PyPDF2.PdfReader(f)
+                reader = pypdf.PdfReader(f)
                 num_pages = len(reader.pages)
                 # Limit extraction to first 20 pages for blueprinting
                 for i in range(min(num_pages, 20)):

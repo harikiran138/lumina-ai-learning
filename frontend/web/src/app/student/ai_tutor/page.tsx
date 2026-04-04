@@ -113,6 +113,7 @@ export default function AITutorPage() {
   const [dynamicSuggestions, setDynamicSuggestions] =
     useState<string[]>(DEFAULT_SUGGESTIONS);
   const [focusTopics, setFocusTopics] = useState<string[]>([]);
+  const [pendingAnswerCount, setPendingAnswerCount] = useState(0);
   const currentTopicRef = useRef<string>("General");
 
   useEffect(() => {
@@ -231,7 +232,7 @@ export default function AITutorPage() {
   useEffect(() => {
     const loadTutorState = async () => {
       try {
-        const [user, dashboard, profile, notes, history, allCourses] =
+        const [user, dashboard, profile, notes, history, allCourses, questions] =
           await Promise.all([
             api.getCurrentUser(),
             api.getDashboardData("student"),
@@ -239,7 +240,13 @@ export default function AITutorPage() {
             api.getNotes(),
             api.getChatHistory(),
             api.getAllCourses(),
+            api.getStudentQuestions().catch(() => [] as any[]),
           ]);
+
+        const pendingCount = (questions || []).filter(
+          (q: any) => q.queue_status === "pending" || q.queue_status === "escalated_to_faculty" || q.queue_status === "escalated_to_hod"
+        ).length;
+        setPendingAnswerCount(pendingCount);
 
         const normalizedHistory = normalizeStoredMessages(history || []);
         const grouped = groupMessages(normalizedHistory);
@@ -443,6 +450,7 @@ export default function AITutorPage() {
           onNewChat={startNewChat}
           studentName={currentUserName}
           subtitle={sidebarSubtitle}
+          pendingAnswerCount={pendingAnswerCount}
         />
       }
       conversation={

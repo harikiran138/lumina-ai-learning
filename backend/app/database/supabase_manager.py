@@ -2,13 +2,45 @@ import httpx
 import os
 import sys
 import time
-from typing import Optional, Any, Dict, List, Tuple
+import asyncio
+from typing import Optional, Any, Dict, List, Tuple, Type, cast
 from datetime import datetime
 from copy import deepcopy
 import uuid
 from supabase import create_client, Client, ClientOptions
 from app.core.config import settings
 from app.core.logging import structlog
+
+# Monkey-patch postgrest to support async_execute() even on the sync client
+# This ensures that the codebase, which was developed with a mock client
+# that had async_execute(), works without changes on real Supabase.
+try:
+    import postgrest._sync.request_builder as sync_rb
+    import postgrest._async.request_builder as async_rb
+
+    async def _async_execute_shim(self):
+        """Shim to bridge the gap between codebase and library."""
+        import asyncio
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self.execute)
+
+    # Patch the sync builders
+    if hasattr(sync_rb, "SyncQueryRequestBuilder"):
+        sync_rb.SyncQueryRequestBuilder.async_execute = _async_execute_shim
+    if hasattr(sync_rb, "SyncFilterRequestBuilder"):
+        sync_rb.SyncFilterRequestBuilder.async_execute = _async_execute_shim
+    
+    # Patch the async builders (though they should have execute() as coroutine)
+    async def _async_execute_direct(self):
+        return await self.execute()
+    
+    if hasattr(async_rb, "AsyncQueryRequestBuilder"):
+        async_rb.AsyncQueryRequestBuilder.async_execute = _async_execute_direct
+    if hasattr(async_rb, "AsyncFilterRequestBuilder"):
+        async_rb.AsyncFilterRequestBuilder.async_execute = _async_execute_direct
+
+except ImportError:
+    pass
 
 log = structlog.get_logger()
 
