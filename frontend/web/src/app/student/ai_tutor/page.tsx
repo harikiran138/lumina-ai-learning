@@ -6,6 +6,7 @@ import {
   processMessage,
   type ProcessMessageOptions,
 } from "@/lib/ai-tutor/router";
+import { extractA2UITopic } from "@/lib/a2ui-schema";
 import { TutorLayout } from "@/components/ai/redesign/TutorLayout";
 import { TutorSidebar } from "@/components/ai/redesign/TutorSidebar";
 import { TutorConversation } from "@/components/ai/redesign/TutorConversation";
@@ -25,16 +26,6 @@ interface TutorMessage {
   sessionId: string;
   source?: string;
   personalization?: Record<string, any>;
-}
-
-function tryExtractA2UITopic(payload: string): string | null {
-  try {
-    const parsed = JSON.parse(payload);
-    const topic = parsed?.meta?.topic;
-    return typeof topic === "string" && topic.trim() ? topic.trim() : null;
-  } catch {
-    return null;
-  }
 }
 
 function resolveTutorProvider(): "auto" | "ollama" | "gemini" {
@@ -402,7 +393,7 @@ export default function AITutorPage() {
 
       try {
         const result = await processMessage(text.trim(), requestOptions);
-        const resolvedTopic = tryExtractA2UITopic(result.text);
+        const resolvedTopic = extractA2UITopic(result.text);
         if (resolvedTopic) {
           currentTopicRef.current = resolvedTopic;
         }

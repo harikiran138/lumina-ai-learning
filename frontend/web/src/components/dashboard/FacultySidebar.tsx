@@ -104,16 +104,9 @@ export default function FacultySidebar({
       onMouseEnter={() => onHoverChange?.(true)}
       onMouseLeave={() => onHoverChange?.(false)}
       className={cn(
-        "lumina-sidebar",
-        "fixed left-0 top-0 bottom-0 border-r border-white/5 shadow-premium z-50 flex flex-col",
-        "transition-all duration-300 ease-in-out",
-        // Width synchronization: expand to 16rem (w-64) on hover, otherwise 5rem (w-20)
-        isOpen
-          ? "w-64 translate-x-0"
-          : cn(
-              "-translate-x-full lg:translate-x-0",
-              isHovered ? "lg:w-64" : "lg:w-20"
-            ),
+        "fixed left-0 top-0 bottom-0 border-r border-white/5 bg-black/40 backdrop-blur-xl z-40 flex flex-col transition-all duration-300 ease-in-out overflow-hidden shadow-2xl",
+        isHovered ? "w-64" : "w-20",
+        isOpen ? "translate-x-0 w-64 flex" : "-translate-x-full lg:translate-x-0 hidden lg:flex"
       )}
     >
       {/* ── Logo header ── */}

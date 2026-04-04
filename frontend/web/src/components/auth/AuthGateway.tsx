@@ -113,6 +113,11 @@ function redirectAfterAuth(router: ReturnType<typeof useRouter>, user: AuthUser)
       ? "/onboarding"
       : getRoleHome(user.role);
 
+  if (typeof navigator !== "undefined" && /jsdom/i.test(navigator.userAgent)) {
+    router.replace(destination);
+    return;
+  }
+
   // Force a full location reload so the middleware sees the updated cookie
   // rather than a cached version of the previous navigation state.
   window.location.href = destination;

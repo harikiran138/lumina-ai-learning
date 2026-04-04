@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 import os
@@ -27,8 +28,17 @@ class Settings(BaseSettings):
     SECURE_COOKIES: bool = os.getenv("ENVIRONMENT", "local").lower() == "production" or os.getenv("SECURE_COOKIES", "False").lower() == "true"
 
     # AI Configuration - Use OPENROUTER_API_KEY for both tutor and assessment
-    OPENROUTER_API_KEY: Optional[str] = os.getenv("OPENROUTER_API_KEY")
-    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free")
+    OPENROUTER_API_KEY: Optional[str] = None
+    OPENROUTER_MODEL: str = "google/gemini-2.0-flash-exp:free"
+    OPENROUTER_SIMPLE_MODEL: str = "google/gemini-2.0-flash-exp:free"
+    OPENROUTER_COMPLEX_MODEL: str = "anthropic/claude-3.5-sonnet"
+    OPENROUTER_FALLBACK_MODEL: str = "openai/gpt-4o-mini"
+    OPENROUTER_API_URL: str = "https://openrouter.ai/api/v1/chat/completions"
+    OPENROUTER_SITE_URL: str = "https://lumina-ai.learning"
+    OPENROUTER_APP_NAME: str = "Lumina AI Learning"
+    OPENROUTER_CONNECT_TIMEOUT: float = 5.0
+    OPENROUTER_READ_TIMEOUT: float = 45.0
+    OPENROUTER_MAX_RETRIES: int = 2
     ASSESSMENT_API_KEY: Optional[str] = None
     SENTRY_DSN: Optional[str] = None
 
@@ -38,7 +48,10 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE_MB: int = 10
     UPLOAD_DIR: str = "uploads/handwritten"
 
-    model_config = SettingsConfigDict(env_file=(".env", "../.env", "../../.env"), extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(".env", "backend/.env", "../.env", "../../.env"),
+        extra="ignore",
+    )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

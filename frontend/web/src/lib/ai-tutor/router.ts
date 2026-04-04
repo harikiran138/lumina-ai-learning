@@ -23,6 +23,10 @@ export interface ProcessMessageOptions {
   history?: Array<{ sender: string; text: string; timestamp?: string | Date }>;
 }
 
+const STUDENT_TUTOR_WAITING_MESSAGE = "Teacher is reviewing your answer";
+const POLL_INTERVAL_MS = 1200;
+const MAX_POLL_ATTEMPTS = 35;
+
 // Simple rule-based matcher for common questions (Sub-5ms response)
 const checkRules = (question: string): string | null => {
   const lower = question.toLowerCase();
@@ -43,6 +47,53 @@ const sendTelemetry = (
   // Placeholder for real telemetry (e.g. PostHog, Mixpanel)
   // For now, structured log
   console.log(`[TELEMETRY] ${metric}: ${value}ms`, tags);
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const inferMode = (question: string): "explain" | "quiz" | "code" | "interactive" => {
+  const lowered = question.toLowerCase();
+  if (/(quiz|test me|mcq|multiple choice)/.test(lowered)) return "quiz";
+  if (/(code|debug|function|script|algorithm|python|javascript|java|sql)/.test(lowered)) {
+    return "code";
+  }
+  if (/(hint|guide me|don't tell me|dont tell me|help me think)/.test(lowered)) {
+    return "interactive";
+  }
+  return "explain";
+};
+
+const extractAnswerText = (payload: any): string => {
+  const candidates = [
+    payload?.answer?.content,
+    payload?.answer?.response,
+    payload?.response,
+    payload?.content,
+    payload?.data?.response,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return "";
+};
+
+const extractAnswerType = (payload: any, content: string): string | undefined => {
+  const directType = payload?.answer?.type || payload?.type;
+  if (typeof directType === "string" && directType.trim()) {
+    return directType.trim();
+  }
+
+  try {
+    const parsed = JSON.parse(content);
+    const firstType = parsed?.flow?.[0]?.type;
+    return typeof firstType === "string" && firstType.trim() ? firstType.trim() : undefined;
+  } catch {
+    return undefined;
+  }
 };
 
 export const processMessage = async (
@@ -90,13 +141,19 @@ export const processMessage = async (
   while (attempts < maxAttempts) {
     try {
       const api = RealAPI.getInstance();
-      const response = await api.fetchAuthorized("/api/ai-tutor/chat", {
+      const mode = inferMode(question);
+      const askResponse = await api.fetchAuthorized("/api/student/tutor/ask", {
         method: "POST",
         body: JSON.stringify({
           prompt: question,
+          question,
+          message: question,
           user_id: userId || "guest",
           session_id: sessionId || "default-session",
           provider,
+          mode,
+          topic,
+          subject,
           history: history.slice(-8).map((item) => ({
             sender: item.sender,
             text: item.text,
@@ -113,14 +170,60 @@ export const processMessage = async (
                 }
               : undefined,
         }),
-      });
+      }, 20000);
 
-      if (!response.ok) {
-        const rawText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${rawText}`);
+      if (!askResponse.ok) {
+        const rawText = await askResponse.text();
+        throw new Error(`HTTP ${askResponse.status}: ${rawText}`);
       }
 
-      const data = await response.json();
+      const askData = await askResponse.json();
+      const answerId = askData?.id || askData?.answer_id;
+      if (typeof answerId !== "string" || !answerId.trim()) {
+        throw new Error("Tutor API did not return an answer id");
+      }
+
+      let answerText = "";
+      let answerType: string | undefined;
+      let answerPayload: any = null;
+
+      for (let pollAttempt = 0; pollAttempt < MAX_POLL_ATTEMPTS; pollAttempt++) {
+        const pollResponse = await api.fetchAuthorized(
+          `/api/student/tutor/answer/${answerId}`,
+          { method: "GET" },
+          20000,
+        );
+
+        if (!pollResponse.ok) {
+          const rawText = await pollResponse.text();
+          throw new Error(`HTTP ${pollResponse.status}: ${rawText}`);
+        }
+
+        const pollData = await pollResponse.json();
+        const status = String(pollData?.status || "").toLowerCase();
+
+        if (status === "completed") {
+          answerText = extractAnswerText(pollData);
+          answerType = extractAnswerType(pollData, answerText);
+          answerPayload = pollData;
+          break;
+        }
+
+        if (status === "failed") {
+          throw new Error(
+            pollData?.message || "Tutor answer generation failed.",
+          );
+        }
+
+        await sleep(POLL_INTERVAL_MS);
+      }
+
+      if (!answerText.trim()) {
+        throw new Error(
+          answerPayload?.message ||
+            `${STUDENT_TUTOR_WAITING_MESSAGE}. The reply is taking longer than usual.`,
+        );
+      }
 
       // Success
       const latency = Math.round(performance.now() - startTime);
@@ -128,9 +231,6 @@ export const processMessage = async (
         source: "api",
         attempt: (attempts + 1).toString(),
       });
-
-      // Backend returns 'response', frontend library likely expects 'answer' based on cache line below
-      const answerText = data.response;
 
       // Cache the result
       cacheResponse(question, answerText).catch((e) =>
@@ -141,7 +241,9 @@ export const processMessage = async (
         text: answerText,
         source: "api",
         latency,
-        personalization: data.personalization,
+        personalization:
+          answerPayload?.personalization ||
+          (answerType ? { recommendation: answerType } : undefined),
       };
     } catch (e: any) {
       attempts++;

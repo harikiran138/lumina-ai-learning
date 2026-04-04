@@ -1350,12 +1350,9 @@ class AnalyticsStore:
 
             if not enrollments:
                 try:
-                    progress_response = (
-                        client.table("student_progress")
-                        .select("*")
-                        .eq("student_id", student_id)
-                        .async_execute()
-                    )
+                    progress_response = await client.table("student_progress").select("*").eq(
+                        "student_id", student_id
+                    ).async_execute()
                     progress_rows = progress_response.data or []
                     enrollments = [
                         {
@@ -1379,12 +1376,9 @@ class AnalyticsStore:
 
             if not enrollments:
                 try:
-                    subject_response = (
-                        client.table("student_subjects")
-                        .select("subject_id")
-                        .eq("student_id", student_id)
-                        .async_execute()
-                    )
+                    subject_response = await client.table("student_subjects").select("subject_id").eq(
+                        "student_id", student_id
+                    ).async_execute()
                     subject_ids = [
                         str(row.get("subject_id"))
                         for row in (subject_response.data or [])

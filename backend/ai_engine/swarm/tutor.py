@@ -414,7 +414,7 @@ def build_tutor_degraded_response(
                             "Skip examples completely",
                         ],
                         "answer": 0,
-                        "explanation": "A strong first step is always to understand the main idea before moving to harder practice.",
+                        "explanation": "A strong first step is always to understand the main idea before moving to understanding.",
                     }
                 ],
             }
@@ -540,6 +540,24 @@ class TutorAgent:
         self.llm = get_llm_provider(feature="tutor", provider=provider)
         self.retrieval = get_rag_engine(provider=provider)
         self.memory_store = TutorMemoryStore()
+
+    def _redact(self, text: str) -> str:
+        """
+        Redact sensitive information (PII) including emails, phone numbers, and IDs.
+        Requirement 3: Mask specific student/faculty numeric identifiers.
+        """
+        import re
+        patterns = [
+            (r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z]{2,}\b", "[EMAIL]"),
+            (r"\b(?:\+?\d{1,3}[-. ]?)?\(?\d{3}\)?[-. ]?\d{3}[-. ]?\d{4}\b", "[PHONE]"),
+            (r"\b\d{2}[A-Z]{2}\d[A-Z]\d{4}\b", "[STUDENT_ID]"), # Pattern like 22NU1A1234
+            (r"\b(?:FAC|HOD|ADM|EMP)\d{4,6}\b", "[STAFF_ID]"),  # Pattern like FAC123456
+            (r"\b\d{10,12}\b", "[NUMERIC_ID]") # Generic 10-12 digit IDs
+        ]
+        redacted = text
+        for pattern, replacement in patterns:
+            redacted = re.sub(pattern, replacement, redacted)
+        return redacted
 
     def _is_local_ollama(self) -> bool:
         return isinstance(self.llm, OllamaProvider)
@@ -678,6 +696,24 @@ Keep arrays short and educational.
             print(f"Curriculum lookup failed: {e}")
             return default_context
 
+    async def generate_simple_response(self, user_input: str, history: list = None) -> str:
+        """
+        Handle simple interactions (greetings, general chat) with a fast model.
+        Returns a single text response.
+        """
+        messages = [{"role": "system", "content": "You are Lumina, an AI Academic Tutor. Be friendly, brief, and educational. Reply with text only, no JSON."}]
+        if history:
+            for h in history[-3:]:
+                role = "assistant" if h.get("role") == "assistant" else "user"
+                messages.append({"role": role, "content": h.get("content", "")})
+        
+        messages.append({"role": "user", "content": user_input})
+        
+        prompt = user_input
+        # Use simple provider for fast response
+        provider = get_llm_provider(feature="fast")
+        return await provider.agenerate(prompt, system_prompt=messages[0]["content"])
+
     async def generate_response(
         self,
         topic: str,
@@ -738,10 +774,17 @@ Keep arrays short and educational.
         If the student is confused, break down the concept into smaller pieces.
         Adjust your complexity based on the learner's mastery levels and cognitive load.
         """
-        subject_instruction = SUBJECT_MODE_INSTRUCTIONS.get(
-            subject_mode, SUBJECT_MODE_INSTRUCTIONS["general"]
-        )
-        socratic_instruction += f"\n\nSUBJECT MODE: {subject_mode}\n{subject_instruction}"
+        mode_instruction = "Provide a high-quality pedagogical explanation using valid A2UI blocks."
+        if subject_mode == "code":
+            mode_instruction = "Focus on syntax, structure, and debugging. Provide clear code snippets and use StepBlocks for logic breakdown."
+        elif subject_mode == "math":
+            mode_instruction = "Use clear mathematical notation and step-by-step derivations. Mandatory use of StepBlocks for the solving process."
+        elif subject_mode == "science":
+            mode_instruction = "Explain concepts using diagrams and intuitive analogies. Focus on first principles."
+        elif subject_mode == "socratic":
+            mode_instruction = "Adopt a Socratic style. Ask leading questions using ReflectionBlocks instead of direct answers."
+        
+        socratic_instruction += f"\n\nSUBJECT MODE: {subject_mode}\n{mode_instruction}"
 
         if weak_topics:
             socratic_instruction += f"\n\nWEAK TOPICS TO PRIORITIZE: {', '.join(weak_topics)}"

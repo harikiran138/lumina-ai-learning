@@ -1,5 +1,12 @@
+"use client";
+
 import React, { useMemo } from "react";
-import { A2UIResponse, A2UIBlock } from "@/lib/a2ui-schema";
+import ReactMarkdown from "react-markdown";
+import {
+  type A2UIBlock,
+  type A2UIRenderable,
+  parseA2UIContent,
+} from "@/lib/a2ui-schema";
 import { ConceptResult } from "./blocks/ConceptBlock";
 import { StepResult } from "./blocks/StepBlock";
 import { QuizResult } from "./blocks/QuizBlock";
@@ -7,109 +14,121 @@ import { FlashcardResult } from "./blocks/FlashcardBlock";
 import { DiagramResult } from "./blocks/DiagramBlock";
 import { TableResult } from "./blocks/TableBlock";
 import { ReflectionResult } from "./blocks/ReflectionBlock";
-import ReactMarkdown from "react-markdown";
+import { TextResult } from "./blocks/TextBlock";
+import { CodeResult } from "./blocks/CodeBlock";
+import { GraphResult } from "./blocks/GraphBlock";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface A2UIRendererV2Props {
   content: string;
 }
 
+function renderBlock(block: A2UIBlock, index: number) {
+  const key = block.id || `${block.type}-${index}`;
+
+  switch (block.type) {
+    case "text":
+      return <TextResult key={key} block={block} />;
+    case "quiz":
+      return <QuizResult key={key} block={block} />;
+    case "code":
+      return <CodeResult key={key} block={block} />;
+    case "graph":
+      return <GraphResult key={key} block={block} />;
+    case "steps":
+      return <StepResult key={key} block={block} />;
+    case "diagram":
+      return <DiagramResult key={key} block={block} />;
+    case "concept":
+      return <ConceptResult key={key} block={block} />;
+    case "table":
+      return <TableResult key={key} block={block} />;
+    case "flashcards":
+      return <FlashcardResult key={key} block={block} />;
+    case "reflection":
+      return <ReflectionResult key={key} block={block} />;
+    default:
+      return null;
+  }
+}
+
+function A2UIHeader({ parsed }: { parsed: A2UIRenderable }) {
+  const meta = parsed.meta;
+  const title =
+    parsed.type === "lesson"
+      ? parsed.content.title
+      : "title" in parsed.content
+        ? parsed.content.title
+        : undefined;
+  const summary =
+    parsed.type === "lesson" ? parsed.content.summary : undefined;
+
+  if (!title && !summary && !meta?.topic && !meta?.difficulty && !meta?.estimatedTimeMin) {
+    return null;
+  }
+
+  return (
+    <div className="mb-4 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {title && (
+          <h3 className="text-base font-semibold tracking-tight text-white">
+            {title}
+          </h3>
+        )}
+        {meta?.topic && meta.topic !== title && (
+          <Badge variant="outline" className="border-amber-400/30 text-amber-200">
+            {meta.topic}
+          </Badge>
+        )}
+        {meta?.difficulty && (
+          <Badge
+            variant="outline"
+            className={cn(
+              "uppercase tracking-[0.2em]",
+              meta.difficulty === "hard"
+                ? "border-red-400/30 text-red-200"
+                : meta.difficulty === "medium"
+                  ? "border-amber-400/30 text-amber-200"
+                  : "border-emerald-400/30 text-emerald-200",
+            )}
+          >
+            {meta.difficulty}
+          </Badge>
+        )}
+        {typeof meta?.estimatedTimeMin === "number" && (
+          <Badge variant="outline" className="border-white/10 text-slate-300">
+            {meta.estimatedTimeMin} min
+          </Badge>
+        )}
+      </div>
+      {summary && (
+        <p className="mt-2 text-sm leading-relaxed text-slate-300">{summary}</p>
+      )}
+    </div>
+  );
+}
+
 export const A2UIRendererV2: React.FC<A2UIRendererV2Props> = ({ content }) => {
-  const parsedResponse = useMemo(() => {
-    try {
-      // 1. Try strict JSON parse
-      const data = JSON.parse(content);
+  const parsedResponse = useMemo(() => parseA2UIContent(content), [content]);
 
-      // 2. Validate basic structure (duck typing for now, use Zod in real prod)
-      if (data && data.meta && Array.isArray(data.flow)) {
-        return data as A2UIResponse;
-      }
-      return null;
-    } catch (e) {
-      // 3. Fallback: Check for markdown code block with json
-      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
-      if (jsonMatch && jsonMatch[1]) {
-        try {
-          const data = JSON.parse(jsonMatch[1]);
-          if (data && data.meta && Array.isArray(data.flow)) {
-            return data as A2UIResponse;
-          }
-        } catch (e2) {
-          // Invalid JSON in code block
-        }
-      }
-      return null;
-    }
-  }, [content]);
-
-  // Fallback to markdown renderer if not valid A2UI JSON
   if (!parsedResponse) {
     return (
-      <div className="prose pamber-sm dark:pamber-invert max-w-none text-zinc-700 dark:text-zinc-300 leading-relaxed">
+      <div className="prose prose-invert max-w-none text-zinc-200 leading-relaxed">
         <ReactMarkdown>{content}</ReactMarkdown>
       </div>
     );
   }
 
-  // Render A2UI Flow
-  return (
-    <div className="a2ui-container space-y-2">
-      {/* Optional: Render Meta Info (e.g. Difficulty Badge) */}
-      {parsedResponse.meta && (
-        <div className="flex items-center gap-2 mb-4 text-xs text-zinc-400 font-mono uppercase tracking-widest border-b border-zinc-100 dark:border-zinc-800 pb-2">
-          <span>{parsedResponse.meta.topic}</span>
-          <span>•</span>
-          <span
-            className={
-              parsedResponse.meta.difficulty === "hard"
-                ? "text-red-500"
-                : parsedResponse.meta.difficulty === "medium"
-                  ? "text-amber-500"
-                  : "text-green-500"
-            }
-          >
-            {parsedResponse.meta.difficulty}
-          </span>
-          <span>•</span>
-          <span>{parsedResponse.meta.estimated_time_min} min</span>
-        </div>
-      )}
+  const blocks =
+    parsedResponse.type === "lesson"
+      ? parsedResponse.content.blocks
+      : [parsedResponse];
 
-      {parsedResponse.flow.map((block: A2UIBlock, idx: number) => {
-        switch (block.type) {
-          case "concept":
-            return <ConceptResult key={idx} block={block} />;
-          case "steps":
-            return <StepResult key={idx} block={block} />;
-          case "quiz":
-            return <QuizResult key={idx} block={block} />;
-          case "flashcards":
-            return <FlashcardResult key={idx} block={block} />;
-          case "diagram":
-            return <DiagramResult key={idx} block={block} />;
-          case "table":
-            return <TableResult key={idx} block={block} />;
-          case "reflection":
-            return <ReflectionResult key={idx} block={block} />;
-          case "text":
-            return (
-              <div
-                key={idx}
-                className="prose pamber-sm dark:pamber-invert max-w-none my-4"
-              >
-                <ReactMarkdown>{block.content}</ReactMarkdown>
-              </div>
-            );
-          default:
-            return (
-              <div
-                key={idx}
-                className="p-4 bg-red-50 text-red-600 rounded-md text-xs"
-              >
-                ⚠️ Unknown block type: {(block as any).type}
-              </div>
-            );
-        }
-      })}
+  return (
+    <div className="a2ui-container space-y-4">
+      <A2UIHeader parsed={parsedResponse} />
+      {blocks.map((block, index) => renderBlock(block, index))}
     </div>
   );
 };

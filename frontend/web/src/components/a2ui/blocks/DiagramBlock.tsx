@@ -1,49 +1,100 @@
-import React, { useEffect, useState } from "react";
-import { DiagramBlock } from "@/lib/a2ui-schema";
-import { Network } from "lucide-react";
+"use client";
 
-// NOTE: In a real production app, we would dynamically import 'mermaid' here.
-// For this "Core Brain Upgrade", we'll implement a clean container.
-// If mermaid rendering is required immediately, we can add the dependency.
+import React, { useEffect, useId, useState } from "react";
+import { type DiagramBlock } from "@/lib/a2ui-schema";
+import { Network } from "lucide-react";
 
 interface DiagramResultProps {
   block: DiagramBlock;
 }
 
+function sanitizeMermaid(code: string) {
+  let sanitized = code.replace(
+    /(\w+)\(([^")]*?\([^")]*?\)[^")]*?)\)/g,
+    '$1("$2")',
+  );
+  sanitized = sanitized.replace(
+    /(\w+)\[([^"]*?\[[^"]*?\][^"]*?)\]/g,
+    '$1["$2"]',
+  );
+  return sanitized;
+}
+
 export const DiagramResult: React.FC<DiagramResultProps> = ({ block }) => {
-  // Basic Mermaid initialization placeholder
-  // useEffect(() => {
-  //  if (block.diagram_type === 'mermaid') {
-  //      mermaid.contentLoaded();
-  //  }
-  // }, [block.code]);
+  const [svg, setSvg] = useState("");
+  const [failed, setFailed] = useState(false);
+  const diagramId = useId().replace(/:/g, "");
+
+  useEffect(() => {
+    if (block.content.diagramType === "svg") {
+      setSvg(block.content.code);
+      setFailed(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const renderMermaid = async () => {
+      try {
+        const mermaid = (await import("mermaid")).default;
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: "dark",
+          securityLevel: "loose",
+        });
+
+        const { svg: renderedSvg } = await mermaid.render(
+          `a2ui-diagram-${diagramId}`,
+          sanitizeMermaid(block.content.code),
+        );
+
+        if (!cancelled) {
+          setSvg(renderedSvg);
+          setFailed(false);
+        }
+      } catch (error) {
+        console.error("diagram_render_failed", error);
+        if (!cancelled) {
+          setSvg("");
+          setFailed(true);
+        }
+      }
+    };
+
+    renderMermaid();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [block.content.code, block.content.diagramType, diagramId]);
 
   return (
-    <div className="my-6">
-      <div className="flex items-center gap-2 mb-3">
-        <Network className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-        {block.title && (
-          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
-            {block.title}
-          </h3>
+    <div className="my-6 rounded-2xl border border-white/8 bg-white/[0.03] p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <Network className="h-5 w-5 text-sky-300" />
+        {block.content.title && (
+          <h3 className="font-semibold text-white">{block.content.title}</h3>
         )}
       </div>
 
-      <div className="p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-x-auto flex justify-center">
-        {block.diagram_type === "mermaid" ? (
+      <div className="overflow-x-auto rounded-xl border border-white/6 bg-[#08111f] p-4">
+        {svg ? (
           <div
-            className="mermaid text-sm opacity-80"
-            data-testid="mermaid-diagram"
-          >
-            {block.code}
-          </div>
+            className="flex justify-center"
+            dangerouslySetInnerHTML={{ __html: svg }}
+          />
+        ) : failed ? (
+          <pre className="whitespace-pre-wrap text-xs text-red-200">
+            {block.content.code}
+          </pre>
         ) : (
-          <div dangerouslySetInnerHTML={{ __html: block.code }} />
+          <div className="text-sm text-slate-400">Rendering diagram...</div>
         )}
       </div>
-      {block.caption && (
-        <p className="text-center text-xs text-zinc-500 mt-2 italic">
-          {block.caption}
+
+      {block.content.caption && (
+        <p className="mt-2 text-xs italic text-slate-400">
+          {block.content.caption}
         </p>
       )}
     </div>

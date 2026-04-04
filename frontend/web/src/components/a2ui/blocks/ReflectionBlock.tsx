@@ -1,36 +1,34 @@
+"use client";
+
 import React, { useState } from "react";
-import { ReflectionBlock } from "@/lib/a2ui-schema";
+import { type ReflectionBlock } from "@/lib/a2ui-schema";
 import { PenTool } from "lucide-react";
 
 interface ReflectionResultProps {
   block: ReflectionBlock;
 }
 
-export const ReflectionResult: React.FC<ReflectionResultProps> = ({
-  block,
-}) => {
+export const ReflectionResult: React.FC<ReflectionResultProps> = ({ block }) => {
   const [response, setResponse] = useState("");
 
   return (
-    <div className="my-6 p-5 bg-gradient-to-br from-yellow-50 to-white dark:from-yellow-900/10 dark:to-zinc-900 border border-yellow-100 dark:border-yellow-900/30 rounded-lg">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="p-1.5 bg-yellow-100 dark:bg-yellow-900/40 rounded-md">
-          <PenTool className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+    <div className="my-6 rounded-2xl border border-amber-300/15 bg-amber-300/10 p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <div className="rounded-xl bg-amber-300/10 p-2">
+          <PenTool className="h-4 w-4 text-amber-200" />
         </div>
-        <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm uppercase tracking-wide">
-          Reflection
+        <h3 className="text-sm font-semibold uppercase tracking-[0.24em] text-amber-100">
+          {block.content.title || "Reflection"}
         </h3>
       </div>
 
-      <p className="text-zinc-700 dark:text-zinc-300 font-medium mb-3">
-        {block.prompt}
-      </p>
+      <p className="mb-3 text-sm font-medium text-white">{block.content.prompt}</p>
 
       <textarea
-        className="w-full p-3 text-sm bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none transition-all resize-none min-h-[80px]"
-        placeholder={block.placeholder || "Type your thoughts here..."}
+        className="min-h-[88px] w-full resize-none rounded-xl border border-white/8 bg-black/20 p-3 text-sm text-slate-100 outline-none transition-all focus:border-amber-300/30"
+        placeholder={block.content.placeholder || "Type your thoughts here..."}
         value={response}
-        onChange={(e) => setResponse(e.target.value)}
+        onChange={(event) => setResponse(event.target.value)}
       />
     </div>
   );

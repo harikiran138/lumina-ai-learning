@@ -112,7 +112,9 @@ class UserStore:
             "id": str(uuid.uuid4()),
             "email": email.strip().lower(),
             "password_hash": hashed_password,
-            "role": self.to_db_role(role)
+            "name": full_name,
+            "role": self.to_db_role(role),
+            "full_name": full_name,
         }
 
         # Backup metadata for secondary profile tables
@@ -225,6 +227,8 @@ class UserStore:
     async def create_user_from_dict(self, user_data: dict) -> dict:
         """Internal helper for resilient user creation."""
         try:
+            if user_data.get("full_name") and not user_data.get("name"):
+                user_data = {**user_data, "name": user_data["full_name"]}
             insert_result = await self.db.table("users").insert(user_data).async_execute()
             result = insert_result.data[0] if insert_result.data else await self.get_user_by_email(user_data["email"])
             if not result:

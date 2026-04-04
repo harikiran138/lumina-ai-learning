@@ -174,7 +174,7 @@ export function TutorConversation({
                   <div className="w-1.5 h-1.5 bg-lumina-primary/80 rounded-full animate-bounce" />
                 </div>
                 <span className="text-xs text-gray-500 font-medium tracking-wide">
-                  Thinking...
+                  Teacher is reviewing your answer
                 </span>
               </div>
             </motion.div>
@@ -214,6 +214,7 @@ export function TutorConversation({
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            aria-label="Ask Lumina Tutor"
             placeholder="Ask about a concept, assignment, weak topic, or quiz..."
             className="flex-1 bg-transparent border-none outline-none text-base text-gray-100 placeholder-gray-600 h-10 px-2 font-light tracking-wide focus:ring-0"
           />
@@ -228,6 +229,7 @@ export function TutorConversation({
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
+            aria-label="Send message"
             className={cn(
               "p-3 rounded-xl transition-all duration-300 flex items-center justify-center",
               input.trim() && !isLoading

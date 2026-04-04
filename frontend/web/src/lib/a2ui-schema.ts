@@ -1,98 +1,545 @@
-export type A2UIBlockType =
-  | "concept"
-  | "steps"
-  | "quiz"
-  | "flashcards"
-  | "diagram"
-  | "table"
-  | "reflection"
-  | "text"; // Fallback only, should be avoided by reasoning engine
+import { z } from "zod";
 
-export interface A2UIMeta {
-  topic: string;
-  difficulty: "easy" | "medium" | "hard";
-  estimated_time_min: number;
-  exportable: boolean;
+export const A2UIDifficultySchema = z.enum(["easy", "medium", "hard"]);
+export type A2UIDifficulty = z.infer<typeof A2UIDifficultySchema>;
+
+export const A2UIActionSchema = z.enum(["next-step", "show-hint"]);
+export type A2UIAction = z.infer<typeof A2UIActionSchema>;
+
+export const A2UIMetaSchema = z.object({
+  topic: z.string().optional(),
+  difficulty: A2UIDifficultySchema.optional(),
+  estimatedTimeMin: z.number().int().nonnegative().optional(),
+  estimated_time_min: z.number().int().nonnegative().optional(),
+  exportable: z.boolean().optional(),
+});
+
+export type A2UIMeta = {
+  topic?: string;
+  difficulty?: A2UIDifficulty;
+  estimatedTimeMin?: number;
+  exportable?: boolean;
+};
+
+export const A2UIConfigSchema = z.object({
+  interactive: z.boolean().optional(),
+  allowHints: z.boolean().optional(),
+  reveal: z.enum(["all", "stepwise"]).optional(),
+  actions: z.array(A2UIActionSchema).optional(),
+});
+
+export type A2UIConfig = z.infer<typeof A2UIConfigSchema>;
+
+const BaseBlockSchema = z.object({
+  id: z.string().optional(),
+  ui: A2UIConfigSchema.optional(),
+  meta: A2UIMetaSchema.optional(),
+});
+
+const TextContentSchema = z.object({
+  title: z.string().optional(),
+  markdown: z.string(),
+  summary: z.string().optional(),
+  bullets: z.array(z.string()).optional(),
+});
+
+const QuizQuestionSchema = z.object({
+  prompt: z.string(),
+  options: z.array(z.string()).min(2),
+  correctIndex: z.number().int().nonnegative().optional(),
+  explanation: z.string().optional(),
+  hint: z.string().optional(),
+});
+
+const QuizContentSchema = z.object({
+  title: z.string().optional(),
+  difficulty: A2UIDifficultySchema.optional(),
+  questions: z.array(QuizQuestionSchema).min(1),
+  passingScore: z.number().min(0).max(100).optional(),
+});
+
+const CodeContentSchema = z.object({
+  title: z.string().optional(),
+  language: z.string().default("text"),
+  code: z.string(),
+  filename: z.string().optional(),
+  explanation: z.string().optional(),
+  output: z.string().optional(),
+});
+
+const GraphDatasetSchema = z.object({
+  label: z.string(),
+  data: z.array(z.number()),
+  color: z.string().optional(),
+  backgroundColor: z.union([z.string(), z.array(z.string())]).optional(),
+  borderColor: z.string().optional(),
+  fill: z.boolean().optional(),
+});
+
+const GraphContentSchema = z.object({
+  title: z.string().optional(),
+  chartType: z.enum(["line", "bar", "pie", "doughnut"]).default("line"),
+  labels: z.array(z.string()),
+  datasets: z.array(GraphDatasetSchema).min(1),
+  xLabel: z.string().optional(),
+  yLabel: z.string().optional(),
+  summary: z.string().optional(),
+});
+
+const StepItemSchema = z.object({
+  title: z.string().optional(),
+  body: z.string(),
+  hint: z.string().optional(),
+});
+
+const StepsContentSchema = z.object({
+  title: z.string(),
+  steps: z.array(StepItemSchema).min(1),
+  summary: z.string().optional(),
+});
+
+const DiagramContentSchema = z.object({
+  title: z.string().optional(),
+  diagramType: z.enum(["mermaid", "svg"]).default("mermaid"),
+  code: z.string(),
+  caption: z.string().optional(),
+});
+
+const TableContentSchema = z.object({
+  title: z.string().optional(),
+  headers: z.array(z.string()).min(1),
+  rows: z.array(z.array(z.string())),
+});
+
+const FlashcardSchema = z.object({
+  front: z.string(),
+  back: z.string(),
+});
+
+const FlashcardsContentSchema = z.object({
+  title: z.string().optional(),
+  cards: z.array(FlashcardSchema).min(1),
+});
+
+const ReflectionContentSchema = z.object({
+  title: z.string().optional(),
+  prompt: z.string(),
+  placeholder: z.string().optional(),
+});
+
+const ConceptContentSchema = z.object({
+  title: z.string(),
+  summary: z.string(),
+  keyPoints: z.array(z.string()).optional(),
+});
+
+export const TextBlockSchema = BaseBlockSchema.extend({
+  type: z.literal("text"),
+  content: TextContentSchema,
+});
+
+export const QuizBlockSchema = BaseBlockSchema.extend({
+  type: z.literal("quiz"),
+  content: QuizContentSchema,
+});
+
+export const CodeBlockSchema = BaseBlockSchema.extend({
+  type: z.literal("code"),
+  content: CodeContentSchema,
+});
+
+export const GraphBlockSchema = BaseBlockSchema.extend({
+  type: z.literal("graph"),
+  content: GraphContentSchema,
+});
+
+export const StepsBlockSchema = BaseBlockSchema.extend({
+  type: z.literal("steps"),
+  content: StepsContentSchema,
+});
+
+export const DiagramBlockSchema = BaseBlockSchema.extend({
+  type: z.literal("diagram"),
+  content: DiagramContentSchema,
+});
+
+export const TableBlockSchema = BaseBlockSchema.extend({
+  type: z.literal("table"),
+  content: TableContentSchema,
+});
+
+export const FlashcardsBlockSchema = BaseBlockSchema.extend({
+  type: z.literal("flashcards"),
+  content: FlashcardsContentSchema,
+});
+
+export const ReflectionBlockSchema = BaseBlockSchema.extend({
+  type: z.literal("reflection"),
+  content: ReflectionContentSchema,
+});
+
+export const ConceptBlockSchema = BaseBlockSchema.extend({
+  type: z.literal("concept"),
+  content: ConceptContentSchema,
+});
+
+export const A2UIBlockSchema = z.discriminatedUnion("type", [
+  TextBlockSchema,
+  QuizBlockSchema,
+  CodeBlockSchema,
+  GraphBlockSchema,
+  StepsBlockSchema,
+  DiagramBlockSchema,
+  TableBlockSchema,
+  FlashcardsBlockSchema,
+  ReflectionBlockSchema,
+  ConceptBlockSchema,
+]);
+
+export type TextBlock = z.infer<typeof TextBlockSchema>;
+export type QuizBlock = z.infer<typeof QuizBlockSchema>;
+export type CodeBlock = z.infer<typeof CodeBlockSchema>;
+export type GraphBlock = z.infer<typeof GraphBlockSchema>;
+export type StepsBlock = z.infer<typeof StepsBlockSchema>;
+export type DiagramBlock = z.infer<typeof DiagramBlockSchema>;
+export type TableBlock = z.infer<typeof TableBlockSchema>;
+export type FlashcardsBlock = z.infer<typeof FlashcardsBlockSchema>;
+export type ReflectionBlock = z.infer<typeof ReflectionBlockSchema>;
+export type ConceptBlock = z.infer<typeof ConceptBlockSchema>;
+export type A2UIBlock = z.infer<typeof A2UIBlockSchema>;
+
+export const LessonResponseSchema = z.object({
+  version: z.string().optional(),
+  type: z.literal("lesson"),
+  content: z.object({
+    title: z.string().optional(),
+    summary: z.string().optional(),
+    blocks: z.array(A2UIBlockSchema).min(1),
+  }),
+  ui: A2UIConfigSchema.optional(),
+  meta: A2UIMetaSchema.optional(),
+});
+
+export type LessonResponse = z.infer<typeof LessonResponseSchema>;
+export type A2UIRenderable = LessonResponse | A2UIBlock;
+
+type LegacyFlowResponse = {
+  meta?: Record<string, unknown>;
+  flow?: unknown[];
+};
+
+function normalizeMeta(meta: Record<string, unknown> | undefined): A2UIMeta | undefined {
+  if (!meta) return undefined;
+
+  const difficulty = meta.difficulty;
+  const estimatedTimeMin =
+    typeof meta.estimatedTimeMin === "number"
+      ? meta.estimatedTimeMin
+      : typeof meta.estimated_time_min === "number"
+        ? meta.estimated_time_min
+        : undefined;
+
+  return {
+    topic: typeof meta.topic === "string" ? meta.topic : undefined,
+    difficulty:
+      difficulty === "easy" || difficulty === "medium" || difficulty === "hard"
+        ? difficulty
+        : undefined,
+    estimatedTimeMin,
+    exportable:
+      typeof meta.exportable === "boolean" ? meta.exportable : undefined,
+  };
 }
 
-export interface BaseBlock {
-  type: A2UIBlockType;
-  id?: string; // Optional for tracking interactions
+function normalizeLegacyBlock(block: Record<string, unknown>): A2UIBlock | null {
+  const type = block.type;
+
+  switch (type) {
+    case "concept":
+      return {
+        type: "concept",
+        content: {
+          title:
+            typeof block.title === "string" ? block.title : "Core concept",
+          summary:
+            typeof block.summary === "string" ? block.summary : "",
+          keyPoints: Array.isArray(block.key_points)
+            ? block.key_points.filter((item): item is string => typeof item === "string")
+            : [],
+        },
+      };
+    case "steps":
+      return {
+        type: "steps",
+        content: {
+          title:
+            typeof block.title === "string" ? block.title : "Steps",
+          steps: Array.isArray(block.steps)
+            ? block.steps
+                .filter((item): item is string => typeof item === "string")
+                .map((body) => ({ body }))
+            : [{ body: "No steps available." }],
+        },
+        ui: {
+          interactive: false,
+          reveal: "all",
+        },
+      };
+    case "quiz":
+      return {
+        type: "quiz",
+        content: {
+          difficulty:
+            block.difficulty === "easy" ||
+            block.difficulty === "medium" ||
+            block.difficulty === "hard"
+              ? block.difficulty
+              : undefined,
+          questions: Array.isArray(block.questions)
+            ? block.questions
+                .filter(
+                  (item): item is Record<string, unknown> =>
+                    Boolean(item) && typeof item === "object",
+                )
+                .map((question) => ({
+                  prompt:
+                    typeof question.question === "string"
+                      ? question.question
+                      : "Question",
+                  options: Array.isArray(question.options)
+                    ? question.options.filter(
+                        (option): option is string => typeof option === "string",
+                      )
+                    : [],
+                  correctIndex:
+                    typeof question.answer === "number"
+                      ? question.answer
+                      : undefined,
+                  explanation:
+                    typeof question.explanation === "string"
+                      ? question.explanation
+                      : undefined,
+                }))
+            : [],
+        },
+        ui: {
+          interactive: true,
+        },
+      };
+    case "flashcards":
+      return {
+        type: "flashcards",
+        content: {
+          cards: Array.isArray(block.cards)
+            ? block.cards
+                .filter(
+                  (item): item is Record<string, unknown> =>
+                    Boolean(item) && typeof item === "object",
+                )
+                .map((card) => ({
+                  front: typeof card.front === "string" ? card.front : "",
+                  back: typeof card.back === "string" ? card.back : "",
+                }))
+            : [],
+        },
+      };
+    case "diagram":
+      return {
+        type: "diagram",
+        content: {
+          title: typeof block.title === "string" ? block.title : undefined,
+          code: typeof block.code === "string" ? block.code : "",
+          diagramType: block.diagram_type === "svg" ? "svg" : "mermaid",
+          caption:
+            typeof block.caption === "string" ? block.caption : undefined,
+        },
+      };
+    case "graph":
+      return {
+        type: "graph",
+        content: {
+          title: typeof block.title === "string" ? block.title : undefined,
+          chartType:
+            block.chartType === "bar" ||
+            block.chartType === "line" ||
+            block.chartType === "pie" ||
+            block.chartType === "doughnut"
+              ? block.chartType
+              : block.graph_type === "bar" ||
+                  block.graph_type === "line" ||
+                  block.graph_type === "pie" ||
+                  block.graph_type === "doughnut"
+                ? block.graph_type
+                : "line",
+          labels: Array.isArray(block.labels)
+            ? block.labels.filter((item): item is string => typeof item === "string")
+            : [],
+          datasets: [
+            {
+              label:
+                typeof block.dataset_label === "string"
+                  ? block.dataset_label
+                  : "Series 1",
+              data: Array.isArray(block.datasets)
+                ? []
+                : Array.isArray(block.values)
+                  ? block.values.filter((item): item is number => typeof item === "number")
+                  : Array.isArray(block.data)
+                    ? block.data.filter((item): item is number => typeof item === "number")
+                    : [],
+            },
+          ],
+          xLabel:
+            typeof block.x_label === "string" ? block.x_label : undefined,
+          yLabel:
+            typeof block.y_label === "string" ? block.y_label : undefined,
+          summary:
+            typeof block.summary === "string" ? block.summary : undefined,
+        },
+      };
+    case "code":
+      return {
+        type: "code",
+        content: {
+          title: typeof block.title === "string" ? block.title : undefined,
+          language:
+            typeof block.language === "string" ? block.language : "text",
+          filename:
+            typeof block.filename === "string" ? block.filename : undefined,
+          code: typeof block.code === "string" ? block.code : "",
+          explanation:
+            typeof block.explanation === "string" ? block.explanation : undefined,
+          output:
+            typeof block.output === "string" ? block.output : undefined,
+        },
+      };
+    case "table":
+      return {
+        type: "table",
+        content: {
+          title: typeof block.title === "string" ? block.title : undefined,
+          headers: Array.isArray(block.headers)
+            ? block.headers.filter((item): item is string => typeof item === "string")
+            : [],
+          rows: Array.isArray(block.rows)
+            ? block.rows.map((row) =>
+                Array.isArray(row)
+                  ? row.filter((cell): cell is string => typeof cell === "string")
+                  : [],
+              )
+            : [],
+        },
+      };
+    case "reflection":
+      return {
+        type: "reflection",
+        content: {
+          title: typeof block.title === "string" ? block.title : undefined,
+          prompt: typeof block.prompt === "string" ? block.prompt : "",
+          placeholder:
+            typeof block.placeholder === "string" ? block.placeholder : undefined,
+        },
+        ui: {
+          interactive: true,
+        },
+      };
+    case "text":
+      return {
+        type: "text",
+        content: {
+          markdown:
+            typeof block.content === "string" ? block.content : "",
+        },
+      };
+    default:
+      return null;
+  }
 }
 
-export interface ConceptBlock extends BaseBlock {
-  type: "concept";
-  title: string;
-  summary: string;
-  key_points: string[];
+function normalizeLegacyResponse(response: LegacyFlowResponse): LessonResponse | null {
+  const meta = normalizeMeta(
+    response.meta && typeof response.meta === "object"
+      ? (response.meta as Record<string, unknown>)
+      : undefined,
+  );
+  const blocks = Array.isArray(response.flow)
+    ? response.flow
+        .filter(
+          (block): block is Record<string, unknown> =>
+            Boolean(block) && typeof block === "object",
+        )
+        .map((block) => normalizeLegacyBlock(block))
+        .filter((block): block is A2UIBlock => Boolean(block))
+    : [];
+
+  if (blocks.length === 0) {
+    return null;
+  }
+
+  return {
+    version: "1.0",
+    type: "lesson",
+    content: {
+      title: meta?.topic,
+      blocks,
+    },
+    meta,
+  };
 }
 
-export interface StepBlock extends BaseBlock {
-  type: "steps";
-  title: string;
-  steps: string[];
+export function normalizeA2UIResponse(payload: unknown): A2UIRenderable | null {
+  const lessonResult = LessonResponseSchema.safeParse(payload);
+  if (lessonResult.success) {
+    return lessonResult.data;
+  }
+
+  const blockResult = A2UIBlockSchema.safeParse(payload);
+  if (blockResult.success) {
+    return blockResult.data;
+  }
+
+  if (payload && typeof payload === "object") {
+    return normalizeLegacyResponse(payload as LegacyFlowResponse);
+  }
+
+  return null;
 }
 
-export interface QuizQuestion {
-  question: string;
-  options: string[];
-  answer: number; // Index of correct option
-  explanation?: string; // Optional explanation for the answer
+function safeParseJson(candidate: string): unknown | null {
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    return null;
+  }
 }
 
-export interface QuizBlock extends BaseBlock {
-  type: "quiz";
-  difficulty: "easy" | "medium" | "hard";
-  questions: QuizQuestion[];
+export function parseA2UIContent(raw: string): A2UIRenderable | null {
+  const direct = normalizeA2UIResponse(safeParseJson(raw));
+  if (direct) {
+    return direct;
+  }
+
+  const fencedMatch = raw.match(/```json\s*([\s\S]*?)\s*```/i);
+  if (!fencedMatch?.[1]) {
+    return null;
+  }
+
+  return normalizeA2UIResponse(safeParseJson(fencedMatch[1]));
 }
 
-export interface Flashcard {
-  front: string;
-  back: string;
-}
+export function extractA2UITopic(raw: string): string | null {
+  const parsed = parseA2UIContent(raw);
+  if (!parsed) {
+    return null;
+  }
 
-export interface FlashcardBlock extends BaseBlock {
-  type: "flashcards";
-  cards: Flashcard[];
-}
+  if (parsed.meta?.topic) {
+    return parsed.meta.topic;
+  }
 
-export interface DiagramBlock extends BaseBlock {
-  type: "diagram";
-  title?: string;
-  caption?: string;
-  code: string; // Mermaid code or SVG content
-  diagram_type: "mermaid" | "svg";
-}
+  if (parsed.type === "lesson") {
+    return parsed.content.title || null;
+  }
 
-export interface TableBlock extends BaseBlock {
-  type: "table";
-  title?: string;
-  headers: string[];
-  rows: string[][];
-}
-
-export interface ReflectionBlock extends BaseBlock {
-  type: "reflection";
-  prompt: string;
-  placeholder?: string;
-}
-
-export interface TextBlock extends BaseBlock {
-  type: "text";
-  content: string;
-}
-
-export type A2UIBlock =
-  | ConceptBlock
-  | StepBlock
-  | QuizBlock
-  | FlashcardBlock
-  | DiagramBlock
-  | TableBlock
-  | ReflectionBlock
-  | TextBlock;
-
-export interface A2UIResponse {
-  meta: A2UIMeta;
-  flow: A2UIBlock[];
+  return null;
 }
