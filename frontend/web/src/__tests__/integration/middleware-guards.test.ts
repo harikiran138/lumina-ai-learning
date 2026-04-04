@@ -93,7 +93,7 @@ describe('Middleware session and role guards', () => {
       exp: Math.floor(Date.now() / 1000) + 3600,
     })
 
-    const response = middleware(makeRequest('/faculty/dashboard', token))
+    const response = middleware(makeRequest('/teacher/dashboard', token))
 
     expect(response.headers.get('location')).toBeNull()
   })

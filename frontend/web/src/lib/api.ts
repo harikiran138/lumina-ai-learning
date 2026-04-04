@@ -208,7 +208,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "super_admin" | "college_admin" | "admin" | "hod" | "faculty" | "teacher" | "student" | "parent" | "mentor" | "peer_tutor" | "counselor" | "content_creator" | "researcher" | "alumni";
+  role: "super_admin" | "college_admin" | "admin" | "hod" | "teacher" | "student" | "parent" | "mentor" | "peer_tutor" | "counselor" | "content_creator" | "researcher" | "alumni";
   status: "active" | "suspended" | "inactive" | string;
   avatar: string;
   createdAt: string;
@@ -230,6 +230,7 @@ export class RealAPI {
   private static instance: RealAPI;
   private currentUser: User | null = null;
   private token: string | null = null;
+  private isLoggingOut = false;
 
   private constructor() {
   }
@@ -259,25 +260,27 @@ export class RealAPI {
   }
 
   private persistToken(token: string | null) {
-      this.token = token;
+    this.token = token;
     if (typeof window !== "undefined") {
       if (token) {
         setAuthCookie(token);
+        localStorage.setItem("auth_token", token);
       } else {
+        localStorage.removeItem("auth_token");
         // Clear all possible auth cookies with common variations
+        const names = ["access_token", "refresh_token", "auth_token"];
         const paths = ["/", "/api"];
-        const domains = [window.location.hostname];
+        const domains = [window.location.hostname, `.${window.location.hostname}`, ""];
 
-        // Ensure we try both Secure and SameSite flags (Production fallback)
-        const commonFlags = [
-          "; path=/; SameSite=Lax",
-          "; path=/; SameSite=None; Secure",
-          "; path=/; max-age=0",
-        ];
-
-        ["access_token", "refresh_token", "auth_token"].forEach((name) => {
-          commonFlags.forEach((flags) => {
-            document.cookie = `${name}=${flags}`;
+        names.forEach((name) => {
+          paths.forEach((path) => {
+            domains.forEach((domain) => {
+              const base = `${name}=; path=${path}; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0`;
+              document.cookie = base;
+              if (domain) document.cookie = `${base}; domain=${domain}`;
+              document.cookie = `${base}; SameSite=Lax`;
+              document.cookie = `${base}; SameSite=None; Secure`;
+            });
           });
         });
       }
@@ -313,6 +316,8 @@ export class RealAPI {
   }
 
   private async handleUnauthorized(): Promise<boolean> {
+    if (this.isLoggingOut) return false;
+
     const isAuthPage =
       typeof window !== "undefined" &&
       (window.location.pathname.startsWith("/login") || window.location.pathname.startsWith("/register"));
@@ -321,7 +326,7 @@ export class RealAPI {
     // when the browser simply has no session cookies yet.
     if (!this.token && !hasCookie("refresh_token") && !hasCookie("access_token")) {
       if (!isAuthPage) {
-        this.logout();
+        await this.logout();
       }
       return false;
     }
@@ -490,7 +495,7 @@ export class RealAPI {
               : daysUntilDue <= 2
                 ? "due-soon"
                 : "scheduled",
-        href: `/faculty/assignments/${assignment?.id}/submissions`,
+        href: `/teacher/assignments/${assignment?.id}/submissions`,
       };
     });
 
@@ -530,7 +535,7 @@ export class RealAPI {
           courseAssignments.map((item: any) => item?.dueDate).filter(Boolean).sort()[0] || null,
         lastActivity: null,
         image: course?.image || "",
-        href: `/faculty/courses/${course?.id}`,
+        href: `/teacher/courses/${course?.id}`,
         attention: pendingGrading > 0 ? "watch" : "healthy",
       };
     });
@@ -561,7 +566,7 @@ export class RealAPI {
         tone: "urgent",
         title: item?.question_text || item?.title || "AI answer awaiting review",
         detail: item?.student_question || item?.detail || "Approve or edit before the student sees it.",
-        href: "/faculty/verification-queue",
+        href: "/teacher/verification-queue",
       })) as any[],
     ];
 
@@ -628,14 +633,14 @@ export class RealAPI {
     return {
       department: dashboard?.meta?.department || { id: "", department_name: "Department", code: "" },
       summary: {
-        totalTeachers: this.extractNumericStat(stats, "Dep. Faculty"),
+        totalTeachers: this.extractNumericStat(stats, "Teachers"),
         totalStudents: this.extractNumericStat(stats, "Total Students"),
         totalPrograms: this.extractNumericStat(stats, "Programs"),
         pendingRequests: this.extractNumericStat(stats, "Pending Requests"),
       },
       teachers: (teachers || []).map((teacher: any) => ({
         id: teacher?.id,
-        name: teacher?.full_name || teacher?.name || teacher?.email || "Faculty",
+        name: teacher?.full_name || teacher?.name || teacher?.email || "Teacher",
         email: teacher?.email || "",
         status: teacher?.status || "active",
       })),
@@ -647,7 +652,7 @@ export class RealAPI {
       })),
       requests: (requests || []).map((request: any) => ({
         id: request?.id,
-        teacher_name: request?.teacher_name || request?.teacherName || "Faculty",
+        teacher_name: request?.teacher_name || request?.teacherName || "Teacher",
         program_name: request?.program_name || request?.programName || "Program",
         semester_number: request?.semester_number || request?.semesterNumber || 0,
         course_name: request?.course_name || request?.courseName || "Course",
@@ -663,7 +668,7 @@ export class RealAPI {
       this.getTeacherCourses().catch(() => []),
       this.getAssignments().catch(() => []),
       this.fetchJsonOrDefault("/api/teacher/interventions/queue", []),
-      this.fetchJsonOrDefault("/api/faculty/ai-queue", { items: [], total_pending: 0 }),
+      this.fetchJsonOrDefault("/api/teacher/ai-queue", { items: [], total_pending: 0 }),
     ]);
 
     const aiQueueItems = Array.isArray(aiQueue) ? aiQueue : (aiQueue as any)?.items ?? [];
@@ -680,7 +685,7 @@ export class RealAPI {
 
     const dashboard = {
       stats: [
-        { label: "Dep. Faculty", value: String(this.toArray(teachers).length) },
+        { label: "Teachers", value: String(this.toArray(teachers).length) },
         { label: "Total Students", value: "0" },
         { label: "Programs", value: String(this.toArray(programs).length) },
         { label: "Pending Requests", value: String(this.toArray(requests).length) },
@@ -803,23 +808,33 @@ export class RealAPI {
   }
 
   async logout(): Promise<void> {
+    if (this.isLoggingOut) return;
+    this.isLoggingOut = true;
+
     try {
-      // 1. Clear Supabase session globally as requested
+      // 1. Clear Supabase session globally
       const { supabase } = await import("@/lib/supabase");
-      await supabase.auth.signOut();
+      await supabase.auth.signOut().catch(() => {});
 
       // 2. Call backend to clear HTTP-only cookies and blacklist token
       const url = this.buildUrl(requireAuthBase(), "/api/auth/logout");
       await fetch(url, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
-      });
+      }).catch(() => {});
     } catch (err) {
       console.warn("Logout request failed:", err);
     } finally {
       // 3. Clear local state and client-side cookies
       this.currentUser = null;
+      this.token = null;
       this.persistToken(null);
+      
+      // Force immediate redirect to login to avoid any other background tasks continuing
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
     }
   }
 
@@ -1088,25 +1103,41 @@ export class RealAPI {
     return await parseJsonSafe(res) ?? {};
   }
 
-  async getFacultyOnboardingOptions(): Promise<any> {
-    const res = await this.fetchAuthorized("/api/faculty/onboarding/options");
+  async getTeacherOnboardingOptions(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/teacher/onboarding/options");
     if (!res.ok) {
       const error = await parseJsonSafe(res);
-      throw new Error(error?.detail || "Failed to load faculty onboarding options");
+      throw new Error(error?.detail || "Failed to load teacher onboarding options");
     }
     return await parseJsonSafe(res) ?? {};
   }
 
-  async completeFacultyOnboarding(payload: any): Promise<any> {
-    const res = await this.fetchAuthorized("/api/faculty/onboarding/complete", {
+  async completeTeacherOnboarding(payload: any): Promise<any> {
+    const res = await this.fetchAuthorized("/api/teacher/onboarding/complete", {
       method: "POST",
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
       const error = await parseJsonSafe(res);
-      throw new Error(error?.detail || "Failed to complete faculty onboarding setup");
+      throw new Error(error?.detail || "Failed to complete teacher onboarding setup");
     }
     return await parseJsonSafe(res) ?? {};
+  }
+
+  async updateParentOnboarding(data: { fullName: string; relationship: string; user_id: string }): Promise<any> {
+    const res = await this.fetchAuthorized("/api/parent/onboarding", {
+      method: "POST",
+      body: JSON.stringify({
+        full_name: data.fullName,
+        relationship: data.relationship,
+        user_id: data.user_id,
+      }),
+    });
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      return { success: false, error: error?.detail || "Failed to update parent onboarding" };
+    }
+    return { success: true, ...(await parseJsonSafe(res)) };
   }
 
   async updateOnboardingStep(step: number, data: any): Promise<any> {
@@ -1149,7 +1180,7 @@ export class RealAPI {
 
   // --- Dashboard ---
   async getDashboardData(userRole: string): Promise<any> {
-    if (userRole === "teacher" || userRole === "faculty") {
+    if (userRole === "teacher") {
       return this.getTeacherDashboardData();
     }
     if (userRole === "hod") {
@@ -1158,7 +1189,6 @@ export class RealAPI {
     const roleMap: Record<string, string> = {
       student: "/api/student/dashboard",
       teacher: "/api/teacher/dashboard",
-      faculty: "/api/faculty/dashboard",
       admin: "/api/admin/dashboard",
       hod: "/api/hod/dashboard"
     };
@@ -1263,8 +1293,8 @@ export class RealAPI {
     return res.ok ? await res.json() : null;
   }
 
-  // --- Faculty Academic APIs ---
-  async getFacultyAssignments(): Promise<any[]> {
+  // --- Teacher Academic APIs ---
+  async getTeacherAssignments(): Promise<any[]> {
     return await this.getAssignments();
   }
 
@@ -1350,12 +1380,12 @@ export class RealAPI {
     }
   }
 
-  // --- Faculty Specific ---
-  async getFacultyCourse(courseId: string): Promise<any> {
+  // --- Teacher Specific ---
+  async getTeacherCourse(courseId: string): Promise<any> {
     const res = await this.fetchAuthorized(`/api/courses/${courseId}`);
     if (!res.ok) {
-        const e = await parseJsonSafe(res);
-        throw new Error(e?.detail || "Failed to load faculty course details");
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Failed to load teacher course details");
     }
     return await res.json();
   }
@@ -1632,11 +1662,11 @@ export class RealAPI {
     return res.ok ? await res.json() : [];
   }
 
-  // --- Teacher / Faculty APIs ---
+  // --- teacher / teacher APIs ---
 
-  /** GET /api/faculty/subjects — returns teacher's assigned courses */
+  /** GET /api/teacher/subjects — returns teacher's assigned courses */
   async getTeacherCourses(): Promise<any[]> {
-    const res = await this.fetchAuthorized("/api/faculty/subjects");
+    const res = await this.fetchAuthorized("/api/teacher/subjects");
     if (!res.ok) return [];
     const data = await res.json();
     // Transform { assignment, course } pairs into a flat course list
@@ -1655,21 +1685,21 @@ export class RealAPI {
     });
   }
 
-  /** GET /api/faculty/students/{batchId} — returns students for a batch */
+  /** GET /api/teacher/students/{batchId} — returns students for a batch */
   async getTeacherStudents(batchId?: string): Promise<any[]> {
     if (batchId) {
-      const res = await this.fetchAuthorized(`/api/faculty/students/${batchId}`);
+      const res = await this.fetchAuthorized(`/api/teacher/students/${batchId}`);
       return res.ok ? await res.json() : [];
     }
     // No batchId: get subjects first, collect unique batch_ids from assignments
-    const subjects = await this.fetchAuthorized("/api/faculty/subjects");
+    const subjects = await this.fetchAuthorized("/api/teacher/subjects");
     if (!subjects.ok) return [];
     const data = await subjects.json();
     const batchIds = [...new Set((data || []).map((item: any) => item.assignment?.class_id).filter(Boolean))] as string[];
     if (!batchIds.length) return [];
     const allStudents = await Promise.all(
       batchIds.map(async (bid: string) => {
-        const r = await this.fetchAuthorized(`/api/faculty/students/${bid}`);
+        const r = await this.fetchAuthorized(`/api/teacher/students/${bid}`);
         return r.ok ? await r.json() : [];
       })
     );
@@ -1714,31 +1744,31 @@ export class RealAPI {
     return res.ok ? await res.json() : [];
   }
 
-  /** GET /api/faculty/ai-queue — teacher verification queue (real AI answer queue) */
+  /** GET /api/teacher/ai-queue — teacher verification queue (real AI answer queue) */
   async getTeacherVerificationQueue(): Promise<{ items: any[]; total_pending: number }> {
-    const res = await this.fetchAuthorized("/api/faculty/ai-queue");
+    const res = await this.fetchAuthorized("/api/teacher/ai-queue");
     if (res.ok) return res.json();
     return { items: [], total_pending: 0 };
   }
 
-  /** POST /api/faculty/ai-queue/{id}/approve */
+  /** POST /api/teacher/ai-queue/{id}/approve */
   async approveQueueItem(queueId: string): Promise<any> {
-    return this.fetchJsonOrDefault(`/api/faculty/ai-queue/${queueId}/approve`, { success: false }, { method: "POST" });
+    return this.fetchJsonOrDefault(`/api/teacher/ai-queue/${queueId}/approve`, { success: false }, { method: "POST" });
   }
 
-  /** POST /api/faculty/ai-queue/{id}/edit-approve */
-  async editApproveQueueItem(queueId: string, finalAnswer: string, facultyNote?: string): Promise<any> {
-    return this.fetchJsonOrDefault(`/api/faculty/ai-queue/${queueId}/edit-approve`, { success: false }, {
+  /** POST /api/teacher/ai-queue/{id}/edit-approve */
+  async editApproveQueueItem(queueId: string, finalAnswer: string, teacherNote?: string): Promise<any> {
+    return this.fetchJsonOrDefault(`/api/teacher/ai-queue/${queueId}/edit-approve`, { success: false }, {
       method: "POST",
-      body: JSON.stringify({ final_answer: finalAnswer, faculty_note: facultyNote }),
+      body: JSON.stringify({ final_answer: finalAnswer, teacher_note: teacherNote }),
     });
   }
 
-  /** POST /api/faculty/ai-queue/{id}/reject */
+  /** POST /api/teacher/ai-queue/{id}/reject */
   async rejectQueueItem(queueId: string, note: string): Promise<any> {
-    return this.fetchJsonOrDefault(`/api/faculty/ai-queue/${queueId}/reject`, { success: false }, {
+    return this.fetchJsonOrDefault(`/api/teacher/ai-queue/${queueId}/reject`, { success: false }, {
       method: "POST",
-      body: JSON.stringify({ faculty_note: note }),
+      body: JSON.stringify({ teacher_note: note }),
     });
   }
 
@@ -1891,7 +1921,7 @@ export class RealAPI {
   async updateIntervention(interventionId: string, data: any): Promise<any> {
     const tryPaths = [
       `/api/teacher/interventions/${interventionId}`,
-      `/api/faculty/interventions/${interventionId}`,
+      `/api/teacher/interventions/${interventionId}`,
     ];
 
     let lastError = "Failed to update intervention";
@@ -1935,7 +1965,7 @@ export class RealAPI {
       JSON.stringify(user).toLowerCase().includes(normalized),
     );
   }
-  async listFacultyByDept(_deptId?: string, ..._args: any[]): Promise<any> { return []; }
+  async listTeachersByDept(_deptId?: string, ..._args: any[]): Promise<any> { return []; }
   async inviteStudent(..._args: any[]): Promise<any> { return { success: false }; }
   async approveTeacherRequest(requestId: string, ..._args: any[]): Promise<any> {
     return this.updateTeacherRequest(requestId, "approved");

@@ -91,9 +91,9 @@ counselor: [
 ],
 
 teacher: [
-{ name: "Dashboard", href: "/faculty/dashboard", icon: LayoutDashboard },
-{ name: "Students", href: "/faculty/students", icon: Users },
-{ name: "Settings", href: "/faculty/settings", icon: Settings },
+{ name: "Dashboard", href: "/teacher/dashboard", icon: LayoutDashboard },
+{ name: "Students", href: "/teacher/students", icon: Users },
+{ name: "Settings", href: "/teacher/settings", icon: Settings },
 ],
 
 admin: [
@@ -110,7 +110,7 @@ student: "/student/profile",
 parent: "/parent/settings",
 peer_tutor: "/peer_tutor/settings",
 counselor: "/counselor/settings",
-teacher: "/faculty/settings",
+teacher: "/teacher/settings",
 admin: "/admin/platform/profile",
 };
 

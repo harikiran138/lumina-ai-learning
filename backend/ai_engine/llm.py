@@ -277,10 +277,7 @@ class GeminiRestProvider(LLMProvider):
 
 
 class OpenRouterProvider(LLMProvider):
-    RETRYABLE_STATUS_CODES = {408, 409, 429, 500, 502, 503, 504}
-
-class OpenRouterProvider(LLMProvider):
-    RETRYABLE_STATUS_CODES = {408, 409, 429, 500, 502, 503, 504}
+    RETRYABLE_STATUS_CODES = {408, 409, 425, 429, 500, 502, 503, 504}
 
     def __init__(
         self,
@@ -357,11 +354,19 @@ class OpenRouterProvider(LLMProvider):
                     logger.error("openrouter_auth_error", feature=self.feature or "generic", status=401)
                     return "Error generating content: Invalid OpenRouter API key (401)."
 
+                if response.status_code == 429:
+                    last_error = f"OpenRouter rate limit (429): {_truncate_for_log(response.text, 180)}"
+                    logger.warning("openrouter_rate_limit", attempt=attempt + 1, feature=self.feature or "generic", retry_in_seconds=0.8 * (attempt + 1))
+                    if attempt < self.max_retries:
+                        time.sleep(0.8 * (attempt + 1))
+                        continue
+                    break
+
                 if response.status_code in self.RETRYABLE_STATUS_CODES:
                     last_error = f"OpenRouter returned {response.status_code}: {_truncate_for_log(response.text, 180)}"
                     logger.warning("openrouter_retryable_error", attempt=attempt + 1, feature=self.feature or "generic", status=response.status_code, error=last_error)
                     if attempt < self.max_retries:
-                        time.sleep(0.5 * (attempt + 1))
+                        time.sleep(0.8 * (attempt + 1))
                         continue
                     break
 
@@ -383,12 +388,16 @@ class OpenRouterProvider(LLMProvider):
 
             except requests.exceptions.Timeout:
                 last_error = "OpenRouter request timed out."
+                logger.warning("openrouter_timeout", attempt=attempt + 1, feature=self.feature or "generic")
                 if attempt < self.max_retries:
+                    time.sleep(0.8 * (attempt + 1))
                     continue
                 break
             except Exception as exc:
                 last_error = str(exc)
+                logger.warning("openrouter_unexpected_error", attempt=attempt + 1, feature=self.feature or "generic", error=last_error)
                 if attempt < self.max_retries:
+                    time.sleep(0.8 * (attempt + 1))
                     continue
                 break
 

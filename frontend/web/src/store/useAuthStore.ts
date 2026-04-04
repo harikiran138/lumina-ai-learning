@@ -4,10 +4,11 @@ import { api, type User as ApiUser } from '@/lib/api';
 
 export type Role =
   | "super_admin"
+  | "system_admin"
+  | "institution_admin"
   | "college_admin"
   | "admin"
   | "hod"
-  | "faculty"
   | "teacher"
   | "student"
   | "parent"

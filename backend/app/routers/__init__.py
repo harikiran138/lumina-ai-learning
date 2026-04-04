@@ -25,6 +25,5 @@ from . import (
     college_architecture,
     attendance,
     materials,
-    faculty,
     ai_tutor,
 )

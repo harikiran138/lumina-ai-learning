@@ -191,10 +191,13 @@ class UserStore:
     async def _persist_user_profile(self, user_id: str, role: str, metadata: dict):
         """Helper to store user metadata in specialized profile tables."""
         try:
+            # Always use canonical role
+            canonical_role = self.normalize_role(role)
+            
             # 1. Learner Profile (Primary fallback for all roles as it's the standard Lumina metadata sink)
             learner_data = {
                 "user_id": user_id,
-                "role": role,
+                "role": canonical_role,
                 "full_name": metadata.get("full_name") or "Unnamed User",
                 "phone": metadata.get("phone"),
                 "preferences": {"onboarding_complete": False}
@@ -205,13 +208,13 @@ class UserStore:
             if metadata.get("dept_id"): learner_data["dept_id"] = metadata["dept_id"]
             
             await self.db.table("learner_profiles").upsert(learner_data).async_execute()
-            log.info("profile_metadata_persisted", user_id=user_id, table="learner_profiles")
+            log.info("profile_metadata_persisted", user_id=user_id, table="learner_profiles", role=canonical_role)
 
             # 2. Onboarding Profile (Legacy alignment)
             try:
                 await self.db.table("onboarding_profiles").upsert({
                     "user_id": user_id,
-                    "role": role,
+                    "role": canonical_role,
                     "institution_id": metadata.get("college_id"),
                     "onboarding_step": 1
                 }).async_execute()

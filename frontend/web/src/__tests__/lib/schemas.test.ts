@@ -94,7 +94,7 @@ describe('registerSchema', () => {
   })
 
   it('passes with all valid role enum values', () => {
-    const roles = ['student', 'teacher', 'faculty', 'parent', 'mentor', 'peer_tutor', 'researcher'] as const
+    const roles = ['student', 'teacher', 'parent', 'mentor', 'peer_tutor', 'researcher'] as const
     for (const role of roles) {
       expect(registerSchema.safeParse({ ...valid, role }).success).toBe(true)
     }

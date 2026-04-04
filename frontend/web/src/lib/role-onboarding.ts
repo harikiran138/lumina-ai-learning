@@ -1,6 +1,5 @@
 export type SupportedRoleOnboardingRole =
   | "teacher"
-  | "faculty"
   | "parent"
   | "mentor"
   | "peer_tutor"
@@ -43,10 +42,13 @@ const CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
       {
         id: 1,
         title: "Personal Details",
-        description: "Tell us a bit about yourself so we can personalise your workspace.",
+        description: "Official teaching credentials",
         fields: [
-          { key: "fullName", label: "Full name", type: "text", helper: "Your display name across the platform.", placeholder: "e.g. Dr. Jane Smith", required: true },
-          { key: "bio", label: "Short bio", type: "textarea", helper: "A brief description for your profile page.", placeholder: "What do you teach and what drives you?" },
+          { key: "fullName", label: "Full name", type: "text", helper: "Your full name for account verification.", placeholder: "Jane Doe", required: true },
+          { key: "employeeId", label: "Employee ID", type: "text", helper: "Your official institutional employee identifier.", placeholder: "EMP-1024", required: true },
+          { key: "collegeId", label: "Institution ID", type: "text", helper: "The unique ID of your college or university.", placeholder: "INST-8822", required: true },
+          { key: "department", label: "Department", type: "text", helper: "Your primary department (e.g., Computer Science).", placeholder: "Computer Science", required: true },
+          { key: "designation", label: "Designation", type: "text", helper: "Your current job title (e.g., Assistant Professor).", placeholder: "Assistant Professor", required: true },
         ],
       },
       {
@@ -55,6 +57,7 @@ const CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
         description: "Describe your subject areas and teaching style.",
         fields: [
           { key: "subjects", label: "Subjects / disciplines", type: "array", helper: "List the subjects you teach, one per line.", placeholder: "Mathematics\nPhysics" },
+          { key: "specialisation", label: "Specialisation", type: "text", helper: "Your primary academic or research specialisation.", placeholder: "Machine Learning & AI" },
           { key: "teachingStyle", label: "Teaching style", type: "select", helper: "How would you describe your primary teaching approach?", options: [
             { label: "Lecture-based", value: "lecture" },
             { label: "Project-based", value: "project" },
@@ -71,6 +74,7 @@ const CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
         fields: [
           { key: "yearsExperience", label: "Years of teaching experience", type: "number", helper: "Approximate number of years.", placeholder: "5" },
           { key: "qualifications", label: "Qualifications", type: "array", helper: "List your degrees or certifications, one per line.", placeholder: "M.Ed. – University of Example\nCertified STEM Educator" },
+          { key: "researchAreas", label: "Research areas (Optional)", type: "array", helper: "List your research topics if applicable, one per line.", placeholder: "Natural Language Processing\nComputer Vision" },
         ],
       },
       {
@@ -78,8 +82,9 @@ const CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
         title: "Platform Preferences",
         description: "Let us know how you prefer to use Lumina.",
         fields: [
-          { key: "aiAssistEnabled", label: "Enable AI teaching assistant", type: "boolean", helper: "Allow Lumina AI to suggest content and flag learner risk." },
+          { key: "aiAssistEnabled", label: "Enable AI teaching & grading assistant", type: "boolean", helper: "Allow Lumina AI to suggest content and assist with grading recommendations." },
           { key: "notifyOnSubmission", label: "Notify me on student submissions", type: "boolean", helper: "Receive an in-app notification whenever a student submits work." },
+          { key: "officeHoursPublic", label: "Make office hours public", type: "boolean", helper: "Allow students to see your office hours on your profile." },
         ],
       },
       {
@@ -87,60 +92,7 @@ const CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
         title: "Final Review",
         description: "Review and confirm your profile before finishing setup.",
         fields: [
-          { key: "agreedToTerms", label: "I agree to the educator guidelines", type: "boolean", helper: "Confirm you have read and agree to the Lumina educator community guidelines.", required: true },
-        ],
-      },
-    ],
-  },
-
-  faculty: {
-    label: "Faculty Onboarding",
-    intro:
-      "Complete your faculty profile to connect with students and manage your courses effectively.",
-    completionLabel: "Finish setup",
-    steps: [
-      {
-        id: 1,
-        title: "Personal Details",
-        description: "Set up your faculty identity on Lumina.",
-        fields: [
-          { key: "fullName", label: "Full name", type: "text", helper: "Your name as it appears in the institution directory.", placeholder: "Prof. Alex Johnson", required: true },
-          { key: "department", label: "Department", type: "text", helper: "Your primary department or school.", placeholder: "Department of Computer Science" },
-        ],
-      },
-      {
-        id: 2,
-        title: "Academic Background",
-        description: "Share your specialisation and research areas.",
-        fields: [
-          { key: "specialisation", label: "Specialisation", type: "text", helper: "Your primary academic or research specialisation.", placeholder: "Machine Learning & AI" },
-          { key: "researchAreas", label: "Research areas", type: "array", helper: "List your research topics, one per line.", placeholder: "Natural Language Processing\nComputer Vision" },
-        ],
-      },
-      {
-        id: 3,
-        title: "Courses & Load",
-        description: "Tell us about the courses you're responsible for.",
-        fields: [
-          { key: "currentCourses", label: "Current courses", type: "array", helper: "Courses you are teaching this semester, one per line.", placeholder: "CS401 – Deep Learning\nCS301 – Data Structures" },
-          { key: "maxStudents", label: "Max students per course", type: "number", helper: "Your preferred class size.", placeholder: "40" },
-        ],
-      },
-      {
-        id: 4,
-        title: "Platform Preferences",
-        description: "Configure how Lumina supports your faculty role.",
-        fields: [
-          { key: "aiAssistEnabled", label: "Enable AI grading assistant", type: "boolean", helper: "Allow AI to assist with rubric-based grading suggestions." },
-          { key: "officeHoursPublic", label: "Make office hours public", type: "boolean", helper: "Allow students to see your office hours on your profile." },
-        ],
-      },
-      {
-        id: 5,
-        title: "Final Review",
-        description: "Confirm your faculty profile.",
-        fields: [
-          { key: "agreedToTerms", label: "I agree to the faculty conduct policy", type: "boolean", helper: "Confirm that you accept the institution's faculty conduct and data policy.", required: true },
+          { key: "agreedToTerms", label: "I agree to the teacher conduct policy", type: "boolean", helper: "Confirm that you accept the educator guidelines and institutional conduct policy.", required: true },
         ],
       },
     ],
@@ -333,7 +285,6 @@ const CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
   },
 
   researcher: {
-    // ... (existing researcher config)
     label: "Researcher Onboarding",
     intro:
       "Set up your researcher profile to collaborate, publish, and access the Lumina research ecosystem.",
@@ -504,7 +455,7 @@ export function validateRoleStep(
     data[field.key] = value ?? (field.type === "boolean" ? false : field.type === "array" || field.type === "multiselect" ? [] : "");
   }
 
-  if (role === "faculty" && step === 1 && !String(values.collegeId ?? "").trim()) {
+  if (role === "teacher" && step === 1 && !String(values.collegeId ?? "").trim()) {
     errors.collegeId = "Institution ID is required.";
   }
 

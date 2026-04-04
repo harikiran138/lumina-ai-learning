@@ -205,11 +205,17 @@ class AITutorService:
         return models
 
     def _build_system_prompt(self, request: TutorGenerationRequest) -> str:
+        difficulty = self._difficulty_for_mode(request.mode) if not request.mastery_summary else (
+            "hard" if request.student_level == "advanced" else
+            "medium" if request.student_level == "intermediate" else "easy"
+        )
         base_prompt = (
             A2UI_SYSTEM_PROMPT
             .replace("{current_semester}", request.current_semester or "Not specified")
             .replace("{allowed_courses}", ", ".join(request.allowed_courses) or request.course_name)
             .replace("{allowed_concepts}", ", ".join(request.allowed_concepts) or request.subject)
+            .replace("{student_level}", request.student_level or "intermediate")
+            .replace("{difficulty}", difficulty)
         )
 
         context_lines = [

@@ -24,11 +24,13 @@ export const StepResult: React.FC<StepResultProps> = ({ block }) => {
     [block.content.steps, visibleCount],
   );
 
-  const activeHintIndex = visibleSteps.findIndex(
-    (step, index) => step.hint && !shownHints[index],
-  );
+  // "Show hint" applies to the LAST visible step's hint, not the first unrevealed one
+  const currentStepIndex = visibleCount - 1;
+  const currentStep = block.content.steps[currentStepIndex];
   const canRevealHint =
-    block.ui?.allowHints !== false && activeHintIndex !== -1;
+    block.ui?.allowHints !== false &&
+    Boolean(currentStep?.hint) &&
+    !shownHints[currentStepIndex];
 
   return (
     <div className="my-4 rounded-2xl border border-white/8 bg-white/[0.03] p-5 shadow-sm">
@@ -79,11 +81,9 @@ export const StepResult: React.FC<StepResultProps> = ({ block }) => {
             type="button"
             variant="outline"
             className="border-amber-300/20 bg-transparent text-amber-100 hover:bg-amber-300/10"
-            onClick={() => {
-              if (activeHintIndex !== -1) {
-                setShownHints((current) => ({ ...current, [activeHintIndex]: true }));
-              }
-            }}
+            onClick={() =>
+              setShownHints((current) => ({ ...current, [currentStepIndex]: true }))
+            }
             disabled={!canRevealHint}
           >
             Show hint

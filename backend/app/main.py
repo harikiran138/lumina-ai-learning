@@ -92,9 +92,6 @@ from app.routers import (  # noqa: E402
     hod,
     onboarding,
     college_architecture,
-    attendance,
-    materials,
-    faculty,
     ai_queue,
     unit_pipeline,
     handwritten,
@@ -340,9 +337,6 @@ app.include_router(hod.router, prefix="/api/hod", tags=["HOD Dashboard"])
 app.include_router(knowledge_graph.router, prefix="/api/knowledge-graph", tags=["Knowledge Graph"])
 app.include_router(onboarding.router, prefix="/api/onboarding", tags=["Onboarding"])
 app.include_router(college_architecture.router, prefix="/api", tags=["College Architecture"])
-app.include_router(attendance.router, prefix="/api", tags=["Attendance"])
-app.include_router(materials.router, prefix="/api", tags=["Materials"])
-app.include_router(faculty.router, prefix="/api/faculty", tags=["Faculty"])
 app.include_router(ai_queue.router, prefix="/api", tags=["AI Queue"])
 app.include_router(unit_pipeline.router, prefix="/api/teacher", tags=["Unit Pipeline"])
 app.include_router(ai_tutor.router, prefix="/api/ai-tutor", tags=["AI Tutor"])

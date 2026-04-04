@@ -5,8 +5,7 @@ export const ROLE_HOME_ROUTES: Record<string, string> = {
   institution_admin: "/admin/dashboard",
   college_admin: "/college",
   hod: "/hod/dashboard",
-  faculty: "/faculty/dashboard",
-  teacher: "/faculty/dashboard",
+  teacher: "/teacher/dashboard",
   student: "/student/dashboard",
   parent: "/parent/dashboard",
   mentor: "/mentor/dashboard",
@@ -24,7 +23,6 @@ const ROLE_PATH_PREFIXES: Record<string, string[]> = {
   institution_admin: ["/admin", "/college"],
   hod: ["/hod"],
   teacher: ["/teacher"],
-  faculty: ["/faculty"],
   student: ["/student"],
   parent: ["/parent"],
   mentor: ["/mentor"],
@@ -36,7 +34,7 @@ const ROLE_PATH_PREFIXES: Record<string, string[]> = {
 }
 
 export function normalizeRole(role?: string | null): string {
-  if (role === "teacher") return "faculty"
+  if (role === "faculty") return "teacher"
   if (role === "admin") return "super_admin"
   if (role === "peer-tutor") return "peer_tutor"
   // institution_admin and system_admin are now distinct roles — do NOT collapse to college_admin
@@ -72,9 +70,6 @@ export function getCanonicalPath(pathname: string): string | null {
     return pathname.replace("/researcher/portal", "/researcher/dashboard")
   }
 
-  if (pathname === "/teacher" || pathname.startsWith("/teacher/")) {
-    return pathname.replace("/teacher", "/faculty")
-  }
   if (pathname === "/peer-tutor" || pathname.startsWith("/peer-tutor/")) {
     return pathname.replace("/peer-tutor", "/peer_tutor")
   }
@@ -85,6 +80,10 @@ export function getCanonicalPath(pathname: string): string | null {
 
   if (pathname === "/content-creator" || pathname.startsWith("/content-creator/")) {
     return pathname.replace("/content-creator", "/content_creator")
+  }
+
+  if (pathname === "/faculty" || pathname.startsWith("/faculty/")) {
+    return pathname.replace("/faculty", "/teacher")
   }
 
   return null

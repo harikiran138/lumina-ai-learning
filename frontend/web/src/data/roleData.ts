@@ -68,7 +68,7 @@ export const roleRegistry: Record<string, RoleData> = {
       do: ["Complete assessments", "Submit assignments", "Interact with AI Tutor"]
     },
     interactions: [
-      { role: "Faculty", explanation: "Receiving direct guidance and verified content feedback." },
+      { role: "Teacher", explanation: "Receiving direct guidance and verified content feedback." },
       { role: "Peer Mentor", explanation: "Collaborative learning and peer-level scaffolding support." },
       { role: "Counselor", explanation: "Support for wellbeing and academic persistence." }
     ],
@@ -79,9 +79,9 @@ export const roleRegistry: Record<string, RoleData> = {
       "System updates mastery score and unlocks relevant advanced modules."
     ]
   },
-  faculty: {
-    slug: "faculty",
-    title: "Faculty",
+  teacher: {
+    slug: "teacher",
+    title: "Teacher",
     tagline: "AI-Augmented Educator",
     iconName: "BookOpen",
     icon: BookOpen,
@@ -93,7 +93,7 @@ export const roleRegistry: Record<string, RoleData> = {
       },
       {
         name: "Automated AI Grading",
-        explanation: "Semantic evaluation of assignments with AI-drafted feedback for faculty review."
+        explanation: "Semantic evaluation of assignments with AI-drafted feedback for teacher review."
       },
       {
         name: "Teacher Intervention Queue",
@@ -110,10 +110,10 @@ export const roleRegistry: Record<string, RoleData> = {
       { role: "Parent", explanation: "Communicating progress milestones and early warning signs." }
     ],
     workflowSteps: [
-      "Faculty uploads a syllabus chapter and defines learning objectives.",
+      "Teacher uploads a syllabus chapter and defines learning objectives.",
       "AI generates modular pathways and practice banks for students.",
-      "Faculty monitors the Intervention Queue for students needing support.",
-      "Faculty provides 1-on-1 human feedback to flagged student groups."
+      "Teacher monitors the Intervention Queue for students needing support.",
+      "Teacher provides 1-on-1 human feedback to flagged student groups."
     ]
   },
   hod: {
@@ -129,27 +129,27 @@ export const roleRegistry: Record<string, RoleData> = {
         explanation: "Identify mastery gaps across the entire department that traditional grading systems miss."
       },
       {
-        name: "Faculty Excellence Dashboard",
+        name: "Teacher Excellence Dashboard",
         explanation: "Monitor teaching effectiveness and responsiveness to intervention cues across all classes."
       },
       {
         name: "Curriculum Consistency Guard",
-        explanation: "Ensure all faculty members are aligned with department-level learning standards and goals."
+        explanation: "Ensure all teacher members are aligned with department-level learning standards and goals."
       }
     ],
     access: {
-      see: ["Department-wide mastery metrics", "Faculty performance data", "Academic risk reports"],
+      see: ["Department-wide mastery metrics", "Teacher performance data", "Academic risk reports"],
       do: ["Approve curriculum updates", "Manage department structure", "Set academic targets"]
     },
     interactions: [
-      { role: "Faculty", explanation: "Supervising content quality and intervention performance." },
+      { role: "Teacher", explanation: "Supervising content quality and intervention performance." },
       { role: "Institution Admin", explanation: "Resource allocation and institutional compliance reporting." },
       { role: "Student", explanation: "High-level oversight of department learner groups." }
     ],
     workflowSteps: [
       "HOD identifies a concept with low mastery rates across multiple classes.",
       "HOD reviews the shared content modules for consistency and quality.",
-      "HOD suggests collaborative updates to the teaching faculty.",
+      "HOD suggests collaborative updates to the teaching teacher.",
       "HOD tracks the mastery delta following the intervention."
     ]
   },
@@ -217,7 +217,7 @@ export const roleRegistry: Record<string, RoleData> = {
     },
     interactions: [
       { role: "Student", explanation: "Supporting home learning environment and goal alignment." },
-      { role: "Faculty", explanation: "Receiving updates on student breakthroughs or struggles." },
+      { role: "Teacher", explanation: "Receiving updates on student breakthroughs or struggles." },
       { role: "Counselor", explanation: "Coordinating on student wellbeing and persistence." }
     ],
     workflowSteps: [
@@ -254,14 +254,14 @@ export const roleRegistry: Record<string, RoleData> = {
     },
     interactions: [
       { role: "Student", explanation: "Direct wellbeing support and stress management." },
-      { role: "Faculty", explanation: "Coordinating human-centered responses to academic distress." },
+      { role: "Teacher", explanation: "Coordinating human-centered responses to academic distress." },
       { role: "Parent", explanation: "Coordinating on home-based wellbeing support." }
     ],
     workflowSteps: [
       "Counselor receives a 'Sudden Disengagement' notification for a student.",
       "Counselor reviews the cognitive load map to understand the student's pressure.",
       "Counselor initiates a private check-in with the student.",
-      "Counselor updates the case status and coordinates with faculty for accommodation."
+      "Counselor updates the case status and coordinates with teacher for accommodation."
     ]
   },
   mentor: {
@@ -291,7 +291,7 @@ export const roleRegistry: Record<string, RoleData> = {
     },
     interactions: [
       { role: "Student", explanation: "Providing relatability and direct peer-to-peer scaffolding." },
-      { role: "Faculty", explanation: "Aligning peer support with course objectives and faculty goals." },
+      { role: "Teacher", explanation: "Aligning peer support with course objectives and teacher goals." },
       { role: "Alumni", explanation: "Receiving industry-level mentorship and career guidance." }
     ],
     workflowSteps: [
@@ -366,7 +366,7 @@ export const roleRegistry: Record<string, RoleData> = {
     interactions: [
       { role: "Institution Admin", explanation: "Managing high-level platform access and institutional policy." },
       { role: "AI Engine", explanation: "Govern the core logic and safety systems of the Platform AI." },
-      { role: "Faculty", explanation: "Top-level oversight of educational delivery health." }
+      { role: "Teacher", explanation: "Top-level oversight of educational delivery health." }
     ],
     workflowSteps: [
       "Super Admin detects a global increase in toxic or off-path student prompts.",

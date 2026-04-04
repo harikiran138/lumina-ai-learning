@@ -48,6 +48,7 @@ export default function RoleOnboardingFlow({ role }: RoleOnboardingFlowProps) {
   const [completedStep, setCompletedStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [values, setValues] = useState<Record<string, any>>({});
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const totalSteps = config.steps.length;
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export default function RoleOnboardingFlow({ role }: RoleOnboardingFlowProps) {
           router.push("/login");
           return;
         }
+        setCurrentUser(user);
 
         const status = await api.getOnboardingStatus();
         if (status.role !== role) {
@@ -132,9 +134,28 @@ export default function RoleOnboardingFlow({ role }: RoleOnboardingFlowProps) {
         return;
       }
 
-      await api.updateOnboardingStep(currentStep, result.data);
+      console.log(`[ONBOARDING DEBUG] Submitting Step ${currentStep} for role: ${role}`, { data: result.data });
+      let response;
+      
+      if (role === 'parent' && currentStep === 1) {
+        // Use the specialized parent onboarding endpoint as requested
+        response = await api.updateParentOnboarding({
+          fullName: result.data.fullName,
+          relationship: result.data.relationship,
+          user_id: currentUser?.id || ""
+        });
+      } else {
+        response = await api.updateOnboardingStep(currentStep, result.data);
+      }
+      
+      console.log(`[ONBOARDING DEBUG] API Response for Step ${currentStep}:`, response);
+
+      if (response && response.success === false) {
+        throw new Error(response.error || response.detail || "Failed to save step progress");
+      }
 
       if (currentStep === totalSteps) {
+        console.log(`[ONBOARDING DEBUG] Final step completed. Redirection to ${getRoleHome(role)}`);
         await api.completeOnboarding();
         clearSnapshot(role);
         toast.success(`${config.label} completed`);
@@ -147,6 +168,7 @@ export default function RoleOnboardingFlow({ role }: RoleOnboardingFlowProps) {
       setSuccessMessage(`${activeStep.title} saved successfully.`);
       toast.success(`Step ${currentStep} saved`);
     } catch (error: any) {
+      console.error(`[ONBOARDING ERROR] Step ${currentStep} failed:`, error);
       const message = error?.message || "Something went wrong";
       setPageError(message);
       toast.error(message);

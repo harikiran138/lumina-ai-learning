@@ -20,6 +20,15 @@ function sanitizeMermaid(code: string) {
   return sanitized;
 }
 
+/** Strip event handlers and <script> tags from Mermaid-rendered SVG before dangerouslySetInnerHTML. */
+function sanitizeSvg(svgContent: string): string {
+  return svgContent
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/\s+on\w+="[^"]*"/gi, "")
+    .replace(/\s+on\w+='[^']*'/gi, "")
+    .replace(/javascript:[^"'\s]*/gi, "");
+}
+
 export const DiagramResult: React.FC<DiagramResultProps> = ({ block }) => {
   const [svg, setSvg] = useState("");
   const [failed, setFailed] = useState(false);
@@ -27,7 +36,7 @@ export const DiagramResult: React.FC<DiagramResultProps> = ({ block }) => {
 
   useEffect(() => {
     if (block.content.diagramType === "svg") {
-      setSvg(block.content.code);
+      setSvg(sanitizeSvg(block.content.code));
       setFailed(false);
       return;
     }
@@ -40,7 +49,7 @@ export const DiagramResult: React.FC<DiagramResultProps> = ({ block }) => {
         mermaid.initialize({
           startOnLoad: false,
           theme: "dark",
-          securityLevel: "loose",
+          securityLevel: "strict",
         });
 
         const { svg: renderedSvg } = await mermaid.render(
@@ -49,7 +58,7 @@ export const DiagramResult: React.FC<DiagramResultProps> = ({ block }) => {
         );
 
         if (!cancelled) {
-          setSvg(renderedSvg);
+          setSvg(sanitizeSvg(renderedSvg));
           setFailed(false);
         }
       } catch (error) {

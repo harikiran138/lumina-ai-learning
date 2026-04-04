@@ -25,10 +25,10 @@ const roles = [
   },
   {
     icon: BookOpen,
-    title: "Faculty",
+    title: "Teacher",
     purpose: "Content creation & AI verification",
     access: "Class analytics, verification queue",
-    slug: "faculty",
+    slug: "teacher",
   },
   {
     icon: Shield,

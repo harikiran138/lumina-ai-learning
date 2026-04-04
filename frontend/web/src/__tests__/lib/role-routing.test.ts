@@ -8,10 +8,6 @@ import {
   ROLE_HOME_ROUTES,
 } from '@/lib/role-routing'
 
-// Note: normalizeRole, getRoleHome, getExpectedRoleForPath and getCanonicalPath
-// are also exercised in integration/middleware.test.ts for the core happy paths.
-// This file adds deeper coverage for edge cases and the untested getRolePathPrefixes.
-
 // ── normalizeRole edge cases ──────────────────────────────────────────────────
 
 describe('normalizeRole', () => {
@@ -19,8 +15,8 @@ describe('normalizeRole', () => {
     expect(normalizeRole('admin')).toBe('super_admin')
   })
 
-  it('normalizes "teacher" to "faculty"', () => {
-    expect(normalizeRole('teacher')).toBe('faculty')
+  it('normalizes "faculty" to "teacher"', () => {
+    expect(normalizeRole('faculty')).toBe('teacher')
   })
 
   it('normalizes "peer-tutor" to "peer_tutor"', () => {
@@ -29,7 +25,7 @@ describe('normalizeRole', () => {
 
   it('leaves canonical roles unchanged', () => {
     const canonicalRoles = [
-      'super_admin', 'college_admin', 'hod', 'faculty', 'student',
+      'super_admin', 'college_admin', 'hod', 'teacher', 'student',
       'parent', 'mentor', 'peer_tutor', 'counselor', 'content_creator',
       'researcher', 'alumni',
     ]
@@ -72,16 +68,16 @@ describe('getRoleHome', () => {
     expect(getRoleHome('admin')).toBe('/admin/dashboard')
   })
 
-  it('handles "teacher" alias via normalizeRole', () => {
-    expect(getRoleHome('teacher')).toBe('/faculty/dashboard')
+  it('handles "faculty" alias via normalizeRole', () => {
+    expect(getRoleHome('faculty')).toBe('/teacher/dashboard')
   })
 })
 
 // ── getRolePathPrefixes ───────────────────────────────────────────────────────
 
 describe('getRolePathPrefixes', () => {
-  it('returns the correct prefixes for "faculty"', () => {
-    expect(getRolePathPrefixes('faculty')).toEqual(['/faculty'])
+  it('returns the correct prefixes for "teacher"', () => {
+    expect(getRolePathPrefixes('teacher')).toEqual(['/teacher'])
   })
 
   it('returns the correct prefixes for "student"', () => {
@@ -109,9 +105,9 @@ describe('getRolePathPrefixes', () => {
     expect(getRolePathPrefixes(null)).toEqual([])
   })
 
-  it('normalizes legacy "teacher" role before lookup', () => {
-    // "teacher" normalizes to "faculty", which maps to ["/faculty"]
-    expect(getRolePathPrefixes('teacher')).toEqual(['/faculty'])
+  it('normalizes legacy "faculty" role before lookup', () => {
+    // "faculty" normalizes to "teacher", which maps to ["/teacher"]
+    expect(getRolePathPrefixes('faculty')).toEqual(['/teacher'])
   })
 
   it('normalizes legacy "admin" role before lookup', () => {
@@ -156,19 +152,19 @@ describe('getExpectedRoleForPath', () => {
 
 describe('getCanonicalPath', () => {
   it('returns null for an already-canonical path', () => {
-    expect(getCanonicalPath('/faculty/dashboard')).toBeNull()
+    expect(getCanonicalPath('/teacher/dashboard')).toBeNull()
   })
 
   it('returns null for paths outside any alias', () => {
     expect(getCanonicalPath('/student/courses')).toBeNull()
   })
 
-  it('canonicalizes "/teacher" root', () => {
-    expect(getCanonicalPath('/teacher')).toBe('/faculty')
+  it('canonicalizes "/faculty" root', () => {
+    expect(getCanonicalPath('/faculty')).toBe('/teacher')
   })
 
-  it('canonicalizes a deep "/teacher/..." path', () => {
-    expect(getCanonicalPath('/teacher/courses/5')).toBe('/faculty/courses/5')
+  it('canonicalizes a deep "/faculty/..." path', () => {
+    expect(getCanonicalPath('/faculty/courses/5')).toBe('/teacher/courses/5')
   })
 
   it('canonicalizes "/peer-tutor" root', () => {

@@ -51,11 +51,11 @@ class AskQuestionRequest(BaseModel):
 
 class EditApproveRequest(BaseModel):
     final_answer: str = Field(min_length=1)
-    faculty_note: Optional[str] = None
+    teacher_note: Optional[str] = None
 
 
 class RejectRequest(BaseModel):
-    faculty_note: str = Field(min_length=1)
+    teacher_note: str = Field(min_length=1)
 
 
 class EscalateRequest(BaseModel):
@@ -287,10 +287,8 @@ def _queue_status_message(row: Dict[str, Any]) -> str:
     status = row.get("status", "pending")
     if status in {"approved", "edited_approved"} and row.get("released_to_student", True):
         return "Your teacher approved the answer."
-    if status == "rejected":
-        return "Your teacher rejected this answer and may provide feedback separately."
-    if status == "escalated_to_faculty":
-        return "Your answer is waiting for faculty review."
+    if status == "pending":
+        return "Your answer is waiting for teacher review."
     if status == "escalated_to_hod":
         return "Your answer has been escalated for senior academic review."
     return "Your teacher is reviewing the answer."
@@ -470,7 +468,7 @@ async def _submit_question(
         "request_mode": request.mode,
         "question_topic": body.topic or request.subject,
         "reviewed_by": None,
-        "faculty_note": None,
+        "teacher_note": None,
         "ai_model": cached_row.get("ai_model") if cached_row else None,
         "generation_error": None,
     }
@@ -601,8 +599,7 @@ async def list_course_questions(
     course_id: str,
     current_user: Dict[str, Any] = Depends(get_current_active_user),
 ):
-    role = current_user.get("role")
-    is_faculty = role in {"teacher", "faculty", "hod", "college_admin", "admin", "super_admin"}
+    is_teacher = role in {"teacher", "hod", "college_admin", "admin", "super_admin"}
     client = _client()
     rows = (
         client.table("ai_answer_queue")
@@ -618,7 +615,7 @@ async def list_course_questions(
     for row in rows:
         status = row.get("status", "pending")
         released = bool(row.get("released_to_student", False))
-        if not is_faculty:
+        if not is_teacher:
             if str(row.get("student_id")) != str(current_user.get("id")):
                 continue
             if not released or status not in {"approved", "edited_approved"}:
@@ -653,15 +650,13 @@ async def question_status(
     return await get_student_tutor_answer(Request, question_id, current_user)  # type: ignore[arg-type]
 
 
-@router.get("/faculty/ai-queue")
-async def faculty_queue(current_user: Dict[str, Any] = Depends(get_current_teacher)):
+@router.get("/teacher/ai-queue")
+async def teacher_queue(current_user: Dict[str, Any] = Depends(get_current_teacher)):
     client = _client()
     query = client.table("ai_answer_queue").select("*")
     role = current_user.get("role")
     if role == "teacher":
         query = query.eq("status", "pending")
-    elif role == "faculty":
-        query = query.eq("status", "escalated_to_faculty")
     elif role == "hod":
         query = query.eq("status", "escalated_to_hod")
 
@@ -704,7 +699,7 @@ async def faculty_queue(current_user: Dict[str, Any] = Depends(get_current_teach
     return {"items": items, "total_pending": total_pending}
 
 
-@router.post("/faculty/ai-queue/{queue_id}/approve")
+@router.post("/teacher/ai-queue/{queue_id}/approve")
 async def approve_queue_item(
     queue_id: str,
     current_user: Dict[str, Any] = Depends(get_current_teacher),
@@ -728,7 +723,7 @@ async def approve_queue_item(
             "verified_at": _now_iso(),
             "released_to_student": True,
             "reviewed_by": current_user.get("id"),
-            "faculty_note": None,
+            "teacher_note": None,
         },
     )
 
@@ -741,7 +736,7 @@ async def approve_queue_item(
     return {"success": True, "status": "approved"}
 
 
-@router.post("/faculty/ai-queue/{queue_id}/edit-approve")
+@router.post("/teacher/ai-queue/{queue_id}/edit-approve")
 async def edit_approve_queue_item(
     queue_id: str,
     body: EditApproveRequest,
@@ -762,7 +757,7 @@ async def edit_approve_queue_item(
             "verified_at": _now_iso(),
             "released_to_student": True,
             "reviewed_by": current_user.get("id"),
-            "faculty_note": body.faculty_note,
+            "teacher_note": body.teacher_note,
         },
     )
 
@@ -775,7 +770,7 @@ async def edit_approve_queue_item(
     return {"success": True, "status": "edited_approved"}
 
 
-@router.post("/faculty/ai-queue/{queue_id}/reject")
+@router.post("/teacher/ai-queue/{queue_id}/reject")
 async def reject_queue_item(
     queue_id: str,
     body: RejectRequest,
@@ -794,7 +789,7 @@ async def reject_queue_item(
             "verified_at": _now_iso(),
             "released_to_student": False,
             "reviewed_by": current_user.get("id"),
-            "faculty_note": body.faculty_note,
+            "teacher_note": body.teacher_note,
         },
     )
 
