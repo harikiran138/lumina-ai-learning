@@ -103,6 +103,7 @@ from app.routers import (  # noqa: E402
     core_extensions,
     notifications,
     realtime,
+    generation,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
@@ -296,7 +297,7 @@ app.add_middleware(CacheControlMiddleware)
 Instrumentator().instrument(app).expose(app)
 
 app.include_router(ai.router, prefix="/api", tags=["AI"])
-app.include_router(generation.router)
+app.include_router(generation.router, prefix="/api/generation", tags=["Generation"])
 app.include_router(handwriting.router, prefix="/api/handwriting", tags=["Handwriting"])
 app.include_router(handwritten.router, prefix="/api/handwritten", tags=["Handwritten Assignments"])
 app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignments"])

@@ -49,6 +49,7 @@ class CreateCourseBody(BaseModel):
     image: Optional[str] = None
     thumbnail: Optional[str] = None
     program_id: Optional[str] = None
+    modules: Optional[List[Any]] = None
 
 
 class UpdateCourseBody(BaseModel):
@@ -341,6 +342,7 @@ async def create_course_json(
         difficulty_level=body.level,
         thumbnail_url=body.thumbnail or body.image,
         program_id=body.program_id,
+        modules=body.modules,
     )
     
     if not course:

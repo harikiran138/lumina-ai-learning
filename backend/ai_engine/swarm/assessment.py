@@ -9,7 +9,7 @@ class AssessmentAgent:
     """
 
     def __init__(self, provider: str = "auto"):
-        self.llm = get_llm_provider(provider)
+        self.llm = get_llm_provider(feature="assessment")
         self.rag = get_rag_engine()
 
     async def generate_question(self, topic: str, difficulty: float, context: str = "") -> dict:

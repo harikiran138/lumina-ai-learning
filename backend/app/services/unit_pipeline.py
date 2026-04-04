@@ -251,7 +251,7 @@ class UnitPDFParser:
 
 class UnitEnrichmentService:
     def __init__(self):
-        self.llm = get_llm_provider("ollama")
+        self.llm = get_llm_provider(feature="content_gen", provider="ollama")
 
     def enrich_topic(self, unit_id: str, topic: Dict[str, Any]) -> Dict[str, Any]:
         title = topic.get("title") or "Topic"

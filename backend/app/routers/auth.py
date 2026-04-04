@@ -116,54 +116,71 @@ def _is_adaptive_onboarding_completed(user: dict) -> bool:
     if not user_id:
         return False
 
+    # 1. Quick check: does the user object already have the flag?
+    if user.get("onboarding_completed") is True:
+        return True
+
     try:
         client = supabase_db.get_client()
-        learner_profile = (
-            client.table("learner_profiles")
-            .select("status")
-            .eq("user_id", user_id)
-            .limit(1)
-            .execute()
-        )
-        if learner_profile.data:
-            return str(learner_profile.data[0].get("status") or "").lower() in {"completed", "active"}
+        if not client:
+            return False
 
-        profile = (
-            client.table("onboarding_profiles")
-            .select("status")
-            .eq("user_id", user_id)
-            .limit(1)
-            .execute()
-        )
-        if profile.data:
-            return str(profile.data[0].get("status") or "").lower() == "completed"
+        # 1. Profile Status Check (Multiple Table fallbacks)
+        # We check learner_profiles then onboarding_profiles
+        for table in ["learner_profiles", "onboarding_profiles"]:
+            try:
+                res = client.table(table).select("status").eq("user_id", user_id).limit(1).execute()
+                # Handle both PostgrestResponse objects and raw dictionaries
+                data = getattr(res, "data", None) if not isinstance(res, dict) else res.get("data")
+                
+                if data and len(data) > 0:
+                    status = str(data[0].get("status") or "").lower()
+                    if status in {"completed", "active"}:
+                        return True
+            except Exception:
+                continue
 
-        progress = (
-            client.table("user_data")
-            .select("progress")
-            .eq("user_id", user_id)
-            .limit(1)
-            .execute()
-        )
-        if progress.data:
-            adaptive = ((progress.data[0] or {}).get("progress") or {}).get("adaptive_onboarding") or {}
-            return str(adaptive.get("status") or "").lower() == "completed"
-    except Exception:
-        pass
+        # 2. Check user_data progress as final fallback
+        try:
+            res = client.table("user_data").select("progress").eq("user_id", user_id).limit(1).execute()
+            data = getattr(res, "data", None) if not isinstance(res, dict) else res.get("data")
+            
+            if data and len(data) > 0:
+                progress = data[0].get("progress") or {}
+                adaptive = progress.get("adaptive_onboarding") or {}
+                # Handle both string "completed" and boolean True
+                if str(adaptive.get("status") or "").lower() == "completed" or adaptive.get("completed") is True:
+                    return True
+        except Exception:
+            pass
 
+    except Exception as e:
+        logger.error(f"Error in _is_adaptive_onboarding_completed check: {e}")
+    
     return False
 
 
 def is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
     role = normalize_role(user.get("role", "guest"))
-    if role in ["super_admin", "admin", "hod", "system_admin", "institution_admin"]:
+
+    # Roles that fully bypass onboarding wizard
+    BYPASS_ROLES = {"super_admin", "admin", "hod", "system_admin", "institution_admin"}
+    if role in BYPASS_ROLES:
         return True, True
-        
+
+    # If DB already has onboarding_completed=True, trust it directly
+    db_flag = user.get("onboarding_completed")
+    if db_flag is True:
+        return True, True
+
     required_steps = 2 if role == "college_admin" else 5
     onboarding_step = int(user.get("onboarding_step") or 0)
+
+    # For students, also check adaptive onboarding; for other roles it's auto-complete
     adaptive_completed = role != "student" or _is_adaptive_onboarding_completed(user)
-    
-    return onboarding_step >= required_steps and adaptive_completed, adaptive_completed
+
+    completed = onboarding_step >= required_steps and adaptive_completed
+    return completed, adaptive_completed
 
 
 def build_claims(user: dict) -> dict:
@@ -946,19 +963,38 @@ async def change_password(
 
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: dict = Depends(get_current_user)):
-    onboarding_completed, adaptive_completed = is_onboarding_complete(current_user)
-    return UserResponse(
-        id=str(current_user["id"]),
-        fullName=current_user.get("full_name") or current_user.get("name", "Unknown"),
-        email=current_user["email"],
-        role=current_user.get("role", "student"),
-        department=current_user.get("department_id") or current_user.get("dept_id"),
-        collegeId=current_user.get("college_id"),
-        deptId=current_user.get("dept_id") or current_user.get("department_id"),
-        batchId=current_user.get("batch_id"),
-        onboardingStep=current_user.get("onboarding_step", 0),
-        onboardingCompleted=onboarding_completed,
-        adaptiveOnboardingCompleted=adaptive_completed,
-        profilePhotoUrl=current_user.get("profile_photo_url") or current_user.get("avatar"),
-        mustChangePassword=current_user.get("must_change_password", False),
-    )
+    try:
+        onboarding_completed, adaptive_completed = is_onboarding_complete(current_user)
+        
+        response_obj = UserResponse(
+            id=str(current_user.get("id") or "unknown"),
+            fullName=current_user.get("full_name") or current_user.get("name", "Unknown"),
+            email=current_user.get("email", "unknown@example.com"),
+            role=current_user.get("role", "student"),
+            department=current_user.get("department_id") or current_user.get("dept_id"),
+            collegeId=current_user.get("college_id"),
+            deptId=current_user.get("dept_id") or current_user.get("department_id"),
+            batchId=current_user.get("batch_id"),
+            onboardingStep=current_user.get("onboarding_step", 0),
+            onboardingCompleted=onboarding_completed,
+            adaptiveOnboardingCompleted=adaptive_completed,
+            profilePhotoUrl=current_user.get("profile_photo_url") or current_user.get("avatar"),
+            mustChangePassword=current_user.get("must_change_password", False),
+        )
+        return response_obj
+    except Exception as e:
+        logger.error(f"error_in_read_users_me: {str(e)}")
+        # If we failed to build the response for some reason, return a minimal valid response
+        # instead of a 500 to keep the frontend from crashing during onboarding.
+        try:
+            return UserResponse(
+                id=str(current_user.get("id") or "unknown"),
+                fullName=current_user.get("full_name") or "User",
+                email=current_user.get("email") or "unknown",
+                role=current_user.get("role") or "student",
+                onboardingCompleted=False,
+                adaptiveOnboardingCompleted=False,
+                onboardingStep=0
+            )
+        except Exception:
+            raise HTTPException(status_code=500, detail="Could not retrieve user info")

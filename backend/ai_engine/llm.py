@@ -1,6 +1,10 @@
 import requests
 import os
+import structlog
 from starlette.concurrency import run_in_threadpool
+from typing import List, Optional
+
+logger = structlog.get_logger()
 
 
 def _parse_ollama_think(value):
@@ -64,6 +68,7 @@ class OllamaProvider(LLMProvider):
 
     def generate(self, prompt: str, system_prompt: str = "") -> str:
         if not self.is_healthy():
+            logger.warning("ollama_unavailable", host=self.host)
             return "Error generating content: Ollama is unavailable."
 
         url = f"{self.host}/api/generate"
@@ -98,11 +103,10 @@ class OllamaProvider(LLMProvider):
             data = response.json()
             return data.get("response", "")
         except requests.exceptions.RequestException as e:
-            print(f"Ollama Error: {e}")
+            logger.error("ollama_error", error=str(e))
             return f"Error generating content: {str(e)}"
 
 
-# Factory
 class GeminiRestProvider(LLMProvider):
     def __init__(self, api_keys: list, model: str = "gemini-1.5-flash"):
         self.api_keys = api_keys
@@ -146,7 +150,7 @@ class GeminiRestProvider(LLMProvider):
 
                 # Check for Rate Limit (429) specifically
                 if response.status_code == 429:
-                    print(f"Gemini Rate Limit on Key ending in ...{current_key[-4:]}. Switching...")
+                    logger.warning("gemini_rate_limit", key_suffix=current_key[-4:])
                     attempts += 1
                     continue  # Try next key in loop
 
@@ -158,16 +162,106 @@ class GeminiRestProvider(LLMProvider):
                 return ""
 
             except Exception as e:
-                print(f"Gemini REST Error (Key ...{current_key[-4:]}): {e}")
+                logger.error("gemini_rest_error", key_suffix=current_key[-4:], error=str(e))
                 last_error = e
                 attempts += 1
 
         return f"Error generating content after retries: {str(last_error)}"
 
 
+class OpenRouterProvider(LLMProvider):
+    def __init__(self, api_key: str, model: str = "openrouter/auto"):
+        self.api_key = api_key
+        self.model = model
+        self.session = requests.Session()
+        self.connect_timeout = float(os.getenv("OPENROUTER_CONNECT_TIMEOUT", "5"))
+        self.read_timeout = float(os.getenv("OPENROUTER_READ_TIMEOUT", "45"))
+
+    def generate(self, prompt: str, system_prompt: str = "") -> str:
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://lumina-ai.learning",
+            "X-Title": "Lumina AI Learning"
+        }
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7
+        }
+
+        try:
+            response = self.session.post(
+                url,
+                json=payload,
+                headers=headers,
+                timeout=(self.connect_timeout, self.read_timeout)
+            )
+            if response.status_code == 429:
+                return "Error (429): Rate Limit Exceeded"
+            response.raise_for_status()
+            data = response.json()
+            if "choices" in data and data["choices"]:
+                content = data["choices"][0]["message"]["content"]
+                if content:
+                    return content
+            return "Error: Empty response from provider"
+        except Exception as e:
+            return f"Error: {str(e)}"
+
+
+# Robust Multi-Model Feature Map
+FEATURE_MODEL_MAP = {
+    "onboarding": ["arcee-ai/trinity-large-preview:free", "openrouter/auto"],
+    "dashboard":  ["arcee-ai/trinity-large-preview:free", "openrouter/auto"],
+    "code":       ["qwen/qwen3-coder-480b:free", "deepseek/deepseek-r1:free", "openrouter/auto"],
+    "validation": ["deepseek/deepseek-r1:free", "mistralai/mistral-small-3:free", "openrouter/auto"],
+    "fast":       ["nvidia/nemotron-3-nano-30b-a3b:free", "openrouter/auto"],
+    "rag":        ["mistralai/mistral-small-3:free", "openrouter/auto"],
+    "vision":     ["qwen/qwen-vl:free", "openrouter/auto"],
+}
+
+
+class ResilientOpenRouterProvider(LLMProvider):
+    def __init__(self, api_key: str, feature: str, models: List[str]):
+        self.api_key = api_key
+        self.feature = feature
+        self.models = models
+
+    def generate(self, prompt: str, system_prompt: str = "") -> str:
+        last_error = "All models failed."
+        
+        for model in self.models:
+            provider = OpenRouterProvider(self.api_key, model=model)
+            logger.info("llm_attempt", feature=self.feature, model=model)
+            
+            # Internal retry for transient errors (max 2 attempts per model)
+            for attempt in range(2):
+                try:
+                    response = provider.generate(prompt, system_prompt)
+                    if response and not is_provider_error(response):
+                        logger.info("llm_success", feature=self.feature, model=model, attempt=attempt+1)
+                        return response
+                    
+                    last_error = response
+                    logger.warning("llm_retry", feature=self.feature, model=model, attempt=attempt+1, error=response)
+                except Exception as e:
+                    last_error = str(e)
+                    logger.error("llm_exception", feature=self.feature, model=model, attempt=attempt+1, error=str(e))
+        
+        return f"Error generating content: {last_error}"
+
+
 class CompositeLLMProvider(LLMProvider):
-    def __init__(self, providers):
-        self.providers = [provider for provider in providers if provider is not None]
+    def __init__(self, providers: List[LLMProvider]):
+        self.providers = [p for p in providers if p is not None]
 
     def generate(self, prompt: str, system_prompt: str = "") -> str:
         last_error = "No provider available."
@@ -185,36 +279,45 @@ class CompositeLLMProvider(LLMProvider):
         return f"Error generating content: {last_error}"
 
 
-def get_llm_provider(provider: str = "auto") -> LLMProvider:
-    # Check Environment Variable Override
+def get_llm_provider(feature: str = None, provider: str = "auto") -> LLMProvider:
+    # Check Environment Variable Override (for testing/debugging)
     env_provider = os.getenv("LLM_PROVIDER")
     if env_provider:
         provider = env_provider.lower()
 
-    keys = []
-    key1 = os.getenv("GEMINI_API_KEY")
-    if key1:
-        keys.append(key1)
-    key2 = os.getenv("GEMINI_API_KEY_SECONDARY")
-    if key2:
-        keys.append(key2)
+    # Gather Keys
+    openrouter_key = os.getenv("OPENROUTER_API_KEY")
+    
+    gemini_keys = []
+    if os.getenv("GEMINI_API_KEY"):
+        gemini_keys.append(os.getenv("GEMINI_API_KEY"))
+    if os.getenv("GEMINI_API_KEY_SECONDARY"):
+        gemini_keys.append(os.getenv("GEMINI_API_KEY_SECONDARY"))
 
-    gemini_provider = GeminiRestProvider(api_keys=keys) if keys else None
-    ollama_provider = OllamaProvider()
+    providers = []
 
-    if provider in {"lumina", "local"}:
-        provider = "ollama"
+    # 1. OpenRouter (Primary Strategy: Resilient Feature-based)
+    if openrouter_key and provider in {"auto", "openrouter"}:
+        if feature and feature in FEATURE_MODEL_MAP:
+            models = FEATURE_MODEL_MAP[feature]
+            providers.append(ResilientOpenRouterProvider(openrouter_key, feature, models))
+        else:
+            # Fallback for generic calls
+            providers.append(OpenRouterProvider(openrouter_key, model="openrouter/auto"))
 
-    if provider == "gemini":
-        return CompositeLLMProvider([gemini_provider, ollama_provider])
+    # 2. Gemini (Secondary Fallback Chain)
+    if gemini_keys and provider in {"auto", "gemini"}:
+        providers.append(GeminiRestProvider(api_keys=gemini_keys))
 
-    if provider == "ollama":
-        return ollama_provider
+    # 3. Ollama (Final Local Safety Net)
+    if provider in {"auto", "ollama", "local"}:
+        providers.append(OllamaProvider())
 
-    if provider == "auto":
-        # Prefer Gemini when a key is configured, but fall back to Ollama
-        # transparently if the key is invalid or the API call fails.
-        return CompositeLLMProvider([gemini_provider, ollama_provider])
+    if not providers:
+        logger.warning("no_providers_found_falling_back_to_ollama")
+        return OllamaProvider()
 
-    print("Warning: Falling back to auto provider chain.")
-    return CompositeLLMProvider([gemini_provider, ollama_provider])
+    if len(providers) == 1:
+        return providers[0]
+
+    return CompositeLLMProvider(providers)

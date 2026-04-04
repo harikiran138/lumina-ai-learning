@@ -136,7 +136,7 @@ def _merge_json(base: Any, extra: Any) -> Any:
 class AdaptiveOnboardingEngine:
     def __init__(self, db: Any):
         self.db = db
-        self.llm = get_llm_provider("auto")
+        self.llm = get_llm_provider(feature="onboarding")
 
     async def start_session(
         self,
@@ -1069,6 +1069,7 @@ class AdaptiveOnboardingEngine:
             {
                 "user_id": user_id,
                 "role": role,
+                "status": "completed",
                 "goals": existing.get("goals") or ["complete_onboarding"],
                 "preferences": preferences,
                 "learning_style": (result.get("learningStyle") or {}).get("primary"),
@@ -1080,6 +1081,13 @@ class AdaptiveOnboardingEngine:
                 "updated_at": _now_iso(),
             },
             on_conflict="user_id",
+        )
+
+        # 2. Update master user flag
+        await self.db.update(
+            "users",
+            {"onboarding_completed": True, "onboarding_step": 5},
+            {"id": user_id}
         )
 
     async def _seed_student_mastery(

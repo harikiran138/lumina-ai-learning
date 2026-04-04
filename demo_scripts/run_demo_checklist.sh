@@ -1,13 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env zsh
 # Lumina AI Learning Platform - Demo Readiness Checklist Runner
 # Runs all verification tests and generates final report
-
-set -e
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="/Users/chepuriharikiran/Desktop/github/lumina-ai-learning"
-BACKEND_DIR="$PROJECT_DIR/backend"
-FRONTEND_DIR="$PROJECT_DIR/frontend/web"
 
 # Colors
 GREEN='\033[0;32m'
@@ -26,22 +19,25 @@ echo "Starting comprehensive demo verification..."
 echo ""
 
 # Track results
-declare -A RESULTS
+typeset -A RESULTS
+TOTAL_COUNT=0
+PASS_COUNT=0
 
 # Function to run test
 run_test() {
     local name="$1"
     local script="$2"
     
-    echo -e "${BLUE}Running: $name...${NC}"
-    if python3 "$script"; then
+    echo -ne "${BLUE}Running: $name... ${NC}"
+    if python3 "$script" > /dev/null 2>&1; then
         RESULTS["$name"]="✓ PASS"
-        echo -e "${GREEN}✓ $name completed${NC}"
+        echo -e "${GREEN}✓ PASS${NC}"
+        PASS_COUNT=$((PASS_COUNT + 1))
     else
         RESULTS["$name"]="✗ FAIL"
-        echo -e "${YELLOW}⚠ $name had issues${NC}"
+        echo -e "${RED}✗ FAIL${NC}"
     fi
-    echo ""
+    TOTAL_COUNT=$((TOTAL_COUNT + 1))
 }
 
 # Check Python dependencies
@@ -81,7 +77,7 @@ echo ""
 # Print results table
 echo "Test Results:"
 echo ""
-for test_name in "${!RESULTS[@]}"; do
+for test_name in ${(k)RESULTS}; do
     result="${RESULTS[$test_name]}"
     if [[ $result == *"PASS"* ]]; then
         echo -e "  ${GREEN}${result}${NC} - ${test_name}"
@@ -94,25 +90,11 @@ echo ""
 echo -e "${BLUE}============================================================${NC}"
 echo ""
 
-# Count passes
-PASS_COUNT=0
-TOTAL_COUNT=0
-for result in "${RESULTS[@]}"; do
-    TOTAL_COUNT=$((TOTAL_COUNT + 1))
-    if [[ $result == *"PASS"* ]]; then
-        PASS_COUNT=$((PASS_COUNT + 1))
-    fi
-done
-
 echo "Summary: $PASS_COUNT/$TOTAL_COUNT tests passed"
 echo ""
 
 if [ $PASS_COUNT -eq $TOTAL_COUNT ]; then
     echo -e "${GREEN}🎉 ALL SYSTEMS READY FOR DEMO!${NC}"
-    echo ""
-    echo "Quick Start:"
-    echo "  Backend:  cd $BACKEND_DIR && uvicorn app.main:app --reload --port 8000"
-    echo "  Frontend: cd $FRONTEND_DIR && npm run dev"
     echo ""
     exit 0
 else

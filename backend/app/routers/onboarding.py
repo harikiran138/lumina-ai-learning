@@ -2,7 +2,7 @@ import mimetypes
 import os
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Literal
 import logging
 
@@ -189,7 +189,13 @@ async def _persist_progress(
     current_step = int(user_record.get("onboarding_step") or 0)
     next_step = 5 if completed else max(current_step, target_step)
 
-    updates = {**(user_updates or {}), "onboarding_step": next_step}
+    updates = {
+        **(user_updates or {}),
+        "onboarding_step": next_step,
+    }
+    if completed:
+        updates["onboarding_completed"] = True
+
     updated = await UserStore(db=db).update_user_fields(user_id, updates)
     if not updated:
         raise HTTPException(status_code=500, detail="Failed to persist onboarding user fields")
@@ -699,6 +705,7 @@ async def save_student_preferences(
                 "learning_styles": learning_styles,
                 "self_assessment": self_assessment,
             },
+            "status": "active",
             "metadata": {
                 "onboarding_version": "student_v2",
                 "selected_subject_ids": subject_ids,

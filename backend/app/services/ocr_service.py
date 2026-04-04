@@ -253,12 +253,13 @@ def _heuristic_confidence(text: str) -> float:
 
 
 async def run_gemini_ocr(image: Image.Image, confidence_threshold: float = 0.70) -> OCRResult:
-    """Use Gemini Vision API to transcribe handwritten text — fast, no local model needed."""
+    """Use OpenRouter (Gemini Vision) to transcribe handwritten text."""
     import base64
     import httpx
 
-    gemini_key = settings.ASSESSMENT_API_KEY
-    if not gemini_key:
+    api_key = settings.OPENROUTER_API_KEY
+    model = settings.OPENROUTER_MODEL
+    if not api_key:
         return OCRResult(text="", confidence=0.0, is_flagged=True, model_used="none")
 
     processed = preprocess_image(image)
@@ -267,31 +268,51 @@ async def run_gemini_ocr(image: Image.Image, confidence_threshold: float = 0.70)
     img_b64 = base64.b64encode(buf.getvalue()).decode()
 
     payload = {
-        "contents": [{
-            "parts": [
-                {"text": "Transcribe all handwritten text from this exam paper image exactly as written. Output only the transcribed text, no commentary."},
-                {"inline_data": {"mime_type": "image/png", "data": img_b64}}
-            ]
-        }]
+        "model": model,
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Transcribe all handwritten text from this exam paper image exactly as written. Output only the transcribed text, no commentary."
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{img_b64}"
+                        }
+                    }
+                ]
+            }
+        ],
+        "temperature": 0.1
     }
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+    url = "https://openrouter.ai/api/v1/chat/completions"
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(url, json=payload)
+        async with httpx.AsyncClient(timeout=60) as client:
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://lumina.learning",
+                "X-Title": "Lumina Learning Platform"
+            }
+            resp = await client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
-        text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            
+        text = data["choices"][0]["message"]["content"].strip()
         confidence = _heuristic_confidence(text)
         return OCRResult(
             text=text,
             confidence=confidence,
             is_flagged=confidence < confidence_threshold,
-            model_used="gemini-1.5-flash-vision",
+            model_used=f"{model} (via OpenRouter)",
         )
     except Exception as e:
-        log.error("gemini_ocr_failed", error=str(e))
-        return OCRResult(text="", confidence=0.0, is_flagged=True, model_used="gemini-error")
+        log.error("openrouter_ocr_failed", error=str(e))
+        return OCRResult(text="", confidence=0.0, is_flagged=True, model_used="openrouter-error")
 
 
 class OCRService:

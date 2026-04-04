@@ -1,4 +1,4 @@
-import google.generativeai as genai
+import httpx
 from app.core.config import settings
 from app.core.logging import structlog
 from typing import List, Dict, Any, Optional
@@ -7,15 +7,14 @@ log = structlog.get_logger()
 
 class AITutorStore:
     def __init__(self):
-        if settings.ASSESSMENT_API_KEY:
-            genai.configure(api_key=settings.ASSESSMENT_API_KEY)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
-        else:
-            self.model = None
-            log.warning("ai_tutor_no_api_key", message="GEMINI_API_KEY NOT SET")
+        self.api_key = settings.OPENROUTER_API_KEY
+        self.model = settings.OPENROUTER_MODEL
+        self.base_url = "https://openrouter.ai/api/v1/chat/completions"
+        if not self.api_key:
+            log.warning("ai_tutor_no_api_key", message="OPENROUTER_API_KEY NOT SET")
 
     async def get_response(self, prompt: str, history: List[Dict] = None, context: Dict = None) -> str:
-        if not self.model:
+        if not self.api_key:
             return "I'm sorry, my AI processing unit is currently offline. Please contact the administrator."
 
         # Build system instruction based on context
@@ -27,32 +26,45 @@ class AITutorStore:
         
         system_instruction += "Keep your answers educational, concise, and encouraging. Use simple analogies when explaining complex concepts."
 
-        try:
-            # Prepare chat
-            chat = self.model.start_chat(history=history or [])
-            
-            # Combine system instruction with prompt if it's the first message
-            full_prompt = prompt
-            if not history:
-                full_prompt = f"{system_instruction}\n\nStudent: {prompt}"
+        # Prepare messages in OpenAI format
+        messages = [{"role": "system", "content": system_instruction}]
+        if history:
+            messages.extend(self.format_history_for_openrouter(history))
+        messages.append({"role": "user", "content": prompt})
 
-            response = await chat.send_message_async(full_prompt)
-            return response.text
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                headers = {
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://lumina.learning", # Optional but recommended by OpenRouter
+                    "X-Title": "Lumina Learning Platform"
+                }
+                payload = {
+                    "model": self.model,
+                    "messages": messages,
+                    "temperature": 0.7,
+                }
+                response = await client.post(self.base_url, headers=headers, json=payload)
+                response.raise_for_status()
+                data = response.json()
+                return data["choices"][0]["message"]["content"]
         except Exception as e:
             log.error("ai_tutor_response_failed", error=str(e))
             return "I encountered an error while thinking. Let me try that again in a moment."
 
-    def format_history_for_gemini(self, messages: List[Dict]) -> List[Dict]:
+    def format_history_for_openrouter(self, messages: List[Dict]) -> List[Dict]:
         """
-        Converts Lumina message format to Gemini history format.
-        Lumina: [{'role': 'user'|'assistant', 'content': '...'}]
-        Gemini: [{'role': 'user'|'model', 'parts': [{'text': '...'}]}]
+        Converts Lumina message format to OpenRouter (OpenAI) history format.
+        Lumina: [{'role': 'user'|'assistant'|'model', 'content': '...'}]
+        OpenRouter: [{'role': 'user'|'assistant', 'content': '...'}]
         """
-        gemini_history = []
+        formatted_history = []
         for msg in messages:
-            role = 'user' if msg['role'] == 'user' else 'model'
-            gemini_history.append({
+            # Map roles: 'model' or 'assistant' -> 'assistant'
+            role = 'user' if msg['role'] == 'user' else 'assistant'
+            formatted_history.append({
                 'role': role,
-                'parts': [{'text': msg['content']}]
+                'content': msg['content']
             })
-        return gemini_history
+        return formatted_history

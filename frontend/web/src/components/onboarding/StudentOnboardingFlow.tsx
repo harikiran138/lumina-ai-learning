@@ -163,7 +163,10 @@ export default function StudentOnboardingFlow() {
         const adaptiveStage = nextCompleted >= 5 && !adaptiveDone;
         if (nextCompleted >= 5 && adaptiveDone) {
           clearSnapshot("student");
-          await api.getCurrentUser().catch(() => undefined);
+          // Refresh the JWT so the middleware cookie carries onboardingCompleted: true.
+          // Without this the browser still holds the login-time token and the
+          // middleware loops the student back to /onboarding on every visit.
+          await api.completeOnboarding().catch(() => undefined);
           window.location.href = "/student/dashboard";
           return;
         }
@@ -532,7 +535,13 @@ export default function StudentOnboardingFlow() {
     setAdaptiveCompleted(true);
     setAdaptiveStatus("completed");
     clearSnapshot("student");
-    await api.getCurrentUser().catch(() => undefined);
+    // CRITICAL: Exchange the stale login JWT for a fresh token that carries
+    // onboardingCompleted: true.  The backend /api/onboarding/complete endpoint
+    // marks the learner_profile status as "active", rebuilds the JWT claims,
+    // and sets an updated access_token cookie.  Without this the Next.js
+    // middleware reads onboardingCompleted: false from the old cookie and
+    // immediately redirects back to /onboarding — creating an infinite loop.
+    await api.completeOnboarding().catch(() => undefined);
     window.location.href = "/student/dashboard";
   };
 

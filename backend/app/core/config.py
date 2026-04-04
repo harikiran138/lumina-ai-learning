@@ -26,7 +26,9 @@ class Settings(BaseSettings):
     PORT: int = 8000
     SECURE_COOKIES: bool = os.getenv("ENVIRONMENT", "local").lower() == "production" or os.getenv("SECURE_COOKIES", "False").lower() == "true"
 
-    # AI Configuration - Use GEMINI_API_KEY for both tutor and assessment
+    # AI Configuration - Use OPENROUTER_API_KEY for both tutor and assessment
+    OPENROUTER_API_KEY: Optional[str] = os.getenv("OPENROUTER_API_KEY")
+    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free")
     ASSESSMENT_API_KEY: Optional[str] = None
     SENTRY_DSN: Optional[str] = None
 
@@ -40,9 +42,9 @@ class Settings(BaseSettings):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # If ASSESSMENT_API_KEY not set, use GEMINI_API_KEY
+        # If ASSESSMENT_API_KEY not set, prefer OPENROUTER_API_KEY then fallback to GEMINI_API_KEY
         if not self.ASSESSMENT_API_KEY:
-            self.ASSESSMENT_API_KEY = os.getenv("GEMINI_API_KEY")
+            self.ASSESSMENT_API_KEY = self.OPENROUTER_API_KEY or os.getenv("GEMINI_API_KEY")
 
         # Security Check for Production or Development Secret Presence
         env = os.getenv("ENVIRONMENT", "").lower()

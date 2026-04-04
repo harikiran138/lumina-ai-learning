@@ -10,7 +10,7 @@ class RetrievalService:
     def __init__(self, provider: str = "auto"):
         self.vector_store = VectorStore()
         self.embedding_service = EmbeddingService.get_embeddings()
-        self.llm = get_llm_provider(provider)
+        self.llm = get_llm_provider(feature="search")
 
     def ingest_text(self, text: str, metadata: Dict[str, Any] = None):
         """

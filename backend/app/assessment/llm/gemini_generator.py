@@ -23,13 +23,13 @@ class GeminiGenerator:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(GeminiGenerator, cls).__new__(cls)
-            if not settings.ASSESSMENT_API_KEY:
-                logger.warning("No ASSESSMENT_API_KEY provided. GeminiGenerator will fail.")
+            if not settings.OPENROUTER_API_KEY:
+                logger.warning("No OPENROUTER_API_KEY provided. GeminiGenerator will fail.")
         return cls._instance
 
     def __init__(self):
-        self.model_name = "gemini-1.5-flash"
-        self.api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent"
+        self.model_name = settings.OPENROUTER_MODEL
+        self.api_url = "https://openrouter.ai/api/v1/chat/completions"
 
     def generate_question(
         self, 
@@ -39,8 +39,7 @@ class GeminiGenerator:
         previous_analysis: Optional[AnswerAnalysis] = None
     ) -> Optional[Question]:
         """
-        Generates a question of the specified format using Google Gemini REST API.
-        If previous_analysis is provided, it generates a targetted follow-up.
+        Generates a question of the specified format using OpenRouter API.
         """
         difficulty_str = "easy" if difficulty < 0.4 else "medium" if difficulty < 0.7 else "hard"
         
@@ -70,27 +69,31 @@ class GeminiGenerator:
             f"Return ONLY valid JSON with the requested structure, no markdown, no other text."
         )
 
-        headers = {"Content-Type": "application/json"}
-        params = {"key": settings.ASSESSMENT_API_KEY}
+        headers = {
+            "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://lumina.learning",
+            "X-Title": "Lumina Learning Platform"
+        }
+        
         payload = {
-            "contents": [{"parts": [{"text": prompt_text}]}],
-            "generationConfig": {"temperature": 0.7, "responseMimeType": "application/json"},
+            "model": self.model_name,
+            "messages": [{"role": "user", "content": prompt_text}],
+            "temperature": 0.7,
+            "response_format": {"type": "json_object"}
         }
 
         try:
             response = requests.post(
-                self.api_url, params=params, headers=headers, json=payload, timeout=30
+                self.api_url, headers=headers, json=payload, timeout=30
             )
 
             if response.status_code != 200:
-                logger.error(f"Gemini API Error: {response.status_code} - {response.text}")
+                logger.error(f"OpenRouter API Error: {response.status_code} - {response.text}")
                 return self._fallback_question(topic, difficulty, format)
 
             result = response.json()
-            try:
-                generated_text = result["candidates"][0]["content"]["parts"][0]["text"]
-            except (KeyError, IndexError):
-                return self._fallback_question(topic, difficulty, format)
+            generated_text = result["choices"][0]["message"]["content"].strip()
 
             # Parse JSON
             q_data = json.loads(generated_text.replace("```json", "").replace("```", "").strip())
@@ -116,13 +119,13 @@ class GeminiGenerator:
                 rubric=q_data.get("rubric", {}),
                 metadata=QuestionMetadata(
                     question_id=str(uuid.uuid4()),
-                    concepts=[topic], # Initial broad topic
+                    concepts=[topic], 
                     difficulty=difficulty
                 )
             )
 
         except Exception as e:
-            logger.error(f"Gemini Generation Failed: {e}")
+            logger.error(f"OpenRouter Generation Failed: {e}")
             return self._fallback_question(topic, difficulty, format)
 
     def analyze_answer(
@@ -131,7 +134,7 @@ class GeminiGenerator:
         student_answer: str
     ) -> AnswerAnalysis:
         """
-        Uses Gemini to semantically analyze an open-ended student response.
+        Uses OpenRouter to semantically analyze an open-ended student response.
         """
         prompt_text = (
             f"Question: {question.text}\n"
@@ -143,28 +146,34 @@ class GeminiGenerator:
             f'"misconceptions": ["list"], "confidence_estimate": 0.0-1.0, "feedback": "Brief supportive feedback"}}\n'
         )
 
-        headers = {"Content-Type": "application/json"}
-        params = {"key": settings.ASSESSMENT_API_KEY}
+        headers = {
+            "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://lumina.learning",
+            "X-Title": "Lumina Learning Platform"
+        }
+        
         payload = {
-            "contents": [{"parts": [{"text": prompt_text}]}],
-            "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
+            "model": self.model_name,
+            "messages": [{"role": "user", "content": prompt_text}],
+            "temperature": 0.1,
+            "response_format": {"type": "json_object"}
         }
 
         try:
             response = requests.post(
-                self.api_url, params=params, headers=headers, json=payload, timeout=30
+                self.api_url, headers=headers, json=payload, timeout=30
             )
 
             if response.status_code == 200:
                 result = response.json()
-                analysis_text = result["candidates"][0]["content"]["parts"][0]["text"]
+                analysis_text = result["choices"][0]["message"]["content"].strip()
                 a_data = json.loads(analysis_text.replace("```json", "").replace("```", "").strip())
                 return AnswerAnalysis(**a_data)
         except Exception as e:
-            logger.error(f"Gemini Analysis Failed: {e}")
+            logger.error(f"OpenRouter Analysis Failed: {e}")
         
-        # Smart Mock Fallback (WS4 Alignment)
-        # Instead of just partial credit, we simulate a "deep" analysis for testing
+        # Smart Mock Fallback
         is_honest = "mutable" in student_answer.lower() and "immutable" in student_answer.lower()
         return AnswerAnalysis(
             correctness=1.0 if is_honest else 0.4,

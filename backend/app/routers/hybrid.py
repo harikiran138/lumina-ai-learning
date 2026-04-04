@@ -32,7 +32,7 @@ async def hybrid_generate(request: HybridGenerateRequest):
         context_str = "\n".join(context_docs)
 
         # Stage 2: Local Llama (Raw Knowledge with Context)
-        local_llm = get_llm_provider("ollama")
+        local_llm = get_llm_provider(feature="fast", provider="ollama")
 
         system_prompt_1 = "You are a knowledgeable professor. Provide a detailed, comprehensive explanation using the provided context."
         user_prompt_1 = f"Context:\n{context_str}\n\nQuestion: Explain '{request.topic}' in depth. Include key dates, process flows, and concepts."
@@ -40,7 +40,7 @@ async def hybrid_generate(request: HybridGenerateRequest):
         raw_content = await local_llm.agenerate(user_prompt_1, system_prompt_1)
 
         # Stage 2: Cloud Gemini (Structure & Formatting)
-        cloud_llm = get_llm_provider("gemini")
+        cloud_llm = get_llm_provider(feature="tutor", provider="gemini")
 
         # Use the shared Orchestrator Prompt
         from ai_engine.prompts import A2UI_SYSTEM_PROMPT

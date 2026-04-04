@@ -6,6 +6,7 @@ No async issues. Idempotent (uses ON CONFLICT).
 import os
 import uuid
 import json
+import time
 from typing import Optional
 import requests
 import bcrypt
@@ -160,32 +161,44 @@ def upsert_user(user_data: dict) -> Optional[dict]:
 
 
 def create_learner_profile(user_id: str, email: str):
-    """Creates/updates a learner_profile entry marking adaptive onboarding as completed."""
+    """Creates/updates a learner_profile and ensures user_data progress is COMPLETED."""
     now = datetime.utcnow().isoformat()
+    
+    # 1. Update/Create Learner Profile (omit status if possible schema mismatch)
     payload = {
         "user_id": user_id,
-        "status": "completed",
         "learning_style": "visual",
         "goals": ["pass exams", "understand concepts"],
         "created_at": now,
         "updated_at": now,
     }
+    # Check if we can add status or if it errors
     url = f"{SUPABASE_URL}/rest/v1/learner_profiles"
-    resp = requests.post(url, headers=HEADERS, json=payload)
-    if resp.status_code in (200, 201, 409):
-        print(f"  ✓ Learner profile created/exists for {email}")
-    else:
-        # Try update
-        patch_resp = requests.patch(
-            url,
-            headers={**HEADERS, "Prefer": "return=minimal"},
-            params={"user_id": f"eq.{user_id}"},
-            json={"status": "completed", "updated_at": now},
-        )
-        if patch_resp.status_code in (200, 204):
-            print(f"  ↻ Learner profile updated for {email}")
-        else:
-            print(f"  ⚠ Could not create learner profile for {email}: {resp.text[:100]}")
+    resp = requests.post(url, headers=HEADERS, json={**payload, "status": "active"})
+    if resp.status_code not in (200, 201, 204):
+        # Fallback without status
+        requests.post(url, headers=HEADERS, json=payload)
+    
+    # 2. Update user_data progress for auth checks
+    progress_payload = {
+        "user_id": user_id,
+        "progress": {
+            "onboarding_status": "COMPLETED",
+            "onboarding_step": 5,
+            "completed_at": now,
+            "adaptive_onboarding": {
+                "status": "completed",
+                "completed_at": now
+            }
+        },
+        "updated_at": now
+    }
+    requests.post(
+        f"{SUPABASE_URL}/rest/v1/user_data",
+        headers=HEADERS,
+        json=progress_payload
+    )
+    print(f"  ✓ Full onboarding status synced for {email}")
 
 
 def verify_login(email: str):
@@ -235,6 +248,9 @@ def main():
                 results["login_fail"] += 1
         else:
             results["failed"] += 1
+        
+        # Rate limit protection
+        time.sleep(1.5)
 
     print("\n" + "=" * 60)
     print("SEEDING SUMMARY")

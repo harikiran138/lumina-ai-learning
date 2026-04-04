@@ -19,7 +19,7 @@ class Orchestrator:
         self.intervention_agent = InterventionAgent()
         self.guardian_agent = GuardianAgent()
         self.pathway_agent = None
-        self.llm = get_llm_provider(provider)
+        self.llm = get_llm_provider(feature="fast", provider=provider)
 
     def _get_tutor_agent(self):
         if self.tutor_agent is None:

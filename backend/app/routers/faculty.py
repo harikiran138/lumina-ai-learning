@@ -67,10 +67,10 @@ def _build_assignment_views(
     return views
 
 
-@router.get("/faculty/onboarding/options")
+@router.get("/onboarding/options")
 async def get_faculty_onboarding_options(current_user: dict = Depends(get_current_user)):
     _require_faculty(current_user)
-    if current_user.get("role") != "faculty":
+    if current_user.get("role") not in {"teacher", "faculty"}:
         raise HTTPException(status_code=403, detail="Teacher onboarding access required")
 
     teacher_id = str(current_user.get("id"))
@@ -115,7 +115,7 @@ async def get_faculty_onboarding_options(current_user: dict = Depends(get_curren
     }
 
 
-@router.post("/faculty/onboarding/complete")
+@router.post("/onboarding/complete")
 async def complete_faculty_onboarding(
     payload: FacultyOnboardingCompleteRequest,
     current_user: dict = Depends(get_current_user),
@@ -255,7 +255,7 @@ async def complete_faculty_onboarding(
     }
 
 
-@router.get("/faculty/subjects")
+@router.get("/subjects")
 async def list_faculty_subjects(current_user: dict = Depends(get_current_user)):
     """List all subjects/courses assigned to this faculty member."""
     _require_faculty(current_user)
@@ -283,7 +283,7 @@ async def list_faculty_subjects(current_user: dict = Depends(get_current_user)):
     return results
 
 
-@router.get("/faculty/students/{batch_id}")
+@router.get("/students/{batch_id}")
 async def list_batch_students(
     batch_id: str,
     section: Optional[str] = None,
@@ -385,7 +385,7 @@ async def get_faculty_dashboard_summary(current_user: dict = Depends(get_current
     }
 
 
-@router.get("/faculty/interventions/queue")
+@router.get("/interventions/queue")
 async def get_intervention_queue(current_user: dict = Depends(get_current_user)):
     """Get intervention queue for faculty - students needing attention."""
     _require_faculty(current_user)
@@ -399,7 +399,7 @@ async def get_intervention_queue(current_user: dict = Depends(get_current_user))
     return active
 
 
-@router.patch("/faculty/interventions/{intervention_id}")
+@router.patch("/interventions/{intervention_id}")
 async def update_intervention_status(
     intervention_id: str,
     update: InterventionUpdateRequest,
@@ -419,7 +419,7 @@ async def update_intervention_status(
     return updated.model_dump(mode="json")
 
 
-@router.get("/faculty/alerts")
+@router.get("/alerts")
 async def get_faculty_alerts(current_user: dict = Depends(get_current_user)):
     """Get alerts for at-risk students in faculty's classes."""
     _require_faculty(current_user)
@@ -434,7 +434,7 @@ async def get_faculty_alerts(current_user: dict = Depends(get_current_user)):
     return alerts
 
 
-@router.get("/faculty/attendance/{course_id}")
+@router.get("/attendance/{course_id}")
 async def get_course_attendance(
     course_id: str,
     current_user: dict = Depends(get_current_user)
@@ -447,7 +447,7 @@ async def get_course_attendance(
     return sessions or []
 
 
-@router.post("/faculty/attendance/mark")
+@router.post("/attendance/mark")
 async def mark_attendance_faculty(
     records: List[Dict[str, Any]],
     current_user: dict = Depends(get_current_user)
@@ -505,7 +505,7 @@ async def mark_attendance_faculty(
     return {"created": len(response.data or []), "session_id": session_id}
 
 
-@router.get("/faculty/analytics/misconceptions")
+@router.get("/analytics/misconceptions")
 async def get_misconception_clusters(
     student_ids: List[str] = Query(..., alias="student_id"),
     current_user: dict = Depends(get_current_user)
@@ -516,7 +516,7 @@ async def get_misconception_clusters(
     return await service.get_cohort_misconceptions(student_ids)
 
 
-@router.get("/faculty/analytics/growth")
+@router.get("/analytics/growth")
 async def get_growth_trajectories(
     student_ids: List[str] = Query(..., alias="student_id"),
     current_user: dict = Depends(get_current_user)
@@ -527,7 +527,7 @@ async def get_growth_trajectories(
     return await service.get_growth_trajectories(student_ids)
 
 
-@router.get("/faculty/students/{student_id}/analytics")
+@router.get("/students/{student_id}/analytics")
 async def get_student_analytics(
     student_id: str,
     current_user: dict = Depends(get_current_user)
