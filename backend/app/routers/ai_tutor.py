@@ -25,12 +25,12 @@ async def ai_tutor_chat(
         raise HTTPException(status_code=400, detail="Prompt is required")
 
     tutor_store = AITutorStore()
-    
+
     # Process history
-    gemini_history = tutor_store.format_history_for_gemini(history_raw)
-    
+    formatted_history = tutor_store.format_history_for_openrouter(history_raw)
+
     # Get response
-    response_text = await tutor_store.get_response(prompt, gemini_history, context)
+    response_text = await tutor_store.get_response(prompt, formatted_history, context)
     
     return {
         "success": True,

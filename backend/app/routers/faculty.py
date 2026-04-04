@@ -333,24 +333,26 @@ async def get_faculty_dashboard_summary(current_user: dict = Depends(get_current
             students = await db.fetch_all("student_enrollments", {"class_id": class_id})
             total_students += len(students or [])
 
-    # Get pending submissions to grade
-    pending_submissions = await db.fetch_all("assignment_submissions", {"graded_by": None, "status": "submitted"})
+    # Get pending submissions to grade (filter by status only; graded_by column doesn't exist)
+    pending_submissions = await db.fetch_all("assignment_submissions", {"status": "submitted"})
 
-    # Get active interventions
-    service = get_personalization_service(db=db)
-    interventions = await service.get_interventions()
-
-    active_alerts = [
-        {
-            "id": str(i.id),
-            "type": "warning" if i.priority in ["high", "critical"] else "info",
-            "title": i.recommended_action,
-            "description": i.reason,
-            "priority": i.priority,
-        }
-        for i in interventions
-        if i.status in [InterventionStatus.OPEN, InterventionStatus.ACKNOWLEDGED]
-    ]
+    # Get active interventions (best-effort — table may not exist yet)
+    try:
+        service = get_personalization_service(db=db)
+        interventions = await service.get_interventions()
+        active_alerts = [
+            {
+                "id": str(i.id),
+                "type": "warning" if i.priority in ["high", "critical"] else "info",
+                "title": i.recommended_action,
+                "description": i.reason,
+                "priority": i.priority,
+            }
+            for i in interventions
+            if i.status in [InterventionStatus.OPEN, InterventionStatus.ACKNOWLEDGED]
+        ]
+    except Exception:
+        active_alerts = []
 
     return {
         "stats": [

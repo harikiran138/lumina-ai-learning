@@ -41,8 +41,9 @@ class InstitutionStore:
             result = await self.db.upsert("institutions", inst_data)
             if not result:
                 raise Exception("Failed to create institution in institutions table")
-            
-            institution = result[0]
+
+            # upsert() returns the row dict directly (not a list)
+            institution = result if isinstance(result, dict) else result[0]
             inst_id = institution["id"]
 
             # Upsert into institution_details if we have data
@@ -110,7 +111,8 @@ class InstitutionStore:
                 data["department_name"] = data.pop("name")
             result = await self.db.upsert("departments", data)
             if result:
-                return result[0]
+                # upsert() returns a single dict, not a list
+                return result if isinstance(result, dict) else result[0]
             raise Exception("Failed to create department")
         except Exception as e:
             log.error("create_department_failed", error=str(e))
@@ -131,7 +133,7 @@ class InstitutionStore:
                 data["program_name"] = data.pop("name")
             result = await self.db.upsert("programs", data)
             if result:
-                return result[0]
+                return result if isinstance(result, dict) else result[0]
             raise Exception("Failed to create program")
         except Exception as e:
             log.error("create_program_failed", error=str(e))

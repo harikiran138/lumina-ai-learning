@@ -351,6 +351,31 @@ async def update_user_role(user_id: str, role: str, admin: dict = Depends(is_adm
     return {"success": True}
 
 
+@router.patch("/users/by-email")
+async def assign_user_dept_by_email(data: dict, admin: dict = Depends(is_admin)):
+    """Update dept_id / college_id for a user identified by email. Used by demo setup."""
+    email = (data.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="email is required")
+
+    db = get_scoped_db(admin)
+    user_store = UserStore(db=db)
+    target = await user_store.get_user_by_email(email)
+    if not target:
+        raise HTTPException(status_code=404, detail=f"User {email} not found")
+
+    updates: dict = {}
+    if data.get("dept_id"):
+        updates["dept_id"] = data["dept_id"]
+    if data.get("college_id"):
+        updates["college_id"] = data["college_id"]
+    if not updates:
+        raise HTTPException(status_code=400, detail="No updatable fields provided")
+
+    await user_store.update_user_fields(target["id"], updates)
+    return {"success": True, "user_id": target["id"], "updated": updates}
+
+
 @router.get("/courses")
 async def get_all_courses(admin: dict = Depends(is_admin)):
     """List courses scoped to the primary institution."""

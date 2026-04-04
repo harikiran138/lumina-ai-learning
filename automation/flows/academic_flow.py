@@ -178,6 +178,39 @@ async def create_enrollment_code(
         return None
 
 
+async def assign_users_to_dept(
+    client: httpx.AsyncClient,
+    admin_token: str,
+    dept_id: str,
+    college_id: str,
+) -> None:
+    """
+    PATCH hod@lumina.com and teacher@lumina.com to carry dept_id + college_id so
+    that HOD/Faculty dashboards (which require dept_id) work without 403.
+    """
+    from automation.config import API, HTTP_TIMEOUT, USERS
+    for role_key in ("hod", "teacher"):
+        email = USERS[role_key]["email"]
+        try:
+            resp = await client.patch(
+                f"{API}/admin/users/by-email",
+                json={
+                    "email":      email,
+                    "dept_id":    dept_id,
+                    "college_id": college_id,
+                },
+                headers={"Authorization": f"Bearer {admin_token}"},
+                timeout=HTTP_TIMEOUT,
+            )
+            if resp.status_code == 200:
+                ok(f"Linked {email} → dept {dept_id}")
+            else:
+                # Fallback: try PATCH /admin/users/{id} if by-email endpoint missing
+                warn(f"by-email patch not available ({resp.status_code}) for {email} — skipping dept assignment")
+        except Exception as exc:
+            warn(f"dept assignment exception for {email}: {exc}")
+
+
 async def run_academic_flow(
     client: httpx.AsyncClient,
     admin_token: str,
@@ -201,6 +234,9 @@ async def run_academic_flow(
         fail("Cannot continue without a department record")
         return ctx
     ctx["dept_id"] = dept.get("id")
+
+    # Assign HOD and teacher to this department so their dashboards don't 403
+    await assign_users_to_dept(client, admin_token, ctx["dept_id"], ctx["college_id"])
 
     batch = await create_batch(client, hod_token, ctx["dept_id"])
     if batch:

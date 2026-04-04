@@ -124,10 +124,10 @@ async def chat_with_tutor(
         resp = await client.post(
             f"{API}/ai-tutor/chat",
             json={
-                "message":    "Explain Newton's Second Law with a real-world example.",
-                "user_id":    user_id,
-                "session_id": "demo-automation-session",
-                "provider":   "google",
+                # endpoint expects 'prompt', not 'message'
+                "prompt":  "Explain Newton's Second Law with a real-world example.",
+                "context": {"user_id": user_id},
+                "history": [],
             },
             headers={"Authorization": f"Bearer {student_token}"},
             timeout=HTTP_TIMEOUT,
