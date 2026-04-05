@@ -1,3 +1,4 @@
+from __future__ import annotations
 import httpx
 import os
 import sys
@@ -301,6 +302,24 @@ class _LocalTableQuery:
 class _LocalSupabaseClient:
     def table(self, table_name: str) -> _LocalTableQuery:
         return _LocalTableQuery(table_name)
+    
+    def rpc(self, function_name: str, params: Dict[str, Any] = None):
+        """Mock RPC handler."""
+        return _LocalRPCQuery(function_name, params)
+
+class _LocalRPCQuery:
+    def __init__(self, function_name: str, params: Dict[str, Any] = None):
+        self.function_name = function_name
+        self.params = params or {}
+
+    async def async_execute(self):
+        return self.execute()
+
+    def execute(self):
+        # Specific mock logic for get_leaderboard_data
+        if self.function_name == "get_leaderboard_data":
+            return _LocalQueryResult([]) # Return empty by default for mock
+        return _LocalQueryResult({})
 
 
 class SupabaseManager:

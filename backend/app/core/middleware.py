@@ -7,6 +7,7 @@ from jose import jwt, JWTError
 from app.core.config import settings
 from app.core.rbac import normalize_role
 import structlog
+import time
 
 logger = structlog.get_logger(__name__)
 
@@ -49,15 +50,18 @@ RBAC_RULES = {
 
 class SentinelMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
         path = request.url.path
         
         # 1. Check if path is exempt
         if any(re.match(pattern, path) for pattern in EXEMPT_PATHS):
-            return await call_next(request)
+            response = await call_next(request)
+            return self.add_headers(response, start_time)
 
         # Let route-level dependency overrides drive auth in tests and local harnesses.
         if getattr(request.app, "dependency_overrides", None):
-            return await call_next(request)
+            response = await call_next(request)
+            return self.add_headers(response, start_time)
             
         # 2. Extract Token
         auth_header = request.headers.get("Authorization")
@@ -130,4 +134,10 @@ class SentinelMiddleware(BaseHTTPMiddleware):
         
         # 4. Proceed
         response = await call_next(request)
+        return self.add_headers(response, start_time)
+
+    def add_headers(self, response: Any, start_time: float):
+        process_time = (time.time() - start_time) * 1000
+        response.headers["X-Process-Time"] = f"{process_time:.2f}ms"
+        response.headers["Lumina-Health"] = "Stable"
         return response

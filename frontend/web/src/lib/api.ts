@@ -229,7 +229,12 @@ async function fetchWithRetry(
 async function parseJsonSafe(res: Response): Promise<any> {
     const text = await res.text();
     try {
-      return JSON.parse(text);
+      const json = JSON.parse(text);
+      // Auto-unwrap Lumina Standard Response
+      if (json && typeof json === 'object' && json.success === true && 'data' in json) {
+        return json.data;
+      }
+      return json;
     } catch {
       return null;
     }
@@ -508,7 +513,11 @@ export class RealAPI {
     try {
       const res = await this.fetchAuthorized(path, options, timeoutMs);
       if (!res.ok) return defaultValue;
-      return (await res.json()) as T;
+      const json = await res.json();
+      if (json && typeof json === 'object' && json.success === true && 'data' in json) {
+        return json.data as T;
+      }
+      return json as T;
     } catch (err) {
       console.error(`Error fetching ${path}:`, err);
       return defaultValue;

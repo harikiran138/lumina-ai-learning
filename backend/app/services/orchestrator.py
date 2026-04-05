@@ -25,7 +25,12 @@ import logging
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.services.dkt_engine import DKTEngine
+    from app.services.trait_detector import TraitEngine
+    from app.services.adaptive_engine import AdaptiveEngine
+    from app.services.spaced_repetition import SpacedRepetitionScheduler
 
 logger = logging.getLogger(__name__)
 
