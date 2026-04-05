@@ -88,7 +88,21 @@ jobs:
             python backend/tests/rag_eval.py
           fi
 
-  # 6. UI Testing (Jest/Playwright)
+  # 6. Policy Enforcement: No Axios
+  enforce-no-axios:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for Axios usage
+        run: |
+          if grep -r "axios" . --exclude-dir=node_modules --exclude-dir=.git --exclude=.github/workflows/ci.yml; then
+            echo "::error::Axios is forbidden in this project. Use native fetch (frontend) or httpx (backend) instead."
+            exit 1
+          else
+            echo "No Axios usage found."
+          fi
+
+  # 7. UI Testing (Jest/Playwright)
   test-ui:
     runs-on: ubuntu-latest
     steps:
