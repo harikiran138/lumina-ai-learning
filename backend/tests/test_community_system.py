@@ -31,7 +31,7 @@ app.dependency_overrides[get_current_active_user] = override_get_student
 
 @pytest.mark.asyncio
 async def test_get_community_messages():
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.get("/api/community/messages")
     
     assert response.status_code == 200
@@ -42,7 +42,7 @@ async def test_get_community_messages():
 
 @pytest.mark.asyncio
 async def test_post_community_message_success():
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         payload = {"content": "Hello Lumina Community! This is a test message."}
         response = await ac.post("/api/community/messages", json=payload)
     
@@ -53,7 +53,7 @@ async def test_post_community_message_success():
 
 @pytest.mark.asyncio
 async def test_post_community_message_empty_content():
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         payload = {"content": "   "}
         response = await ac.post("/api/community/messages", json=payload)
     

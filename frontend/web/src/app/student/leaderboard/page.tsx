@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Trophy, Medal, Star, Flame, Search, Filter, ArrowUp, ArrowDown, Minus } from "lucide-react";
-import { RealAPI } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type LeaderboardEntry = {
   rank: number;
-  id: string;
+  userId: string;
   name: string;
   avatar: string;
   xp: number;
@@ -27,12 +27,11 @@ export default function StudentLeaderboard() {
     const fetchLeaderboard = async () => {
       setIsLoading(true);
       try {
-        const res = await RealAPI.getInstance().fetchAuthorized(`/api/student/leaderboard?timeframe=${activeTimeframe}`);
-        if (res.ok) {
-          const data = await res.json();
-          const entries: LeaderboardEntry[] = (data.entries || []).map((e: any) => ({
+        const data = await api.get(`/api/student/leaderboard?timeframe=${activeTimeframe}`);
+        if (data && data.entries) {
+          const entries: LeaderboardEntry[] = data.entries.map((e: any) => ({
             rank: e.rank,
-            id: e.userId,
+            userId: e.userId,
             name: e.name,
             avatar: e.avatar,
             xp: e.xp,
@@ -139,7 +138,7 @@ export default function StudentLeaderboard() {
             <tbody className="divide-y divide-white/5">
               {filteredLeaderboard.map((entry) => (
                 <tr 
-                  key={entry.id} 
+                  key={entry.userId} 
                   className={`group transition-colors ${entry.isCurrentUser ? "bg-lumina-primary/5" : "hover:bg-white/[0.02]"}`}
                 >
                   <td className="px-6 py-4">

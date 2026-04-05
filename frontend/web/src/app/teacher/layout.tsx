@@ -26,14 +26,14 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   : { name: "Teacher", role: "Teacher", initial: "T" };
 
   return (
-    <DashboardLayout SidebarComponent={TeacherSidebar} user={mappedUser}>
+    <DashboardLayout SidebarComponent={TeacherSidebar} user={mappedUser} sidebarOffset="24">
       <BGPattern
         variant="grid"
         size={32}
         fill="rgba(100, 100, 100, 0.05)"
         className="fixed inset-0 z-0 pointer-events-none opacity-20"
       />
-      <div className="py-10 page-enter relative z-10">
+      <div className="pb-10 page-enter relative z-10">
         <Breadcrumb />
         {children}
       </div>

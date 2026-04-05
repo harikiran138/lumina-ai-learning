@@ -279,7 +279,7 @@ function GradingSection({ assignments }: { assignments: TeacherAssignmentCard[] 
 
         {needsGrading.length > 4 && (
           <Link
-            href="/faculty/gradebook"
+            href="/teacher/gradebook"
             className="flex items-center justify-center gap-2 w-full py-4 rounded-3xl border border-dashed border-white/20 text-gray-400 text-sm hover:bg-white/5 hover:text-white transition-all font-semibold"
           >
             View all {needsGrading.length} grading tasks
@@ -337,21 +337,33 @@ export default function TeacherDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [updatingInterventionId, setUpdatingInterventionId] = useState<string | null>(null);
 
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
+    console.log("✅ NEW DASHBOARD LOADED");
+    let isFetching = true;
+
     const load = async () => {
       try {
         const payload = await api.getDashboardData("teacher");
-        setData(payload);
+        if (isFetching) setData(payload);
       } catch (err: any) {
         console.error("teacher_dashboard_load_failed", err);
-        setError(err?.message || "Unable to load teacher dashboard");
+        if (isFetching) setError(err?.message || "Unable to load teacher dashboard");
       } finally {
-        setLoading(false);
+        if (isFetching) setLoading(false);
       }
     };
 
     load();
+
+    return () => {
+      isFetching = false;
+    };
   }, []);
+
+  if (!mounted) return null;
 
   if (loading) {
     return (
@@ -450,28 +462,28 @@ export default function TeacherDashboard() {
 
             <div className="mt-10 grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
               <QuickAction
-                href="/faculty/create-course"
+                href="/teacher/create-course"
                 icon={PlusCircle}
                 title="Create course"
                 description="Launch a new learning track with modules and publishing controls."
                 tone="gold"
               />
               <QuickAction
-                href="/faculty/assignments/create"
+                href="/teacher/assignments/create"
                 icon={ClipboardCheck}
                 title="Create assignment"
                 description="Set deadlines, collect submissions, and push work into grading."
                 tone="amber"
               />
               <QuickAction
-                href="/faculty/verification-queue"
+                href="/teacher/verification-queue"
                 icon={ShieldCheck}
                 title="AI Verify Queue"
                 description="Review and approve AI-generated answers before students see them."
                 tone="gold"
               />
               <QuickAction
-                href="/faculty/ai-generator"
+                href="/teacher/ai-generator"
                 icon={Sparkles}
                 title="Generate with AI"
                 description="Draft content faster with the course generator and tutor tooling."
@@ -555,7 +567,7 @@ export default function TeacherDashboard() {
           subtitle="Every course now surfaces enrollment, mastery, grading load, and the next deadline."
           action={
             <Link
-              href="/faculty/courses"
+              href="/teacher/courses"
               className="inline-flex items-center gap-2 text-sm font-semibold text-lumina-highlight transition-colors hover:text-white"
             >
               View all courses

@@ -465,7 +465,8 @@ class PersonalizationService:
                 # Reward RL Style Router (Intelligence Controller)
                 # Reward = binary correctness weighted by integrity
                 reward = float(is_correct) * integrity
-                ExplanationPlanner.record_outcome(profile, profile.explanation_profile.primary_mode, reward)
+                mode = profile.explanation_profile.last_plan.mode if profile.explanation_profile.last_plan else profile.explanation_profile.primary_mode
+                ExplanationPlanner.record_outcome(profile, mode, reward)
 
         elif event_type == LearningEventType.ASSESSMENT_COMPLETED:
             engagement.total_assessments_completed += 1

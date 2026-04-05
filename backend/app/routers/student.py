@@ -5,9 +5,9 @@ from datetime import datetime, timedelta, timezone
 import structlog
 logger = structlog.get_logger()
 from app.core.responses import success_response, error_response
-from fastapi import APIRouter, HTTPException, Depends, Body
-from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
+from fastapi import APIRouter, HTTPException, Depends, Body, Response
+from pydantic import BaseModel
 from app.store.redis_client import redis_client
 from app.personalization.schemas import (
     LearningEventType,
@@ -71,6 +71,8 @@ class ActivityLogRequest(BaseModel):
 
 class StudentOnboardingCompleteRequest(BaseModel):
     section_id: Optional[str] = None
+    class_id: Optional[str] = None
+    program_id: Optional[str] = None
     subject_ids: List[str] = []
     learning_styles: List[str] = []
     skill_levels: Dict[str, float] = {}
@@ -1435,7 +1437,6 @@ async def get_profile(
             "parentLinkCode": getattr(profile_data.preferences, "parent_link_code", None) or current_user.get("parent_link_code")
         }
     except Exception as e:
-        import traceback
         error_msg = f"student_profile_api_failure: {str(e)}"
         logger.error(error_msg, user_id=current_user.get("id"), exc_info=True)
         # Print to stdout for terminal visibility
@@ -1456,112 +1457,79 @@ async def get_profile(
 async def get_leaderboard(
     timeframe: str = "weekly",
     current_user: dict = Depends(get_current_user),
+    response: Response = None,
 ):
     """
-    Returns a ranked leaderboard of students ordered by computed XP from learner_events.
+    Returns a ranked leaderboard of students based on XP from learning_events.
+    Includes a 5-minute Redis cache.
     """
+    cache_key = f"leaderboard:{timeframe}"
+    try:
+        cached_data = await redis_client.get(cache_key)
+        if cached_data:
+            if response: response.headers["X-Cache"] = "HIT"
+            return success_response(data={"timeframe": timeframe, "entries": json.loads(cached_data)})
+    except: pass
+
     db = get_scoped_db(current_user)
-    client = db.get_client()
-    entries: List[Dict[str, Any]] = []
+    try:
+        # Fetch recent quiz submission events
+        query = db.table("learning_events").select("user_id, payload")
+        query = query.eq("event_type", "quiz_submitted")
+        
+        if timeframe == "weekly":
+            last_week = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+            query = query.query.gte("created_at", last_week)
 
-    if client:
-        try:
-            # 1. Attempt High-Performance RPC (Aggregation)
-            try:
-                rpc_res = client.rpc("get_leaderboard_v2", {"p_timeframe": timeframe}).execute()
-                if rpc_res.data:
-                    raw_entries = rpc_res.data
-                    # Group by XP and sort
-                    top_user_ids = [e["user_id"] for e in raw_entries]
-                    xp_map = {e["user_id"]: e["xp"] for e in raw_entries}
-                else:
-                    # Fallback to local processing if RPC not available (legacy/mock)
-                    events_res = (
-                        client.table("learning_events")
-                        .select("user_id, event_type, payload")
-                        .order("created_at", desc=True)
-                        .limit(2000)
-                        .execute()
-                    )
-                    events = events_res.data or []
-                    xp_map: Dict[str, int] = defaultdict(int)
-                    for ev in events:
-                        uid = ev.get("user_id")
-                        if not uid: continue
-                        et = ev.get("event_type", "")
-                        pl = ev.get("payload") or {}
-                        if et == "quiz_submitted":
-                            try: score = float(pl.get("score", 0)); xp_map[uid] += int(score * 1.5)
-                            except: pass
-                        elif et == "lesson_completed": xp_map[uid] += 50
-                        elif et == "activity_logged":
-                            try: dur = int(pl.get("duration_minutes", 0)); xp_map[uid] += min(dur, 60)
-                            except: pass
-                    top_user_ids = sorted(xp_map, key=lambda u: xp_map[u], reverse=True)[:50]
-            except Exception as rpc_exc:
-                logger.debug("leaderboard_rpc_failed_fallback_to_select", error=str(rpc_exc))
-                # Legacy select logic (hardened)
-                events_res = client.table("learning_events").select("user_id, event_type, payload").order("created_at", desc=True).limit(2000).execute()
-                events = events_res.data or []
-                xp_map = defaultdict(int) 
-                for ev in events:
-                    uid = ev.get("user_id")
-                    if not uid: continue
-                    if ev.get("event_type") == "quiz_submitted":
-                        try: xp_map[uid] += int(float((ev.get("payload") or {}).get("score", 0)) * 1.5)
-                        except: pass
-                    elif ev.get("event_type") == "lesson_completed": xp_map[uid] += 50
-                top_user_ids = sorted(xp_map, key=lambda u: xp_map[u], reverse=True)[:50]
+        res = await query.limit(2000).async_execute()
+        events = res.data or []
 
-            # 2. Enrich entries with user info and streaks
-            if top_user_ids:
-                users_res = (
-                    client.table("users")
-                    .select("id, name, full_name, avatar")
-                    .in_("id", top_user_ids)
-                    .execute()
-                )
-                user_info = {u["id"]: u for u in (users_res.data or [])}
+        # Aggregate XP in Python
+        xp_map = defaultdict(int)
+        for ev in events:
+            u_id = ev.get("user_id")
+            pl = ev.get("payload") or {}
+            xp_map[u_id] += int(pl.get("score", 0))
 
-                progress_res = (
-                    client.table("student_progress")
-                    .select("user_id, streak")
-                    .in_("user_id", top_user_ids)
-                    .execute()
-                )
-                streak_map: Dict[str, int] = {p["user_id"]: p.get("streak") or 0 for p in (progress_res.data or [])}
+        sorted_ids = sorted(xp_map.keys(), key=lambda x: xp_map[x], reverse=True)[:50]
+        
+        entries = []
+        curr_uid = str(current_user.get("id"))
+        
+        for idx, u_id in enumerate(sorted_ids):
+            user_doc = await db.fetch_one("users", {"id": u_id})
+            entries.append({
+                "rank": idx + 1,
+                "userId": str(u_id),
+                "name": user_doc.get("full_name") if user_doc else "Scholar",
+                "avatar": user_doc.get("avatar_url") if user_doc else "",
+                "xp": xp_map[u_id],
+                "streak": user_doc.get("streak", 0) if user_doc else 0,
+                "isCurrentUser": str(u_id) == curr_uid
+            })
 
-                for rank, uid in enumerate(top_user_ids, start=1):
-                    u = user_info.get(uid, {})
-                    display = u.get("name") or u.get("full_name") or "Anonymous"
-                    entries.append({
-                        "rank": rank,
-                        "userId": uid,
-                        "name": display,
-                        "avatar": u.get("avatar") or f"https://ui-avatars.com/api/?name={display}&background=random",
-                        "xp": xp_map.get(uid, 0),
-                        "streak": streak_map.get(uid, 0),
-                        "isCurrentUser": uid == current_user.get("id"),
-                    })
-        except Exception as exc:
-            logger.warning("leaderboard_fetch_failed", error=str(exc))
+        # Ensure current user is included
+        if not any(e["isCurrentUser"] for e in entries):
+            user_doc = await db.fetch_one("users", {"id": curr_uid})
+            if user_doc:
+                entries.append({
+                    "rank": 99,
+                    "userId": curr_uid,
+                    "name": user_doc.get("full_name"),
+                    "avatar": user_doc.get("avatar_url"),
+                    "xp": xp_map.get(curr_uid, 0),
+                    "streak": user_doc.get("streak", 0),
+                    "isCurrentUser": True
+                })
 
-    if not entries:
-        name = current_user.get("name") or current_user.get("full_name") or "You"
-        entries = [{
-            "rank": 1,
-            "userId": current_user.get("id"),
-            "name": name,
-            "avatar": current_user.get("avatar") or f"https://ui-avatars.com/api/?name={name}&background=random",
-            "xp": 0,
-            "streak": 0,
-            "isCurrentUser": True,
-        }]
+        if entries: await redis_client.setex(cache_key, 300, json.dumps(entries))
+        if response: response.headers["X-Cache"] = "MISS"
+        return success_response(data={"timeframe": timeframe, "entries": entries})
 
-    return success_response(
-        data={"timeframe": timeframe, "entries": entries},
-        meta={"count": len(entries)}
-    )
+    except Exception as e:
+        logger.error("leaderboard_failed", error=str(e))
+        return success_response(data={"timeframe": timeframe, "entries": []})
+
 
 
 @router.get("/subjects")
