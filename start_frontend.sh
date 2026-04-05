@@ -14,8 +14,8 @@ if [ -f "../../.env" ]; then
 fi
 
 # Set Next.js environment variables
-export NEXT_PUBLIC_API_URL="http://localhost:8000"
-export NEXT_PUBLIC_AUTH_URL="http://localhost:8000"
+export NEXT_PUBLIC_API_URL="http://localhost:9000"
+export NEXT_PUBLIC_AUTH_URL="http://localhost:9000"
 
 # Ensure port 3000 is clean
 lsof -ti :3000 | xargs kill -9 2>/dev/null || true

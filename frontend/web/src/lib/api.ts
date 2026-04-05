@@ -81,10 +81,12 @@ function hasCookie(name: string): boolean {
 async function fetchWithRetry(
   url: string,
   options: RequestInit,
-  retries = 3,
-  timeoutMs = 30000
+  retries = 2,
+  timeoutMs = 15000
 ): Promise<Response> {
-  for (let attempt = 1; attempt <= retries; attempt++) {
+  const MAX_RETRIES = 2;
+  const actualRetries = Math.min(retries, MAX_RETRIES);
+  for (let attempt = 1; attempt <= actualRetries; attempt++) {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => {
       console.warn(`[API] Request timed out after ${timeoutMs}ms: ${url}`);
@@ -96,62 +98,69 @@ async function fetchWithRetry(
     }, timeoutMs)
 
     try {
+      console.log(`[API] Fetching: ${url}`);
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
       })
 
-      // Stop retrying on 429 Too Many Requests
+      // [Lumina Security] Stop retrying on 429 Too Many Requests
       if (response.status === 429) {
         throw new Error("Rate limit exceeded. Please wait a moment before trying again.");
       }
 
-      // Retry on 5xx Server Errors - but include response body for better debugging
+      // [Lumina Auth Hardening] NEVER retry Auth, Profile, or Session endpoints.
+      // Retrying these can lead to session corruption, double-tokens, or lockout.
+      const isAuthPath = url.includes("/auth/") || url.includes("/me") || url.includes("/login") || url.includes("/register");
+      if (isAuthPath && !response.ok) {
+        const clonedResponse = response.clone();
+        const errorBody = await clonedResponse.text().catch(() => "");
+        console.error(`[AUTH FAIL] ${response.status} at ${url}:`, errorBody.substring(0, 500));
+        throw new Error(`Auth Failure: ${response.status} - Single attempt only for security.`);
+      }
+
+      // [Lumina Recovery] STOP retrying on 5xx Server Errors immediately.
+      // Retrying a broken backend logic only causes infinite loops and session corruption.
       if (!response.ok && response.status >= 500) {
         const clonedResponse = response.clone();
         const errorBody = await clonedResponse.text().catch(() => "");
-        console.error(`[API] Server Error ${response.status}:`, errorBody.substring(0, 500));
-        throw new Error(`Server Error: ${response.status} - ${errorBody || 'Internal server error'}`)
+        console.error(`[API FAIL] ${response.status} at ${url}:`, errorBody.substring(0, 500));
+        throw new Error(`Server Error: ${response.status} - ${errorBody || 'Stop retrying broken logic.'}`);
       }
 
       return response
     } catch (err: any) {
+      // Don't retry on our own thrown errors (500, 429)
+      if (err.message?.includes("Server Error") || err.message?.includes("Rate limit")) {
+        throw err;
+      }
+
       // Robust Local Hostname Fallback:
-      // On some OS environments (especially macOS), a process may bind only to IPv4 (127.0.0.1) 
-      // but the browser resolves 'localhost' to IPv6 (::1). Fallback bi-directionally.
       if (err instanceof TypeError && (url.includes("localhost") || url.includes("127.0.0.1"))) {
-        const isCurrentlyLocalhost = url.includes("localhost")
+        const isCurrentlyLocalhost = url.includes("localhost");
         const fallbackUrl = isCurrentlyLocalhost 
           ? url.replace("localhost", "127.0.0.1") 
-          : url.replace("127.0.0.1", "localhost")
+          : url.replace("127.0.0.1", "localhost");
         
-        if (attempt <= retries) {
-          console.warn(`[Lumina API] Fetch failed for ${url}, trying fallback to ${fallbackUrl}`)
-          // Call recursive but decrement from the ORIGINAL budget, don't restart attempts.
-          // Since we're halfway through an attempt, this is part of the current attempt's recovery.
-          return fetchWithRetry(fallbackUrl, options, retries - 1, timeoutMs)
+        if (attempt < retries) {
+          console.warn(`[API] Fallback attempt ${attempt} to ${fallbackUrl}`);
+          return fetchWithRetry(fallbackUrl, options, retries - 1, timeoutMs);
         }
       }
 
       if (attempt === retries) {
-        if (err instanceof TypeError && err.message === "Failed to fetch") {
-          const isLocal = url.includes("localhost") || url.includes("127.0.0.1") || url.includes(":8000");
-          const msg = isLocal 
-            ? `[Lumina API] Network Error: Failed to fetch from ${url}. Is the local backend running on port 8000?`
-            : `[Lumina API] Network Error: Failed to connect to ${url}. This may be a CORS issue or the server may be down.`;
-          console.error(msg, err);
-        } else {
-          console.error(`Final fetch failure for ${url}:`, err);
-        }
+        console.error(`[API] Final failure for ${url} after ${retries} attempts:`, err);
         throw err;
       }
-      console.warn(`Fetch failed for ${url}, retrying... (Attempt ${attempt}/${retries})`, err);
-      await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
+      
+      const delay = 500 * Math.pow(2, attempt - 1);
+      console.warn(`[API] Retry ${attempt}/${retries} for ${url} in ${delay}ms...`, err.message);
+      await new Promise(resolve => setTimeout(resolve, delay));
     } finally {
       clearTimeout(timeoutId)
     }
   }
-  throw new Error('Max retries exceeded')
+  throw new Error('Max retries exceeded');
 }
 
 // Safely parse JSON from a Response — returns null if the body is HTML or unparseable.
@@ -780,10 +789,15 @@ export class RealAPI {
           return this.currentUser;
         }
       }
-    } catch {
-      // Network error or not authenticated – return null below
+      // [Lumina Consistency] If response is not OK (e.g. 401), force clear local state
+      console.warn("[API] Session invalid on backend. Clearing local auth.");
+      this.currentUser = null;
+      return null;
+    } catch (err) {
+      // Network error – we safely keep current state but don't re-auth
+      console.log("[API] getCurrentUser failed due to network. Keeping state.");
+      throw err;
     }
-    return null;
   }
 
   async createUser(userData: Partial<User> & { password?: string }): Promise<any> {

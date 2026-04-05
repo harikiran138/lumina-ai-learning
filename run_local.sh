@@ -124,9 +124,9 @@ echo -e "\n${YELLOW}⏳ Waiting for services to be ready...${NC}"
 sleep 5
 
 # Check if backend is responding
-if curl -s http://localhost:8000/health > /dev/null 2>&1; then
-    echo -e "${GREEN}✓ Backend is ready at http://localhost:8000${NC}"
-    echo -e "${GREEN}  API Docs: http://localhost:8000/docs${NC}"
+if curl -s http://localhost:9000/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ Backend is ready at http://localhost:9000${NC}"
+    echo -e "${GREEN}  API Docs: http://localhost:9000/docs${NC}"
 else
     echo -e "${YELLOW}⚠️  Backend health check failed. Check logs.${NC}"
 fi
@@ -142,8 +142,8 @@ echo -e "\n${GREEN}=================================================="
 echo -e "✨ Lumina Platform is running!"
 echo -e "=================================================="
 echo -e "Frontend: ${GREEN}http://localhost:3000${NC}"
-echo -e "Backend:  ${GREEN}http://localhost:8000${NC}"
-echo -e "API Docs: ${GREEN}http://localhost:8000/docs${NC}"
+echo -e "Backend:  ${GREEN}http://localhost:9000${NC}"
+echo -e "API Docs: ${GREEN}http://localhost:9000/docs${NC}"
 echo -e "=================================================="
 echo -e "\nPress Ctrl+C to stop all services\n${NC}"
 

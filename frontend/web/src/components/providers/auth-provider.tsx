@@ -26,7 +26,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (initAttempted.current) return;
     initAttempted.current = true;
 
-    const hydrateAuth = async () => {
+    const hydrateAuth = async (retries = 3) => {
+      // Guard against race conditions if multiple useEffects trigger (dev mode/fast refresh)
+      if ((window as any).__LUMINA_AUTH_HYDRATING__) return;
+      (window as any).__LUMINA_AUTH_HYDRATING__ = true;
+
       const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
       const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
       const hasClientSession =
@@ -35,25 +39,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (isAuthPage && !hasClientSession) {
         clearAuth();
+        (window as any).__LUMINA_AUTH_HYDRATING__ = false;
         return;
       }
 
-      // isLoading is already true (set by onRehydrateStorage + initial value).
-      // Explicitly set it so the promise start is synchronous.
       setLoading(true);
+
+      // Delay hydration slightly to let backend/network stabilize on mount
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       try {
         const currentUser = await api.getCurrentUser();
         if (currentUser) {
           setUser(currentUser as any);
+          console.log('[Lumina Auth] Session hydrated successfully.');
         } else {
-          // No valid session on the backend → clear any stale local state.
+          console.warn('[Lumina Auth] No valid session on backend. Clearing.');
           clearAuth();
+          if (!isAuthPage) window.location.href = '/login';
         }
-      } catch {
-        // Network error or 401 → treat as unauthenticated.
-        clearAuth();
+      } catch (err: any) {
+        const isNetworkError = err.message?.includes('fetch') || err.message?.includes('Network') || !window.navigator.onLine;
+
+        if (isNetworkError && retries > 0) {
+          console.warn(`[Lumina Auth] Hydration fetch failed. Retrying... (${retries} left)`);
+          (window as any).__LUMINA_AUTH_HYDRATING__ = false;
+          return hydrateAuth(retries - 1);
+        }
+
+        if (isNetworkError) {
+          // [Lumina Resilience] If it's pure network failure after retries, 
+          // we DO NOT clearAuth. We keep the stored session optimistically.
+          console.error('[Lumina Auth] Persistent network failure. Keeping local session state.');
+        } else {
+          // Only clear if it's a real Auth error (like a 401 decoded by getCurrentUser)
+          console.error('[Lumina Auth] Hydration failed with non-network error:', err.message);
+          clearAuth();
+          if (!isAuthPage) {
+             console.error('[Lumina Auth] Redirecting to login.');
+             window.location.href = '/login';
+          }
+        }
+      } finally {
+        (window as any).__LUMINA_AUTH_HYDRATING__ = false;
+        setLoading(false);
       }
-      // isLoading is set to false by both setUser and clearAuth.
     };
 
     hydrateAuth();

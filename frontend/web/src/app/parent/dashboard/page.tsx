@@ -109,8 +109,8 @@ export default function ParentDashboard() {
   }, [])
 
   const handleLinkAccount = async () => {
-    if (!linkCode || linkCode.length < 8) {
-      setLinkError("Please enter a valid 8-character code")
+    if (!linkCode || linkCode.length < 6) {
+      setLinkError("Please enter a valid 6-character code")
       return
     }
 
@@ -658,7 +658,7 @@ export default function ParentDashboard() {
                 
                 <h3 className="text-2xl font-black text-white mb-2">Secure Link</h3>
                 <p className="text-gray-400 text-sm mb-8">
-                  Enter your child's 8-character unique access code to establish a secure academic connection.
+                  Enter your child's 6-character unique access code to establish a secure academic connection.
                 </p>
 
                 <div className="space-y-4 text-left">
@@ -668,8 +668,8 @@ export default function ParentDashboard() {
                       type="text"
                       value={linkCode}
                       onChange={(e) => setLinkCode(e.target.value.toUpperCase())}
-                      placeholder="E.G. ST78X9A2"
-                      maxLength={8}
+                      placeholder="E.G. ST8X9A"
+                      maxLength={6}
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white text-xl font-mono tracking-[0.5em] text-center focus:border-lumina-highlight outline-none transition-all"
                     />
                   </div>
@@ -686,7 +686,7 @@ export default function ParentDashboard() {
 
                   <Button 
                     onClick={handleLinkAccount}
-                    disabled={linking || linkCode.length < 8}
+                    disabled={linking || linkCode.length < 6}
                     className="w-full bg-lumina-highlight hover:bg-lumina-highlight/80 text-black font-black h-14 rounded-xl shadow-[0_0_20px_rgba(255,184,0,0.2)]"
                   >
                     {linking ? (
@@ -705,7 +705,7 @@ export default function ParentDashboard() {
                 </div>
 
                 <p className="mt-8 text-[10px] text-gray-600 uppercase tracking-widest font-medium text-center">
-                  Codes are generated within the Student Portal under "Parent Access"
+                  Codes are generated within the Student Profile under "Parent Linking"
                 </p>
               </div>
             </motion.div>

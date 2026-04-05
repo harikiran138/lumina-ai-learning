@@ -61,6 +61,7 @@ class LearnerPreferences(BaseModel):
     study_goals: List[str] = Field(default_factory=list)
     accessibility_needs: List[str] = Field(default_factory=list)
     language: LanguagePreferences = Field(default_factory=LanguagePreferences)
+    parent_link_code: Optional[str] = None
 
 
 class EngagementSummary(BaseModel):
@@ -180,6 +181,7 @@ class InterventionHistory(BaseModel):
 
 
 class LearnerProfileRecord(BaseModel):
+    id: Optional[str] = None
     user_id: str
     role: str = "student"
     grade_level: Optional[str] = None

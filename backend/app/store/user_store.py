@@ -1,6 +1,8 @@
 from typing import Optional, List, Any
 from datetime import datetime
 import uuid
+import random
+import string
 from app.database.supabase_manager import supabase_db
 from app.core.security import get_password_hash, verify_password
 from app.core.logging import structlog
@@ -99,6 +101,11 @@ class UserStore:
         
         return safe_user
 
+    def _generate_link_code(self) -> str:
+        """Generates a 6-character unique alphanumeric code."""
+        chars = string.ascii_uppercase + string.digits
+        return ''.join(random.choices(chars, k=6))
+
     async def create_user(
         self, email: str, password: str, full_name: str, role: str = "student", 
         phone: str = "", college_id: str = None, dept_id: str = None, 
@@ -110,13 +117,6 @@ class UserStore:
 
         hashed_password = self.get_password_hash(password)
 
-        # Generate Parent Link Code for students
-        parent_link_code = None
-        if self.normalize_role(role) == "student":
-            import random
-            import string
-            parent_link_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-
         # Minimal schema for public.users table
         user_data = {
             "id": str(uuid.uuid4()),
@@ -124,9 +124,12 @@ class UserStore:
             "password_hash": hashed_password,
             "name": full_name,
             "role": self.to_db_role(role),
-            "full_name": full_name,
-            "parent_link_code": parent_link_code
+            "full_name": full_name
         }
+
+        # [Lumina Relationship Logic] Generate unique link code for students
+        if role.lower() == "student":
+            user_data["parent_link_code"] = self._generate_link_code()
 
         # Backup metadata for secondary profile tables
         profile_metadata = {
@@ -206,12 +209,24 @@ class UserStore:
             canonical_role = self.normalize_role(role)
             
             # 1. Learner Profile (Primary fallback for all roles as it's the standard Lumina metadata sink)
+            import random
+            import string
+            
+            # Generate Parent Link Code for students
+            parent_link_code = None
+            if canonical_role == "student":
+                parent_link_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+                log.info("generating_parent_link_code", user_id=user_id, code=parent_link_code)
+
             learner_data = {
                 "user_id": user_id,
                 "role": canonical_role,
                 "full_name": metadata.get("full_name") or "Unnamed User",
                 "phone": metadata.get("phone"),
-                "preferences": {"onboarding_complete": False}
+                "preferences": {
+                    "onboarding_complete": False,
+                    "parent_link_code": parent_link_code
+                }
             }
             
             # Check for batch/college alignment in learner_profiles
