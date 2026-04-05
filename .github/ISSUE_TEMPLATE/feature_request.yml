@@ -1,0 +1,16 @@
+name: Feature Request
+description: Suggest an idea for Lumina
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 💡 Feature Description
+        What is the feature you'd like to see?
+
+        ## ❓ Problem Statement
+        What problem does this feature solve?
+
+        ## 🚀 Proposed Solution
+        How should this be implemented?
