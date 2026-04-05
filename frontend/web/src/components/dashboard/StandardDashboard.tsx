@@ -91,16 +91,17 @@ export function StandardDashboard({
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Premium Header */}
       <div className="relative group">
-        <div className="absolute inset-0 bg-gradient-to-r from-lumina-highlight/10 via-transparent to-lumina-highlight/5 rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-        <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8 lg:p-12 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-lumina-highlight/15 via-transparent to-lumina-highlight/5 rounded-[2.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+        <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 bg-black/40 border border-white/5 rounded-[2.5rem] p-8 lg:p-12 overflow-hidden backdrop-blur-md">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-lumina-highlight/5 rounded-full blur-[100px] -mr-32 -mt-32" />
           <div className="flex-1 z-10 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lumina-highlight/10 border border-lumina-highlight/20 text-lumina-highlight text-[10px] font-black uppercase tracking-[0.2em] mb-6">
-               <Zap className="w-3 h-3" /> System Status: Optimized
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lumina-highlight/10 border border-lumina-highlight/20 text-lumina-highlight text-[10px] font-black uppercase tracking-[0.2em] mb-6 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+               <Zap className="w-3 h-3 animate-pulse" /> System Status: Optimized
             </div>
             <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tight text-white mb-2">
               {title}
             </h1>
-            <p className="text-gray-400 text-lg md:text-xl max-w-2xl leading-relaxed">
+            <p className="text-gray-400 text-lg md:text-xl max-w-2xl leading-relaxed font-medium">
               {subtitle || `Welcome back to your Lumina terminal. Everything is looking great today.`}
             </p>
             {headerAction && <div className="mt-8">{headerAction}</div>}
@@ -135,22 +136,22 @@ export function StandardDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8">
         <div className="space-y-8">
           {/* Main Content / Alerts */}
-          <section className="glass-v2-gold border-white/5 rounded-[2rem] overflow-hidden">
+          <section className="glass-onyx rounded-[2.5rem] overflow-hidden border-white/5">
             <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/[0.02]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-lumina-highlight/10 flex items-center justify-center text-lumina-highlight border border-lumina-highlight/20">
+                <div className="w-10 h-10 rounded-xl bg-lumina-highlight/10 flex items-center justify-center text-lumina-highlight border border-lumina-highlight/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
                   <Bell className="w-5 h-5" />
                 </div>
                 <h2 className="text-xl font-display font-bold text-white">Priority Alerts</h2>
               </div>
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{(alerts?.length || 0)} Active</span>
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest bg-white/[0.03] px-3 py-1 rounded-full">{(alerts?.length || 0)} Active</span>
             </div>
             <div className="p-6 space-y-4">
               {(alerts?.length || 0) > 0 ? (
                 alerts?.map((alert) => (
                   <div 
                     key={alert.id}
-                    className="group relative flex items-start gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all duration-300"
+                    className="group relative flex items-start gap-4 p-5 rounded-2xl bg-white/[0.01] border border-white/5 hover:bg-white/[0.03] hover:border-lumina-highlight/20 transition-all duration-300"
                   >
                     <div className={cn(
                       "w-2 h-2 mt-2 rounded-full ring-4 shadow-[0_0_12px_rgba(var(--color))] transition-transform group-hover:scale-125",
@@ -160,7 +161,7 @@ export function StandardDashboard({
                     )} />
                     <div className="flex-1">
                       <div className="flex items-center justify-between gap-4 mb-1">
-                        <h3 className="font-bold text-white group-hover:text-lumina-highlight transition-colors">{alert.title}</h3>
+                        <h3 className="font-bold text-white group-hover:text-lumina-highlight transition-colors leading-tight">{alert.title}</h3>
                         <span className={cn(
                           "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border transition-colors",
                           alert.priority === "critical" ? "border-red-500/30 text-red-400 bg-red-400/5" :
@@ -192,9 +193,9 @@ export function StandardDashboard({
           {children}
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-8 h-full">
           {/* Feed / Activity */}
-          <section className="glass-v2-gold border-white/5 rounded-[2rem] overflow-hidden flex flex-col h-full">
+          <section className="glass-onyx rounded-[2.5rem] overflow-hidden flex flex-col h-full border-white/5">
             <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/[0.02]">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-400 border border-white/10">
@@ -208,11 +209,11 @@ export function StandardDashboard({
               {(feed?.length || 0) > 0 ? (
                 feed?.map((item) => (
                   <div key={item.id} className="relative pl-8 group">
-                    <div className="absolute left-[-4px] top-1.5 w-2 h-2 rounded-full bg-lumina-highlight border border-lumina-highlight group-hover:scale-150 transition-transform duration-300 shadow-[0_0_8px_rgba(252,196,25,0.4)]" />
+                    <div className="absolute left-[-4px] top-1.5 w-2 h-2 rounded-full bg-lumina-highlight border border-lumina-highlight group-hover:scale-150 transition-transform duration-300 shadow-[0_0_12px_rgba(252,196,25,0.6)]" />
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center justify-between gap-4">
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{item.type.replace('_', ' ')}</span>
-                        <span className="text-[10px] font-medium text-gray-600 flex items-center gap-1">
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{item.type.replace('_', ' ')}</span>
+                        <span className="text-[10px] font-bold text-gray-600 flex items-center gap-1">
                           <Calendar className="w-3 h-3" /> {item.time}
                         </span>
                       </div>

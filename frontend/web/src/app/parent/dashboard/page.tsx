@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   LineChart, Line, AreaChart, Area, 
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
@@ -9,10 +10,16 @@ import {
   Users, TrendingUp, AlertCircle, BookOpen, 
   Calendar, CheckCircle, ChevronRight, Filter, 
   MessageSquare, Settings, Share2, Plus, 
-  Clock, Award, Brain, Target, Shield, Heart, ShieldAlert
+  Clock, Award, Brain, Target, Shield, Heart, ShieldAlert,
+  Sparkles,
+  ArrowRight,
+  ChevronDown
 } from "lucide-react";
 import { api } from "@/lib/api";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const ParentDashboardPage = () => {
   const [loading, setLoading] = useState(true);
@@ -21,6 +28,7 @@ const ParentDashboardPage = () => {
   const [linking, setLinking] = useState(false);
   const [linkingError, setLinkingError] = useState("");
   const [linkingSuccess, setLinkingSuccess] = useState(false);
+  const [activeChildId, setActiveChildId] = useState<string | null>(null);
   
   // Goal Modal State
   const [showGoalModal, setShowGoalModal] = useState(false);
@@ -35,6 +43,9 @@ const ParentDashboardPage = () => {
       setLoading(true);
       const data = await api.getParentDashboard();
       setParentData(data);
+      if (data.children?.length > 0) {
+        setActiveChildId(data.children[0].id);
+      }
     } catch (err) {
       console.error("Failed to load dashboard:", err);
     } finally {
@@ -66,11 +77,10 @@ const ParentDashboardPage = () => {
   };
 
   const handleAddGoal = async () => {
-    const activeChild = parentData?.children?.[0];
-    if (!activeChild?.id || !newGoal.text) return;
+    if (!activeChildId || !newGoal.text) return;
     try {
       await api.setParentGoal(
-        activeChild.id,
+        activeChildId,
         newGoal.type,
         newGoal.text,
         newGoal.timeframe
@@ -83,382 +93,541 @@ const ParentDashboardPage = () => {
     }
   };
 
+  const activeStudent = useMemo(() => {
+    return parentData?.children?.find((c: any) => c.id === activeChildId) || parentData?.children?.[0];
+  }, [parentData, activeChildId]);
+
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#fdfaf5]">
-        <div className="relative">
-          <div className="h-16 w-16 animate-spin rounded-full border-4 border-[#e8d5b5] border-t-[#8c7851]"></div>
-          <div className="absolute inset-x-0 -bottom-8 whitespace-nowrap text-center text-sm font-medium text-[#8c7851]">
-            Curating your dashboard...
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <div className="h-20 w-20 border-4 border-[#efe9de] border-t-[#8c7851] rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+               <Shield className="w-8 h-8 text-[#8c7851]/20" />
+            </div>
+          </div>
+          <div className="text-center space-y-2">
+            <p className="text-[#8c7851] font-display font-black text-xl italic">Curating Guardian Intelligence</p>
+            <p className="text-[#b8a994] text-xs font-bold uppercase tracking-widest">Aggregating real-time data</p>
           </div>
         </div>
       </div>
     );
   }
 
-  const children = parentData?.children || [];
-  const activeStudent = children.length > 0 ? children[0] : null;
-  
   // Show link form if no student is linked
-  if (!activeStudent || children.length === 0) {
+  if (!activeStudent) {
     return (
-      <div className="min-h-screen bg-[#fdfaf5] p-8">
-        <div className="mx-auto max-w-2xl bg-white p-12 rounded-3xl shadow-xl border border-[#efe9de] text-center">
-          <div className="mx-auto w-24 h-24 bg-[#f8f5ee] rounded-full flex items-center justify-center mb-6">
-            <Users size={48} className="text-[#8c7851]" />
-          </div>
-          <h1 className="text-3xl font-serif text-[#4a3f35] mb-4">Welcome to Lumina AI</h1>
-          <p className="text-[#807060] mb-8 leading-relaxed">
-            Link your child's student account to begin monitoring their progress, 
-            viewing AI reports, and supporting their academic journey.
-          </p>
+      <div className="max-w-4xl mx-auto py-12">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/60 backdrop-blur-2xl p-12 rounded-[3rem] shadow-2xl border border-[#efe9de] text-center relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#efe9de]/30 rounded-full blur-3xl -mr-32 -mt-32" />
           
-          <div className="space-y-4 max-w-md mx-auto">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Enter Student Link Code"
-                className="w-full h-14 px-6 bg-[#f8f5ee] border-2 border-transparent rounded-xl focus:border-[#8c7851] focus:bg-white outline-none transition-all text-[#4a3f35] placeholder-[#c4b5a2] uppercase"
-                value={linkCode}
-                onChange={(e) => setLinkCode(e.target.value.toUpperCase())}
-              />
-              {linkingSuccess && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-600 animate-in fade-in zoom-in">
-                  <CheckCircle size={24} />
-                </div>
-              )}
+          <div className="relative z-10">
+            <div className="mx-auto w-24 h-24 bg-[#8c7851]/5 rounded-[2rem] flex items-center justify-center mb-8 border border-[#8c7851]/10">
+              <Users size={48} className="text-[#8c7851]" />
             </div>
             
-            {linkingError && (
-              <p className="text-red-500 text-sm font-medium">{linkingError}</p>
-            )}
-            
-            <button
-              onClick={handleLinkStudent}
-              disabled={linking}
-              className="w-full h-14 bg-[#8c7851] text-white rounded-xl font-bold shadow-lg shadow-[#8c785144] hover:bg-[#726242] active:scale-[0.98] transition-all disabled:opacity-50"
-            >
-              {linking ? "Verify Code..." : "Connect Student Account"}
-            </button>
-            <p className="text-xs text-[#b8a994] mt-4">
-              Your child can find their link code in their <strong>Lumina Student Dashboard</strong> under 'Account Settings'.
+            <h1 className="text-4xl font-display font-black text-[#4a3f35] mb-4 tracking-tight">
+               Establish Your <span className="text-[#8c7851]">Guardian</span> Connection
+            </h1>
+            <p className="text-[#807060] mb-12 max-w-xl mx-auto leading-relaxed font-medium">
+              Link your child's student account to begin monitoring their progress, 
+              viewing AI reports, and supporting their academic journey with Lumina AI.
             </p>
+            
+            <div className="space-y-6 max-w-md mx-auto">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#8c7851] to-[#b8a994] opacity-0 group-focus-within:opacity-10 rounded-2xl transition-opacity duration-500" />
+                <input
+                  type="text"
+                  placeholder="Enter Student Link Code"
+                  className="w-full h-16 px-8 bg-white/80 border border-[#efe9de] rounded-2xl focus:border-[#8c7851] outline-none transition-all text-[#4a3f35] font-bold placeholder-[#c4b5a2] uppercase tracking-[0.2em] shadow-sm text-center"
+                  value={linkCode}
+                  onChange={(e) => setLinkCode(e.target.value.toUpperCase())}
+                />
+                <AnimatePresence>
+                  {linkingSuccess && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute right-6 top-1/2 -translate-y-1/2 text-green-500"
+                    >
+                      <CheckCircle size={28} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              
+              {linkingError && (
+                <motion.p 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-red-500 text-sm font-bold bg-red-50 py-2 rounded-lg"
+                >
+                  {linkingError}
+                </motion.p>
+              )}
+              
+              <Button
+                onClick={handleLinkStudent}
+                disabled={linking}
+                className="w-full h-16 bg-[#4a3f35] hover:bg-[#2c241e] text-white rounded-2xl font-black text-lg shadow-xl shadow-[#4a3f35]/20 group transition-all"
+              >
+                {linking ? "Authenticating..." : "Synchronize Account"}
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              
+              <div className="pt-8 border-t border-[#efe9de]">
+                <p className="text-xs text-[#b8a994] font-bold uppercase tracking-widest">
+                  Where to find the code?
+                </p>
+                <p className="text-sm text-[#807060] mt-2 italic">
+                  The link code is located in the <strong>Lumina Student Dashboard</strong> under Profile Settings.
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#fdfaf5] pb-12">
-      {/* Premium Header */}
-      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-[#efe9de]">
-        <div className="max-w-[1400px] mx-auto px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className="w-12 h-12 bg-[#8c7851] rounded-2xl flex items-center justify-center shadow-lg shadow-[#8c785133]">
-              <Brain className="text-white" size={24} />
-            </div>
-            <div>
-              <h1 className="text-xl font-serif text-[#4a3f35]">Guardian Dashboard</h1>
-              <div className="flex items-center gap-2 text-sm text-[#8c7851]">
-                <Shield size={14} />
-                <span className="font-medium">
-                  {activeStudent.verified ? "Verified Relationship" : "Link Pending Verification"}: {activeStudent.relationship}
-                </span>
-              </div>
-            </div>
+    <div className="space-y-8 pb-12">
+      {/* PREMIUM DASHBOARD HEADER */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-2">
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="space-y-1"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-1 w-8 bg-[#8c7851] rounded-full" />
+            <span className="text-[#8c7851] text-[10px] font-black uppercase tracking-[0.3em]">Guardian Intelligence Overview</span>
           </div>
-          
-          <div className="flex items-center gap-4">
-            <button className="p-3 text-[#8c7851] hover:bg-[#f8f5ee] rounded-xl transition-all relative">
-              <MessageSquare size={20} />
-              <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></div>
+          <h1 className="text-4xl font-display font-black text-[#4a3f35] tracking-tight">
+             Academic <span className="text-[#8c7851]">Trajectory</span>
+          </h1>
+          <p className="text-[#807060] font-medium flex items-center gap-2">
+            Monitoring <span className="font-bold text-[#4a3f35]">{activeStudent.name}&apos;s</span> performance and engagement.
+            <Shield className="w-3 h-3 text-[#8c7851]" />
+          </p>
+        </motion.div>
+
+        {/* CHILD SELECTOR */}
+        <div className="flex items-center gap-3 p-2 bg-white/40 backdrop-blur-2xl border border-[#efe9de] rounded-[2rem] shadow-sm">
+          {parentData?.children?.map((child: any) => (
+            <button
+              key={child.id}
+              onClick={() => setActiveChildId(child.id)}
+              className={cn(
+                "px-6 py-2.5 rounded-[1.5rem] text-sm font-bold transition-all duration-300 relative overflow-hidden group",
+                activeChildId === child.id
+                  ? "bg-[#8c7851] text-white shadow-lg shadow-[#8c7851]/20 scale-105"
+                  : "text-[#807060] hover:text-[#4a3f35] hover:bg-[#8c7851]/5"
+              )}
+            >
+              {child.name}
+              {activeChildId === child.id && (
+                <motion.div 
+                  layoutId="activeChild"
+                  className="absolute inset-0 bg-white/10"
+                />
+              )}
             </button>
-            <button className="p-3 text-[#8c7851] hover:bg-[#f8f5ee] rounded-xl transition-all">
-              <Settings size={20} />
-            </button>
-            <div className="w-px h-8 bg-[#efe9de]"></div>
-            <div className="flex items-center gap-3 pl-2">
-              <img 
-                src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150" 
-                className="w-10 h-10 rounded-xl object-cover ring-2 ring-[#e8d5b5]" 
-                alt="Parent"
-              />
-            </div>
-          </div>
+          ))}
+          <button className="w-10 h-10 rounded-full border border-[#efe9de] flex items-center justify-center text-[#8c7851] hover:bg-[#8c7851] hover:text-white transition-all">
+            <Plus size={20} />
+          </button>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-[1400px] mx-auto px-8 pt-8">
-        {!activeStudent.verified && (
-          <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-4 animate-in fade-in slide-in-from-top-4">
-            <div className="p-2 bg-amber-100 rounded-xl text-amber-600">
-              <ShieldAlert size={24} />
-            </div>
-            <div>
-              <h3 className="font-bold text-amber-900">Verification Pending</h3>
-              <p className="text-amber-700 text-sm">
-                Your connection to <strong>{activeStudent.name}</strong> is linked but awaiting administrator verification. 
-                Full access to assignments, deep AI insights, and verified reports will be available shortly.
-              </p>
-            </div>
+      {!activeStudent.verified && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-6 bg-[#8c7851]/10 border border-[#8c7851]/20 rounded-[2rem] flex items-center gap-6 relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-4 opacity-5">
+            <ShieldAlert size={80} />
           </div>
-        )}
-
-        {/* Welcome Section */}
-        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between items-start gap-4">
-          <div>
-            <span className="text-[#8c7851] font-bold text-sm tracking-widest uppercase mb-2 block">
-              {activeStudent.verified ? "Premium Learning Support" : "Connection Pending"}
-            </span>
-            <h2 className="text-4xl font-serif text-[#3a2f26]">Good morning, {activeStudent.name}'s Guardian</h2>
-            <p className="text-[#807060] mt-2">
-              {activeStudent.verified 
-                ? "Here is the latest snapshot of your student's learning momentum." 
-                : "Your student dashboard will populate as soon as the relationship is verified."}
+          <div className="p-4 bg-white/60 backdrop-blur-md rounded-2xl text-[#8c7851] border border-[#efe9de] shrink-0">
+            <ShieldAlert size={32} />
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-black text-[#4a3f35] text-lg">Relationship Verification Pending</h3>
+            <p className="text-[#807060] text-sm max-w-2xl font-medium">
+              Your connection to <strong>{activeStudent.name}</strong> is established but awaiting secondary verification. Some granular insights may be restricted until confirmed.
             </p>
           </div>
+          <Button variant="outline" className="ml-auto border-[#8c7851]/30 text-[#8c7851] font-bold rounded-xl hidden md:flex">
+             Help Center
+          </Button>
+        </motion.div>
+      )}
+
+      {/* ACTION BUTTONS ROW */}
+      <div className="flex gap-4">
+        <Button 
+          onClick={() => setShowGoalModal(true)}
+          className="bg-[#8c7851] hover:bg-[#726242] text-white font-black px-8 h-14 rounded-2xl shadow-xl shadow-[#8c7851]/20 flex items-center gap-3 transition-all"
+        >
+          <Target className="w-5 h-5" />
+          Set New Objective
+        </Button>
+        <Button 
+          variant="outline"
+          className="bg-white/40 border-[#efe9de] text-[#4a3f35] font-black px-8 h-14 rounded-2xl hover:bg-white hover:shadow-lg transition-all flex items-center gap-3"
+        >
+          <Share2 className="w-5 h-5" />
+          Export Intelligence
+        </Button>
+      </div>
+
+      {/* DASHBOARD GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* LEFT COLUMN: MAIN ANALYTICS */}
+        <div className="lg:col-span-8 space-y-8">
           
-          <div className="flex gap-3">
-             <button 
-              onClick={() => setShowGoalModal(true)}
-              disabled={!activeStudent.verified}
-              className="px-6 h-12 bg-[#8c7851] text-white rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-[#8c785144] hover:bg-[#726242] transition-colors disabled:opacity-50"
-             >
-              <Target size={18} />
-              Set Academic Goal
-            </button>
-            <button 
-              disabled={!activeStudent.verified}
-              className="px-6 h-12 bg-white text-[#8c7851] border border-[#e8d5b5] rounded-xl font-bold flex items-center gap-2 hover:bg-[#faf9f6] transition-colors shadow-sm disabled:opacity-50"
-            >
-              <Share2 size={18} />
-              Weekly Report
-            </button>
+          {/* TOP METRICS GRID */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {[
+              { 
+                label: "Current Mastery", 
+                value: `${activeStudent.mastery || 0}%`, 
+                trend: "+4.2%", 
+                icon: Award, 
+                color: "#8c7851",
+                bg: "bg-[#8c7851]/5"
+              },
+              { 
+                label: "Course Velocity", 
+                value: "High", 
+                trend: "Optimal", 
+                icon: TrendingUp, 
+                color: "#6b5c3d",
+                bg: "bg-[#6b5c3d]/5"
+              },
+              { 
+                label: "Weekly Study", 
+                value: `${activeStudent.usage?.totalHours || 0}h`, 
+                trend: "14h Target", 
+                icon: Clock, 
+                color: "#4a3f35",
+                bg: "bg-[#4a3f35]/5"
+              }
+            ].map((metric, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 * idx }}
+                className="group bg-white/60 backdrop-blur-xl border border-[#efe9de] p-8 rounded-[2.5rem] hover:border-[#8c7851]/30 hover:shadow-xl transition-all duration-500"
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <div className={cn("p-4 rounded-2xl text-[#8c7851] transition-transform group-hover:scale-110 duration-500", metric.bg)}>
+                    <metric.icon size={24} />
+                  </div>
+                  <Badge className="bg-[#8c7851] text-white border-none rounded-full px-3 font-black text-[10px]">
+                    {metric.trend}
+                  </Badge>
+                </div>
+                <p className="text-[10px] font-black text-[#b8a994] uppercase tracking-[0.2em] mb-1">{metric.label}</p>
+                <h4 className="text-3xl font-display font-black text-[#4a3f35]">{metric.value}</h4>
+              </motion.div>
+            ))}
           </div>
-        </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          {[
-            { label: "Course Progress", value: "84%", trend: "+12%", icon: BookOpen, color: "bg-blue-50 text-blue-600" },
-            { label: "Concept Mastery", value: "A-", trend: "0.4 pts", icon: Brain, color: "bg-purple-50 text-purple-600" },
-            { label: "Engagement", value: "High", trend: "Stable", icon: Heart, color: "bg-red-50 text-red-600" },
-            { label: "Active Streak", value: "14 Days", trend: "+2", icon: TrendingUp, color: "bg-orange-50 text-orange-600" },
-          ].map((stat, i) => (
-            <div key={i} className="bg-white p-6 rounded-3xl border border-[#efe9de] shadow-sm hover:translate-y-[-4px] transition-all">
-              <div className="flex justify-between items-start mb-4">
-                <div className={`p-3 rounded-2xl ${stat.color}`}>
-                  <stat.icon size={20} />
-                </div>
-                <div className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-                  {stat.trend}
-                </div>
-              </div>
-              <p className="text-[#807060] text-sm font-medium mb-1">{stat.label}</p>
-              <h4 className="text-2xl font-serif text-[#4a3f35] font-bold">{stat.value}</h4>
-            </div>
-          ))}
-        </div>
-
-        {/* Main Content Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          
-          {/* Progress Chart Section */}
-          <section className="space-y-6">
-            <div className="bg-white p-8 rounded-[40px] border border-[#efe9de] shadow-xl relative overflow-hidden group">
-              <div className="flex justify-between items-center mb-8">
+          {/* MAIN CHART */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white/60 backdrop-blur-xl border border-[#efe9de] p-10 rounded-[3rem] shadow-sm relative overflow-hidden"
+          >
+             <div className="absolute top-0 right-0 w-80 h-80 bg-[#fdfaf5]/50 rounded-full blur-3xl -mr-40 -mt-40" />
+             
+             <div className="flex justify-between items-center mb-12 relative z-10">
                 <div>
-                  <h3 className="text-2xl font-serif text-[#4a3f35]">Learning Velocity</h3>
-                  <p className="text-sm text-[#b8a994]">Aggregate progress across all enrolled courses</p>
+                   <h3 className="text-2xl font-display font-black text-[#4a3f35]">Absorption Velocity</h3>
+                   <p className="text-sm text-[#807060] font-medium italic">Measuring conceptual retention over time.</p>
                 </div>
-                <div className="flex bg-[#f8f5ee] rounded-xl p-1">
-                  <button className="px-4 py-2 text-xs font-bold bg-[#8c7851] text-white rounded-lg shadow-sm">Week</button>
-                  <button className="px-4 py-2 text-xs font-bold text-[#b8a994]">Month</button>
+                <div className="flex bg-[#efe9de]/50 p-1.5 rounded-2xl border border-[#efe9de]">
+                  {["7D", "30D", "ALL"].map((t) => (
+                    <button key={t} className={cn(
+                      "px-4 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all",
+                      t === "7D" ? "bg-white text-[#4a3f35] shadow-sm" : "text-[#b8a994] hover:text-[#8c7851]"
+                    )}>{t}</button>
+                  ))}
                 </div>
-              </div>
-              
-              <div className="h-[300px] w-full">
+             </div>
+
+             <div className="h-[350px] w-full relative z-10">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={[
-                    { date: 'Mon', progress: 65 },
-                    { date: 'Tue', progress: 68 },
-                    { date: 'Wed', progress: 75 },
-                    { date: 'Thu', progress: 72 },
-                    { date: 'Fri', progress: 84 },
-                    { date: 'Sat', progress: 84 },
-                    { date: 'Sun', progress: 88 },
+                    { date: 'Mon', val: 68 }, { date: 'Tue', val: 74 },
+                    { date: 'Wed', val: 72 }, { date: 'Thu', val: 85 },
+                    { date: 'Fri', val: 82 }, { date: 'Sat', val: 92 },
+                    { date: 'Sun', val: 88 },
                   ]}>
                     <defs>
-                      <linearGradient id="colorProgress" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8c7851" stopOpacity={0.2}/>
+                      <linearGradient id="premiumGold" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8c7851" stopOpacity={0.3}/>
                         <stop offset="95%" stopColor="#8c7851" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#b8a994', fontSize: 12}} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#b8a994', fontSize: 12}} />
+                    <CartesianGrid vertical={false} strokeDasharray="6 6" stroke="#efe9de" />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#b8a994', fontSize: 11, fontWeight: 700}} dy={15} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#b8a994', fontSize: 11, fontWeight: 700}} width={40} />
                     <Tooltip 
-                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+                      contentStyle={{ borderRadius: '24px', border: '1px solid #efe9de', boxShadow: '0 20px 40px rgba(140,120,81,0.1)', background: 'rgba(255,255,255,0.95)', padding: '16px' }}
+                      itemStyle={{ fontWeight: 900, color: '#4a3f35' }}
                     />
-                    <Area type="monotone" dataKey="progress" stroke="#8c7851" strokeWidth={4} fillOpacity={1} fill="url(#colorProgress)" />
+                    <Area type="monotone" dataKey="val" stroke="#8c7851" strokeWidth={5} fillOpacity={1} fill="url(#premiumGold)" />
                   </AreaChart>
                 </ResponsiveContainer>
-              </div>
-            </div>
+             </div>
+          </motion.div>
 
-            {/* Courses Overview */}
-            <div className="bg-white p-8 rounded-[40px] border border-[#efe9de] shadow-xl">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-serif text-[#4a3f35]">Detailed Subjects</h3>
-                <Link href="/parent/progress" className="text-[#8c7851] font-bold text-sm flex items-center hover:translate-x-1 transition-all">
-                  Deep Analytics <ChevronRight size={16} />
+          {/* SUBJECT PROFICIENCY LIST */}
+          <div className="bg-white/60 backdrop-blur-xl border border-[#efe9de] p-10 rounded-[3rem] shadow-sm">
+             <div className="flex justify-between items-center mb-10">
+                <h3 className="text-2xl font-display font-black text-[#4a3f35]">Competency Matrix</h3>
+                <Link href="/parent/progress" className="text-[#8c7851] text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:translate-x-1 transition-transform">
+                   Deep Diagnostics <ChevronRight size={14} />
                 </Link>
-              </div>
-              <div className="space-y-4">
-                {[
-                  { name: "Advanced Mathematics", progress: 88, status: "Ahead", color: "bg-[#8c7851]" },
-                  { name: "Data Structures", progress: 64, status: "Steady", color: "bg-[#e8d5b5]" },
-                  { name: "Applied Physics", progress: 72, status: "Review needed", color: "bg-[#b8a994]" },
-                ].map((course, i) => (
-                  <div key={i} className="p-5 rounded-2xl bg-[#fdfaf5] border border-transparent hover:border-[#e8d5b5] hover:bg-white transition-all group">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="font-bold text-[#4a3f35] group-hover:text-[#8c7851] transition-colors">{course.name}</span>
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#b8a994]">{course.status}</span>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                {activeStudent.usage?.subjectBreakdown?.map((subject: any, idx: number) => (
+                  <div key={idx} className="space-y-4 group">
+                    <div className="flex justify-between items-end">
+                      <div>
+                         <p className="text-[10px] font-black text-[#b8a994] uppercase tracking-widest mb-1">Subject</p>
+                         <h4 className="text-lg font-bold text-[#4a3f35] group-hover:text-[#8c7851] transition-colors">{subject.subject}</h4>
+                      </div>
+                      <div className="text-right">
+                         <span className="text-2xl font-display font-black text-[#8c7851]">{subject.percentage}%</span>
+                      </div>
                     </div>
-                    <div className="w-full bg-[#efe9de] h-2 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full ${course.color} rounded-full transition-all duration-1000`} 
-                        style={{ width: `${course.progress}%` }}
-                      ></div>
+                    <div className="h-2 w-full bg-[#efe9de] rounded-full overflow-hidden p-0.5 border border-[#efe9de]">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${subject.percentage}%` }}
+                        transition={{ duration: 1.5, delay: idx * 0.1 }}
+                        className="h-full bg-gradient-to-r from-[#4a3f35] via-[#8c7851] to-[#b8a994] rounded-full"
+                      />
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Side Column: AI Insights & Alerts */}
-          <section className="space-y-8">
-            {/* AI Insight Box */}
-            <div className="bg-[#4a3f35] p-8 rounded-[40px] text-white shadow-2xl relative overflow-hidden">
-              <div className="absolute top-[-40px] right-[-40px] w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-md">
-                    <Brain size={24} className="text-[#e8d5b5]" />
-                  </div>
-                  <h3 className="text-xl font-serif text-[#e8d5b5]">Lumina AI Insight</h3>
-                </div>
-                <p className="text-lg leading-relaxed text-[#fdfaf5] mb-6 font-serif italic text-white/90">
-                  "{activeStudent.name} is demonstrating exceptional cognitive focus in Mathematics. 
-                  However, interest in Physics has dipped recently. We recommend checking if the 
-                  last module on 'Quantum Mechanics' was particularly challenging."
-                </p>
-                <div className="flex gap-3">
-                  <button className="px-4 py-2 bg-white text-[#4a3f35] rounded-xl text-sm font-bold shadow-lg hover:scale-105 transition-all">Support Plan</button>
-                  <button className="px-4 py-2 bg-white/10 text-white border border-white/20 rounded-xl text-sm font-bold backdrop-blur-md hover:bg-white/20 transition-all">Acknowledge</button>
-                </div>
-              </div>
-            </div>
-
-            {/* Real-time Alerts */}
-            <div className="bg-white p-8 rounded-[40px] border border-[#efe9de] shadow-xl">
-              <h3 className="text-2xl font-serif text-[#4a3f35] mb-6">Active Notifications</h3>
-              <div className="space-y-4">
-                {[
-                  { title: "Assignment Submitted", student: activeStudent.name, time: "2h ago", icon: CheckCircle, type: "success" },
-                  { title: "Missing Attendance", student: activeStudent.name, time: "8h ago", icon: AlertCircle, type: "urgent" },
-                  { title: "Upcoming Exam", student: "Applied Physics", time: "2 days", icon: Calendar, type: "info" },
-                ].map((alert, i) => (
-                  <div key={i} className="flex gap-4 p-4 rounded-2xl hover:bg-[#f8f5ee] transition-all cursor-pointer">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 
-                      ${alert.type === 'success' ? 'bg-green-50 text-green-600' : 
-                        alert.type === 'urgent' ? 'bg-red-50 text-red-600' : 
-                        'bg-blue-50 text-blue-600'}`}>
-                      <alert.icon size={20} />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-[#4a3f35] text-sm">{alert.title}</h4>
-                      <p className="text-[#807060] text-xs mt-1">{alert.student} • {alert.time}</p>
-                    </div>
-                    <ChevronRight size={14} className="text-[#b8a994] self-center" />
-                  </div>
-                ))}
-              </div>
-              <button className="w-full mt-6 py-4 bg-[#f8f5ee] text-[#8c7851] rounded-2xl font-bold hover:bg-[#f2efe6] transition-all">
-                Notification History
-              </button>
-            </div>
-          </section>
-        </div>
-      </main>
-
-      {/* Goal Creation Modal */}
-      {showGoalModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#4a3f35]/60 backdrop-blur-sm" onClick={() => setShowGoalModal(false)}></div>
-          <div className="relative bg-white w-full max-w-lg rounded-[40px] shadow-2xl p-10 animate-in zoom-in slide-in-from-bottom-4">
-            <h3 className="text-3xl font-serif text-[#4a3f35] mb-2">New Growth Target</h3>
-            <p className="text-[#807060] mb-8">Set a supportive academic or behavioral goal for {activeStudent.name}.</p>
-            
-            <div className="space-y-6">
-              <div>
-                <label className="text-xs font-bold text-[#8c7851] uppercase tracking-widest mb-2 block">Category</label>
-                <div className="grid grid-cols-2 gap-4">
-                  {['academic', 'behavioral'].map(t => (
-                    <button 
-                      key={t}
-                      onClick={() => setNewGoal({...newGoal, type: t})}
-                      className={`h-12 rounded-xl font-bold border-2 capitalize transition-all ${newGoal.type === t ? 'border-[#8c7851] bg-[#8c7851] text-white shadow-lg' : 'border-[#efe9de] text-[#b8a994] hover:border-[#e8d5b5]'}`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <label className="text-xs font-bold text-[#8c7851] uppercase tracking-widest mb-2 block">The Goal</label>
-                <textarea 
-                  value={newGoal.text}
-                  onChange={(e) => setNewGoal({...newGoal, text: e.target.value})}
-                  className="w-full min-h-[120px] p-4 bg-[#f8f5ee] border-2 border-transparent rounded-2xl focus:bg-white focus:border-[#8c7851] outline-none transition-all placeholder-[#c4b5a2] text-[#4a3f35] font-medium"
-                  placeholder="e.g. Complete math exercises with >80% accuracy..."
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-[#8c7851] uppercase tracking-widest mb-2 block">Timeframe</label>
-                <select 
-                  value={newGoal.timeframe}
-                  onChange={(e) => setNewGoal({...newGoal, timeframe: e.target.value})}
-                  className="w-full h-14 px-4 bg-[#f8f5ee] border-2 border-transparent rounded-xl outline-none focus:bg-white focus:border-[#8c7851] text-[#4a3f35] font-bold appearance-none cursor-pointer"
-                >
-                  <option value="weekly">This Week</option>
-                  <option value="biweekly">Next 2 Weeks</option>
-                  <option value="monthly">This Month</option>
-                </select>
-              </div>
-
-              <div className="pt-4 flex gap-4">
-                <button 
-                  onClick={() => setShowGoalModal(false)}
-                  className="flex-1 h-14 rounded-2xl font-bold text-[#b8a994] hover:bg-[#f8f5ee] transition-all"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleAddGoal}
-                  className="flex-1 h-14 rounded-2xl font-bold bg-[#8c7851] text-white shadow-xl shadow-[#8c785144] hover:bg-[#726242] transition-all"
-                >
-                  Confirm Goal
-                </button>
-              </div>
-            </div>
+             </div>
           </div>
         </div>
-      )}
+
+        {/* RIGHT COLUMN: AI & ALERTS */}
+        <div className="lg:col-span-4 space-y-8">
+          
+          {/* AI GUARDIAN INSIGHT */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-[#4a3f35] p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group"
+          >
+             <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+               <Brain size={120} />
+             </div>
+
+             <div className="relative z-10">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20 mb-8 border-dashed">
+                   <Sparkles className="w-4 h-4 text-[#8c7851]" />
+                   <span className="text-[10px] font-black uppercase tracking-[0.2em]">Lumina AI Counselor</span>
+                </div>
+
+                <h3 className="text-3xl font-display font-medium mb-6 leading-tight italic">
+                   &quot;{activeStudent.name} is accelerating in <span className="text-[#8c7851] font-black not-italic underline underline-offset-4 decoration-white/20">Conceptual Logic</span>.&quot;
+                </h3>
+                
+                <p className="text-white/70 text-sm leading-relaxed mb-10 font-medium">
+                  Analysis indicates a 40% faster retention rate in Abstract Mathematics. We suggest providing additional challenge modules in Physics to maintain this cognitive momentum.
+                </p>
+
+                <div className="grid grid-cols-2 gap-4">
+                   <Button className="bg-[#8c7851] hover:bg-white hover:text-[#4a3f35] text-white font-black rounded-2xl h-14 border-none shadow-lg">
+                      View Advice
+                   </Button>
+                   <Button variant="outline" className="border-white/20 text-white font-black rounded-2xl h-14 hover:bg-white/10">
+                      Export Plan
+                   </Button>
+                </div>
+             </div>
+          </motion.div>
+
+          {/* ALERTS SECTION */}
+          <div className="bg-white/60 backdrop-blur-xl border border-[#efe9de] p-10 rounded-[3rem] shadow-sm">
+             <div className="flex justify-between items-center mb-8">
+                <h3 className="text-xl font-display font-black text-[#4a3f35]">Guardian Alerts</h3>
+                <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
+             </div>
+
+             <div className="space-y-4">
+                {[
+                  { title: "Engagement Peak", desc: "Longest study session in 3 months", time: "2h ago", icon: TrendingUp, mode: "success" },
+                  { title: "Assignment Caution", desc: "History module progress is slower", time: "5h ago", icon: AlertCircle, mode: "warning" },
+                  { title: "New Achievement", desc: "Earned the 'Logic Master' badge", time: "1d ago", icon: Award, mode: "premium" },
+                ].map((alert, idx) => (
+                  <div key={idx} className="flex gap-5 p-5 rounded-[2rem] hover:bg-white/80 transition-all cursor-pointer group border border-transparent hover:border-[#efe9de]">
+                     <div className={cn(
+                       "w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border transition-all duration-500 group-hover:scale-110 group-hover:rotate-3",
+                       alert.mode === "success" && "bg-green-50 text-green-600 border-green-100",
+                       alert.mode === "warning" && "bg-amber-50 text-amber-600 border-amber-100",
+                       alert.mode === "premium" && "bg-[#8c7851]/10 text-[#8c7851] border-[#8c7851]/20"
+                     )}>
+                       <alert.icon size={24} />
+                     </div>
+                     <div className="space-y-1 flex-1">
+                        <div className="flex justify-between items-start">
+                           <h4 className="text-sm font-black text-[#4a3f35]">{alert.title}</h4>
+                           <span className="text-[9px] font-black text-[#b8a994] uppercase tracking-tighter">{alert.time}</span>
+                        </div>
+                        <p className="text-xs text-[#807060] font-medium leading-relaxed">{alert.desc}</p>
+                     </div>
+                     <ChevronRight className="w-4 h-4 text-[#efe9de] self-center group-hover:text-[#8c7851] group-hover:translate-x-1 transition-all" />
+                  </div>
+                ))}
+             </div>
+
+             <Button variant="ghost" className="w-full mt-10 h-14 text-[#8c7851] font-black hover:bg-[#8c7851]/5 rounded-2xl">
+                Full Notification History
+             </Button>
+          </div>
+
+          {/* UPCOMING EVENTS */}
+          <div className="bg-[#efe9de]/40 border border-[#efe9de] p-10 rounded-[3rem] relative overflow-hidden">
+             <h3 className="text-lg font-display font-black text-[#4a3f35] mb-8 flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-[#8c7851]" />
+                Upcoming Milestones
+             </h3>
+             <div className="space-y-8">
+                <div className="flex gap-5 group">
+                   <div className="w-14 h-14 bg-white rounded-2xl border border-[#efe9de] flex flex-col items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105">
+                      <span className="text-[10px] font-black text-[#8c7851] uppercase">Apr</span>
+                      <span className="text-xl font-display font-black text-[#4a3f35]">15</span>
+                   </div>
+                   <div className="space-y-0.5">
+                      <p className="text-sm font-black text-[#4a3f35] group-hover:text-[#8c7851] transition-colors">Mid-Term Verification</p>
+                      <p className="text-[10px] font-bold text-[#b8a994] uppercase tracking-[0.1em]">Verified Report Delivery</p>
+                   </div>
+                </div>
+                <div className="flex gap-5 group opacity-60 hover:opacity-100 transition-opacity">
+                   <div className="w-14 h-14 bg-white rounded-2xl border border-[#efe9de] flex flex-col items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105">
+                      <span className="text-[10px] font-black text-[#8c7851] uppercase">May</span>
+                      <span className="text-xl font-display font-black text-[#4a3f35]">02</span>
+                   </div>
+                   <div className="space-y-0.5">
+                      <p className="text-sm font-black text-[#4a3f35]">Physics Olympiad</p>
+                      <p className="text-[10px] font-bold text-[#b8a994] uppercase tracking-[0.1em]">Regional Competition</p>
+                   </div>
+                </div>
+             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* GOAL MODAL */}
+      <AnimatePresence>
+        {showGoalModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+             <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               className="absolute inset-0 bg-[#2c241e]/80 backdrop-blur-md" 
+               onClick={() => setShowGoalModal(false)} 
+             />
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.9, y: 30 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.9, y: 30 }}
+               className="bg-white relative w-full max-w-xl rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.4)] p-12 border border-[#efe9de] overflow-hidden"
+             >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-[#fdfaf5] rounded-full blur-3xl -mr-32 -mt-32 opacity-50" />
+                
+                <h3 className="text-4xl font-display font-black text-[#4a3f35] mb-2 tracking-tight relative z-10">New Academic <span className="text-[#8c7851]">Directive</span></h3>
+                <p className="text-[#807060] mb-10 font-medium relative z-10 italic">Define a high-impact growth target for your student.</p>
+                
+                <div className="space-y-8 relative z-10">
+                   <div>
+                      <label className="text-[10px] font-black text-[#8c7851] uppercase tracking-[0.3em] mb-3 block">Perspective</label>
+                      <div className="grid grid-cols-2 gap-4">
+                         {['academic', 'behavioral'].map(t => (
+                           <button 
+                             key={t}
+                             onClick={() => setNewGoal({...newGoal, type: t})}
+                             className={cn(
+                               "h-14 rounded-2xl font-black capitalize transition-all border-2",
+                               newGoal.type === t ? "bg-[#8c7851] border-[#8c7851] text-white shadow-lg" : "bg-white border-[#efe9de] text-[#b8a994] hover:border-[#8c7851]/30"
+                             )}
+                           >
+                             {t}
+                           </button>
+                         ))}
+                      </div>
+                   </div>
+
+                   <div className="space-y-3">
+                      <label className="text-[10px] font-black text-[#8c7851] uppercase tracking-[0.3em] block">Objective Description</label>
+                      <textarea 
+                        value={newGoal.text}
+                        onChange={(e) => setNewGoal({...newGoal, text: e.target.value})}
+                        className="w-full min-h-[160px] p-6 bg-[#fdfaf5] border border-[#efe9de] rounded-3xl focus:bg-white focus:border-[#8c7851] outline-none transition-all placeholder-[#c4b5a2] text-[#4a3f35] font-bold text-lg leading-relaxed shadow-inner"
+                        placeholder="e.g. Master Differential Equations with 95% retention..."
+                      />
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-8">
+                      <div>
+                         <label className="text-[10px] font-black text-[#8c7851] uppercase tracking-[0.3em] mb-3 block">Horizon</label>
+                         <div className="relative">
+                            <select 
+                              value={newGoal.timeframe}
+                              onChange={(e) => setNewGoal({...newGoal, timeframe: e.target.value})}
+                              className="w-full h-14 pl-6 pr-10 bg-[#fdfaf5] border border-[#efe9de] rounded-2xl outline-none focus:bg-white focus:border-[#8c7851] text-[#4a3f35] font-black appearance-none cursor-pointer shadow-sm"
+                            >
+                              <option value="weekly">Weekly Cycle</option>
+                              <option value="biweekly">Bi-Weekly Phase</option>
+                              <option value="monthly">Quarterly Horizon</option>
+                            </select>
+                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8c7851] w-5 h-5 pointer-events-none" />
+                         </div>
+                      </div>
+                      <div className="flex items-end gap-3">
+                         <Button 
+                           onClick={() => setShowGoalModal(false)}
+                           variant="ghost"
+                           className="flex-1 h-14 rounded-2xl font-black text-[#b8a994] hover:bg-[#fdfaf5] border border-transparent hover:border-[#efe9de]"
+                         >
+                            Cancel
+                         </Button>
+                         <Button 
+                           onClick={handleAddGoal}
+                           className="flex-[2] h-14 rounded-2xl font-black bg-[#8c7851] text-white shadow-xl shadow-[#8c7851]/40 hover:bg-[#726242] transition-all"
+                         >
+                            Publish Goal
+                         </Button>
+                      </div>
+                   </div>
+                </div>
+             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

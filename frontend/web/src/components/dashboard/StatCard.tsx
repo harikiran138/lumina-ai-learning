@@ -35,27 +35,26 @@ export function StatCard({
   return (
     <div
       className={cn(
-        color === "gold" ? "glass-v2-gold" : "glass-v2",
-        "p-6 relative overflow-hidden group",
+        "glass-onyx p-6 rounded-[2rem] relative overflow-hidden group transition-all duration-500 hover:border-lumina-highlight/30 hover:shadow-[0_0_30px_rgba(245,158,11,0.05)]",
         className,
       )}
     >
       <div className="flex justify-between items-start mb-4">
-        <div className="relative z-10">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-[0.2em] mb-2 opacity-80">
+        <div className="relative z-10 w-full flex flex-col gap-2">
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.25em] opacity-80 group-hover:text-lumina-highlight/60 transition-colors">
             {title}
           </p>
-          <div className="flex items-baseline gap-2">
-            <h3 className="text-4xl font-display font-bold text-white tracking-tight">
+          <div className="flex items-baseline gap-3">
+            <h3 className="text-4xl lg:text-5xl font-display font-bold text-white tracking-tight group-hover:text-glow-gold transition-all duration-500">
               {value}
             </h3>
             {trend && (
               <span
                 className={cn(
-                  "text-xs font-bold px-2 py-0.5 rounded-md",
+                  "text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border backdrop-blur-sm",
                   trend.isPositive
-                    ? "text-yellow-400 bg-yellow-400/10 border border-yellow-400/20"
-                    : "text-red-400 bg-red-400/10 border border-red-400/20",
+                    ? "text-lumina-highlight bg-lumina-highlight/10 border-lumina-highlight/20"
+                    : "text-red-400 bg-red-400/10 border-red-400/20",
                 )}
               >
                 {trend.value}
@@ -65,21 +64,22 @@ export function StatCard({
         </div>
         <div
           className={cn(
-            "p-3 rounded-xl transition-all group-hover:scale-110 group-hover:rotate-6 duration-500 relative z-10",
+            "p-4 rounded-2xl transition-all group-hover:scale-110 group-hover:rotate-6 duration-700 relative z-10 backdrop-blur-md border border-white/5 shadow-xl",
             colorStyles[color],
           )}
         >
-          <Icon className="w-6 h-6" />
+          <Icon className="w-6 h-6 group-hover:animate-pulse" />
         </div>
       </div>
       {subtitle && (
-        <p className="text-xs text-gray-400/60 font-medium relative z-10">
+        <p className="text-[10px] text-gray-400/60 font-black uppercase tracking-widest relative z-10 mt-2">
           {subtitle}
         </p>
       )}
 
       {/* Modern Gradient Background */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-lumina-highlight/[0.05] to-transparent rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none transition-all duration-500 group-hover:bg-lumina-highlight/[0.08]" />
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-lumina-highlight/[0.08] to-transparent rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none transition-all duration-700 group-hover:opacity-100 group-hover:scale-125" />
     </div>
   );
 }
+

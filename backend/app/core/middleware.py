@@ -74,15 +74,11 @@ class SentinelMiddleware(BaseHTTPMiddleware):
             
         # 3. Verify JWT
         try:
-            # Try decoding with JWT_SECRET first, fallback to SECRET_KEY
-            decoded_payload = None
-            for secret in [settings.JWT_SECRET, settings.SECRET_KEY]:
-                try:
-                    if not secret: continue
-                    decoded_payload = jwt.decode(token, secret, algorithms=["HS256"])
-                    if decoded_payload: break
-                except JWTError:
-                    continue
+            # Decode with unified SECRET_KEY
+            try:
+                decoded_payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            except JWTError:
+                decoded_payload = None
 
             if not decoded_payload:
                 raise JWTError("Invalid token signature")

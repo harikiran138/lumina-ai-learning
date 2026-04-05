@@ -31,8 +31,8 @@ import { registerSchema } from "@/lib/schemas/auth";
 import { getRoleHome, ROLE_HOME_ROUTES } from "@/lib/role-routing";
 import { useAuthStore } from "@/store/useAuthStore";
 
-type LoginRole = "student" | "teacher" | "faculty" | "hod" | "admin" | "parent" | "mentor" | "peer_tutor" | "counselor" | "researcher";
-type SignupRole = "student" | "teacher" | "faculty" | "parent" | "mentor" | "peer_tutor" | "researcher";
+type LoginRole = "student" | "teacher" | "faculty" | "hod" | "admin" | "parent" | "mentor" | "peer_tutor" | "counselor" | "researcher" | "alumni" | "content_creator";
+type SignupRole = "student" | "teacher" | "parent" | "mentor" | "peer_tutor" | "counselor" | "researcher" | "alumni" | "content_creator";
 type AuthMode = "login" | "signup";
 
 type SignupForm = {
@@ -57,17 +57,21 @@ const loginRoleHints: Array<{
   { id: "parent", label: "Parent", icon: Users, helper: "Parent portal email" },
   { id: "mentor", label: "Mentor", icon: Compass, helper: "Mentor email" },
   { id: "counselor", label: "Counselor", icon: Heart, helper: "Counselor email" },
-  { id: "researcher", label: "Researcher", icon: FlaskConical, helper: "Research portal email" },
+  { id: "researcher", label: "Researcher", icon: FlaskConical, helper: "Research portal access" },
+  { id: "alumni", label: "Alumni", icon: School, helper: "Alumni network login" },
+  { id: "content_creator", label: "Content Creator", icon: Compass, helper: "Studio access" },
 ];
 
 const signupRoleOptions: Array<{ id: SignupRole; label: string; icon: typeof GraduationCap; desc: string }> = [
   { id: "student", label: "Student", icon: GraduationCap, desc: "Adaptive learning & AI tutor" },
-  { id: "teacher", label: "Teacher", icon: BookOpen, desc: "Content creation & AI verification" },
-  { id: "faculty", label: "Faculty", icon: School, desc: "Course oversight & grading" },
+  { id: "teacher", label: "Teacher / Faculty", icon: BookOpen, desc: "Content creation & AI verification" },
+  { id: "counselor", label: "Counselor", icon: Heart, desc: "Student wellbeing & support" },
   { id: "parent", label: "Parent", icon: Users, desc: "Monitor child progress" },
-  { id: "mentor", label: "Mentor", icon: Compass, desc: "Guidance & support" },
+  { id: "mentor", label: "Mentor", icon: Compass, desc: "Guidance & career support" },
   { id: "peer_tutor", label: "Peer Tutor", icon: HeartHandshake, desc: "Collaborative learning" },
   { id: "researcher", label: "Researcher", icon: FlaskConical, desc: "Educational impact studies" },
+  { id: "alumni", label: "Alumni", icon: School, desc: "Professional network & mentorship" },
+  { id: "content_creator", label: "Content Creator", icon: Compass, desc: "Build & share educational content" },
 ];
 
 const featurePillars = [

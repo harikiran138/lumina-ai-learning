@@ -200,7 +200,6 @@ select {
 
   .glass-card,
   .glass-v2,
-  .glass-v2-primary,
   .glass-card-premium {
     border-radius: 1.5rem;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -210,28 +209,55 @@ select {
     box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
   }
 
-  .glass-v2-primary {
-    background:
-      linear-gradient(180deg, rgba(245, 158, 11, 0.08), rgba(18, 18, 20, 0.85)),
-      rgba(18, 18, 20, 0.75);
+  .glass-ivory {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(239, 233, 222, 0.5);
+    box-shadow: 0 8px 32px 0 rgba(140, 120, 81, 0.05);
   }
 
-  .glass-v2-gold {
-    border-radius: 1.5rem;
+  .glass-ivory-card {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(239, 233, 222, 0.8);
+    box-shadow: 0 20px 60px -15px rgba(140, 120, 81, 0.1);
+    border-radius: 2.5rem;
+  }
+
+  .glass-onyx {
+    background: rgba(10, 10, 12, 0.82);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(245, 158, 11, 0.15);
+    box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.5);
+  }
+
+  .glass-onyx-card {
+    background: linear-gradient(145deg, rgba(20, 20, 24, 0.9), rgba(10, 10, 12, 0.95));
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border: 1px solid rgba(245, 158, 11, 0.12);
-    background: linear-gradient(180deg, rgba(245, 158, 11, 0.05), rgba(18, 18, 20, 0.62));
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    box-shadow: 0 14px 40px rgba(10, 10, 12, 0.28);
-    position: relative;
-    overflow: hidden;
+    box-shadow: 0 24px 60px -15px rgba(0, 0, 0, 0.7);
+    border-radius: 2.5rem;
   }
 
-  .glass-card-premium {
-    background:
-      linear-gradient(145deg, rgba(245, 158, 11, 0.12), rgba(249, 115, 22, 0.05)),
-      rgba(18, 18, 20, 0.72);
-    border-color: rgba(245, 158, 11, 0.14);
+  .bg-ivory-gradient {
+    background: linear-gradient(135deg, #fdfaf5 0%, #ffffff 100%);
+  }
+
+  .bg-onyx-gradient {
+    background: radial-gradient(circle at center, #121214 0%, #000000 100%);
+  }
+
+  .text-premium-gold {
+     color: #8c7851;
+  }
+
+  .text-glow-gold {
+     color: #f59e0b;
+     text-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
   }
 
   .glass-shimmer::after {
@@ -243,7 +269,7 @@ select {
     height: 200%;
     background: linear-gradient(
       transparent,
-      rgba(255, 255, 255, 0.05),
+      rgba(245, 158, 11, 0.08),
       transparent
     );
     transform: rotate(35deg);

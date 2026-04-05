@@ -192,8 +192,8 @@ async function fetchWithRetry(
 
       return response
     } catch (err: any) {
-      // Don't retry on our own thrown errors (500, 429)
-      if (err.message?.includes("Server Error") || err.message?.includes("Rate limit")) {
+      // Don't retry on our own thrown errors (500, 429, or Auth Failure)
+      if (err.message?.includes("Server Error") || err.message?.includes("Rate limit") || err.message?.includes("Auth Failure")) {
         throw err;
       }
 
@@ -2062,8 +2062,87 @@ export class RealAPI {
   }
   async getPeerTutorSessions(..._args: any[]): Promise<any> { return []; }
   async getPeerTutorTraining(..._args: any[]): Promise<any> { return []; }
-  async getCounselorCases(..._args: any[]): Promise<any> { return []; }
-  async logSafeguardingEvent(..._args: any[]): Promise<any> { return { success: true }; }
+  async getRiskAlerts(): Promise<any[]> {
+    const res = await this.fetchJsonOrDefault('/api/counselor/risk-alerts', null);
+    return res ?? [];
+  }
+
+  async revealStudentIdentity(alertId: string, reason: string): Promise<any> {
+    return this.fetchJsonOrDefault(
+      `/api/counselor/risk-alerts/${alertId}/reveal`,
+      { success: false },
+      { method: 'POST', body: JSON.stringify({ reason }) }
+    );
+  }
+
+  async suppressRiskAlert(alertId: string, expiryHours: number = 24): Promise<any> {
+    return this.fetchJsonOrDefault(
+      `/api/counselor/risk-alerts/${alertId}/suppress?expiry_hours=${expiryHours}`,
+      { success: false },
+      { method: 'POST' }
+    );
+  }
+
+  async getCounselorNotes(studentId: string): Promise<any[]> {
+    const res = await this.fetchJsonOrDefault(`/api/counselor/notes/${studentId}`, null);
+    return res ?? [];
+  }
+
+  async addCounselorNote(
+    studentId: string,
+    encryptedNote: { encrypted_blob: string; iv: string; auth_tag: string }
+  ): Promise<any> {
+    return this.fetchJsonOrDefault(
+      '/api/counselor/notes',
+      { success: false },
+      { method: 'POST', body: JSON.stringify({ student_id: studentId, ...encryptedNote }) }
+    );
+  }
+
+  async getCounselorCases(): Promise<any> {
+    // Cases are derived from risk alerts + follow-up tasks
+    const [alerts, tasks] = await Promise.all([
+      this.getRiskAlerts(),
+      this.fetchJsonOrDefault('/api/counselor/follow-up', []),
+    ]);
+    return { alerts: alerts ?? [], tasks: tasks ?? [] };
+  }
+
+  async logSafeguardingEvent(
+    event: { counselor_id?: string; student_id?: string; reason: string; event_type?: string }
+  ): Promise<any> {
+    return this.fetchJsonOrDefault(
+      '/api/counselor/safeguarding/log',
+      { success: false },
+      { method: 'POST', body: JSON.stringify(event) }
+    );
+  }
+
+  async updateFollowUpTask(
+    taskId: string,
+    updates: { status: string; acknowledged_at?: string }
+  ): Promise<any> {
+    return this.fetchJsonOrDefault(
+      `/api/counselor/follow-up/${taskId}`,
+      { success: false },
+      { method: 'PATCH', body: JSON.stringify(updates) }
+    );
+  }
+
+  async getCounselorAtRiskStudents(): Promise<any[]> {
+    const res = await this.fetchJsonOrDefault('/api/counselor/students/at-risk', null);
+    return res ?? [];
+  }
+
+  async createCounselorIntervention(
+    data: { student_id: string; type: string; notes?: string; due_at?: string }
+  ): Promise<any> {
+    return this.fetchJsonOrDefault(
+      '/api/counselor/interventions',
+      { success: false },
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  }
   async updateIntervention(interventionId: string, data: any): Promise<any> {
     const tryPaths = [
       `/api/teacher/interventions/${interventionId}`,
@@ -2088,7 +2167,6 @@ export class RealAPI {
 
     throw new Error(lastError);
   }
-  async getRiskAlerts(..._args: any[]): Promise<any> { return []; }
   async getMisconceptionClusters(..._args: any[]): Promise<any> { return []; }
   async getABTestPerformance(..._args: any[]): Promise<any> { return {}; }
   async getCurriculumScope(..._args: any[]): Promise<any> { return {}; }

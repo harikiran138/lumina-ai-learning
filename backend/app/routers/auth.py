@@ -832,18 +832,14 @@ async def get_current_user(
 
     try:
         from jose import jwt
-        # Core logic: Try decoding with JWT_SECRET first (standard app flow)
-        # Fallback to legacy SECRET_KEY if JWT_SECRET fails (for background transition)
-        decoded_payload = None
-        for secret in [settings.JWT_SECRET, settings.SECRET_KEY]:
-            try:
-                decoded_payload = jwt.decode(auth_token, secret, algorithms=["HS256"])
-                if decoded_payload: break
-            except Exception:
-                continue
+        # Decode with unified SECRET_KEY
+        try:
+            decoded_payload = jwt.decode(auth_token, settings.SECRET_KEY, algorithms=["HS256"])
+        except Exception:
+            decoded_payload = None
 
         if not decoded_payload:
-            raise HTTPException(status_code=401, detail="Invalid token")
+            raise HTTPException(status_code=401, detail="Invalid token signature")
 
         # Prioritize sub as user ID, then check custom userId, then email
         user_id = decoded_payload.get("userId") or decoded_payload.get("sub") or decoded_payload.get("id")

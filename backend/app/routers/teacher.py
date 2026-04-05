@@ -1,7 +1,7 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from typing import List, Literal, Optional, Dict, Any
 
 from app.services.personalization_service import get_personalization_service
 from app.services.onboarding_service import OnboardingService
@@ -624,3 +624,117 @@ async def get_teacher_assignments(
 ):
     check_teacher_role(current_user)
     return await teacher_store.get_teacher_assignments(str(current_user["id"]))
+
+
+# --- Live Intervention & Question Override ---
+
+class TeacherInterventionRequest(BaseModel):
+    student_id: str
+    message: str
+    action: Literal["message", "encourage", "reassign_track", "send_resource", "schedule_1on1"] = "message"
+    track: Optional[str] = None          # for reassign_track
+    resource_url: Optional[str] = None  # for send_resource
+
+
+@router.post("/intervene")
+async def teacher_intervene(
+    req: TeacherInterventionRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Send a live intervention message or action to a student mid-session."""
+    check_teacher_role(current_user)
+
+    teacher_id = str(current_user["id"])
+    db = get_scoped_db(current_user)
+
+    record = {
+        "teacher_id": teacher_id,
+        "student_id": req.student_id,
+        "message": req.message,
+        "action": req.action,
+        "created_at": datetime.utcnow().isoformat(),
+        "status": "sent",
+    }
+    if req.track:
+        record["track"] = req.track
+    if req.resource_url:
+        record["resource_url"] = req.resource_url
+
+    try:
+        db.table("teacher_interventions").insert(record).execute()
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("teacher_interventions_insert_failed: %s", str(exc))
+
+    # Broadcast to student's adaptive channel via WebSocket manager
+    try:
+        from app.routers.realtime import broadcast_adaptive_event
+        await broadcast_adaptive_event(
+            req.student_id,
+            {
+                "type": "teacher:intervene",
+                "student_id": req.student_id,
+                "teacher_id": teacher_id,
+                "message": req.message,
+                "action": req.action,
+            },
+        )
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("broadcast_adaptive_event_failed: %s", str(exc))
+
+    return {"status": "sent", "student_id": req.student_id, "action": req.action}
+
+
+class QuestionOverrideRequest(BaseModel):
+    student_id: str
+    session_id: str
+    question_text: str
+    concept_id: str
+    question_type: str = "SHORT_ANSWER"
+    difficulty: float = 0.5
+
+
+@router.post("/override-question")
+async def override_student_question(
+    req: QuestionOverrideRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Replace the next question for a student in an active session."""
+    check_teacher_role(current_user)
+
+    import json as _json
+    payload = _json.dumps({
+        "student_id": req.student_id,
+        "session_id": req.session_id,
+        "question_text": req.question_text,
+        "concept_id": req.concept_id,
+        "question_type": req.question_type,
+        "difficulty": req.difficulty,
+        "overridden_by": str(current_user["id"]),
+        "created_at": datetime.utcnow().isoformat(),
+    })
+
+    redis_key = f"question_override:{req.student_id}:{req.session_id}"
+    stored_in_redis = False
+
+    try:
+        from app.routers.realtime import _try_redis_pubsub
+        r = _try_redis_pubsub()
+        if r:
+            r.set(redis_key, payload, ex=300)
+            stored_in_redis = True
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("redis_question_override_failed: %s", str(exc))
+
+    if not stored_in_redis:
+        db = get_scoped_db(current_user)
+        try:
+            record = _json.loads(payload)
+            db.table("question_overrides").insert(record).execute()
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("question_overrides_insert_failed: %s", str(exc))
+
+    return {"status": "queued", "student_id": req.student_id, "session_id": req.session_id}
