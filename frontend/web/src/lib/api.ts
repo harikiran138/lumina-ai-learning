@@ -430,7 +430,15 @@ export class RealAPI {
     return false
   }
 
-  public async fetchAuthorized(
+  public async fetchWithAuth(
+    path: string,
+    options: RequestInit = {},
+    timeoutMs?: number
+  ): Promise<Response> {
+    return this.fetchAuthorized(path, options, timeoutMs);
+  }
+
+  private async fetchAuthorized(
     path: string,
     options: RequestInit = {},
     timeoutMs?: number
@@ -1315,6 +1323,23 @@ export class RealAPI {
       meta: data?.meta || {},
     };
     return { ...data, ...normalized };
+  }
+
+  async getWellbeingData(): Promise<any> {
+    const res = await this.fetchAuthorized("/api/wellbeing/summary");
+    return res.ok ? await res.json() : { mood: null, checkins: [] };
+  }
+
+  async submitWellbeingCheckin(payload: { mood: string; notes?: string | null }): Promise<any> {
+    const res = await this.fetchAuthorized("/api/wellbeing/checkin", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw new Error(error?.detail || "Check-in failed");
+    }
+    return await parseJsonSafe(res);
   }
 
   async getAdminQueueHealth(): Promise<any> {
