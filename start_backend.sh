@@ -55,5 +55,6 @@ if ! python -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) el
 fi
 
 # Start FastAPI with uvicorn
-echo "Starting uvicorn on port 8000..."
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+# Start FastAPI with uvicorn on port 9000 (Avoiding AirPlay port 8000 conflict)
+echo "Starting uvicorn on port 9000..."
+python -m uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload

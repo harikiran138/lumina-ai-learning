@@ -443,10 +443,14 @@ if frontend_url and frontend_url != "*":
     if frontend_url not in origins:
         origins.append(frontend_url)
 
+# [Lumina Security] Development mode uses relaxed CORS for rapid debugging.
+# Production uses strict whitelists for hard compliance.
+is_dev = (os.getenv("ENVIRONMENT") == "development" or os.getenv("DEBUG") == "true")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=_ALLOWED_CORS_ORIGIN_REGEX,
+    allow_origin_regex=None if is_dev else _ALLOWED_CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

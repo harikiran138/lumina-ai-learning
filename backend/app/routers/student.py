@@ -1308,7 +1308,7 @@ async def get_profile(
     Get the full profile for the CURRENT user.
     """
     try:
-        log.info("profile_fetch_init", user_id=current_user.get("id"))
+        logger.info("profile_fetch_init", user_id=current_user.get("id"))
         from app.store.analytics_store import AnalyticsStore
         db = get_scoped_db(current_user)
         user_data_store = UserDataStore(db=db)
@@ -1394,11 +1394,24 @@ async def get_profile(
             "notes": notes,
             "user_info": {"name": display_name, "email": current_user.get("email")},
             "hierarchy": hierarchy,
-            "parentLinkCode": current_user.get("parent_link_code")
+            "parentLinkCode": getattr(profile_data.preferences, "parent_link_code", None) or current_user.get("parent_link_code")
         }
     except Exception as e:
-        log.error("student_profile_api_failure", user_id=current_user.get("id"), error=str(e), exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+        import traceback
+        error_msg = f"student_profile_api_failure: {str(e)}"
+        logger.error(error_msg, user_id=current_user.get("id"), exc_info=True)
+        # Print to stdout for terminal visibility
+        print(f"❌ FULL ERROR in /profile: {e}")
+        traceback.print_exc()
+        
+        raise HTTPException(
+            status_code=500, 
+            detail={
+                "message": str(e),
+                "traceback": traceback.format_exc(),
+                "user_id": current_user.get("id")
+            }
+        )
 
 
 @router.get("/leaderboard")
