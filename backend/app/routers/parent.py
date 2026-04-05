@@ -23,7 +23,7 @@ class GoalRequest(BaseModel):
 class ParentOnboardingRequest(BaseModel):
     full_name: str
     relationship: str
-    user_id: str
+    user_id: Optional[str] = None # Make optional to avoid 422 if frontend is slow
 
 @router.post("/onboarding")
 async def parent_onboarding(
@@ -36,7 +36,14 @@ async def parent_onboarding(
     Expects full_name and relationship.
     """
     try:
-        log.info("parent_onboarding_triggered", user_id=current_user["id"], payload=request.dict())
+        current_uid = current_user.get("id") or current_user.get("user_id")
+        log.info("parent_onboarding_triggered", 
+                 user_id=current_uid, 
+                 payload=request.dict())
+        
+        if not current_uid:
+            log.error("parent_onboarding_no_user_id")
+            raise HTTPException(status_code=401, detail="User identity not found in session")
         
         # 1. Update the base user record
         from app.store.user_store import UserStore
@@ -57,36 +64,45 @@ async def parent_onboarding(
         # 2. Update learner_profiles (Lumina's standard metadata sink)
         try:
             from app.database.supabase_manager import supabase_db
-            await supabase_db.table("learner_profiles").upsert({
-                "user_id": current_user["id"],
+            profile_data = {
+                "user_id": current_uid,
                 "full_name": request.full_name,
                 "role": "parent",
                 "preferences": {"relationship": request.relationship, "onboarding_step": 1}
-            }).async_execute()
+            }
+            log.info("parent_onboarding_upsert_profile", data=profile_data)
+            await supabase_db.table("learner_profiles").upsert(profile_data).async_execute()
         except Exception as pe:
-            log.warning("parent_onboarding_profile_update_failed", user_id=current_user["id"], error=str(pe))
+            log.warning("parent_onboarding_profile_update_failed_non_fatal", user_id=current_uid, error=str(pe))
 
-        # 3. Persist the relationship (Best effort to store in progress or a profile table)
-        # For now, let's store it in user_data.progress as well for Consistency with generic flow
-        from app.database.manager import db
-        existing = await db.fetch_one("user_data", {"user_id": current_user["id"]})
-        progress = (existing or {}).get("progress") or {}
-        progress["step_1"] = request.dict()
-        progress["onboarding_step"] = 1
-        
-        if existing:
-            await db.update(
-                "user_data",
-                {"progress": progress, "updated_at": datetime.utcnow().isoformat()},
-                {"user_id": current_user["id"]},
-            )
-        else:
-            await db.insert(
-                "user_data",
-                {"user_id": current_user["id"], "progress": progress, "updated_at": datetime.utcnow().isoformat()},
-            )
+        # 3. Persist the relationship in user_data.progress
+        try:
+            from app.database.scoped_db import get_scoped_db
+            from app.store.user_data_store import UserDataStore
+            
+            db_scoped = get_scoped_db(current_user)
+            data_store = UserDataStore(db=db_scoped)
+            
+            progress_payload = request.dict()
+            progress_payload["onboarding_step"] = 1
+            
+            # Use the store's dedicated method if available, or manually update
+            existing = await data_store.get_progress(current_uid) or {}
+            existing["step_1"] = request.dict()
+            existing["onboarding_step"] = 1
+            
+            # Simple metadata update
+            await data_store.db.table("user_data").upsert({
+                "user_id": current_uid,
+                "progress": existing,
+                "updated_at": datetime.utcnow().isoformat()
+            }).async_execute()
+            
+            log.info("parent_onboarding_progress_saved", user_id=current_uid)
+        except Exception as ude:
+            log.warning("parent_onboarding_user_data_failed_non_fatal", user_id=current_uid, error=str(ude))
 
-        return {"status": "success", "message": "Onboarding step 1 saved", "step": 1}
+        return {"success": True, "status": "success", "message": "Onboarding details saved", "step": 1}
         
     except HTTPException:
         raise
@@ -160,3 +176,26 @@ async def disconnect_student(
     if not success:
         raise HTTPException(status_code=500, detail="Failed to remove connection")
     return {"status": "success", "message": "Disconnected successfully"}
+
+@router.post("/link-by-code")
+async def link_student_by_code(
+    request: dict,
+    current_user: dict = Depends(get_current_user),
+    store: ParentStore = Depends(get_parent_store)
+):
+    """
+    Links a parent to a student using the student's unique parent_link_code.
+    """
+    code = request.get("code")
+    if not code:
+        raise HTTPException(status_code=400, detail="Code is required")
+        
+    result = await store.link_student_by_code(current_user["id"], code)
+    if not result:
+        raise HTTPException(status_code=404, detail="Invalid code or student already linked")
+        
+    return {
+        "status": "success", 
+        "message": "Student linked successfully",
+        "student": result
+    }

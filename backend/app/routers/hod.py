@@ -24,7 +24,7 @@ async def get_hod_dashboard(current_user: dict = Depends(get_current_hod)):
     return {
         "stats": [
             {"label": "Total Students", "value": str(len(students)), "trend": "Stable", "icon": "Users"},
-            {"label": "Dep. Faculty", "value": str(len(teachers)), "trend": "Consistent", "icon": "GraduationCap"},
+            {"label": "Dep. Teachers", "value": str(len(teachers)), "trend": "Consistent", "icon": "GraduationCap"},
             {"label": "Programs", "value": str(len(programs)), "trend": "Active", "icon": "BookOpen"},
             {"label": "Pending Requests", "value": str(len(requests)), "trend": "Action Required", "icon": "ClipboardCheck"},
         ],

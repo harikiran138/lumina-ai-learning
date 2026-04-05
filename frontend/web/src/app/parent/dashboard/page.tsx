@@ -85,16 +85,18 @@ export default function ParentDashboard() {
   const [messagesPanelOpen, setMessagesPanelOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [filterStatus, setFilterStatus] = useState<"all" | "on-track" | "at-risk" | "completed">("all")
-
   const api = RealAPI.getInstance()
+
+  const [linkModalOpen, setLinkModalOpen] = useState(false)
+  const [linkCode, setLinkCode] = useState("")
+  const [linking, setLinking] = useState(false)
+  const [linkError, setLinkError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadDashboard() {
       try {
         const dashboardData = await api.getParentDashboard()
         if (dashboardData) {
-          // Adapt backend data to frontend needs if necessary
-          // For now, using mock-like structure derived from RealAPI response
           setData(dashboardData)
         }
       } catch (err) {
@@ -105,6 +107,32 @@ export default function ParentDashboard() {
     }
     loadDashboard()
   }, [])
+
+  const handleLinkAccount = async () => {
+    if (!linkCode || linkCode.length < 8) {
+      setLinkError("Please enter a valid 8-character code")
+      return
+    }
+
+    setLinking(true)
+    setLinkError(null)
+    try {
+      const response = await api.post("/api/parent/link-by-code", { code: linkCode.toUpperCase() })
+      if (response.status === "success") {
+        setLinkModalOpen(false)
+        setLinkCode("")
+        // Refresh dashboard
+        const data = await api.getParentDashboard()
+        setData(data)
+      } else {
+        setLinkError(response.message || "Failed to link account")
+      }
+    } catch (err: any) {
+      setLinkError(err.response?.data?.detail || "Invalid code or connection error")
+    } finally {
+      setLinking(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -122,30 +150,10 @@ export default function ParentDashboard() {
 
   const unreadCount = (dashboardData.messages || []).filter((m: any) => m.unread).length
 
-  // Mock subject performance data
-  const subjectPerformance = [
-    { subject: "Mathematics", mastery: 78, status: "good" },
-    { subject: "Physics", mastery: 42, status: "weak" },
-    { subject: "Chemistry", mastery: 65, status: "good" },
-    { subject: "English", mastery: 88, status: "good" },
-    { subject: "Biology", mastery: 39, status: "weak" },
-    { subject: "History", mastery: 71, status: "good" },
-  ]
-
-  // Mock alerts
-  const alerts = [
-    { id: "1", type: "low_mastery", message: "Physics mastery dropped below 45%", child: "Child", severity: "high", time: "2h ago" },
-    { id: "2", type: "missing_assignment", message: "Assignment 'Organic Chemistry' not submitted", child: "Child", severity: "high", time: "5h ago" },
-    { id: "3", type: "inactivity", message: "No study activity detected in 48 hours", child: "Child", severity: "medium", time: "1d ago" },
-  ]
-
-  // Mock weekly progress
-  const weeklyProgress = [
-    { topic: "Quadratic Equations", subject: "Math", change: +12, status: "improved" },
-    { topic: "Newton's Laws", subject: "Physics", change: -5, status: "declined" },
-    { topic: "Essay Writing", subject: "English", change: +8, status: "improved" },
-    { topic: "Cell Biology", subject: "Biology", change: -3, status: "declined" },
-  ]
+  // These should be fetched from the backend or derived from real data
+  const subjectPerformance: any[] = dashboardData.subject_performance || []
+  const alerts: any[] = dashboardData.alerts || []
+  const weeklyProgress: any[] = dashboardData.weekly_progress || []
 
   return (
     <div className="space-y-8 pb-12">
@@ -162,7 +170,13 @@ export default function ParentDashboard() {
             <Users className="h-4 w-4 text-lumina-highlight" />
             Your Children
           </h3>
-          <Button variant="link" className="text-lumina-highlight text-xs p-0 h-auto">Manage Verification</Button>
+          <Button 
+            variant="link" 
+            className="text-lumina-highlight text-xs p-0 h-auto"
+            onClick={() => setLinkModalOpen(true)}
+          >
+            Link New Account
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -241,20 +255,27 @@ export default function ParentDashboard() {
           ))}
 
           {(!dashboardData.children || dashboardData.children.length === 0) && (
-            <Card className="bg-white/5 border-dashed border-white/10 p-8 flex flex-col items-center justify-center text-center md:col-span-2 lg:col-span-3">
-              <div className="h-12 w-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
-                <Users className="h-6 w-6 text-gray-500" />
+            <Card className="bg-white/2 border-dashed border-white/10 p-12 flex flex-col items-center justify-center text-center md:col-span-2 lg:col-span-3">
+              <div className="h-20 w-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
+                <Users className="h-10 w-10 text-gray-500" />
               </div>
-              <h4 className="font-semibold text-white text-sm">No children linked</h4>
-              <p className="text-xs text-gray-500 mt-1 max-w-[220px]">Link your children via their unique ID to monitor progress.</p>
-              <Button variant="link" className="text-lumina-highlight mt-2 text-xs">Link Account</Button>
+              <h4 className="text-xl font-bold text-white mb-2">No children linked yet</h4>
+              <p className="text-gray-400 text-sm max-w-sm mb-6">Connect your children to monitor their learning progress, academic achievements, and receive alerts about their progress.</p>
+              <Button 
+                onClick={() => setLinkModalOpen(true)}
+                className="bg-lumina-highlight hover:bg-lumina-highlight/80 text-black font-bold h-12 px-8"
+              >
+                Link Child Account
+              </Button>
             </Card>
           )}
         </div>
       </section>
 
-      {/* ── 2. Subject Performance ── */}
-      <section>
+      {dashboardData.children && dashboardData.children.length > 0 && (
+        <div className="space-y-8">
+          {/* ── 2. Subject Performance ── */}
+          <section>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-white flex items-center gap-2">
             <BarChart2 className="h-4 w-4 text-lumina-highlight" />
@@ -541,8 +562,8 @@ export default function ParentDashboard() {
           </section>
         </div>
       </div>
-
-      {/* ── Role Completeness Badge ── */}
+    </div>
+  )}
       <section className="border border-lumina-highlight/20 bg-lumina-highlight/5 rounded-2xl p-6">
         <div className="flex items-start gap-4">
           <div className="h-10 w-10 rounded-xl bg-lumina-highlight/15 border border-lumina-highlight/30 flex items-center justify-center shrink-0">
@@ -604,6 +625,91 @@ export default function ParentDashboard() {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+      {/* Link Account Modal */}
+      <AnimatePresence>
+        {linkModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-[#0A0A0A] border border-white/10 rounded-3xl p-8 max-w-md w-full relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-lumina-highlight/10 blur-[60px] -mr-16 -mt-16" />
+              
+              <button 
+                onClick={() => setLinkModalOpen(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-white"
+              >
+                <X className="h-6 w-6" />
+              </button>
+
+              <div className="relative z-10 text-center">
+                <div className="h-16 w-16 rounded-2xl bg-lumina-highlight/10 border border-lumina-highlight/20 flex items-center justify-center mx-auto mb-6">
+                  <ShieldCheck className="h-8 w-8 text-lumina-highlight" />
+                </div>
+                
+                <h3 className="text-2xl font-black text-white mb-2">Secure Link</h3>
+                <p className="text-gray-400 text-sm mb-8">
+                  Enter your child's 8-character unique access code to establish a secure academic connection.
+                </p>
+
+                <div className="space-y-4 text-left">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-gray-500 font-black ml-1">Access Code</label>
+                    <input 
+                      type="text"
+                      value={linkCode}
+                      onChange={(e) => setLinkCode(e.target.value.toUpperCase())}
+                      placeholder="E.G. ST78X9A2"
+                      maxLength={8}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white text-xl font-mono tracking-[0.5em] text-center focus:border-lumina-highlight outline-none transition-all"
+                    />
+                  </div>
+
+                  {linkError && (
+                    <motion.p 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-xs text-rose-500 bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg text-center"
+                    >
+                      {linkError}
+                    </motion.p>
+                  )}
+
+                  <Button 
+                    onClick={handleLinkAccount}
+                    disabled={linking || linkCode.length < 8}
+                    className="w-full bg-lumina-highlight hover:bg-lumina-highlight/80 text-black font-black h-14 rounded-xl shadow-[0_0_20px_rgba(255,184,0,0.2)]"
+                  >
+                    {linking ? (
+                      <div className="flex items-center gap-2 justify-center">
+                        <motion.div 
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="h-4 w-4 border-2 border-black border-t-transparent rounded-full"
+                        />
+                        Verifying...
+                      </div>
+                    ) : (
+                      "Establish Secure Link"
+                    )}
+                  </Button>
+                </div>
+
+                <p className="mt-8 text-[10px] text-gray-600 uppercase tracking-widest font-medium text-center">
+                  Codes are generated within the Student Portal under "Parent Access"
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

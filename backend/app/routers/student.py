@@ -30,6 +30,7 @@ from app.core.audit import audit_logger
 import uuid
 import secrets
 from app.routers.ai_tutor import build_tutor_response_payload, WAITING_MESSAGE
+from ai_engine.classifier import classify, RoutingTier, SAFE_INSTANT_WAITING, RESTRICTED_REDIRECT
 
 router = APIRouter()
 _student_tutor_answers: Dict[str, Dict[str, Any]] = {}
@@ -68,7 +69,7 @@ class ActivityLogRequest(BaseModel):
 
 
 class StudentOnboardingCompleteRequest(BaseModel):
-    class_id: Optional[str] = None
+    section_id: Optional[str] = None
     subject_ids: List[str] = []
     learning_styles: List[str] = []
     skill_levels: Dict[str, float] = {}
@@ -186,19 +187,19 @@ def _clamp_unit_interval(value: Any, default: float = 0.5) -> float:
     return max(0.0, min(1.0, numeric))
 
 
-def _pick_preferred_class(class_rows: List[Dict[str, Any]], user_section: Optional[str]) -> Optional[Dict[str, Any]]:
-    if not class_rows:
+def _pick_preferred_class(section_rows: List[Dict[str, Any]], user_section: Optional[str]) -> Optional[Dict[str, Any]]:
+    if not section_rows:
         return None
 
     normalized_section = str(user_section or "").strip().lower()
     if normalized_section:
-        for row in class_rows:
+        for row in section_rows:
             row_section = str(row.get("section") or row.get("section_name") or "").strip().lower()
             if row_section == normalized_section:
                 return row
 
-    if len(class_rows) == 1:
-        return class_rows[0]
+    if len(section_rows) == 1:
+        return section_rows[0]
 
     return None
 
@@ -722,33 +723,83 @@ async def ask_tutor(
     if not str(prompt).strip():
         raise HTTPException(status_code=400, detail="Prompt is required")
 
+    # ── Pre-classify so we set the right waiting message and can short-circuit
+    # RESTRICTED questions without spawning a background task at all.
+    ctx_raw = payload.get("context") or payload.get("context_filters") or {}
+    clf = classify(str(prompt).strip(), ctx_raw if isinstance(ctx_raw, dict) else {})
+    tier = clf["tier"]
+
     answer_id = uuid.uuid4().hex
     now = _student_tutor_timestamp()
     poll_path = f"/api/student/tutor/answer/{answer_id}"
+
+    # ── RESTRICTED: pre-fill job as already completed — zero background work ──
+    if tier == RoutingTier.RESTRICTED:
+        _student_tutor_answers[answer_id] = {
+            "id": answer_id,
+            "student_id": str(current_user.get("id") or ""),
+            "status": "completed",
+            "message": "Response ready",
+            "response": RESTRICTED_REDIRECT,
+            "content": RESTRICTED_REDIRECT,
+            "answer": {
+                "id": answer_id,
+                "type": "text",
+                "content": RESTRICTED_REDIRECT,
+                "mode": "explain",
+                "meta": {},
+            },
+            "type": "text",
+            "tier": tier,
+            "mode": payload.get("mode"),
+            "queued": False,
+            "meta": {},
+            "created_at": now,
+            "updated_at": now,
+            "completed_at": now,
+            "poll_url": poll_path,
+        }
+        return {
+            "success": True,
+            "id": answer_id,
+            "status": "pending",
+            "message": "Processing…",
+            "poll_url": poll_path,
+            "tier": tier,
+        }
+
+    # ── SAFE_INSTANT / ACADEMIC_VERIFIED: start background task ──────────────
+    waiting_msg = SAFE_INSTANT_WAITING if tier == RoutingTier.SAFE_INSTANT else WAITING_MESSAGE
+
+    # Pass pre-computed tier to the background task so it doesn't re-classify
+    payload_copy = dict(payload)
+    payload_copy["_routing_tier"] = tier
 
     _student_tutor_answers[answer_id] = {
         "id": answer_id,
         "student_id": str(current_user.get("id") or ""),
         "status": "pending",
-        "message": WAITING_MESSAGE,
+        "message": waiting_msg,
         "response": None,
         "answer": None,
         "type": None,
+        "tier": tier,
         "mode": payload.get("mode"),
         "created_at": now,
         "updated_at": now,
         "poll_url": poll_path,
     }
     _student_tutor_tasks[answer_id] = asyncio.create_task(
-        _run_student_tutor_answer(answer_id, dict(payload), dict(current_user))
+        _run_student_tutor_answer(answer_id, payload_copy, dict(current_user))
     )
 
     return {
         "success": True,
         "id": answer_id,
         "status": "pending",
-        "message": WAITING_MESSAGE,
+        "message": waiting_msg,
         "poll_url": poll_path,
+        "tier": tier,
     }
 
 
@@ -774,6 +825,7 @@ async def get_tutor_answer(
         "answer": job.get("answer"),
         "type": job.get("type"),
         "mode": job.get("mode"),
+        "tier": job.get("tier"),
         "meta": job.get("meta") or {},
         "queued": job.get("queued", False),
         "created_at": job.get("created_at"),
@@ -904,6 +956,7 @@ async def get_student_dashboard(
             "coachInsight": coach_insight,
             "enrolledCourses": enrolled_courses,
             "resumeCourse": resume_course,
+            "parentLinkCode": current_user.get("parent_link_code"),
         },
         # ── AI Analytics block (consumed by dashboard + AI Tutor) ──────────
         "aiAnalytics": {
@@ -1254,64 +1307,98 @@ async def get_profile(
     """
     Get the full profile for the CURRENT user.
     """
-    from app.store.analytics_store import AnalyticsStore
+    try:
+        log.info("profile_fetch_init", user_id=current_user.get("id"))
+        from app.store.analytics_store import AnalyticsStore
+        db = get_scoped_db(current_user)
+        user_data_store = UserDataStore(db=db)
+        analytics = AnalyticsStore(db=db)
+        
+        # 1. Fetch Personalization Profile
+        profile_data = await get_personalization_service(db=db).get_profile(
+            current_user["id"], role=current_user.get("role", "student")
+        )
+        if not profile_data:
+             from app.personalization.schemas import LearnerProfileRecord
+             profile_data = LearnerProfileRecord(user_id=current_user["id"], role=current_user.get("role", "student"))
 
-    db = get_scoped_db(current_user)
-    user_data_store = UserDataStore(db=db)
-    analytics = AnalyticsStore(db=db)
-    profile_data = await get_personalization_service(db=db).get_profile(
-        current_user["id"], role=current_user.get("role", "student")
-    )
-    quiz_stats = await user_data_store.get_recent_quiz_stats(current_user["id"])
-    profile_settings = await user_data_store.get_profile_settings(current_user["id"])
-    dashboard_stats = await analytics.get_student_dashboard_stats(current_user["id"])
-    notes = await user_data_store.get_notes(current_user["id"])
-    display_name = current_user.get("name") or current_user.get("full_name")
-    
-    recent_activity = [
-        {
-            "type": "quiz",
-            "title": item.get("topic") or item.get("course_id") or "Quiz Attempt",
-            "description": (
-                f"Score: {item.get('score', 0)}%"
-                + (
-                    f" on {item.get('difficulty')} difficulty"
-                    if item.get("difficulty")
-                    else ""
-                )
-            ),
-            "timestamp": item.get("timestamp"),
+        # 2. Resolve Academic Hierarchy
+        hierarchy = {
+            "institution": None,
+            "department": None,
+            "batch": None,
+            "section": None,
+            "academicYear": None,
         }
-        for item in reversed(quiz_stats.get("recent_history", [])[-5:])
-    ]
+        
+        inst_id = current_user.get("college_id")
+        dept_id = current_user.get("dept_id") or current_user.get("department_id")
+        batch_id = current_user.get("batch_id")
+        section_id = current_user.get("section_id")
+        ay_id = current_user.get("academic_year_id")
+        
+        if inst_id:
+            inst = await db.fetch_one("institutions", {"id": inst_id})
+            hierarchy["institution"] = (inst.get("name") if inst else None) if isinstance(inst, dict) else None
+        if dept_id:
+            dept = await db.fetch_one("departments", {"id": dept_id})
+            hierarchy["department"] = (dept.get("name") if dept else None) if isinstance(dept, dict) else None
+        if batch_id:
+            batch = await db.fetch_one("batches", {"id": batch_id})
+            if batch and isinstance(batch, dict):
+                hierarchy["batch"] = f"{batch.get('batch_name') or batch.get('name')} ({batch.get('year') or ''})"
+        if section_id:
+            section = await db.fetch_one("sections", {"id": section_id})
+            hierarchy["section"] = (section.get("name") if section else None) if isinstance(section, dict) else None
+        if ay_id:
+            ay = await db.fetch_one("academic_years", {"id": ay_id})
+            hierarchy["academicYear"] = (ay.get("name") if ay else None) if isinstance(ay, dict) else None
 
-    return {
-        "name": display_name,
-        "username": profile_settings.get("username") or current_user.get("username"),
-        "email": current_user.get("email"),
-        "phone": current_user.get("phone"),
-        "avatar": profile_settings.get("avatar")
-        or current_user.get("avatar")
-        or current_user.get("profile_image"),
-        "bio": profile_settings.get("bio") or current_user.get("bio"),
-        "skills": current_user.get("skills", []),
-        "location": profile_settings.get("location") or current_user.get("location"),
-        "language": profile_settings.get("language") or current_user.get("language"),
-        "preferences": profile_settings.get("preferences") or current_user.get("preferences", {}),
-        "notification_preferences": profile_settings.get("notification_preferences")
-        or current_user.get("notification_preferences", {}),
-        "security_preferences": profile_settings.get("security_preferences")
-        or current_user.get("security_preferences", {}),
-        "privacy_settings": profile_settings.get("privacy_settings")
-        or current_user.get("privacy_settings", {}),
-        "joinedDate": current_user.get("created_at"),
-        "recentActivity": recent_activity,
-        "stats": quiz_stats,
-        "dashboard_stats": dashboard_stats,
-        "learner_profile": profile_data.model_dump(mode="json"),
-        "notes": notes,
-        "user_info": {"name": display_name, "email": current_user.get("email")},
-    }
+        # 3. Fetch Supplemental Data
+        quiz_stats = await user_data_store.get_recent_quiz_stats(current_user["id"])
+        profile_settings = await user_data_store.get_profile_settings(current_user["id"])
+        dashboard_stats = await analytics.get_student_dashboard_stats(current_user["id"])
+        notes = await user_data_store.get_notes(current_user["id"])
+        
+        display_name = current_user.get("name") or current_user.get("full_name") or "Student"
+        
+        # 4. Formulate Response
+        recent_activity = []
+        for item in reversed(quiz_stats.get("recent_history", [])[-5:]):
+            recent_activity.append({
+                "type": "quiz",
+                "title": item.get("topic") or item.get("course_id") or "Quiz Attempt",
+                "description": f"Score: {item.get('score', 0)}% on {item.get('difficulty', 'standard')} difficulty",
+                "timestamp": item.get("timestamp")
+            })
+
+        return {
+            "name": display_name,
+            "username": profile_settings.get("username") or current_user.get("username"),
+            "email": current_user.get("email"),
+            "phone": current_user.get("phone"),
+            "avatar": profile_settings.get("avatar") or current_user.get("avatar") or current_user.get("profile_image"),
+            "bio": profile_settings.get("bio") or current_user.get("bio"),
+            "skills": current_user.get("skills") if isinstance(current_user.get("skills"), list) else [],
+            "location": profile_settings.get("location") or current_user.get("location"),
+            "language": profile_settings.get("language") or current_user.get("language"),
+            "preferences": profile_settings.get("preferences") or current_user.get("preferences", {}),
+            "notification_preferences": profile_settings.get("notification_preferences") or current_user.get("notification_preferences", {}),
+            "security_preferences": profile_settings.get("security_preferences") or current_user.get("security_preferences", {}),
+            "privacy_settings": profile_settings.get("privacy_settings") or current_user.get("privacy_settings", {}),
+            "joinedDate": current_user.get("created_at"),
+            "recentActivity": recent_activity,
+            "stats": quiz_stats,
+            "dashboard_stats": dashboard_stats,
+            "learner_profile": profile_data.model_dump(mode="json"),
+            "notes": notes,
+            "user_info": {"name": display_name, "email": current_user.get("email")},
+            "hierarchy": hierarchy,
+            "parentLinkCode": current_user.get("parent_link_code")
+        }
+    except Exception as e:
+        log.error("student_profile_api_failure", user_id=current_user.get("id"), error=str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 
 @router.get("/leaderboard")
@@ -1511,21 +1598,21 @@ async def get_student_onboarding_options(current_user: dict = Depends(get_curren
 
     batch = await db.fetch_one("batches", {"id": batch_id}) if batch_id else None
 
-    class_rows: List[Dict[str, Any]] = []
+    section_rows: List[Dict[str, Any]] = []
     try:
         class_query = client.table("classes").select("*")
         if dept_id:
             class_query = class_query.eq("department_id", dept_id)
         if batch_id:
             class_query = class_query.eq("batch_id", batch_id)
-        class_rows = class_query.execute().data or []
+        section_rows = class_query.execute().data or []
     except Exception:
         if dept_id:
-            class_rows = client.table("classes").select("*").eq("department_id", dept_id).execute().data or []
+            section_rows = client.table("sections").select("*").eq("department_id", dept_id).execute().data or []
 
     if current_user.get("section"):
         user_section = str(current_user.get("section"))
-        class_rows.sort(
+        section_rows.sort(
             key=lambda row: (
                 0 if str(row.get("section") or row.get("section_name") or "") == user_section else 1,
                 str(row.get("class_name") or row.get("section_name") or ""),
@@ -1582,12 +1669,12 @@ async def get_student_onboarding_options(current_user: dict = Depends(get_curren
         if row.get("course_id")
     }
 
-    preferred_class = _pick_preferred_class(class_rows, current_user.get("section"))
+    preferred_class = _pick_preferred_class(section_rows, current_user.get("section"))
     issues = {
         "missingDepartmentLink": not bool(dept_id),
         "missingBatchLink": not bool(batch_id),
         "missingSubjects": len(subjects) == 0,
-        "missingClasses": len(class_rows) == 0,
+        "missingClasses": len(section_rows) == 0,
         "missingProgramLink": not bool(
             (enrollment or {}).get("program_id")
             or (preferred_class or {}).get("program_id")
@@ -1596,7 +1683,7 @@ async def get_student_onboarding_options(current_user: dict = Depends(get_curren
 
     return {
         "batch": batch,
-        "classes": class_rows,
+        "sections": section_rows,
         "subjects": subjects,
         "selectedSubjectIds": selected_subject_ids,
         "enrollment": enrollment,
@@ -1634,15 +1721,15 @@ async def complete_student_onboarding(
     if not batch:
         raise HTTPException(status_code=400, detail="Batch details are missing from your account")
 
-    selected_class = await db.fetch_one("classes", {"id": payload.class_id}) if payload.class_id else None
+    selected_section = await db.fetch_one("sections", {"id": payload.section_id}) if payload.section_id else None
     enrollment_record = await db.fetch_one("student_enrollments", {"student_id": student_id})
-    if not selected_class and batch_id:
-        class_candidates = await db.fetch_all("classes", {"batch_id": batch_id})
-        selected_class = _pick_preferred_class(class_candidates, current_user.get("section"))
+    if not selected_section and batch_id:
+        section_candidates = await db.fetch_all("sections", {"batch_id": batch_id})
+        selected_section = _pick_preferred_class(section_candidates, current_user.get("section"))
 
-    if selected_class and dept_id and selected_class.get("department_id") not in {None, dept_id}:
+    if selected_section and dept_id and selected_section.get("department_id") not in {None, dept_id}:
         raise HTTPException(status_code=403, detail="Selected class is outside your department scope")
-    if selected_class and batch_id and selected_class.get("batch_id") not in {None, batch_id}:
+    if selected_section and batch_id and selected_section.get("batch_id") not in {None, batch_id}:
         raise HTTPException(status_code=403, detail="Selected class does not belong to your batch")
 
     course_lookup: Dict[str, Dict[str, Any]] = {}
@@ -1652,7 +1739,7 @@ async def complete_student_onboarding(
             course_lookup[str(subject_id)] = course
 
     program_id = (
-        (selected_class or {}).get("program_id")
+        (selected_section or {}).get("program_id")
         or (enrollment_record or {}).get("program_id")
         or next(
             (
@@ -1664,7 +1751,7 @@ async def complete_student_onboarding(
         )
     )
     current_semester_id = (
-        (selected_class or {}).get("semester_id")
+        (selected_section or {}).get("semester_id")
         or (enrollment_record or {}).get("current_semester_id")
         or next(
             (
@@ -1711,7 +1798,7 @@ async def complete_student_onboarding(
                 "student_id": student_id,
                 "program_id": program_id,
                 "current_semester_id": current_semester_id,
-                "class_id": (selected_class or {}).get("id") or payload.class_id or (enrollment_record or {}).get("class_id"),
+                "class_id": (selected_section or {}).get("id") or payload.class_id or (enrollment_record or {}).get("class_id"),
                 "year_of_study": year_of_study,
                 "status": "active",
                 "updated_at": now,
@@ -1722,10 +1809,10 @@ async def complete_student_onboarding(
             raise HTTPException(status_code=500, detail="Failed to update student enrollment")
 
     user_updates: Dict[str, Any] = {"onboarding_step": 5}
-    if (selected_class or {}).get("section"):
-        user_updates["section"] = selected_class.get("section")
-    elif (selected_class or {}).get("section_name"):
-        user_updates["section"] = selected_class.get("section_name")
+    if (selected_section or {}).get("section"):
+        user_updates["section"] = selected_section.get("section")
+    elif (selected_section or {}).get("section_name"):
+        user_updates["section"] = selected_section.get("section_name")
     db = get_scoped_db(current_user)
     updated_user = await db.update("users", user_updates, {"id": student_id})
     if updated_user is None:
@@ -1846,7 +1933,7 @@ async def complete_student_onboarding(
         "consents": payload.consents,
         "batchConfirmed": payload.batch_confirmed,
         "batchConfirmationNote": payload.batch_confirmation_note,
-        "preferredClassId": (selected_class or {}).get("id"),
+        "preferredClassId": (selected_section or {}).get("id"),
         "programId": program_id,
         "programLinked": bool(program_id),
     }
@@ -1868,7 +1955,7 @@ async def complete_student_onboarding(
     return {
         "success": True,
         "studentId": student_id,
-        "classId": (selected_class or {}).get("id") or payload.class_id,
+        "classId": (selected_section or {}).get("id") or payload.class_id,
         "subjectCount": len(course_lookup),
         "batchLabel": batch.get("label"),
         "programLinked": bool(program_id),

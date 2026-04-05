@@ -98,3 +98,48 @@ async def delete_department(
     if not success:
         raise HTTPException(status_code=400, detail="Failed to delete department")
     return {"success": True}
+
+# --- Academic Years ---
+@router.get("/academic-years")
+async def get_academic_years(
+    institution_id: str = Query(..., description="UUID of the institution"),
+    current_user: dict = Depends(get_current_user)
+):
+    return await academic_store.get_academic_years(institution_id)
+
+@router.post("/academic-years")
+async def create_academic_year(
+    payload: Dict[str, Any],
+    current_user: dict = Depends(get_current_user)
+):
+    check_admin_role(current_user)
+    return await academic_store.create_academic_year(payload)
+
+# --- Sections ---
+@router.get("/batches/{batch_id}/sections")
+async def get_sections(
+    batch_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    return await academic_store.get_sections(batch_id)
+
+@router.post("/sections")
+async def create_section(
+    payload: Dict[str, Any],
+    current_user: dict = Depends(get_current_user)
+):
+    check_admin_role(current_user)
+    return await academic_store.create_section(payload)
+
+@router.post("/enrollments/{student_id}/section")
+async def assign_student_to_section(
+    student_id: str,
+    payload: Dict[str, Any],
+    current_user: dict = Depends(get_current_user)
+):
+    check_admin_role(current_user)
+    section_id = payload.get("section_id")
+    academic_year_id = payload.get("academic_year_id")
+    if not section_id or not academic_year_id:
+        raise HTTPException(status_code=400, detail="Missing section_id or academic_year_id")
+    return await academic_store.assign_student_to_section(student_id, section_id, academic_year_id)

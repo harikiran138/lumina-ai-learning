@@ -220,47 +220,61 @@ class OnboardingService:
 
 
     async def _migrate_parent(self, user_id: str, progress: Dict[str, Any], current_user: Dict[str, Any], payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Migrates parent data to parent_profiles."""
+        """Migrates parent data to learner_profiles and parent_guardian."""
         step_1 = progress.get("step_1") or {}
         step_2 = progress.get("step_2") or {}
         step_3 = progress.get("step_3") or {}
-        step_4 = progress.get("step_4") or {}
-
+        
+        # Normalize fields between frontend (camelCase) and backend expectations
+        full_name = step_1.get("fullName") or step_1.get("full_name") or current_user.get("full_name") or current_user.get("name")
+        relationship = step_1.get("relationship") or step_1.get("relation")
+        
         now = datetime.utcnow().isoformat()
 
-        profile_payload = {
+        # 1. Update Learner Profile metadata (primary sink for preferences)
+        profile_update = {
             "user_id": user_id,
-            "full_name": payload.get("full_name") or step_1.get("fullName") or current_user.get("full_name") or current_user.get("name"),
-            "relation": payload.get("relation") or step_1.get("relation"),
-            "contact_phone": payload.get("contact_phone") or step_1.get("contactPhone"),
-            "parent_email": payload.get("parent_email") or step_1.get("parentEmail"),
-            "monitoring_goals": payload.get("monitoring_goals") or step_2.get("monitoringGoals") or [],
-            "check_in_frequency": payload.get("check_in_frequency") or step_2.get("checkInFrequency"),
-            "alert_preferences": payload.get("alert_preferences") or step_3.get("alertPreferences") or [],
-            "support_notes": payload.get("support_notes") or step_3.get("supportNotes"),
-            "preferred_language": payload.get("preferred_language") or step_3.get("preferredLanguage") or "English",
-            "communication_mode": payload.get("communication_mode") or step_4.get("communicationMode"),
-            "dashboard_intent": payload.get("dashboard_intent") or step_4.get("dashboardIntent"),
+            "role": "parent",
+            "full_name": full_name,
+            "preferences": {
+                "relationship": relationship,
+                "contact_email": step_2.get("contactEmail") or step_2.get("contact_email"),
+                "notification_frequency": step_2.get("notificationFrequency") or step_2.get("notification_frequency"),
+                "track_areas": step_3.get("trackAreas") or step_3.get("track_areas") or [],
+                "onboarding_completed": True
+            },
             "updated_at": now,
         }
+        
+        try:
+            await self.db.upsert("learner_profiles", profile_update, on_conflict="user_id")
+        except Exception as e:
+            logger.warning(f"failed_to_sync_parent_meta_to_learner_profiles: {e}")
 
-        await self.db.upsert("parent_profiles", profile_payload, on_conflict="user_id")
+        # 2. Update parent_guardian (mapping table) if student_ids provided
+        student_ids = step_2.get("studentIds") or step_2.get("student_ids") or []
+        if student_ids:
+            # Clear existing to avoid duplicates
+            try:
+                await self.db.delete("parent_guardian", {"parent_user_id": user_id})
+            except: pass
+            
+            for student_id in student_ids:
+                try:
+                    await self.db.insert(
+                        "parent_guardian",
+                        {
+                            "parent_user_id": user_id,
+                            "student_user_id": student_id,
+                            "relationship": relationship,
+                            "can_view_grades": True,
+                            "can_view_progress": True,
+                        }
+                    )
+                except Exception as e:
+                    logger.warning(f"failed_to_insert_parent_guardian_link: {student_id}, error={e}")
 
-        student_ids = payload.get("student_ids") or step_2.get("studentIds") or []
-        await self.db.delete("parent_student_map", {"parent_id": user_id})
-        for student_id in student_ids:
-            await self.db.upsert(
-                "parent_student_map",
-                {
-                    "parent_id": user_id,
-                    "student_id": student_id,
-                    "relationship_type": profile_payload.get("relation"),
-                    "is_verified": bool(step_4.get("relationshipConfirmation")),
-                },
-                on_conflict="parent_id, student_id",
-            )
-
-        return {"status": "success", "profile": "parent_profiles"}
+        return {"status": "success", "profile_synced": True}
 
     async def _migrate_mentor(self, user_id: str, progress: Dict[str, Any], current_user: Dict[str, Any], payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Migrates mentor data to mentor_profiles."""

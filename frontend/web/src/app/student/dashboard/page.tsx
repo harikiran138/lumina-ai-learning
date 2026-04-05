@@ -13,6 +13,7 @@ import {
   RefreshCw,
   ClipboardList,
   CheckCircle,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
@@ -299,6 +300,45 @@ export default function StudentDashboard() {
           ) : (
             <EmptyState title="No active insights" description="Your AI coach is currently monitoring your performance." />
           )}
+        </SectionCard>
+      </div>
+
+      {/* Parent Access Link Code */}
+      <div className="grid grid-cols-1 gap-8">
+        <SectionCard
+          title="Parent Access"
+          subtitle="Share this unique code with your parent to link your accounts."
+          icon={ShieldCheck}
+        >
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-lumina-highlight/5 border border-lumina-highlight/20 rounded-3xl p-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                 <div className="w-8 h-8 rounded-xl bg-lumina-highlight/10 flex items-center justify-center text-lumina-highlight/40">
+                   <ShieldCheck className="w-5 h-5" />
+                 </div>
+                 <h3 className="text-[10px] uppercase tracking-[0.25em] text-gray-500 font-black">Secure Account Mapping</h3>
+              </div>
+              <p className="text-gray-400 text-sm max-w-sm leading-relaxed">Required for parental monitoring and shared reports. This code verifies your primary academic identity.</p>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="bg-black/60 border-2 border-white/5 rounded-2xl px-12 py-6 text-4xl font-mono font-black text-lumina-highlight tracking-[0.25em] shadow-[inset_0_2px_20px_rgba(0,0,0,0.8)] border-dashed">
+                {meta?.parentLinkCode || "••••••••"}
+              </div>
+              <button 
+                onClick={() => {
+                   if (meta?.parentLinkCode) {
+                     navigator.clipboard.writeText(meta.parentLinkCode);
+                     // Alert or toast would be good
+                   }
+                }}
+                className="h-20 w-20 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-gray-500 hover:text-lumina-highlight hover:bg-lumina-highlight/10 transition-all border-dashed group"
+                title="Copy to Clipboard"
+              >
+                <ClipboardList className="h-8 w-8 group-active:scale-95 group-hover:scale-110 transition-all" />
+              </button>
+            </div>
+          </div>
         </SectionCard>
       </div>
 

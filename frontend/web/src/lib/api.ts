@@ -82,7 +82,7 @@ async function fetchWithRetry(
   url: string,
   options: RequestInit,
   retries = 3,
-  timeoutMs = 60000
+  timeoutMs = 30000
 ): Promise<Response> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     const controller = new AbortController()
@@ -721,7 +721,7 @@ export class RealAPI {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ identifier, password, role_hint, college_id }),
       credentials: "include",
-    });
+    }, 2, 10000);
 
     if (!res.ok) {
       const error = await parseJsonSafe(res);
@@ -1125,6 +1125,7 @@ export class RealAPI {
   }
 
   async updateParentOnboarding(data: { fullName: string; relationship: string; user_id: string }): Promise<any> {
+    console.log("[API DEBUG] updateParentOnboarding triggering:", data);
     const res = await this.fetchAuthorized("/api/parent/onboarding", {
       method: "POST",
       body: JSON.stringify({
@@ -1133,11 +1134,18 @@ export class RealAPI {
         user_id: data.user_id,
       }),
     });
+    
+    console.log("[API DEBUG] updateParentOnboarding status:", res.status);
+    
     if (!res.ok) {
       const error = await parseJsonSafe(res);
+      console.error("[API ERROR] updateParentOnboarding failed:", error);
       return { success: false, error: error?.detail || "Failed to update parent onboarding" };
     }
-    return { success: true, ...(await parseJsonSafe(res)) };
+    
+    const result = await parseJsonSafe(res);
+    console.log("[API DEBUG] updateParentOnboarding success:", result);
+    return { success: true, ...result };
   }
 
   async updateOnboardingStep(step: number, data: any): Promise<any> {
@@ -1228,6 +1236,18 @@ export class RealAPI {
   async getAdminInterventions(): Promise<any[]> {
     const res = await this.fetchAuthorized("/api/admin/interventions");
     return res.ok ? (await parseJsonSafe(res) ?? []) : [];
+  }
+
+  async post(path: string, payload: any = {}): Promise<any> {
+    const res = await this.fetchAuthorized(path, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const error = await parseJsonSafe(res);
+      throw { response: { data: error || { detail: "Request failed" } } };
+    }
+    return await parseJsonSafe(res);
   }
 
   // --- Student Academic APIs ---
