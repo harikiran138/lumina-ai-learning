@@ -1,7 +1,11 @@
 import json
 import os
-from google import genai
-from google.genai import types
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    genai = None
+    types = None
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
@@ -41,8 +45,8 @@ Ensure the tone is professional, engaging, and clear.
 
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            print("WARNING: GEMINI_API_KEY not found. Blueprint generator will use mock data.")
+        if not api_key or not genai:
+            print("WARNING: GEMINI_API_KEY not found or google-genai not installed. Blueprint generator will use mock data.")
             self.client = None
         else:
             self.client = genai.Client(api_key=api_key)

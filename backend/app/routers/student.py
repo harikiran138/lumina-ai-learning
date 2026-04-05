@@ -4,6 +4,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 import structlog
 logger = structlog.get_logger()
+from app.core.responses import success_response, error_response
 from fastapi import APIRouter, HTTPException, Depends, Body
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
@@ -1465,31 +1466,54 @@ async def get_leaderboard(
 
     if client:
         try:
-            events_res = (
-                client.table("learner_events")
-                .select("user_id, event_type, payload")
-                .order("created_at", desc=True)
-                .limit(2000)
-                .execute()
-            )
-            events = events_res.data or []
+            # 1. Attempt High-Performance RPC (Aggregation)
+            try:
+                rpc_res = client.rpc("get_leaderboard_v2", {"p_timeframe": timeframe}).execute()
+                if rpc_res.data:
+                    raw_entries = rpc_res.data
+                    # Group by XP and sort
+                    top_user_ids = [e["user_id"] for e in raw_entries]
+                    xp_map = {e["user_id"]: e["xp"] for e in raw_entries}
+                else:
+                    # Fallback to local processing if RPC not available (legacy/mock)
+                    events_res = (
+                        client.table("learning_events")
+                        .select("user_id, event_type, payload")
+                        .order("created_at", desc=True)
+                        .limit(2000)
+                        .execute()
+                    )
+                    events = events_res.data or []
+                    xp_map: Dict[str, int] = defaultdict(int)
+                    for ev in events:
+                        uid = ev.get("user_id")
+                        if not uid: continue
+                        et = ev.get("event_type", "")
+                        pl = ev.get("payload") or {}
+                        if et == "quiz_submitted":
+                            try: score = float(pl.get("score", 0)); xp_map[uid] += int(score * 1.5)
+                            except: pass
+                        elif et == "lesson_completed": xp_map[uid] += 50
+                        elif et == "activity_logged":
+                            try: dur = int(pl.get("duration_minutes", 0)); xp_map[uid] += min(dur, 60)
+                            except: pass
+                    top_user_ids = sorted(xp_map, key=lambda u: xp_map[u], reverse=True)[:50]
+            except Exception as rpc_exc:
+                logger.debug("leaderboard_rpc_failed_fallback_to_select", error=str(rpc_exc))
+                # Legacy select logic (hardened)
+                events_res = client.table("learning_events").select("user_id, event_type, payload").order("created_at", desc=True).limit(2000).execute()
+                events = events_res.data or []
+                xp_map = defaultdict(int) 
+                for ev in events:
+                    uid = ev.get("user_id")
+                    if not uid: continue
+                    if ev.get("event_type") == "quiz_submitted":
+                        try: xp_map[uid] += int(float((ev.get("payload") or {}).get("score", 0)) * 1.5)
+                        except: pass
+                    elif ev.get("event_type") == "lesson_completed": xp_map[uid] += 50
+                top_user_ids = sorted(xp_map, key=lambda u: xp_map[u], reverse=True)[:50]
 
-            xp_map: Dict[str, int] = defaultdict(int)
-            for ev in events:
-                uid = ev.get("user_id")
-                if not uid:
-                    continue
-                ev_type = ev.get("event_type", "")
-                payload = ev.get("payload") or {}
-                if ev_type == "quiz_submitted":
-                    xp_map[uid] += max(0, int(float(payload.get("score", 0)) * 1.5))
-                elif ev_type == "lesson_completed":
-                    xp_map[uid] += 50
-                elif ev_type == "activity_logged":
-                    xp_map[uid] += min(int(payload.get("duration_minutes", 0)), 60)
-
-            top_user_ids = sorted(xp_map, key=lambda u: xp_map[u], reverse=True)[:50]
-
+            # 2. Enrich entries with user info and streaks
             if top_user_ids:
                 users_res = (
                     client.table("users")
@@ -1499,16 +1523,13 @@ async def get_leaderboard(
                 )
                 user_info = {u["id"]: u for u in (users_res.data or [])}
 
-                streak_map: Dict[str, int] = defaultdict(int)
                 progress_res = (
-                    client.table("progress")
+                    client.table("student_progress")
                     .select("user_id, streak")
                     .in_("user_id", top_user_ids)
                     .execute()
                 )
-                for p in (progress_res.data or []):
-                    uid = p["user_id"]
-                    streak_map[uid] = max(streak_map[uid], p.get("streak") or 0)
+                streak_map: Dict[str, int] = {p["user_id"]: p.get("streak") or 0 for p in (progress_res.data or [])}
 
                 for rank, uid in enumerate(top_user_ids, start=1):
                     u = user_info.get(uid, {})
@@ -1518,7 +1539,7 @@ async def get_leaderboard(
                         "userId": uid,
                         "name": display,
                         "avatar": u.get("avatar") or f"https://ui-avatars.com/api/?name={display}&background=random",
-                        "xp": xp_map[uid],
+                        "xp": xp_map.get(uid, 0),
                         "streak": streak_map.get(uid, 0),
                         "isCurrentUser": uid == current_user.get("id"),
                     })
@@ -1537,7 +1558,10 @@ async def get_leaderboard(
             "isCurrentUser": True,
         }]
 
-    return {"timeframe": timeframe, "entries": entries}
+    return success_response(
+        data={"timeframe": timeframe, "entries": entries},
+        meta={"count": len(entries)}
+    )
 
 
 @router.get("/subjects")

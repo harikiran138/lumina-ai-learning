@@ -27,7 +27,7 @@ No LLM call is made here; the caller is responsible for LLM routing.
 from __future__ import annotations
 
 import re
-from typing import TypedDict
+from typing import TypedDict, Optional
 
 import structlog
 

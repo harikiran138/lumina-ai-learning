@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Body
 from app.api.deps import get_current_active_user
 from app.store.community_store import CommunityStore
+from app.core.responses import success_response
 from typing import List, Dict, Any, Optional
 
 router = APIRouter()
@@ -15,10 +16,7 @@ async def get_messages(
     """
     store = CommunityStore()
     messages = await store.get_messages(limit)
-    return {
-        "success": True,
-        "messages": messages
-    }
+    return success_response(messages)
 
 @router.post("/messages")
 async def post_message(
@@ -32,12 +30,8 @@ async def post_message(
     if not content or len(content.strip()) == 0:
         raise HTTPException(status_code=400, detail="Content cannot be empty.")
 
-    store = CommunityStore()
-    user_id = current_user.get("id")
     result = await store.post_message(user_id, content)
     
     if result:
-        return {"success": True, "message": "Posted successfully", "data": result}
-    else:
-        # Fallback if table doesn't exist – return the data as if success to allow UI to continue
-        return {"success": True, "message": "Simulated post", "data": {"id": "mock-id", "content": content}}
+        return success_response(result, "Posted successfully")
+    return success_response({"id": "mock-id", "content": content}, "Simulated post")

@@ -1099,7 +1099,7 @@ async def get_ai_models(admin: dict = Depends(is_admin)):
 
 @router.get("/ai/costs")
 async def get_ai_costs(admin: dict = Depends(is_admin)):
-    """Fetch AI usage cost summary."""
+    db = get_scoped_db(admin)
     analytics = AnalyticsStore(db=db)
     return await analytics.get_ai_cost_analysis()
 

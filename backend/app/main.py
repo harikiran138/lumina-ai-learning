@@ -49,6 +49,7 @@ from app.core.config import settings  # noqa: E402
 from app.core.logging import configure_logging  # noqa: E402
 from app.core.limiter import limiter  # noqa: E402
 from app.core.middleware import SentinelMiddleware # noqa: E402
+from app.core.responses import error_response # noqa: E402
 
 # 1. Configure JSON Logging
 configure_logging()
@@ -228,23 +229,23 @@ def add_cors_headers(response: JSONResponse, request: Request) -> JSONResponse:
 async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
     status_code = getattr(exc, "status_code", 500)
     detail = getattr(exc, "detail", "Internal Server Error")
-    response = JSONResponse(
+    
+    # Standardized response
+    response = error_response(
+        error=str(status_code),
+        message=str(detail),
         status_code=status_code,
-        content={"detail": detail},
+        path=request.url.path
     )
     return add_cors_headers(response, request)
 
-@app.exception_handler(Exception)
-async def universal_exception_handler(request: Request, exc: Exception):
-    logger.error("unhandled_exception", error=str(exc), path=request.url.path, exc_info=True)
-    response = JSONResponse(
+    # Standardized response for unhandled exceptions
+    response = error_response(
+        error="INTERNAL_SERVER_ERROR",
+        message="An unexpected error occurred. Please try again later.",
         status_code=500,
-        content={
-            "detail": "Internal Server Error", 
-            "type": str(type(exc).__name__),
-            "message": "An unexpected error occurred. Please try again later.",
-            "path": request.url.path,
-        },
+        path=request.url.path,
+        detail=str(type(exc).__name__)
     )
     return add_cors_headers(response, request)
 
@@ -390,31 +391,22 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 app.add_middleware(LoggingMiddleware)
 
 
-class TimingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        start_time = time.time()
-        response = await call_next(request)
-        process_time = time.time() - start_time
-        response.headers["X-Process-Time"] = str(process_time)
-        return response
-
-
-app.add_middleware(TimingMiddleware)
+# Note: Timing is handled by SentinelMiddleware to avoid double headers
 
 
 
+
+from app.core.responses import success_response
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to Lumina API"}
+    return success_response({"version": "1.0.0"}, "Welcome to Lumina API")
 
 
 @app.get("/health")
 async def health_check():
-    """
-    Very Simple Health Check to debug 500.
-    """
-    return {"status": "ok"}
+    """Very Simple Health Check for external monitors."""
+    return success_response({"status": "healthy"}, "System is operational")
 
 
 @app.middleware("http")
