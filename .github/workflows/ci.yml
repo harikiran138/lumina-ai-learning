@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   # 1. Standard Testing (Python)
   test-backend:
@@ -36,7 +40,29 @@ jobs:
         with:
           config: "p/ci"
 
-  # 3. Security: Python Specific (Bandit)
+  # 3. Security: Container & Filesystem (Trivy)
+  security-trivy:
+    name: Run Trivy Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: 'fs'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          exit-code: '0'   # IMPORTANT: Prevents failure while reporting results
+          ignore-unfixed: true
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
+  # 4. Security: Python Specific (Bandit)
   security-bandit:
     runs-on: ubuntu-latest
     steps:
@@ -50,7 +76,7 @@ jobs:
       - name: Run Bandit
         run: bandit -c .bandit -r backend/ -iii
 
-  # 4. API Testing (Newman)
+  # 5. API Testing (Newman)
   test-api-newman:
     runs-on: ubuntu-latest
     steps:
@@ -66,7 +92,7 @@ jobs:
           echo "Validating API Collection..."
           newman run backend/tests/api_tests.json --suppress-exit-code
 
-  # 5. RAG Quality (RAGAS)
+  # 6. RAG Quality (RAGAS)
   eval-rag-quality:
     runs-on: ubuntu-latest
     steps:
@@ -88,7 +114,7 @@ jobs:
             python backend/tests/rag_eval.py
           fi
 
-  # 6. Policy Enforcement: No Axios
+  # 7. Policy Enforcement: No Axios
   enforce-no-axios:
     runs-on: ubuntu-latest
     steps:
@@ -102,7 +128,7 @@ jobs:
             echo "No Axios usage found."
           fi
 
-  # 7. UI Testing (Jest/Playwright)
+  # 8. UI Testing (Jest/Playwright)
   test-ui:
     runs-on: ubuntu-latest
     steps:
@@ -123,7 +149,7 @@ jobs:
           cd frontend/web
           npm test -- --testTimeout=15000
 
-  # 7. Container Validation (Docker)
+  # 9. Container Validation (Docker)
   docker-build:
     runs-on: ubuntu-latest
     steps:
