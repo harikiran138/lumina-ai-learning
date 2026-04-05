@@ -21,7 +21,9 @@ from app.store.personalization_store import PersonalizationStore
 from app.store.student_store import StudentStore
 from app.personalization.kpi_engine import KPIEngine
 from app.personalization.authenticity_engine import authenticity_engine
+from app.personalization.adaptive_engine import AdaptiveEngine, AdaptiveDecision
 from app.assessment.models.schemas import ResponseTelemetry, AnswerAnalysis
+from app.personalization.explanation_planner import ExplanationPlanner
 from learner_profile.analysis.cognitive_load import CognitiveLoadEstimator
 from learner_profile.models.bkt import BKTModel
 from app.services.ml_client import ml_client
@@ -456,8 +458,11 @@ class PersonalizationService:
                 
                 await self._update_mastery_from_binary(profile, topic_id, is_correct, event_type.value, integrity=integrity)
                 self._update_misconceptions(profile, topic_id, analysis_data, is_correct)
-                # Reward the last explanation if this was successful
-                self._reward_explanation_style(profile, is_correct)
+                
+                # Reward RL Style Router (Intelligence Controller)
+                # Reward = binary correctness weighted by integrity
+                reward = float(is_correct) * integrity
+                ExplanationPlanner.record_outcome(profile, profile.explanation_profile.primary_mode, reward)
 
         elif event_type == LearningEventType.ASSESSMENT_COMPLETED:
             engagement.total_assessments_completed += 1
@@ -584,7 +589,15 @@ class PersonalizationService:
             await self._sync_mastery_to_enrollment(user_id, course_id, topic_id, profile)
 
         await self._maybe_create_intervention(profile, event)
-        return profile
+        
+        # 4. Intelligence Controller: Decide Next Activity (Close the Loop)
+        next_step = AdaptiveEngine.decide_next_step(profile, current_topic_id=topic_id)
+        
+        # Wrap for return
+        return {
+            "profile": profile,
+            "next_step": next_step.to_dict()
+        }
 
     async def refresh_profile(self, user_id: str, role: str = "student") -> LearnerProfileRecord:
         """

@@ -45,6 +45,10 @@ GLOBAL_TABLES = {
     # Hierarchy tables scoped via program_id/department_id — no institution_id column
     "semesters",
     "classes",
+    "teacher_requests",
+    "content_uploads",
+    "physical_submissions",
+    "course_concepts",
 }
 
 
@@ -79,8 +83,11 @@ class ScopedQueryBuilder:
     def _apply_auth_filters(self):
         """Internal helper to apply institution scoping and soft-delete filters."""
         if not self.is_super_admin and self.institution_id and not self.is_global:
-            # Force institution_id filter for non-global tables
-            self.query = self.query.eq("institution_id", self.institution_id)
+            # Force institution scoping. 
+            # Note: The "institutions" table itself uses "id" for scoping, 
+            # while other tables use "institution_id"
+            target_column = "id" if self.table_name == "institutions" else "institution_id"
+            self.query = self.query.eq(target_column, self.institution_id)
         
         # Apply the soft-delete filter if enabled and required
         if self.soft_delete_enabled and not self.show_deleted:
@@ -94,22 +101,25 @@ class ScopedQueryBuilder:
 
     def insert(self, data: Dict[str, Any]):
         if not self.is_super_admin and self.institution_id and not self.is_global:
-            # Force institution_id on insert
-            if isinstance(data, list):
-                for item in data:
-                    item["institution_id"] = self.institution_id
-            else:
-                data["institution_id"] = self.institution_id
+            # Force institution scoping on insert, except for the institutions table itself
+            if self.table_name != "institutions":
+                if isinstance(data, list):
+                    for item in data:
+                        item["institution_id"] = self.institution_id
+                else:
+                    data["institution_id"] = self.institution_id
         self.query = self.query.insert(data)
         return self
 
     def upsert(self, data: Dict[str, Any], on_conflict: str = 'id'):
         if not self.is_super_admin and self.institution_id and not self.is_global:
-            if isinstance(data, list):
-                for item in data:
-                    item["institution_id"] = self.institution_id
-            else:
-                data["institution_id"] = self.institution_id
+            # Force institution scoping on upsert, except for the institutions table itself
+            if self.table_name != "institutions":
+                if isinstance(data, list):
+                    for item in data:
+                        item["institution_id"] = self.institution_id
+                else:
+                    data["institution_id"] = self.institution_id
         self.query = self.query.upsert(data, on_conflict=on_conflict)
         return self
 

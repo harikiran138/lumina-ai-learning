@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Dict, Any, Optional
+from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime
 from app.api.deps import get_current_parent as get_current_user
@@ -126,8 +126,8 @@ async def set_child_goal(
     
     # Verify link
     links = await store.get_linked_children(current_user["id"])
-    if not any(str(link["child_id"]) == request.child_id and link["verified_by_admin"] for link in links):
-        raise HTTPException(status_code=403, detail="You can only set goals for your verified children")
+    if not any(str(link["child_id"]) == request.child_id for link in links):
+        raise HTTPException(status_code=403, detail="You can only set goals for your linked children")
     
     goal = await store.create_goal(current_user["id"], request.child_id, request.goal_text)
     if not goal:
@@ -199,3 +199,25 @@ async def link_student_by_code(
         "message": "Student linked successfully",
         "student": result
     }
+
+
+@router.get("/weekly-reports")
+async def get_weekly_reports(
+    current_user: dict = Depends(get_current_user),
+    store: ParentStore = Depends(get_parent_store)
+):
+    """
+    Fetch scannable weekly activity reports for all linked children (Item 2: Retention).
+    """
+    return await store.get_weekly_reports(current_user["id"])
+
+
+@router.get("/children")
+async def get_linked_children(
+    current_user: dict = Depends(get_current_user),
+    store: ParentStore = Depends(get_parent_store)
+):
+    """
+    List all children linked to this parent.
+    """
+    return await store.get_linked_children(current_user["id"])

@@ -67,8 +67,8 @@ erDiagram
   users ||--o{ ppt_generations : requests
   users ||--o{ feedback : provides
   users ||--o{ leaderboard_entries : appears
-  users ||--o{ parent_guardian : parentOf
-  users ||--o{ parent_guardian : parentAccount
+  users ||--o{ parent_student_links : parentOf
+  users ||--o{ parent_student_links : parentAccount
 
   courses ||--o{ progress : enrolls
   courses ||--o{ assignments : contains
@@ -174,7 +174,7 @@ preferences: {
 
 **Relationships:**
 - Owns: sessions, progress, submissions, user_data, learner_profiles, behavior_logs, conversations, ai_logs, quiz_attempts, student_stats, teacher_stats, tutor_sessions, notifications, student_pathways, attendance, study_groups, intervention_logs, ppt_generations, feedback, leaderboard_entries
-- Can be: parent of another user (parent_guardian)
+- Can be: parent of another user (parent_student_links)
 
 **Unique Constraints:**
 - email (UNIQUE)
@@ -1149,6 +1149,30 @@ INSERT INTO agent_memory (user_id, agent_type, memory_key, memory_value, confide
 
 ---
 
-## 4. Maintenance & Evolution
+### 3.21 parent_student_links
+**Purpose:** Formal linking mechanism between parents and students via restricted codes. Requires admin verification for portal access.
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| student_id | uuid | FK → users(id) |
+| parent_id | uuid | FK → users(id); Nullable until linked |
+| link_code | text | UNIQUE; One-time usage code |
+| status | text | pending \| linked \| expired |
+| verification_status | text | pending \| verified \| rejected \| flagged |
+| verified_by_admin | boolean | Default: false; Gateway for portal access |
+| verified_at | timestamptz | When verified by admin |
+| verified_by | uuid | Admin user ID who verified |
+| expires_at | timestamptz | Code expiry |
+
+---
+
+## 4. Governance & Security
+
+### 4.1 Admin-Verified Parent Access
+To prevent unauthorized access to sensitive student data (grades, progress, submissions), all parent-student links must be **explicitly verified** by a system administrator.
+- **RLS Enforced:** Policies on `progress`, `submissions`, and `certificates` tables check for `verified_by_admin = true` on the corresponding link.
+- **Audit Logging:** Every verification action is logged with the admin's user ID and timestamp.
+
+## 5. Maintenance & Evolution
 
 For details on how to add new tables or modify policies, see [DATABASE_MIGRATION_GUIDE.md](file:///Users/chepuriharikiran/Desktop/github/lumina-ai-learning/docs/DATABASE_MIGRATION_GUIDE.md).

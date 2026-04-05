@@ -1252,14 +1252,17 @@ export class RealAPI {
     return res.ok ? (await parseJsonSafe(res) ?? []) : [];
   }
 
-  async post(path: string, payload: any = {}): Promise<any> {
+  async post(path: string, payload: any = {}, options: RequestInit = {}): Promise<any> {
     const res = await this.fetchAuthorized(path, {
+      ...options,
       method: "POST",
-      body: JSON.stringify(payload),
+      body: payload instanceof FormData ? payload : JSON.stringify(payload),
     });
     if (!res.ok) {
       const error = await parseJsonSafe(res);
-      throw { response: { data: error || { detail: "Request failed" } } };
+      // Compatibility with existing error handling that expects { response: { data: ... } }
+      const errObj = { response: { data: error || { detail: "Request failed" } } };
+      throw errObj;
     }
     return await parseJsonSafe(res);
   }
@@ -1916,7 +1919,14 @@ export class RealAPI {
   async getStudentCertificates(..._args: any[]): Promise<any> { return []; }
   async getStudentMastery(..._args: any[]): Promise<any> { return {}; }
   async getParentDashboard(..._args: any[]): Promise<any> { return this.getDashboardData("parent"); }
-  async setParentGoal(..._args: any[]): Promise<any> { return { success: false }; }
+  async setParentGoal(studentId: string, goalType: string, goalText: string, timeframe: string): Promise<any> {
+    return this.post("/api/parent/goals", {
+      child_id: studentId,
+      goal_type: goalType,
+      goal_text: goalText,
+      timeframe,
+    });
+  }
   async getHODDashboard(..._args: any[]): Promise<any> { return this.getDashboardData("hod"); }
   async getMentorMatches(..._args: any[]): Promise<any> {
     return this.fetchJsonOrDefault("/api/mentor/matches", []);
@@ -2112,6 +2122,28 @@ export class RealAPI {
       throw new Error(e?.detail || "Blueprint generation failed");
     }
     return await res.json();
+  }
+
+  // --- Parent & Student Connections ---
+  async get(path: string, options: RequestInit = {}): Promise<any> {
+    const res = await this.fetchAuthorized(path, { ...options, method: "GET" });
+    if (!res.ok) {
+        const e = await parseJsonSafe(res);
+        throw new Error(e?.detail || `GET ${path} failed with ${res.status}`);
+    }
+    return await parseJsonSafe(res);
+  }
+
+  async studentRefreshLinkCode(): Promise<any> {
+    return this.post("/api/student/refresh-link-code", {});
+  }
+
+  async studentGetParentConnectionStatus(): Promise<any> {
+    return this.get("/api/student/parent-connection-status");
+  }
+
+  async parentLinkStudentByCode(code: string): Promise<any> {
+    return this.post("/api/parent/link-by-code", { code });
   }
 }
 

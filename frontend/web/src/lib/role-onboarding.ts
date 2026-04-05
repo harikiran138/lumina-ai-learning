@@ -120,27 +120,35 @@ const CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
       },
       {
         id: 2,
-        title: "Contact Preferences",
-        description: "Choose how and when you want to be notified.",
+        title: "Link Student",
+        description: "Enter the code provided by your child to link their account to yours.",
         fields: [
-          { key: "contactEmail", label: "Preferred contact email", type: "text", helper: "Email address for progress reports and alerts.", placeholder: "parent@example.com" },
-          { key: "notificationFrequency", label: "Notification frequency", type: "select", helper: "How often should we send you progress updates?", options: [
-            { label: "Daily digest", value: "daily" },
-            { label: "Weekly summary", value: "weekly" },
-            { label: "Important events only", value: "events_only" },
-          ]},
+          { 
+            key: "studentCode", 
+            label: "Student Linking Code", 
+            type: "text", 
+            helper: "Enter the 8-character code from your child's student dashboard.", 
+            placeholder: "LUM-XXXX", 
+            required: true 
+          },
         ],
       },
       {
         id: 3,
-        title: "Monitoring Preferences",
-        description: "Tell us which areas you'd like to track.",
+        title: "Guardian Preferences",
+        description: "Configure how you want to stay informed about progress.",
         fields: [
-          { key: "trackAreas", label: "Areas to monitor", type: "multiselect", helper: "Select the aspects of your child's learning you want to follow.", options: [
-            { label: "Assignment submissions", value: "assignments", helper: "Know when work is submitted or overdue." },
-            { label: "Test & quiz results", value: "tests", helper: "Receive scores as soon as they are released." },
-            { label: "AI risk flags", value: "risk_flags", helper: "Be notified if the AI detects learning struggles." },
-            { label: "Attendance", value: "attendance", helper: "Track class attendance signals." },
+          { key: "contactEmail", label: "Contact email", type: "text", helper: "Email address for progress reports.", placeholder: "parent@example.com" },
+          { key: "notificationFrequency", label: "Update frequency", type: "select", helper: "How often should we send updates?", options: [
+            { label: "Daily digest", value: "daily" },
+            { label: "Weekly summary", value: "weekly" },
+            { label: "Important events only", value: "events_only" },
+          ]},
+          { key: "trackAreas", label: "Areas to monitor", type: "multiselect", helper: "Select aspects of your child's learning to follow.", options: [
+            { label: "Assignment submissions", value: "assignments" },
+            { label: "Test & quiz results", value: "tests" },
+            { label: "AI risk flags", value: "risk_flags" },
+            { label: "Attendance", value: "attendance" },
           ]},
         ],
       },

@@ -502,3 +502,13 @@ class CourseConcept(BaseModel):
     course_id: str
     concept_name: str
     created_at: str = Field(default_factory=current_time_iso)
+
+
+class ParentStudentLink(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    student_id: str
+    parent_id: Optional[str] = None
+    link_code: str
+    status: str = "pending"  # pending, linked, expired
+    created_at: str = Field(default_factory=current_time_iso)
+    expires_at: Optional[str] = None

@@ -17,6 +17,9 @@ class EvaluationResult:
     confidence: float
     criteria_scores: Dict[str, float]
     model_used: str
+    misconceptions: List[str] = None
+    authenticity_vibe: float = 1.0
+    remediation_topic: str = ""
 
 GRADING_SYSTEM_PROMPT = """You are an expert academic evaluator. Your task is to grade a student's handwritten answer.
 You will be given:
@@ -27,18 +30,23 @@ You will be given:
 Rules:
 - Be fair and consistent
 - Give partial credit for partial understanding
-- OCR may have minor errors; be charitable
+- Detect misconceptions: look for conceptual errors, not just calculation errors.
+- Evaluate authenticity_vibe: 0.0 (likely copied/robotic) to 1.0 (authentic expression).
+- Suggest a remediation_topic for future practice.
 - Output ONLY valid JSON
 
 Output this exact JSON structure:
-{{
+{
   "score": <float>,
   "max_score": <int>,
   "reasoning": "<internal steps>",
   "feedback": "<student-facing>",
   "confidence": <float 0-1>,
-  "criteria_scores": {{ "<label>": <marks> }}
-}}"""
+  "criteria_scores": { "<label>": <marks> },
+  "misconceptions": [ "<label1>", "<label2>" ],
+  "authenticity_vibe": <float 0-1>,
+  "remediation_topic": "<topic_id>"
+}"""
 
 GRADING_HUMAN_PROMPT = """QUESTION ({max_marks} marks):
 {question_text}
@@ -166,9 +174,16 @@ def _parse_evaluation_output(raw: str, max_marks: int, model_used: str) -> Evalu
         data = json.loads(cleaned)
         score = max(0.0, min(float(data.get("score", 0)), float(max_marks)))
         return EvaluationResult(
-            score=score, max_score=max_marks, reasoning=data.get("reasoning", ""),
-            feedback=data.get("feedback", ""), confidence=float(data.get("confidence", 0.5)),
-            criteria_scores=data.get("criteria_scores", {}), model_used=model_used
+            score=score, 
+            max_score=max_marks, 
+            reasoning=data.get("reasoning", ""),
+            feedback=data.get("feedback", ""), 
+            confidence=float(data.get("confidence", 0.5)),
+            criteria_scores=data.get("criteria_scores", {}), 
+            model_used=model_used,
+            misconceptions=data.get("misconceptions", []),
+            authenticity_vibe=float(data.get("authenticity_vibe", 1.0)),
+            remediation_topic=data.get("remediation_topic", "")
         )
     except Exception as e:
         log.error("json_parse_failed", error=str(e), raw=raw[:200])

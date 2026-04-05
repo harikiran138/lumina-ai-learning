@@ -131,6 +131,7 @@ class KPISnapshot(BaseModel):
     engagement_score: float = 0.0
     persistence: float = 0.0
     readiness: float = 0.0
+    learning_score: float = 0.5            # Multidimensional 40/30/20/10 score
     # Extended by student_analytics service
     growth_trend: str = "plateauing"        # improving | plateauing | declining
     tier: str = "developing"               # struggling | developing | proficient | advanced

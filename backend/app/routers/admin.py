@@ -1100,6 +1100,48 @@ async def get_ai_models(admin: dict = Depends(is_admin)):
 @router.get("/ai/costs")
 async def get_ai_costs(admin: dict = Depends(is_admin)):
     """Fetch AI usage cost summary."""
-    db = get_scoped_db(admin)
     analytics = AnalyticsStore(db=db)
     return await analytics.get_ai_cost_analysis()
+
+
+# --- Parent Management ---
+
+@router.get("/parents/pending-verification")
+async def get_pending_parent_links(admin: dict = Depends(is_admin)):
+    """List parent-student links awaiting admin verification (Item 1: Security)."""
+    db = get_scoped_db(admin)
+    try:
+        # Fetch links that are status='linked' but not yet verified
+        res = await db.client.table("parent_student_links").select("*, parent:parent_id(full_name, email), student:student_id(full_name, email)").eq("status", "linked").eq("verified_by_admin", False).async_execute()
+        return res.data
+    except Exception as e:
+        log.error("get_pending_parent_links_failed", error=str(e))
+        return []
+
+
+@router.post("/parents/verify/{link_id}")
+async def verify_parent_link(link_id: str, admin: dict = Depends(is_admin)):
+    """Manually verify a parent-student link after checking ID/Email (Item 1: Security)."""
+    db = get_scoped_db(admin)
+    try:
+        now = datetime.utcnow().isoformat()
+        res = await db.client.table("parent_student_links").update({
+            "verified_by_admin": True,
+            "status": "verified",
+            "verified_at": now,
+            "verified_by": admin.get("id")
+        }).eq("id", link_id).async_execute()
+        
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Link not found")
+            
+        audit_logger.log(
+            action="parent_link_verified",
+            user_id=str(admin.get("id")),
+            resource_id=link_id,
+            metadata={"link_id": link_id}
+        )
+        return {"success": True, "verified_at": now}
+    except Exception as e:
+        log.error("verify_parent_link_failed", link_id=link_id, error=str(e))
+        raise HTTPException(status_code=500, detail="Failed to verify link")

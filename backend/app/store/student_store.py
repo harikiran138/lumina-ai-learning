@@ -195,3 +195,136 @@ class StudentStore:
         except Exception as e:
             log.error("log_activity_failed", student_id=student_id, error=str(e))
             return False
+
+    async def generate_parent_link_code(self, student_id: str) -> str:
+        """
+        Generates a new 8-character connection code for a student.
+        Format: LUM-XXXXXX
+        Includes a retry loop to ensure uniqueness.
+        """
+        import secrets
+        import string
+        from datetime import datetime, timedelta
+        
+        client = self.db.get_client()
+        
+        # 1. Expire all previous pending codes for this student
+        try:
+            await client.table("parent_student_links").update({
+                "status": "expired"
+            }).eq("student_id", student_id).eq("status", "pending").async_execute()
+        except Exception as e:
+            log.warning("expire_previous_codes_failed", student_id=student_id, error=str(e))
+
+        # 2. Generate unique code with retry logic
+        link_code = None
+        for attempt in range(5):
+            random_part = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
+            candidate_code = f"LUM-{random_part}"
+            
+            # Check for collision
+            existing = await client.table("parent_student_links").select("id").eq("link_code", candidate_code).async_execute()
+            if not existing.data:
+                link_code = candidate_code
+                break
+        
+        if not link_code:
+            log.error("code_generation_collision_limit", student_id=student_id)
+            raise Exception("Failed to generate a unique connection code after multiple attempts.")
+
+        # 3. Create the new link record
+        expires_at = (datetime.utcnow() + timedelta(hours=24)).isoformat()
+        
+        link_data = {
+            "student_id": student_id,
+            "link_code": link_code,
+            "status": "pending",
+            "expires_at": expires_at,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        try:
+            await client.table("parent_student_links").insert(link_data).async_execute()
+            
+            # Sync to users table for convenience (legacy fields)
+            try:
+                await client.table("users").update({"parent_link_code": link_code}).eq("id", student_id).async_execute()
+            except Exception as ue:
+                log.warning("sync_link_code_to_users_failed_non_fatal", error=str(ue))
+
+            log.info("generate_parent_link_code_success", student_id=student_id, code=link_code)
+            return link_code
+        except Exception as e:
+            log.error("save_parent_link_code_failed", student_id=student_id, error=str(e))
+            raise e
+
+    async def get_current_parent_link_code(self, student_id: str) -> Optional[dict]:
+        """
+        Retrieves the current active (pending) link code for a student if it's not expired.
+        """
+        from datetime import datetime
+        try:
+            client = self.db.get_client()
+            response = await client.table("parent_student_links").select("*").eq("student_id", student_id).eq("status", "pending").order("created_at", desc=True).limit(1).async_execute()
+            
+            if response.data:
+                link = response.data[0]
+                expires_at = link.get("expires_at")
+                if expires_at:
+                    expiry_dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00")).replace(tzinfo=None)
+                    if expiry_dt > datetime.utcnow():
+                        return link
+                    else:
+                        # Auto-expire if found expired
+                        await client.table("parent_student_links").update({"status": "expired"}).eq("id", link["id"]).async_execute()
+            return None
+        except Exception as e:
+            log.error("get_current_parent_link_code_failed", student_id=student_id, error=str(e))
+            return None
+
+    async def get_parent_link_status(self, student_id: str) -> Dict[str, Any]:
+        """
+        Retrieves the status of the parent-student link.
+        Returns: {
+            "status": "linked" | "pending" | "none", 
+            "parent_name": str | None,
+            "linked_at": iso_ts | None,
+            "code": str | None,
+            "expires_at": iso_ts | None
+        }
+        """
+        try:
+            client = self.db.get_client()
+            
+            # 1. Check for active link
+            response = await client.table("parent_student_links").select(
+                "status, linked_at, parent_id, users!parent_id(name)"
+            ).eq("student_id", student_id).eq("status", "linked").order("linked_at", desc=True).limit(1).async_execute()
+            
+            if response.data:
+                link = response.data[0]
+                # Safely extract parent name from the joined users table
+                # The join alias 'users!parent_id' maps to the parent's user record
+                parent_info = link.get("users", {})
+                parent_name = parent_info.get("name") if isinstance(parent_info, dict) else "Parent"
+                
+                return {
+                    "status": "linked",
+                    "parent_name": parent_name or "Parent",
+                    "linked_at": link.get("linked_at")
+                }
+            
+            # 2. Check for pending code
+            pending = await self.get_current_parent_link_code(student_id)
+            if pending:
+                return {
+                    "status": "pending",
+                    "code": pending.get("link_code"),
+                    "expires_at": pending.get("expires_at"),
+                    "created_at": pending.get("created_at")
+                }
+            
+            return {"status": "none"}
+        except Exception as e:
+            log.error("get_parent_link_status_failed", student_id=student_id, error=str(e))
+            return {"status": "error", "message": str(e)}

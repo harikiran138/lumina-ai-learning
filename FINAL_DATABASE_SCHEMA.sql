@@ -399,6 +399,11 @@ CREATE TABLE IF NOT EXISTS skill_mastery (
     bkt_p_s NUMERIC DEFAULT 0.1,  -- Probability of slip
     last_assessed TIMESTAMPTZ,
     assessment_count INT DEFAULT 0,
+    -- SM-2 Spaced Repetition fields
+    ease_factor NUMERIC DEFAULT 2.5,    -- SM-2 ease factor (min 1.3)
+    repetitions INT DEFAULT 0,          -- Number of successful reviews
+    interval_days INT DEFAULT 1,        -- Days until next review
+    next_review_at TIMESTAMPTZ,         -- Scheduled next review date
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -762,14 +767,23 @@ CREATE POLICY "Students can view own intervention logs" ON intervention_logs
     FOR SELECT USING (auth.uid() = student_user_id);
 
 -- 14. Parent/Guardian relationships
-CREATE TABLE IF NOT EXISTS parent_guardian (
+CREATE TABLE IF NOT EXISTS public.parent_guardian (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    parent_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    student_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    parent_user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    student_user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
     relationship TEXT,
     can_view_grades BOOLEAN DEFAULT TRUE,
     can_view_progress BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    
+    -- Verification Support (Item 1: Security)
+    verification_status TEXT DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified', 'rejected')),
+    verified_by_admin BOOLEAN DEFAULT false,
+    verified_at TIMESTAMPTZ,
+    verified_by UUID REFERENCES public.users(id),
+    verification_notes TEXT,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(parent_user_id, student_user_id)
 );
 
 -- 15. Community Channels
@@ -1709,5 +1723,75 @@ CREATE TABLE IF NOT EXISTS public.login_history (
 CREATE INDEX IF NOT EXISTS idx_login_history_user_id  ON public.login_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_login_history_created  ON public.login_history(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_login_history_success  ON public.login_history(success);
+
+
+-- 018_parent_student_connection_system.sql --
+-- Migration 018: Add support for parent-student connection codes (v2 CLEAN ARCHITECTURE)
+
+-- Only ONE table for linking: parent_student_links
+-- Handles both pending codes and permanent links
+CREATE TABLE IF NOT EXISTS public.parent_student_links (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id  uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  parent_id   uuid REFERENCES public.users(id) ON DELETE CASCADE, -- Nullable until linked
+  
+  link_code   text UNIQUE NOT NULL,
+  status      text NOT NULL DEFAULT 'pending', -- pending, linked, expired
+  
+  -- Verification Support (Item 1: Security)
+  verification_status TEXT DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified', 'rejected', 'flagged')),
+  verified_by_admin   BOOLEAN DEFAULT false,
+  verified_at         TIMESTAMPTZ,
+  verified_by         uuid REFERENCES public.users(id),
+  verification_notes  text,
+  
+  expires_at  timestamptz NOT NULL,
+  created_at  timestamptz DEFAULT now(),
+  linked_at   timestamptz,
+  
+  -- Prevent multiple active permanent links for same student/parent combo
+  CONSTRAINT unique_student_parent_link UNIQUE(student_id, parent_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_parent_student_links_code ON public.parent_student_links(link_code);
+CREATE INDEX IF NOT EXISTS idx_parent_student_links_student ON public.parent_student_links(student_id);
+CREATE INDEX IF NOT EXISTS idx_parent_student_links_parent ON public.parent_student_links(parent_id);
+
+-- Enable RLS for connection links
+ALTER TABLE public.parent_student_links ENABLE ROW LEVEL SECURITY;
+
+-- 1. Students can see their own codes (pending or linked)
+CREATE POLICY "Students can view own codes" ON public.parent_student_links
+  FOR SELECT USING (auth.uid() = student_id);
+
+-- 2. Parents can see codes they have linked or use for linking
+CREATE POLICY "Parents can view linked codes" ON public.parent_student_links
+  FOR SELECT USING (auth.uid() = parent_id OR (status = 'pending' AND auth.uid() IS NOT NULL));
+
+-- 3. Students can manage (create/expire) their own codes
+CREATE POLICY "Students can manage own codes" ON public.parent_student_links
+  FOR ALL USING (auth.uid() = student_id);
+
+-- 4. Parents can update codes to 'linked' status
+CREATE POLICY "Parents can perform linking" ON public.parent_student_links
+  FOR UPDATE USING (status = 'pending')
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+-- 5. ONLY Admins can verify links (Item 1: Security)
+CREATE POLICY "Admins can verify parent-student links" ON public.parent_student_links
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'admin')
+  );
+
+-- 6. Parents can ONLY view child progress/submissions if link is verified
+CREATE POLICY "Parents see verified progress" ON public.progress
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.parent_student_links psl
+            WHERE psl.parent_id = auth.uid()
+            AND psl.student_id = progress.user_id
+            AND psl.verified_by_admin = true
+        )
+    );
 
 

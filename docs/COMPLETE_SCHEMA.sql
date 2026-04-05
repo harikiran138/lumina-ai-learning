@@ -414,16 +414,28 @@ CREATE TABLE study_group_members (
   UNIQUE(study_group_id, user_id)
 );
 
--- Table: parent_guardian
--- Purpose: Parent accounts linked to students.
-CREATE TABLE parent_guardian (
+-- Table: parent_student_links
+-- Purpose: Parent accounts linked to students via restricted codes.
+CREATE TABLE parent_student_links (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  parent_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  student_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  parent_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   relationship TEXT,
+  link_code TEXT UNIQUE,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'linked', 'expired')),
   can_view_grades BOOLEAN DEFAULT true,
   can_view_progress BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT now()
+  
+  -- Verification Support (Security)
+  verification_status TEXT DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified', 'rejected', 'flagged')),
+  verified_by_admin BOOLEAN DEFAULT false,
+  verified_at TIMESTAMPTZ,
+  verified_by UUID REFERENCES users(id),
+  verification_notes TEXT,
+  
+  expires_at TIMESTAMPTZ,
+  created_at TIMESTAMP DEFAULT now(),
+  UNIQUE(parent_id, student_id)
 );
 
 -- Table: attendance
@@ -709,9 +721,10 @@ CREATE INDEX idx_study_groups_creator_id ON study_groups(creator_id);
 CREATE INDEX idx_study_group_members_study_group_id ON study_group_members(study_group_id);
 CREATE INDEX idx_study_group_members_user_id ON study_group_members(user_id);
 
--- parent_guardian
-CREATE INDEX idx_parent_guardian_parent_user_id ON parent_guardian(parent_user_id);
-CREATE INDEX idx_parent_guardian_student_user_id ON parent_guardian(student_user_id);
+-- parent_student_links
+CREATE INDEX idx_parent_student_links_parent_id ON parent_student_links(parent_id);
+CREATE INDEX idx_parent_student_links_student_id ON parent_student_links(student_id);
+CREATE INDEX idx_parent_student_links_link_code ON parent_student_links(link_code);
 
 -- attendance
 CREATE INDEX idx_attendance_user_id ON attendance(user_id);
@@ -836,7 +849,7 @@ ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE agent_memory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE intervention_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE parent_guardian ENABLE ROW LEVEL SECURITY;
+ALTER TABLE parent_student_links ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for progress
 -- Students can only see their own progress
@@ -906,14 +919,22 @@ CREATE POLICY "teachers_see_course_conversations" ON conversations
 CREATE POLICY "users_own_notifications" ON notifications
   FOR ALL USING (auth.uid()::text = user_id::text);
 
--- RLS Policies for parent access to student data
+-- RLS Policies for parent access to student data (Restricted to Admin-Verified Links)
 CREATE POLICY "parents_see_child_progress" ON progress
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM parent_guardian pg
-      WHERE pg.parent_user_id = auth.uid()
-      AND pg.student_user_id = progress.user_id
-      AND pg.can_view_progress = true
+      SELECT 1 FROM parent_student_links psl
+      WHERE psl.parent_id = auth.uid()
+      AND psl.student_id = progress.user_id
+      AND psl.verified_by_admin = true
+      AND psl.can_view_progress = true
+    )
+    OR
+    EXISTS (
+      SELECT 1 FROM parent_student_links psl
+      WHERE psl.parent_id = auth.uid()
+      AND psl.student_id = progress.user_id
+      AND psl.verified_by_admin = true
     )
   );
 

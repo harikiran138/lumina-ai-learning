@@ -1,28 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, RefreshCw, Smartphone, CheckCircle2 } from 'lucide-react';
+import { Loader2, RefreshCw, Smartphone, CheckCircle2, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const ParentConnect = () => {
   const [token, setToken] = useState<string | null>(null);
-  const [expiresIn, setExpiresIn] = useState<number>(600);
   const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(600);
+  const [copied, setCopied] = useState(false);
 
-  const fetchToken = async () => {
+  const fetchToken = async (isRefresh = false) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/student/connection-token');
+      const endpoint = isRefresh ? '/api/student/refresh-link-code' : '/api/student/connection-token';
+      const method = isRefresh ? 'POST' : 'GET';
+      
+      const response = await fetch(endpoint, { method });
       if (!response.ok) throw new Error('Failed to fetch token');
       const data = await response.json();
       setToken(data.token);
-      setExpiresIn(data.expires_in);
       setTimeLeft(data.expires_in);
     } catch (error) {
       console.error('Error fetching connection token:', error);
-      toast.error('Could not generate connection QR code');
+      toast.error('Could not generate connection code');
     } finally {
       setLoading(false);
     }
@@ -48,6 +49,15 @@ export const ParentConnect = () => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  const copyToClipboard = () => {
+    if (token) {
+      navigator.clipboard.writeText(token);
+      setCopied(true);
+      toast.success('Code copied to clipboard');
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
     <Card className="w-full max-w-md mx-auto overflow-hidden border-2 border-primary/10 shadow-lg bg-gradient-to-br from-background to-primary/5">
       <CardHeader className="text-center pb-2">
@@ -56,57 +66,61 @@ export const ParentConnect = () => {
         </div>
         <CardTitle className="text-2xl font-bold">Connect Parent</CardTitle>
         <CardDescription>
-          Ask your parent to scan this QR code using their Lumina app to link your accounts.
+          Give this code to your parent. They should enter it in their Lumina app to link your accounts.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col items-center space-y-6 pb-8">
-        <div className="relative p-6 bg-white rounded-2xl shadow-inner group">
+        <div className="w-full relative p-8 bg-white/50 backdrop-blur-sm rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center min-h-[160px] group">
           {loading ? (
-            <div className="w-[200px] h-[200px] flex items-center justify-center">
+            <div className="flex items-center justify-center">
               <Loader2 className="w-10 h-10 text-primary animate-spin" />
             </div>
           ) : token && timeLeft > 0 ? (
-            <div className="relative">
-              <QRCodeSVG 
-                value={token} 
-                size={200} 
-                level="H"
-                includeMargin={true}
-                className="transition-transform group-hover:scale-105 duration-300"
-              />
-              <div className="absolute inset-0 border-4 border-primary/20 rounded-lg pointer-events-none" />
+            <div className="flex flex-col items-center space-y-4">
+              <div className="text-4xl font-black tracking-widest text-primary font-mono select-all bg-primary/5 px-6 py-3 rounded-xl border border-primary/10">
+                {token}
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={copyToClipboard}
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                {copied ? 'Copied!' : 'Copy Code'}
+              </Button>
             </div>
           ) : (
-            <div className="w-[200px] h-[200px] flex flex-col items-center justify-center text-center space-y-2 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center text-center space-y-2 text-muted-foreground">
               <Smartphone className="w-12 h-12 opacity-20" />
-              <p className="text-sm font-medium">QR Expired</p>
-              <Button variant="ghost" size="sm" onClick={fetchToken}>
-                Regenerate
+              <p className="text-sm font-medium">Code Expired</p>
+              <Button variant="ghost" size="sm" onClick={() => fetchToken(true)}>
+                Generate New Code
               </Button>
             </div>
           )}
         </div>
 
         <div className="w-full space-y-4">
-          <div className="flex items-center justify-between px-4 py-2 bg-background/50 rounded-full border border-primary/10">
+          <div className="flex items-center justify-between px-4 py-2 bg-background/50 rounded-full border border-primary/10 shadow-sm">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valid for</span>
             <span className={`text-sm font-mono font-bold ${timeLeft < 60 ? 'text-destructive animate-pulse' : 'text-primary'}`}>
-              {formatTime(timeLeft)}
+              {formatTime(Math.max(0, timeLeft))}
             </span>
           </div>
 
           <Button 
             className="w-full h-12 font-semibold text-lg shadow-md hover:shadow-xl transition-all"
             variant="outline"
-            onClick={fetchToken}
+            onClick={() => fetchToken(true)}
             disabled={loading}
           >
             <RefreshCw className={`w-5 h-5 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh QR Code
+            Refresh Code
           </Button>
         </div>
 
-        <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/10 text-left">
+        <div className="flex items-start gap-3 p-4 bg-primary/5 rounded-xl border border-primary/10 text-left scale-95 opacity-90 transition-all hover:scale-100 hover:opacity-100">
           <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
             Linking allows your parent to track progress, set goals, and view assignments. 
