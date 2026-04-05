@@ -1,21 +1,109 @@
 name: Bug Report
 description: Report a bug to help us improve Lumina
 title: "[BUG] "
-labels: ["bug"]
+labels: ["bug", "needs-triage"]
+assignees:
+  - harikiran138
 body:
   - type: markdown
     attributes:
       value: |
-        ## 🐛 Bug Description
-        Describe the issue.
+        Thanks for taking the time to report a bug! Please fill out as much detail as possible.
+        **Do not include real student data, PII, or credentials in this report.**
 
-        ## 🔁 Steps to Reproduce
-        1. 
-        2. 
-        3. 
+  - type: dropdown
+    id: portal
+    attributes:
+      label: Affected Portal
+      description: Which portal did you encounter this bug in?
+      options:
+        - Student
+        - Teacher
+        - Admin
+        - Parent
+        - Mentor
+        - Peer Tutor
+        - Counselor
+        - Content Creator
+        - Researcher
+        - Alumni
+        - Backend / API
+        - Shared / General
+    validations:
+      required: true
 
-        ## 🎯 Expected Behavior
-        What did you expect to happen?
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the bug...
+    validations:
+      required: true
 
-        ## 📸 Screenshots
-        Add screenshots if applicable.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the bug.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: I expected...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened? Include any error messages or console output.
+      placeholder: Instead, what happened was...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical (data loss / security issue / platform down)
+        - High (major feature broken)
+        - Medium (feature partially broken, workaround exists)
+        - Low (cosmetic / minor issue)
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Browser / Environment
+      description: Browser name and version, OS, or Node/Python version if backend.
+      placeholder: "e.g. Chrome 124, macOS 14 / Node 20.x"
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / Screen Recording
+      description: Add screenshots or a screen recording if applicable. Drag and drop images here.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I searched existing issues and this is not a duplicate
+          required: true
+        - label: This report does not contain real student data, PII, or credentials
+          required: true
+        - label: I can reproduce this issue consistently

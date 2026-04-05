@@ -1,16 +1,87 @@
 name: Feature Request
-description: Suggest an idea for Lumina
+description: Suggest an idea or improvement for Lumina
 title: "[FEATURE] "
-labels: ["enhancement"]
+labels: ["enhancement", "needs-triage"]
+assignees:
+  - harikiran138
 body:
   - type: markdown
     attributes:
       value: |
-        ## 💡 Feature Description
-        What is the feature you'd like to see?
+        Thanks for suggesting a new feature! Please provide as much detail as possible to help us evaluate it.
 
-        ## ❓ Problem Statement
-        What problem does this feature solve?
+  - type: dropdown
+    id: portal
+    attributes:
+      label: Target Portal
+      description: Which portal(s) would this feature affect?
+      multiple: true
+      options:
+        - Student
+        - Teacher
+        - Admin
+        - Parent
+        - Mentor
+        - Peer Tutor
+        - Counselor
+        - Content Creator
+        - Researcher
+        - Alumni
+        - Backend / API
+        - Shared / General
+    validations:
+      required: true
 
-        ## 🚀 Proposed Solution
-        How should this be implemented?
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What is the current pain point?
+      placeholder: "As a [role], I need... because currently..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the feature you'd like to see. Be as specific as possible.
+      placeholder: "I would like..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: "I also considered..."
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority / Impact
+      description: How important is this feature to you?
+      options:
+        - Critical (blocks core workflow)
+        - High (significantly improves experience)
+        - Medium (nice to have)
+        - Low (minor improvement)
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any mockups, references, or additional context that would help. Drag and drop images here.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I searched existing issues and this feature has not been requested before
+          required: true
+        - label: This feature aligns with Lumina's privacy-first principles
+          required: true
