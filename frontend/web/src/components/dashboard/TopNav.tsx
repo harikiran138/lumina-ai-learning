@@ -20,7 +20,7 @@ export default function TopNav({
   return (
     <header
       className={cn(
-        "fixed top-0 right-0 left-20 h-16 transition-all duration-300 z-30 px-6 flex items-center justify-between",
+        "fixed top-0 right-0 h-16 transition-all duration-300 z-30 px-6 flex items-center justify-between",
         isPremium 
           ? "bg-[#fdfaf5]/60 backdrop-blur-md border-b border-[#efe9de] text-[#4a3f35]" 
           : "bg-black/60 backdrop-blur-2xl border-b border-white/5 text-white shadow-[0_4px_30px_rgba(0,0,0,0.4)]",

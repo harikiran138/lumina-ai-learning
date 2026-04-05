@@ -144,7 +144,7 @@ async function fetchWithRetry(
   url: string,
   options: RequestInit,
   retries = 2,
-  timeoutMs = 15000
+  timeoutMs = 30000
 ): Promise<Response> {
   const MAX_RETRIES = 2;
   const actualRetries = Math.min(retries, MAX_RETRIES);
@@ -812,7 +812,7 @@ export class RealAPI {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ identifier, password, role_hint, college_id }),
       credentials: "include",
-    }, 2, 10000);
+    }, 2, 30000);
 
     if (!res.ok) {
       const error = await parseJsonSafe(res);

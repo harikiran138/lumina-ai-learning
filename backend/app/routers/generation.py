@@ -6,8 +6,9 @@ from ..services.ai.generation_service import content_generator
 
 router = APIRouter()
 
+import tempfile
 # Temporary upload path
-TEMP_UPLOAD_DIR = "/tmp/lumina_uploads"
+TEMP_UPLOAD_DIR = os.path.join(tempfile.gettempdir(), "lumina_uploads")
 os.makedirs(TEMP_UPLOAD_DIR, exist_ok=True)
 
 @router.post("/blueprint-from-pdf")
