@@ -181,10 +181,13 @@ class ParentStore:
         try:
             client = self.db.get_client()
             
+            # Normalize code to handle lowercase or whitespace
+            normalized_code = code.strip().upper()
+            
             # 1. Find the link entry by code
-            response = await client.table("parent_student_links").select("*").eq("link_code", code).eq("status", "pending").async_execute()
+            response = await client.table("parent_student_links").select("*").eq("link_code", normalized_code).eq("status", "pending").async_execute()
             if not response.data:
-                log.warning("link_by_code_invalid", code=code)
+                log.warning("link_by_code_invalid", code=normalized_code)
                 return None
             
             link_record = response.data[0]
@@ -195,7 +198,7 @@ class ParentStore:
             expiry_dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00")).replace(tzinfo=None)
             if expiry_dt < datetime.utcnow():
                 await client.table("parent_student_links").update({"status": "expired"}).eq("id", link_record["id"]).async_execute()
-                log.warning("link_by_code_expired", code=code, student_id=student_id)
+                log.warning("link_by_code_expired", code=normalized_code, student_id=student_id)
                 return None
 
             # 3. Check if THIS parent already has a verified link
@@ -211,6 +214,7 @@ class ParentStore:
                 "status": "linked",
                 "parent_id": parent_id,
                 "verified_by_admin": False, # SECURITY - ITEM 1: Must be verified by admin later
+                "verification_status": "pending",
                 "linked_at": datetime.utcnow().isoformat()
             }).eq("id", link_record["id"]).async_execute()
             
@@ -290,11 +294,19 @@ class ParentStore:
         unverified_links = [l for l in links if not l.get("verified")]
         
         children = []
-        for link in verified_links:
+        for link in links: # Include BOTH verified and unverified
             child_id = str(link["child_id"])
-            mastery = await self.get_child_mastery(child_id)
-            assignments = await self.get_child_assignments(child_id)
-            ai_digest = await self.get_ai_tutor_digest(child_id) # ITEM 6
+            is_verified = link.get("verified", False)
+            
+            # Only fetch deep data for verified children for performance/security
+            mastery = 0.0
+            assignments = []
+            ai_digest = []
+            
+            if is_verified:
+                mastery = await self.get_child_mastery(child_id)
+                assignments = await self.get_child_assignments(child_id)
+                ai_digest = await self.get_ai_tutor_digest(child_id)
             
             children.append({
                 "id": child_id,
@@ -303,13 +315,15 @@ class ParentStore:
                 "mastery": round(mastery or 0.0, 2),
                 "pending_assignments": len([item for item in assignments if item.get("status") != "graded"]),
                 "exam_readiness": round(min(100.0, mastery or 0.0), 2),
-                "ai_tutor_topics": ai_digest, # ITEM 6
+                "ai_tutor_topics": ai_digest,
                 "streak": 0,
+                "verified": is_verified,
+                "relationship": "Parent/Guardian" # Add default relationship
             })
 
         return {
             "children": children,
-            "has_unverified_children": len(unverified_links) > 0, # Frontend can show "Pending Verification"
+            "has_unverified_children": len(unverified_links) > 0,
             "messages": await self.get_messages(parent_id),
             "alerts": await self.get_alerts(parent_id),
             "weekly_reports": await self.get_weekly_reports(parent_id),
@@ -367,3 +381,40 @@ class ParentStore:
         except Exception as e:
             log.error("delete_link_failed", parent_id=parent_id, student_id=student_id, error=str(e))
             return False
+
+    async def verify_link(self, link_id: str) -> bool:
+        """Approves a parent-student link (Item 1)."""
+        try:
+            client = self.db.get_client()
+            await client.table("parent_student_links").update({
+                "verified_by_admin": True,
+                "verification_status": "verified"
+            }).eq("id", link_id).async_execute()
+            return True
+        except Exception as e:
+            log.error("verify_link_failed", link_id=link_id, error=str(e))
+            return False
+
+    async def reject_link(self, link_id: str, reason: str = "") -> bool:
+        """Rejects/removes a parent-student link."""
+        try:
+            client = self.db.get_client()
+            await client.table("parent_student_links").update({
+                "status": "rejected",
+                "verification_status": "rejected",
+                "notes": reason
+            }).eq("id", link_id).async_execute()
+            return True
+        except Exception as e:
+            log.error("reject_link_failed", link_id=link_id, error=str(e))
+            return False
+
+    async def list_pending_links(self) -> List[Dict[str, Any]]:
+        """List all links awaiting admin verification."""
+        try:
+            client = self.db.get_client()
+            res = await client.table("parent_student_links").select("*").eq("status", "linked").eq("verified_by_admin", False).async_execute()
+            return res.data or []
+        except Exception as e:
+            log.error("list_pending_links_failed", error=str(e))
+            return []

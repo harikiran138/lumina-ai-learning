@@ -9,7 +9,7 @@ import {
   Users, TrendingUp, AlertCircle, BookOpen, 
   Calendar, CheckCircle, ChevronRight, Filter, 
   MessageSquare, Settings, Share2, Plus, 
-  Clock, Award, Brain, Target, Shield, Heart
+  Clock, Award, Brain, Target, Shield, Heart, ShieldAlert
 } from "lucide-react";
 import { api } from "@/lib/api";
 import Link from "next/link";
@@ -48,7 +48,7 @@ const ParentDashboardPage = () => {
     setLinkingError("");
     try {
       const res = await api.parentLinkStudentByCode(linkCode);
-      if (res.success) {
+      if (res.status === "success" || res.success) {
         setLinkingSuccess(true);
         setTimeout(() => {
           setLinkingSuccess(false);
@@ -56,7 +56,7 @@ const ParentDashboardPage = () => {
           fetchDashboard();
         }, 2000);
       } else {
-        setLinkingError(res.detail || "Invalid code. Please try again.");
+        setLinkingError(res.detail || res.message || "Invalid code. Please try again.");
       }
     } catch (err: any) {
       setLinkingError(err.message || "Failed to link student.");
@@ -66,10 +66,11 @@ const ParentDashboardPage = () => {
   };
 
   const handleAddGoal = async () => {
-    if (!parentData?.children?.[0]?.id || !newGoal.text) return;
+    const activeChild = parentData?.children?.[0];
+    if (!activeChild?.id || !newGoal.text) return;
     try {
       await api.setParentGoal(
-        parentData.children[0].id,
+        activeChild.id,
         newGoal.type,
         newGoal.text,
         newGoal.timeframe
@@ -96,9 +97,10 @@ const ParentDashboardPage = () => {
   }
 
   const children = parentData?.children || [];
-  const activeStudent = children[0]; // Simple case for now
+  const activeStudent = children.length > 0 ? children[0] : null;
   
-  if (children.length === 0) {
+  // Show link form if no student is linked
+  if (!activeStudent || children.length === 0) {
     return (
       <div className="min-h-screen bg-[#fdfaf5] p-8">
         <div className="mx-auto max-w-2xl bg-white p-12 rounded-3xl shadow-xl border border-[#efe9de] text-center">
@@ -116,9 +118,9 @@ const ParentDashboardPage = () => {
               <input
                 type="text"
                 placeholder="Enter Student Link Code"
-                className="w-full h-14 px-6 bg-[#f8f5ee] border-2 border-transparent rounded-xl focus:border-[#8c7851] focus:bg-white outline-none transition-all text-[#4a3f35] placeholder-[#c4b5a2]"
+                className="w-full h-14 px-6 bg-[#f8f5ee] border-2 border-transparent rounded-xl focus:border-[#8c7851] focus:bg-white outline-none transition-all text-[#4a3f35] placeholder-[#c4b5a2] uppercase"
                 value={linkCode}
-                onChange={(e) => setLinkCode(e.target.value)}
+                onChange={(e) => setLinkCode(e.target.value.toUpperCase())}
               />
               {linkingSuccess && (
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-600 animate-in fade-in zoom-in">
@@ -160,7 +162,9 @@ const ParentDashboardPage = () => {
               <h1 className="text-xl font-serif text-[#4a3f35]">Guardian Dashboard</h1>
               <div className="flex items-center gap-2 text-sm text-[#8c7851]">
                 <Shield size={14} />
-                <span className="font-medium">Verified Relationship: {activeStudent.relationship}</span>
+                <span className="font-medium">
+                  {activeStudent.verified ? "Verified Relationship" : "Link Pending Verification"}: {activeStudent.relationship}
+                </span>
               </div>
             </div>
           </div>
@@ -186,23 +190,48 @@ const ParentDashboardPage = () => {
       </header>
 
       <main className="max-w-[1400px] mx-auto px-8 pt-8">
+        {!activeStudent.verified && (
+          <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-4 animate-in fade-in slide-in-from-top-4">
+            <div className="p-2 bg-amber-100 rounded-xl text-amber-600">
+              <ShieldAlert size={24} />
+            </div>
+            <div>
+              <h3 className="font-bold text-amber-900">Verification Pending</h3>
+              <p className="text-amber-700 text-sm">
+                Your connection to <strong>{activeStudent.name}</strong> is linked but awaiting administrator verification. 
+                Full access to assignments, deep AI insights, and verified reports will be available shortly.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Welcome Section */}
         <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between items-start gap-4">
           <div>
-            <span className="text-[#8c7851] font-bold text-sm tracking-widest uppercase mb-2 block">Premium Learning Support</span>
+            <span className="text-[#8c7851] font-bold text-sm tracking-widest uppercase mb-2 block">
+              {activeStudent.verified ? "Premium Learning Support" : "Connection Pending"}
+            </span>
             <h2 className="text-4xl font-serif text-[#3a2f26]">Good morning, {activeStudent.name}'s Guardian</h2>
-            <p className="text-[#807060] mt-2">Here is the latest snapshot of your student's learning momentum.</p>
+            <p className="text-[#807060] mt-2">
+              {activeStudent.verified 
+                ? "Here is the latest snapshot of your student's learning momentum." 
+                : "Your student dashboard will populate as soon as the relationship is verified."}
+            </p>
           </div>
           
           <div className="flex gap-3">
              <button 
               onClick={() => setShowGoalModal(true)}
-              className="px-6 h-12 bg-[#8c7851] text-white rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-[#8c785144] hover:bg-[#726242] transition-colors"
+              disabled={!activeStudent.verified}
+              className="px-6 h-12 bg-[#8c7851] text-white rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-[#8c785144] hover:bg-[#726242] transition-colors disabled:opacity-50"
              >
               <Target size={18} />
               Set Academic Goal
             </button>
-            <button className="px-6 h-12 bg-white text-[#8c7851] border border-[#e8d5b5] rounded-xl font-bold flex items-center gap-2 hover:bg-[#faf9f6] transition-colors shadow-sm">
+            <button 
+              disabled={!activeStudent.verified}
+              className="px-6 h-12 bg-white text-[#8c7851] border border-[#e8d5b5] rounded-xl font-bold flex items-center gap-2 hover:bg-[#faf9f6] transition-colors shadow-sm disabled:opacity-50"
+            >
               <Share2 size={18} />
               Weekly Report
             </button>

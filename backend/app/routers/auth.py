@@ -358,7 +358,7 @@ def _log_login_history(
 def _decode_invite_token(token: str) -> dict:
     try:
         from jose import jwt
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token, settings.JWT_SECRET or settings.SECRET_KEY, algorithms=["HS256"])
         if payload.get("type") != "invite":
             raise HTTPException(status_code=400, detail="Invalid invite token")
         return payload
@@ -371,7 +371,7 @@ def _decode_invite_token(token: str) -> dict:
 def _decode_reset_token(token: str) -> dict:
     try:
         from jose import jwt
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token, settings.JWT_SECRET or settings.SECRET_KEY, algorithms=["HS256"])
         if payload.get("type") != "reset":
             raise HTTPException(status_code=400, detail="Invalid reset token")
         return payload
@@ -554,6 +554,7 @@ async def forgot_password(
         subject=payload.email,
         expires_delta=timedelta(hours=1),
         extra_claims={"type": "reset", "userId": user.get("id")},
+        secret_key=settings.JWT_SECRET,
     )
     print(f"[EMAIL STUB] Reset link: /auth/reset-password?token={reset_token}")
     return {"success": True}
@@ -918,7 +919,7 @@ async def change_password(
     if token:
         try:
             from jose import jwt
-            decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            decoded = jwt.decode(token, settings.JWT_SECRET or settings.SECRET_KEY, algorithms=["HS256"])
             if decoded.get("type") == "temp_password":
                 user_id = decoded.get("userId")
         except Exception:

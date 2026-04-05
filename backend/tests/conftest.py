@@ -31,8 +31,8 @@ class LifespanManager:
         self._receive_queue: "asyncio.Queue[Dict[str, Any]]" = asyncio.Queue()
         self._startup_complete = asyncio.Event()
         self._shutdown_complete = asyncio.Event()
-        self._task: asyncio.Task | None = None
-        self._error: BaseException | None = None
+        self._task: Optional[asyncio.Task] = None
+        self._error: Optional[BaseException] = None
 
     async def __aenter__(self):
         self._task = asyncio.create_task(self._run())

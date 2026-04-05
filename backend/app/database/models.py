@@ -504,11 +504,69 @@ class CourseConcept(BaseModel):
     created_at: str = Field(default_factory=current_time_iso)
 
 
-class ParentStudentLink(BaseModel):
+    expires_at: Optional[str] = None
+
+
+# --- 10. COUNSELOR SYSTEM ---
+
+
+class CounselorNote(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    counselor_id: str
+    student_id: str
+    encrypted_blob: str
+    iv: str
+    auth_tag: str
+    created_at: str = Field(default_factory=current_time_iso)
+    updated_at: str = Field(default_factory=current_time_iso)
+
+
+class RiskRevealLog(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    counselor_id: str
+    student_id: str
+    reason: str
+    revealed_at: str = Field(default_factory=current_time_iso)
+
+
+class FollowUpTask(BaseModel):
     id: str = Field(default_factory=generate_id)
     student_id: str
-    parent_id: Optional[str] = None
-    link_code: str
-    status: str = "pending"  # pending, linked, expired
+    counselor_id: Optional[str] = None
+    status: str = "pending"  # pending, acknowledged, completed, escalated
+    due_at: str
+    acknowledged_at: Optional[str] = None
+    escalated_at: Optional[str] = None
     created_at: str = Field(default_factory=current_time_iso)
-    expires_at: Optional[str] = None
+    updated_at: str = Field(default_factory=current_time_iso)
+
+
+class RiskAlert(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    student_id: str
+    signal_type: str
+    severity: str
+    suppression_status: str = "active"
+    suppression_expiry: Optional[str] = None
+    created_at: str = Field(default_factory=current_time_iso)
+    updated_at: str = Field(default_factory=current_time_iso)
+
+
+# Helper Schemas for API
+class RevealRequest(BaseModel):
+    reason: str
+
+
+class EncryptedNoteCreate(BaseModel):
+    student_id: str
+    encrypted_blob: str
+    iv: str
+    auth_tag: str
+
+
+class RiskAlertAnonymized(BaseModel):
+    id: str
+    anonymized_name: str
+    signal_type: str
+    severity: str
+    created_at: str

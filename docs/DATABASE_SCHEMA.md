@@ -1149,7 +1149,9 @@ INSERT INTO agent_memory (user_id, agent_type, memory_key, memory_value, confide
 
 ---
 
+
 ### 3.21 parent_student_links
+
 **Purpose:** Formal linking mechanism between parents and students via restricted codes. Requires admin verification for portal access.
 | Column | Type | Notes |
 |--------|------|-------|
@@ -1162,14 +1164,19 @@ INSERT INTO agent_memory (user_id, agent_type, memory_key, memory_value, confide
 | verified_by_admin | boolean | Default: false; Gateway for portal access |
 | verified_at | timestamptz | When verified by admin |
 | verified_by | uuid | Admin user ID who verified |
+| can_view_grades | boolean | Permission to see children's grades |
+| can_view_progress | boolean | Permission to see children's progress |
 | expires_at | timestamptz | Code expiry |
 
 ---
 
 ## 4. Governance & Security
 
+
 ### 4.1 Admin-Verified Parent Access
+
 To prevent unauthorized access to sensitive student data (grades, progress, submissions), all parent-student links must be **explicitly verified** by a system administrator.
+
 - **RLS Enforced:** Policies on `progress`, `submissions`, and `certificates` tables check for `verified_by_admin = true` on the corresponding link.
 - **Audit Logging:** Every verification action is logged with the admin's user ID and timestamp.
 

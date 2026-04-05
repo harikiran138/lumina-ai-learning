@@ -49,6 +49,10 @@ GLOBAL_TABLES = {
     "content_uploads",
     "physical_submissions",
     "course_concepts",
+    "counselor_notes",
+    "risk_reveal_logs",
+    "follow_up_tasks",
+    "risk_alerts",
 }
 
 

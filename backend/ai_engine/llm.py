@@ -108,10 +108,10 @@ def infer_openrouter_complexity(prompt: str, system_prompt: str = "") -> str:
 
 
 def resolve_openrouter_models(
-    feature: str | None,
+    feature: Optional[str],
     prompt: str,
     system_prompt: str = "",
-    explicit_model: str | None = None,
+    explicit_model: Optional[str] = None,
     fallback_models: Optional[List[str]] = None,
 ) -> List[str]:
     models: list[str] = []
@@ -282,8 +282,8 @@ class OpenRouterProvider(LLMProvider):
     def __init__(
         self,
         api_key: str,
-        model: str | None = None,
-        feature: str | None = None,
+        model: Optional[str] = None,
+        feature: Optional[str] = None,
         fallback_models: Optional[List[str]] = None,
     ):
         self.api_key = api_key

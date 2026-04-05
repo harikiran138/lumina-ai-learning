@@ -30,7 +30,7 @@ def create_access_token(
     }
     if extra_claims:
         to_encode.update(extra_claims)
-    encoded_jwt = jwt.encode(to_encode, secret_key or settings.SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, secret_key or settings.JWT_SECRET or settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 

@@ -1127,7 +1127,8 @@ async def verify_parent_link(link_id: str, admin: dict = Depends(is_admin)):
         now = datetime.utcnow().isoformat()
         res = await db.client.table("parent_student_links").update({
             "verified_by_admin": True,
-            "status": "verified",
+            "status": "linked", # Keep it as linked so it appears on dashboard
+            "verification_status": "verified",
             "verified_at": now,
             "verified_by": admin.get("id")
         }).eq("id", link_id).async_execute()

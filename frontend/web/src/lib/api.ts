@@ -77,6 +77,68 @@ function hasCookie(name: string): boolean {
   return document.cookie.split(";").some((part) => part.trim().startsWith(prefix));
 }
 
+// ── JWT Token Validation Helpers ─────────────────────────────────────────────
+/**
+ * Validates if a JWT token is expired by checking its exp claim.
+ * Returns true if token is expired, invalid, or malformed.
+ */
+function isTokenExpired(token: string): boolean {
+  if (!token || typeof token !== 'string') return true;
+  
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    
+    const payload = JSON.parse(atob(parts[1]));
+    if (!payload.exp) return true;
+    
+    // Add 5 second buffer to account for clock skew
+    return payload.exp * 1000 < Date.now() - 5000;
+  } catch (err) {
+    console.warn('[JWT] Token validation failed:', err);
+    return true;
+  }
+}
+
+/**
+ * Gets the access token from localStorage.
+ * Returns null if not found or expired.
+ */
+function getStoredToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const token = localStorage.getItem('access_token');
+    if (!token) return null;
+    
+    if (isTokenExpired(token)) {
+      console.warn('[JWT] Stored token is expired, removing...');
+      clearStoredToken();
+      return null;
+    }
+    
+    return token;
+  } catch (err) {
+    console.error('[JWT] Error reading stored token:', err);
+    return null;
+  }
+}
+
+/**
+ * Clears all stored authentication tokens from localStorage.
+ */
+function clearStoredToken(): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    console.log('[JWT] Cleared stored tokens');
+  } catch (err) {
+    console.error('[JWT] Error clearing tokens:', err);
+  }
+}
+
 // ── Fetch with retry + timeout ────────────────────────────────────────────────
 async function fetchWithRetry(
   url: string,
@@ -273,9 +335,12 @@ export class RealAPI {
     if (typeof window !== "undefined") {
       if (token) {
         setAuthCookie(token);
-        localStorage.setItem("auth_token", token);
+        localStorage.setItem("access_token", token); // 🔥 Use access_token for consistency with backend
       } else {
+        // Clear all possible token variations
+        localStorage.removeItem("access_token");
         localStorage.removeItem("auth_token");
+        localStorage.removeItem("refresh_token");
         // Clear all possible auth cookies with common variations
         const names = ["access_token", "refresh_token", "auth_token"];
         const paths = ["/", "/api"];
@@ -778,6 +843,15 @@ export class RealAPI {
 
   async getCurrentUser(forceRefresh = false): Promise<User | null> {
     if (this.currentUser && !forceRefresh) return this.currentUser;
+    
+    // [JWT Validation] Check if stored token exists and is valid before making request
+    const storedToken = getStoredToken();
+    if (!storedToken) {
+      console.warn("[API] No valid stored token found");
+      this.currentUser = null;
+      return null;
+    }
+    
     // After a page refresh the in-memory value is lost; re-hydrate from the
     // backend using the HTTP-only cookie that was already set during login.
     try {
@@ -789,11 +863,27 @@ export class RealAPI {
           return this.currentUser;
         }
       }
+      
       // [Lumina Consistency] If response is not OK (e.g. 401), force clear local state
+      if (res.status === 401) {
+        console.error("[API] 401 Unauthorized - Invalid or expired token. Clearing all auth data.");
+        clearStoredToken(); // 🔥 CRITICAL: Clear invalid token
+        this.currentUser = null;
+        return null;
+      }
+      
       console.warn("[API] Session invalid on backend. Clearing local auth.");
       this.currentUser = null;
       return null;
-    } catch (err) {
+    } catch (err: any) {
+      // [JWT Auth Failure] If it's an auth failure (401), clear tokens
+      if (err.message?.includes("401") || err.message?.includes("Auth Failure")) {
+        console.error("[API] Auth error detected:", err.message);
+        clearStoredToken(); // 🔥 CRITICAL: Clear invalid token
+        this.currentUser = null;
+        throw err;
+      }
+      
       // Network error – we safely keep current state but don't re-auth
       console.log("[API] getCurrentUser failed due to network. Keeping state.");
       throw err;
@@ -1928,16 +2018,28 @@ export class RealAPI {
     });
   }
   async getHODDashboard(..._args: any[]): Promise<any> { return this.getDashboardData("hod"); }
-  async getMentorMatches(..._args: any[]): Promise<any> {
+  async getMentorMatches(): Promise<any[]> {
     return this.fetchJsonOrDefault("/api/mentor/matches", []);
   }
-  async getMentorSessions(..._args: any[]): Promise<any> {
+
+  async getMentorSessions(): Promise<any[]> {
     return this.fetchJsonOrDefault("/api/mentor/sessions", []);
   }
-  async submitPortfolioReview(payload: any = {}, ..._args: any[]): Promise<any> {
-    return this.fetchJsonOrDefault("/api/mentor/portfolio-review", { success: false }, {
-      method: "POST",
-      body: JSON.stringify(payload),
+
+  async getMenteeProfile(menteeId: string): Promise<any> {
+    return this.fetchJsonOrDefault(`/api/mentor/mentees/${menteeId}/profile`, null);
+  }
+
+  async getMenteeBriefing(menteeId: string): Promise<any> {
+    return this.fetchJsonOrDefault(`/api/mentor/mentees/${menteeId}/briefing`, { "error": "Briefing not available" });
+  }
+
+  async scheduleMentorSession(menteeId: string, sessionDate: string, notes: any = {}, nextSteps: string = ""): Promise<any> {
+    return this.post("/api/mentor/session/schedule", {
+      mentee_id: menteeId,
+      session_date: sessionDate,
+      notes,
+      next_steps: nextSteps
     });
   }
   async getAlumniPortfolio(..._args: any[]): Promise<any> {

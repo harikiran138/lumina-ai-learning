@@ -80,8 +80,10 @@ class Settings(BaseSettings):
                 raise ValueError(f"PRODUCTION REQUIREMENT: {', '.join(missing)} must be set and at least 32 characters long.")
             else:
                 # Default for local development ONLY if not in prod
-                self.SECRET_KEY = self.SECRET_KEY or "dev_secret_only_for_local_testing_min_32_chars_long_12345"
-                self.JWT_SECRET = self.JWT_SECRET or "dev_jwt_secret_only_for_local_testing_min_32_chars_long_12345"
+                # SECURITY: Unified dev secret to prevent JWT signature mismatch in local dev
+                dev_secret = "dev_secret_only_for_local_testing_min_32_chars_long_12345"
+                self.SECRET_KEY = self.SECRET_KEY or dev_secret
+                self.JWT_SECRET = self.JWT_SECRET or dev_secret
                 self.JWT_REFRESH_SECRET = self.JWT_REFRESH_SECRET or "dev_refresh_secret_only_for_local_testing_min_32_chars_long_12345"
 
 
