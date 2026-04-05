@@ -60,7 +60,7 @@ async def test_ai_queue_approval_only_banks_answer_once():
             "id": "queue-hardening-1",
             "question_id": "question-hardening-1",
             "course_id": "course-hardening-1",
-            "ai_draft": "A verified answer",
+            "ai_generated_answer": "A verified answer",
             "status": "pending",
         }
     ).execute()

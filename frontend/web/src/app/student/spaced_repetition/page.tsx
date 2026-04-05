@@ -124,7 +124,7 @@ export default function SpacedRepetitionPage() {
     const fetchCards = async () => {
       setIsLoading(true);
       try {
-        const res = await RealAPI.getInstance().fetchAuthorized("/api/student/spaced-repetition");
+        const res = await RealAPI.getInstance().fetchWithAuth("/api/student/spaced-repetition");
         if (res.ok) {
           const data = await res.json();
           setCards(data.cards ?? []);
@@ -158,7 +158,7 @@ export default function SpacedRepetitionPage() {
         rating,
       );
       try {
-        await RealAPI.getInstance().fetchAuthorized("/api/student/spaced-repetition/review", {
+        await RealAPI.getInstance().fetchWithAuth("/api/student/spaced-repetition/review", {
           method: "POST",
           body: JSON.stringify({ cardId: currentCard.id, rating, newInterval: interval, newEaseFactor: easeFactor }),
         });

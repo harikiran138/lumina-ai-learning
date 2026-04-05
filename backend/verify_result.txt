@@ -1,1 +1,0 @@
-FAILED: {'message': 'invalid input value for enum user_role: "anon"', 'code': '22P02', 'hint': None, 'details': None}

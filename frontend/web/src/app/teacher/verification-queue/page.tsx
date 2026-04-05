@@ -86,7 +86,7 @@ export default function VerificationQueuePage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch("/faculty/ai-queue");
+      const data = await apiFetch("/teacher/ai-queue");
       const items: AIAnswer[] = (data.items || []).map((row: any) => ({
         id: row.id,
         questionText: row.question_text || "",
@@ -131,14 +131,14 @@ export default function VerificationQueuePage() {
     setProcessing(id);
     try {
       if (action === "approved") {
-        await apiFetch(`/faculty/ai-queue/${id}/approve`, { method: "POST" });
+        await apiFetch(`/teacher/ai-queue/${id}/approve`, { method: "POST" });
       } else if (action === "edited") {
-        await apiFetch(`/faculty/ai-queue/${id}/edit-approve`, {
+        await apiFetch(`/teacher/ai-queue/${id}/edit-approve`, {
           method: "POST",
           body: JSON.stringify({ final_answer: updatedAnswer, faculty_note: note }),
         });
       } else if (action === "rejected") {
-        await apiFetch(`/faculty/ai-queue/${id}/reject`, {
+        await apiFetch(`/teacher/ai-queue/${id}/reject`, {
           method: "POST",
           body: JSON.stringify({ faculty_note: note || "Rejected by faculty" }),
         });
@@ -508,7 +508,7 @@ export default function VerificationQueuePage() {
           The more you interact with this queue, the smarter Lumina becomes for your students.
         </p>
         <Link
-          href="/faculty/analytics"
+          href="/teacher/analytics"
           className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-lumina-highlight hover:text-white transition-colors"
         >
           View AI performance analytics

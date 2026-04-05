@@ -115,7 +115,7 @@ export default function AssessmentPage() {
       return;
     }
     try {
-      const res = await RealAPI.getInstance().fetchAuthorized(`${API_BASE}/start`, {
+      const res = await RealAPI.getInstance().fetchWithAuth(`${API_BASE}/start`, {
         method: "POST",
         body: JSON.stringify({
           student_id: currentUserId || "demo_student",
@@ -145,7 +145,7 @@ export default function AssessmentPage() {
 
   const fetchReport = async (sid: string) => {
     try {
-      const res = await RealAPI.getInstance().fetchAuthorized(`${API_BASE}/report/${sid}`);
+      const res = await RealAPI.getInstance().fetchWithAuth(`${API_BASE}/report/${sid}`);
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(`Report error: ${res.status} ${txt}`);
@@ -168,7 +168,7 @@ export default function AssessmentPage() {
   const loadNextQuestion = async (sid: string) => {
     setStatus("loading");
     try {
-      const res = await RealAPI.getInstance().fetchAuthorized(`${API_BASE}/next-question/${sid}`);
+      const res = await RealAPI.getInstance().fetchWithAuth(`${API_BASE}/next-question/${sid}`);
 
       if (!res.ok) {
         if (res.status === 404) {
@@ -232,7 +232,7 @@ export default function AssessmentPage() {
     };
 
     try {
-      const res = await RealAPI.getInstance().fetchAuthorized(`${API_BASE}/submit`, {
+      const res = await RealAPI.getInstance().fetchWithAuth(`${API_BASE}/submit`, {
         method: "POST",
         body: JSON.stringify({
           session_id: sessionId,
@@ -272,7 +272,7 @@ export default function AssessmentPage() {
     if (confirm("Are you sure you want to end the assessment early?")) {
       setStatus("loading");
       try {
-        await RealAPI.getInstance().fetchAuthorized(`${API_BASE}/complete/${sessionId}`, { method: "POST" });
+        await RealAPI.getInstance().fetchWithAuth(`${API_BASE}/complete/${sessionId}`, { method: "POST" });
         // After manual completion, load the summary report
         await fetchReport(sessionId);
       } catch (err) {

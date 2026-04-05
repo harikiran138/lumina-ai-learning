@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Lock, FileText, Send, RefreshCw, XCircle, Unlock } from 'lucide-react';
 import { encryptNote, decryptNote } from './encryption-utils';
-import axios from 'axios';
 
 interface Note {
   id: string;
@@ -31,8 +30,9 @@ export const CounselorInterventionNotes = ({ identity, passphrase }: { identity:
 
   const fetchNotes = async () => {
     try {
-      const res = await axios.get(`/api/counselor/notes/${identity.id}`);
-      setNotes(res.data);
+      const res = await fetch(`/api/counselor/notes/${identity.id}`);
+      const data = await res.json();
+      setNotes(data);
     } catch (error) {
       console.error("Failed to fetch notes", error);
     }
@@ -43,9 +43,10 @@ export const CounselorInterventionNotes = ({ identity, passphrase }: { identity:
     setIsEncrypting(true);
     try {
       const encrypted = await encryptNote(newNote, passphrase);
-      await axios.post('/api/counselor/notes', {
-        student_id: identity.id,
-        ...encrypted
+      await fetch('/api/counselor/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: identity.id, ...encrypted }),
       });
       setNewNote("");
       fetchNotes();

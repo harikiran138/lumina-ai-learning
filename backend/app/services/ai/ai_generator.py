@@ -1,7 +1,6 @@
 import json
 import os
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
@@ -33,22 +32,23 @@ Ensure the tone is professional, engaging, and clear.
     USER_PROMPT_TEMPLATE = """Analyze the following text from a syllabus or textbook and extract a complete course structure:
     
     --- RAW TEXT ---
-    {text}
+    {{text}}
     --- END RAW TEXT ---
     
     Return the result in a structured format with modules and topics.
     """
 
     def __init__(self):
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
+        self.api_key = os.getenv("GEMINI_API_KEY")
+        if not self.api_key:
             print("WARNING: GEMINI_API_KEY not found. Blueprint generator will use mock data.")
-            self.client = None
+            self.has_client = False
         else:
-            self.client = genai.Client(api_key=api_key)
+            genai.configure(api_key=self.api_key)
+            self.has_client = True
 
     async def generate(self, raw_text: str) -> dict:
-        if not self.client:
+        if not self.has_client:
             return self._generate_mock(raw_text)
         
         prompt = f"""{self.SYSTEM_PROMPT}
@@ -76,32 +76,34 @@ IMPORTANT: You MUST return a valid JSON object following this schema:
 }}
 """
         try:
-            response = self.client.models.generate_content(
-                model='gemini-1.5-flash',
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type='application/json'
-                )
+            # Use generate_text for older library versions (v0.1.0rc1)
+            response = genai.generate_text(
+                model='models/text-bison-001',
+                prompt=prompt
             )
-            return json.loads(response.text)
+            if hasattr(response, 'result') and response.result:
+                return json.loads(response.result)
+            return self._generate_mock(raw_text)
         except Exception as e:
             print(f"Gemini Blueprint Error: {str(e)}")
             return self._generate_mock(raw_text)
 
     def _generate_mock(self, raw_text: str) -> dict:
         """Fallback mock implementation."""
-        lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
-        title = lines[0] if lines else "AI-Generated Course"
+        title = "AI-Generated Course"
         
-        modules = [
-             BlueprintModule(title="Foundation", description="Core concepts from the document", topics=[
-                 BlueprintTopic(title="Introduction", description="Overview of the content"),
-                 BlueprintTopic(title="Core Principles", description="Detailed analysis of key themes")
-             ])
-        ]
-        
-        return BlueprintResult(
-            title=title,
-            description="A course blueprint generated from your document.",
-            modules=modules
-        ).model_dump()
+        return {
+            "title": title,
+            "description": "A course blueprint generated from your document.",
+            "level": "Beginner",
+            "modules": [
+                {
+                    "title": "Foundation",
+                    "description": "Core concepts from the document",
+                    "topics": [
+                        {"title": "Introduction", "description": "Overview of the content", "duration_minutes": 45},
+                        {"title": "Core Principles", "description": "Detailed analysis of key themes", "duration_minutes": 45}
+                    ]
+                }
+            ]
+        }

@@ -48,7 +48,7 @@ export default function TeacherCourses() {
           <p className="text-gray-400">Manage and create your curriculum</p>
         </div>
         <Link
-          href="/faculty/create-course"
+          href="/teacher/create-course"
           className="flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg transition-colors"
         >
           <Plus className="w-5 h-5 mr-2" />
@@ -79,7 +79,7 @@ export default function TeacherCourses() {
         {filteredCourses.map((course) => (
           <Link
             key={course.id}
-            href={`/faculty/courses/${course.id}`}
+            href={`/teacher/courses/${course.id}`}
             className="group relative bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:border-amber-500/50 transition-all duration-300 block"
           >
             {/* Course Image */}

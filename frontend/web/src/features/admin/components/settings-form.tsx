@@ -34,7 +34,7 @@ export function SettingsForm({ initialConfig }: SettingsFormProps) {
   const saveConfig = () => {
     startTransition(async () => {
       try {
-        const response = await api.fetchAuthorized("/api/admin/config", {
+        const response = await api.fetchWithAuth("/api/admin/config", {
           method: "POST",
           body: JSON.stringify(config),
         });

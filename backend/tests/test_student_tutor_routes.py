@@ -6,6 +6,7 @@ import pytest
 
 from app.api.deps import get_current_student
 from app.main import app
+from ai_engine.classifier import RoutingTier, SAFE_INSTANT_WAITING
 
 
 @pytest.fixture
@@ -63,10 +64,9 @@ async def test_student_tutor_ask_and_poll(student_override, ac):
         }
     )
 
-    with patch(
-        "app.routers.ai_tutor.AITutorStore.get_response",
-        new=AsyncMock(return_value=structured),
-    ):
+    _safe_clf = {"tier": RoutingTier.SAFE_INSTANT, "confidence": 0.95, "reason": "mocked"}
+    with patch("app.routers.student.classify", return_value=_safe_clf), \
+         patch("app.routers.ai_tutor.AITutorStore.get_response", new=AsyncMock(return_value=structured)):
         ask_response = await ac.post(
             "/api/student/tutor/ask",
             json={"prompt": "Quiz me on algebra", "history": []},
@@ -75,7 +75,7 @@ async def test_student_tutor_ask_and_poll(student_override, ac):
     assert ask_response.status_code == 200
     ask_payload = ask_response.json()
     assert ask_payload["status"] == "pending"
-    assert ask_payload["message"] == "Teacher is reviewing your answer"
+    assert ask_payload["message"] == SAFE_INSTANT_WAITING
     assert ask_payload["poll_url"].endswith(ask_payload["id"])
 
     answer_payload = await _wait_for_answer(ac, ask_payload["id"])

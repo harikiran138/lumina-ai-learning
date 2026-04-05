@@ -28,7 +28,7 @@ class LifespanManager:
 
     def __init__(self, app: Any):
         self.app = app
-        self._receive_queue: "asyncio.Queue[Dict[str, Any]]" = asyncio.Queue()
+        self._receive_queue: "Any" = asyncio.Queue()
         self._startup_complete = asyncio.Event()
         self._shutdown_complete = asyncio.Event()
         self._task: Optional[asyncio.Task] = None

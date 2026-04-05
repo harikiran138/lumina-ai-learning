@@ -67,8 +67,7 @@ export default function CounselorNotes() {
       await api.logSafeguardingEvent({
         student_id: selectedCase.student_id,
         event_type: 'identity_reveal',
-        description: revealJustification,
-        severity: 'medium'
+        reason: revealJustification,
       });
       setShowRevealModal(false);
       setIsEncrypted(false);

@@ -5,6 +5,7 @@ import pytest
 
 from app.api.deps import get_current_active_user
 from app.store.ai_tutor_store import AITutorStore
+from ai_engine.classifier import RoutingTier
 
 
 def test_ai_tutor_classification_adapts_to_student_state():
@@ -67,16 +68,18 @@ async def test_ai_tutor_chat_queues_student_answer_for_teacher_review(ac, app, l
         }
     ).execute()
 
-    with patch.object(
-        AITutorStore,
-        "_generate_teacher_review_draft",
-        new=AsyncMock(
-            return_value={
-                "draft_answer": "Newton's Second Law states that force equals mass times acceleration.",
-                "response_payload": {"response_type": "explanation"},
-            }
-        ),
-    ):
+    _academic_clf = {"tier": RoutingTier.ACADEMIC_VERIFIED, "confidence": 0.9, "reason": "mocked"}
+    with patch("app.routers.ai_tutor.classify", return_value=_academic_clf), \
+         patch.object(
+            AITutorStore,
+            "_generate_teacher_review_draft",
+            new=AsyncMock(
+                return_value={
+                    "draft_answer": "Newton's Second Law states that force equals mass times acceleration.",
+                    "response_payload": {"response_type": "explanation"},
+                }
+            ),
+        ):
         response = await ac.post(
             "/api/ai-tutor/chat",
             json={
@@ -93,7 +96,7 @@ async def test_ai_tutor_chat_queues_student_answer_for_teacher_review(ac, app, l
     assert payload["classification"]["response_type"] == "explanation"
     assert payload["classification"]["mode"] == "explain"
 
-    ack = json.loads(payload["response"])
+    ack = json.loads(payload["content"])
     assert ack["meta"]["queue_status"] == "pending_teacher_review"
     assert ack["flow"][0]["title"] == "Answer queued for teacher review"
 

@@ -174,7 +174,7 @@ export default function SystemAdminPage() {
       const [h, q, c] = await Promise.allSettled([
         api.getAdminSystemHealth(),
         api.getAdminQueueHealth(),
-        (api as any).fetchAuthorized?.("/api/admin/config").then((r: Response) =>
+        api.fetchWithAuth?.("/api/admin/config").then((r: Response) =>
           r.ok ? r.json() : {}
         ),
       ]);

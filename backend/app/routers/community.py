@@ -1,43 +1,91 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
-from app.api.deps import get_current_active_user
+from fastapi import APIRouter, Depends, HTTPException, Body, Query
+from app.api.deps import get_current_active_user, get_current_student
 from app.store.community_store import CommunityStore
 from typing import List, Dict, Any, Optional
 
 router = APIRouter()
 
-@router.get("/messages")
-async def get_messages(
+@router.get("/communities")
+async def list_communities(
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Fetch all subject-based communities."""
+    store = CommunityStore()
+    communities = await store.get_communities()
+    return {"success": True, "data": communities}
+
+@router.post("/join/{community_id}")
+async def join_community(
+    community_id: str,
+    current_student: dict = Depends(get_current_student)
+):
+    """Let a student join a community. Restricted to Students only."""
+    store = CommunityStore()
+    success = await store.join_community(community_id, current_student["id"])
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to join community")
+    return {"success": True, "message": "Joined community"}
+
+@router.get("/posts")
+async def list_posts(
+    community_id: Optional[str] = None,
+    subject: Optional[str] = None,
+    sort: str = "latest",
     limit: int = 50,
     current_user: dict = Depends(get_current_active_user)
 ):
-    """
-    Endpoint to get all community messages.
-    """
+    """Fetch posts with optional community/topic filtering."""
     store = CommunityStore()
-    messages = await store.get_messages(limit)
-    return {
-        "success": True,
-        "messages": messages
-    }
+    posts = await store.get_posts(community_id, subject, sort, limit)
+    return {"success": True, "data": posts}
 
-@router.post("/messages")
-async def post_message(
+@router.post("/posts")
+async def create_post(
+    community_id: str = Query(...),
     payload: Dict[str, Any] = Body(...),
+    current_student: dict = Depends(get_current_student)
+):
+    """Create a new post. Restricted to Students only."""
+    store = CommunityStore()
+    post = await store.create_post(community_id, current_student["id"], payload)
+    if not post:
+        raise HTTPException(status_code=400, detail="Failed to create post")
+    return {"success": True, "data": post}
+
+@router.get("/posts/{post_id}/comments")
+async def list_comments(
+    post_id: str,
     current_user: dict = Depends(get_current_active_user)
 ):
-    """
-    Endpoint for posting a new community message.
-    """
-    content = payload.get("content")
-    if not content or len(content.strip()) == 0:
-        raise HTTPException(status_code=400, detail="Content cannot be empty.")
-
+    """Fetch comments for a specific post."""
     store = CommunityStore()
-    user_id = current_user.get("id")
-    result = await store.post_message(user_id, content)
-    
-    if result:
-        return {"success": True, "message": "Posted successfully", "data": result}
-    else:
-        # Fallback if table doesn't exist – return the data as if success to allow UI to continue
-        return {"success": True, "message": "Simulated post", "data": {"id": "mock-id", "content": content}}
+    comments = await store.get_comments(post_id)
+    return {"success": True, "data": comments}
+
+@router.post("/posts/{post_id}/comments")
+async def create_comment(
+    post_id: str,
+    payload: Dict[str, Any] = Body(...),
+    current_student: dict = Depends(get_current_student)
+):
+    """Post a comment or reply. Restricted to Students only."""
+    store = CommunityStore()
+    comment = await store.create_comment(
+        post_id, 
+        current_student["id"], 
+        payload["content"], 
+        payload.get("parent_id")
+    )
+    if not comment:
+        raise HTTPException(status_code=400, detail="Failed to post comment")
+    return {"success": True, "data": comment}
+
+@router.post("/posts/{post_id}/like")
+async def toggle_like(
+    post_id: str,
+    current_student: dict = Depends(get_current_student)
+):
+    """Toggle like/upvote on a post. Restricted to Students only."""
+    store = CommunityStore()
+    is_liked = await store.toggle_like(post_id, current_student["id"])
+    return {"success": True, "liked": is_liked}

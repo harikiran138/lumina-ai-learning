@@ -132,7 +132,7 @@ export async function decryptNote(
     encryptedData.set(authTagBytes, blob.length);
 
     const decrypted = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: ivBytes },
+      { name: 'AES-GCM', iv: ivBytes as Uint8Array<ArrayBuffer> },
       key,
       encryptedData
     );

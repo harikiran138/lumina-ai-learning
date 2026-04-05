@@ -1450,6 +1450,10 @@ export class RealAPI {
     return await this.getAssignments();
   }
 
+  async getFacultyAssignments(): Promise<any[]> {
+    return this.getTeacherAssignments();
+  }
+
   async getAssignmentSubmissions(assignmentId: string): Promise<any[]> {
     return await this.getSubmissions(assignmentId);
   }
@@ -2067,6 +2071,10 @@ export class RealAPI {
       next_steps: nextSteps
     });
   }
+
+  async submitPortfolioReview(payload: { mentee_id: string; portfolio_snapshot: Record<string, unknown>; feedback: string; rating: number }): Promise<any> {
+    return this.post("/api/mentor/portfolio-review", payload);
+  }
   async getAlumniPortfolio(..._args: any[]): Promise<any> {
     return this.fetchJsonOrDefault("/api/alumni/portfolio", null);
   }
@@ -2198,9 +2206,18 @@ export class RealAPI {
   async getCreatorVerificationQueue(..._args: any[]): Promise<any> { return []; }
   async getContentCreatorBlueprints(..._args: any[]): Promise<any> { return []; }
   async getAnonymizedSnapshots(..._args: any[]): Promise<any> { return []; }
-  async getCommunityData(..._args: any[]): Promise<any> { return { channels: [], messages: [] }; }
-  async getAllChatRooms(..._args: any[]): Promise<any> { return []; }
-  async sendCommunityMessage(..._args: any[]): Promise<any> { return { success: false }; }
+  async getCommunityData(communityId?: string): Promise<any> {
+    const path = communityId ? `/api/community/?id=${communityId}` : "/api/community/";
+    return this.get(path);
+  }
+  async sendCommunityMessage(communityId: string, content: string, title?: string): Promise<any> {
+    return this.post("/api/community/post/create", {
+      community_id: communityId,
+      title: title || content.slice(0, 30) + "...",
+      content: content,
+      subject_tag: "general"
+    });
+  }
   async chatWithAI(..._args: any[]): Promise<any> { return { response: "" }; }
   async logActivity(..._args: any[]): Promise<any> { return { success: true }; }
   async exportData(..._args: any[]): Promise<any> { return { success: false }; }

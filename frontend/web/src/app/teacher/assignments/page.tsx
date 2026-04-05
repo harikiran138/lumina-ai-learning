@@ -222,7 +222,7 @@ function AssignmentsList({
                 </td>
                 <td className="p-6 text-right">
                   <Link
-                    href={`/faculty/assignments/${assignment.id}/submissions`}
+                    href={`/teacher/assignments/${assignment.id}/submissions`}
                     className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-all"
                   >
                     <Eye size={16} />

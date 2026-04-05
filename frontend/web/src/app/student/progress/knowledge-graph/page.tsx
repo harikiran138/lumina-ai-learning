@@ -36,7 +36,7 @@ export default function KnowledgeGraphPage() {
       setIsLoading(true);
       try {
         // 1. Get enrolled courses from dashboard
-        const dashRes = await RealAPI.getInstance().fetchAuthorized("/api/student/dashboard");
+        const dashRes = await RealAPI.getInstance().fetchWithAuth("/api/student/dashboard");
         const dash = dashRes.ok ? await dashRes.json() : {};
         const enrolled: any[] = dash.enrolledCourses || [];
 
@@ -57,7 +57,7 @@ export default function KnowledgeGraphPage() {
         setCourseTitle(primary.name || primary.title || "Learning Path");
 
         // 2. Fetch knowledge nodes for that course
-        const kgRes = await RealAPI.getInstance().fetchAuthorized(`/api/knowledge-graph/${primary.id}`);
+        const kgRes = await RealAPI.getInstance().fetchWithAuth(`/api/knowledge-graph/${primary.id}`);
         const rawNodes: any[] = kgRes.ok ? await kgRes.json() : [];
 
         if (rawNodes.length === 0) {

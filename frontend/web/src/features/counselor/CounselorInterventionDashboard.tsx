@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertCircle, ShieldCheck, Eye, EyeOff, Lock, Unlock, CheckCircle } from 'lucide-react';
 import { encryptNote, decryptNote } from './encryption-utils';
 import { CounselorInterventionNotes } from './CounselorInterventionNotes';
-import axios from 'axios';
 
 interface RiskAlert {
   id: string;
@@ -39,8 +38,9 @@ export const CounselorInterventionDashboard = () => {
 
   const fetchAlerts = async () => {
     try {
-      const res = await axios.get('/api/counselor/risk-alerts');
-      setAlerts(res.data);
+      const res = await fetch('/api/counselor/risk-alerts');
+      const data = await res.json();
+      setAlerts(data);
       setLoading(false);
     } catch (error) {
       console.error("Failed to fetch alerts", error);
@@ -50,8 +50,13 @@ export const CounselorInterventionDashboard = () => {
   const handleReveal = async (alertId: string) => {
     if (!revealReason.trim()) return;
     try {
-      const res = await axios.post(`/api/counselor/risk-alerts/${alertId}/reveal`, { reason: revealReason });
-      setRevealedIdentities(prev => ({ ...prev, [alertId]: res.data.identity }));
+      const res = await fetch(`/api/counselor/risk-alerts/${alertId}/reveal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: revealReason }),
+      });
+      const data = await res.json();
+      setRevealedIdentities(prev => ({ ...prev, [alertId]: data.identity }));
       setRevealReason("");
     } catch (error) {
       console.error("Reveal failed", error);

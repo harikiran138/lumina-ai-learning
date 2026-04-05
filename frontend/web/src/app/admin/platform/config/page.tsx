@@ -42,7 +42,7 @@ export default function PlatformConfiguration() {
   useEffect(() => {
     Promise.allSettled([
       api.getAdminSystemHealth(),
-      (api as any).fetchAuthorized("/api/admin/config").then((r: Response) =>
+      api.fetchWithAuth("/api/admin/config").then((r: Response) =>
         r.ok ? r.json() : null,
       ),
     ]).then(([healthRes, configRes]) => {
@@ -72,7 +72,7 @@ export default function PlatformConfiguration() {
     setSaving(true);
     setError(null);
     try {
-      await (api as any).fetchAuthorized("/api/admin/config", {
+      await api.fetchWithAuth("/api/admin/config", {
         method: "POST",
         body: JSON.stringify(config),
       });

@@ -279,7 +279,7 @@ function GradingSection({ assignments }: { assignments: TeacherAssignmentCard[] 
 
         {needsGrading.length > 4 && (
           <Link
-            href="/faculty/gradebook"
+            href="/teacher/gradebook"
             className="flex items-center justify-center gap-2 w-full py-4 rounded-3xl border border-dashed border-white/20 text-gray-400 text-sm hover:bg-white/5 hover:text-white transition-all font-semibold"
           >
             View all {needsGrading.length} grading tasks
@@ -450,28 +450,28 @@ export default function TeacherDashboard() {
 
             <div className="mt-10 grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
               <QuickAction
-                href="/faculty/create-course"
+                href="/teacher/create-course"
                 icon={PlusCircle}
                 title="Create course"
                 description="Launch a new learning track with modules and publishing controls."
                 tone="gold"
               />
               <QuickAction
-                href="/faculty/assignments/create"
+                href="/teacher/assignments/create"
                 icon={ClipboardCheck}
                 title="Create assignment"
                 description="Set deadlines, collect submissions, and push work into grading."
                 tone="amber"
               />
               <QuickAction
-                href="/faculty/verification-queue"
+                href="/teacher/verification-queue"
                 icon={ShieldCheck}
                 title="AI Verify Queue"
                 description="Review and approve AI-generated answers before students see them."
                 tone="gold"
               />
               <QuickAction
-                href="/faculty/ai-generator"
+                href="/teacher/ai-generator"
                 icon={Sparkles}
                 title="Generate with AI"
                 description="Draft content faster with the course generator and tutor tooling."
@@ -555,7 +555,7 @@ export default function TeacherDashboard() {
           subtitle="Every course now surfaces enrollment, mastery, grading load, and the next deadline."
           action={
             <Link
-              href="/faculty/courses"
+              href="/teacher/courses"
               className="inline-flex items-center gap-2 text-sm font-semibold text-lumina-highlight transition-colors hover:text-white"
             >
               View all courses
@@ -850,7 +850,7 @@ export default function TeacherDashboard() {
         subtitle="Deadlines, submission volume, and grading load are linked here."
         action={
           <Link
-            href="/faculty/assignments"
+            href="/teacher/assignments"
             className="inline-flex items-center gap-2 text-sm font-semibold text-amber-300 transition-colors hover:text-white"
           >
             Open assignments
@@ -918,7 +918,7 @@ export default function TeacherDashboard() {
         subtitle="Roster health is derived from course progress, mastery, and recency of activity."
         action={
           <Link
-            href="/faculty/students"
+            href="/teacher/students"
             className="inline-flex items-center gap-2 text-sm font-semibold text-amber-300 transition-colors hover:text-white"
           >
             Open students
@@ -990,7 +990,7 @@ export default function TeacherDashboard() {
         subtitle="AI-generated answers waiting for your review. Students cannot see these until you approve."
         action={
           <Link
-            href="/faculty/verification-queue"
+            href="/teacher/verification-queue"
             className="inline-flex items-center gap-2 text-sm font-semibold text-lumina-highlight transition-colors hover:text-white"
           >
             Open full queue
@@ -1013,7 +1013,7 @@ export default function TeacherDashboard() {
               {summary.pendingAIVerifications || 0}
             </p>
             <Link
-              href="/faculty/verification-queue"
+              href="/teacher/verification-queue"
               className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-amber-300 hover:text-white transition-colors"
             >
               Review now <ArrowRight className="h-3 w-3" />

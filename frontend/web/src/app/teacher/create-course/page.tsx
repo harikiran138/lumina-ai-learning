@@ -47,7 +47,7 @@ export default function CreateCoursePage() {
     try {
       const res = await api.createCourse(formData);
       if (res.success) {
-        router.push("/faculty/courses");
+        router.push("/teacher/courses");
       } else {
         setError(res.error || "Failed to create course.");
       }
@@ -105,7 +105,7 @@ export default function CreateCoursePage() {
 
       const res = await api.createCourse(createData);
       if (res.success || res.id) {
-        router.push("/faculty/courses");
+        router.push("/teacher/courses");
       } else {
         setError(res.error || "Failed to create course.");
       }

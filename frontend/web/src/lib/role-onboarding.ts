@@ -243,6 +243,7 @@ const CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
         description: "Help fellow students get to know you.",
         fields: [
           { key: "fullName", label: "Full name", type: "text", helper: "Your name as it will appear on the peer tutor directory.", placeholder: "Jordan Lee", required: true },
+          { key: "studentId", label: "Student ID", type: "text", helper: "Your institutional student ID number.", placeholder: "STU-20240001", required: true },
           { key: "studyYear", label: "Current year of study", type: "number", helper: "Which year of your programme are you in?", placeholder: "3" },
         ],
       },
@@ -592,6 +593,13 @@ export function validateRoleStep(
 
   // Generic validation is handled by field.required, but role-specific cross-field checks can go here.
   // Previous validations for studentIds/collegeId were removed as they targeted non-existent fields in those steps.
+
+  if (role === "parent" && step === 2) {
+    const ids = values.studentIds;
+    if (!ids || (Array.isArray(ids) && ids.length === 0)) {
+      errors.studentIds = "At least one linked student is required.";
+    }
+  }
 
   if (role === "researcher" && step === 2 && values.dataAccessLevel === "full" && values.ethicsApproval !== true) {
     errors.ethicsApproval = "Ethics approval is required for full data access.";

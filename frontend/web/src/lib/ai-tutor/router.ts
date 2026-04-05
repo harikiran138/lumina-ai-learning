@@ -148,7 +148,7 @@ export const processMessage = async (
     try {
       const api = RealAPI.getInstance();
       const mode = inferMode(question);
-      const askResponse = await api.fetchAuthorized("/api/student/tutor/ask", {
+      const askResponse = await api.fetchWithAuth("/api/student/tutor/ask", {
         method: "POST",
         body: JSON.stringify({
           prompt: question,
@@ -200,7 +200,7 @@ export const processMessage = async (
       let answerPayload: any = null;
 
       for (let pollAttempt = 0; pollAttempt < maxAttempts; pollAttempt++) {
-        const pollResponse = await api.fetchAuthorized(
+        const pollResponse = await api.fetchWithAuth(
           `/api/student/tutor/answer/${answerId}`,
           { method: "GET" },
           20000,

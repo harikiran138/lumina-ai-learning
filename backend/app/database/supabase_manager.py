@@ -85,6 +85,11 @@ _DEFAULT_LOCAL_TABLES = {
     "risk_reveal_logs",
     "counselor_notes",
     "follow_up_tasks",
+    "communities",
+    "community_posts",
+    "community_comments",
+    "community_likes",
+    "community_members",
 }
 _GLOBAL_MOCK_TABLES: Dict[str, List[Dict[str, Any]]] = {table_name: [] for table_name in _DEFAULT_LOCAL_TABLES}
 

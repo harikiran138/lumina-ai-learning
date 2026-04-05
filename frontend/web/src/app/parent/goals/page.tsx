@@ -47,7 +47,7 @@ export default function ParentGoalsPage() {
   const handleCreateGoal = async () => {
     if (!newGoal.title || !newGoal.student_id) return
     try {
-      await api.setParentGoal(newGoal)
+      await api.setParentGoal(newGoal.student_id, "academic", newGoal.title, newGoal.target_date)
       setIsModalOpen(false)
       // Refresh
       const dashboard = await api.getParentDashboard()

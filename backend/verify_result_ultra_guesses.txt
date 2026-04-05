@@ -1,1 +1,0 @@
-ERROR: 'SUPER_ADMIN' failed with unexpected error: {'message': 'new row violates row-level security policy for table "users"', 'code': '42501', 'hint':

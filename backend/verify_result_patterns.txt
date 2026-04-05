@@ -1,6 +1,0 @@
-FAILED: 'student' rejected: {'message': 'invalid input value for enum user_role: "student"', 'code': '22P02', 'hint': None, 'details': None}
-FAILED: 'STUDENT' rejected: {'message': 'invalid input value for enum user_role: "STUDENT"', 'code': '22P02', 'hint': None, 'details': None}
-FAILED: 'Student' rejected: {'message': 'invalid input value for enum user_role: "Student"', 'code': '22P02', 'hint': None, 'details': None}
-FAILED: 'parent' rejected: {'message': 'invalid input value for enum user_role: "parent"', 'code': '22P02', 'hint': None, 'details': None}
-FAILED: 'teacher' rejected: {'message': 'invalid input value for enum user_role: "teacher"', 'code': '22P02', 'hint': None, 'details': None}
-FAILED: 'admin' rejected: {'message': 'invalid input value for enum user_role: "admin"', 'code': '22P02', 'hint': None, 'details': None}

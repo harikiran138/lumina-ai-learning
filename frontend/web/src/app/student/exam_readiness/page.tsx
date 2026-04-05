@@ -77,7 +77,7 @@ export default function ExamReadinessPage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const res = await RealAPI.getInstance().fetchAuthorized("/api/student/exam-readiness");
+        const res = await RealAPI.getInstance().fetchWithAuth("/api/student/exam-readiness");
         if (res.ok) {
           setData(await res.json());
           setIsLoading(false);

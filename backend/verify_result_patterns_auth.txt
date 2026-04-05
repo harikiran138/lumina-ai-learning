@@ -1,3 +1,0 @@
-FAILED: 'authenticated' rejected: {'message': 'invalid input value for enum user_role: "authenticated"', 'code': '22P02', 'hint': None, 'details': None}
-FAILED: 'anon' rejected: {'message': 'invalid input value for enum user_role: "anon"', 'code': '22P02', 'hint': None, 'details': None}
-FAILED: 'service_role' rejected: {'message': 'invalid input value for enum user_role: "service_role"', 'code': '22P02', 'hint': None, 'details': None}
