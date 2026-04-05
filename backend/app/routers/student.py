@@ -1523,7 +1523,7 @@ async def get_leaderboard(
                         "isCurrentUser": uid == current_user.get("id"),
                     })
         except Exception as exc:
-            log.warning("leaderboard_fetch_failed", error=str(exc))
+            logger.warning("leaderboard_fetch_failed", error=str(exc))
 
     if not entries:
         name = current_user.get("name") or current_user.get("full_name") or "You"
