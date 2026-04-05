@@ -28,6 +28,7 @@ from learner_profile.analysis.cognitive_load import CognitiveLoadEstimator
 from learner_profile.models.bkt import BKTModel
 from app.personalization.dkt_engine import DKTEngine
 from app.services.ml_client import ml_client
+from app.services.intervention_service import log_intervention
 
 log = structlog.get_logger()
 
@@ -594,6 +595,22 @@ class PersonalizationService:
         
         # 4. Intelligence Controller: Decide Next Activity (Close the Loop)
         next_step = AdaptiveEngine.decide_next_step(profile, current_topic_id=topic_id)
+        
+        # 4.1 Persistence: Log decision as an intervention if it's not a standard assessment
+        from app.personalization.adaptive_engine import ActivityType
+        if next_step.activity_type in [ActivityType.REMEDIATION, ActivityType.CHALLENGE, ActivityType.SOCRATIC_REFLECTION, ActivityType.INTERVENTION]:
+            await log_intervention(
+                self._db,
+                student_id=user_id,
+                intervention_type=next_step.activity_type.value,
+                reason=next_step.reason,
+                payload={
+                    "topic_id": next_step.topic_id,
+                    "difficulty": next_step.difficulty,
+                    "explanation_plan": next_step.explanation_plan.model_dump() if next_step.explanation_plan else None,
+                    "kpi_context": next_step.metadata.get("kpi_context")
+                }
+            )
         
         # 5. DKT Forecasting: Predict Future Mastery
         predicted_mastery = 0.0

@@ -102,6 +102,13 @@ from app.routers import (  # noqa: E402
     notifications,
     realtime,
     generation,
+    gamification,
+    fsrs,
+    ai_tools,
+    exam_mode,
+    progress,
+    study_groups,
+    wellbeing,
 )
 
 from app.assessment.api.router import router as assessment_router  # noqa: E402
@@ -344,6 +351,13 @@ app.include_router(flashcards.router)
 app.include_router(core_extensions.router)
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(realtime.router, prefix="/ws", tags=["Real-time WebSocket"])
+app.include_router(gamification.router, prefix="/api/gamification", tags=["Gamification"])
+app.include_router(fsrs.router, prefix="/api/fsrs", tags=["FSRS"])
+app.include_router(ai_tools.router, prefix="/api/ai-tools", tags=["AI Tools"])
+app.include_router(exam_mode.router, prefix="/api/exam-mode", tags=["Exam Mode"])
+app.include_router(progress.router, prefix="/api/progress", tags=["Progress"])
+app.include_router(study_groups.router, prefix="/api/study-groups", tags=["Study Groups"])
+app.include_router(wellbeing.router, prefix="/api/wellbeing", tags=["Wellbeing"])
 
 
 # --- RATE LIMITING (L5 Sentinel) ---

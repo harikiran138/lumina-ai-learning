@@ -19,6 +19,7 @@ import {
 import { api } from "@/lib/api";
 import { StandardDashboard } from "@/components/dashboard/StandardDashboard";
 import { MasteryOrb } from "@/components/student/MasteryOrb";
+import { WellbeingCheckin } from "@/components/student/WellbeingCheckin";
 import { cn } from "@/lib/utils";
 
 // --- Types ---
@@ -345,6 +346,10 @@ export default function StudentDashboard() {
             <EmptyState title="No active insights" description="Your AI coach is currently monitoring your performance." />
           )}
         </SectionCard>
+      </div>
+
+      <div className="grid grid-cols-1 gap-8">
+         <WellbeingCheckin studentId={dashboardData.meta?.studentId || "unknown"} />
       </div>
 
       {/* Parent Access Link Code */}
