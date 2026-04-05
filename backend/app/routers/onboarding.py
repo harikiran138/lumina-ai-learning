@@ -1164,7 +1164,7 @@ async def update_onboarding_step(payload: Dict[str, Any], current_user: dict = D
     
     updates["onboarding_step"] = requested_step
 
-    updated = await UserStore().update_user_fields(user_id, updates)
+    updated = await UserStore(db=db).update_user_fields(user_id, updates)
     if not updated:
         raise HTTPException(status_code=500, detail="Failed to persist onboarding user fields")
 

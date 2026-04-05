@@ -455,17 +455,8 @@ export function validateRoleStep(
     data[field.key] = value ?? (field.type === "boolean" ? false : field.type === "array" || field.type === "multiselect" ? [] : "");
   }
 
-  if (role === "teacher" && step === 1 && !String(values.collegeId ?? "").trim()) {
-    errors.collegeId = "Institution ID is required.";
-  }
-
-  if (role === "parent" && step === 2 && (!Array.isArray(values.studentIds) || values.studentIds.length === 0)) {
-    errors.studentIds = "At least one linked student is required.";
-  }
-
-  if (role === "peer_tutor" && step === 1 && !String(values.studentId ?? "").trim()) {
-    errors.studentId = "Student ID is required.";
-  }
+  // Generic validation is handled by field.required, but role-specific cross-field checks can go here.
+  // Previous validations for studentIds/collegeId were removed as they targeted non-existent fields in those steps.
 
   if (role === "researcher" && step === 2 && values.dataAccessLevel === "full" && values.ethicsApproval !== true) {
     errors.ethicsApproval = "Ethics approval is required for full data access.";

@@ -88,8 +88,11 @@ class UserStore:
         safe_user["college_id"] = safe_user.get("college_id")
         safe_user["dept_id"] = safe_user.get("dept_id") or safe_user.get("department_id")
         safe_user["batch_id"] = safe_user.get("batch_id")
+        safe_user["section_id"] = safe_user.get("section_id")
+        safe_user["academic_year_id"] = safe_user.get("academic_year_id")
         safe_user["onboarding_step"] = safe_user.get("onboarding_step", 0)
         safe_user["must_change_password"] = safe_user.get("must_change_password", False)
+        safe_user["parent_link_code"] = safe_user.get("parent_link_code")
         
         if include_sensitive and password_hash:
             safe_user["password_hash"] = password_hash
@@ -107,6 +110,13 @@ class UserStore:
 
         hashed_password = self.get_password_hash(password)
 
+        # Generate Parent Link Code for students
+        parent_link_code = None
+        if self.normalize_role(role) == "student":
+            import random
+            import string
+            parent_link_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+
         # Minimal schema for public.users table
         user_data = {
             "id": str(uuid.uuid4()),
@@ -115,6 +125,7 @@ class UserStore:
             "name": full_name,
             "role": self.to_db_role(role),
             "full_name": full_name,
+            "parent_link_code": parent_link_code
         }
 
         # Backup metadata for secondary profile tables
@@ -210,7 +221,28 @@ class UserStore:
             await self.db.table("learner_profiles").upsert(learner_data).async_execute()
             log.info("profile_metadata_persisted", user_id=user_id, table="learner_profiles", role=canonical_role)
 
-            # 2. Onboarding Profile (Legacy alignment)
+            # 2. Specialized Roles (Student/Teacher)
+            if canonical_role == "student":
+                student_data = {
+                    "user_id": user_id,
+                    "roll_number": metadata.get("roll_number") or metadata.get("student_roll") or "N/A",
+                    "current_section_id": metadata.get("section_id"),
+                    "current_academic_year_id": metadata.get("academic_year_id")
+                }
+                await self.db.table("student_profiles").upsert(student_data).async_execute()
+                log.info("student_profile_persisted", user_id=user_id)
+            
+            elif canonical_role == "teacher":
+                teacher_data = {
+                    "user_id": user_id,
+                    "employee_id": metadata.get("employee_id") or "N/A",
+                    "designation": metadata.get("designation") or "Professor",
+                    "department_id": metadata.get("dept_id") or metadata.get("department_id")
+                }
+                await self.db.table("teacher_profiles").upsert(teacher_data).async_execute()
+                log.info("teacher_profile_persisted", user_id=user_id)
+
+            # 3. Onboarding Profile (Legacy alignment)
             try:
                 await self.db.table("onboarding_profiles").upsert({
                     "user_id": user_id,
@@ -219,7 +251,7 @@ class UserStore:
                     "onboarding_step": 1
                 }).async_execute()
             except:
-                pass # Silently ignore if table doesn't exist
+                pass 
 
         except Exception as e:
             # We don't want to fail the whole registration if profile creation fails, 
@@ -302,6 +334,9 @@ class UserStore:
             await client.table("enrollments").delete().eq("student_id", user_id).async_execute()
             await client.table("student_enrollments").delete().eq("student_id", user_id).async_execute()
             await client.table("student_progress").delete().eq("student_id", user_id).async_execute()
+            await client.table("student_profiles").delete().eq("user_id", user_id).async_execute()
+            await client.table("teacher_profiles").delete().eq("user_id", user_id).async_execute()
+            await client.table("academic_history").delete().eq("student_id", user_id).async_execute()
 
             # 3. Clean up sessions
             await client.table("assessment_sessions").delete().eq("student_id", user_id).async_execute()
@@ -363,6 +398,8 @@ class UserStore:
             "department_id",
             "batch_id",
             "section",
+            "section_id",
+            "academic_year_id",
             "roll_number",
             "student_roll",
             "employee_id",
@@ -434,6 +471,8 @@ class UserStore:
             "department_id",
             "batch_id",
             "section",
+            "section_id",
+            "academic_year_id",
             "roll_number",
             "student_roll",
             "employee_id",

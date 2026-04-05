@@ -13,17 +13,15 @@ class AcademicStore:
     def __init__(self, db: Optional[Any] = None):
         self.db = db or supabase_db
 
-    def _normalize_class(self, cls: Optional[dict]) -> Optional[dict]:
-        if not cls:
+    def _normalize_section(self, sec: Optional[dict]) -> Optional[dict]:
+        if not sec:
             return None
-        normalized = cls.copy()
-        # Map current schema fields to legacy-friendly keys
-        if "class_name" not in normalized and "section_name" in normalized:
-            normalized["class_name"] = normalized.get("section_name")
-        if "batch" not in normalized and "batch_name" in normalized:
-            normalized["batch"] = normalized.get("batch_name")
-        if "section" not in normalized and "section_name" in normalized:
-            normalized["section"] = normalized.get("section_name")
+        normalized = sec.copy()
+        # Ensure section_name and class_name are interchangeable for legacy support
+        if "section_name" not in normalized and "name" in normalized:
+            normalized["section_name"] = normalized.get("name")
+        if "class_name" not in normalized and "name" in normalized:
+            normalized["class_name"] = normalized.get("name")
         return normalized
 
     async def get_student_enrollment(self, student_id: str) -> Optional[dict]:
@@ -32,17 +30,18 @@ class AcademicStore:
     async def get_student_credits(self, student_id: str) -> List[dict]:
         return await self.db.fetch_all("student_credits", {"student_id": student_id})
 
-    async def get_classes(self, program_id: str, semester_id: str) -> List[dict]:
-        """Fetch all classes/sections for a specific program and semester."""
-        classes = await self.db.fetch_all("classes", {
-            "program_id": program_id, 
-            "semester_id": semester_id
-        })
-        return [c for c in (self._normalize_class(c) for c in classes) if c is not None]
+    async def get_sections(self, batch_id: str, semester_id: Optional[str] = None) -> List[dict]:
+        """Fetch all sections/classes for a specific batch and semester."""
+        filters = {"batch_id": batch_id}
+        if semester_id:
+            filters["semester_id"] = semester_id
+            
+        sections = await self.db.fetch_all("sections", filters)
+        return [s for s in (self._normalize_section(s) for s in sections) if s is not None]
 
-    async def get_class_by_id(self, class_id: str) -> Optional[dict]:
-        cls = await self.db.fetch_one("classes", {"id": class_id})
-        return self._normalize_class(cls)
+    async def get_section_by_id(self, section_id: str) -> Optional[dict]:
+        sec = await self.db.fetch_one("sections", {"id": section_id})
+        return self._normalize_section(sec)
 
     async def create_class(self, data: Dict[str, Any]) -> Optional[dict]:
         # Map incoming legacy fields to current schema
@@ -104,6 +103,15 @@ class AcademicStore:
                 {"current_semester_id": next_sem["id"]}, 
                 {"student_id": student_id}
             )
+            
+            # Record promotion in history
+            await self.db.insert("academic_history", {
+                "student_id": student_id,
+                "academic_year_id": enrollment.get("academic_year_id"),
+                "semester_id": next_sem["id"],
+                "section_id": enrollment.get("section_id"),
+                "result_status": "promoted"
+            })
             
             log.info("student_promoted", student_id=student_id, to_semester=next_sem_num)
             return updated
@@ -171,3 +179,42 @@ class AcademicStore:
         """Remove a class/section."""
         res = await self.db.delete("classes", {"id": class_id})
         return res is not None
+
+    # --- Academic Years ---
+
+    async def get_academic_years(self, institution_id: str) -> List[dict]:
+        return await self.db.fetch_all("academic_years", {"institution_id": institution_id})
+
+    async def create_academic_year(self, data: Dict[str, Any]) -> Optional[dict]:
+        return await self.db.insert("academic_years", data)
+
+    # --- Sections ---
+
+    async def get_course_concepts(self, course_id: str) -> List[dict]:
+        """Fetch concepts allowed for a specific course (AI Scope Enforcement)."""
+        return await self.db.fetch_all("course_concepts", {"course_id": course_id})
+
+    async def get_student_allowed_concepts(self, student_id: str, course_id: str) -> List[str]:
+        """Fetch names of concepts allowed for this student in this course."""
+        concepts = await self.get_course_concepts(course_id)
+        return [c["name"] for c in concepts]
+
+    async def assign_student_to_section(self, student_id: str, section_id: str, academic_year_id: str):
+        data = {
+            "section_id": section_id,
+            "academic_year_id": academic_year_id,
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        res = await self.db.update("student_enrollments", data, {"student_id": student_id})
+        
+        # Also bind to normalized student_profiles
+        try:
+            await self.db.upsert("student_profiles", {
+                "user_id": student_id,
+                "section_id": section_id,
+                "academic_year_id": academic_year_id
+            }, on_conflict="user_id")
+        except Exception as e:
+            log.warning("student_profile_update_failed", error=str(e))
+            
+        return res

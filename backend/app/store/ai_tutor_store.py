@@ -448,11 +448,27 @@ class AITutorStore:
         course_id = requested_course_id
         class_id = context.get("class_id")
 
+        section_id = context.get("section_id") or context.get("class_id") # class_id is legacy for section
+        academic_year_id = context.get("academic_year_id")
+        section_name = "Not specified"
+        academic_year_name = "Not specified"
+
         if not course_id:
             enrollment = await supabase_db.fetch_one("student_enrollments", {"student_id": student_id})
             if enrollment:
                 course_id = enrollment.get("course_id")
-                class_id = class_id or enrollment.get("class_id")
+                section_id = section_id or enrollment.get("section_id") or enrollment.get("class_id")
+                academic_year_id = academic_year_id or enrollment.get("academic_year_id")
+
+        if section_id:
+            section = await supabase_db.fetch_one("sections", {"id": section_id})
+            if section:
+                section_name = section.get("name") or section_name
+
+        if academic_year_id:
+            ay = await supabase_db.fetch_one("academic_years", {"id": academic_year_id})
+            if ay:
+                academic_year_name = ay.get("name") or academic_year_name
 
         if course_id:
             course = await supabase_db.fetch_one("courses", {"id": course_id})
@@ -465,12 +481,12 @@ class AITutorStore:
                     or course_name
                 )
 
-        if class_id and course_id:
+        if section_id and course_id:
             try:
                 assignments = (
                     client.table("teacher_assignments")
                     .select("teacher_id")
-                    .eq("class_id", class_id)
+                    .eq("section_id", section_id) # Using new section_id
                     .eq("course_id", course_id)
                     .limit(1)
                     .execute()
@@ -480,11 +496,24 @@ class AITutorStore:
             except Exception as exc:
                 log.warning("ai_tutor_teacher_assignment_lookup_failed", error=str(exc))
 
+        # 5. Fetch Allowed Concepts for Scoping
+        concepts = []
+        if course_id:
+            try:
+                concepts = await self.academic_store.get_student_allowed_concepts(student_id, course_id)
+            except Exception as exc:
+                log.warning("ai_tutor_concepts_fetch_failed", error=str(exc))
+
         return {
             "course_id": course_id,
             "course_name": course_name,
             "teacher_id": teacher_id,
-            "class_id": class_id,
+            "section_id": section_id,
+            "section_name": section_name,
+            "academic_year_id": academic_year_id,
+            "academic_year": academic_year_name,
+            "allowed_concepts": concepts,
+            "concept_count": len(concepts)
         }
 
     async def _fetch_rag_context(self, prompt: str, course_context: Dict[str, Any]) -> List[str]:
@@ -661,6 +690,8 @@ class AITutorStore:
     ) -> str:
         profile = profile or {}
         semester = context.get("semester") or context.get("current_semester") or "Not specified"
+        section = context.get("section_name") or context.get("section") or "Not specified"
+        academic_year = context.get("academic_year") or "Not specified"
         allowed_courses = context.get("allowed_courses") or context.get("course_name") or "All courses"
         allowed_concepts = context.get("allowed_concepts") or context.get("topic") or "All concepts"
 
@@ -675,6 +706,8 @@ class AITutorStore:
         base_prompt = (
             A2UI_SYSTEM_PROMPT
             .replace("{current_semester}", str(semester))
+            .replace("{current_section}", str(section))
+            .replace("{academic_year}", str(academic_year))
             .replace("{allowed_courses}", str(allowed_courses))
             .replace("{allowed_concepts}", str(allowed_concepts))
             .replace("{student_level}", str(student_level))

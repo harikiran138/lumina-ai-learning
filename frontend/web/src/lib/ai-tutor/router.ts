@@ -23,7 +23,12 @@ export interface ProcessMessageOptions {
   history?: Array<{ sender: string; text: string; timestamp?: string | Date }>;
 }
 
-const STUDENT_TUTOR_WAITING_MESSAGE = "Teacher is reviewing your answer";
+const WAITING_MESSAGES: Record<string, string> = {
+  SAFE_INSTANT: "Thinking…",
+  ACADEMIC_VERIFIED: "Teacher is reviewing your answer",
+  RESTRICTED: "Processing…",
+};
+const STUDENT_TUTOR_WAITING_MESSAGE = WAITING_MESSAGES.ACADEMIC_VERIFIED;
 const POLL_INTERVAL_MS = 1200;
 const MAX_POLL_ATTEMPTS = 35;
 
@@ -184,11 +189,17 @@ export const processMessage = async (
         throw new Error("Tutor API did not return an answer id");
       }
 
+      // Determine the tier-specific poll interval:
+      // SAFE_INSTANT resolves quickly (~3-5s) so poll faster.
+      const tier: string = askData?.tier || "ACADEMIC_VERIFIED";
+      const pollInterval = tier === "SAFE_INSTANT" ? 800 : POLL_INTERVAL_MS;
+      const maxAttempts = tier === "SAFE_INSTANT" ? 20 : MAX_POLL_ATTEMPTS;
+
       let answerText = "";
       let answerType: string | undefined;
       let answerPayload: any = null;
 
-      for (let pollAttempt = 0; pollAttempt < MAX_POLL_ATTEMPTS; pollAttempt++) {
+      for (let pollAttempt = 0; pollAttempt < maxAttempts; pollAttempt++) {
         const pollResponse = await api.fetchAuthorized(
           `/api/student/tutor/answer/${answerId}`,
           { method: "GET" },
@@ -216,17 +227,18 @@ export const processMessage = async (
           );
         }
 
-        await sleep(POLL_INTERVAL_MS);
+        await sleep(pollInterval);
       }
 
       if (!answerText.trim()) {
-        // Polling exhausted — the answer isn't ready yet (teacher review queue or slow model).
-        // Return the waiting message directly; do NOT retry the ask — it would create a duplicate.
+        // Polling exhausted — answer isn't ready yet.
+        // Return the tier-specific waiting message; do NOT retry the ask.
         const latency = Math.round(performance.now() - startTime);
+        const tierMsg = WAITING_MESSAGES[tier] ?? STUDENT_TUTOR_WAITING_MESSAGE;
         const waitingText =
           answerPayload?.message ||
-          `${STUDENT_TUTOR_WAITING_MESSAGE}. Check back shortly for the full answer.`;
-        sendTelemetry("ai_response_time", latency, { source: "waiting" });
+          `${tierMsg}. Check back shortly for the full answer.`;
+        sendTelemetry("ai_response_time", latency, { source: "waiting", tier });
         return { text: waitingText, source: "fallback", latency };
       }
 

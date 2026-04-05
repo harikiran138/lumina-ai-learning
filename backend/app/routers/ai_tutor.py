@@ -5,6 +5,7 @@ from app.store.ai_tutor_store import AITutorStore
 from app.core.limiter import limiter
 from starlette.requests import Request
 from typing import List, Dict, Any, Optional
+from ai_engine.classifier import classify, RoutingTier, RESTRICTED_REDIRECT
 
 router = APIRouter()
 
@@ -103,6 +104,14 @@ def _extract_meta(response_str: str) -> Dict[str, Any]:
     return {}
 
 
+def _restricted_content(mode: str) -> str:
+    """Return an A2UI-serialized redirect message for RESTRICTED questions."""
+    return json.dumps({
+        "meta": {"topic": "off-topic"},
+        "flow": [{"type": "text", "content": RESTRICTED_REDIRECT}],
+    })
+
+
 _MODE_TO_TYPE = {
     "quiz": "quiz",
     "code": "code",
@@ -129,6 +138,53 @@ async def build_tutor_response_payload(
     role = str(current_user.get("role") or "").lower()
 
     if role == "student":
+        # Use pre-computed tier from ask endpoint if available (avoids double classify)
+        pre_tier = payload.get("_routing_tier")
+        if pre_tier in (RoutingTier.SAFE_INSTANT, RoutingTier.ACADEMIC_VERIFIED, RoutingTier.RESTRICTED):
+            clf = {"tier": pre_tier, "confidence": 1.0, "reason": "pre-classified by ask endpoint"}
+        else:
+            clf = classify(prompt, context)
+
+        tier = clf["tier"]
+
+        # ── RESTRICTED: instant redirect, no LLM, no queue ───────────────────
+        if tier == RoutingTier.RESTRICTED:
+            redirect_str = _restricted_content(mode)
+            return {
+                "success": True,
+                "queued": False,
+                "tier": RoutingTier.RESTRICTED,
+                "type": "text",
+                "content": redirect_str,
+                "meta": {"topic": "off-topic"},
+                "role": "assistant",
+                "mode": mode,
+                "classification": {"mode": mode, **clf},
+            }
+
+        # ── SAFE_INSTANT: direct LLM, no teacher queue ────────────────────────
+        if tier == RoutingTier.SAFE_INSTANT:
+            response_text = await tutor_store.get_response(
+                prompt=prompt,
+                history=formatted_history,
+                context=context,
+                mode=mode,
+                student_id=str(current_user.get("id")),
+            )
+            response_str = _ensure_serialized_response(response_text, mode)
+            return {
+                "success": True,
+                "queued": False,
+                "tier": RoutingTier.SAFE_INSTANT,
+                "type": _MODE_TO_TYPE.get(mode, "text"),
+                "content": response_str,
+                "meta": _extract_meta(response_str),
+                "role": "assistant",
+                "mode": mode,
+                "classification": {"mode": mode, **clf},
+            }
+
+        # ── ACADEMIC_VERIFIED: teacher verification queue ─────────────────────
         queued = await tutor_store.queue_student_request(
             prompt=prompt,
             history=formatted_history,
@@ -141,6 +197,7 @@ async def build_tutor_response_payload(
         return {
             "success": True,
             "queued": True,
+            "tier": RoutingTier.ACADEMIC_VERIFIED,
             "queue_id": queued.get("queue_id"),
             "delivery_status": queued.get("delivery_status"),
             "type": _MODE_TO_TYPE.get(resolved_mode, "text"),
@@ -151,6 +208,7 @@ async def build_tutor_response_payload(
             "classification": queued.get("classification"),
         }
 
+    # Non-student (teacher, admin): direct LLM response
     response_text = await tutor_store.get_response(
         prompt=prompt,
         history=formatted_history,

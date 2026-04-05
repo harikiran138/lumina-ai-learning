@@ -19,6 +19,7 @@ import {
   Sparkles,
   Bot,
   Brain, // Added Brain icon
+  Copy, // Added Copy icon
 } from "lucide-react";
 
 export default function StudentProfile() {
@@ -186,6 +187,33 @@ export default function StudentProfile() {
                 <Sparkles className="w-4 h-4 mr-2" />
                 Open AI Tutor
               </a>
+            </div>
+
+            {/* Parent Linking Card */}
+            <div className="glass-card p-6 relative overflow-hidden group backdrop-blur-md bg-black/40 border-white/10 mt-6">
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-2 flex items-center">
+                <LinkIcon className="w-4 h-4 mr-2 text-lumina-primary" />
+                Parent Linking
+              </h3>
+              <p className="text-xs text-gray-400 mb-4">
+                Share this code with your parent to link your accounts.
+              </p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 font-mono text-center text-lumina-primary tracking-widest text-lg">
+                  {profile?.parentLinkCode || "--------"}
+                </div>
+                <button 
+                  onClick={() => {
+                    if (profile?.parentLinkCode) {
+                      navigator.clipboard.writeText(profile.parentLinkCode);
+                    }
+                  }}
+                  className="p-2 hover:bg-white/5 rounded-lg border border-white/10 transition-colors"
+                  title="Copy to clipboard"
+                >
+                  <Copy className="w-4 h-4 text-gray-400 hover:text-white" />
+                </button>
+              </div>
             </div>
 
             {/* Adaptive Mastery Card */}

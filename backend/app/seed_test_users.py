@@ -34,7 +34,7 @@ RAW_PASSWORD = "password"
 #   super_admin / hod → auto-bypassed (any steps work)
 #   college_admin     → needs >= 2
 #   student           → needs >= 5 + learner_profile completed
-#   teacher/faculty   → needs >= 5
+#   teacher           → needs >= 5
 TEST_USERS = [
     {
         "email": "superadmin@lumina.com",

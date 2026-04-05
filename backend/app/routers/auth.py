@@ -112,81 +112,54 @@ class LoginResponse(BaseModel):
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 def _is_adaptive_onboarding_completed(user: dict) -> bool:
+    """Check if the user has completed the adaptive learning style profile."""
     user_id = str(user.get("id") or "")
     if not user_id:
-        return False
-
-    # 1. Quick check: Status from existing indicator instead of missing column
-    status = str(user.get("status") or "").lower()
-    if status in {"completed", "active"}:
-        return True
+        return True # Safety default
 
     try:
+        # Check user_data table for existence of 'learning_style' or similar
+        # If record exists, we consider it done.
         client = supabase_db.get_client()
-        if not client:
-            return False
-
-        # 1. Profile Status Check (Multiple Table fallbacks)
-        # We check learner_profiles then onboarding_profiles
-        for table in ["learner_profiles", "onboarding_profiles"]:
-            try:
-                res = client.table(table).select("status").eq("user_id", user_id).limit(1).execute()
-                # Handle both PostgrestResponse objects and raw dictionaries
-                data = getattr(res, "data", None) if not isinstance(res, dict) else res.get("data")
-                
-                if data and len(data) > 0:
-                    status = str(data[0].get("status") or "").lower()
-                    if status in {"completed", "active"}:
-                        return True
-            except Exception:
-                continue
-
-        # 2. Check user_data progress as final fallback
-        try:
-            res = client.table("user_data").select("progress").eq("user_id", user_id).limit(1).execute()
-            data = getattr(res, "data", None) if not isinstance(res, dict) else res.get("data")
-            
-            if data and len(data) > 0:
-                progress = data[0].get("progress") or {}
-                adaptive = progress.get("adaptive_onboarding") or {}
-                # Handle both string "completed" and boolean True
-                if str(adaptive.get("status") or "").lower() == "completed" or adaptive.get("completed") is True:
-                    return True
-        except Exception:
-            pass
-
-    except Exception as e:
-        logger.error(f"Error in _is_adaptive_onboarding_completed check: {e}")
+        result = client.table("user_data").select("user_id").eq("user_id", user_id).limit(1).execute()
+        if result.data:
+            return True
+    except Exception:
+        pass
     
     return False
 
 
 def is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
+    """Returns (onboarding_completed, adaptive_completed)."""
+    # 1. Standardize role
     role = normalize_role(user.get("role", "guest"))
 
-    # Roles that fully bypass onboarding wizard
+    # 2. Bypass roles that don't need onboarding wizard
     BYPASS_ROLES = {"super_admin", "admin", "hod", "system_admin", "institution_admin", "faculty", "teacher", "college_admin"}
     if role in BYPASS_ROLES:
         return True, True
 
-    # 1. Quick check: use onboarding_step as primary source of truth
-    onboarding_step = int(user.get("onboarding_step") or 0)
-    required_steps = 2 if role == "college_admin" else 5
-    
-    if onboarding_step >= required_steps:
-        # For students, we still verify adaptive onboarding completion
+    # 3. Check explicitly marked field in user object
+    if user.get("onboarding_completed") is True:
+        # For students, still verify the adaptive phase
         if role == "student":
-            return _is_adaptive_onboarding_completed(user), True
+            adaptive = _is_adaptive_onboarding_completed(user)
+            return adaptive, adaptive
         return True, True
 
-    required_steps = 2 if role == "college_admin" else 5
+    # 4. Fallback: check onboarding_step
     onboarding_step = int(user.get("onboarding_step") or 0)
+    required_steps = 5 # Standard for learner/parent
+    if role == "college_admin": required_steps = 2
+    
+    if onboarding_step >= required_steps:
+        if role == "student":
+            adaptive = _is_adaptive_onboarding_completed(user)
+            return adaptive, adaptive
+        return True, True
 
-    # For students, also check adaptive onboarding; for other roles it's auto-complete
-    adaptive_completed = role != "student" or _is_adaptive_onboarding_completed(user)
-
-    completed = onboarding_step >= required_steps and adaptive_completed
-    return completed, adaptive_completed
+    return False, False
 
 
 def build_claims(user: dict) -> dict:
@@ -225,6 +198,12 @@ def _get_identifier_type(identifier: str) -> str:
 def _resolve_identifier(identifier: str, user_store: UserStore) -> Optional[dict]:
     """Resolve a login identifier (roll number / employee ID / email) to a user row."""
     identifier = identifier.strip()
+    
+    # 1. If it looks like an email, jump straight to the fast indexed path
+    if "@" in identifier:
+        return user_store.get_user_by_email_sync(identifier, include_sensitive=True)
+
+    # 2. Try secondary identifiers (roll_number, employee_id)
     try:
         client = supabase_db.get_client()
         if _ROLL_RE.match(identifier):
@@ -237,7 +216,8 @@ def _resolve_identifier(identifier: str, user_store: UserStore) -> Optional[dict
                 return user_store._sanitize_user(r.data[0], include_sensitive=True)
     except Exception:
         pass
-    # Default: treat as email
+        
+    # 3. Last fallback: try as email anyway (might be a malformed email or custom username)
     return user_store.get_user_by_email_sync(identifier, include_sensitive=True)
 
 

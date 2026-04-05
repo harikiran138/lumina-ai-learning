@@ -138,6 +138,83 @@ class ParentStore:
             })
         return reports
 
+    async def link_student_by_code(self, parent_id: str, code: str) -> Optional[Dict[str, Any]]:
+        """
+        Links a parent to a student using the student's unique 8-character parent_link_code.
+        """
+        try:
+            client = self.db.get_client()
+            
+            # 1. Find the student by code
+            response = await client.table("users").select("id, name, role").eq("parent_link_code", code).eq("role", "student").async_execute()
+            if not response.data:
+                log.warning("link_by_code_invalid", code=code)
+                return None
+            
+            student = response.data[0]
+            student_id = student["id"]
+
+            # 2. Check if link already exists
+            existing = await client.table("parent_child_links").select("*").eq("parent_id", parent_id).eq("child_id", student_id).async_execute()
+            if existing.data:
+                log.info("link_by_code_exists", parent_id=parent_id, student_id=student_id)
+                return student
+
+            # 3. Create the link
+            await client.table("parent_child_links").insert({
+                "parent_id": parent_id,
+                "child_id": student_id,
+                "verified_by_admin": True # For now let's auto-verify or let the system handle it
+            }).async_execute()
+            
+            log.info("link_by_code_success", parent_id=parent_id, student_id=student_id)
+            return student
+            
+        except Exception as e:
+            log.error("link_student_by_code_failed", parent_id=parent_id, code=code, error=str(e))
+            return None
+
+    async def get_goals(self, parent_id: str) -> List[Dict[str, Any]]:
+        try:
+            client = self.db.get_client()
+            response = await client.table("parent_goals").select("*, users!child_id(name)").eq("parent_id", parent_id).async_execute()
+            result = []
+            for r in response.data:
+                r["childName"] = r.get("users", {}).get("name", "Student")
+                result.append(r)
+            return result
+        except Exception as e:
+            log.error("get_goals_failed", parent_id=parent_id, error=str(e))
+            return []
+
+    async def get_recent_activities(self, parent_id: str) -> List[Dict[str, Any]]:
+        try:
+            links = await self.get_linked_children(parent_id)
+            client = self.db.get_client()
+            activities = []
+            for link in links:
+                child_id = str(link["child_id"])
+                child_name = link.get("child_name", "Student")
+                
+                # Fetch recent quiz results as activities
+                quizzes = await client.table("quiz_attempts").select("*").eq("user_id", child_id).order("created_at", desc=True).limit(5).async_execute()
+                for q in quizzes.data or []:
+                    activities.append({
+                        "id": q.get("id"),
+                        "childId": child_id,
+                        "childName": child_name,
+                        "type": "assignment",
+                        "title": f"Quiz: {q.get('topic') or 'Assessment'}",
+                        "timestamp": q.get("created_at"),
+                        "score": q.get("score")
+                    })
+            
+            activities.sort(key=lambda x: x["timestamp"] or "", reverse=True)
+            return activities[:10]
+        except Exception as e:
+            log.error("get_recent_activities_failed", parent_id=parent_id, error=str(e))
+            return []
+
     async def get_parent_dashboard(self, parent_id: str) -> Dict[str, Any]:
         links = await self.get_linked_children(parent_id)
         children = []
@@ -160,6 +237,8 @@ class ParentStore:
             "messages": await self.get_messages(parent_id),
             "alerts": await self.get_alerts(parent_id),
             "weekly_reports": await self.get_weekly_reports(parent_id),
+            "goals": await self.get_goals(parent_id),
+            "recent_activities": await self.get_recent_activities(parent_id)
         }
 
     async def create_goal(self, parent_id: str, child_id: str, goal_text: str) -> Optional[Dict[str, Any]]:
