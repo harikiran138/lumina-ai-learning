@@ -4,7 +4,9 @@ export type SupportedRoleOnboardingRole =
   | "mentor"
   | "peer_tutor"
   | "counselor"
-  | "researcher";
+  | "researcher"
+  | "alumni"
+  | "content_creator";
 
 export type SupportedRoleStep = 1 | 2 | 3 | 4 | 5;
 
@@ -393,6 +395,131 @@ const CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
         description: "Review and confirm your profile.",
         fields: [
           { key: "agreedToTerms", label: "I agree to the professional conduct policy", type: "boolean", helper: "Confirm you accept the institutional counseling guidelines.", required: true },
+        ],
+      },
+    ],
+  },
+  alumni: {
+    label: "Alumni Onboarding",
+    intro: "Rejoin the community to mentor current students and expand your professional network.",
+    completionLabel: "Finish setup",
+    steps: [
+      {
+        id: 1,
+        title: "Academic Background",
+        description: "Verify your graduation details.",
+        fields: [
+          { key: "fullName", label: "Full name", type: "text", helper: "Your name as it appeared during graduation.", required: true },
+          { key: "graduationYear", label: "Year of Graduation", type: "number", helper: "The year you completed your course.", placeholder: "2022", required: true },
+          { key: "major", label: "Field of Study", type: "text", helper: "Your primary major/specialisation.", placeholder: "Computer Science", required: true },
+        ],
+      },
+      {
+        id: 2,
+        title: "Professional Journey",
+        description: "Tell us what you've been up to since graduation.",
+        fields: [
+          { key: "currentCompany", label: "Current Company / Organisation", type: "text", helper: "Where are you currently working?", placeholder: "Google" },
+          { key: "jobTitle", label: "Current Role", type: "text", helper: "Your current designation.", placeholder: "Senior Engineer" },
+          { key: "industry", label: "Industry", type: "select", helper: "Primary industry you work in.", options: [
+            { label: "Technology", value: "tech" },
+            { label: "Finance", value: "finance" },
+            { label: "Healthcare", value: "healthcare" },
+            { label: "Education", value: "education" },
+            { label: "Other", value: "other" },
+          ]},
+        ],
+      },
+      {
+        id: 3,
+        title: "Mentorship & Giving Back",
+        description: "Let us know how you'd like to support current students.",
+        fields: [
+          { key: "openToMentoring", label: "Open to mentoring students", type: "boolean", helper: "Allow current students to reach out for guidance." },
+          { key: "expertise", label: "Areas of Expertise", type: "array", helper: "List skills you can mentor on, one per line.", placeholder: "System Design\nCareer Prep" },
+        ],
+      },
+      {
+        id: 4,
+        title: "Privacy Settings",
+        description: "Control your visibility in the alumni directory.",
+        fields: [
+          { key: "isPublic", label: "Make profile public to other alumni", type: "boolean", helper: "Your profile will be visible to fellow alumni for networking." },
+        ],
+      },
+      {
+        id: 5,
+        title: "Final Review",
+        description: "Confirm and join the alumni network.",
+        fields: [
+          { key: "agreedToAlumniTerms", label: "I agree to the alumni network guidelines", type: "boolean", helper: "Confirm acceptance of the professional conduct policy.", required: true },
+        ],
+      },
+    ],
+  },
+  content_creator: {
+    label: "Creator Onboarding",
+    intro: "Set up your studio to start building high-quality educational content and courses.",
+    completionLabel: "Launch Studio",
+    steps: [
+      {
+        id: 1,
+        title: "Creator Identity",
+        description: "Tell us about your brand or persona.",
+        fields: [
+          { key: "fullName", label: "Full name / Brand name", type: "text", helper: "Your display name in the Studio.", required: true },
+          { key: "expertise", label: "Primary Expertise", type: "text", helper: "What is your main teaching domain?", placeholder: "Full Stack Development", required: true },
+        ],
+      },
+      {
+        id: 2,
+        title: "Content Strategy",
+        description: "What kind of content do you plan to create?",
+        fields: [
+          { key: "contentType", label: "Preferred Content Type", type: "multiselect", helper: "Select types of materials you want to build.", options: [
+            { label: "Video Courses", value: "video" },
+            { label: "Interactive Exercises", value: "interactive" },
+            { label: "AI-Assisted Textbooks", value: "textbook" },
+            { label: "Assessment Banks", value: "assessments" },
+          ]},
+          { key: "targetLevel", label: "Target Learner Level", type: "select", helper: "Who is your primary audience?", options: [
+            { label: "Beginner", value: "beginner" },
+            { label: "Intermediate", value: "intermediate" },
+            { label: "Advanced", value: "advanced" },
+            { label: "Professional", value: "pro" },
+          ]},
+        ],
+      },
+      {
+        id: 3,
+        title: "Studio Preferences",
+        description: "Configure your workspace.",
+        fields: [
+          { key: "prefersDarkMode", label: "Default Studio Theme", type: "select", helper: "Choose your preferred editor theme.", options: [
+            { label: "Modern Dark", value: "dark" },
+            { label: "Clean Light", value: "light" },
+          ]},
+          { key: "aiCocreationEnabled", label: "Enable AI Co-creation", type: "boolean", helper: "Allow Lumina AI to suggest curriculum outlines and generate initial drafts." },
+        ],
+      },
+      {
+        id: 4,
+        title: "Publication Settings",
+        description: "How do you want to share your work?",
+        fields: [
+          { key: "defaultLicense", label: "Default Content License", type: "select", helper: "Choose how your content can be used.", options: [
+            { label: "Standard Lumina License", value: "standard" },
+            { label: "Creative Commons (BY-NC)", value: "cc_by_nc" },
+            { label: "Open Education Resource (OER)", value: "oer" },
+          ]},
+        ],
+      },
+      {
+        id: 5,
+        title: "Final Review",
+        description: "Ready to start creating?",
+        fields: [
+          { key: "agreedToCreatorTerms", label: "I agree to the content creator policy", type: "boolean", helper: "Accept the intellectual property and quality guidelines.", required: true },
         ],
       },
     ],

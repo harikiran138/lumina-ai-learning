@@ -27,7 +27,6 @@ type Role =
   | "college_admin"
   | "hod"
   | "teacher"
-  | "faculty"
   | "student"
   | "parent"
   | "mentor"
@@ -39,12 +38,13 @@ type Role =
 
 const structuredRoleFlows: SupportedRoleOnboardingRole[] = [
   "teacher",
-  "faculty",
   "parent",
   "mentor",
   "peer_tutor",
   "counselor",
   "researcher",
+  "content_creator",
+  "alumni",
 ];
 
 export default function OnboardingPage() {

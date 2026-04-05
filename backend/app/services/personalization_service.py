@@ -26,6 +26,7 @@ from app.assessment.models.schemas import ResponseTelemetry, AnswerAnalysis
 from app.personalization.explanation_planner import ExplanationPlanner
 from learner_profile.analysis.cognitive_load import CognitiveLoadEstimator
 from learner_profile.models.bkt import BKTModel
+from app.personalization.dkt_engine import DKTEngine
 from app.services.ml_client import ml_client
 
 log = structlog.get_logger()
@@ -40,6 +41,7 @@ class PersonalizationService:
         self.store = PersonalizationStore(db=db)
         self.student_store = StudentStore(db=db)
         self.bkt = BKTModel()
+        self.dkt = DKTEngine()
         self.cognitive_load = CognitiveLoadEstimator()
         self._db = db
 
@@ -593,10 +595,27 @@ class PersonalizationService:
         # 4. Intelligence Controller: Decide Next Activity (Close the Loop)
         next_step = AdaptiveEngine.decide_next_step(profile, current_topic_id=topic_id)
         
+        # 5. DKT Forecasting: Predict Future Mastery
+        predicted_mastery = 0.0
+        if topic_id:
+            predicted_mastery = self.dkt.predict_mastery(profile, topic_id, horizon=5)
+            
+        # 6. Check for Proactive Triggers
+        triggers = self.dkt.get_intervention_triggers(profile)
+        if triggers:
+            profile.metadata["dkt_triggers"] = triggers
+            # Force high-priority intervention if we have critical triggers
+            if "high_lag_detected" in triggers or "authenticity_risk" in triggers:
+                await self._maybe_create_intervention(profile, event, confidence=0.85)
+
         # Wrap for return
         return {
             "profile": profile,
-            "next_step": next_step.to_dict()
+            "next_step": next_step.to_dict(),
+            "forecasting": {
+                "predicted_mastery_5_steps": predicted_mastery,
+                "triggers": triggers
+            }
         }
 
     async def refresh_profile(self, user_id: str, role: str = "student") -> LearnerProfileRecord:

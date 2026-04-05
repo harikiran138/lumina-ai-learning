@@ -36,8 +36,14 @@ class PersonalizationStore:
 
     async def get_profile(self, user_id: str) -> Optional[LearnerProfileRecord]:
         try:
-            data = await self.db.fetch_one("learner_profiles", {"user_id": user_id})
+            # Table name: student_adaptive_profiles, Column: student_id
+            data = await self.db.fetch_one("student_adaptive_profiles", {"student_id": user_id})
             if data:
+                # Map student_id back to user_id for the model
+                data["user_id"] = data.pop("student_id")
+                # Map mastery_scores to mastery_state if needed, or assume they are compatible
+                if "mastery_scores" in data:
+                    data["mastery_state"] = data.pop("mastery_scores")
                 return LearnerProfileRecord(**data)
         except Exception as exc:
             log.warning("learner_profile_fetch_failed", user_id=user_id, error=str(exc))
@@ -45,9 +51,17 @@ class PersonalizationStore:
 
     async def upsert_profile(self, profile: LearnerProfileRecord) -> LearnerProfileRecord:
         record = profile.model_dump(mode="json")
+        # Map user_id to student_id for the DB
+        record["student_id"] = record.pop("user_id")
+        if "mastery_state" in record:
+            record["mastery_scores"] = record.pop("mastery_state")
+            
         try:
-            result = await self.db.upsert("learner_profiles", record, on_conflict="user_id")
+            result = await self.db.upsert("student_adaptive_profiles", record, on_conflict="student_id")
             if result:
+                result["user_id"] = result.pop("student_id")
+                if "mastery_scores" in result:
+                    result["mastery_state"] = result.pop("mastery_scores")
                 return LearnerProfileRecord(**result)
             return profile
         except Exception as exc:
@@ -56,17 +70,33 @@ class PersonalizationStore:
 
     async def list_profiles(self, limit: int = 5000) -> List[LearnerProfileRecord]:
         try:
-            data = await self.db.fetch_all("learner_profiles", limit=limit)
-            return [LearnerProfileRecord(**item) for item in data]
+            data = await self.db.fetch_all("student_adaptive_profiles", limit=limit)
+            profiles = []
+            for item in data:
+                item["user_id"] = item.pop("student_id")
+                if "mastery_scores" in item:
+                    item["mastery_state"] = item.pop("mastery_scores")
+                profiles.append(LearnerProfileRecord(**item))
+            return profiles
         except Exception as exc:
             log.warning("learner_profiles_list_failed", limit=limit, error=str(exc))
             return []
 
     async def append_event(self, event: LearningEventRecord) -> LearningEventRecord:
         record = event.model_dump(mode="json")
+        # Map to adaptive_answers table
+        record["student_id"] = record.pop("user_id")
+        # Map payload to specific columns if possible, otherwise keep as payload?
+        # The adaptive_answers table has specific columns like response_time_ms
+        if "payload" in record:
+            payload = record["payload"]
+            record["response_time_ms"] = payload.get("response_time_ms") or payload.get("time_taken")
+            record["is_correct"] = payload.get("is_correct")
+            
         try:
-            result = await self.db.upsert("learning_events", record, on_conflict="id")
+            result = await self.db.upsert("adaptive_answers", record, on_conflict="id")
             if result:
+                result["user_id"] = result.pop("student_id")
                 return LearningEventRecord(**result)
             return event
         except Exception as exc:
@@ -77,14 +107,18 @@ class PersonalizationStore:
         try:
             client = self.db.get_client()
             response = await (
-                client.table("learning_events")
+                client.table("adaptive_answers")
                 .select("*")
-                .eq("user_id", user_id)
+                .eq("student_id", user_id)
                 .order("created_at", desc=True)
                 .limit(limit)
                 .async_execute()
             )
-            return [LearningEventRecord(**item) for item in response.data]
+            events = []
+            for item in response.data:
+                item["user_id"] = item.pop("student_id")
+                events.append(LearningEventRecord(**item))
+            return events
         except Exception as exc:
             log.warning("learning_events_list_failed", user_id=user_id, error=str(exc))
             return []
@@ -93,9 +127,16 @@ class PersonalizationStore:
         self, recommendation: InterventionRecommendation
     ) -> InterventionRecommendation:
         record = recommendation.model_dump(mode="json")
+        # Table: intervention_queue, Column: student_id
+        record["student_id"] = record.pop("user_id")
+        record["reason"] = record.pop("reason", "unknown")
+        record["suggested_action"] = record.pop("recommended_action", "")
+        
         try:
-            result = await self.db.upsert("intervention_recommendations", record, on_conflict="id")
+            result = await self.db.upsert("intervention_queue", record, on_conflict="id")
             if result:
+                result["user_id"] = result.pop("student_id")
+                result["recommended_action"] = result.pop("suggested_action")
                 return InterventionRecommendation(**result)
             return recommendation
         except Exception as exc:
@@ -106,21 +147,28 @@ class PersonalizationStore:
         self, user_id: Optional[str] = None, limit: int = 100
     ) -> List[InterventionRecommendation]:
         try:
-            filters = {"user_id": user_id} if user_id else {}
             client = self.db.get_client()
-            query = client.table("intervention_recommendations").select("*").order("created_at", desc=True).limit(limit)
+            query = client.table("intervention_queue").select("*").order("created_at", desc=True).limit(limit)
             if user_id:
-                query = query.eq("user_id", user_id)
+                query = query.eq("student_id", user_id)
             response = await query.async_execute()
-            return [InterventionRecommendation(**item) for item in response.data]
+            
+            interventions = []
+            for item in response.data:
+                item["user_id"] = item.pop("student_id")
+                item["recommended_action"] = item.pop("suggested_action")
+                interventions.append(InterventionRecommendation(**item))
+            return interventions
         except Exception as exc:
             log.warning("interventions_list_failed", user_id=user_id, error=str(exc))
             return []
 
     async def get_intervention(self, intervention_id: str) -> Optional[InterventionRecommendation]:
         try:
-            data = await self.db.fetch_one("intervention_recommendations", {"id": intervention_id})
+            data = await self.db.fetch_one("intervention_queue", {"id": intervention_id})
             if data:
+                data["user_id"] = data.pop("student_id")
+                data["recommended_action"] = data.pop("suggested_action")
                 return InterventionRecommendation(**data)
         except Exception as exc:
             log.warning("intervention_fetch_failed", intervention_id=intervention_id, error=str(exc))

@@ -245,6 +245,74 @@ async def ai_tutor_ws(
 
 
 # ---------------------------------------------------------------------------
+# Adaptive learning events channel
+# ---------------------------------------------------------------------------
+
+@router.websocket("/adaptive/{class_id}")
+async def adaptive_events_ws(
+    ws: WebSocket,
+    class_id: str,
+    access_token: Optional[str] = Query(default=None),
+):
+    """
+    WebSocket for real-time adaptive learning events.
+
+    Events broadcast from server:
+    - student:answer_submitted    — {"type": "student:answer_submitted", "student_id": "...", "concept_id": "...", "is_correct": bool}
+    - student:mastery_updated     — {"type": "student:mastery_updated", "student_id": "...", "concept_id": "...", "mastery": float}
+    - student:alert_triggered     — {"type": "student:alert_triggered", "student_id": "...", "alert_type": "...", "dropout_risk": float}
+    - class:heatmap_refresh       — {"type": "class:heatmap_refresh", "class_id": "...", "heatmap": {...}}
+
+    Events from teacher:
+    - teacher:intervene           — {"type": "teacher:intervene", "student_id": "...", "message": "...", "action": "..."}
+    - teacher:question_override   — {"type": "teacher:question_override", "student_id": "...", "session_id": "...", "question": {...}}
+    """
+    payload = _auth_ws(ws, access_token)
+    if not payload:
+        await ws.accept()
+        await ws.send_json({"type": "error", "detail": "Authentication required"})
+        await ws.close(code=4001)
+        return
+
+    user_id = str(payload.get("id") or payload.get("sub", "unknown"))
+    user_role = str(payload.get("role") or "student")
+    channel = f"adaptive:{class_id}"
+
+    await manager.connect(channel, ws)
+    log.info("ws_adaptive_connected", user_id=user_id, class_id=class_id, role=user_role)
+
+    try:
+        while True:
+            data = await ws.receive_text()
+            try:
+                msg = json.loads(data)
+            except json.JSONDecodeError:
+                await ws.send_json({"type": "error", "detail": "Invalid JSON"})
+                continue
+
+            event_type = msg.get("type", "")
+
+            # Tag teacher-originated events so clients can distinguish them
+            if user_role in {"teacher", "admin", "hod", "faculty"}:
+                if event_type and not event_type.startswith("teacher:"):
+                    msg["type"] = f"teacher:{event_type}"
+
+            msg.setdefault("sender_id", user_id)
+            msg.setdefault("class_id", class_id)
+
+            await manager.broadcast(channel, msg)
+
+    except WebSocketDisconnect:
+        manager.disconnect(channel, ws)
+        log.info("ws_adaptive_disconnected", user_id=user_id, class_id=class_id)
+
+
+async def broadcast_adaptive_event(class_id: str, event: dict) -> None:
+    """Push an event to all subscribers of the adaptive:{class_id} channel."""
+    await manager.broadcast(f"adaptive:{class_id}", event)
+
+
+# ---------------------------------------------------------------------------
 # Redis pub/sub helper
 # ---------------------------------------------------------------------------
 

@@ -4,7 +4,7 @@ class BKTModel:
     Tracks P(L) = probability student learned skill.
     """
 
-    def __init__(self, p_l0=0.1, p_t=0.2, p_g=0.1, p_s=0.1):
+    def __init__(self, p_l0=0.3, p_t=0.1, p_g=0.2, p_s=0.1):
         # Default parameters (can be tuned per concept)
         self.p_l0 = p_l0  # Initial probability of knowledge
         self.p_t = p_t    # Probability of learning from one attempt

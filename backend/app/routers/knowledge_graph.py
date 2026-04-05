@@ -77,3 +77,97 @@ async def upsert_knowledge_nodes(
     db["knowledge_nodes"] = existing + rows
     store.write(db)
     return {"status": "success", "count": len(rows), "source": "local"}
+
+
+@router.get("/concept/{concept_id}/graph")
+async def get_concept_graph(
+    concept_id: str,
+    depth: int = 2,
+    current_user: dict = Depends(get_current_user),
+):
+    """Return the dependency graph for a specific concept up to `depth` hops."""
+    client = supabase_db.get_client()
+
+    if not client:
+        # Supabase unavailable — return a safe mock response
+        return {
+            "concept_id": concept_id,
+            "name": concept_id,
+            "dependencies": [],
+            "dependents": [],
+            "depth": depth,
+            "edges": [],
+        }
+
+    # Fetch the concept node
+    concept = None
+    try:
+        rows = client.table("concept_nodes").select("*").eq("id", concept_id).limit(1).execute().data
+        concept = rows[0] if rows else None
+    except Exception as exc:
+        log.warning("concept_nodes_fetch_failed", concept_id=concept_id, error=str(exc))
+
+    if concept is None:
+        # Table may not exist yet — return mock
+        return {
+            "concept_id": concept_id,
+            "name": concept_id,
+            "dependencies": [],
+            "dependents": [],
+            "depth": depth,
+            "edges": [],
+        }
+
+    # Collect edges by walking up to `depth` hops from the seed concept
+    visited_concepts: set = {concept_id}
+    frontier: set = {concept_id}
+    all_edges: List[Dict[str, Any]] = []
+
+    for _hop in range(depth):
+        if not frontier:
+            break
+        next_frontier: set = set()
+        for cid in frontier:
+            try:
+                edge_rows = (
+                    client.table("concept_edges")
+                    .select("*")
+                    .or_(f"source_id.eq.{cid},target_id.eq.{cid}")
+                    .execute()
+                    .data
+                )
+                for edge in edge_rows:
+                    all_edges.append(edge)
+                    for side in ("source_id", "target_id"):
+                        neighbor = str(edge.get(side, ""))
+                        if neighbor and neighbor not in visited_concepts:
+                            visited_concepts.add(neighbor)
+                            next_frontier.add(neighbor)
+            except Exception as exc:
+                log.warning("concept_edges_fetch_failed", concept_id=cid, error=str(exc))
+        frontier = next_frontier
+
+    # Deduplicate edges by id (or by source+target if id absent)
+    seen_edge_ids: set = set()
+    unique_edges: List[Dict[str, Any]] = []
+    for edge in all_edges:
+        key = edge.get("id") or f"{edge.get('source_id')}:{edge.get('target_id')}"
+        if key not in seen_edge_ids:
+            seen_edge_ids.add(key)
+            unique_edges.append(edge)
+
+    dependencies = [
+        e.get("source_id") for e in unique_edges if e.get("target_id") == concept_id
+    ]
+    dependents = [
+        e.get("target_id") for e in unique_edges if e.get("source_id") == concept_id
+    ]
+
+    return {
+        "concept_id": concept_id,
+        "name": concept.get("name") or concept.get("concept") or concept_id,
+        "dependencies": dependencies,
+        "dependents": dependents,
+        "depth": depth,
+        "edges": unique_edges,
+    }
