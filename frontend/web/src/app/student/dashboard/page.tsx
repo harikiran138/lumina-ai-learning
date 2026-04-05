@@ -91,6 +91,9 @@ export default function StudentDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<any>(null);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [linkStatus, setLinkStatus] = useState<"pending" | "linked">("pending");
+
   const loadDashboard = async () => {
     setIsLoading(true);
     setError(null);
@@ -105,9 +108,50 @@ export default function StudentDashboard() {
     }
   };
 
+  const refreshLinkCode = async () => {
+    setIsRefreshing(true);
+    try {
+      const resp = await api.studentRefreshLinkCode();
+      setDashboardData({
+        ...dashboardData,
+        meta: {
+          ...dashboardData.meta,
+          parentLinkCode: resp.token
+        }
+      });
+    } catch (e) {
+      console.error("refresh_link_code_failed", e);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  useEffect(() => {
+    if (!dashboardData) return;
+    
+    // Poll for status if not already linked in the meta data
+    if (dashboardData.meta?.parentLinked) {
+      setLinkStatus("linked");
+      return;
+    }
+
+    const interval = setInterval(async () => {
+       try {
+         const resp = await api.studentGetParentConnectionStatus();
+         if (resp.status === "linked") {
+           setLinkStatus("linked");
+           clearInterval(interval);
+           loadDashboard(); // Refresh to hide code and show linked state
+         }
+       } catch (e) {}
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [dashboardData]);
 
   const getStatValue = (label: string, fallback = "0") => {
     if (!Array.isArray(dashboardData?.stats)) return fallback;
@@ -307,37 +351,72 @@ export default function StudentDashboard() {
       <div className="grid grid-cols-1 gap-8">
         <SectionCard
           title="Parent Access"
-          subtitle="Share this unique code with your parent to link your accounts."
+          subtitle={linkStatus === "linked" ? "Successfully linked to your parent account." : "Share this unique code with your parent to link your accounts."}
           icon={ShieldCheck}
         >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-lumina-highlight/5 border border-lumina-highlight/20 rounded-3xl p-8">
+          <div className={cn(
+            "flex flex-col md:flex-row items-center justify-between gap-6 rounded-3xl p-8 transition-all duration-500",
+            linkStatus === "linked" ? "bg-lumina-highlight/10 border-lumina-highlight" : "bg-lumina-highlight/5 border-lumina-highlight/20 border"
+          )}>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                  <div className="w-8 h-8 rounded-xl bg-lumina-highlight/10 flex items-center justify-center text-lumina-highlight/40">
-                   <ShieldCheck className="w-5 h-5" />
+                   {linkStatus === "linked" ? <CheckCircle className="w-5 h-5 text-lumina-highlight" /> : <ShieldCheck className="w-5 h-5" />}
                  </div>
-                 <h3 className="text-[10px] uppercase tracking-[0.25em] text-gray-500 font-black">Secure Account Mapping</h3>
+                 <h3 className="text-[10px] uppercase tracking-[0.25em] text-gray-500 font-black">
+                   {linkStatus === "linked" ? "Identity Verified" : "Secure Account Mapping"}
+                 </h3>
               </div>
-              <p className="text-gray-400 text-sm max-w-sm leading-relaxed">Required for parental monitoring and shared reports. This code verifies your primary academic identity.</p>
+              <p className="text-gray-400 text-sm max-w-sm leading-relaxed">
+                {linkStatus === "linked" 
+                  ? "Your parent can now monitor your progress, set specific goals, and view AI-generated weekly performance summaries."
+                  : "Required for parental monitoring and shared reports. This code expires periodically for security."}
+              </p>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="bg-black/60 border-2 border-white/5 rounded-2xl px-12 py-6 text-4xl font-mono font-black text-lumina-highlight tracking-[0.25em] shadow-[inset_0_2px_20px_rgba(0,0,0,0.8)] border-dashed">
-                {meta?.parentLinkCode || "••••••••"}
+            {linkStatus === "linked" ? (
+              <div className="bg-lumina-highlight/10 px-8 py-4 rounded-2xl flex items-center gap-3">
+                <ShieldCheck className="text-lumina-highlight w-6 h-6" />
+                <span className="font-bold text-white uppercase tracking-widest text-sm">Linked to Parent</span>
               </div>
-              <button 
-                onClick={() => {
-                   if (meta?.parentLinkCode) {
-                     navigator.clipboard.writeText(meta.parentLinkCode);
-                     // Alert or toast would be good
-                   }
-                }}
-                className="h-20 w-20 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-gray-500 hover:text-lumina-highlight hover:bg-lumina-highlight/10 transition-all border-dashed group"
-                title="Copy to Clipboard"
-              >
-                <ClipboardList className="h-8 w-8 group-active:scale-95 group-hover:scale-110 transition-all" />
-              </button>
-            </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="relative group">
+                  <div className={cn(
+                    "bg-black/60 border-2 border-white/5 rounded-2xl px-12 py-6 text-4xl font-mono font-black text-lumina-highlight tracking-[0.25em] shadow-[inset_0_2px_20px_rgba(0,0,0,0.8)] border-dashed",
+                    isRefreshing && "opacity-30 blur-sm grayscale"
+                  )}>
+                    {meta?.parentLinkCode || "••••••••"}
+                    {isRefreshing && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <RefreshCw className="w-8 h-8 animate-spin text-lumina-highlight" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button 
+                    onClick={() => {
+                       if (meta?.parentLinkCode) {
+                         navigator.clipboard.writeText(meta.parentLinkCode);
+                       }
+                    }}
+                    className="h-12 w-12 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-gray-500 hover:text-lumina-highlight hover:bg-lumina-highlight/10 transition-all border-dashed"
+                    title="Copy Code"
+                  >
+                    <ClipboardList className="h-5 w-5" />
+                  </button>
+                  <button 
+                    disabled={isRefreshing}
+                    onClick={refreshLinkCode}
+                    className="h-12 w-12 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-gray-500 hover:text-lumina-highlight hover:bg-lumina-highlight/10 transition-all border-dashed"
+                    title="Refresh Code"
+                  >
+                    <RefreshCw className={cn("h-5 w-5", isRefreshing && "animate-spin")} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </SectionCard>
       </div>

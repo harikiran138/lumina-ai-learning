@@ -11,6 +11,8 @@ import httpx
 from ai_engine.prompts import A2UI_SYSTEM_PROMPT
 from app.core.config import settings
 from app.core.logging import structlog
+from app.personalization.explanation_planner import ExplanationPlanner
+from app.personalization.schemas import LearningEventType
 
 log = structlog.get_logger()
 
@@ -70,6 +72,7 @@ class TutorGenerationRequest:
     visual_requested: bool = False
     assignment_related: bool = False
     context_notes: List[str] = field(default_factory=list)
+    explanation_plan: Optional[Dict[str, Any]] = None
 
     @property
     def question_signature(self) -> str:
@@ -98,7 +101,23 @@ class AITutorService:
         read_timeout = getattr(settings, "OPENROUTER_READ_TIMEOUT", 45.0)
         self.timeout = httpx.Timeout(connect=connect_timeout, read=read_timeout, write=read_timeout, pool=connect_timeout)
 
-    def infer_mode(self, question: str, requested_mode: Optional[str] = None) -> str:
+    def plan_personalization(self, profile_projection: Dict[str, Any], question: str) -> Dict[str, Any]:
+        """
+        Uses the Intelligence Controller to plan the tutor's personality and pedagogical strategy.
+        """
+        # Convert projection dict back to simplified context for the planner
+        # In a real system, we'd use the full LearnerProfileRecord
+        from app.personalization.schemas import LearnerProfileRecord, ExplanationProfile
+        
+        # Mocking a minimal profile record for the planner if needed, 
+        # but better to have the service pass the results.
+        # For this integration, we'll assume the caller (endpoint) passes the plan.
+        pass
+
+    def infer_mode(self, question: str, requested_mode: Optional[str] = None, plan: Optional[Dict[str, Any]] = None) -> str:
+        if plan and "mode" in plan:
+            return plan["mode"].lower()
+            
         normalized = (requested_mode or "").strip().lower()
         if normalized in _MODE_INSTRUCTIONS:
             return normalized
@@ -248,6 +267,17 @@ class AITutorService:
                 "Academic integrity mode is active. Do not provide a submission-ready answer. "
                 "Coach the student with hints, structure, checkpoints, and a safe worked mini-example instead."
             )
+
+        # Integration of Dynamic Explanation Plan (Personality Router)
+        if hasattr(request, 'explanation_plan') and request.explanation_plan:
+            plan = request.explanation_plan
+            p_mode = plan.get("mode", "Standard")
+            p_strat = plan.get("strategy", "Direct")
+            context_lines.append(f"ADAPTIVE PERSONALITY: Use a {p_mode} style with a {p_strat} pedagogical strategy.")
+            context_lines.append(f"VOCABULARY BAND: {plan.get('vocabulary_band', 'grade-level')}")
+            context_lines.append(f"PACING: {plan.get('pace', 'normal')}")
+            if plan.get("socratic_ratio", 0) > 0.6:
+                context_lines.append("STRICT SOCRATIC: Ask probing questions. Do not give direct answers.")
 
         mode_instructions = _MODE_INSTRUCTIONS.get(request.mode, _MODE_INSTRUCTIONS["explain"])
         output_contract = """

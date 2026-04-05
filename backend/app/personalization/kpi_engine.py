@@ -44,6 +44,10 @@ class KPIEngine:
         engagement = cls._calculate_engagement(relevant_events, profile)
         persistence = cls._calculate_persistence(relevant_events)
         readiness = cls._calculate_readiness(profile)
+        
+        # Multidimensional Learning Score (S)
+        # S = 0.4*corr + 0.3*depth + 0.2*effort + 0.1*growth
+        current_s = cls.calculate_learning_score(assessment_events, now)
 
         # AI analytics fields — derived from student_analytics service
         tier, _tier_score = _classify_tier(profile)
@@ -59,12 +63,44 @@ class KPIEngine:
             engagement_score=engagement,
             persistence=persistence,
             readiness=readiness,
+            learning_score=current_s, # Added new dimension
             growth_trend=trend,
             tier=tier,
             study_pattern=pattern,
             recommended_section=section,
             recorded_at=now,
         )
+
+    @classmethod
+    def calculate_learning_score(cls, events: List[LearningEventRecord], now: datetime) -> float:
+        """
+        Calculates the 40/30/20/10 Multidimensional score.
+        """
+        if not events: return 0.5
+        
+        recent = events[-5:] # Last 5 events
+        
+        # 1. Correctness (40%)
+        correctness = sum(1 for e in recent if e.payload.get("is_correct") is True) / len(recent)
+        
+        # 2. Depth (30%) - Proxy: word count or rubric depth
+        depths = [len(e.payload.get("answer_text", "")) / 500.0 for e in recent]
+        avg_depth = min(1.0, sum(depths) / len(recent))
+        
+        # 3. Effort (20%) - Proxy: time taken relative to expectation
+        effort_scores = [min(1.0, e.payload.get("time_taken", 0) / 60.0) for e in recent]
+        avg_effort = sum(effort_scores) / len(recent)
+        
+        # 4. Growth (10%) - Δ correctness between first and last half of events
+        if len(events) >= 10:
+            past_half = events[:-5][-5:]
+            past_corr = sum(1 for e in past_half if e.payload.get("is_correct") is True) / len(past_half)
+            growth = max(0, correctness - past_corr)
+        else:
+            growth = 0.5 # Neutral for new students
+            
+        s_score = (0.4 * correctness) + (0.3 * avg_depth) + (0.2 * avg_effort) + (0.1 * growth)
+        return round(float(s_score), 2)
 
     @staticmethod
     def _calculate_engagement(events: List[LearningEventRecord], profile: LearnerProfileRecord) -> float:
@@ -123,16 +159,22 @@ class KPIEngine:
     def _calculate_lag_zone(events: List[LearningEventRecord]) -> float:
         """
         Measures 'spinning wheels' - high attempt volume with low correctness.
-        Returns a score from 0.0 (no lag) to 1.0 (severe lag).
+        Lag = (1 - L) * (1 - e^(-N/τ)) where L is local mastery and N is attempts.
         """
         if not events:
             return 0.0
             
-        incorrect_count = sum(1 for e in events if e.payload.get("is_correct") is False)
-        error_rate = float(incorrect_count) / len(events)
+        recent_window = events[-10:] # Last 10 attempts
+        incorrect_count = sum(1 for e in recent_window if e.payload.get("is_correct") is False)
+        error_rate = float(incorrect_count) / len(recent_window)
         
-        # If error rate is high and volume of events is also high, they are in a lag zone
-        volume_penalty = min(len(events) / 50.0, 1.0) # Peaks if >= 50 questions answered recently
+        # If they haven't gotten anything right in 3+ attempts, lag spikes
+        if len(recent_window) >= 3 and incorrect_count == len(recent_window):
+            return 0.9
+            
+        # Exponential volume penalty
+        # Tau=5: After 5 attempts at failing, lag is significant.
+        volume_penalty = 1 - math.exp(-len(events) / 5.0)
         
         return round(error_rate * volume_penalty, 2)
 
@@ -149,24 +191,28 @@ class KPIEngine:
             
         scores = []
         for e in events:
+            # Priority 1: Direct score from analysis engine
+            payload_auth = e.payload.get("analysis", {}).get("authenticity_score")
+            if payload_auth is not None:
+                scores.append(float(payload_auth))
+                continue
+                
+            # Priority 2: Heuristic based on timing
             time_taken = e.payload.get("time_taken", 0)
             answer_text = e.payload.get("answer_text", "")
             
-            # If no time track or no text, it's neutral (skip or assume authentic)
             if not time_taken or not answer_text:
                 continue
                 
             char_count = len(answer_text)
-            # Rough heuristic: average typing speed is ~200 chars/min (3.3 chars/sec)
-            # If they typed > 10 chars per second, it's highly suspect.
             chars_per_sec = char_count / float(time_taken)
             
             if chars_per_sec > 15.0:
-                scores.append(0.2) # High chance of copy-paste
+                scores.append(0.2)
             elif chars_per_sec > 8.0:
-                scores.append(0.5) # Suspect
+                scores.append(0.5)
             else:
-                scores.append(1.0) # Looks normal
+                scores.append(1.0)
                 
         if not scores:
             return profile.kpi_snapshot.authenticity_score if profile.kpi_snapshot else 1.0

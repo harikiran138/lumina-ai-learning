@@ -17,7 +17,11 @@ REQUIRED_TABLES = [
     "physical_submissions",
     "question_bank",
     "handwritten_submissions",
-    "handwritten_submission_questions"
+    "handwritten_submission_questions",
+    "parent_student_links",
+    "parent_goals",
+    "parent_messages",
+    "inactivity_alerts"
 ]
 
 def check_table_exists(table_name: str) -> bool:

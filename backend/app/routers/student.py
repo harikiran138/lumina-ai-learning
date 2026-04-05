@@ -81,6 +81,43 @@ class StudentOnboardingCompleteRequest(BaseModel):
     batch_confirmation_note: Optional[str] = None
 
 
+class BehaviorSignal(BaseModel):
+    event_type: str
+    ts: str
+    payload: Dict[str, Any] = {}
+
+
+class BehaviorBatchRequest(BaseModel):
+    course_id: Optional[str] = None
+    question_id: Optional[str] = None
+    session_id: str
+    signals: List[BehaviorSignal]
+
+
+class AdaptiveQuestionRequest(BaseModel):
+    course_id: str
+    topic_id: Optional[str] = None
+    exclude_ids: List[str] = []
+
+
+class StudentAnswerRequest(BaseModel):
+    """Unified answer submission — triggers the full orchestrator pipeline."""
+    course_id:        str
+    topic_id:         str
+    question_id:      str
+    question_text:    str       = ""
+    answer_text:      str
+    is_correct:       bool
+    correct_answer:   str       = ""
+    difficulty:       str       = "medium"
+    time_taken_s:     float     = 0.0
+    correction_count: int       = 0
+    behavior_signals: Dict[str, Any] = {}
+    session_id:       str       = ""
+    exclude_q_ids:    List[str] = []
+    debug_mode:       bool      = False
+
+
 def _student_tutor_timestamp() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -2288,25 +2325,494 @@ async def trigger_risk_analysis(current_user: dict = Depends(get_current_user)):
     return await service.run_risk_analysis(current_user["id"], institution_id)
 @router.get("/connection-token")
 async def get_connection_token(
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    student_store: StudentStore = Depends(get_student_store)
 ):
     """
-    Generates a temporary connection token for parent-student linking.
+    Returns an 8-character connection code for parent-student linking.
+    Format: LUM-XXXXXX
     Expires in 10 minutes (600 seconds).
     """
     try:
-        # Generate a unique token
-        token = secrets.token_urlsafe(16)
-        key = f"student_connect:{token}"
+        # Check if there's already an active code
+        status = await student_store.get_parent_link_status(current_user["id"])
         
-        # Store in Redis: token -> student_id
-        await redis_client.setex(key, 600, current_user["id"])
+        if status["status"] == "pending":
+            code = status["code"]
+            from datetime import datetime
+            expires_at = datetime.fromisoformat(status["expires_at"].replace("Z", "+00:00")).replace(tzinfo=None)
+            remaining = int((expires_at - datetime.utcnow()).total_seconds())
+        else:
+            # Generate a new code
+            code = await student_store.generate_parent_link_code(current_user["id"])
+            remaining = 600
         
         return {
-            "token": token,
-            "expires_in": 600,
-            "display_id": current_user["id"] # Optional: use for manual entry if needed
+            "token": code,
+            "expires_in": max(0, remaining),
+            "display_id": current_user["id"],
+            "status": status["status"]
         }
     except Exception as e:
-        logger.error(f"get_connection_token_failed | user_id={current_user['id']} error={e}")
-        raise HTTPException(status_code=500, detail="Failed to generate connection token")
+        logger.error("get_connection_token_failed", error=str(e))
+        raise HTTPException(status_code=500, detail="Failed to generate connection code")
+
+
+@router.post("/refresh-link-code")
+async def refresh_link_code(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    student_store: StudentStore = Depends(get_student_store)
+):
+    """
+    Forces the generation of a new 8-character connection code.
+    """
+    try:
+        code = await student_store.generate_parent_link_code(current_user["id"])
+        return {
+            "token": code,
+            "expires_in": 600,
+            "display_id": current_user["id"]
+        }
+    except Exception as e:
+        logger.error("refresh_link_code_failed", error=str(e))
+        # Returning actual error message for deep debug
+        raise HTTPException(status_code=500, detail=f"Failed to refresh connection code: {str(e)}")
+
+
+@router.get("/parent-connection-status")
+async def get_parent_connection_status(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    student_store: StudentStore = Depends(get_student_store)
+):
+    """
+    Polls for the status of the parent-student link.
+    """
+    try:
+        status = await student_store.get_parent_link_status(current_user["id"])
+        return status
+    except Exception as e:
+        logger.warning("poll_parent_connection_status_failed", student_id=current_user["id"], error=str(e))
+        return {"status": "pending"}
+
+
+# ─── Behavior Tracking Pipeline ───────────────────────────────────────────────
+
+@router.post("/behavior")
+async def ingest_behavior_batch(
+    request: BehaviorBatchRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """
+    Receives a batch of real-time behavior signals from the frontend.
+
+    Signal types: typing_burst, paste_detected, scroll, idle, focus_lost,
+    focus_regained, mouse_idle, time_on_question, session_heartbeat.
+
+    Signals are stored in behavior_logs and used to update the student's
+    cognitive load and authenticity KPIs via the personalization service.
+    """
+    if current_user.get("role") not in ("student", "peer_tutor"):
+        raise HTTPException(status_code=403, detail="Student access required")
+
+    user_id = current_user["id"]
+    db = get_scoped_db(current_user)
+    signals = request.signals
+
+    # ── 1. Persist to behavior_logs ───────────────────────────────────────
+    rows = [
+        {
+            "user_id": user_id,
+            "course_id": request.course_id,
+            "event_type": s.event_type,
+            "event_data": {
+                **s.payload,
+                "question_id": request.question_id,
+                "session_id": request.session_id,
+            },
+            "timestamp": s.ts,
+        }
+        for s in signals
+    ]
+    try:
+        await supabase_db.table("behavior_logs").insert(rows).execute()
+    except Exception as exc:
+        logger.warning("behavior_logs_insert_failed", user_id=user_id, error=str(exc))
+
+    # ── 2. Derive quick cognitive / authenticity signals ──────────────────
+    paste_events = [s for s in signals if s.event_type == "paste_detected"]
+    idle_events = [s for s in signals if s.event_type in ("idle", "mouse_idle")]
+    time_on_q_events = [s for s in signals if s.event_type == "time_on_question"]
+
+    # Build a lightweight assessment-answer-like payload so the KPI engine
+    # can update authenticity without a quiz answer
+    if paste_events or time_on_q_events:
+        for s in paste_events:
+            char_count = s.payload.get("char_count", 0)
+            # Model paste as very fast typing: chars_per_sec = char_count / 0.1s
+            synthetic_payload = {
+                "is_correct": None,
+                "time_taken": 0.1,
+                "answer_text": "x" * int(char_count),
+                "source": "paste_detection",
+                "session_id": request.session_id,
+                "course_id": request.course_id,
+            }
+            await get_personalization_service(db=db).record_event(
+                user_id,
+                LearningEventType.ASSESSMENT_ANSWER,
+                payload=synthetic_payload,
+                source="behavior_tracker",
+                course_id=request.course_id,
+                role=current_user.get("role", "student"),
+            )
+
+    # ── 3. Log idle signals as activity events ────────────────────────────
+    if idle_events:
+        await get_personalization_service(db=db).record_event(
+            user_id,
+            LearningEventType.ACTIVITY_LOGGED,
+            payload={
+                "idle_signal": True,
+                "idle_count": len(idle_events),
+                "session_id": request.session_id,
+                "course_id": request.course_id,
+            },
+            source="behavior_tracker",
+            course_id=request.course_id,
+            role=current_user.get("role", "student"),
+        )
+
+    return {
+        "status": "ok",
+        "accepted": len(signals),
+        "session_id": request.session_id,
+    }
+
+
+# ─── Adaptive Question Engine ─────────────────────────────────────────────────
+
+@router.post("/adaptive-question")
+async def get_adaptive_question(
+    request: AdaptiveQuestionRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """
+    Returns the next best question for the student using BKT mastery scores.
+
+    Selection algorithm:
+      1. Load student mastery_state for the course/topic
+      2. Fetch published quiz questions for the course (optionally filtered by topic)
+      3. Score each question by how well its difficulty matches the student's
+         current mastery (zone-of-proximal-development targeting)
+      4. Return the highest-scoring question not in exclude_ids
+    """
+    if current_user.get("role") not in ("student", "peer_tutor"):
+        raise HTTPException(status_code=403, detail="Student access required")
+
+    user_id = current_user["id"]
+    db = get_scoped_db(current_user)
+
+    from app.services.adaptive_engine import AdaptiveEngine
+    engine = AdaptiveEngine(db=db)
+    result = await engine.select_next_question(
+        user_id=user_id,
+        course_id=request.course_id,
+        topic_id=request.topic_id,
+        exclude_ids=request.exclude_ids,
+    )
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="No suitable question found")
+
+    return result
+
+
+# ─── Spaced Repetition Review Schedule ───────────────────────────────────────
+
+@router.get("/review-schedule")
+async def get_review_schedule(
+    course_id: Optional[str] = None,
+    limit: int = 10,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """
+    Returns topics/concepts due for spaced-repetition review using the SM-2
+    algorithm applied to the student's skill_mastery and KPI history.
+
+    Topics are ranked by urgency (overdue first, then by forgetting-curve decay).
+    """
+    if current_user.get("role") not in ("student", "peer_tutor"):
+        raise HTTPException(status_code=403, detail="Student access required")
+
+    user_id = current_user["id"]
+    db = get_scoped_db(current_user)
+
+    from app.services.spaced_repetition import SpacedRepetitionScheduler
+    scheduler = SpacedRepetitionScheduler(db=db)
+    schedule = await scheduler.get_due_reviews(
+        user_id=user_id,
+        course_id=course_id,
+        limit=limit,
+    )
+    return {"schedule": schedule, "count": len(schedule)}
+
+
+# ─── Master Orchestrator Endpoint ─────────────────────────────────────────────
+
+@router.post("/answer")
+async def submit_answer(
+    request: StudentAnswerRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """
+    MASTER INTELLIGENCE PIPELINE — submit a student answer.
+
+    Triggers the full on_student_answer() orchestration:
+      1. Multi-dimensional answer analysis (40/30/20/10 scoring)
+      2. BKT mastery update
+      3. DKT sequence update
+      4. KPI recompute
+      5. RL explanation style reward
+      6. Trait detection update
+      7. Adaptive next question selection
+      8. Intervention check
+
+    Returns: learning_score, next_question, kpi_snapshot, traits, probes.
+    """
+    if current_user.get("role") not in ("student", "peer_tutor"):
+        raise HTTPException(status_code=403, detail="Student access required")
+
+    db = get_scoped_db(current_user)
+
+    from app.services.orchestrator import AdaptiveOrchestrator
+    orchestrator = AdaptiveOrchestrator(db=db)
+
+    try:
+        result = await orchestrator.on_student_answer(
+            user_id          = current_user["id"],
+            course_id        = request.course_id,
+            topic_id         = request.topic_id,
+            question_id      = request.question_id,
+            question_text    = request.question_text,
+            answer_text      = request.answer_text,
+            is_correct       = request.is_correct,
+            correct_answer   = request.correct_answer,
+            difficulty       = request.difficulty,
+            time_taken_s     = request.time_taken_s,
+            correction_count = request.correction_count,
+            behavior_signals = request.behavior_signals,
+            session_id       = request.session_id,
+            exclude_q_ids    = request.exclude_q_ids,
+            debug_mode       = request.debug_mode,
+            current_user     = current_user,
+        )
+    except Exception as exc:
+        logger.error("orchestrator_failed", user_id=current_user["id"], error=str(exc))
+        raise HTTPException(status_code=500, detail=f"Pipeline error: {exc}")
+
+    return {
+        "status": "ok",
+        # Answer analysis
+        "learning_score":      result.learning_score,
+        "dimensions": {
+            "correctness":     result.correctness,
+            "depth":           result.depth,
+            "effort":          result.effort,
+            "growth_delta":    result.growth_delta,
+        },
+        # Authenticity
+        "authenticity": {
+            "score":           result.authenticity_score,
+            "probe_question":  result.probe_question,
+        },
+        # Knowledge state
+        "knowledge": {
+            "mastery_after":   result.mastery_after,
+            "dkt_knowledge":   result.dkt_knowledge,
+            "lag_concepts":    result.lag_concepts,
+            "mastered":        result.mastered_concepts,
+        },
+        # Next adaptive step
+        "next": {
+            "question":        result.next_question,
+            "question_type":   result.next_question_type,
+        },
+        # Student state
+        "kpi":        result.kpi_snapshot,
+        "traits":     result.traits,
+        # Intervention
+        "intervention": {
+            "triggered": result.intervention_triggered,
+            "reason":    result.intervention_reason,
+        },
+        "latency_ms": result.pipeline_latency_ms,
+        # Debug trace (only when debug_mode=True)
+        **({"debug": result.debug_trace} if request.debug_mode else {}),
+    }
+
+
+# ─── Student Intelligence State ───────────────────────────────────────────────
+
+@router.get("/intelligence")
+async def get_student_intelligence(
+    course_id: Optional[str] = None,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """
+    Returns the full intelligence state for the current student:
+      - KPI snapshot (all 8 metrics)
+      - DKT knowledge state (all concepts + predictions)
+      - Mastery per topic
+      - Cognitive traits
+      - Spaced repetition schedule
+      - Recent learning score trend
+      - Explanation style preferences
+    """
+    if current_user.get("role") not in ("student", "peer_tutor"):
+        raise HTTPException(status_code=403, detail="Student access required")
+
+    user_id = current_user["id"]
+    db = get_scoped_db(current_user)
+
+    from app.services.dkt_engine import DKTEngine
+    from app.services.trait_detector import TraitEngine
+    from app.services.spaced_repetition import SpacedRepetitionScheduler
+
+    dkt     = DKTEngine(db=db)
+    traits  = TraitEngine(db=db)
+    spaced  = SpacedRepetitionScheduler(db=db)
+
+    # Run all reads in parallel
+    dkt_state, trait_data, review_schedule, profile_raw, recent_analytics = await asyncio.gather(
+        dkt.get_state_summary(user_id),
+        traits.get_traits(user_id),
+        spaced.get_due_reviews(user_id, course_id=course_id, limit=5),
+        _load_learner_profile(db, user_id),
+        _load_recent_analytics(db, user_id, limit=10),
+    )
+
+    return {
+        "user_id": user_id,
+        "kpi":     profile_raw.get("kpi_snapshot", {}),
+        "mastery": profile_raw.get("mastery_state", {}),
+        "weak_topics": profile_raw.get("weak_topics", []),
+        "dkt":     dkt_state,
+        "traits":  trait_data,
+        "review_schedule": review_schedule,
+        "recent_scores": [
+            {
+                "learning_score": r.get("learning_score"),
+                "correctness":    r.get("correctness"),
+                "depth":          r.get("depth_score"),
+                "effort":         r.get("effort_score"),
+                "authenticity":   r.get("authenticity_score"),
+                "topic":          r.get("topic_id"),
+                "created_at":     r.get("created_at"),
+            }
+            for r in recent_analytics
+        ],
+        "explanation_profile": profile_raw.get("explanation_profile", {}),
+        "risk":    profile_raw.get("risk_summary", {}),
+        "engagement": profile_raw.get("engagement_summary", {}),
+    }
+
+
+# ─── Debug Trace Endpoint ──────────────────────────────────────────────────────
+
+@router.get("/intelligence/debug/{question_id}")
+async def get_debug_trace(
+    question_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """
+    Returns full pipeline trace for a specific answer interaction.
+    Shows WHY a question was generated, WHY the style was chosen, KPI breakdown.
+    """
+    if current_user.get("role") not in ("student", "peer_tutor"):
+        raise HTTPException(status_code=403, detail="Student access required")
+
+    db = get_scoped_db(current_user)
+    user_id = current_user["id"]
+
+    try:
+        r = (
+            await db.table("answer_analytics")
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("question_id", question_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        row = (r.data or [None])[0]
+        if not row:
+            raise HTTPException(status_code=404, detail="No trace found for this question")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    from app.services.dkt_engine import DKTEngine
+    dkt = DKTEngine(db=db)
+    sequence = await dkt.get_sequence(user_id, last_n=10)
+
+    return {
+        "question_id": question_id,
+        "answer_record": row,
+        "why_this_question": {
+            "mastery_before":     row.get("mastery_before"),
+            "target_difficulty":  row.get("difficulty"),
+            "lag_concepts_detected": "See DKT sequence",
+            "adaptive_reason":    "Selected by ZPD engine (mastery → target_difficulty)",
+        },
+        "why_this_style": {
+            "last_explanation_plan": "See /student/intelligence for full plan",
+            "epsilon_greedy_mode":   "10% explore, 90% exploit best effectiveness",
+        },
+        "kpi_breakdown": {
+            "learning_score":     row.get("learning_score"),
+            "correctness_40pct":  row.get("correctness"),
+            "depth_30pct":        row.get("depth_score"),
+            "effort_20pct":       row.get("effort_score"),
+            "growth_10pct":       row.get("growth_delta"),
+        },
+        "authenticity_signals": row.get("authenticity_signals", {}),
+        "dkt_sequence_last10":  sequence,
+    }
+
+
+# ─── Helper functions ─────────────────────────────────────────────────────────
+
+async def _load_learner_profile(db: Any, user_id: str) -> Dict[str, Any]:
+    try:
+        r = (
+            await db.table("learner_profiles")
+            .select(
+                "mastery_state, weak_topics, kpi_snapshot, "
+                "explanation_profile, risk_summary, engagement_summary"
+            )
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        return r.data or {}
+    except Exception:
+        return {}
+
+
+async def _load_recent_analytics(db: Any, user_id: str, limit: int = 10) -> List[Dict]:
+    try:
+        r = (
+            await db.table("answer_analytics")
+            .select(
+                "learning_score, correctness, depth_score, effort_score, "
+                "authenticity_score, topic_id, created_at"
+            )
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return r.data or []
+    except Exception:
+        return []

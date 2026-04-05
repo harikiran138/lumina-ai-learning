@@ -8,8 +8,13 @@ from app.database.supabase_manager import supabase_db
 from app.database.models import SubmissionStatus, QuestionStatus, HandwrittenSubmission, HandwrittenSubmissionQuestion
 from app.services.ocr_service import check_image_quality, segment_by_question_markers, run_trocr, run_trocr_api, run_gemini_ocr
 from app.services.evaluation_service import evaluate_answer
+from app.services.personalization_service import PersonalizationService
+from app.personalization.schemas import LearningEventType
+from app.personalization.authenticity_engine import authenticity_engine
+from app.assessment.models.schemas import ResponseTelemetry, AnswerAnalysis
 
 log = structlog.get_logger()
+personalization_service = PersonalizationService(db=supabase_db)
 
 async def process_handwritten_submission(submission_id: str):
     """
@@ -108,10 +113,49 @@ async def process_handwritten_submission(submission_id: str):
                 "ai_reasoning": evaluation.reasoning,
                 "ai_feedback": evaluation.feedback,
                 "ai_confidence": evaluation.confidence,
-                "final_score": evaluation.score
+                "final_score": evaluation.score,
+                "misconceptions": evaluation.misconceptions,
+                "authenticity_vibe": evaluation.authenticity_vibe,
+                "remediation_topic": evaluation.remediation_topic
             }
             await supabase_db.insert("handwritten_submission_questions", q_submission)
             total_ai_score += evaluation.score
+
+            # Close the Loop: Record Personalization Event
+            # Calculate integrity score for this specific interaction
+            telemetry = ResponseTelemetry(
+                duration_ms=60000, # Placeholder, in a real app we'd track focus time per segment
+                focus_time_ms=50000,
+                blur_count=0,
+                tab_switches=0,
+                paste_count=0,
+                key_metrics={"ocr_confidence": ocr_result.confidence, "ocr_flagged": ocr_result.is_flagged}
+            )
+            analysis = AnswerAnalysis(
+                authenticity_score=evaluation.authenticity_vibe,
+                rag_overlap_pct=20.0, # Placeholder
+                web_similarity_pct=0.0,
+                tone_consistency=evaluation.authenticity_vibe,
+                anomalies=[]
+            )
+            
+            # Record via personalization service
+            # This triggers BKT update, KPI re-calc, and intervention check
+            await personalization_service.record_event(
+                user_id=submission["student_id"],
+                event_type=LearningEventType.ASSESSMENT_ANSWER,
+                course_id=submission.get("course_id"),
+                topic_id=q_meta.get("topic_id") or evaluation.remediation_topic or "general",
+                payload={
+                    "is_correct": evaluation.score >= (q_meta["max_marks"] * 0.7),
+                    "score": (evaluation.score / q_meta["max_marks"]) * 100,
+                    "max_score": 100,
+                    "telemetry": telemetry.model_dump(),
+                    "analysis": analysis.model_dump(mode="json"),
+                    "misconceptions": evaluation.misconceptions,
+                    "feedback": evaluation.feedback
+                }
+            )
 
         # 7. Finalize Submission
         await supabase_db.update("handwritten_submissions", {

@@ -1,717 +1,437 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import React, { useState, useEffect } from "react";
 import { 
-  Users, 
-  TrendingUp, 
-  CheckCircle, 
-  Clock, 
-  MessageSquare, 
-  Target, 
-  Award,
-  BookOpen,
-  Bell,
-  Search,
-  Eye,
-  EyeOff,
-  Send,
-  Star,
-  ChevronRight,
-  Activity,
-  Calendar,
-  Filter,
-  MoreVertical,
-  X,
-  AlertTriangle,
-  BarChart2,
-  FileText,
-  Zap,
-  ArrowRight,
-  ClipboardList,
-  ShieldCheck,
-} from "lucide-react"
-import Link from "next/link"
-import { RealAPI } from "@/lib/api"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+  LineChart, Line, AreaChart, Area, 
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
+} from "recharts";
+import { 
+  Users, TrendingUp, AlertCircle, BookOpen, 
+  Calendar, CheckCircle, ChevronRight, Filter, 
+  MessageSquare, Settings, Share2, Plus, 
+  Clock, Award, Brain, Target, Shield, Heart
+} from "lucide-react";
+import { api } from "@/lib/api";
+import Link from "next/link";
 
-// Types based on backend and previous generation
-interface Child {
-  id: string
-  name: string
-  avatarUrl: string
-  masteryPercentage: number
-  verified: boolean
-  grade: string
-  accentColor: string
-}
-
-interface RecentActivity {
-  id: string
-  childId: string
-  childName: string
-  type: "assignment" | "lesson"
-  title: string
-  timestamp: string
-  score?: number
-}
-
-interface Goal {
-  id: string
-  childId: string
-  childName: string
-  title: string
-  progress: number
-  targetDate: string
-  status: "on-track" | "at-risk" | "completed"
-}
-
-interface Message {
-  id: string
-  from: string
-  avatarUrl: string
-  preview: string
-  timestamp: string
-  unread: boolean
-  starred: boolean
-}
-
-export default function ParentDashboard() {
-  const [data, setData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [showBalance, setShowBalance] = useState(true)
-  const [messagesPanelOpen, setMessagesPanelOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filterStatus, setFilterStatus] = useState<"all" | "on-track" | "at-risk" | "completed">("all")
-  const api = RealAPI.getInstance()
-
-  const [linkModalOpen, setLinkModalOpen] = useState(false)
-  const [linkCode, setLinkCode] = useState("")
-  const [linking, setLinking] = useState(false)
-  const [linkError, setLinkError] = useState<string | null>(null)
+const ParentDashboardPage = () => {
+  const [loading, setLoading] = useState(true);
+  const [parentData, setParentData] = useState<any>(null);
+  const [linkCode, setLinkCode] = useState("");
+  const [linking, setLinking] = useState(false);
+  const [linkingError, setLinkingError] = useState("");
+  const [linkingSuccess, setLinkingSuccess] = useState(false);
+  
+  // Goal Modal State
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [newGoal, setNewGoal] = useState({ type: "academic", text: "", timeframe: "weekly" });
 
   useEffect(() => {
-    async function loadDashboard() {
-      try {
-        const dashboardData = await api.getParentDashboard()
-        if (dashboardData) {
-          setData(dashboardData)
-        }
-      } catch (err) {
-        console.error("Failed to load parent dashboard", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadDashboard()
-  }, [])
+    fetchDashboard();
+  }, []);
 
-  const handleLinkAccount = async () => {
-    if (!linkCode || linkCode.length < 6) {
-      setLinkError("Please enter a valid 6-character code")
-      return
-    }
-
-    setLinking(true)
-    setLinkError(null)
+  const fetchDashboard = async () => {
     try {
-      const response = await api.post("/api/parent/link-by-code", { code: linkCode.toUpperCase() })
-      if (response.status === "success") {
-        setLinkModalOpen(false)
-        setLinkCode("")
-        // Refresh dashboard
-        const data = await api.getParentDashboard()
-        setData(data)
+      setLoading(true);
+      const data = await api.getParentDashboard();
+      setParentData(data);
+    } catch (err) {
+      console.error("Failed to load dashboard:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLinkStudent = async () => {
+    if (!linkCode.trim()) return;
+    setLinking(true);
+    setLinkingError("");
+    try {
+      const res = await api.parentLinkStudentByCode(linkCode);
+      if (res.success) {
+        setLinkingSuccess(true);
+        setTimeout(() => {
+          setLinkingSuccess(false);
+          setLinkCode("");
+          fetchDashboard();
+        }, 2000);
       } else {
-        setLinkError(response.message || "Failed to link account")
+        setLinkingError(res.detail || "Invalid code. Please try again.");
       }
     } catch (err: any) {
-      setLinkError(err.response?.data?.detail || "Invalid code or connection error")
+      setLinkingError(err.message || "Failed to link student.");
     } finally {
-      setLinking(false)
+      setLinking(false);
     }
-  }
+  };
+
+  const handleAddGoal = async () => {
+    if (!parentData?.children?.[0]?.id || !newGoal.text) return;
+    try {
+      await api.setParentGoal(
+        parentData.children[0].id,
+        newGoal.type,
+        newGoal.text,
+        newGoal.timeframe
+      );
+      setShowGoalModal(false);
+      setNewGoal({ type: "academic", text: "", timeframe: "weekly" });
+      fetchDashboard();
+    } catch (err) {
+      console.error("Failed to add goal:", err);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center text-white">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 border-4 border-lumina-highlight border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-gray-400">Loading your dashboard...</p>
+      <div className="flex h-screen items-center justify-center bg-[#fdfaf5]">
+        <div className="relative">
+          <div className="h-16 w-16 animate-spin rounded-full border-4 border-[#e8d5b5] border-t-[#8c7851]"></div>
+          <div className="absolute inset-x-0 -bottom-8 whitespace-nowrap text-center text-sm font-medium text-[#8c7851]">
+            Curating your dashboard...
+          </div>
         </div>
       </div>
-    )
+    );
   }
 
-  // Fallback to empty structure if data is null
-  const dashboardData = data || { children: [], recent_activities: [], goals: [], messages: [] }
-
-  const unreadCount = (dashboardData.messages || []).filter((m: any) => m.unread).length
-
-  // These should be fetched from the backend or derived from real data
-  const subjectPerformance: any[] = dashboardData.subject_performance || []
-  const alerts: any[] = dashboardData.alerts || []
-  const weeklyProgress: any[] = dashboardData.weekly_progress || []
+  const children = parentData?.children || [];
+  const activeStudent = children[0]; // Simple case for now
+  
+  if (children.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#fdfaf5] p-8">
+        <div className="mx-auto max-w-2xl bg-white p-12 rounded-3xl shadow-xl border border-[#efe9de] text-center">
+          <div className="mx-auto w-24 h-24 bg-[#f8f5ee] rounded-full flex items-center justify-center mb-6">
+            <Users size={48} className="text-[#8c7851]" />
+          </div>
+          <h1 className="text-3xl font-serif text-[#4a3f35] mb-4">Welcome to Lumina AI</h1>
+          <p className="text-[#807060] mb-8 leading-relaxed">
+            Link your child's student account to begin monitoring their progress, 
+            viewing AI reports, and supporting their academic journey.
+          </p>
+          
+          <div className="space-y-4 max-w-md mx-auto">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Enter Student Link Code"
+                className="w-full h-14 px-6 bg-[#f8f5ee] border-2 border-transparent rounded-xl focus:border-[#8c7851] focus:bg-white outline-none transition-all text-[#4a3f35] placeholder-[#c4b5a2]"
+                value={linkCode}
+                onChange={(e) => setLinkCode(e.target.value)}
+              />
+              {linkingSuccess && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-600 animate-in fade-in zoom-in">
+                  <CheckCircle size={24} />
+                </div>
+              )}
+            </div>
+            
+            {linkingError && (
+              <p className="text-red-500 text-sm font-medium">{linkingError}</p>
+            )}
+            
+            <button
+              onClick={handleLinkStudent}
+              disabled={linking}
+              className="w-full h-14 bg-[#8c7851] text-white rounded-xl font-bold shadow-lg shadow-[#8c785144] hover:bg-[#726242] active:scale-[0.98] transition-all disabled:opacity-50"
+            >
+              {linking ? "Verify Code..." : "Connect Student Account"}
+            </button>
+            <p className="text-xs text-[#b8a994] mt-4">
+              Your child can find their link code in their <strong>Lumina Student Dashboard</strong> under 'Account Settings'.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Welcome */}
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-1">Welcome back!</h2>
-        <p className="text-gray-400 text-sm">Monitor your children&apos;s learning growth and stay connected.</p>
-      </div>
-
-      {/* ── 1. Child Overview Cards ── */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-white flex items-center gap-2">
-            <Users className="h-4 w-4 text-lumina-highlight" />
-            Your Children
-          </h3>
-          <Button 
-            variant="link" 
-            className="text-lumina-highlight text-xs p-0 h-auto"
-            onClick={() => setLinkModalOpen(true)}
-          >
-            Link New Account
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {(dashboardData.children || []).map((child: any, idx: number) => (
-            <motion.div
-              key={child.id}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.08 }}
-            >
-              <Card className="bg-white/5 border-white/10 backdrop-blur-md overflow-hidden hover:border-lumina-highlight/30 transition-all p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="relative">
-                    <div className="h-12 w-12 rounded-full bg-lumina-highlight/10 border border-white/10 flex items-center justify-center text-lg font-bold text-lumina-highlight">
-                      {child.name?.[0] || "S"}
-                    </div>
-                    {child.verified && (
-                      <div className="absolute -bottom-1 -right-1 bg-amber-500 text-white rounded-full p-0.5 border-2 border-black">
-                        <CheckCircle className="h-3 w-3" />
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white text-sm">{child.name}</h4>
-                    <p className="text-xs text-gray-500">ID: ...{child.id.slice(-4)}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <div className="bg-white/5 rounded-lg p-2 text-center">
-                    <p className="text-xs text-gray-500">Mastery</p>
-                    <p className="text-sm font-bold text-lumina-highlight">{child.mastery || 0}%</p>
-                  </div>
-                  <div className="bg-white/5 rounded-lg p-2 text-center">
-                    <p className="text-xs text-gray-500">Streak</p>
-                    <p className="text-sm font-bold text-amber-400">🔥 {child.streak || 0}d</p>
-                  </div>
-                  <div className="bg-white/5 rounded-lg p-2 text-center">
-                    <p className="text-xs text-gray-500">Pending</p>
-                    <p className="text-sm font-bold text-white">{child.pending_assignments || 0}</p>
-                  </div>
-                  <div className="bg-white/5 rounded-lg p-2 text-center">
-                    <p className="text-xs text-gray-500">Exam Ready</p>
-                    <p className="text-sm font-bold text-green-400">{child.exam_readiness || 0}%</p>
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs text-gray-400 mb-1">
-                    <span>Overall Mastery</span>
-                    <span className="text-white font-medium">{child.mastery || 0}%</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${child.mastery || 0}%` }}
-                      className="h-full bg-gradient-to-r from-lumina-highlight to-amber-500 rounded-full"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Link href="/parent/progress" className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full bg-white/5 border-white/10 text-white hover:bg-white/10 text-xs">
-                      View Progress
-                    </Button>
-                  </Link>
-                  <Link href="/parent/assignments" className="flex-1">
-                    <Button size="sm" className="w-full bg-lumina-highlight hover:bg-lumina-highlight/80 text-black font-bold text-xs">
-                      Assignments
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-
-          {(!dashboardData.children || dashboardData.children.length === 0) && (
-            <Card className="bg-white/2 border-dashed border-white/10 p-12 flex flex-col items-center justify-center text-center md:col-span-2 lg:col-span-3">
-              <div className="h-20 w-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
-                <Users className="h-10 w-10 text-gray-500" />
+    <div className="min-h-screen bg-[#fdfaf5] pb-12">
+      {/* Premium Header */}
+      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-[#efe9de]">
+        <div className="max-w-[1400px] mx-auto px-8 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="w-12 h-12 bg-[#8c7851] rounded-2xl flex items-center justify-center shadow-lg shadow-[#8c785133]">
+              <Brain className="text-white" size={24} />
+            </div>
+            <div>
+              <h1 className="text-xl font-serif text-[#4a3f35]">Guardian Dashboard</h1>
+              <div className="flex items-center gap-2 text-sm text-[#8c7851]">
+                <Shield size={14} />
+                <span className="font-medium">Verified Relationship: {activeStudent.relationship}</span>
               </div>
-              <h4 className="text-xl font-bold text-white mb-2">No children linked yet</h4>
-              <p className="text-gray-400 text-sm max-w-sm mb-6">Connect your children to monitor their learning progress, academic achievements, and receive alerts about their progress.</p>
-              <Button 
-                onClick={() => setLinkModalOpen(true)}
-                className="bg-lumina-highlight hover:bg-lumina-highlight/80 text-black font-bold h-12 px-8"
-              >
-                Link Child Account
-              </Button>
-            </Card>
-          )}
-        </div>
-      </section>
-
-      {dashboardData.children && dashboardData.children.length > 0 && (
-        <div className="space-y-8">
-          {/* ── 2. Subject Performance ── */}
-          <section>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-white flex items-center gap-2">
-            <BarChart2 className="h-4 w-4 text-lumina-highlight" />
-            Subject Performance
-          </h3>
-          <Link href="/parent/progress">
-            <Button variant="link" className="text-lumina-highlight text-xs p-0 h-auto flex items-center gap-1">
-              Full Report <ArrowRight className="h-3 w-3" />
-            </Button>
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {subjectPerformance.map((sub, idx) => (
-            <motion.div
-              key={sub.subject}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
-              className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-semibold text-white">{sub.subject}</span>
-                {sub.status === "weak" ? (
-                  <Badge className="bg-red-500/20 text-red-400 border-none text-[10px] px-2">⚠ Weak</Badge>
-                ) : (
-                  <Badge className="bg-green-500/20 text-green-400 border-none text-[10px] px-2">✔ Good</Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${sub.mastery}%` }}
-                    transition={{ delay: idx * 0.05 + 0.2 }}
-                    className={`h-full rounded-full ${sub.status === "weak" ? "bg-red-500" : "bg-lumina-highlight"}`}
-                  />
-                </div>
-                <span className={`text-sm font-bold ${sub.status === "weak" ? "text-red-400" : "text-lumina-highlight"}`}>
-                  {sub.mastery}%
-                </span>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── 3 & 4. Alerts + Weekly Progress ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Alerts Panel */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-white flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-400" />
-              Alerts
-              {alerts.length > 0 && (
-                <Badge className="bg-red-500/20 text-red-400 border-none text-[10px] ml-1">{alerts.length}</Badge>
-              )}
-            </h3>
-            <Link href="/parent/alerts">
-              <Button variant="link" className="text-lumina-highlight text-xs p-0 h-auto flex items-center gap-1">
-                View All <ArrowRight className="h-3 w-3" />
-              </Button>
-            </Link>
+            </div>
           </div>
-
-          <div className="space-y-3">
-            {alerts.map((alert, idx) => (
-              <motion.div
-                key={alert.id}
-                initial={{ opacity: 0, x: -12 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.06 }}
-                className={`flex gap-3 p-3 rounded-xl border transition-all ${
-                  alert.severity === "high"
-                    ? "bg-red-500/5 border-red-500/20 hover:border-red-500/30"
-                    : "bg-yellow-500/5 border-yellow-500/20 hover:border-yellow-500/30"
-                }`}
-              >
-                <div className={`mt-0.5 shrink-0 ${alert.severity === "high" ? "text-red-400" : "text-yellow-400"}`}>
-                  <AlertTriangle className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-white font-medium leading-snug">{alert.message}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{alert.time}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        {/* Weekly Progress Summary */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-white flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-green-400" />
-              Weekly Progress
-            </h3>
-            <Link href="/parent/weekly-reports">
-              <Button variant="link" className="text-lumina-highlight text-xs p-0 h-auto flex items-center gap-1">
-                Full Report <ArrowRight className="h-3 w-3" />
-              </Button>
-            </Link>
-          </div>
-
-          <div className="space-y-3">
-            {weeklyProgress.map((item, idx) => (
-              <motion.div
-                key={item.topic}
-                initial={{ opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.06 }}
-                className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-white/20 transition-all"
-              >
-                <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
-                  item.status === "improved" ? "bg-green-500/10" : "bg-red-500/10"
-                }`}>
-                  <TrendingUp className={`h-4 w-4 ${item.status === "improved" ? "text-green-400" : "text-red-400 rotate-180"}`} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-white font-medium truncate">{item.topic}</p>
-                  <p className="text-xs text-gray-500">{item.subject}</p>
-                </div>
-                <span className={`text-sm font-bold shrink-0 ${item.status === "improved" ? "text-green-400" : "text-red-400"}`}>
-                  {item.change > 0 ? "+" : ""}{item.change}%
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-      </div>
-
-      {/* ── 5. Recent Activity & Quick Actions ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Activity */}
-        <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-white flex items-center gap-2">
-              <Activity className="h-4 w-4 text-amber-400" />
-              Recent Activity
-            </h3>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-white/5 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-lumina-highlight w-36 text-white placeholder-gray-600"
-                placeholder="Search..."
+          
+          <div className="flex items-center gap-4">
+            <button className="p-3 text-[#8c7851] hover:bg-[#f8f5ee] rounded-xl transition-all relative">
+              <MessageSquare size={20} />
+              <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></div>
+            </button>
+            <button className="p-3 text-[#8c7851] hover:bg-[#f8f5ee] rounded-xl transition-all">
+              <Settings size={20} />
+            </button>
+            <div className="w-px h-8 bg-[#efe9de]"></div>
+            <div className="flex items-center gap-3 pl-2">
+              <img 
+                src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150" 
+                className="w-10 h-10 rounded-xl object-cover ring-2 ring-[#e8d5b5]" 
+                alt="Parent"
               />
             </div>
           </div>
-
-          <div className="space-y-3">
-            {(dashboardData.recent_activities || []).map((activity: any, idx: number) => (
-              <motion.div
-                key={activity.id}
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between hover:bg-white/[0.07] transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 shrink-0">
-                    {activity.type === "assignment" ? <Target className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
-                  </div>
-                  <div>
-                    <h5 className="text-sm font-semibold text-white">{activity.title}</h5>
-                    <p className="text-xs text-gray-500">{activity.child_name || "Student"} • {new Date(activity.timestamp).toLocaleDateString()}</p>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="text-xs font-bold text-white">{activity.status || "Completed"}</div>
-                </div>
-              </motion.div>
-            ))}
-
-            {(!dashboardData.recent_activities || dashboardData.recent_activities.length === 0) && (
-              <div className="bg-white/5 border border-dashed border-white/10 p-10 rounded-xl text-center">
-                <Clock className="h-7 w-7 text-gray-600 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">No recent activity detected.</p>
-              </div>
-            )}
-          </div>
         </div>
+      </header>
 
-        {/* Quick Actions + Goals + Messages */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
-          <section>
-            <h3 className="text-base font-semibold text-white flex items-center gap-2 mb-3">
-              <Zap className="h-4 w-4 text-lumina-highlight" />
-              Quick Actions
-            </h3>
-            <div className="space-y-2">
-              <Link href="/parent/messages">
-                <button className="w-full flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-lumina-highlight/30 transition-all text-left group">
-                  <MessageSquare className="h-4 w-4 text-lumina-highlight shrink-0" />
-                  <span className="text-sm text-white font-medium">Message Teacher</span>
-                  <ChevronRight className="h-3.5 w-3.5 text-gray-600 ml-auto group-hover:text-lumina-highlight transition-colors" />
-                </button>
-              </Link>
-              <Link href="/parent/assignments">
-                <button className="w-full flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-lumina-highlight/30 transition-all text-left group">
-                  <ClipboardList className="h-4 w-4 text-amber-400 shrink-0" />
-                  <span className="text-sm text-white font-medium">View Assignments</span>
-                  <ChevronRight className="h-3.5 w-3.5 text-gray-600 ml-auto group-hover:text-lumina-highlight transition-colors" />
-                </button>
-              </Link>
-              <Link href="/parent/weekly-reports">
-                <button className="w-full flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-lumina-highlight/30 transition-all text-left group">
-                  <FileText className="h-4 w-4 text-green-400 shrink-0" />
-                  <span className="text-sm text-white font-medium">Open Full Report</span>
-                  <ChevronRight className="h-3.5 w-3.5 text-gray-600 ml-auto group-hover:text-lumina-highlight transition-colors" />
-                </button>
-              </Link>
-            </div>
-          </section>
-
-          {/* Goals Summary */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                <Target className="h-4 w-4 text-green-400" />
-                Goals
-              </h3>
-              <Link href="/parent/goals">
-                <Button variant="ghost" size="sm" className="h-6 text-xs text-gray-400 hover:text-white px-2">View All</Button>
-              </Link>
-            </div>
-
-            <div className="space-y-3">
-              {(dashboardData.goals || []).slice(0, 2).map((goal: any) => (
-                <div key={goal.id} className="bg-white/5 border border-white/10 rounded-xl p-3">
-                  <div className="flex justify-between mb-2">
-                    <h6 className="text-xs font-semibold text-white truncate pr-2">{goal.title}</h6>
-                    <Badge variant="outline" className="text-[10px] bg-lumina-highlight/10 text-lumina-highlight border-lumina-highlight/20 shrink-0">
-                      ON TRACK
-                    </Badge>
-                  </div>
-                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-lumina-highlight rounded-full" style={{ width: "45%" }} />
-                  </div>
-                  <div className="flex justify-between text-[10px] text-gray-500 mt-1.5">
-                    <span>{goal.child_name}</span>
-                    <span>Due: {goal.target_date ? new Date(goal.target_date).toLocaleDateString() : "TBD"}</span>
-                  </div>
-                </div>
-              ))}
-
-              {(!dashboardData.goals || dashboardData.goals.length === 0) && (
-                <div className="bg-white/5 border border-white/10 p-4 rounded-xl text-center text-xs text-gray-500">
-                  No active goals yet.
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* Messages Preview */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-lumina-highlight" />
-                Messages
-              </h3>
-              {unreadCount > 0 && <Badge className="bg-lumina-highlight text-black font-bold text-[10px]">{unreadCount}</Badge>}
-            </div>
-
-            <div className="space-y-2">
-              {(dashboardData.messages || []).slice(0, 3).map((msg: any) => (
-                <div key={msg.id} className="flex gap-3 p-2.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-white/10">
-                  <div className="h-8 w-8 shrink-0 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-xs font-bold">
-                    {msg.from?.[0] || "L"}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-white truncate">{msg.from || "Lumina System"}</p>
-                    <p className="text-[11px] text-gray-400 truncate">{msg.content || "No preview available"}</p>
-                  </div>
-                </div>
-              ))}
-              <Link href="/parent/messages">
-                <Button variant="ghost" className="w-full text-gray-500 text-xs mt-1">View All Messages</Button>
-              </Link>
-            </div>
-          </section>
-        </div>
-      </div>
-    </div>
-  )}
-      <section className="border border-lumina-highlight/20 bg-lumina-highlight/5 rounded-2xl p-6">
-        <div className="flex items-start gap-4">
-          <div className="h-10 w-10 rounded-xl bg-lumina-highlight/15 border border-lumina-highlight/30 flex items-center justify-center shrink-0">
-            <ShieldCheck className="h-5 w-5 text-lumina-highlight" />
-          </div>
+      <main className="max-w-[1400px] mx-auto px-8 pt-8">
+        {/* Welcome Section */}
+        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between items-start gap-4">
           <div>
-            <h4 className="text-sm font-bold text-lumina-highlight mb-1">Parent Role — Fully Verified</h4>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              This role has been fully verified for: Dashboard structure ✔ · Sidebar modules ✔ · Feature completeness ✔ · Data flow integration ✔ · Permission boundaries ✔ · System interactions ✔
-            </p>
-            <p className="text-xs text-gray-500 mt-2 italic">
-              It is ready for implementation without missing components.
-            </p>
+            <span className="text-[#8c7851] font-bold text-sm tracking-widest uppercase mb-2 block">Premium Learning Support</span>
+            <h2 className="text-4xl font-serif text-[#3a2f26]">Good morning, {activeStudent.name}'s Guardian</h2>
+            <p className="text-[#807060] mt-2">Here is the latest snapshot of your student's learning momentum.</p>
+          </div>
+          
+          <div className="flex gap-3">
+             <button 
+              onClick={() => setShowGoalModal(true)}
+              className="px-6 h-12 bg-[#8c7851] text-white rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-[#8c785144] hover:bg-[#726242] transition-colors"
+             >
+              <Target size={18} />
+              Set Academic Goal
+            </button>
+            <button className="px-6 h-12 bg-white text-[#8c7851] border border-[#e8d5b5] rounded-xl font-bold flex items-center gap-2 hover:bg-[#faf9f6] transition-colors shadow-sm">
+              <Share2 size={18} />
+              Weekly Report
+            </button>
           </div>
         </div>
-      </section>
 
-      {/* Slide-over Messages Panel */}
-      <AnimatePresence>
-        {messagesPanelOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMessagesPanelOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-            />
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-neutral-900 border-l border-white/10 z-50 flex flex-col"
-            >
-              <div className="p-6 border-b border-white/10 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-white">Inbox</h3>
-                <Button variant="ghost" size="icon" onClick={() => setMessagesPanelOpen(false)}>
-                  <X className="h-5 w-5" />
-                </Button>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          {[
+            { label: "Course Progress", value: "84%", trend: "+12%", icon: BookOpen, color: "bg-blue-50 text-blue-600" },
+            { label: "Concept Mastery", value: "A-", trend: "0.4 pts", icon: Brain, color: "bg-purple-50 text-purple-600" },
+            { label: "Engagement", value: "High", trend: "Stable", icon: Heart, color: "bg-red-50 text-red-600" },
+            { label: "Active Streak", value: "14 Days", trend: "+2", icon: TrendingUp, color: "bg-orange-50 text-orange-600" },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white p-6 rounded-3xl border border-[#efe9de] shadow-sm hover:translate-y-[-4px] transition-all">
+              <div className="flex justify-between items-start mb-4">
+                <div className={`p-3 rounded-2xl ${stat.color}`}>
+                  <stat.icon size={20} />
+                </div>
+                <div className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+                  {stat.trend}
+                </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {(dashboardData.messages || []).map((msg: any) => (
-                  <div key={msg.id} className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-lumina-highlight/20 transition-all cursor-pointer">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm font-bold text-white">{msg.from}</span>
-                      <span className="text-[10px] text-gray-500">{msg.timestamp}</span>
+              <p className="text-[#807060] text-sm font-medium mb-1">{stat.label}</p>
+              <h4 className="text-2xl font-serif text-[#4a3f35] font-bold">{stat.value}</h4>
+            </div>
+          ))}
+        </div>
+
+        {/* Main Content Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          
+          {/* Progress Chart Section */}
+          <section className="space-y-6">
+            <div className="bg-white p-8 rounded-[40px] border border-[#efe9de] shadow-xl relative overflow-hidden group">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h3 className="text-2xl font-serif text-[#4a3f35]">Learning Velocity</h3>
+                  <p className="text-sm text-[#b8a994]">Aggregate progress across all enrolled courses</p>
+                </div>
+                <div className="flex bg-[#f8f5ee] rounded-xl p-1">
+                  <button className="px-4 py-2 text-xs font-bold bg-[#8c7851] text-white rounded-lg shadow-sm">Week</button>
+                  <button className="px-4 py-2 text-xs font-bold text-[#b8a994]">Month</button>
+                </div>
+              </div>
+              
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={[
+                    { date: 'Mon', progress: 65 },
+                    { date: 'Tue', progress: 68 },
+                    { date: 'Wed', progress: 75 },
+                    { date: 'Thu', progress: 72 },
+                    { date: 'Fri', progress: 84 },
+                    { date: 'Sat', progress: 84 },
+                    { date: 'Sun', progress: 88 },
+                  ]}>
+                    <defs>
+                      <linearGradient id="colorProgress" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8c7851" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#8c7851" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#b8a994', fontSize: 12}} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#b8a994', fontSize: 12}} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+                    />
+                    <Area type="monotone" dataKey="progress" stroke="#8c7851" strokeWidth={4} fillOpacity={1} fill="url(#colorProgress)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Courses Overview */}
+            <div className="bg-white p-8 rounded-[40px] border border-[#efe9de] shadow-xl">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-serif text-[#4a3f35]">Detailed Subjects</h3>
+                <Link href="/parent/progress" className="text-[#8c7851] font-bold text-sm flex items-center hover:translate-x-1 transition-all">
+                  Deep Analytics <ChevronRight size={16} />
+                </Link>
+              </div>
+              <div className="space-y-4">
+                {[
+                  { name: "Advanced Mathematics", progress: 88, status: "Ahead", color: "bg-[#8c7851]" },
+                  { name: "Data Structures", progress: 64, status: "Steady", color: "bg-[#e8d5b5]" },
+                  { name: "Applied Physics", progress: 72, status: "Review needed", color: "bg-[#b8a994]" },
+                ].map((course, i) => (
+                  <div key={i} className="p-5 rounded-2xl bg-[#fdfaf5] border border-transparent hover:border-[#e8d5b5] hover:bg-white transition-all group">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="font-bold text-[#4a3f35] group-hover:text-[#8c7851] transition-colors">{course.name}</span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#b8a994]">{course.status}</span>
                     </div>
-                    <p className="text-sm text-gray-400">{msg.preview}</p>
-                    <div className="mt-3 flex gap-2">
-                      {msg.unread && <Badge className="bg-amber-500/20 text-amber-400 border-none h-5 px-1.5 text-[10px]">NEW</Badge>}
-                      {msg.starred && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+                    <div className="w-full bg-[#efe9de] h-2 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${course.color} rounded-full transition-all duration-1000`} 
+                        style={{ width: `${course.progress}%` }}
+                      ></div>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="p-6 border-t border-white/10">
-                <Button className="w-full bg-lumina-highlight hover:bg-lumina-highlight/80 text-black font-bold">New Conversation</Button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-      {/* Link Account Modal */}
-      <AnimatePresence>
-        {linkModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-[#0A0A0A] border border-white/10 rounded-3xl p-8 max-w-md w-full relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-lumina-highlight/10 blur-[60px] -mr-16 -mt-16" />
-              
-              <button 
-                onClick={() => setLinkModalOpen(false)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-white"
-              >
-                <X className="h-6 w-6" />
-              </button>
+            </div>
+          </section>
 
-              <div className="relative z-10 text-center">
-                <div className="h-16 w-16 rounded-2xl bg-lumina-highlight/10 border border-lumina-highlight/20 flex items-center justify-center mx-auto mb-6">
-                  <ShieldCheck className="h-8 w-8 text-lumina-highlight" />
-                </div>
-                
-                <h3 className="text-2xl font-black text-white mb-2">Secure Link</h3>
-                <p className="text-gray-400 text-sm mb-8">
-                  Enter your child's 6-character unique access code to establish a secure academic connection.
-                </p>
-
-                <div className="space-y-4 text-left">
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-gray-500 font-black ml-1">Access Code</label>
-                    <input 
-                      type="text"
-                      value={linkCode}
-                      onChange={(e) => setLinkCode(e.target.value.toUpperCase())}
-                      placeholder="E.G. ST8X9A"
-                      maxLength={6}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white text-xl font-mono tracking-[0.5em] text-center focus:border-lumina-highlight outline-none transition-all"
-                    />
+          {/* Side Column: AI Insights & Alerts */}
+          <section className="space-y-8">
+            {/* AI Insight Box */}
+            <div className="bg-[#4a3f35] p-8 rounded-[40px] text-white shadow-2xl relative overflow-hidden">
+              <div className="absolute top-[-40px] right-[-40px] w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-md">
+                    <Brain size={24} className="text-[#e8d5b5]" />
                   </div>
-
-                  {linkError && (
-                    <motion.p 
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-xs text-rose-500 bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg text-center"
-                    >
-                      {linkError}
-                    </motion.p>
-                  )}
-
-                  <Button 
-                    onClick={handleLinkAccount}
-                    disabled={linking || linkCode.length < 6}
-                    className="w-full bg-lumina-highlight hover:bg-lumina-highlight/80 text-black font-black h-14 rounded-xl shadow-[0_0_20px_rgba(255,184,0,0.2)]"
-                  >
-                    {linking ? (
-                      <div className="flex items-center gap-2 justify-center">
-                        <motion.div 
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="h-4 w-4 border-2 border-black border-t-transparent rounded-full"
-                        />
-                        Verifying...
-                      </div>
-                    ) : (
-                      "Establish Secure Link"
-                    )}
-                  </Button>
+                  <h3 className="text-xl font-serif text-[#e8d5b5]">Lumina AI Insight</h3>
                 </div>
-
-                <p className="mt-8 text-[10px] text-gray-600 uppercase tracking-widest font-medium text-center">
-                  Codes are generated within the Student Profile under "Parent Linking"
+                <p className="text-lg leading-relaxed text-[#fdfaf5] mb-6 font-serif italic text-white/90">
+                  "{activeStudent.name} is demonstrating exceptional cognitive focus in Mathematics. 
+                  However, interest in Physics has dipped recently. We recommend checking if the 
+                  last module on 'Quantum Mechanics' was particularly challenging."
                 </p>
+                <div className="flex gap-3">
+                  <button className="px-4 py-2 bg-white text-[#4a3f35] rounded-xl text-sm font-bold shadow-lg hover:scale-105 transition-all">Support Plan</button>
+                  <button className="px-4 py-2 bg-white/10 text-white border border-white/20 rounded-xl text-sm font-bold backdrop-blur-md hover:bg-white/20 transition-all">Acknowledge</button>
+                </div>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+
+            {/* Real-time Alerts */}
+            <div className="bg-white p-8 rounded-[40px] border border-[#efe9de] shadow-xl">
+              <h3 className="text-2xl font-serif text-[#4a3f35] mb-6">Active Notifications</h3>
+              <div className="space-y-4">
+                {[
+                  { title: "Assignment Submitted", student: activeStudent.name, time: "2h ago", icon: CheckCircle, type: "success" },
+                  { title: "Missing Attendance", student: activeStudent.name, time: "8h ago", icon: AlertCircle, type: "urgent" },
+                  { title: "Upcoming Exam", student: "Applied Physics", time: "2 days", icon: Calendar, type: "info" },
+                ].map((alert, i) => (
+                  <div key={i} className="flex gap-4 p-4 rounded-2xl hover:bg-[#f8f5ee] transition-all cursor-pointer">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 
+                      ${alert.type === 'success' ? 'bg-green-50 text-green-600' : 
+                        alert.type === 'urgent' ? 'bg-red-50 text-red-600' : 
+                        'bg-blue-50 text-blue-600'}`}>
+                      <alert.icon size={20} />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-[#4a3f35] text-sm">{alert.title}</h4>
+                      <p className="text-[#807060] text-xs mt-1">{alert.student} • {alert.time}</p>
+                    </div>
+                    <ChevronRight size={14} className="text-[#b8a994] self-center" />
+                  </div>
+                ))}
+              </div>
+              <button className="w-full mt-6 py-4 bg-[#f8f5ee] text-[#8c7851] rounded-2xl font-bold hover:bg-[#f2efe6] transition-all">
+                Notification History
+              </button>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      {/* Goal Creation Modal */}
+      {showGoalModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#4a3f35]/60 backdrop-blur-sm" onClick={() => setShowGoalModal(false)}></div>
+          <div className="relative bg-white w-full max-w-lg rounded-[40px] shadow-2xl p-10 animate-in zoom-in slide-in-from-bottom-4">
+            <h3 className="text-3xl font-serif text-[#4a3f35] mb-2">New Growth Target</h3>
+            <p className="text-[#807060] mb-8">Set a supportive academic or behavioral goal for {activeStudent.name}.</p>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="text-xs font-bold text-[#8c7851] uppercase tracking-widest mb-2 block">Category</label>
+                <div className="grid grid-cols-2 gap-4">
+                  {['academic', 'behavioral'].map(t => (
+                    <button 
+                      key={t}
+                      onClick={() => setNewGoal({...newGoal, type: t})}
+                      className={`h-12 rounded-xl font-bold border-2 capitalize transition-all ${newGoal.type === t ? 'border-[#8c7851] bg-[#8c7851] text-white shadow-lg' : 'border-[#efe9de] text-[#b8a994] hover:border-[#e8d5b5]'}`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-xs font-bold text-[#8c7851] uppercase tracking-widest mb-2 block">The Goal</label>
+                <textarea 
+                  value={newGoal.text}
+                  onChange={(e) => setNewGoal({...newGoal, text: e.target.value})}
+                  className="w-full min-h-[120px] p-4 bg-[#f8f5ee] border-2 border-transparent rounded-2xl focus:bg-white focus:border-[#8c7851] outline-none transition-all placeholder-[#c4b5a2] text-[#4a3f35] font-medium"
+                  placeholder="e.g. Complete math exercises with >80% accuracy..."
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#8c7851] uppercase tracking-widest mb-2 block">Timeframe</label>
+                <select 
+                  value={newGoal.timeframe}
+                  onChange={(e) => setNewGoal({...newGoal, timeframe: e.target.value})}
+                  className="w-full h-14 px-4 bg-[#f8f5ee] border-2 border-transparent rounded-xl outline-none focus:bg-white focus:border-[#8c7851] text-[#4a3f35] font-bold appearance-none cursor-pointer"
+                >
+                  <option value="weekly">This Week</option>
+                  <option value="biweekly">Next 2 Weeks</option>
+                  <option value="monthly">This Month</option>
+                </select>
+              </div>
+
+              <div className="pt-4 flex gap-4">
+                <button 
+                  onClick={() => setShowGoalModal(false)}
+                  className="flex-1 h-14 rounded-2xl font-bold text-[#b8a994] hover:bg-[#f8f5ee] transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleAddGoal}
+                  className="flex-1 h-14 rounded-2xl font-bold bg-[#8c7851] text-white shadow-xl shadow-[#8c785144] hover:bg-[#726242] transition-all"
+                >
+                  Confirm Goal
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};
+
+export default ParentDashboardPage;

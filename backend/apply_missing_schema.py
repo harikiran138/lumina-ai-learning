@@ -102,6 +102,53 @@ CREATE INDEX IF NOT EXISTS idx_question_bank_course ON question_bank(course_id);
 CREATE INDEX IF NOT EXISTS idx_hw_assignments_teacher ON handwritten_assignments(teacher_id);
 CREATE INDEX IF NOT EXISTS idx_hw_submissions_student ON handwritten_submissions(student_id);
 CREATE INDEX IF NOT EXISTS idx_hw_submission_questions_sub ON handwritten_submission_questions(submission_id);
+
+-- 6. Parent Feature Schema
+ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_link_code VARCHAR(15);
+
+CREATE TABLE IF NOT EXISTS parent_student_links (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    parent_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    student_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    link_code TEXT UNIQUE,
+    status TEXT DEFAULT 'pending',
+    verified_by_admin BOOLEAN DEFAULT FALSE,
+    expires_at TIMESTAMPTZ,
+    linked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS parent_goals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    parent_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    child_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    goal_text TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending_student_approval',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS parent_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    parent_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    teacher_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    content TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'unread',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS inactivity_alerts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    risk_level VARCHAR(20) DEFAULT 'medium',
+    reason TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_parent_links_student ON parent_student_links(student_id);
+CREATE INDEX IF NOT EXISTS idx_parent_links_code ON parent_student_links(link_code);
+CREATE INDEX IF NOT EXISTS idx_parent_goals_parent ON parent_goals(parent_id);
+CREATE INDEX IF NOT EXISTS idx_parent_messages_parent ON parent_messages(parent_id);
 """
 
 def apply_migrations():

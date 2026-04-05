@@ -77,12 +77,33 @@ class NotificationService:
         metadata: Optional[Dict[str, Any]] = None,
         send_email: bool = False,
         email_address: Optional[str] = None,
+        user_role: Optional[str] = None, # ITEM 3: Role-based capping
     ) -> str:
         """
         Dispatch a notification to *user_id*.
-
-        Returns the notification ID.
+        Enforces Item 3: Parent notification capping (max 3/day).
         """
+        # ITEM 3: Check for parent notification capping
+        if user_role == "parent":
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            cap_key = f"notif_cap:{user_id}:{today}"
+            redis = _get_redis()
+            if redis:
+                current_count = int(redis.get(cap_key) or 0)
+                
+                # Priority mapping (Item 3)
+                # 1. teacher_urgent, 2. assignment_overdue, 3. grade_low, 4. streak_risk, 5. goal_achieved
+                is_high_priority = priority in [PRIORITY_HIGH, PRIORITY_CRITICAL] or \
+                                  notification_type in ["teacher_urgent", "assignment_overdue"]
+                
+                if current_count >= 3 and not is_high_priority:
+                    log.info("notification_capped_for_parent", user_id=user_id, count=current_count, type=notification_type)
+                    return "CAPPED" # Return special ID or handle gracefully
+                
+                # Increment count
+                redis.incr(cap_key)
+                redis.expire(cap_key, 86400) # 24 hours
+
         notif_id = str(uuid.uuid4())
         payload: Dict[str, Any] = {
             "id": notif_id,

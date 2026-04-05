@@ -144,10 +144,13 @@ export default function RoleOnboardingFlow({ role }: RoleOnboardingFlowProps) {
           relationship: result.data.relationship,
           user_id: currentUser?.id || ""
         });
+      } else if (role === 'parent' && currentStep === 2) {
+        // Step 2 for parents is now linking a student
+        response = await api.parentLinkStudentByCode(result.data.studentCode);
       } else {
         response = await api.updateOnboardingStep(currentStep, result.data);
       }
-      
+
       console.log(`[ONBOARDING DEBUG] API Response for Step ${currentStep}:`, response);
 
       if (response && response.success === false) {
@@ -169,7 +172,9 @@ export default function RoleOnboardingFlow({ role }: RoleOnboardingFlowProps) {
       toast.success(`Step ${currentStep} saved`);
     } catch (error: any) {
       console.error(`[ONBOARDING ERROR] Step ${currentStep} failed:`, error);
-      const message = error?.message || "Something went wrong";
+      // Handle various error formats from API
+      const apiMessage = error?.response?.data?.detail || error?.response?.data?.error || error?.detail || error?.message;
+      const message = apiMessage || "Something went wrong";
       setPageError(message);
       toast.error(message);
     } finally {
