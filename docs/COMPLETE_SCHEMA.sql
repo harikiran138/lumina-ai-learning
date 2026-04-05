@@ -929,12 +929,32 @@ CREATE POLICY "parents_see_child_progress" ON progress
       AND psl.verified_by_admin = true
       AND psl.can_view_progress = true
     )
-    OR
+  );
+
+CREATE POLICY "parents_see_child_submissions" ON submissions
+  FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM parent_student_links psl
       WHERE psl.parent_id = auth.uid()
-      AND psl.student_id = progress.user_id
+      AND psl.student_id = submissions.user_id
       AND psl.verified_by_admin = true
+      AND psl.can_view_grades = true
+    )
+  );
+
+-- certificates
+ALTER TABLE certificates ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "users_own_certificates" ON certificates
+  FOR ALL USING (auth.uid()::text = user_id::text);
+
+CREATE POLICY "parents_see_child_certificates" ON certificates
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM parent_student_links psl
+      WHERE psl.parent_id = auth.uid()
+      AND psl.student_id = certificates.user_id
+      AND psl.verified_by_admin = true
+      AND psl.can_view_progress = true
     )
   );
 

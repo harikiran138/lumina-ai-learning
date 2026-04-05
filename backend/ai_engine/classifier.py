@@ -214,7 +214,7 @@ def _count_matches(text: str, patterns: list[str]) -> int:
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def classify(prompt: str, context: dict | None = None) -> Classification:
+def classify(prompt: str, context: Optional[dict] = None) -> Classification:
     """
     Classify a student question into a routing tier.
 

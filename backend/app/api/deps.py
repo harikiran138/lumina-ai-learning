@@ -55,8 +55,8 @@ async def get_current_user(
         try:
             payload = jwt.decode(auth_token, settings.JWT_SECRET, algorithms=["HS256"])
         except Exception:
-            # Fallback to legacy SECRET_KEY if JWT_SECRET fails
-            payload = jwt.decode(auth_token, settings.SECRET_KEY, algorithms=["HS256"])
+            # Fallback to legacy SECRET_KEY if JWT_SECRET fails (Lumina Shield)
+            payload = jwt.decode(auth_token, settings.JWT_SECRET or settings.SECRET_KEY, algorithms=["HS256"])
             
         user_id = payload.get("user_id") or payload.get("userId") or payload.get("id")
         email = payload.get("sub") or payload.get("email")

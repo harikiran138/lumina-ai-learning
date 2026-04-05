@@ -33,12 +33,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
       const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+      
+      // [JWT Validation] Check if we have a valid token in localStorage
+      const hasStoredToken = typeof window !== 'undefined' && localStorage.getItem('access_token');
       const hasClientSession =
         typeof document !== 'undefined' &&
         (document.cookie.includes('access_token=') || document.cookie.includes('refresh_token='));
 
-      if (isAuthPage && !hasClientSession) {
+      // If on auth page and no session, clear and return early
+      if (isAuthPage && !hasClientSession && !hasStoredToken) {
         clearAuth();
+        (window as any).__LUMINA_AUTH_HYDRATING__ = false;
+        return;
+      }
+
+      // If no token at all, clear auth and redirect
+      if (!hasClientSession && !hasStoredToken) {
+        console.warn('[Lumina Auth] No authentication tokens found. Clearing auth.');
+        clearAuth();
+        if (!isAuthPage) window.location.href = '/login';
         (window as any).__LUMINA_AUTH_HYDRATING__ = false;
         return;
       }
@@ -59,6 +72,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (!isAuthPage) window.location.href = '/login';
         }
       } catch (err: any) {
+        // [JWT Auth Failure] If auth error, clear tokens and redirect
+        if (err.message?.includes('401') || err.message?.includes('Auth Failure') || err.message?.includes('Invalid token')) {
+          console.error('[Lumina Auth] Authentication failed:', err.message);
+          clearAuth();
+          if (!isAuthPage) {
+            console.error('[Lumina Auth] Redirecting to login due to invalid token.');
+            window.location.href = '/login';
+          }
+          (window as any).__LUMINA_AUTH_HYDRATING__ = false;
+          setLoading(false);
+          return;
+        }
+
         const isNetworkError = err.message?.includes('fetch') || err.message?.includes('Network') || !window.navigator.onLine;
 
         if (isNetworkError && retries > 0) {

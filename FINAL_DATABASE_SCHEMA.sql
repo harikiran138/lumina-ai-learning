@@ -1795,3 +1795,79 @@ CREATE POLICY "Parents see verified progress" ON public.progress
     );
 
 
+-- Counselor System Tables
+-- Privacy-first design for Lumina
+
+-- 1. Counselor Notes (Client-side encrypted)
+CREATE TABLE IF NOT EXISTS counselor_notes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    counselor_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    student_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    encrypted_blob TEXT NOT NULL,
+    iv TEXT NOT NULL,
+    auth_tag TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Risk Reveal Logs (Audit trail for deanonymization)
+CREATE TABLE IF NOT EXISTS risk_reveal_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    counselor_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    student_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    reason TEXT NOT NULL,
+    revealed_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Follow-up Tasks (Escalation system)
+CREATE TABLE IF NOT EXISTS follow_up_tasks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    counselor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    status TEXT DEFAULT 'pending', -- pending, acknowledged, completed, escalated
+    due_at TIMESTAMPTZ NOT NULL,
+    acknowledged_at TIMESTAMPTZ,
+    escalated_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. Risk Alerts (Anonymized signals)
+CREATE TABLE IF NOT EXISTS risk_alerts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    signal_type TEXT NOT NULL, -- withdrawal, low_engagement, crisis_keyword
+    severity TEXT NOT NULL, -- low, medium, high, critical
+    suppression_status TEXT DEFAULT 'active', -- active, suppressed
+    suppression_expiry TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RLS Policies for Counselor System
+ALTER TABLE counselor_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE risk_reveal_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE follow_up_tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE risk_alerts ENABLE ROW LEVEL SECURITY;
+
+-- Counselors can manage their own notes
+CREATE POLICY "Counselors can manage own notes" ON counselor_notes
+    FOR ALL USING (auth.uid() = counselor_id);
+
+-- Counselors and Admins can view reveal logs
+CREATE POLICY "Counselors and Admins can view reveal logs" ON risk_reveal_logs
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role IN ('counselor', 'admin'))
+    );
+
+-- Counselors can view alerts
+CREATE POLICY "Counselors can view risk alerts" ON risk_alerts
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role IN ('counselor', 'admin'))
+    );
+
+-- Counselors can view and update follow-ups
+CREATE POLICY "Counselors can manage follow-ups" ON follow_up_tasks
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role IN ('counselor', 'admin'))
+    );

@@ -9,13 +9,9 @@ router = APIRouter()
 
 class SessionRequest(BaseModel):
     mentee_id: str
-    scheduled_at: str
-    notes: Optional[str] = None
-
-class PortfolioReviewRequest(BaseModel):
-    mentee_id: str
-    portfolio_data: Dict[str, Any]
-    feedback: str
+    session_date: str
+    notes: Optional[Dict[str, Any]] = None
+    next_steps: Optional[str] = None
 
 @router.get("/matches")
 async def get_mentor_matches(
@@ -30,10 +26,9 @@ async def get_mentee_profile(
     current_user: dict = Depends(get_current_user),
     store: MentorStore = Depends(get_mentor_store)
 ):
-    
     # Verify match
     matches = await store.get_matches(current_user["id"])
-    if not any(str(m["mentee_id"]) == mentee_id for m in matches):
+    if not any(str(m["student_id"]) == mentee_id for m in matches):
         raise HTTPException(status_code=403, detail="You can only view profiles of your mentees")
     
     profile = await store.get_mentee_profile(mentee_id)
@@ -41,29 +36,35 @@ async def get_mentee_profile(
         raise HTTPException(status_code=404, detail="Mentee profile not found")
     return profile
 
+@router.get("/mentees/{mentee_id}/briefing")
+async def get_mentee_briefing(
+    mentee_id: str,
+    current_user: dict = Depends(get_current_user),
+    store: MentorStore = Depends(get_mentor_store)
+):
+    # Verify match
+    matches = await store.get_matches(current_user["id"])
+    if not any(str(m["student_id"]) == mentee_id for m in matches):
+        raise HTTPException(status_code=403, detail="Unauthorized briefing request")
+    
+    return await store.get_session_briefing(current_user["id"], mentee_id)
+
 @router.post("/session/schedule")
 async def schedule_mentor_session(
     request: SessionRequest,
     current_user: dict = Depends(get_current_user),
     store: MentorStore = Depends(get_mentor_store)
 ):
-    
-    session = await store.schedule_session(current_user["id"], request.mentee_id, request.scheduled_at, request.notes or "")
+    session = await store.schedule_session(
+        current_user["id"], 
+        request.mentee_id, 
+        request.session_date, 
+        request.notes,
+        request.next_steps
+    )
     if not session:
         raise HTTPException(status_code=500, detail="Failed to schedule session")
     return {"status": "success", "session": session}
-
-@router.post("/portfolio-review")
-async def create_portfolio_review(
-    request: PortfolioReviewRequest,
-    current_user: dict = Depends(get_current_user),
-    store: MentorStore = Depends(get_mentor_store)
-):
-    
-    review = await store.create_portfolio_review(current_user["id"], request.mentee_id, request.portfolio_data, request.feedback)
-    if not review:
-        raise HTTPException(status_code=500, detail="Failed to create portfolio review")
-    return {"status": "success", "review": review}
 
 @router.get("/sessions")
 async def get_mentor_sessions(
