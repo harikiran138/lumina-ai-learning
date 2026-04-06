@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import MagicMock, AsyncMock
 from app.services.adaptive_onboarding import AdaptiveOnboardingEngine
 
-class TestRAOIELogic(unittest.TestCase):
+class TestRAOIELogic(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.db = AsyncMock()
         self.engine = AdaptiveOnboardingEngine(self.db)

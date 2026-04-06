@@ -234,7 +234,8 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
         error=str(status_code),
         message=str(detail),
         status_code=status_code,
-        path=request.url.path
+        path=request.url.path,
+        detail=detail
     )
     return add_cors_headers(response, request)
 
@@ -420,23 +421,8 @@ def read_root():
 
 @app.get("/health")
 async def health_check():
-    """Enhanced health check with DB heartbeat."""
-    db_status = "unknown"
-    try:
-        # Check if database responds
-        await db.get_client().from_("institution").select("count").limit(1).async_execute()
-        db_status = "healthy"
-    except Exception as e:
-        logger.error("health_check_db_failed", error=str(e))
-        db_status = "unhealthy"
-
-    status = "healthy" if db_status == "healthy" else "degraded"
-    return success_response({
-        "status": status,
-        "database": db_status,
-        "version": "1.0.0",
-        "timestamp": time.time()
-    }, "System operational" if status == "healthy" else "System degraded")
+    """Simple health check for service availability."""
+    return {"status": "ok"}
 
 
 @app.middleware("http")

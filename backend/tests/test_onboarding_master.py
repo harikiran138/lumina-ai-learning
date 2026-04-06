@@ -295,7 +295,7 @@ async def test_role_violation(ac, db_manager):
         "primary_device": "laptop"
     })
     
-    # Should be 403 as the user is a student trying to complete faculty onboarding
+    # Should be 403 as the user is a student trying to complete teacher onboarding
     assert response.status_code == 403
     
     app.dependency_overrides.clear()

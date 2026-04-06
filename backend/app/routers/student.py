@@ -1126,6 +1126,7 @@ async def enroll_in_course(
     student_store = StudentStore(db=db)
     success = await student_store.enroll_in_course(current_user["id"], request.course_id)
     if not success:
+        print(f"ENROLLMENT FAILED for student={current_user.get('id')} course={request.course_id}")
         raise HTTPException(status_code=400, detail="Enrollment failed or already enrolled")
 
     return {"status": "success", "message": "Enrolled successfully"}

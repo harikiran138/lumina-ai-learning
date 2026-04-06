@@ -40,4 +40,7 @@ qdrant-client
 supabase==2.13.0
 
 # OCR service dependency
-opencv-python-headless>=4.8.0
+# NumPy must be < 2 for LangChain and older OpenCV compatibility
+numpy<2.0.0
+# OCR service dependency - fixed version for stability
+opencv-python-headless==4.8.1.78

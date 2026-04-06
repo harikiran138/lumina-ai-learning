@@ -283,6 +283,37 @@ def _safe_update_queue_item(client: Any, queue_id: str, updates: Dict[str, Any])
         return client.table("ai_answer_queue").update(legacy_updates).eq("id", queue_id).execute()
 
 
+def _bank_verified_answer(client: Any, item: Dict[str, Any], approved_answer: str, user_id: str):
+    """
+    Store a teacher-verified answer in the bank for future reuse (knowledge bank).
+    """
+    queue_id = item.get("id")
+    if not queue_id:
+        return
+
+    try:
+        # Avoid duplicates by checking if already banked
+        existing = client.table("verified_answers_bank").select("id").eq("source_queue_id", queue_id).execute()
+        if existing.data:
+            log.info("ai_answer_already_banked", queue_id=queue_id)
+            return
+
+        bank_payload = {
+            "source_queue_id": queue_id,
+            "question_signature": item.get("question_signature"),
+            "question_text": item.get("student_question"),
+            "answer_content": approved_answer,
+            "course_id": item.get("course_id"),
+            "approved_by": user_id,
+            "created_at": _now_iso(),
+        }
+        client.table("verified_answers_bank").insert(bank_payload).execute()
+        log.info("ai_answer_banked", queue_id=queue_id, course_id=item.get("course_id"))
+    except Exception as exc:
+        # Don't fail the approval if banking fails, but log it
+        log.error("ai_answer_banking_failed", queue_id=queue_id, error=str(exc))
+
+
 def _queue_status_message(row: Dict[str, Any]) -> str:
     status = row.get("status", "pending")
     if status in {"approved", "edited_approved"} and row.get("released_to_student", True):
@@ -727,6 +758,8 @@ async def approve_queue_item(
         },
     )
 
+    _bank_verified_answer(client, item, approved_answer, str(current_user.get("id")))
+
     audit_logger.log(
         action="ai_answer_approved",
         user_id=str(current_user["id"]),
@@ -760,6 +793,8 @@ async def edit_approve_queue_item(
             "teacher_note": body.teacher_note,
         },
     )
+
+    _bank_verified_answer(client, item, body.final_answer, str(current_user.get("id")))
 
     audit_logger.log(
         action="ai_answer_approved",
