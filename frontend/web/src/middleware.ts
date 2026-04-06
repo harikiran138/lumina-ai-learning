@@ -138,6 +138,11 @@ export function middleware(request: NextRequest) {
   if (isPublicPath) {
     // Redirect logged-in users away from /login and /register.
     if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
+      // If they explicitly want to logout/switch account, allow them to see the page.
+      if (request.nextUrl.searchParams.get('logout') === 'true') {
+        return NextResponse.next()
+      }
+
       const url = request.nextUrl.clone()
       url.pathname = onboardingCompleted ? getRoleHome(role) : '/onboarding'
       // Clear reason param so the destination doesn't see a stale reason.

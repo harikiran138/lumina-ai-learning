@@ -178,6 +178,11 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
   const isAuthHydrating = useAuthStore((state) => state.isLoading);
 
   useEffect(() => {
+    if (searchParams.get("logout") === "true") {
+      api.logout();
+      return;
+    }
+
     if (reason === "session_expired" || reason === "unauthorized" || reason === "session_sync_required") {
       // BREAK REDIRECT LOOP: middleware sent us here because the session is invalid.
       // Clear any stale store state and stay on the login page.

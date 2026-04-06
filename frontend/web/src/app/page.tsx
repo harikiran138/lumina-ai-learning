@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { DottedSurface } from "@/components/ui/DottedSurface";
 import HeroSection from "@/components/home/HeroSection";
+import { useAuthStore } from "@/store/useAuthStore";
+import { getRoleHome } from "@/lib/role-routing";
 
 const ProblemSection = dynamic(() => import("@/components/home/ProblemSection"), { ssr: false });
 const SolutionSection = dynamic(() => import("@/components/home/SolutionSection"), { ssr: false });
@@ -23,6 +25,8 @@ const Footer = dynamic(() => import("@/components/layout/Footer"), { ssr: false 
 const StructuredData = dynamic(() => import("@/components/seo/StructuredData"), { ssr: false });
 
 export default function Home() {
+  const { user, isLoading: isAuthLoading } = useAuthStore();
+
   const [sectionsVisible, setSectionsVisible] = useState({
     problem: false,
     solution: false,
@@ -102,18 +106,31 @@ export default function Home() {
             </nav>
 
             <div className="flex items-center space-x-6">
-              <Link
-                href="/login"
-                className="text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors hidden sm:block"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/login"
-                className="glass-button-highlight text-black text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all"
-              >
-                Get Started
-              </Link>
+              {!isAuthLoading && user ? (
+                <>
+                  <Link
+                    href={user.onboardingCompleted ? getRoleHome(user.role) : "/onboarding"}
+                    className="glass-button-highlight text-black text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all"
+                  >
+                    Go to Dashboard
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors hidden sm:block"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="glass-button-highlight text-black text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all"
+                  >
+                    Get Started
+                  </Link>
+                </>
+              )}
               <ThemeToggle />
             </div>
           </div>

@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { MoveRight, Shield, Zap, FileText, CheckCircle } from "lucide-react";
+import { MoveRight, Shield, Zap, FileText, CheckCircle, ArrowRight } from "lucide-react";
+import { useAuthStore } from "@/store/useAuthStore";
+import { getRoleHome } from "@/lib/role-routing";
 
 const floatingCards = [
   {
@@ -39,6 +41,8 @@ const stats = [
 ];
 
 export default function HeroSection() {
+  const { user, isLoading: isAuthLoading } = useAuthStore();
+
   return (
     <section className="relative pt-32 pb-24 lg:pt-44 lg:pb-32 overflow-hidden bg-black">
       {/* Neural grid background */}
@@ -75,20 +79,32 @@ export default function HeroSection() {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-          <Link
-            href="/login"
-            className="glass-button-highlight inline-flex items-center gap-2 text-black font-black text-sm uppercase tracking-[0.15em] h-14 px-10 rounded-xl shadow-[0_0_40px_rgba(255,215,0,0.3)] hover:shadow-[0_0_60px_rgba(255,215,0,0.45)] hover:scale-[1.04] active:scale-[0.97] transition-all"
-          >
-            Get Started Free
-            <MoveRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 text-lumina-highlight font-bold text-sm uppercase tracking-[0.15em] h-14 px-10 rounded-xl border border-lumina-highlight/25 bg-lumina-highlight/5 hover:bg-lumina-highlight/10 hover:border-lumina-highlight/40 transition-all"
-          >
-            <Shield className="h-4 w-4" />
-            Sign In
-          </Link>
+          {!isAuthLoading && user ? (
+             <Link
+              href={user.onboardingCompleted ? getRoleHome(user.onboardingCompleted ? user.role : user.role) : "/onboarding"}
+              className="glass-button-highlight inline-flex items-center gap-2 text-black font-black text-sm uppercase tracking-[0.15em] h-14 px-10 rounded-xl shadow-[0_0_40px_rgba(255,215,0,0.3)] hover:shadow-[0_0_60px_rgba(255,215,0,0.45)] hover:scale-[1.04] active:scale-[0.97] transition-all"
+            >
+              {user.onboardingCompleted ? "Go to Dashboard" : "Continue Setup"}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/register"
+                className="glass-button-highlight inline-flex items-center gap-2 text-black font-black text-sm uppercase tracking-[0.15em] h-14 px-10 rounded-xl shadow-[0_0_40px_rgba(255,215,0,0.3)] hover:shadow-[0_0_60px_rgba(255,215,0,0.45)] hover:scale-[1.04] active:scale-[0.97] transition-all"
+              >
+                Get Started Free
+                <MoveRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/login?logout=true"
+                className="inline-flex items-center gap-2 text-zinc-400 font-bold text-sm uppercase tracking-[0.15em] h-14 px-10 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all hover:text-white"
+              >
+                <Shield className="h-4 w-4" />
+                Sign In
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Floating Feature Cards */}
