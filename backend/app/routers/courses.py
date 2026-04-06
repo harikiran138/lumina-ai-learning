@@ -43,7 +43,7 @@ DEFAULT_COURSES = [
 class CreateCourseBody(BaseModel):
     name: Optional[str] = None
     title: Optional[str] = None
-    code: str
+    code: Optional[str] = None
     description: str = ""
     level: Optional[str] = None
     image: Optional[str] = None
@@ -106,26 +106,19 @@ async def list_courses_root(store: CourseStore = Depends(get_course_store)):
     return courses
 
 
-@router.get("/{course_id}")
-async def get_course(course_id: str, store: CourseStore = Depends(get_course_store)):
-    """Get a specific course by ID."""
-    course = await store.get_course_by_id(course_id)
-    if not course:
-        course = await store.get_course_by_code(course_id)
-    if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
-    return course
+# NOTE: /{course_id} wildcard is declared later (after all /teacher/* static routes)
+# so that FastAPI does not swallow /teacher/stats, /teacher/list etc.
 
 
 # ─── Teacher-Specific Endpoints ─────────────────────────────────────────────
 
-@router.get("/teacher/dashboard")
-async def teacher_dashboard(
+@router.get("/teacher/stats")
+async def get_teacher_stats(
     current_user: dict = Depends(get_current_user),
     analytics: AnalyticsStore = Depends(get_analytics_store),
 ):
     """Teacher dashboard stats with role check"""
-    if current_user.get("role") not in ["teacher", "admin", "hod"]:
+    if current_user.get("role") not in ["teacher", "faculty", "admin", "hod", "super_admin"]:
         raise HTTPException(status_code=403, detail="Teacher access required")
     overview = await analytics.get_teacher_dashboard_overview(current_user["id"])
     stats = await analytics.get_teacher_dashboard_stats(current_user["id"])
@@ -252,13 +245,24 @@ async def teacher_dashboard(
     }
 
 
-@router.get("/teacher/list")
-async def teacher_courses(
+@router.get("/teacher/drafts")
+async def list_draft_courses(
     current_user: dict = Depends(get_current_user),
     store: CourseStore = Depends(get_course_store),
 ):
-    """List courses created by the authenticated teacher."""
-    if current_user["role"] not in ("teacher", "admin", "hod"):
+    """List draft courses for the user."""
+    if current_user["role"] not in ("teacher", "faculty", "admin", "hod", "super_admin"):
+        raise HTTPException(status_code=403, detail="Teacher access required")
+    return await store.get_courses_by_teacher(current_user["id"])
+
+
+@router.get("/teacher/list")
+async def list_teacher_courses(
+    current_user: dict = Depends(get_current_user),
+    store: CourseStore = Depends(get_course_store),
+):
+    """List courses created by the current teacher."""
+    if current_user["role"] not in ("teacher", "faculty", "admin", "hod", "super_admin"):
         raise HTTPException(status_code=403, detail="Teacher access required")
     return await store.get_courses_by_teacher(current_user["id"])
 
@@ -295,6 +299,49 @@ async def teacher_students(
 
 # ─── Course Creation ─────────────────────────────────────────────────────────
 
+@router.post("/blueprint")
+async def create_course_blueprint(
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+    store: CourseStore = Depends(get_course_store),
+):
+    """Create a course draft from an AI blueprint."""
+    if current_user["role"] not in ("teacher", "faculty", "hod", "super_admin", "admin"):
+        raise HTTPException(status_code=403, detail="Only Teacher, HOD or Admin can create courses")
+
+    # Validate and resolve name
+    course_name = body.get("name") or body.get("title")
+    if not course_name:
+        raise HTTPException(status_code=400, detail="Blueprint must include a course name or title")
+
+    # Auto-generate code if missing
+    import re
+    course_code = body.get("code")
+    if not course_code:
+        slug = re.sub(r'[^a-z0-9]+', '-', course_name.lower()).strip('-')
+        course_code = f"{slug}-{str(uuid.uuid4())[:8]}"
+
+    # Collision detection with auto-resolution
+    if course_code and await store.get_course_by_code(course_code):
+        slug = re.sub(r'[^a-z0-9]+', '-', (course_name or "blueprint").lower()).strip('-')
+        course_code = f"{slug}-{str(uuid.uuid4())[:12]}"
+        print(f"🔄 Blueprint collision resolved. New code: {course_code}")
+
+    course = await store.create_course(
+        name=course_name,
+        code=course_code,
+        description=body.get("description", ""),
+        teacher_id=current_user["id"],
+        modules=body.get("modules"),
+    )
+    if not course:
+        raise HTTPException(status_code=500, detail="Failed to create course from blueprint")
+
+    from app.core.cache import invalidate_cache
+    await invalidate_cache("courses:*")
+    return {"success": True, "course": course, "courseId": course.get("id"), "code": course_code}
+
+
 @router.post("/create")
 async def create_course_form(
     name: str,
@@ -304,13 +351,19 @@ async def create_course_form(
     store: CourseStore = Depends(get_course_store),
 ):
     """Create a course (form-data variant)."""
-    if current_user["role"] not in ("super_admin", "hod", "teacher"):
+    if current_user["role"] not in ("teacher", "faculty", "hod", "super_admin", "admin"):
         raise HTTPException(status_code=403, detail="Only Teacher, HOD or Admin can create courses")
-    if await store.get_course_by_code(code):
-        raise HTTPException(status_code=400, detail="Course code already exists")
+    # Collision detection with auto-resolution
+    resolved_code = code
+    if await store.get_course_by_code(resolved_code):
+        import re
+        slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+        resolved_code = f"{slug}-{str(uuid.uuid4())[:12]}"
+        print(f"🔄 Form collision resolved. New code: {resolved_code}")
+
     course = await store.create_course(
         name=name,
-        code=code,
+        code=resolved_code,
         description=description,
         teacher_id=current_user["id"],
     )
@@ -326,34 +379,68 @@ async def create_course_json(
     store: CourseStore = Depends(get_course_store),
 ):
     """Create a course (JSON body)."""
-    if current_user["role"] not in ("super_admin", "hod", "teacher"):
+    if current_user["role"] not in ("teacher", "faculty", "hod", "super_admin", "admin"):
         raise HTTPException(status_code=403, detail="Only Teacher, HOD or Admin can create courses")
-    if await store.get_course_by_code(body.code):
-        raise HTTPException(status_code=400, detail="Course code already exists")
+    
     course_name = body.name or body.title
     if not course_name:
-        raise HTTPException(status_code=400, detail="Course name is required")
+        raise HTTPException(status_code=400, detail="Course name or title is required")
 
+    course_code = body.code
+    import re
+    if not course_code:
+        slug = re.sub(r'[^a-z0-9]+', '-', course_name.lower()).strip('-')
+        course_code = f"{slug}-{str(uuid.uuid4())[:8]}"
+
+    # Collision detection with auto-resolution
+    if await store.get_course_by_code(course_code):
+        slug = re.sub(r'[^a-z0-9]+', '-', (course_name or "course").lower()).strip('-')
+        course_code = f"{slug}-{str(uuid.uuid4())[:12]}"
+        print(f"🔄 Resolved code collision. New code: {course_code}")
+
+    print(f"📥 COURSE DATA: name={course_name!r} code={course_code!r} level={body.level!r} modules_count={len(body.modules or [])}")
     course = await store.create_course(
         name=course_name,
-        code=body.code,
+        code=course_code,
         description=body.description,
         teacher_id=current_user.get("id"),
         difficulty_level=body.level,
         thumbnail_url=body.thumbnail or body.image,
         program_id=body.program_id,
         modules=body.modules,
+        college_id=current_user.get("college_id") or current_user.get("institution_id")
     )
     
     if not course:
-        # Fallback if return data is missing due to RLS but insert succeeded
-        course = await store.get_course_by_code(body.code)
-        
+        # Fallback if return data is missing due to RLS but insert succeeded.
+        # Must use the resolved course_code, not body.code (which may be None
+        # when the code was auto-generated above).
+        course = await store.get_course_by_code(course_code)
+
     if not course:
         raise HTTPException(status_code=500, detail="Failed to create course record")
 
     from app.core.cache import invalidate_cache
     await invalidate_cache("courses:*")
+    return {
+        "success": True,
+        "id": str(course.get("id")),
+        "course": course,
+        "courseId": course.get("id"),
+        "code": course_code
+    }
+
+
+# ─── Single Course Lookup (wildcard - must come AFTER all static routes) ─────
+
+@router.get("/{course_id}")
+async def get_course(course_id: str, store: CourseStore = Depends(get_course_store)):
+    """Get a specific course by ID or code."""
+    course = await store.get_course_by_id(course_id)
+    if not course:
+        course = await store.get_course_by_code(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
     return course
 
 
@@ -397,10 +484,14 @@ async def publish_course(
     current_user: dict = Depends(get_current_user),
     store: CourseStore = Depends(get_course_store),
 ):
-    """Mark a course as published."""
+    """Mark a course as published. Requires teacher/hod/admin role."""
+    if current_user["role"] not in ("teacher", "faculty", "hod", "super_admin", "admin"):
+        raise HTTPException(status_code=403, detail="Only teachers or admins can publish courses")
     success = await store.update_course(course_id, {"is_published": True})
     if not success:
         raise HTTPException(status_code=404, detail="Course not found")
+    from app.core.cache import invalidate_cache
+    await invalidate_cache("courses:*")
     return {"success": True, "message": "Course published"}
 
 

@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import { Upload, X, Loader2, Wand2, FileText, Check, AlertCircle, Sparkles } from "lucide-react";
+import { Upload, X, Loader2, Wand2, FileText, Check, AlertCircle, Sparkles, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/BackButton";
 
 export default function CreateCoursePage() {
   const router = useRouter();
@@ -47,12 +48,17 @@ export default function CreateCoursePage() {
     try {
       const res = await api.createCourse(formData);
       if (res.success) {
-        router.push("/faculty/courses");
+        router.push("/teacher/courses");
       } else {
         setError(res.error || "Failed to create course.");
       }
-    } catch (err) {
-      setError("An error occurred. Please try again.");
+    } catch (err: any) {
+      console.error("❌ Course creation error:", err);
+      let errMsg = err?.message || "Something went wrong. Please try again.";
+      if (errMsg.toLowerCase().includes("already exists")) {
+        errMsg += " Tip: Try typing a different 'Course Code' or modifying your slug.";
+      }
+      setError(errMsg);
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +67,7 @@ export default function CreateCoursePage() {
   const handleAIUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!aiFile) {
-      setError("Please select a PDF file first.");
+      setError("Please select a file first (PDF or Image).");
       return;
     }
 
@@ -70,20 +76,39 @@ export default function CreateCoursePage() {
     setPreviewBlueprint(null);
 
     try {
-      const res = await api.generateBlueprintFromPdf(aiFile);
-      if (res.blueprint) {
-        setPreviewBlueprint(res.blueprint);
-        // Autofill title and description if available in blueprint metadata/root
+      console.log("📤 Uploading file for blueprint:", aiFile.name, aiFile.type, aiFile.size);
+      const res = await api.generateBlueprintFromFile(aiFile);
+      console.log("📥 AI Blueprint response:", res);
+
+      // Normalize: backend always returns { blueprint: { title, description, level, modules } }
+      const bp = res?.blueprint;
+      if (bp) {
+        const normalized = {
+          title: bp.title || "Untitled Course",
+          description: bp.description || "",
+          level: bp.level || "Beginner",
+          modules: (bp.modules || bp.sections || []).map((m: any) => ({
+            title: m.title || m.name || "Module",
+            description: m.description || "",
+            topics: m.topics || [],
+            duration: m.duration || 45,
+          })),
+        };
+        setPreviewBlueprint(normalized);
         setFormData((prev) => ({
           ...prev,
-          title: res.blueprint.title || prev.title,
-          description: res.blueprint.description || prev.description,
-          id: res.blueprint.title ? res.blueprint.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : prev.id
+          title: normalized.title !== "Untitled Course" ? normalized.title : prev.title,
+          description: normalized.description || prev.description,
+          level: normalized.level || prev.level,
+          id: normalized.title && normalized.title !== "Untitled Course"
+            ? normalized.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+            : prev.id,
         }));
       } else {
-        setError("AI was unable to extract a structure from this document.");
+        setError("AI was unable to extract a structure from this material.");
       }
     } catch (err: any) {
+      console.error("❌ Blueprint generation error:", err);
       setError(err.message || "Blueprint generation failed.");
     } finally {
       setIsGenerating(false);
@@ -92,25 +117,31 @@ export default function CreateCoursePage() {
 
   const confirmAndCreate = async () => {
     setIsLoading(true);
+    setError("");
     try {
-      // Create course with the generated blueprint structure
       const createData = {
-        ...formData,
-        name: formData.title, // Map title to name for backend consistency
+        name: formData.title,
+        title: formData.title,
+        description: formData.description,
+        level: formData.level,
         thumbnail: formData.image,
-        modules: previewBlueprint.modules || [],
-        code: formData.code || formData.id || `c-${Math.random().toString(36).slice(2, 7)}`, // Ensure a code exists
-        status: "draft"
+        modules: previewBlueprint?.modules || [],
+        // Use code if edited, else use slug, or leave empty for backend auto-gen
+        code: formData.code || formData.id || "",
+        status: "draft",
       };
 
+      console.log("📤 Creating course with blueprint data:", createData);
       const res = await api.createCourse(createData);
-      if (res.success || res.id) {
-        router.push("/faculty/courses");
-      } else {
-        setError(res.error || "Failed to create course.");
+      console.log("✅ Course created:", res);
+      router.push("/teacher/courses");
+    } catch (err: any) {
+      console.error("❌ Course creation error:", err);
+      let errMsg = err?.message || "Failed to create course. Please try again.";
+      if (errMsg.toLowerCase().includes("already exists")) {
+        errMsg += " Tip: Try using a significantly different course code or adding a suffix like -v2.";
       }
-    } catch (err) {
-      setError("An error occurred during final creation.");
+      setError(errMsg);
     } finally {
       setIsLoading(false);
     }
@@ -118,6 +149,10 @@ export default function CreateCoursePage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center justify-between mb-2">
+        <BackButton href="/teacher/courses" label="Back to courses" className="mb-0" />
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">
@@ -127,12 +162,6 @@ export default function CreateCoursePage() {
             Design your curriculum and reach students.
           </p>
         </div>
-        <button
-          onClick={() => router.back()}
-          className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
-        >
-          <X className="w-6 h-6" />
-        </button>
       </div>
 
       {error && (
@@ -173,11 +202,17 @@ export default function CreateCoursePage() {
           {isGenerating && aiFile && !previewBlueprint && (
             <div className="glass-v2-primary p-12 text-center space-y-6 animate-pulse border-amber-500/20 mb-8 shadow-2xl shadow-amber-500/10">
               <div className="relative inline-block">
-                <Loader2 className="w-16 h-16 text-amber-500 animate-spin mx-auto" />
-                <Sparkles className="w-8 h-8 text-amber-400 absolute -top-2 -right-2 animate-bounce" />
+                {aiFile.type.startsWith('image/') ? (
+                  <img src={URL.createObjectURL(aiFile)} alt="Preview" className="w-24 h-24 object-cover rounded-xl border border-amber-500/30 mx-auto" />
+                ) : (
+                  <div className="relative">
+                    <Loader2 className="w-16 h-16 text-amber-500 animate-spin mx-auto" />
+                    <Sparkles className="w-8 h-8 text-amber-400 absolute -top-2 -right-2 animate-bounce" />
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-bold gradient-text-gold">Analyzing Document...</h3>
+                <h3 className="text-2xl font-bold gradient-text-gold">Analyzing {aiFile.type.startsWith('image/') ? "Photo" : "Document"}...</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
                   Lumina AI is architecting your course roadmap from <span className="text-foreground font-medium">{aiFile.name}</span>.
                 </p>
@@ -190,7 +225,7 @@ export default function CreateCoursePage() {
           <div>
             <h2 className="text-2xl font-bold text-white mb-2">Upload Syllabus or Textbook</h2>
             <p className="text-gray-400 max-w-md mx-auto">
-              Our AI will analyze your PDF and generate a complete course structure including modules and topics instantly.
+              Our AI will analyze your PDF or Image (photo) and generate a complete course structure including modules and topics instantly.
             </p>
           </div>
           
@@ -199,12 +234,12 @@ export default function CreateCoursePage() {
               <div className="border-2 border-dashed border-white/10 rounded-2xl p-8 group-hover:border-lumina-primary transition-colors bg-white/5">
                 <input
                   type="file"
-                  accept=".pdf"
+                  accept=".pdf,image/*"
                   onChange={(e) => setAiFile(e.target.files?.[0] || null)}
                   className="hidden"
                 />
                 <span className="text-gray-300">
-                  {aiFile ? aiFile.name : "Select Syllabus (PDF)"}
+                  {aiFile ? aiFile.name : "Select Syllabus (PDF or Image)"}
                 </span>
               </div>
             </label>
@@ -232,16 +267,52 @@ export default function CreateCoursePage() {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="glass-card-premium p-8 border-amber-500/10">
             <div className="flex items-start justify-between mb-6">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
+              <div className="w-full mr-4">
+                <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-amber-500" />
                   <span className="text-xs font-bold uppercase tracking-widest text-amber-500/80">AI Blueprint Ready</span>
                 </div>
-                <h2 className="text-3xl font-bold tracking-tight mb-3">{previewBlueprint.title}</h2>
-                <p className="text-lg text-muted-foreground leading-relaxed">{previewBlueprint.description}</p>
-              </div>
-              <div className="px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-sm font-bold">
-                {previewBlueprint.level || "Beginner"}
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs text-amber-500/60 uppercase font-bold tracking-tighter mb-1 block">Course Title</label>
+                    <input 
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => handleGenerateSlug(e.target.value)}
+                      className="text-3xl font-bold tracking-tight bg-transparent border-b border-white/10 w-full focus:border-amber-500 outline-none pb-1 transition-all"
+                    />
+                  </div>
+
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="text-xs text-amber-500/60 uppercase font-bold tracking-tighter mb-1 block">Course Code (Unique)</label>
+                      <input 
+                        type="text"
+                        value={formData.code || formData.id}
+                        onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                        placeholder="e.g. math-101"
+                        className="text-lg font-mono bg-white/5 border border-white/10 rounded-lg px-3 py-1 w-full focus:border-amber-500 outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-amber-500/60 uppercase font-bold tracking-tighter mb-1 block">Difficulty</label>
+                      <div className="px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-sm font-bold h-10 flex items-center">
+                        {previewBlueprint.level || "Beginner"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-amber-500/60 uppercase font-bold tracking-tighter mb-1 block">Description</label>
+                    <textarea 
+                      value={formData.description}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      className="text-lg text-muted-foreground leading-relaxed bg-transparent border-none w-full focus:ring-0 outline-none resize-none p-0"
+                      rows={3}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -315,13 +386,13 @@ export default function CreateCoursePage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">
-              Slug (URL Identifier)
+              Slug (URL Identifier - used for code if specified)
             </label>
             <input
               type="text"
               value={formData.id}
-              readOnly
-              className="w-full bg-black/40 border border-white/5 rounded-lg px-4 py-2 text-gray-500 cursor-not-allowed font-mono text-sm"
+              onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+              className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white font-mono text-sm focus:ring-2 focus:ring-lumina-primary outline-none transition-all"
             />
           </div>
 

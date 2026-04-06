@@ -131,7 +131,7 @@ export default function StudentMasterListPage() {
                 className="group hover:bg-white/[0.02] transition-all cursor-pointer"
               >
                 <td className="px-8 py-6">
-                  <Link href={`/faculty/students/${student.id}`} className="flex items-center gap-4">
+                  <Link href={`/teacher/students/${student.id}`} className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-sm font-bold text-white uppercase italic">
                       {student.name.split(' ').map(n => n[0]).join('')}
                     </div>

@@ -437,7 +437,7 @@ export default function LiveClassPage() {
           </p>
         </div>
         <Link
-          href="/faculty/analytics"
+          href="/teacher/analytics"
           className="inline-flex items-center gap-2 rounded-xl border border-lumina-highlight/20 bg-lumina-highlight/5 px-4 py-2.5 text-sm font-semibold text-lumina-highlight hover:bg-lumina-highlight/10 transition-colors shrink-0"
         >
           View Analytics

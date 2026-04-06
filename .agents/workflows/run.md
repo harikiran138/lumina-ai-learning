@@ -59,7 +59,7 @@ This workflow automates the local development lifecycle: environment validation,
 8.  Verify both services are responding:
     ```bash
     # Check Backend
-    curl -f http://localhost:8000/health || (echo "Backend health check failed" && exit 1)
+    curl -f http://localhost:9000/health || (echo "Backend health check failed" && exit 1)
     # Check Frontend 
     curl -f http://localhost:3000 || (echo "Frontend check failed" && exit 1)
     ```

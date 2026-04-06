@@ -34,7 +34,7 @@ const navItems = [
   { name: "At-Risk Students",   href: "/hod/at-risk",            icon: AlertOctagon },
   { name: "Alumni Feedback",    href: "/hod/alumni-feedback",    icon: Star },
   { name: "Alert Center",       href: "/hod/alerts",             icon: Bell },
-  { name: "Faculty Management", href: "/hod/faculty",            icon: Users },
+  { name: "Faculty Management", href: "/hod/teachers",           icon: Users },
   { name: "Program Management", href: "/hod/programs",           icon: GraduationCap },
   { name: "Curriculum Map",     href: "/hod/curriculum",         icon: BookOpen },
 ];

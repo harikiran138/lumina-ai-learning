@@ -38,3 +38,6 @@ ragas==0.1.1
 rank-bm25==0.2.2
 qdrant-client
 supabase==2.13.0
+
+# OCR service dependency
+opencv-python-headless>=4.8.0

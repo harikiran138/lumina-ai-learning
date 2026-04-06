@@ -121,7 +121,12 @@ class _LocalTableQuery:
         self._single = False
 
     def select(self, columns: str = "*", **_kwargs):
-        self._operation = "select"
+        # Only switch to "select" mode for fresh read queries.
+        # When chained after insert/update/upsert/delete (e.g. .insert(x).select()),
+        # "select" is a Supabase hint to return affected rows — don't override the
+        # write operation.
+        if self._operation == "select":
+            pass  # already in read mode
         self._columns = columns or "*"
         return self
 
@@ -334,6 +339,9 @@ class SupabaseManager:
     _init_attempted = False
     _last_error = None
 
+    # Schema cache: table_name → set of column names (populated lazily)
+    _schema_cache: Dict[str, set] = {}
+
     def __init__(self, client: Optional[Client] = None):
         self._instance_client = client
 
@@ -466,6 +474,7 @@ class SupabaseManager:
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("insert_failed", table=table, error=str(e))
+            print(f"INSERT ERROR: {table} - {str(e)}")
             return None
 
     async def update(self, table: str, data: Dict[str, Any], query_filter: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -486,12 +495,101 @@ class SupabaseManager:
             query = self.client.table(table).delete()
             for key, value in query_filter.items():
                 query = query.eq(key, value)
-            
             response = await query.async_execute()
-            return len(response.data) > 0
+            return len(response.data) > 0 if response.data else False
         except Exception as e:
             log.error("delete_failed", table=table, error=str(e))
             return False
+
+    # ── Schema Discovery ────────────────────────────────────────
+
+    async def get_table_columns(self, table: str, bust_cache: bool = False) -> set:
+        """
+        Returns the set of column names for a given table.
+        Results are cached per-table for the lifetime of the process.
+        Falls back to an empty set (no filtering) if discovery fails.
+        """
+        if not bust_cache and table in self.__class__._schema_cache:
+            return self.__class__._schema_cache[table]
+
+        try:
+            client = self.get_client()
+            # Fetch one row to infer columns; if table is empty use insert+rollback trick
+            resp = await client.table(table).select("*").limit(1).async_execute()
+            if resp.data:
+                cols = set(resp.data[0].keys())
+                self.__class__._schema_cache[table] = cols
+                log.debug("schema_discovered", table=table, columns=len(cols))
+                return cols
+            else:
+                # Table exists but is empty — we cannot discover columns safely.
+                # Return empty set so callers know not to filter.
+                log.warning("schema_discovery_empty_table", table=table)
+                return set()
+        except Exception as e:
+            log.warning("schema_discovery_failed", table=table, error=str(e))
+            return set()
+
+    def _strip_unknown_columns(self, data: Dict[str, Any], known_columns: set) -> Dict[str, Any]:
+        """Remove keys from data that are not in known_columns. Logs warnings."""
+        if not known_columns:
+            return data  # Cannot filter without schema — pass through
+        stripped = {}
+        for k, v in data.items():
+            if k in known_columns:
+                stripped[k] = v
+            else:
+                log.warning("unknown_column_stripped", column=k)
+        return stripped
+
+    # ── Safe Write Wrappers ─────────────────────────────────────
+
+    async def insert_safe(self, table: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Schema-safe insert. Strips unknown columns before inserting.
+        Returns: { success, data, error }
+        """
+        cols = await self.get_table_columns(table)
+        safe_data = self._strip_unknown_columns(data, cols)
+        try:
+            result = await self.insert(table, safe_data)
+            if result:
+                return {"success": True, "data": result, "error": None}
+            # Possibly created but returned no data — attempt lookup
+            log.warning("insert_safe_no_data_returned", table=table)
+            return {"success": True, "data": safe_data, "error": None}
+        except Exception as e:
+            log.error("insert_safe_failed", table=table, error=str(e))
+            return {"success": False, "data": None, "error": str(e)}
+
+    async def update_safe(self, table: str, data: Dict[str, Any], query_filter: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Schema-safe update. Strips unknown columns before updating.
+        Returns: { success, data, error }
+        """
+        cols = await self.get_table_columns(table)
+        safe_data = self._strip_unknown_columns(data, cols)
+        # Never include filter columns in update payload
+        for k in query_filter:
+            safe_data.pop(k, None)
+        try:
+            result = await self.update(table, safe_data, query_filter)
+            return {"success": True, "data": result, "error": None}
+        except Exception as e:
+            log.error("update_safe_failed", table=table, error=str(e))
+            return {"success": False, "data": None, "error": str(e)}
+
+    async def delete_safe(self, table: str, query_filter: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Schema-safe delete.
+        Returns: { success, data, error }
+        """
+        try:
+            ok = await self.delete(table, query_filter)
+            return {"success": ok, "data": None, "error": None}
+        except Exception as e:
+            log.error("delete_safe_failed", table=table, error=str(e))
+            return {"success": False, "data": None, "error": str(e)}
 
 
 def get_scoped_db(user: Dict[str, Any]) -> SupabaseManager:

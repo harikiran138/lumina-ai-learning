@@ -220,7 +220,7 @@ export default function QuestionBankPage() {
 
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
-              href="/faculty/ai-generator"
+              href="/teacher/ai-generator"
               className="inline-flex items-center gap-2 rounded-xl border border-lumina-highlight/30 bg-lumina-highlight/10 px-4 py-2.5 text-sm font-semibold text-lumina-highlight hover:bg-lumina-highlight/20 transition-colors"
             >
               <Sparkles className="h-4 w-4" />

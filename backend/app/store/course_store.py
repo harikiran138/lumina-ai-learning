@@ -1,4 +1,4 @@
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict, Set
 from datetime import datetime
 import uuid
 from app.database.supabase_manager import supabase_db
@@ -58,55 +58,96 @@ class CourseStore:
         self,
         name: str,
         code: str,
-        description: str,
-        teacher_id: str,
-        subject: str = "general",
+        description: str = "",
+        teacher_id: Optional[str] = None,
         difficulty_level: Optional[str] = None,
         thumbnail_url: Optional[str] = None,
         program_id: Optional[str] = None,
-        modules: Optional[List[dict]] = None,
-    ) -> dict:
+        modules: Optional[List[Any]] = None,
+        college_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Public create_course method that builds the course data object and persists it.
+        """
         course_data = {
             "name": name,
-            "course_name": name,
-            "course_code": code,
+            "title": name,        # many Lumina schemas use 'title' instead of 'name'
+            "course_name": name,  # some use 'course_name'
+            "code": code,
+            "course_code": code,  # some use 'course_code'
             "description": description,
             "teacher_id": teacher_id,
-            "subject": subject,
+            "difficulty_level": difficulty_level,
+            "thumbnail_url": thumbnail_url,
+            "image_url": thumbnail_url, # fallback
+            "program_id": program_id,
             "modules": modules or [],
+            "college_id": college_id,
             "is_published": False,
-            "review_status": "draft",
+            "review_status": "draft"
         }
-        if difficulty_level:
-            course_data["difficulty_level"] = difficulty_level
-        if thumbnail_url:
-            course_data["thumbnail_url"] = thumbnail_url
-        if program_id:
-            course_data["program_id"] = program_id
 
+        # Filter out None values
+        course_data = {k: v for k, v in course_data.items() if v is not None}
+
+        log.debug("create_course_request", code=code)
+        
         try:
-            result = await self.db.insert("courses", course_data)
-            if result:
-                return self._normalize_course(result)
-            log.warning("create_course_no_result_returned", code=code, result=result)
-            raise Exception("Insert failed: no data returned")
+            return await self.create_course_db(course_data)
         except Exception as e:
-            log.error("create_course_failed", error=str(e), code=code)
-            raise e
+            log.error("create_course_failed", code=code, error=str(e))
+            raise Exception(f"Insert failed: {str(e)}")
+
+    async def create_course_db(self, course_data: dict) -> dict:
+        log.debug("create_course_db_execute", table="courses")
+        
+        # Robust insert: Strip columns that don't exist in the remote schema
+        try:
+            client = self.db.get_client()
+            sample_res = await client.table("courses").select("*").limit(1).async_execute()
+            if sample_res.data:
+                valid_cols = set(sample_res.data[0].keys())
+                course_data = {k: v for k, v in course_data.items() if k in valid_cols}
+        except Exception as discovery_error:
+            log.warning("column_discovery_failed", error=str(discovery_error))
+            pass
+
+        # 1. Base Insert
+        result = await self.db.insert("courses", course_data)
+        
+        if not result:
+            log.warning("create_course_no_result_returned", code=course_data.get("code"))
+            # Fallback: check if it was actually created
+            result = await self.get_course_by_code(course_data.get("code"))
+            if not result:
+                raise Exception("Insert failed: no data returned")
+
+        return self._normalize_course(result)
 
     async def create_course_from_blueprint(self, blueprint: dict, teacher_id: str) -> dict:
         title = blueprint.get("title", "Untitled Course")
         code = blueprint.get("code") or f"c-{str(uuid.uuid4())[:8]}"
         
+        # Collision detection with auto-resolution
+        if await self.get_course_by_code(code):
+            import re
+            slug = re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')
+            code = f"{slug}-{str(uuid.uuid4())[:12]}"
+            log.info("blueprint_collision_resolved", old_code=blueprint.get("code"), new_code=code)
+
         course_data = {
             "name": title,
+            "title": title,
             "course_name": title,
+            "code": code,
             "course_code": code,
             "description": blueprint.get("description", ""),
             "teacher_id": teacher_id,
             "subject": blueprint.get("subject", "general"),
             "difficulty_level": blueprint.get("difficulty_level", "beginner"),
+            "grade_level": blueprint.get("difficulty_level", "beginner"),
             "modules": blueprint.get("modules", []),
+            "thumbnail_url": blueprint.get("thumbnail_url") or blueprint.get("image_url"),
             "is_published": False,
             "review_status": "draft",
         }
@@ -151,12 +192,26 @@ class CourseStore:
         # Handle field mappings
         if "name" in clean_updates:
             clean_updates["course_name"] = clean_updates["name"]
+            clean_updates["title"] = clean_updates["name"]
+        
         if "title" in clean_updates and "name" not in clean_updates:
             clean_updates["course_name"] = clean_updates["title"]
-        if "course_code" in clean_updates:
-            clean_updates["course_code"] = clean_updates["course_code"]
-        if "code" in clean_updates and "course_code" not in clean_updates:
+            clean_updates["name"] = clean_updates["title"]
+
+        if "difficulty_level" in clean_updates:
+            clean_updates["grade_level"] = clean_updates["difficulty_level"]
+        elif "grade_level" in clean_updates:
+            clean_updates["difficulty_level"] = clean_updates["grade_level"]
+
+        if "thumbnail_url" in clean_updates:
+            clean_updates["image_url"] = clean_updates["thumbnail_url"]
+        elif "image_url" in clean_updates:
+            clean_updates["thumbnail_url"] = clean_updates["image_url"]
+        
+        # Don't pop - we now use these as primary columns
+        if "code" in clean_updates:
             clean_updates["course_code"] = clean_updates["code"]
+        
         if "thumbnail" in clean_updates and "thumbnail_url" not in clean_updates:
             clean_updates["thumbnail_url"] = clean_updates["thumbnail"]
 

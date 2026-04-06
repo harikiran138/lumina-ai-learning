@@ -131,11 +131,28 @@ export default function CourseGeneratorPage() {
         fullTextForBackup = tocText;
       }
 
-      // 2. Analyze Structure
+      // 2. Analyze Structure (with up to 2 retries)
       setAiProgress("Analyzing Textbook Layout & Structure...");
       setAnalysisProgress(15);
 
-      const tocResult = await analyzeTableOfContents(tocText);
+      console.log("📤 Sending TOC to AI for analysis...");
+      let tocResult: any = { success: false };
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          tocResult = await analyzeTableOfContents(tocText);
+          if (tocResult.success) break;
+          // Fast-fail on configuration errors – retrying won't help
+          if (tocResult.error?.toLowerCase().includes("api key")) {
+            throw new Error("Gemini API key is not configured on the server. Contact your administrator.");
+          }
+          console.warn(`⚠️ AI attempt ${attempt} returned no structure. Retrying...`);
+        } catch (retryErr) {
+          console.warn(`⚠️ AI attempt ${attempt} threw:`, retryErr);
+          if (attempt === 3) throw retryErr;
+          await new Promise((r) => setTimeout(r, 1200 * attempt)); // exponential backoff
+        }
+      }
+      console.log("📥 AI TOC result:", tocResult.success ? "✅ Success" : "❌ Failed");
 
       // Branch: Index-Driven OR Fallback
       if (tocResult.success && tocResult.structure) {
@@ -251,8 +268,9 @@ export default function CourseGeneratorPage() {
         throw new Error("Analysis failed. improved parser found no content.");
       }
     } catch (e: any) {
-      console.error(e);
-      toast.error("Analysis failed: " + e.message);
+      const msg = e?.message || String(e);
+      console.error("❌ Analysis failed:", msg, e);
+      toast.error(`Analysis failed: ${msg}`);
       setStep("upload");
       setAnalysisProgress(0);
     }
@@ -261,43 +279,84 @@ export default function CourseGeneratorPage() {
   const saveCourse = async () => {
     setStep("saving");
     setSavingStatus("Creating Course...");
+    setCreationProgress(0);
+
+    // Animate the progress bar so the UI feels alive
+    const progressTimer = setInterval(() => {
+      setCreationProgress((prev) => {
+        if (prev >= 90) { clearInterval(progressTimer); return prev; }
+        return prev + Math.random() * 12;
+      });
+    }, 400);
+
     try {
-      // Transform AI modules to match DB schema (Topic -> Lesson)
+      // ── Guard checks ────────────────────────────────────────────
+      if (!Array.isArray(modules)) {
+        throw new Error("AI did not generate a valid list of modules.");
+      }
+      if (modules.length === 0) {
+        throw new Error("The AI blueprint returned zero modules. Please re-upload a clearer document.");
+      }
+      if (!courseTitle.trim()) {
+        throw new Error("Course title is required before saving.");
+      }
+
+      console.log("🚀 Sending course:", { title: courseTitle, modules: modules.length });
+      setSavingStatus(`Building ${modules.length} modules...`);
+
+      // ── Transform AI modules → DB schema ────────────────────────
       const dbModules = modules.map((mod, idx) => ({
         id: `mod-${Date.now()}-${idx}`,
         title: mod.title,
-        duration: `${mod.topics.length * 15} min`, // Estimate
-        lessons: mod.topics.map((topic, tIdx) => ({
+        duration: `${(mod.topics?.length ?? 1) * 15} min`,
+        lessons: (mod.topics ?? []).map((topic: any, tIdx: number) => ({
           id: `less-${Date.now()}-${tIdx}`,
           title: topic.title,
-          type: "text", // AI content is text/rich-text
-          // FORCE TEXT ONLY as requested
+          type: "text",
           duration: "15 min",
-          // Serialize the rich content structure so the student view can JSON.parse it
           content: JSON.stringify({
             goal: topic.goal,
-            pageRef: topic.pageRef, // Persist page reference
+            pageRef: topic.pageRef,
             content: topic.content,
             subtopics: topic.subtopics,
           }),
         })),
       }));
 
+      setSavingStatus("Saving to database...");
+
+      // ── API call ─────────────────────────────────────────────────
       const result = await api.createCourse({
         title: courseTitle,
+        code:
+          courseTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") +
+          "-" +
+          Math.random().toString(36).substring(2, 7),
         description: courseDescription,
         modules: dbModules,
         image: "https://placehold.co/400x320/0a0a0a/FFF?text=Lumina+Course",
       });
 
-      if (result.success && result.courseId) {
+      console.log("✅ Course created:", result);
+
+      clearInterval(progressTimer);
+      setCreationProgress(100);
+
+      if (result?.success && result?.courseId) {
         setCreatedCourseId(result.courseId);
-        setStep("done");
+        setTimeout(() => setStep("done"), 400); // Brief pause so progress hits 100%
+      } else if (result?.courseId) {
+        // Backend returned an ID but not the success flag — still treat as success
+        setCreatedCourseId(result.courseId);
+        setTimeout(() => setStep("done"), 400);
       } else {
-        throw new Error("Failed to save");
+        throw new Error(result?.detail || result?.message || "Server returned no course ID.");
       }
-    } catch (e) {
-      toast.error("Failed to save course");
+    } catch (e: any) {
+      clearInterval(progressTimer);
+      const msg = e?.message || "Unknown error";
+      console.error("❌ Course save failed:", msg, e);
+      toast.error(`Failed to save course: ${msg}`);
       setStep("review");
     }
   };
@@ -451,7 +510,7 @@ export default function CourseGeneratorPage() {
                   </div>
                   <div className="p-3 pl-12 space-y-2 bg-black/20">
                     <div className="space-y-4">
-                      {mod.topics.map((topic, tIdx) => (
+                      {(mod.topics ?? []).map((topic, tIdx) => (
                         <div
                           key={tIdx}
                           className="bg-black/20 p-4 rounded-lg border border-white/5 hover:border-white/10 transition-colors"
@@ -495,7 +554,7 @@ export default function CourseGeneratorPage() {
 
                           {/* Content Blocks */}
                           <div className="space-y-2 mb-4">
-                            {topic.content.map((block, bIdx) => (
+                            {(topic.content ?? []).map((block, bIdx) => (
                               <div key={bIdx} className="relative group">
                                 <textarea
                                   value={block.content}
@@ -642,12 +701,12 @@ export default function CourseGeneratorPage() {
               <div className="max-w-md mx-auto">
                 <div className="flex justify-between text-xs text-amber-300 mb-1">
                   <span>Progress</span>
-                  <span>{creationProgress}%</span>
+                  <span>{Math.round(creationProgress)}%</span>
                 </div>
                 <div className="h-4 bg-black/40 rounded-full overflow-hidden border border-white/10">
                   <div
                     className="h-full bg-gradient-to-r from-lumina-primary to-amber-500 transition-all duration-300"
-                    style={{ width: `${creationProgress}% ` }}
+                    style={{ width: `${Math.round(creationProgress)}%` }}
                   ></div>
                 </div>
               </div>

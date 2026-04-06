@@ -43,6 +43,28 @@ Ensure the tone is professional, engaging, and clear.
     Return the result in a structured format with modules and topics.
     """
 
+    JSON_SCHEMA_HINT = """
+IMPORTANT: You MUST return a valid JSON object following this schema:
+{
+  "title": "Course Title",
+  "description": "Engaging description",
+  "level": "Beginner|Intermediate|Advanced",
+  "modules": [
+    {
+      "title": "Module Title",
+      "description": "Module description",
+      "topics": [
+        {
+          "title": "Topic title",
+          "description": "Topic description",
+          "duration_minutes": 45
+        }
+      ]
+    }
+  ]
+}
+"""
+
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key or not genai:
@@ -59,25 +81,7 @@ Ensure the tone is professional, engaging, and clear.
 
 {self.USER_PROMPT_TEMPLATE.format(text=raw_text[:15000])}
 
-IMPORTANT: You MUST return a valid JSON object following this schema:
-{{
-  "title": "Course Title",
-  "description": "Engaging description",
-  "level": "Beginner|Intermediate|Advanced",
-  "modules": [
-    {{
-      "title": "Module Title",
-      "description": "Module description",
-      "topics": [
-        {{
-          "title": "Topic title",
-          "description": "Topic description",
-          "duration_minutes": 45
-        }}
-      ]
-    }}
-  ]
-}}
+{self.JSON_SCHEMA_HINT}
 """
         try:
             response = self.client.models.generate_content(
@@ -92,20 +96,49 @@ IMPORTANT: You MUST return a valid JSON object following this schema:
             print(f"Gemini Blueprint Error: {str(e)}")
             return self._generate_mock(raw_text)
 
-    def _generate_mock(self, raw_text: str) -> dict:
-        """Fallback mock implementation."""
-        lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
-        title = lines[0] if lines else "AI-Generated Course"
+    async def generate_from_image(self, image_path: str) -> dict:
+        """Processes an image/photo of a syllabus or textbook content directly."""
+        if not self.client:
+             return self._generate_mock(f"From image: {image_path}")
         
+        prompt = f"""{self.SYSTEM_PROMPT}
+
+Analyze this image (photo) of a syllabus, textbook table of contents, or course outline.
+Extract the structured course information.
+
+{self.JSON_SCHEMA_HINT}
+"""
+        try:
+            from PIL import Image
+            img = Image.open(image_path)
+            
+            response = self.client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=[prompt, img],
+                config=types.GenerateContentConfig(
+                    response_mime_type='application/json'
+                )
+            )
+            return json.loads(response.text)
+        except Exception as e:
+            print(f"Gemini Image Blueprint Error: {str(e)}")
+            return self._generate_mock(f"Recovery from image error: {str(e)}")
+
+    def _generate_mock(self, source_text: str) -> dict:
+        """Fallback mock implementation."""
+        title = "AI-Generated Course"
+        if "from image" in source_text.lower():
+            title = "Course from Image Analysis"
+            
         modules = [
-             BlueprintModule(title="Foundation", description="Core concepts from the document", topics=[
-                 BlueprintTopic(title="Introduction", description="Overview of the content"),
-                 BlueprintTopic(title="Core Principles", description="Detailed analysis of key themes")
+             BlueprintModule(title="Foundation", description="Core concepts from the provided document/image", topics=[
+                  BlueprintTopic(title="Introduction", description="Overview of the content"),
+                  BlueprintTopic(title="Core Principles", description="Detailed analysis of key themes identified by AI")
              ])
         ]
         
         return BlueprintResult(
             title=title,
-            description="A course blueprint generated from your document.",
+            description="A course blueprint generated from your uploaded materials.",
             modules=modules
         ).model_dump()

@@ -200,6 +200,11 @@ export const config = {
     // Onboarding gate
     '/onboarding',
     '/onboarding/:path*',
+    // Role aliases
+    '/faculty/:path*',
+    '/peer-tutor/:path*',
+    '/creator/:path*',
+    '/content-creator/:path*',
     // Redirect logged-in users away from auth pages
     '/login',
     '/register',

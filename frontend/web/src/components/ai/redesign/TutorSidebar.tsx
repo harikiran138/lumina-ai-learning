@@ -1,7 +1,8 @@
 "use client";
 
-import { History, BookOpen, Plus, Clock } from "lucide-react";
+import { History, BookOpen, Plus, Clock, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BackButton } from "@/components/ui/BackButton";
 
 interface TutorSidebarProps {
   sessions: Record<string, any[]>;
@@ -42,6 +43,11 @@ export function TutorSidebar({
 
   return (
     <div className="h-full flex flex-col bg-transparent">
+      {/* Back Button */}
+      <div className="px-4 py-2">
+        <BackButton href="/student/dashboard" label="Back to Dashboard" className="mb-0 text-xs" />
+      </div>
+
       {/* Header */}
       <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
         <h2 className="text-sm font-semibold text-gray-200 flex items-center gap-2">

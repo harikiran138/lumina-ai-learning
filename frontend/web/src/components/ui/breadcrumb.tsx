@@ -17,8 +17,8 @@ const defaultLabels: Record<string, string> = {
 
 const defaultHrefs: Record<string, string> = {
   student: '/student/dashboard',
-  teacher: '/faculty/dashboard',
-  faculty: '/faculty/dashboard',
+  teacher: '/teacher/dashboard',
+  faculty: '/teacher/dashboard',
   admin: '/admin/dashboard',
   parent: '/parent/dashboard',
   mentor: '/mentor/dashboard',

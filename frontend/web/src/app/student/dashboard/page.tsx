@@ -219,7 +219,7 @@ export default function StudentDashboard() {
             className="h-14 px-8 rounded-2xl bg-lumina-highlight text-black font-black inline-flex items-center gap-3 hover:scale-105 transition-all shadow-xl hover:shadow-lumina-highlight/20 active:scale-95"
           >
             Start Learning Session
-            <ArrowRight className="w-5 h-5" />
+            <ShieldCheck className="w-5 h-5" />
           </Link>
           <Link
             href="/student/course_explorer"
@@ -310,7 +310,7 @@ export default function StudentDashboard() {
                 className="h-12 w-full rounded-2xl bg-white/[0.04] border border-white/10 text-white font-bold inline-flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
               >
                 Resume Course
-                <ArrowRight className="w-4 h-4" />
+                <CheckCircle className="w-4 h-4" />
               </Link>
             </div>
           ) : (
