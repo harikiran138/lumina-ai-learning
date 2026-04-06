@@ -123,7 +123,7 @@ def upsert_user(user_data: dict) -> Optional[dict]:
         payload["roll_number"] = user_data["roll_number"]
 
     url = f"{SUPABASE_URL}/rest/v1/users"
-    resp = requests.post(url, headers=HEADERS, json=payload)
+    resp = requests.post(url, headers=HEADERS, json=payload, timeout=30)
 
     if resp.status_code in (200, 201):
         data = resp.json()
@@ -134,6 +134,7 @@ def upsert_user(user_data: dict) -> Optional[dict]:
             f"{SUPABASE_URL}/rest/v1/users",
             headers={**HEADERS, "Prefer": ""},
             params={"email": f"eq.{user_data['email']}", "select": "id,email,role"},
+            timeout=30,
         )
         if get_resp.status_code == 200 and get_resp.json():
             existing = get_resp.json()[0]
@@ -151,6 +152,7 @@ def upsert_user(user_data: dict) -> Optional[dict]:
                     "must_change_password": False,
                     "updated_at": datetime.utcnow().isoformat(),
                 },
+                timeout=30,
             )
             if patch_resp.status_code in (200, 204):
                 print(f"  ↻ Updated existing user: {user_data['email']}")
@@ -174,10 +176,10 @@ def create_learner_profile(user_id: str, email: str):
     }
     # Check if we can add status or if it errors
     url = f"{SUPABASE_URL}/rest/v1/learner_profiles"
-    resp = requests.post(url, headers=HEADERS, json={**payload, "status": "active"})
+    resp = requests.post(url, headers=HEADERS, json={**payload, "status": "active"}, timeout=30)
     if resp.status_code not in (200, 201, 204):
         # Fallback without status
-        requests.post(url, headers=HEADERS, json=payload)
+        requests.post(url, headers=HEADERS, json=payload, timeout=30)
     
     # 2. Update user_data progress for auth checks
     progress_payload = {
@@ -196,7 +198,8 @@ def create_learner_profile(user_id: str, email: str):
     requests.post(
         f"{SUPABASE_URL}/rest/v1/user_data",
         headers=HEADERS,
-        json=progress_payload
+        json=progress_payload,
+        timeout=30
     )
     print(f"  ✓ Full onboarding status synced for {email}")
 

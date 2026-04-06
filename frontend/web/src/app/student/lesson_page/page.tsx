@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { BackButton } from "@/components/ui/BackButton";
 
 export default function LessonPage() {
   const searchParams = useSearchParams();
@@ -47,12 +48,10 @@ export default function LessonPage() {
 
   return (
     <div className="min-h-screen bg-black text-white p-8 max-w-4xl mx-auto">
-      <button
-        onClick={() => router.push(courseId ? `/student/courses/${courseId}` : "/student/courses")}
-        className="mb-6 text-gray-400 hover:text-white flex items-center gap-2 text-sm transition-colors"
-      >
-        ← Back to Course
-      </button>
+      <BackButton 
+        href={courseId ? `/student/courses/${courseId}` : "/student/courses"} 
+        label="Back to Course" 
+      />
 
       {course && (
         <p className="text-sm text-gray-500 mb-1">{course.name}</p>

@@ -3,9 +3,11 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies for ML and RAG
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY ml_services/requirements.txt .

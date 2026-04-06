@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { type StepsBlock } from "@/lib/a2ui-schema";
-import { Lightbulb, ListOrdered } from "lucide-react";
+import { CheckCircle2, Lightbulb, ListOrdered } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface StepResultProps {
@@ -49,30 +49,38 @@ export const StepResult: React.FC<StepResultProps> = ({ block }) => {
       </div>
 
       <div className="space-y-4">
-        {visibleSteps.map((step, index) => (
-          <div
-            key={`${step.title || "step"}-${index}`}
-            className="rounded-xl border border-white/6 bg-black/10 p-4"
-          >
-            <div className="flex gap-3">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-amber-300/30 bg-amber-300/10 text-xs font-semibold text-amber-100">
-                {index + 1}
-              </div>
-              <div className="min-w-0 flex-1">
-                {step.title && (
-                  <h4 className="text-sm font-semibold text-white">{step.title}</h4>
-                )}
-                <p className="text-sm leading-relaxed text-slate-200">{step.body}</p>
-                {step.hint && shownHints[index] && (
-                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-100">
-                    <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>{step.hint}</span>
-                  </div>
-                )}
+        {visibleSteps.map((step, index) => {
+          const isLastAndIntermediate = index === visibleCount - 1 && visibleCount < totalSteps;
+          
+          return (
+            <div
+              key={`${step.title || "step"}-${index}`}
+              className="rounded-xl border border-white/6 bg-black/10 p-4"
+            >
+              <div className="flex gap-3">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-amber-300/30 bg-amber-300/10 text-xs font-semibold text-amber-100">
+                  {!isLastAndIntermediate ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  ) : (
+                    index + 1
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  {step.title && (
+                    <h4 className="text-sm font-semibold text-white">{step.title}</h4>
+                  )}
+                  <p className="text-sm leading-relaxed text-slate-200">{step.body}</p>
+                  {step.hint && shownHints[index] && (
+                    <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-100">
+                      <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span>{step.hint}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {interactive && (

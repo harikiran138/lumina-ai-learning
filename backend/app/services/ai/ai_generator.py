@@ -1,6 +1,11 @@
 import json
 import os
-import google.generativeai as genai
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    genai = None
+    types = None
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
@@ -21,89 +26,123 @@ class BlueprintResult(BaseModel):
     modules: List[BlueprintModule] = Field(default_factory=list, description="Structured roadmap of learning modules")
 
 class LuminaCourseBlueprintGenerator:
-    """Specialized AI generator for course blueprints from raw text (PDF extraction)."""
+    """Specialized AI generator for course blueprints from raw text (PDF extraction) or images."""
     
     SYSTEM_PROMPT = """You are Lumina's Lead Content Architect. 
-Your goal is to transform raw PDF text into a structured, pedagogical course blueprint.
+Your goal is to transform raw PDF text or syllabus images into a structured, pedagogical course blueprint.
 Break down the content into a logical sequence of modules and topics.
 Ensure the tone is professional, engaging, and clear.
 """
 
-    USER_PROMPT_TEMPLATE = """Analyze the following text from a syllabus or textbook and extract a complete course structure:
+    USER_PROMPT_TEMPLATE = """Analyze the following text or content and extract a complete course structure:
     
-    --- RAW TEXT ---
+    --- CONTENT ---
     {{text}}
-    --- END RAW TEXT ---
+    --- END CONTENT ---
     
     Return the result in a structured format with modules and topics.
     """
 
-    def __init__(self):
-        self.api_key = os.getenv("GEMINI_API_KEY")
-        if not self.api_key:
-            print("WARNING: GEMINI_API_KEY not found. Blueprint generator will use mock data.")
-            self.has_client = False
-        else:
-            genai.configure(api_key=self.api_key)
-            self.has_client = True
-
-    async def generate(self, raw_text: str) -> dict:
-        if not self.has_client:
-            return self._generate_mock(raw_text)
-        
-        prompt = f"""{self.SYSTEM_PROMPT}
-
-{self.USER_PROMPT_TEMPLATE.format(text=raw_text[:15000])}
-
+    JSON_SCHEMA_HINT = """
 IMPORTANT: You MUST return a valid JSON object following this schema:
-{{
+{
   "title": "Course Title",
   "description": "Engaging description",
   "level": "Beginner|Intermediate|Advanced",
   "modules": [
-    {{
+    {
       "title": "Module Title",
       "description": "Module description",
       "topics": [
-        {{
+        {
           "title": "Topic title",
           "description": "Topic description",
           "duration_minutes": 45
-        }}
+        }
       ]
-    }}
+    }
   ]
-}}
+}
+"""
+
+    def __init__(self):
+        self.api_key = os.getenv("GEMINI_API_KEY")
+        if not self.api_key or not genai:
+            print("WARNING: GEMINI_API_KEY not found or google-genai not installed. Blueprint generator will use mock data.")
+            self.client = None
+        else:
+            try:
+                self.client = genai.Client(api_key=self.api_key)
+            except Exception as e:
+                print(f"Failed to initialize Gemini Client: {e}")
+                self.client = None
+
+    async def generate(self, raw_text: str) -> dict:
+        if not self.client:
+            return self._generate_mock(raw_text)
+        
+        prompt = f"""{self.SYSTEM_PROMPT}
+
+{self.USER_PROMPT_TEMPLATE.replace("{{text}}", raw_text[:15000])}
+
+{self.JSON_SCHEMA_HINT}
 """
         try:
-            # Use generate_text for older library versions (v0.1.0rc1)
-            response = genai.generate_text(
-                model='models/text-bison-001',
-                prompt=prompt
+            response = self.client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type='application/json'
+                )
             )
-            if hasattr(response, 'result') and response.result:
-                return json.loads(response.result)
-            return self._generate_mock(raw_text)
+            return json.loads(response.text)
         except Exception as e:
             print(f"Gemini Blueprint Error: {str(e)}")
             return self._generate_mock(raw_text)
 
-    def _generate_mock(self, raw_text: str) -> dict:
+    async def generate_from_image(self, image_path: str) -> dict:
+        """Processes an image/photo of a syllabus or textbook content directly."""
+        if not self.client:
+             return self._generate_mock(f"From image: {image_path}")
+        
+        prompt = f"""{self.SYSTEM_PROMPT}
+
+Analyze this image (photo) of a syllabus, textbook table of contents, or course outline.
+Extract the structured course information.
+
+{self.JSON_SCHEMA_HINT}
+"""
+        try:
+            from PIL import Image
+            img = Image.open(image_path)
+            
+            response = self.client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=[prompt, img],
+                config=types.GenerateContentConfig(
+                    response_mime_type='application/json'
+                )
+            )
+            return json.loads(response.text)
+        except Exception as e:
+            print(f"Gemini Image Blueprint Error: {str(e)}")
+            return self._generate_mock(f"Recovery from image error: {str(e)}")
+
+    def _generate_mock(self, source_text: str) -> dict:
         """Fallback mock implementation."""
         title = "AI-Generated Course"
+        if "from image" in source_text.lower():
+            title = "Course from Image Analysis"
+            
+        modules = [
+             BlueprintModule(title="Foundation", description="Core concepts from the provided document/image", topics=[
+                  BlueprintTopic(title="Introduction", description="Overview of the content"),
+                  BlueprintTopic(title="Core Principles", description="Detailed analysis of key themes identified by AI")
+             ])
+        ]
         
-        return {
-            "title": title,
-            "description": "A course blueprint generated from your document.",
-            "level": "Beginner",
-            "modules": [
-                {
-                    "title": "Foundation",
-                    "description": "Core concepts from the document",
-                    "topics": [
-                        {"title": "Introduction", "description": "Overview of the content", "duration_minutes": 45},
-                        {"title": "Core Principles", "description": "Detailed analysis of key themes", "duration_minutes": 45}
-                    ]
-                }
-            ]
-        }
+        return BlueprintResult(
+            title=title,
+            description="A course blueprint generated from your uploaded materials.",
+            modules=modules
+        ).model_dump()

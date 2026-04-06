@@ -28,14 +28,10 @@ def _override_user(user: dict):
         return user
     app.dependency_overrides[get_current_user] = _get_user
     app.dependency_overrides[get_current_active_user] = _get_user
-    app.dependency_overrides[get_current_student] = _get_user
-    app.dependency_overrides[get_current_college_admin] = _get_user
 
 def _clear_overrides():
     app.dependency_overrides.pop(get_current_user, None)
     app.dependency_overrides.pop(get_current_active_user, None)
-    app.dependency_overrides.pop(get_current_student, None)
-    app.dependency_overrides.pop(get_current_college_admin, None)
 
 def create_val_id():
     return f"val_{uuid.uuid4().hex[:8]}"

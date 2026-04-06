@@ -33,15 +33,19 @@ class AssignmentStore:
             "description": description,
             "due_date": due_date,
             "teacher_id": created_by,
+            "created_by": created_by,
             "batch_id": batch_id,
             "section": section,
             "max_marks": max_marks,
         }
+        # Remove None values
+        assignment_data = {k: v for k, v in assignment_data.items() if v is not None}
+
         try:
-            result = await self.db.insert("assignments", assignment_data)
-            if result:
-                return result
-            raise Exception("Failed to insert assignment")
+            result = await self.db.insert_safe("assignments", assignment_data)
+            if result["success"] and result["data"]:
+                return result["data"]
+            raise Exception(result.get("error") or "Failed to insert assignment")
         except Exception as e:
             log.error("create_assignment_failed", error=str(e), title=title)
             raise e

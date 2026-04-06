@@ -5,6 +5,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy"
+        required: false
+        default: "main"
 
 permissions:
   contents: read
@@ -15,15 +20,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  # ─────────────────────────────────────────────────────────
+  # Build all Docker images in parallel, push to GHCR
+  # ─────────────────────────────────────────────────────────
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      backend_image:  ${{ steps.meta-backend.outputs.tags }}
+      frontend_image: ${{ steps.meta-frontend.outputs.tags }}
+      ml_image:       ${{ steps.meta-ml.outputs.tags }}
+      public_ip:      ${{ steps.instance.outputs.public_ip }}
+
     env:
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-      AWS_EC2_INSTANCE_ID: ${{ secrets.AWS_EC2_INSTANCE_ID }}
-      BACKEND_IMAGE: ghcr.io/harikiran138/lumina-ai-learning-backend:${{ github.sha }}
-      BACKEND_IMAGE_LATEST: ghcr.io/harikiran138/lumina-ai-learning-backend:latest
-      FRONTEND_IMAGE: ghcr.io/harikiran138/lumina-ai-learning-frontend:${{ github.sha }}
-      FRONTEND_IMAGE_LATEST: ghcr.io/harikiran138/lumina-ai-learning-frontend:latest
+      AWS_REGION:           ${{ secrets.AWS_REGION }}
+      AWS_EC2_INSTANCE_ID:  ${{ secrets.AWS_EC2_INSTANCE_ID }}
+      REGISTRY:             ghcr.io
+      IMAGE_BASE:           ghcr.io/${{ github.repository_owner }}
 
     steps:
       - name: Check out repository
@@ -32,11 +44,11 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region:            ${{ secrets.AWS_REGION }}
 
-      - name: Resolve instance public IP
+      - name: Resolve EC2 public IP
         id: instance
         run: |
           PUBLIC_IP=$(aws ec2 describe-instances \
@@ -44,10 +56,10 @@ jobs:
             --query 'Reservations[0].Instances[0].PublicIpAddress' \
             --output text)
           if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" = "None" ]; then
-            echo "Unable to resolve EC2 public IP" >&2
-            exit 1
+            echo "Unable to resolve EC2 public IP" >&2; exit 1
           fi
           echo "public_ip=$PUBLIC_IP" >> "$GITHUB_OUTPUT"
+          echo "EC2 IP: $PUBLIC_IP"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -56,73 +68,147 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── Backend ──────────────────────────────────────────
+      - name: Docker metadata (backend)
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_BASE }}/lumina-ai-learning-backend
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
       - name: Build and push backend image
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: true
+          context:    ./backend
+          file:       ./backend/Dockerfile
+          push:       true
+          tags:       ${{ steps.meta-backend.outputs.tags }}
+          labels:     ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha,scope=backend
+          cache-to:   type=gha,mode=max,scope=backend
+
+      # ── ML Service ───────────────────────────────────────
+      - name: Docker metadata (ml-service)
+        id: meta-ml
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_BASE }}/lumina-ai-learning-ml
           tags: |
-            ${{ env.BACKEND_IMAGE }}
-            ${{ env.BACKEND_IMAGE_LATEST }}
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push ml-service image
+        uses: docker/build-push-action@v6
+        with:
+          context:    ./backend
+          file:       ./backend/ml_services/Dockerfile
+          push:       true
+          tags:       ${{ steps.meta-ml.outputs.tags }}
+          labels:     ${{ steps.meta-ml.outputs.labels }}
+          cache-from: type=gha,scope=ml-service
+          cache-to:   type=gha,mode=max,scope=ml-service
+
+      # ── Frontend ─────────────────────────────────────────
+      - name: Docker metadata (frontend)
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_BASE }}/lumina-ai-learning-frontend
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v6
         with:
-          context: ./frontend/web
-          file: ./frontend/web/Dockerfile
-          push: true
+          context:    ./frontend/web
+          file:       ./frontend/web/Dockerfile
+          push:       true
           build-args: |
-            NEXT_PUBLIC_API_URL=http://${{ steps.instance.outputs.public_ip }}:8000
-          tags: |
-            ${{ env.FRONTEND_IMAGE }}
-            ${{ env.FRONTEND_IMAGE_LATEST }}
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
+            NEXT_PUBLIC_API_URL=http://${{ steps.instance.outputs.public_ip }}
+          tags:       ${{ steps.meta-frontend.outputs.tags }}
+          labels:     ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha,scope=frontend
+          cache-to:   type=gha,mode=max,scope=frontend
+
+  # ─────────────────────────────────────────────────────────
+  # Deploy to EC2 via AWS SSM (no open SSH port required)
+  # ─────────────────────────────────────────────────────────
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION:          ${{ secrets.AWS_REGION }}
+      AWS_EC2_INSTANCE_ID: ${{ secrets.AWS_EC2_INSTANCE_ID }}
+      BACKEND_IMAGE:       ${{ needs.build.outputs.backend_image }}
+      FRONTEND_IMAGE:      ${{ needs.build.outputs.frontend_image }}
+      ML_IMAGE:            ${{ needs.build.outputs.ml_image }}
+      PUBLIC_IP:           ${{ needs.build.outputs.public_ip }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
 
       - name: Wait for SSM connectivity
         run: |
+          echo "Waiting for EC2 SSM agent..."
           for attempt in $(seq 1 30); do
             STATUS=$(aws ssm describe-instance-information \
               --filters "Key=InstanceIds,Values=$AWS_EC2_INSTANCE_ID" \
               --query 'InstanceInformationList[0].PingStatus' \
               --output text 2>/dev/null || true)
             if [ "$STATUS" = "Online" ]; then
-              exit 0
+              echo "SSM Online."; exit 0
             fi
-            sleep 10
+            echo "Attempt $attempt/30 — status: $STATUS"; sleep 10
           done
-          echo "EC2 instance is not online in AWS Systems Manager" >&2
-          exit 1
+          echo "EC2 instance not online in SSM" >&2; exit 1
 
-      - name: Deploy on EC2 via SSM
+      - name: Deploy via SSM
         env:
           AWS_PROD_ENV_FILE: ${{ secrets.AWS_PROD_ENV_FILE }}
         run: |
+          RAW_BASE="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}"
           ENV_B64=$(printf '%s' "$AWS_PROD_ENV_FILE" | base64 -w 0)
           GHCR_USER_B64=$(printf '%s' "${{ github.actor }}" | base64 -w 0)
           GHCR_TOKEN_B64=$(printf '%s' "${{ github.token }}" | base64 -w 0)
-          RAW_BASE="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}"
+
+          # Build the first image tag for each service (SSM commands are strings)
+          BACKEND_IMG=$(echo "$BACKEND_IMAGE" | head -1)
+          FRONTEND_IMG=$(echo "$FRONTEND_IMAGE" | head -1)
+          ML_IMG=$(echo "$ML_IMAGE" | head -1)
+
           cat > ssm-commands.json <<EOF
           {
             "commands": [
               "set -euo pipefail",
+              "mkdir -p /opt/lumina",
               "export APP_DIR=/opt/lumina",
-              "export BACKEND_IMAGE=${BACKEND_IMAGE}",
-              "export FRONTEND_IMAGE=${FRONTEND_IMAGE}",
+              "export REPO_DIR=/opt/lumina/lumina-ai-learning",
+              "export BACKEND_IMAGE=${BACKEND_IMG}",
+              "export FRONTEND_IMAGE=${FRONTEND_IMG}",
+              "export ML_IMAGE=${ML_IMG}",
               "export GHCR_USER=\$(printf '%s' '${GHCR_USER_B64}' | base64 -d)",
               "export GHCR_TOKEN=\$(printf '%s' '${GHCR_TOKEN_B64}' | base64 -d)",
-              "mkdir -p /opt/lumina",
-              "curl -fsSL ${RAW_BASE}/deployment/aws/bootstrap-ec2.sh -o /tmp/bootstrap-ec2.sh",
-              "curl -fsSL ${RAW_BASE}/deployment/aws/deploy-on-ec2.sh -o /tmp/deploy-on-ec2.sh",
-              "curl -fsSL ${RAW_BASE}/deployment/aws/docker-compose.ec2.yml -o /opt/lumina/docker-compose.yml",
               "printf '%s' '${ENV_B64}' | base64 -d > /opt/lumina/.env",
+              "curl -fsSL ${RAW_BASE}/deployment/aws/bootstrap-ec2.sh -o /tmp/bootstrap-ec2.sh",
+              "curl -fsSL ${RAW_BASE}/deployment/aws/deploy-on-ec2.sh  -o /tmp/deploy-on-ec2.sh",
+              "curl -fsSL ${RAW_BASE}/deployment/aws/docker-compose.full.yml -o /opt/lumina/docker-compose.full.yml",
+              "curl -fsSL ${RAW_BASE}/deployment/aws/nginx.conf -o /opt/lumina/nginx.conf",
               "bash /tmp/bootstrap-ec2.sh",
-              "bash /tmp/deploy-on-ec2.sh"
+              "APP_DIR=/opt/lumina REPO_DIR=/opt/lumina/lumina-ai-learning GIT_BRANCH=main ENV_FILE=/opt/lumina/.env COMPOSE_FILE=/opt/lumina/docker-compose.full.yml bash /tmp/deploy-on-ec2.sh"
             ]
           }
           EOF
@@ -132,52 +218,63 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --comment "Deploy Lumina commit ${GITHUB_SHA}" \
             --parameters file://ssm-commands.json \
+            --timeout-seconds 1800 \
             --query 'Command.CommandId' \
             --output text)
 
-          echo "SSM command: $COMMAND_ID"
+          echo "SSM command ID: $COMMAND_ID"
 
-          for attempt in $(seq 1 60); do
+          for attempt in $(seq 1 90); do
             STATUS=$(aws ssm list-command-invocations \
-              --command-id "$COMMAND_ID" \
-              --details \
+              --command-id "$COMMAND_ID" --details \
               --query 'CommandInvocations[0].Status' \
               --output text 2>/dev/null || true)
+            echo "[$attempt/90] Status: $STATUS"
             case "$STATUS" in
               Success)
-                aws ssm list-command-invocations \
-                  --command-id "$COMMAND_ID" \
-                  --details \
-                  --query 'CommandInvocations[0].CommandPlugins[*].Output' \
+                aws ssm list-command-invocations --command-id "$COMMAND_ID" \
+                  --details --query 'CommandInvocations[0].CommandPlugins[*].Output' \
                   --output text
-                exit 0
-                ;;
+                exit 0 ;;
               Failed|Cancelled|TimedOut)
-                aws ssm list-command-invocations \
-                  --command-id "$COMMAND_ID" \
-                  --details \
-                  --query 'CommandInvocations[0].CommandPlugins[*].Output' \
+                aws ssm list-command-invocations --command-id "$COMMAND_ID" \
+                  --details --query 'CommandInvocations[0].CommandPlugins[*].Output' \
                   --output text
-                exit 1
-                ;;
+                exit 1 ;;
             esac
             sleep 10
           done
-
-          echo "Timed out waiting for SSM deployment command" >&2
-          exit 1
+          echo "Timed out waiting for SSM command" >&2; exit 1
 
       - name: Verify live endpoints
         run: |
-          FRONTEND_URL="http://${{ steps.instance.outputs.public_ip }}"
-          BACKEND_URL="http://${{ steps.instance.outputs.public_ip }}:8000/health"
+          FRONTEND_URL="http://$PUBLIC_IP"
+          BACKEND_URL="http://$PUBLIC_IP:8000/health"
 
-          for attempt in $(seq 1 20); do
-            if curl -fsS "$FRONTEND_URL" >/dev/null && curl -fsS "$BACKEND_URL" >/dev/null; then
+          echo "Checking $FRONTEND_URL and $BACKEND_URL ..."
+          for attempt in $(seq 1 24); do
+            FRONTEND_OK=false; BACKEND_OK=false
+            curl -fsS --max-time 10 "$FRONTEND_URL" >/dev/null 2>&1 && FRONTEND_OK=true || true
+            curl -fsS --max-time 10 "$BACKEND_URL"  >/dev/null 2>&1 && BACKEND_OK=true  || true
+            if $FRONTEND_OK && $BACKEND_OK; then
+              echo "All endpoints healthy."
               exit 0
             fi
-            sleep 10
+            echo "Attempt $attempt/24 — frontend=$FRONTEND_OK backend=$BACKEND_OK"
+            sleep 15
           done
 
           echo "Live deployment verification failed" >&2
           exit 1
+
+      - name: Post deployment summary
+        if: always()
+        run: |
+          echo "## Deployment Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "| | |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Commit | \`${GITHUB_SHA:0:8}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Branch | \`${GITHUB_REF_NAME}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| EC2 IP | \`$PUBLIC_IP\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Frontend | http://$PUBLIC_IP |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Backend API | http://$PUBLIC_IP:8000/docs |" >> "$GITHUB_STEP_SUMMARY"

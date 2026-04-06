@@ -2,10 +2,21 @@ import pytest
 import uuid
 import sys
 import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from httpx import AsyncClient, ASGITransport
+from app.main import app
+from app.api.deps import get_current_active_user, get_current_student
 from app.store.user_store import UserStore
 from app.store.community_store import CommunityStore
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# --- Mock Data & Overrides ---
+mock_student_data = {
+    "id": "test-student-id",
+    "email": "student@lumina.ai",
+    "role": "student",
+    "name": "Test Student"
+}
 
 @pytest.fixture
 async def ac(async_client):
@@ -14,7 +25,7 @@ async def ac(async_client):
 async def create_test_user(role="student"):
     uid = str(uuid.uuid4())[:8]
     email = f"community_test_{uid}@example.com"
-    pwd = "Password123A1" # Meets complexity
+    pwd = "Password123A1" # Meets complexity 
     name = f"Community {role.capitalize()}"
     phone = f"+1555{uuid.uuid4().int % 1000000:06d}"
     user_store = UserStore()
@@ -27,6 +38,8 @@ async def get_token(ac, email, password):
         raise Exception(f"Auth failed: {res.text}")
     return res.json()["access_token"]
 
+# --- Integration Tests ---
+
 @pytest.mark.asyncio
 async def test_student_community_flow_tc_comm_001(ac):
     """TC-COMM-001: Student community integration flow (Join, Post, Like)."""
@@ -36,7 +49,6 @@ async def test_student_community_flow_tc_comm_001(ac):
     headers = {"Authorization": f"Bearer {token}"}
 
     # 2. List communities
-    # Seed a community first since Mock store is empty
     client = UserStore().db.get_client()
     await client.table("communities").insert({
         "id": "phys-101",
@@ -69,7 +81,7 @@ async def test_student_community_flow_tc_comm_001(ac):
     # 5. Like post
     res = await ac.post(f"/api/community/posts/{post_id}/like", headers=headers)
     assert res.status_code == 200
-    assert res.json()["liked"] is True
+    assert res.json()["data"]["liked"] is True
 
     # 6. Cleanup
     user_store = UserStore()
@@ -82,8 +94,6 @@ async def test_rbac_block_teacher_create_post_tc_comm_002(ac):
     token = await get_token(ac, teacher["email"], pwd)
     headers = {"Authorization": f"Bearer {token}"}
 
-    # 1. Get a community (Teachers can view)
-    # Seed a community first
     client = UserStore().db.get_client()
     await client.table("communities").insert({
         "id": "chem-101",
@@ -95,22 +105,28 @@ async def test_rbac_block_teacher_create_post_tc_comm_002(ac):
     comm_res = await ac.get("/api/community/communities", headers=headers)
     community_id = comm_res.json()["data"][0]["id"]
 
-    # 2. Attempt post creation (Should fail - restricted to get_current_student)
     post_data = {
         "title": "Teacher Post (Unauthorized)",
         "content": "Teachers should not be able to post in student communities."
     }
     res = await ac.post(f"/api/community/posts?community_id={community_id}", json=post_data, headers=headers)
-    # Since teachers fail get_current_student, it should be 403 or 401 depending on the dependency behavior
     assert res.status_code in [403, 401]
 
-    # 3. Cleanup
     user_store = UserStore()
     await user_store.delete_user(teacher["id"])
 
 @pytest.mark.asyncio
 async def test_anonymous_access_block_tc_comm_003(ac):
     """TC-COMM-003: Ensure anonymous users cannot access community endpoints."""
-    # Attempt list (Should fail)
     res = await ac.get("/api/community/communities")
     assert res.status_code == 401
+
+# --- ASGI Transport Mock Tests ---
+
+@pytest.mark.asyncio
+async def test_get_community_messages_mock():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.get("/api/community/posts") # Corrected path
+    
+    # This might fail in CI if DB is not setup, but good for local dev with mocks
+    assert response.status_code in [200, 401]

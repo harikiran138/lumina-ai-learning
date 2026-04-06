@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Body, Query
 from app.api.deps import get_current_active_user, get_current_student
 from app.store.community_store import CommunityStore
+from app.core.responses import success_response
 from typing import List, Dict, Any, Optional
 
 router = APIRouter()
@@ -37,7 +38,7 @@ async def list_posts(
     """Fetch posts with optional community/topic filtering."""
     store = CommunityStore()
     posts = await store.get_posts(community_id, subject, sort, limit)
-    return {"success": True, "data": posts}
+    return success_response(posts)
 
 @router.post("/posts")
 async def create_post(
@@ -50,7 +51,7 @@ async def create_post(
     post = await store.create_post(community_id, current_student["id"], payload)
     if not post:
         raise HTTPException(status_code=400, detail="Failed to create post")
-    return {"success": True, "data": post}
+    return success_response(post)
 
 @router.get("/posts/{post_id}/comments")
 async def list_comments(
@@ -60,7 +61,7 @@ async def list_comments(
     """Fetch comments for a specific post."""
     store = CommunityStore()
     comments = await store.get_comments(post_id)
-    return {"success": True, "data": comments}
+    return success_response(comments)
 
 @router.post("/posts/{post_id}/comments")
 async def create_comment(
@@ -78,7 +79,7 @@ async def create_comment(
     )
     if not comment:
         raise HTTPException(status_code=400, detail="Failed to post comment")
-    return {"success": True, "data": comment}
+    return success_response(comment)
 
 @router.post("/posts/{post_id}/like")
 async def toggle_like(
@@ -88,4 +89,4 @@ async def toggle_like(
     """Toggle like/upvote on a post. Restricted to Students only."""
     store = CommunityStore()
     is_liked = await store.toggle_like(post_id, current_student["id"])
-    return {"success": True, "liked": is_liked}
+    return success_response({"liked": is_liked})

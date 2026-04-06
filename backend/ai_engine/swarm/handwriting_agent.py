@@ -45,6 +45,9 @@ class HandwritingAgent:
     def _load_model(self):
         if not self.model:
             print(f"HandwritingAgent loading {self.model_name}...")
+            from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+            import torch
+            self._torch = torch
             try:
                 self.processor = TrOCRProcessor.from_pretrained(self.model_name)  # nosec B615
                 self.model = VisionEncoderDecoderModel.from_pretrained(self.model_name)  # nosec B615

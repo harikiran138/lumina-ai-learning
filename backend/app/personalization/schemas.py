@@ -94,7 +94,7 @@ class RiskSummary(BaseModel):
 
 
 class ExplanationStrategyState(BaseModel):
-    mode_name: str
+    mode_name: Optional[str] = ""
     effectiveness_score: float = Field(default=0.5, ge=0.0, le=1.0)
     total_uses: int = 0
     success_count: int = 0

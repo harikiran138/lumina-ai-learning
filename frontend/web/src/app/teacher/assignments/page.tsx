@@ -57,7 +57,7 @@ function AssignmentsContent() {
 
   const fetchAssignments = async () => {
     try {
-      const data = await api.getFacultyAssignments();
+      const data = await api.getTeacherAssignments();
       setAssignments(data);
     } catch (e) {
       console.error("Failed to fetch assignments", e);

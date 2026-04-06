@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { RealAPI } from "@/lib/api";
 import {
   CheckCircle,
   XCircle,
@@ -52,23 +54,6 @@ function normalizeStatus(raw: string): AIAnswer["status"] {
   return raw as AIAnswer["status"];
 }
 
-async function apiFetch(path: string, options: RequestInit = {}) {
-  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "/api";
-  const url = `${base}${path}`;
-  const res = await fetch(url, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`${res.status}: ${text || res.statusText}`);
-  }
-  return res.json();
-}
 
 export default function VerificationQueuePage() {
   const [queue, setQueue] = useState<AIAnswer[]>([]);
@@ -86,7 +71,8 @@ export default function VerificationQueuePage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch("/teacher/ai-queue");
+      const api = RealAPI.getInstance();
+      const data = await api.getTeacherAiQueue();
       const items: AIAnswer[] = (data.items || []).map((row: any) => ({
         id: row.id,
         questionText: row.question_text || "",
@@ -130,18 +116,13 @@ export default function VerificationQueuePage() {
   ) => {
     setProcessing(id);
     try {
+      const api = RealAPI.getInstance();
       if (action === "approved") {
-        await apiFetch(`/teacher/ai-queue/${id}/approve`, { method: "POST" });
+        await api.approveAiQueueItem(id);
       } else if (action === "edited") {
-        await apiFetch(`/teacher/ai-queue/${id}/edit-approve`, {
-          method: "POST",
-          body: JSON.stringify({ final_answer: updatedAnswer, faculty_note: note }),
-        });
+        await api.editApproveAiQueueItem(id, updatedAnswer || "", note);
       } else if (action === "rejected") {
-        await apiFetch(`/teacher/ai-queue/${id}/reject`, {
-          method: "POST",
-          body: JSON.stringify({ faculty_note: note || "Rejected by faculty" }),
-        });
+        await api.rejectAiQueueItem(id, note || "Rejected by faculty");
       }
       // Optimistic update
       setQueue((prev) =>
@@ -175,10 +156,18 @@ export default function VerificationQueuePage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-12">
       {/* Header */}
-      <section className="glass-v2 border-white/5 overflow-hidden">
-        <div className="p-8">
+      <motion.section 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-v2 border-white/5 overflow-hidden"
+      >
+        <div className="p-8 relative">
+          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+            <Sparkles className="w-32 h-32 text-lumina-highlight" />
+          </div>
+          
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-lumina-highlight">
             AI Quality Gate
           </p>
@@ -193,32 +182,44 @@ export default function VerificationQueuePage() {
             it. Approve, edit, or reject — you are the final quality gate.
           </p>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-4">
-            <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5">
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 backdrop-blur-sm"
+            >
               <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Pending Review</p>
               <p className="mt-2 text-4xl font-bold text-amber-300">{pendingCount}</p>
-            </div>
-            <div className="rounded-2xl border border-lumina-highlight/20 bg-lumina-highlight/5 p-5">
+            </motion.div>
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              className="rounded-2xl border border-lumina-highlight/20 bg-lumina-highlight/5 p-5 backdrop-blur-sm"
+            >
               <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Approved</p>
               <p className="mt-2 text-4xl font-bold text-lumina-highlight">
                 {queue.filter((q) => q.status === "approved").length}
               </p>
-            </div>
-            <div className="rounded-2xl border border-blue-400/20 bg-blue-400/5 p-5">
-              <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Edited by Faculty</p>
+            </motion.div>
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              className="rounded-2xl border border-blue-400/20 bg-blue-400/5 p-5 backdrop-blur-sm"
+            >
+              <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Edited</p>
               <p className="mt-2 text-4xl font-bold text-blue-300">
                 {queue.filter((q) => q.status === "edited" || q.status === "edited_approved").length}
               </p>
-            </div>
-            <div className="rounded-2xl border border-red-400/20 bg-red-400/5 p-5">
+            </motion.div>
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              className="rounded-2xl border border-red-400/20 bg-red-400/5 p-5 backdrop-blur-sm"
+            >
               <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Rejected</p>
               <p className="mt-2 text-4xl font-bold text-red-300">
                 {queue.filter((q) => q.status === "rejected").length}
               </p>
-            </div>
+            </motion.div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Info banner */}
       <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 px-6 py-4 flex items-start gap-4">
@@ -291,7 +292,11 @@ export default function VerificationQueuePage() {
       {!loading && !error && (
         <div className="space-y-4">
           {filtered.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.02] p-12 text-center">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="rounded-3xl border border-dashed border-white/10 bg-white/[0.02] p-12 text-center"
+            >
               <CheckCircle className="mx-auto mb-4 h-12 w-12 text-lumina-highlight/50" />
               <h3 className="text-lg font-semibold text-white">
                 {filter === "pending" ? "All caught up!" : "Nothing here yet"}
@@ -301,28 +306,35 @@ export default function VerificationQueuePage() {
                   ? "No pending AI answers waiting for your review."
                   : `No ${filter} answers found.`}
               </p>
-            </div>
+            </motion.div>
           ) : (
-            filtered.map((item) => {
-              const isExpanded = expandedId === item.id;
-              const isEditing = editingId === item.id;
-              const isProcessing = processing === item.id;
-              const isPending = item.status === "pending";
+            <AnimatePresence mode="popLayout">
+              {filtered.map((item, idx) => {
+                const isExpanded = expandedId === item.id;
+                const isEditing = editingId === item.id;
+                const isProcessing = processing === item.id;
+                const isPending = item.status === "pending";
 
-              return (
-                <div
-                  key={item.id}
-                  className={cn(
-                    "rounded-3xl border bg-white/[0.03] transition-all",
-                    isPending
-                      ? "border-amber-400/20"
-                      : item.status === "approved"
-                        ? "border-lumina-highlight/20"
-                        : item.status === "edited" || item.status === "edited_approved"
-                          ? "border-blue-400/20"
-                          : "border-red-400/20",
-                  )}
-                >
+                return (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className={cn(
+                      "rounded-3xl border bg-white/[0.03] transition-all overflow-hidden",
+                      isPending
+                        ? "border-amber-400/20"
+                        : item.status === "approved"
+                          ? "border-lumina-highlight/20"
+                          : item.status === "edited" || item.status === "edited_approved"
+                            ? "border-blue-400/20"
+                            : "border-red-400/20",
+                      isExpanded && "ring-1 ring-white/10"
+                    )}
+                  >
                   {/* Card header */}
                   <div
                     className="flex cursor-pointer items-start justify-between gap-4 p-6"
@@ -382,120 +394,146 @@ export default function VerificationQueuePage() {
                   </div>
 
                   {/* Expanded content */}
-                  {isExpanded && (
-                    <div className="border-t border-white/5 p-6 space-y-5">
-                      {/* AI Answer */}
-                      <div>
-                        <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-gray-500">
-                          AI Generated Answer
-                        </p>
-                        {isEditing ? (
-                          <textarea
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            rows={6}
-                            className="w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-lumina-highlight/50 focus:outline-none resize-none"
-                          />
-                        ) : (
-                          <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 text-sm leading-relaxed text-gray-200">
-                            {item.aiAnswer || (
-                              <span className="italic text-gray-500">AI answer not yet generated — still processing.</span>
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="border-t border-white/5"
+                      >
+                        <div className="p-6 space-y-5">
+                          {/* AI Answer */}
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-xs font-bold uppercase tracking-[0.25em] text-gray-500">
+                                AI Generated Answer
+                              </p>
+                              {item.confidence !== null && (
+                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-lumina-highlight animate-pulse" />
+                                  <span className="text-[10px] text-gray-400 font-medium">Confidence: {Math.round(item.confidence * 100)}%</span>
+                                </div>
+                              )}
+                            </div>
+                            {isEditing ? (
+                              <textarea
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                rows={6}
+                                className="w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-lumina-highlight/50 focus:outline-none resize-none"
+                              />
+                            ) : (
+                              <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 text-sm leading-relaxed text-gray-200">
+                                {item.aiAnswer || (
+                                  <span className="italic text-gray-500">AI answer not yet generated — still processing.</span>
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
-                      </div>
 
-                      {/* Faculty Note */}
-                      {isEditing && (
-                        <div>
-                          <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-gray-500">
-                            Faculty Note (optional)
-                          </p>
-                          <input
-                            type="text"
-                            value={noteText}
-                            onChange={(e) => setNoteText(e.target.value)}
-                            placeholder="Add a note explaining your edit..."
-                            className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-lumina-highlight/50 focus:outline-none"
-                          />
-                        </div>
-                      )}
+                          {/* Faculty Note */}
+                          {isEditing && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                            >
+                              <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-gray-500">
+                                Faculty Note (optional)
+                              </p>
+                              <input
+                                type="text"
+                                value={noteText}
+                                onChange={(e) => setNoteText(e.target.value)}
+                                placeholder="Add a note explaining your edit..."
+                                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-lumina-highlight/50 focus:outline-none"
+                              />
+                            </motion.div>
+                          )}
 
-                      {item.facultyNote && !isEditing && (
-                        <div className="rounded-2xl border border-blue-400/20 bg-blue-400/5 px-4 py-3">
-                          <p className="text-xs text-gray-500">Faculty note: {item.facultyNote}</p>
-                        </div>
-                      )}
+                          {item.facultyNote && !isEditing && (
+                            <div className="rounded-2xl border border-blue-400/20 bg-blue-400/5 px-4 py-3">
+                              <p className="text-xs text-gray-500">Faculty note: {item.facultyNote}</p>
+                            </div>
+                          )}
 
-                      {/* Actions */}
-                      {isPending || isEditing ? (
-                        <div className="flex flex-wrap gap-3">
-                          {!isEditing ? (
-                            <>
-                              <button
-                                onClick={() => handleAction(item.id, "approved")}
-                                disabled={isProcessing || !item.aiAnswer}
-                                className="inline-flex items-center gap-2 rounded-xl border border-lumina-highlight/30 bg-lumina-highlight/10 px-4 py-2 text-sm font-semibold text-lumina-highlight hover:bg-lumina-highlight/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                                Approve
-                              </button>
-                              <button
-                                onClick={() => startEdit(item)}
-                                disabled={isProcessing}
-                                className="inline-flex items-center gap-2 rounded-xl border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-sm font-semibold text-blue-300 hover:bg-blue-400/20 transition-colors disabled:opacity-50"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                                Edit &amp; Approve
-                              </button>
-                              <button
-                                onClick={() => handleAction(item.id, "rejected", undefined, "Rejected by faculty")}
-                                disabled={isProcessing}
-                                className="inline-flex items-center gap-2 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2 text-sm font-semibold text-red-300 hover:bg-red-400/20 transition-colors disabled:opacity-50"
-                              >
-                                <XCircle className="h-4 w-4" />
-                                Reject
-                              </button>
-                            </>
+                          {/* Actions */}
+                          {isPending || isEditing ? (
+                            <div className="flex flex-wrap gap-3 pt-2">
+                              {!isEditing ? (
+                                <>
+                                  <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => handleAction(item.id, "approved")}
+                                    disabled={isProcessing || !item.aiAnswer}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-lumina-highlight/30 bg-lumina-highlight/10 px-5 py-2.5 text-sm font-bold text-lumina-highlight hover:bg-lumina-highlight/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                                    Approve
+                                  </motion.button>
+                                  <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => startEdit(item)}
+                                    disabled={isProcessing}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-blue-400/30 bg-blue-400/10 px-5 py-2.5 text-sm font-bold text-blue-300 hover:bg-blue-400/20 transition-all disabled:opacity-50"
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                    Edit &amp; Approve
+                                  </motion.button>
+                                  <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => handleAction(item.id, "rejected", undefined, "Rejected by faculty")}
+                                    disabled={isProcessing}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-red-400/30 bg-red-400/10 px-5 py-2.5 text-sm font-bold text-red-300 hover:bg-red-400/20 transition-all disabled:opacity-50"
+                                  >
+                                    <XCircle className="h-4 w-4" />
+                                    Reject
+                                  </motion.button>
+                                </>
+                              ) : (
+                                <>
+                                  <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() =>
+                                      handleAction(item.id, "edited", editText, noteText)
+                                    }
+                                    disabled={isProcessing || !editText.trim()}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-lumina-highlight/30 bg-lumina-highlight/10 px-5 py-2.5 text-sm font-bold text-lumina-highlight hover:bg-lumina-highlight/20 transition-all disabled:opacity-50"
+                                  >
+                                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                                    Save &amp; Approve Edited Answer
+                                  </motion.button>
+                                  <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => {
+                                      setEditingId(null);
+                                      setEditText("");
+                                      setNoteText("");
+                                    }}
+                                    className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-bold text-gray-400 hover:text-white transition-all"
+                                  >
+                                    Cancel
+                                  </motion.button>
+                                </>
+                              )}
+                            </div>
                           ) : (
-                            <>
-                              <button
-                                onClick={() =>
-                                  handleAction(item.id, "edited", editText, noteText)
-                                }
-                                disabled={isProcessing || !editText.trim()}
-                                className="inline-flex items-center gap-2 rounded-xl border border-lumina-highlight/30 bg-lumina-highlight/10 px-4 py-2 text-sm font-semibold text-lumina-highlight hover:bg-lumina-highlight/20 transition-colors disabled:opacity-50"
-                              >
-                                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                                Save &amp; Approve Edited Answer
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setEditingId(null);
-                                  setEditText("");
-                                  setNoteText("");
-                                }}
-                                className="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-gray-400 hover:text-white transition-colors"
-                              >
-                                Cancel
-                              </button>
-                            </>
+                            <div className="flex items-center gap-2 text-xs text-gray-500 pt-2">
+                              <RefreshCw className="h-3.5 w-3.5" />
+                              This answer has been {item.status === "edited_approved" ? "edited & approved" : item.status} and is{" "}
+                              {item.status === "rejected"
+                                ? "hidden from students."
+                                : "visible to students."}
+                            </div>
                           )}
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <RefreshCw className="h-3.5 w-3.5" />
-                          This answer has been {item.status === "edited_approved" ? "edited & approved" : item.status} and is{" "}
-                          {item.status === "rejected"
-                            ? "hidden from students."
-                            : "visible to students."}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
               );
-            })
+            })}
+            </AnimatePresence>
           )}
         </div>
       )}

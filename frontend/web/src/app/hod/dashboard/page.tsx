@@ -767,7 +767,7 @@ export default function HODDashboard() {
         <Panel
           title="Faculty Overview"
           subtitle="Current teaching staff in the department."
-          action={<SectionLink href="/hod/faculty" label="Manage" />}
+          action={<SectionLink href="/hod/teachers" label="Manage" />}
         >
           {data.teachers.length === 0 ? (
             <EmptyState

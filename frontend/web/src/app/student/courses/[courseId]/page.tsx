@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { BackButton } from "@/components/ui/BackButton";
 
 export default function CourseDetails({
   params,
@@ -274,6 +275,8 @@ export default function CourseDetails({
 
   return (
     <div className="space-y-8 relative">
+      <BackButton href="/student/courses" label="Back to My Courses" />
+      
       {/* Quiz Modal Container */}
       {activeQuiz && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">

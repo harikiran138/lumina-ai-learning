@@ -20,7 +20,7 @@ from datetime import datetime, date, timezone, timedelta
 from typing import Any, Dict, List, Optional
 
 # Import FSRSModel from ml_services
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', 'ml_services'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'ml_services'))
 from core.fsrs import FSRSModel, FSRSState  # noqa: E402
 
 logger = logging.getLogger(__name__)

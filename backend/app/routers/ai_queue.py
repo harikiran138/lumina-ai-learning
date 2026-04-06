@@ -599,7 +599,7 @@ async def list_course_questions(
     course_id: str,
     current_user: Dict[str, Any] = Depends(get_current_active_user),
 ):
-    is_teacher = role in {"teacher", "hod", "college_admin", "admin", "super_admin"}
+    is_teacher = current_user.get("role") in {"teacher", "hod", "college_admin", "admin", "super_admin"}
     client = _client()
     rows = (
         client.table("ai_answer_queue")

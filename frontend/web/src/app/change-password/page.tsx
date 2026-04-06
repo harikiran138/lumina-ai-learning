@@ -41,7 +41,7 @@ export default function ChangePasswordPage() {
           admin: "/admin/dashboard",
           college_admin: "/college",
           hod: "/hod",
-          faculty: "/faculty",
+          faculty: "/teacher/dashboard",
           teacher: "/teacher/dashboard",
           student: "/student/dashboard",
         };

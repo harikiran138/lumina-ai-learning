@@ -73,7 +73,7 @@ export default function ResetPasswordPage() {
           super_admin: "/admin",
           college_admin: "/college",
           hod: "/hod",
-          faculty: "/faculty",
+          faculty: "/teacher",
           student: "/student/dashboard",
         };
         router.push(routes[user?.role || ""] || "/student/dashboard");

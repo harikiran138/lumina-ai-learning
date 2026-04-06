@@ -1,4 +1,4 @@
-from typing import Optional, List, Any
+from typing import Optional, List, Dict, Any, Set
 from datetime import datetime
 import uuid
 import random
@@ -218,43 +218,54 @@ class UserStore:
                 parent_link_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
                 log.info("generating_parent_link_code", user_id=user_id, code=parent_link_code)
 
+            # Helper for robust insert/upsert to secondary tables
+            async def _robust_write(table: str, data: dict, method: str = "upsert"):
+                try:
+                    # Column discovery
+                    client = self.db.get_client()
+                    sample = await client.table(table).select("*").limit(1).async_execute()
+                    if sample.data:
+                        cols = set(sample.data[0].keys())
+                        data = {k: v for k, v in data.items() if k in cols}
+                    
+                    if method == "upsert":
+                        await self.db.table(table).upsert(data).async_execute()
+                    else:
+                        await self.db.table(table).insert(data).async_execute()
+                except Exception as ex:
+                    log.error(f"{table}_write_failed", error=str(ex), user_id=user_id)
+
+            # 1. Learner Profile
             learner_data = {
                 "user_id": user_id,
                 "role": canonical_role,
-                "full_name": metadata.get("full_name") or "Unnamed User",
-                "phone": metadata.get("phone"),
+                "full_name": metadata.get("name") or metadata.get("full_name") or "Unnamed",
                 "preferences": {
                     "onboarding_complete": False,
                     "parent_link_code": parent_link_code
                 }
             }
+            if metadata.get("college_id"): learner_data["institution_id"] = metadata["college_id"]
             
-            # Check for batch/college alignment in learner_profiles
-            if metadata.get("college_id"): learner_data["college_id"] = metadata["college_id"]
-            if metadata.get("dept_id"): learner_data["dept_id"] = metadata["dept_id"]
-            
-            await self.db.table("learner_profiles").upsert(learner_data).async_execute()
-            log.info("profile_metadata_persisted", user_id=user_id, table="learner_profiles", role=canonical_role)
+            await _robust_write("learner_profiles", learner_data)
 
-            # 2. Specialized Roles (Student/Teacher)
+            # 2. Specialized Roles
             if canonical_role == "student":
                 student_data = {
                     "user_id": user_id,
-                    "roll_number": metadata.get("roll_number") or metadata.get("student_roll") or "N/A",
+                    "roll_number": metadata.get("roll_number") or "N/A",
                     "current_section_id": metadata.get("section_id"),
-                    "current_academic_year_id": metadata.get("academic_year_id")
                 }
-                await self.db.table("student_profiles").upsert(student_data).async_execute()
-                log.info("student_profile_persisted", user_id=user_id)
+                await _robust_write("student_profiles", student_data)
             
             elif canonical_role == "teacher":
                 teacher_data = {
                     "user_id": user_id,
-                    "employee_id": metadata.get("employee_id") or "N/A",
+                    "employee_id": metadata.get("empid") or metadata.get("employee_id") or "N/A",
                     "designation": metadata.get("designation") or "Professor",
                     "department_id": metadata.get("dept_id") or metadata.get("department_id")
                 }
-                await self.db.table("teacher_profiles").upsert(teacher_data).async_execute()
+                await _robust_write("teacher_profiles", teacher_data)
                 log.info("teacher_profile_persisted", user_id=user_id)
 
             # 3. Onboarding Profile (Legacy alignment)

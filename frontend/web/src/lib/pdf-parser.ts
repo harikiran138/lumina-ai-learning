@@ -254,8 +254,6 @@ export async function extractStructuredData(
     }
 
     return modules;
-
-    return modules;
   } catch (e: any) {
     console.error("Structured Parsing Error:", e);
     throw new Error("Failed to parse PDF structure: " + e.message);

@@ -62,8 +62,11 @@ class StudentStore:
         }
 
         try:
-            result = await self.db.insert("enrollments", enrollment_data)
-            return bool(result)
+            result = await self.db.insert_safe("enrollments", enrollment_data)
+            if result["success"]:
+                return True
+            log.warning("enroll_in_course_insert_failed", error=result.get("error"))
+            return False
         except Exception as e:
             log.error("enroll_in_course_failed", student_id=student_id, course_id=course_id, error=str(e))
             return False
