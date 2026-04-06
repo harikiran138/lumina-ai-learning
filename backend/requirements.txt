@@ -18,8 +18,8 @@ aiofiles
 httpx>=0.27.0
 Pillow
 pydantic-settings
-google-genai
-google-generativeai
+google-genai==1.0.0
+# google-generativeai  (Disabled due to conflict with google-genai)
 apscheduler
 python-pptx>=0.6.21
 huggingface_hub

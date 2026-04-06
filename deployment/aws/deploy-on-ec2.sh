@@ -45,7 +45,10 @@ echo ""
 
 # ─── Prune old artifacts to free up disk space ─────────────
 info "Cleaning up old Docker artifacts to free disk space ..."
-docker system prune -a --volumes -f || true
+docker builder prune -f
+docker image prune -f
+docker container prune -f
+docker network prune -f
 
 # ─── GHCR login (if IMAGE mode) ─────────────────────────────
 if [[ -n "${GHCR_USER:-}" && -n "${GHCR_TOKEN:-}" ]]; then
@@ -104,13 +107,22 @@ if [[ -n "${BACKEND_IMAGE:-}" ]]; then
     -f "$COMPOSE_FILE" \
     up -d --remove-orphans --no-build
 
-# ─── BUILD mode: build from source on EC2 ───────────────────
+#  ─── BUILD mode: build from source on EC2 ───────────────────
 else
-  echo "--- BUILD mode: building images from source ---"
-  docker compose \
-    --project-name lumina \
-    -f "$COMPOSE_FILE" \
-    build --pull --parallel
+  echo "--- BUILD mode: building images from source SEQUENTIALLY ---"
+  
+  # Build infrastructure images first (pulling)
+  docker compose -f "$COMPOSE_FILE" pull postgres redis neo4j minio flower nginx
+
+  # Build custom services one by one to save RAM
+  for service in backend ml-service frontend; do
+    echo "--- Building service: $service ---"
+    docker compose --project-name lumina -f "$COMPOSE_FILE" build "$service"
+  done
+
+  # Note: 'worker' usually shares the 'backend' image or context, so it will be fast
+  echo "--- Building worker ---"
+  docker compose --project-name lumina -f "$COMPOSE_FILE" build worker
 
   echo "--- Starting services ---"
   docker compose \
