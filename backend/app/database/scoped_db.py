@@ -261,5 +261,39 @@ class ScopedSupabase:
         res = await qb.async_execute()
         return len(_response_rows(res)) > 0
 
+    # ── Safe Write Wrappers ─────────────────────────────────────
+
+    async def insert_safe(self, table: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Schema-safe insert. Strips unknown columns before inserting."""
+        cols = await supabase_db.get_table_columns(table)
+        safe_data = supabase_db._strip_unknown_columns(data, cols)
+        try:
+            result = await self.insert(table, safe_data)
+            if result:
+                return {"success": True, "data": result, "error": None}
+            return {"success": True, "data": safe_data, "error": None}
+        except Exception as e:
+            return {"success": False, "data": None, "error": str(e)}
+
+    async def update_safe(self, table: str, data: Dict[str, Any], query_filter: Dict[str, Any]) -> Dict[str, Any]:
+        """Schema-safe update. Strips unknown columns before updating."""
+        cols = await supabase_db.get_table_columns(table)
+        safe_data = supabase_db._strip_unknown_columns(data, cols)
+        for k in query_filter:
+            safe_data.pop(k, None)
+        try:
+            result = await self.update(table, safe_data, query_filter)
+            return {"success": True, "data": result, "error": None}
+        except Exception as e:
+            return {"success": False, "data": None, "error": str(e)}
+
+    async def delete_safe(self, table: str, query_filter: Dict[str, Any], permanent: bool = False) -> Dict[str, Any]:
+        """Schema-safe delete."""
+        try:
+            ok = await self.delete(table, query_filter, permanent=permanent)
+            return {"success": ok, "data": None, "error": None}
+        except Exception as e:
+            return {"success": False, "data": None, "error": str(e)}
+
 def get_scoped_db(user: dict) -> ScopedSupabase:
     return ScopedSupabase(user)

@@ -10,6 +10,7 @@ import {
   Clock,
   Users,
   Trash2,
+  ArrowUpRight,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import Link from "next/link";
@@ -125,6 +126,10 @@ export default function TeacherCourses() {
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                <div className="flex items-center gap-2 text-blue-400 font-medium group-hover:text-blue-300 transition-colors">
+                  <span>Manage Students</span>
+                  <ArrowUpRight className="w-4 h-4" />
+                </div>
                 <div className="flex items-center gap-2 text-sm text-gray-300">
                   <Users className="w-4 h-4 text-amber-500" />
                   <span>{course.students} Students</span>

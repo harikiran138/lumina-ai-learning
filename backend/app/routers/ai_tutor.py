@@ -90,7 +90,7 @@ def _ensure_serialized_response(response_text: Any, mode: str) -> str:
     if normalized:
         return normalized
 
-    return AITutorStore._error_fallback(mode)
+    return AITutorStore._error_fallback(mode, "Empty LLM response")
 
 
 def _extract_meta(response_str: str) -> Dict[str, Any]:

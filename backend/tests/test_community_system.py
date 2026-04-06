@@ -1,5 +1,5 @@
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.api.deps import get_current_active_user
 import uuid
@@ -27,6 +27,8 @@ async def override_get_student():
 async def override_get_teacher():
     return mock_teacher
 
+# Reset overrides
+app.dependency_overrides.clear()
 app.dependency_overrides[get_current_active_user] = override_get_student
 
 @pytest.mark.asyncio

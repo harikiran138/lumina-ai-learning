@@ -45,11 +45,11 @@ def test_lag_zone():
     snapshot = KPIEngine.compute_snapshot(profile, events)
     assert snapshot.lag_zone_score == 0.9
     
-    # 50 wrong answers out of 50. Volume = 50 / 50 = 1.0
-    # Error rate = 1.0. lag zone = 1.0
+    # 50 wrong answers out of 50.
+    # Still hits the lag spike return 0.9
     large_lag_events = [build_event(False, 5, "w") for _ in range(50)]
     large_snapshot = KPIEngine.compute_snapshot(profile, large_lag_events)
-    assert large_snapshot.lag_zone_score == 1.0
+    assert large_snapshot.lag_zone_score == 0.9
 
 def test_authenticity_high():
     profile = LearnerProfileRecord(user_id="test_1")

@@ -19,6 +19,28 @@ log = structlog.get_logger()
 router = APIRouter()
 
 # ── Assignments ───────────────────────────────────────────────────────────────
+@router.get("/assignments/stats")
+async def get_assignment_stats(current_user: dict = Depends(get_current_user)):
+    """Teacher-only stats for all assignments."""
+    if current_user.get("role") not in ["teacher", "faculty", "hod", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Only teachers can view stats")
+    
+    db = get_scoped_db(current_user)
+    assignments = await db.fetch_all("handwritten_assignments", {"teacher_id": current_user["id"]})
+    
+    stats = []
+    for a in assignments:
+        submissions = await db.fetch_all("handwritten_submissions", {"assignment_id": a["id"]})
+        count = len(submissions)
+        avg_score = sum(s.get("final_score") or 0 for s in submissions) / count if count > 0 else 0
+        stats.append({
+            "assignment_id": a["id"],
+            "title": a["title"],
+            "submission_count": count,
+            "average_score": round(avg_score, 2)
+        })
+    return {"assignments": stats}
+
 
 @router.post("/assignments", response_model=HandwrittenAssignment)
 async def create_assignment(
@@ -117,11 +139,32 @@ async def get_submission(submission_id: str, current_user: dict = Depends(get_cu
     return sub
 
 
-@router.get("/submissions/{submission_id}/results")
-async def get_submission_results(submission_id: str, current_user: dict = Depends(get_current_user)):
+@router.get("/submissions/{submission_id}/export")
+async def export_submission_results(submission_id: str, current_user: dict = Depends(get_current_user)):
+    """Export results as a structured JSON object for further analysis."""
     db = get_scoped_db(current_user)
+    sub = await db.fetch_one("handwritten_submissions", {"id": submission_id})
+    if not sub:
+        raise HTTPException(status_code=404, detail="Submission not found")
+        
     questions = await db.fetch_all("handwritten_submission_questions", {"submission_id": submission_id})
-    return questions
+    
+    export_data = {
+        "student_id": sub["student_id"],
+        "assignment_id": sub["assignment_id"],
+        "final_score": sub["final_score"],
+        "status": sub["status"],
+        "graded_at": sub.get("updated_at"),
+        "questions": [
+            {
+                "question_id": q["question_id"],
+                "score": q["final_score"],
+                "feedback": q.get("teacher_feedback") or q.get("ai_feedback"),
+                "status": q["status"]
+            } for q in questions
+        ]
+    }
+    return export_data
 
 
 # ── Teacher Review ────────────────────────────────────────────────────────────

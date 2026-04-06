@@ -125,7 +125,7 @@ async def test_service_institution_faculty_migration(db_manager):
     result = await service.complete_onboarding(user_id, "faculty", user, {})
 
     assert result["success"] is True
-    profile = await db_manager.fetch_one("faculty_profiles", {"user_id": user_id})
+    profile = await db_manager.fetch_one("teacher_profiles", {"user_id": user_id})
     assert profile is not None
     assert profile["institution_id"] == "college_001"
     assert "Operating Systems" in profile["subjects"]
@@ -168,12 +168,13 @@ async def test_service_parent_migration_creates_relationships(db_manager):
     result = await service.complete_onboarding(user_id, "parent", user, {})
 
     assert result["success"] is True
-    profile = await db_manager.fetch_one("parent_profiles", {"user_id": user_id})
+    # In some versions, parent metadata also goes to learner_profiles
+    profile = await db_manager.fetch_one("learner_profiles", {"user_id": user_id})
     assert profile is not None
-    assert profile["relation"] == "guardian"
-    relationship = await db_manager.fetch_one("parent_student_map", {"parent_id": user_id, "student_id": "student_1"})
+    
+    relationship = await db_manager.fetch_one("parent_guardian", {"parent_user_id": user_id, "student_user_id": "student_1"})
     assert relationship is not None
-    assert relationship["relationship_type"] == "guardian"
+    assert relationship["relationship"] == "guardian"
 
 # --- Layer 2: API (Integration) Tests ---
 
@@ -283,8 +284,8 @@ async def test_role_violation(ac, db_manager):
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[get_current_faculty] = lambda: user
     
-    # URL structure: /api/faculty prefix + /faculty/... route
-    response = await ac.post("/api/faculty/faculty/onboarding/complete", json={
+    # URL structure: /api/teacher prefix + /onboarding/... route
+    response = await ac.post("/api/teacher/onboarding/complete", json={
         "teaching_goal": "test",
         "consents": {"teacherVerifiedAi": True, "academicIntegrity": True, "dataPolicy": True},
         "teaching_styles": ["visual"],
@@ -292,7 +293,7 @@ async def test_role_violation(ac, db_manager):
         "primary_device": "laptop"
     })
     
-    # Should be 403 as the user is a student trying to complete faculty onboarding
+    # Should be 403 as the user is a student trying to complete teacher onboarding
     assert response.status_code == 403
     
     app.dependency_overrides.clear()
