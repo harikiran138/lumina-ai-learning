@@ -1,13 +1,14 @@
 from typing import List, Dict, Any, Optional
 from app.database.supabase_manager import supabase_db
 from app.core.logging import structlog
+from app.store.base_store import BaseStoreMixin
 from datetime import datetime
 import re
 
 log = structlog.get_logger()
 
 
-class StudentStore:
+class StudentStore(BaseStoreMixin):
     """
     Store for student-specific operations: Enrollment, Progress, Badges, Certificates.
     Operates on 'enrollments' and 'users' tables in Supabase.
@@ -42,9 +43,11 @@ class StudentStore:
     async def enroll_in_course(self, student_id: str, course_id: str) -> bool:
         """
         Enrolls a student in a course. Creates a progress record.
+        Uses safe insert with schema discovery.
         """
         existing = await self.get_enrollment(student_id, course_id)
         if existing:
+            log.debug("already_enrolled", student_id=student_id, course_id=course_id)
             return True
 
         # Ensure progress object is fully initialized with defaults
@@ -61,15 +64,13 @@ class StudentStore:
             }
         }
 
-        try:
-            result = await self.db.insert_safe("enrollments", enrollment_data)
-            if result["success"]:
-                return True
-            log.warning("enroll_in_course_insert_failed", error=result.get("error"))
-            return False
-        except Exception as e:
-            log.error("enroll_in_course_failed", student_id=student_id, course_id=course_id, error=str(e))
-            return False
+        success, result, error = await self.insert_safely(
+            "enrollments",
+            enrollment_data,
+            student_id=student_id,
+            course_id=course_id
+        )
+        return success
 
     async def get_enrollment(self, student_id: str, course_id: str) -> Optional[dict]:
         try:
@@ -139,65 +140,81 @@ class StudentStore:
             log.error("get_badges_failed", student_id=student_id, error=str(e))
         return []
 
-    async def update_mastery(self, student_id: str, course_id: str, mastery: float):
+    async def update_mastery(self, student_id: str, course_id: str, mastery: float) -> bool:
         """Update student mastery level with a floor of 0.0."""
-        enrollment = await self.get_enrollment(student_id, course_id)
-        if not enrollment:
-            return
+        success, enrollment, error = await self.fetch_one_safely(
+            "enrollments",
+            {"student_id": student_id, "course_id": course_id},
+            student_id=student_id,
+            course_id=course_id
+        )
+        if not success or not enrollment:
+            log.warning("update_mastery_not_enrolled", student_id=student_id, course_id=course_id)
+            return False
         
         progress = enrollment.get("progress") or {}
         # Enforce non-negative mastery
         progress["mastery"] = max(0.0, float(mastery))
         
-        await self.db.update(
+        success, _, _ = await self.update_safely(
             "enrollments",
             {"progress": progress},
-            {"student_id": student_id, "course_id": course_id}
+            {"student_id": student_id, "course_id": course_id},
+            student_id=student_id,
+            mastery=mastery
         )
+        return success
 
     async def log_activity(self, student_id: str, course_id: str, duration_minutes: int) -> bool:
         """
         Logs activity time and updates streak in enrollment progress.
+        Uses safe update with schema discovery.
         """
-        try:
-            enrollment = await self.get_enrollment(student_id, course_id)
-            if not enrollment:
-                return False
+        success, enrollment, error = await self.fetch_one_safely(
+            "enrollments",
+            {"student_id": student_id, "course_id": course_id},
+            student_id=student_id,
+            course_id=course_id
+        )
+        if not success or not enrollment:
+            log.warning("log_activity_not_enrolled", student_id=student_id, course_id=course_id)
+            return False
 
-            progress = enrollment.get("progress") or {}
-            now = datetime.utcnow()
-            new_hours = (progress.get("hours_spent") or 0.0) + (duration_minutes / 60.0)
-            new_streak = progress.get("streak") or 0
-            last_accessed_str = progress.get("last_accessed")
-            
-            if last_accessed_str:
-                last_accessed = self._parse_timestamp(last_accessed_str)
-                if last_accessed:
-                    delta = (now.date() - last_accessed.date()).days
-                    if delta == 1:
-                        new_streak += 1
-                    elif delta > 1:
-                        new_streak = 1
-                    elif new_streak == 0:
-                        new_streak = 1
-                else:
+        progress = enrollment.get("progress") or {}
+        now = datetime.utcnow()
+        new_hours = (progress.get("hours_spent") or 0.0) + (duration_minutes / 60.0)
+        new_streak = progress.get("streak") or 0
+        last_accessed_str = progress.get("last_accessed")
+        
+        if last_accessed_str:
+            last_accessed = self._parse_timestamp(last_accessed_str)
+            if last_accessed:
+                delta = (now.date() - last_accessed.date()).days
+                if delta == 1:
+                    new_streak += 1
+                elif delta > 1:
+                    new_streak = 1
+                elif new_streak == 0:
                     new_streak = 1
             else:
                 new_streak = 1
+        else:
+            new_streak = 1
 
-            progress["hours_spent"] = round(new_hours, 2)
-            progress["streak"] = new_streak
-            progress["last_accessed"] = now.isoformat()
+        progress["hours_spent"] = round(new_hours, 2)
+        progress["streak"] = new_streak
+        progress["last_accessed"] = now.isoformat()
 
-            updates = {
-                "progress": progress
-            }
+        updates = {"progress": progress}
 
-            await self.db.update("enrollments", updates, {"id": enrollment["id"]})
-            return True
-        except Exception as e:
-            log.error("log_activity_failed", student_id=student_id, error=str(e))
-            return False
+        success, _, _ = await self.update_safely(
+            "enrollments",
+            updates,
+            {"id": enrollment["id"]},
+            student_id=student_id,
+            duration_minutes=duration_minutes
+        )
+        return success
 
     async def generate_parent_link_code(self, student_id: str) -> str:
         """
