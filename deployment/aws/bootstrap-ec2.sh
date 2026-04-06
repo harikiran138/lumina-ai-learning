@@ -35,7 +35,7 @@ sudo chown ec2-user:ec2-user "$APP_DIR"
 # ─── System packages ────────────────────────────────────────
 echo "--- Installing system packages ---"
 $PKG_UPDATE || true
-$PKG_INSTALL git curl jq unzip
+$PKG_INSTALL git jq unzip
 
 # ─── Docker ─────────────────────────────────────────────────
 echo "--- Setting up Docker ---"
