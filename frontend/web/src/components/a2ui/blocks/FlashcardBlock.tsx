@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { type FlashcardsBlock } from "@/lib/a2ui-schema";
-import { Layers } from "lucide-react";
+import { CheckCircle2, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FlashcardResultProps {
@@ -39,14 +39,19 @@ export const FlashcardResult: React.FC<FlashcardResultProps> = ({ block }) => {
             >
               <div
                 className={cn(
-                  "min-h-[168px] rounded-2xl border p-5 transition-all",
+                  "min-h-[168px] rounded-2xl border p-5 transition-all relative overflow-hidden",
                   isFlipped
-                    ? "border-amber-300/20 bg-amber-300/10"
+                    ? "border-emerald-500/30 bg-emerald-500/10"
                     : "border-white/8 bg-white/[0.03]",
                 )}
               >
+                {isFlipped && (
+                  <div className="absolute top-2 right-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  </div>
+                )}
                 <div className="mb-3 text-[10px] uppercase tracking-[0.3em] text-slate-400">
-                  {isFlipped ? "Answer" : "Prompt"}
+                  {isFlipped ? "Mastered" : "Prompt"}
                 </div>
                 <p className="text-sm font-medium leading-relaxed text-white">
                   {isFlipped ? card.back : card.front}

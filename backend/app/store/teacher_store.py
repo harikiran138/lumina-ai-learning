@@ -31,7 +31,9 @@ class TeacherStore:
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat(),
         }
-        return await self.db.insert("teacher_requests", data)
+        data = {k: v for k, v in data.items() if v is not None}
+        result = await self.db.insert_safe("teacher_requests", data)
+        return result.get("data") if result.get("success") else None
 
     async def request_course_access(self, teacher_id: str, course_id: str, class_id: str, message: Optional[str] = None) -> Optional[dict]:
         """Backward-compatible alias for create_request."""

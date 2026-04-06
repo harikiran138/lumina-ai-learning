@@ -63,7 +63,7 @@ export default function GradebookPage() {
       const [coursesData, studentsData, assignmentsData] = await Promise.all([
         api.getTeacherCourses(),
         api.getTeacherStudents(),
-        api.getFacultyAssignments(),
+        api.getTeacherAssignments(),
       ]);
 
       setCourses(coursesData?.map((c: any) => ({ id: c.id, name: c.title })) || []);

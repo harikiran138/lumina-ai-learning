@@ -30,15 +30,20 @@ class ContentGenerator:
         self.blueprint_generator = LuminaCourseBlueprintGenerator()
         self.pdf_processor = PDFProcessor()
 
-    async def generate_blueprint_from_pdf(self, file_path: str) -> dict:
-        # Step 1: Extract text from PDF
+    async def generate_blueprint_from_file(self, file_path: str) -> dict:
+        ext = os.path.splitext(file_path.lower())[1]
+        
+        # Images are processed directly with Gemini Vision
+        if ext in [".jpg", ".jpeg", ".png", ".webp"]:
+            return await self.blueprint_generator.generate_from_image(file_path)
+            
+        # Default is PDF text extraction for now
         raw_text = self.pdf_processor.extract_text(file_path)
-        
-        # Step 2: Generate blueprint from text
-        # Passes the raw text to the specialized generator
-        blueprint_data = await self.blueprint_generator.generate(raw_text)
-        
-        return blueprint_data
+        return await self.blueprint_generator.generate(raw_text)
+
+    async def generate_blueprint_from_pdf(self, file_path: str) -> dict:
+        """Deprecated: use generate_blueprint_from_file instead."""
+        return await self.generate_blueprint_from_file(file_path)
 
 # Singleton instance
 content_generator = ContentGenerator()

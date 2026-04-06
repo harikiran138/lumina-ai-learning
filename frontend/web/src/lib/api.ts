@@ -309,6 +309,9 @@ export class RealAPI {
   private isLoggingOut = false;
 
   private constructor() {
+    if (typeof window !== "undefined") {
+      this.token = localStorage.getItem("access_token") || localStorage.getItem("auth_token");
+    }
   }
 
   private buildUrl(base: string, path: string): string {
@@ -691,8 +694,8 @@ export class RealAPI {
 
     // ── Build weeklySnapshot — prefer backend values, fall back to computed ──
     const weeklySnapshot = backendSnapshot ?? {
-      publishedCourses:    courseCards.filter((c: any) => c.status !== "draft").length,
-      draftCourses:        courseCards.filter((c: any) => c.status === "draft").length,
+      publishedCourses:    courseCards.filter((c: any) => c.status?.toLowerCase() !== "draft").length,
+      draftCourses:        courseCards.filter((c: any) => c.status?.toLowerCase() === "draft").length,
       assignmentsCreated:  recentAssignments.length,
       submissionsReceived: recentAssignments.reduce(
         (sum: number, item: any) => sum + Number(item?.submissionCount || 0),
@@ -700,16 +703,26 @@ export class RealAPI {
       ),
     };
 
+    // Synthesize student momentum from interventions or backend data
+    const studentMomentum = (dashboard?.studentMomentum || interventionQueue.slice(0, 5).map((item: any) => ({
+      id: item.studentId,
+      name: item.studentName,
+      status: item.riskLevel === "high" ? "needs-attention" : "on-track",
+      focusArea: item.recommendedAction || "General Progress",
+      averageMastery: item.confidence ? Math.floor(item.confidence * 100) : 75,
+      href: `/teacher/students/${item.studentId}`,
+    })));
+
     return {
       summary,
       courses: courseCards,
       recentAssignments,
-      studentMomentum: [],
+      studentMomentum,
       priorityItems,
       weeklySnapshot,
       interventionQueue,
-      conceptHeatmap: [],
-      supportClusters: [],
+      conceptHeatmap: dashboard?.conceptHeatmap || [],
+      supportClusters: dashboard?.supportClusters || [],
       raw: dashboard,
     };
   }
@@ -1351,6 +1364,10 @@ export class RealAPI {
     return await parseJsonSafe(res);
   }
 
+  async studentSubmitWellbeing(studentId: string, mood: string, notes?: string): Promise<any> {
+    return this.submitWellbeingCheckin({ mood, notes });
+  }
+
   async getAdminQueueHealth(): Promise<any> {
     const res = await this.fetchAuthorized("/api/admin/queue-health");
     return res.ok ? (await parseJsonSafe(res) ?? {}) : {};
@@ -1899,6 +1916,38 @@ export class RealAPI {
     return res.ok ? await res.json() : null;
   }
 
+  /** GET /api/teacher/ai-queue — returns AI answers awaiting verification */
+  async getTeacherAiQueue(): Promise<{ items: any[]; total_pending: number }> {
+    const res = await this.fetchAuthorized("/api/teacher/ai-queue");
+    return res.ok ? await res.json() : { items: [], total_pending: 0 };
+  }
+
+  /** POST /api/teacher/ai-queue/{id}/approve — approve an AI answer */
+  async approveAiQueueItem(id: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/teacher/ai-queue/${id}/approve`, {
+      method: "POST"
+    });
+    return res.ok ? await res.json() : null;
+  }
+
+  /** POST /api/teacher/ai-queue/{id}/edit-approve — edit and approve an AI answer */
+  async editApproveAiQueueItem(id: string, final_answer: string, faculty_note?: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/teacher/ai-queue/${id}/edit-approve`, {
+      method: "POST",
+      body: JSON.stringify({ final_answer, faculty_note })
+    });
+    return res.ok ? await res.json() : null;
+  }
+
+  /** POST /api/teacher/ai-queue/{id}/reject — reject an AI answer */
+  async rejectAiQueueItem(id: string, faculty_note: string): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/teacher/ai-queue/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ faculty_note })
+    });
+    return res.ok ? await res.json() : null;
+  }
+
   /** GET /api/teacher/alerts — teacher at-risk alerts */
   async getTeacherAlerts(): Promise<any[]> {
     const res = await this.fetchAuthorized("/api/teacher/alerts");
@@ -2007,10 +2056,15 @@ export class RealAPI {
     return this.fetchJsonOrDefault(`/api/courses/${courseId}`, null);
   }
   async createCourse(data: any = {}, ..._args: any[]): Promise<any> {
-    return this.fetchJsonOrDefault("/api/courses", { success: false }, {
+    const res = await this.fetchAuthorized("/api/courses", {
       method: "POST",
       body: JSON.stringify(data),
     });
+    if (!res.ok) {
+      const e = await parseJsonSafe(res);
+      throw new Error(e?.detail || e?.message || `Course creation failed (${res.status})`);
+    }
+    return parseJsonSafe(res);
   }
   async updateCourseDetails(courseId: string, data: any = {}, ..._args: any[]): Promise<any> {
     return this.fetchJsonOrDefault(`/api/courses/${courseId}`, { success: false }, {
@@ -2323,14 +2377,14 @@ export class RealAPI {
     return await parseJsonSafe(res);
   }
 
-  /** POST /api/generation/blueprint-from-pdf — generate course blueprint from PDF */
-  async generateBlueprintFromPdf(file: File): Promise<any> {
+  /** POST /api/generation/blueprint-from-pdf — generate course blueprint from PDF or Image */
+  async generateBlueprintFromFile(file: File): Promise<any> {
     const form = new FormData();
     form.append("file", file);
     const res = await this.fetchAuthorized("/api/generation/blueprint-from-pdf", {
       method: "POST",
       body: form,
-    }, 180000); // 3-minute timeout for PDF parsing + LLM analysis
+    }, 180000); // 3-minute timeout for file parsing + LLM analysis
     if (!res.ok) {
       const e = await parseJsonSafe(res);
       throw new Error(e?.detail || "Blueprint generation failed");

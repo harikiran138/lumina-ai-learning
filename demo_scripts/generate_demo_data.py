@@ -62,7 +62,7 @@ class DemoDataGenerator:
             
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.post(
-                    "http://localhost:8000/api/v1/auth/register",
+                    "http://localhost:9000/api/v1/auth/register",
                     json=teacher_data
                 )
                 
@@ -117,7 +117,7 @@ class DemoDataGenerator:
                 
                 async with httpx.AsyncClient(timeout=5.0) as client:
                     response = await client.post(
-                        "http://localhost:8000/api/v1/auth/register",
+                        "http://localhost:9000/api/v1/auth/register",
                         json=student_data
                     )
                     
@@ -150,7 +150,7 @@ class DemoDataGenerator:
             
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.post(
-                    "http://localhost:8000/api/v1/courses",
+                    "http://localhost:9000/api/v1/courses",
                     json=course_data
                 )
                 
@@ -218,7 +218,7 @@ class DemoDataGenerator:
                 
                 async with httpx.AsyncClient(timeout=5.0) as client:
                     response = await client.post(
-                        "http://localhost:8000/api/v1/lessons",
+                        "http://localhost:9000/api/v1/lessons",
                         json=lesson_data
                     )
                     
@@ -278,7 +278,7 @@ class DemoDataGenerator:
             
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.post(
-                    "http://localhost:8000/api/v1/teacher/assignments",
+                    "http://localhost:9000/api/v1/teacher/assignments",
                     json=assignment_data
                 )
                 

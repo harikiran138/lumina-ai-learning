@@ -32,6 +32,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (window as any).__LUMINA_AUTH_HYDRATING__ = true;
 
       const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+      
+      // Define public paths that should not trigger a redirect to login
+      const isPublicPath =
+        pathname === '/' ||
+        pathname.startsWith('/login') ||
+        pathname.startsWith('/register') ||
+        pathname.startsWith('/auth/') ||
+        pathname.startsWith('/privacy') ||
+        pathname.startsWith('/technology') ||
+        pathname.startsWith('/roles') ||
+        pathname.startsWith('/platform') ||
+        pathname.startsWith('/research');
+
       const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
       
       // [JWT Validation] Check if we have a valid token in localStorage
@@ -40,18 +53,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         typeof document !== 'undefined' &&
         (document.cookie.includes('access_token=') || document.cookie.includes('refresh_token='));
 
-      // If on auth page and no session, clear and return early
-      if (isAuthPage && !hasClientSession && !hasStoredToken) {
+      // If on public page and no session, just clear and return
+      if (isPublicPath && !hasClientSession && !hasStoredToken) {
         clearAuth();
         (window as any).__LUMINA_AUTH_HYDRATING__ = false;
         return;
       }
 
-      // If no token at all, clear auth and redirect
+      // If no token at all, clear auth and redirect (only if NOT a public path)
       if (!hasClientSession && !hasStoredToken) {
-        console.warn('[Lumina Auth] No authentication tokens found. Clearing auth.');
+        console.warn('[Lumina Auth] Private path accessed without tokens. Clearing auth.');
         clearAuth();
-        if (!isAuthPage) window.location.href = '/login';
+        window.location.href = '/login';
         (window as any).__LUMINA_AUTH_HYDRATING__ = false;
         return;
       }
@@ -69,14 +82,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           console.warn('[Lumina Auth] No valid session on backend. Clearing.');
           clearAuth();
-          if (!isAuthPage) window.location.href = '/login';
+          if (!isPublicPath) window.location.href = '/login';
         }
       } catch (err: any) {
         // [JWT Auth Failure] If auth error, clear tokens and redirect
         if (err.message?.includes('401') || err.message?.includes('Auth Failure') || err.message?.includes('Invalid token')) {
           console.error('[Lumina Auth] Authentication failed:', err.message);
           clearAuth();
-          if (!isAuthPage) {
+          if (!isPublicPath) {
             console.error('[Lumina Auth] Redirecting to login due to invalid token.');
             window.location.href = '/login';
           }
@@ -101,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Only clear if it's a real Auth error (like a 401 decoded by getCurrentUser)
           console.error('[Lumina Auth] Hydration failed with non-network error:', err.message);
           clearAuth();
-          if (!isAuthPage) {
+          if (!isPublicPath) {
              console.error('[Lumina Auth] Redirecting to login.');
              window.location.href = '/login';
           }

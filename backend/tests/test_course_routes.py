@@ -71,8 +71,8 @@ async def test_create_course(ac, admin_user):
     await store.delete_course(course["id"])
 
 @pytest.mark.asyncio
-async def test_student_cannot_create_course(ac, teacher_user):
-    user, pwd = teacher_user
+async def test_student_cannot_create_course(ac, student_user):
+    user, pwd = student_user
     token = await get_token(ac, user["email"], pwd)
     
     res = await ac.post("/api/courses/", json={

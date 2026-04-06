@@ -93,16 +93,13 @@ export default function TeacherSidebar({
   };
 
   const courseDependentItems = new Set([
-    "Analytics", "My Courses", "Students", "Gradebook",
+    "Analytics", "Students", "Gradebook",
     "Assignments", "Create Assignment", "Grading", "AI Verify Queue",
     "Question Bank", "Knowledge Graph", "Live Class",
-    "AI Course Creator", "Messages", "Calendar",
+    "Messages", "Calendar",
   ]);
 
-  const filteredNavItems =
-    hasAssignedCourses === false
-      ? navItems.filter((item) => !courseDependentItems.has(item.name))
-      : navItems;
+  const filteredNavItems = navItems;
 
   return (
     <aside

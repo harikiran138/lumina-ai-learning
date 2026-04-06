@@ -39,12 +39,11 @@ def test_growth_velocity():
 def test_lag_zone():
     profile = LearnerProfileRecord(user_id="test_1")
     
-    # 10 wrong answers out of 10. Volume = 10 / 50 = 0.2
-    # Error rate = 1.0. 
-    # lag zone = 1.0 * 0.2 = 0.2
+    # 10 wrong answers out of 10.
+    # If they haven't gotten anything right in 3+ attempts, lag spikes to 0.9
     events = [build_event(False, 5, "w") for _ in range(10)]
     snapshot = KPIEngine.compute_snapshot(profile, events)
-    assert snapshot.lag_zone_score == 0.20
+    assert snapshot.lag_zone_score == 0.9
     
     # 50 wrong answers out of 50. Volume = 50 / 50 = 1.0
     # Error rate = 1.0. lag zone = 1.0

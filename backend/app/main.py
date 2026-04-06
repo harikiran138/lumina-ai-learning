@@ -405,8 +405,23 @@ def read_root():
 
 @app.get("/health")
 async def health_check():
-    """Very Simple Health Check for external monitors."""
-    return success_response({"status": "healthy"}, "System is operational")
+    """Enhanced health check with DB heartbeat."""
+    db_status = "unknown"
+    try:
+        # Check if database responds
+        await db.get_client().from_("institution").select("count").limit(1).async_execute()
+        db_status = "healthy"
+    except Exception as e:
+        logger.error("health_check_db_failed", error=str(e))
+        db_status = "unhealthy"
+
+    status = "healthy" if db_status == "healthy" else "degraded"
+    return success_response({
+        "status": status,
+        "database": db_status,
+        "version": "1.0.0",
+        "timestamp": time.time()
+    }, "System operational" if status == "healthy" else "System degraded")
 
 
 @app.middleware("http")

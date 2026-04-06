@@ -333,7 +333,7 @@ export default function KnowledgeGraphPage() {
                       Edit Topic
                     </button>
                     <Link
-                      href="/faculty/students"
+                      href="/teacher/students"
                       className="inline-flex items-center gap-2 rounded-xl border border-lumina-highlight/20 bg-lumina-highlight/5 px-4 py-2 text-sm font-semibold text-lumina-highlight hover:bg-lumina-highlight/10 transition-colors"
                     >
                       <Users className="h-4 w-4" />

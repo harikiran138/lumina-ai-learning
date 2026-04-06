@@ -93,7 +93,7 @@ export default function FacultyCalendarPage() {
 
       // Fetch assignments to surface due dates
       const [assignments, courseList] = await Promise.all([
-        api.getFacultyAssignments().catch(() => []),
+        api.getTeacherAssignments().catch(() => []),
         api.listCourses().catch(() => []),
       ]);
       setCourses(courseList);
