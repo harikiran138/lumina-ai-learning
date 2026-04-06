@@ -14,7 +14,8 @@ import {
   Plus, 
   Mail, 
   Users, 
-  Trash2, 
+  Trash2,
+  LogOut, 
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import StudentOnboardingFlow from "@/components/onboarding/StudentOnboardingFlow";
@@ -394,15 +395,25 @@ export default function OnboardingPage() {
       </div>
 
       {/* Escape hatch — always visible so users are never fully stuck */}
-      <p className="mt-6 text-xs text-gray-600">
-        Having trouble?{" "}
+      <div className="mt-8 flex flex-col items-center gap-4">
+        <p className="text-xs text-gray-600">
+          Having trouble?{" "}
+          <button
+            className="text-gray-400 underline underline-offset-2 hover:text-white transition-colors"
+            onClick={() => role && routeByRole(role)}
+          >
+            Go to dashboard
+          </button>
+        </p>
+        
         <button
-          className="text-gray-400 underline underline-offset-2 hover:text-white transition-colors"
-          onClick={() => role && routeByRole(role)}
+          onClick={() => api.logout()}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-all text-xs font-bold"
         >
-          Go to dashboard
+          <LogOut className="w-3.5 h-3.5" />
+          LOG OUT & SIGN IN AGAIN
         </button>
-      </p>
+      </div>
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
