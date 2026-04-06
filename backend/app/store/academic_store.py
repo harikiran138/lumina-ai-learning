@@ -218,3 +218,36 @@ class AcademicStore:
             log.warning("student_profile_update_failed", error=str(e))
             
         return res
+
+    async def update_mastery(self, student_id: str, topic_id: str, performance_gain: float):
+        """Update a student's mastery level for a specific topic/concept."""
+        try:
+            now = datetime.utcnow().isoformat()
+            
+            # Fetch existing mastery
+            existing = await self.db.fetch_one("student_mastery", {
+                "student_id": student_id,
+                "topic_id": topic_id
+            })
+
+            if existing:
+                new_mastery = min(100.0, float(existing.get("mastery_score", 0)) + performance_gain)
+                res = await self.db.update("student_mastery", {
+                    "mastery_score": new_mastery,
+                    "updated_at": now
+                }, {"id": existing["id"]})
+            else:
+                # First time mastery for this topic
+                res = await self.db.insert("student_mastery", {
+                    "student_id": student_id,
+                    "topic_id": topic_id,
+                    "mastery_score": performance_gain,
+                    "created_at": now,
+                    "updated_at": now
+                })
+            
+            log.info("mastery_updated", student_id=student_id, topic_id=topic_id, gain=performance_gain)
+            return res
+        except Exception as e:
+            log.error("update_mastery_failed", error=str(e), student_id=student_id)
+            return None

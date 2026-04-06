@@ -67,6 +67,7 @@ if settings.SENTRY_DSN:
 
 from app.routers import (  # noqa: E402
     ai,
+    ai_governance,
     handwriting_simple as handwriting,
     assignments,
     courses,
@@ -362,6 +363,7 @@ app.include_router(knowledge_graph.router, prefix="/api/knowledge-graph", tags=[
 app.include_router(onboarding.router, prefix="/api/onboarding", tags=["Onboarding"])
 app.include_router(college_architecture.router, prefix="/api", tags=["College Architecture"])
 app.include_router(ai_queue.router, prefix="/api", tags=["AI Queue"])
+app.include_router(ai_governance.router, prefix="/api/monitoring", tags=["AI Monitoring"])
 app.include_router(unit_pipeline.router, prefix="/api/teacher", tags=["Unit Pipeline"])
 app.include_router(ai_tutor.router, prefix="/api/ai-tutor", tags=["AI Tutor"])
 app.include_router(flashcards.router)

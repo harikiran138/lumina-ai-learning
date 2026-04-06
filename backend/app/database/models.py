@@ -570,3 +570,30 @@ class RiskAlertAnonymized(BaseModel):
     signal_type: str
     severity: str
     created_at: str
+# --- 11. AI-FIRST MONITORING & GOVERNANCE ---
+
+
+class AIInteractionLog(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    user_id: str
+    institution_id: Optional[str] = None
+    question: str
+    answer: str
+    topic: Optional[str] = None
+    confidence: float = 0.0
+    sentiment: Optional[str] = None
+    is_confused: bool = False  # Flag for repeated confusion
+    timestamp: str = Field(default_factory=current_time_iso)
+
+
+class StudentKPIProfile(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    user_id: str
+    institution_id: Optional[str] = None
+    mastery_score: float = 0.0  # aggregated
+    accuracy_rate: float = 0.0  # %
+    avg_response_time: float = 0.0  # seconds
+    weak_topics: List[str] = []
+    improvement_rate: float = 0.0
+    engagement_score: float = 0.0
+    last_updated: str = Field(default_factory=current_time_iso)

@@ -541,59 +541,36 @@
         return ranked.length ? ranked.map((r) => r.text).join("\n---\n") : "";
       }
 
-      // OpenRouter API
-      const OpenRouter = {
-        model: "meta-llama/llama-3.2-3b-instruct:free",
-        getApiKey() {
-          return localStorage.getItem("openrouter_api_key") || "";
-        },
-        setApiKey(k) {
-          localStorage.setItem("openrouter_api_key", k);
-        },
-        isConfigured() {
-          return !!this.getApiKey();
-        },
+      // Backend API Integration
+      const LuminaBackend = {
         async chat(userMessage) {
-          if (!this.isConfigured()) throw new Error("API key not set");
           const context = retrieveContext(userMessage);
-          const system = context
-            ? `You are Lumina AI Tutor. Use context if relevant.\nContext:\n${context}`
-            : "You are Lumina AI Tutor. Be concise, clear, and educational.";
-          const recent = chatHistory.slice(-12).map((m) => ({
-            role: m.sender === currentUser.name ? "user" : "assistant",
-            content: m.text.replace(/<[^>]+>/g, ""),
-          }));
+          
           const body = {
-            model: this.model,
-            messages: [
-              { role: "system", content: system },
-              ...recent,
-              { role: "user", content: userMessage },
-            ],
-            temperature: 0.7,
+            message: userMessage,
+            history: chatHistory.slice(-10).map(m => ({
+              role: m.sender === currentUser.name ? "user" : "assistant",
+              content: m.text
+            })),
+            context: context
           };
-          const r = await fetch(
-            "https://openrouter.ai/api/v1/chat/completions",
-            {
-              method: "POST",
-              headers: {
-                Authorization: "Bearer " + this.getApiKey(),
-                "Content-Type": "application/json",
-                "HTTP-Referer": location.origin,
-                "X-Title": "Lumina AI Tutor",
-              },
-              body: JSON.stringify(body),
+
+          const response = await fetch("http://localhost:8000/api/ai-tutor/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              // Authenticating with potential local token
+              "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
             },
-          );
-          if (!r.ok) {
-            let msg = `Request failed (${r.status})`;
-            if (r.status === 401) msg = "Unauthorized (check key)";
-            else if (r.status === 429) msg = "Rate limited";
-            else if (r.status >= 500) msg = "Upstream error";
-            throw new Error(msg);
+            body: JSON.stringify(body),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Connection to Lumina failed (${response.status})`);
           }
-          const data = await r.json();
-          return data.choices?.[0]?.message?.content?.trim() || "No response.";
+
+          const data = await response.json();
+          return data.response || data.content || "No response.";
         },
       };
       async function offlineFallback(q) {
@@ -614,7 +591,7 @@
           typingId,
         );
         try {
-          const reply = await OpenRouter.chat(userMessage);
+          const reply = await LuminaBackend.chat(userMessage);
           removeMessage(typingId);
           addMessage(aiTutor.name, reply);
         } catch (err) {

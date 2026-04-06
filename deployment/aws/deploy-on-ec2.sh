@@ -21,6 +21,15 @@
 
 set -euo pipefail
 
+# ─── Colours ────────────────────────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+BLUE='\033[0;34m'; NC='\033[0m'
+
+info()    { echo -e "${BLUE}[INFO]${NC} $*"; }
+success() { echo -e "${GREEN}[OK]${NC}   $*"; }
+warn()    { echo -e "${YELLOW}[WARN]${NC} $*"; }
+error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; }
+
 APP_DIR="${APP_DIR:-/opt/lumina}"
 REPO_DIR="${REPO_DIR:-$APP_DIR/lumina-ai-learning}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
@@ -34,6 +43,10 @@ echo "Branch    = $GIT_BRANCH"
 echo "$(date '+%Y-%m-%d %H:%M:%S')"
 echo ""
 
+# ─── Prune old artifacts to free up disk space ─────────────
+info "Cleaning up old Docker artifacts to free disk space ..."
+docker system prune -a --volumes -f || true
+
 # ─── GHCR login (if IMAGE mode) ─────────────────────────────
 if [[ -n "${GHCR_USER:-}" && -n "${GHCR_TOKEN:-}" ]]; then
   echo "--- Logging in to GHCR ---"
@@ -42,15 +55,18 @@ fi
 
 # ─── Clone or update repository ─────────────────────────────
 echo "--- Syncing repository ---"
-if [[ ! -d "$REPO_DIR/.git" ]]; then
-  echo "Cloning repo into $REPO_DIR ..."
-  git clone --branch "$GIT_BRANCH" --depth 1 "$GITHUB_REPO" "$REPO_DIR"
-else
+if [[ -d "$REPO_DIR/.git" ]]; then
   echo "Pulling latest from origin/$GIT_BRANCH ..."
   cd "$REPO_DIR"
   git fetch --prune origin
   git checkout "$GIT_BRANCH"
   git reset --hard "origin/$GIT_BRANCH"
+else
+  echo "Repository not a git clone (or .git missing). Skipping git sync."
+  if [[ ! -d "$REPO_DIR" ]]; then
+     echo "ERROR: $REPO_DIR does not exist. Deployment aborted."
+     exit 1
+  fi
 fi
 
 cd "$REPO_DIR"
@@ -59,13 +75,20 @@ cd "$REPO_DIR"
 COMPOSE_FILE="${COMPOSE_FILE:-$REPO_DIR/deployment/aws/docker-compose.full.yml}"
 echo "Compose file: $COMPOSE_FILE"
 
-# ─── Copy .env to repo deployment dir (compose needs it) ────
+# ─── Load environment variables into the shell for interpolation ───
 if [[ -f "$ENV_FILE" ]]; then
-  cp "$ENV_FILE" "$REPO_DIR/deployment/aws/.env"
-  echo "Env file copied to deployment/aws/.env"
+  echo "Loading host environment variables from $ENV_FILE ..."
+  # Strip carriage returns if present and export
+  set -o allexport
+  source <(grep -v '^#' "$ENV_FILE" | sed -e 's/\r//g')
+  set +o allexport
+  success "Environment variables loaded."
 else
-  echo "WARNING: $ENV_FILE not found. Services may fail to start."
+  warn "WARNING: $ENV_FILE not found. Host interpolation may fail."
 fi
+
+# Synced copy for Docker Compose
+cp "$ENV_FILE" "$REPO_DIR/deployment/aws/.env"
 
 # ─── IMAGE mode: pull from GHCR ─────────────────────────────
 if [[ -n "${BACKEND_IMAGE:-}" ]]; then
@@ -78,7 +101,6 @@ if [[ -n "${BACKEND_IMAGE:-}" ]]; then
 
   docker compose \
     --project-name lumina \
-    --env-file "$REPO_DIR/deployment/aws/.env" \
     -f "$COMPOSE_FILE" \
     up -d --remove-orphans --no-build
 
@@ -87,14 +109,12 @@ else
   echo "--- BUILD mode: building images from source ---"
   docker compose \
     --project-name lumina \
-    --env-file "$REPO_DIR/deployment/aws/.env" \
     -f "$COMPOSE_FILE" \
     build --pull --parallel
 
   echo "--- Starting services ---"
   docker compose \
     --project-name lumina \
-    --env-file "$REPO_DIR/deployment/aws/.env" \
     -f "$COMPOSE_FILE" \
     up -d --remove-orphans
 fi

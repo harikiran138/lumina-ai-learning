@@ -6,8 +6,13 @@ from app.core.limiter import limiter
 from starlette.requests import Request
 from typing import List, Dict, Any, Optional
 from ai_engine.classifier import classify, RoutingTier, RESTRICTED_REDIRECT
+from app.store.academic_store import AcademicStore
+from app.core.logging import structlog
+from datetime import datetime
 
 router = APIRouter()
+academic_store = AcademicStore()
+log = structlog.get_logger()
 
 _MAX_PROMPT_LENGTH = 2000  # characters
 _MAX_HISTORY_ITEMS = 10
@@ -138,74 +143,76 @@ async def build_tutor_response_payload(
     role = str(current_user.get("role") or "").lower()
 
     if role == "student":
-        # Use pre-computed tier from ask endpoint if available (avoids double classify)
-        pre_tier = payload.get("_routing_tier")
-        if pre_tier in (RoutingTier.SAFE_INSTANT, RoutingTier.ACADEMIC_VERIFIED, RoutingTier.RESTRICTED):
-            clf = {"tier": pre_tier, "confidence": 1.0, "reason": "pre-classified by ask endpoint"}
-        else:
-            clf = classify(prompt, context)
-
+        clf = classify(prompt, context)
         tier = clf["tier"]
 
         # ── RESTRICTED: instant redirect, no LLM, no queue ───────────────────
         if tier == RoutingTier.RESTRICTED:
             redirect_str = _restricted_content(mode)
+            # Log restricted interaction
+            log.warning("restricted_interaction", student_id=str(current_user.get("id")), prompt=prompt)
             return {
                 "success": True,
                 "queued": False,
                 "tier": RoutingTier.RESTRICTED,
                 "type": "text",
                 "content": redirect_str,
-                "meta": {"topic": "off-topic"},
                 "role": "assistant",
                 "mode": mode,
                 "classification": {"mode": mode, **clf},
             }
 
-        # ── SAFE_INSTANT: direct LLM, no teacher queue ────────────────────────
-        if tier == RoutingTier.SAFE_INSTANT:
-            response_text = await tutor_store.get_response(
-                prompt=prompt,
-                history=formatted_history,
-                context=context,
-                mode=mode,
-                student_id=str(current_user.get("id")),
-            )
-            response_str = _ensure_serialized_response(response_text, mode)
-            return {
-                "success": True,
-                "queued": False,
-                "tier": RoutingTier.SAFE_INSTANT,
-                "type": _MODE_TO_TYPE.get(mode, "text"),
-                "content": response_str,
-                "meta": _extract_meta(response_str),
-                "role": "assistant",
-                "mode": mode,
-                "classification": {"mode": mode, **clf},
-            }
-
-        # ── ACADEMIC_VERIFIED: teacher verification queue ─────────────────────
-        queued = await tutor_store.queue_student_request(
+        # ── INSTANT LEARNING (Turn-key AI-first Model): Direct LLM ───────────
+        # This bypasses the old ACADEMIC_VERIFIED queue to ensure < 1.5s response.
+        response_text = await tutor_store.get_response(
             prompt=prompt,
             history=formatted_history,
             context=context,
+            mode=mode,
             student_id=str(current_user.get("id")),
-            requested_mode=mode,
         )
-        resolved_mode = queued.get("classification", {}).get("mode", mode)
-        response_str = _ensure_serialized_response(queued.get("response"), resolved_mode)
+        response_str = _ensure_serialized_response(response_text, mode)
+        
+        # Calculate Mastery Gain (Simulated heuristic for demo)
+        mastery_gain = 2.5
+        topic_id = context.get("topic") or context.get("topic_id") or "general"
+        
+        # Persist Mastery Tracking
+        await academic_store.update_mastery(str(current_user.get("id")), topic_id, mastery_gain)
+
+        # Log for Governance Monitoring (Retrospective Teacher Oversight)
+        try:
+            client = academic_store.db.get_client()
+            client.table("ai_answer_queue").insert({
+                "student_id": str(current_user.get("id")),
+                "student_question": prompt,
+                "ai_generated_answer": response_str,
+                "question_topic": topic_id,
+                "status": "INSTANT_VOICE",  # Special status for AI-first model
+                "created_at": datetime.utcnow().isoformat()
+            }).execute()
+        except Exception as e:
+            log.warning("governance_log_failed", error=str(e))
+
+        log.info("ai_interaction_student",
+                 student_id=str(current_user.get("id")),
+                 student_name=current_user.get("name"),
+                 question=prompt,
+                 answer=response_str,
+                 flags=["Confused"] if clf["confidence"] < 0.8 else [],
+                 topic=topic_id,
+                 tier=tier)
+
         return {
             "success": True,
-            "queued": True,
-            "tier": RoutingTier.ACADEMIC_VERIFIED,
-            "queue_id": queued.get("queue_id"),
-            "delivery_status": queued.get("delivery_status"),
-            "type": _MODE_TO_TYPE.get(resolved_mode, "text"),
+            "queued": False,
+            "tier": RoutingTier.SAFE_INSTANT,
+            "type": _MODE_TO_TYPE.get(mode, "text"),
             "content": response_str,
-            "meta": _extract_meta(response_str),
+            "meta": {**_extract_meta(response_str), "mastery_gain": mastery_gain},
             "role": "assistant",
-            "mode": resolved_mode,
-            "classification": queued.get("classification"),
+            "mode": mode,
+            "classification": {"mode": mode, **clf},
         }
 
     # Non-student (teacher, admin): direct LLM response

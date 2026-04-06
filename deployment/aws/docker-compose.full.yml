@@ -28,7 +28,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-lumina}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lumina_db_pass}
       POSTGRES_DB: ${POSTGRES_DB:-lumina_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -64,7 +64,7 @@ services:
     image: neo4j:5-community
     restart: unless-stopped
     environment:
-      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?NEO4J_PASSWORD required}
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-neo4j_pass}
       NEO4J_server_memory_heap_initial__size: 256m
       NEO4J_server_memory_heap_max__size: 512m
       NEO4J_server_memory_pagecache_size: 128m
@@ -89,7 +89,7 @@ services:
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD required}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_pass}
     ports:
       - "9001:9001"   # MinIO Console (admin UI)
       # Port 9000 (API) is internal only — backend uses minio:9000

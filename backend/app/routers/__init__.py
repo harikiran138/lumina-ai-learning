@@ -26,4 +26,5 @@ from . import (
     attendance,
     materials,
     ai_tutor,
+    ai_governance,
 )

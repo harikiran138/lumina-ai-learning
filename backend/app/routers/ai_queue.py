@@ -1,8 +1,9 @@
 """
-Teacher-verified AI Tutor queue.
+Teacher-monitored AI Tutor interaction.
 
 Core rule:
-No AI-generated tutor answer is released to a student until a teacher approves it.
+AI answers are delivered to students instantly.
+Teachers and HODs monitor the interaction logs for accuracy and safety.
 """
 
 from datetime import datetime, timezone
@@ -283,6 +284,23 @@ def _safe_update_queue_item(client: Any, queue_id: str, updates: Dict[str, Any])
         return client.table("ai_answer_queue").update(legacy_updates).eq("id", queue_id).execute()
 
 
+def _log_ai_interaction(client: Any, user_id: str, question: str, answer: str, topic: Optional[str] = None):
+    """
+    Log interaction for monitoring and governance.
+    """
+    try:
+        log_payload = {
+            "user_id": user_id,
+            "question": question,
+            "answer": answer,
+            "topic": topic,
+            "timestamp": _now_iso(),
+        }
+        client.table("ai_interaction_logs").insert(log_payload).execute()
+    except Exception as exc:
+        log.error("ai_interaction_logging_failed", error=str(exc))
+
+
 def _bank_verified_answer(client: Any, item: Dict[str, Any], approved_answer: str, user_id: str):
     """
     Store a teacher-verified answer in the bank for future reuse (knowledge bank).
@@ -452,9 +470,12 @@ async def _generate_ai_answer(queue_id: str, request_payload: Dict[str, Any]) ->
                 "ai_request_log": result.request_log,
                 "ai_response_log": result.response_log,
                 "prompt_signature": result.prompt_signature,
+                "released_to_student": True,  # Instant release
+                "status": "ai_answered",
             },
         )
-        log.info("ai_queue_answer_generated", queue_id=queue_id, model=result.model)
+        _log_ai_interaction(client, request.student_id, request.question, result.content, request.subject)
+        log.info("ai_queue_answer_generated_and_released", queue_id=queue_id, model=result.model)
     except Exception as exc:
         fallback_content = tutor_service._fallback_response(  # noqa: SLF001
             request,
@@ -490,11 +511,11 @@ async def _submit_question(
         "ai_generated_answer": (
             (cached_row.get("teacher_edited_answer") or cached_row.get("ai_generated_answer"))
             if cached_row
-            else "Generating AI draft answer for teacher review..."
+            else "Generating AI response..."
         ),
-        "status": "pending",
+        "status": "ai_answered" if cached_row else "pending",
         "created_at": _now_iso(),
-        "released_to_student": False,
+        "released_to_student": True if cached_row else False,
         "question_signature": request.question_signature,
         "request_mode": request.mode,
         "question_topic": body.topic or request.subject,
@@ -536,12 +557,13 @@ async def _submit_question(
 
     return {
         "question_id": queue_id,
-        "status": "pending_review",
-        "queue_status": "pending",
+        "status": "released" if cached_row else "generating",
+        "queue_status": "ai_answered" if cached_row else "pending",
         "course_id": request.course_id,
         "course_name": _course_name(course or {}),
         "mode": request.mode,
-        "message": "Your teacher is reviewing the answer.",
+        "answer": insert_payload["ai_generated_answer"] if cached_row else None,
+        "message": "AI is generating your response..." if not cached_row else "Response retrieved from verified bank.",
     }
 
 

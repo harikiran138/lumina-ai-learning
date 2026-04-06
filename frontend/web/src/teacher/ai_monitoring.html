@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Governance & Monitoring - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body { font-family: "Inter", sans-serif; }
+      .gradient-text { background: linear-gradient(to right, #f59e0b, #fbbf24); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+    <script>
+      if (localStorage.getItem("theme") === "dark" || (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+        document.documentElement.classList.add("dark");
+      }
+    </script>
+  </head>
+  <body class="bg-gray-50 dark:bg-black text-gray-800 dark:text-gray-300 transition-colors duration-300">
+    <div class="relative min-h-screen lg:flex">
+      <!-- Sidebar -->
+      <aside id="sidebar" class="w-64 flex-shrink-0 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 fixed lg:relative z-40 h-full">
+        <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+          <a href="../index.html" class="text-2xl font-bold"><span class="gradient-text">Lumina</span> ✨</a>
+        </div>
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+          <a href="dashboard.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">Dashboard</a>
+          <a href="ai_monitoring.html" class="flex items-center px-4 py-2.5 text-sm font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-300 rounded-lg selection:bg-amber-500">AI Governance</a>
+          <a href="content_upload.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">Content Manager</a>
+          <a href="assessment_management.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">Assessments</a>
+          <a href="reports.html" class="flex items-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">Reports</a>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <div class="flex-1 flex flex-col h-screen overflow-y-auto">
+        <header class="h-16 flex items-center justify-between px-6 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-20">
+          <h1 class="text-lg font-semibold">AI Governance & Institutional Insights</h1>
+          <div class="flex items-center space-x-4">
+              <span class="text-sm font-medium text-amber-500 px-2 py-1 bg-amber-500/10 rounded-full">Institutional Mode</span>
+          </div>
+        </header>
+
+        <main class="p-6 space-y-8">
+          <!-- Institutional KPIs -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Mastery Gain</h3>
+                <p id="kpi-mastery" class="text-3xl font-bold mt-2 text-green-500">+12.4%</p>
+                <p class="text-[10px] text-gray-400 mt-1">Institutional Average</p>
+            </div>
+            <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Accuracy Rate</h3>
+                <p id="kpi-accuracy" class="text-3xl font-bold mt-2">98.5%</p>
+                <p class="text-[10px] text-gray-400 mt-1">Verified Correctness</p>
+            </div>
+            <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Avg. Response</h3>
+                <p id="kpi-latency" class="text-3xl font-bold mt-2">1.2s</p>
+                <p class="text-[10px] text-gray-400 mt-1">Real-time Latency</p>
+            </div>
+            <div class="bg-white dark:bg-[#1C1C1C] p-6 rounded-2xl border border-gray-200 dark:border-gray-800">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Active Threads</h3>
+                <p id="kpi-threads" class="text-3xl font-bold mt-2">142</p>
+                <p class="text-[10px] text-gray-400 mt-1">Current AI Sessions</p>
+            </div>
+          </div>
+
+          <!-- Interaction Logs & Governance -->
+          <div class="bg-white dark:bg-[#1C1C1C] rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                <h3 class="font-bold">Real-time Interaction Logs</h3>
+                <div class="flex gap-2">
+                    <button class="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs font-medium border border-gray-200 dark:border-gray-700">Filter: All</button>
+                    <button class="px-3 py-1 bg-red-500/10 text-red-500 rounded text-xs font-medium border border-red-500/20">Action Required Only</button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="bg-gray-50 dark:bg-[#151515] text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
+                    <th class="py-3 px-6">Student</th>
+                    <th class="py-3 px-6">Topic</th>
+                    <th class="py-3 px-6">Interactions</th>
+                    <th class="py-3 px-6">Flags</th>
+                    <th class="py-3 px-6 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="interaction-logs" class="divide-y divide-gray-200 dark:divide-gray-800">
+                  <!-- Dynamic rows go here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Intervention Modal -->
+    <div id="intervention-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-[#1C1C1C] w-full max-w-lg rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                <h3 class="text-xl font-bold">Intervene / Correct Response</h3>
+                <button onclick="closeIntervention()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">✕</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <span class="text-xs font-bold text-gray-500 uppercase">Student Question</span>
+                    <p id="modal-question" class="mt-1 text-sm bg-gray-50 dark:bg-gray-900 p-3 rounded-lg italic"></p>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-amber-500 uppercase">AI Answer (Proposed)</span>
+                    <p id="modal-answer" class="mt-1 text-sm bg-amber-500/5 p-3 rounded-lg border border-amber-500/20"></p>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-green-500 uppercase">Your Correction</span>
+                    <textarea id="correction-text" rows="4" class="w-full mt-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 outline-none" placeholder="Provide a better explanation or correct a mistake..."></textarea>
+                </div>
+            </div>
+            <div class="p-6 border-t border-gray-200 dark:border-gray-800 flex justify-end gap-3 bg-gray-50 dark:bg-[#151515]">
+                <button onclick="closeIntervention()" class="px-4 py-2 text-sm font-bold text-gray-500">Cancel</button>
+                <button onclick="submitIntervention()" class="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-bold shadow-lg">Retrospectively Correct</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:8000/api";
+        let activeInteractionId = null;
+
+        async function fetchLogs() {
+            try {
+                // For demo, we'll fetch real data if backend is up
+                const response = await fetch(`${API_URL}/monitoring/logs`);
+                const logs = await response.json();
+                renderLogs(logs);
+            } catch (e) {
+                // Fallback demo data
+                renderLogs([
+                    {id: "1", student_name: "Alex Turner", topic: "Calculus", question: "Explain derivatives", answer: "A derivative is...", flags: ["Confused"]},
+                    {id: "2", student_name: "Maria Garcia", topic: "Organic Chem", question: "Solve this assignment for me", answer: "Sure, here's the answer...", flags: ["Academic Integrity Risk"]},
+                    {id: "3", student_name: "John Doe", topic: "General", question: "What's for lunch?", answer: "I'm your math tutor, but...", flags: ["Off-topic"]}
+                ]);
+            }
+        }
+
+        function renderLogs(logs) {
+            const container = document.getElementById("interaction-logs");
+            container.innerHTML = logs.map(log => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
+                    <td class="py-4 px-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">${log.student_name[0]}</div>
+                            <div>
+                                <p class="font-semibold">${log.student_name}</p>
+                                <p class="text-[10px] text-gray-500">Active 2m ago</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 px-6 text-xs font-medium text-gray-600 dark:text-gray-400">${log.topic}</td>
+                    <td class="py-4 px-6 max-w-xs truncate text-xs text-gray-500">${log.question}</td>
+                    <td class="py-4 px-6">
+                        <div class="flex gap-1 flex-wrap">
+                            ${log.flags.map(f => `
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${getFlagClass(f)}">${f}</span>
+                            `).join('')}
+                        </div>
+                    </td>
+                    <td class="py-4 px-6 text-right">
+                        <button onclick="openIntervention('${log.id}', \`${log.question}\`, \`${log.answer}\`)" class="text-amber-500 hover:text-amber-600 font-bold text-xs uppercase tracking-tighter">Intervene</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getFlagClass(flag) {
+            switch(flag) {
+                case 'Confused': return 'bg-amber-500/10 text-amber-600 border border-amber-500/20';
+                case 'Academic Integrity Risk': return 'bg-red-500/10 text-red-500 border border-red-500/20';
+                case 'Off-topic': return 'bg-blue-500/10 text-blue-500 border border-blue-500/20';
+                default: return 'bg-gray-500/10 text-gray-500';
+            }
+        }
+
+        function openIntervention(id, q, a) {
+            activeInteractionId = id;
+            document.getElementById("modal-question").innerText = q;
+            document.getElementById("modal-answer").innerText = a;
+            document.getElementById("intervention-modal").classList.remove("hidden");
+            document.getElementById("intervention-modal").classList.add("flex");
+        }
+
+        function closeIntervention() {
+            document.getElementById("intervention-modal").classList.add("hidden");
+            document.getElementById("intervention-modal").classList.remove("flex");
+        }
+
+        async function submitIntervention() {
+            const correction = document.getElementById("correction-text").value;
+            // In real app: await fetch(`${API_URL}/monitoring/intervene/${activeInteractionId}`, {method: 'POST', body: ...})
+            alert(`Correction published to Student Thread (ID: ${activeInteractionId}). AI will now refer to your correction for future steps.`);
+            closeIntervention();
+        }
+
+        // Init
+        fetchLogs();
+        setInterval(fetchLogs, 10000); // Polling for "Real-time" feel
+    </script>
+  </body>
+</html>

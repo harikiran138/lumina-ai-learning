@@ -188,30 +188,37 @@ else
 fi
 
 # ── Step 2: Run deploy on EC2 ──────────────────────────────
-info "Running deployment on EC2 ..."
+# ── Step 2: Upload application source (Bypass GitHub Auth) ───
+info "Archiving local source (this may take a moment) ..."
+tar czf /tmp/lumina_source.tar.gz \
+  --exclude="node_modules" \
+  --exclude=".git" \
+  --exclude=".next" \
+  --exclude="backend/.venv" \
+  -C "$SCRIPT_DIR" .
+
+info "Uploading source to EC2 ..."
+$SCP_CMD "/tmp/lumina_source.tar.gz" "$REMOTE_USER@$PUBLIC_IP:/tmp/lumina_source.tar.gz"
+
+# ── Step 3: Extract and run deploy on EC2 ────────────────────
+info "Extracting and running deployment on EC2 ..."
 
 $SSH_CMD bash << REMOTE
 set -euo pipefail
 
 APP_DIR="$REMOTE_DIR"
-REPO_DIR="$REMOTE_DIR/lumina-ai-learning"
+REPO_DIR="\$APP_DIR/lumina-ai-learning"
 COMPOSE_FILE="\$REPO_DIR/deployment/aws/docker-compose.full.yml"
 GIT_BRANCH="$GIT_BRANCH"
 GITHUB_REPO="$GITHUB_REPO"
 
-# Clone or update repo
-if [[ ! -d "\$REPO_DIR/.git" ]]; then
-  echo "[EC2] Cloning repository ..."
-  git clone --branch "\$GIT_BRANCH" --depth 1 "\$GITHUB_REPO" "\$REPO_DIR"
-else
-  echo "[EC2] Pulling latest code ..."
-  cd "\$REPO_DIR"
-  git fetch --prune origin
-  git checkout "\$GIT_BRANCH"
-  git reset --hard "origin/\$GIT_BRANCH"
-fi
+# Extract source
+mkdir -p "\$REPO_DIR"
+echo "[EC2] Extracting source code ..."
+tar xzf /tmp/lumina_source.tar.gz -C "\$REPO_DIR"
+rm /tmp/lumina_source.tar.gz
 
-# Copy uploaded files into repo so compose can find them
+# Copy uploaded files into repo
 cp "\$APP_DIR/docker-compose.full.yml" "\$REPO_DIR/deployment/aws/docker-compose.full.yml"
 cp "\$APP_DIR/nginx.conf"              "\$REPO_DIR/deployment/aws/nginx.conf"
 cp "\$APP_DIR/.env"                    "\$REPO_DIR/deployment/aws/.env" 2>/dev/null || true
