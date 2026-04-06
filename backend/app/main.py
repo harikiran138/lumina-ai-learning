@@ -229,8 +229,7 @@ def add_cors_headers(response: JSONResponse, request: Request) -> JSONResponse:
 async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
     status_code = getattr(exc, "status_code", 500)
     detail = getattr(exc, "detail", "Internal Server Error")
-    
-    # Standardized response
+    log.warning("http_exception", status_code=status_code, path=request.url.path, detail=str(detail))
     response = error_response(
         error=str(status_code),
         message=str(detail),
@@ -239,13 +238,29 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
     )
     return add_cors_headers(response, request)
 
-    # Standardized response for unhandled exceptions
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Catch-all for any unhandled Python exception.
+    Logs the full traceback internally; returns a safe 500 to the client.
+    Never exposes stack traces or raw error messages to the frontend.
+    """
+    import traceback
+    log.error(
+        "unhandled_exception",
+        path=request.url.path,
+        method=request.method,
+        exc_type=type(exc).__name__,
+        error=str(exc),
+        traceback=traceback.format_exc(),
+    )
     response = error_response(
         error="INTERNAL_SERVER_ERROR",
         message="An unexpected error occurred. Please try again later.",
         status_code=500,
         path=request.url.path,
-        detail=str(type(exc).__name__)
+        detail=type(exc).__name__,
     )
     return add_cors_headers(response, request)
 
