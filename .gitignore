@@ -1,18 +1,9 @@
-node_modules/
-.venv/
-.venv38/
-venv/
-.DS_Store
-dist/
-build/
-.env
-.env.local
-.env.*
-
+# Large files
+*.tar.gz
+*.zip
 *.log
-coverage/
-.vscode/
-.parcel-cache/
+node_modules/
+.env
 
 # Next.js
 /.next/
