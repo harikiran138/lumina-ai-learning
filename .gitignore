@@ -1,40 +1,18 @@
-# Large files
-*.tar.gz
-*.zip
-*.log
+# General
 node_modules/
 .env
+*.log
+*.tar.gz
+*.zip
 
-# Next.js
-/.next/
-/out/
-
-# Production
-/build
-dist
-.vercel
-
-# Local RAG DB
-backend/db/
-*.pyc
-__pycache__/
-debug_rag.py
-
-# Firebase build artifacts
-.firebase/
-LUMINA_CREDENTIALS.csv
-LUMINA_ALL_CREDENTIALS.csv
-
-# Virtual Environments
-.venv
-.venv*
+# Python
+.venv/
 venv/
-env/
-bin/
-lib/
-include/
-share/
+__pycache__/
+.pytest_cache/
 
-.env*.local
-deployment/aws/.env.production
-!deployment/aws/.env.production.example
+# Frontend
+.next/
+dist/
+build/
+.turbo/
