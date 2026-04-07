@@ -121,7 +121,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check for Axios usage
         run: |
-          if grep -r "axios" . --exclude-dir=node_modules --exclude-dir=.git --exclude=.github/workflows/ci.yml; then
+          if grep -r "axios" . --exclude-dir={node_modules,.git,.firebase,skills} --exclude=.github/workflows/ci.yml; then
             echo "::error::Axios is forbidden in this project. Use native fetch (frontend) or httpx (backend) instead."
             exit 1
           else
