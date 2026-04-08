@@ -1,36 +1,24 @@
-FROM node:20-alpine AS base
-
-# Install dependencies stage
-FROM base AS deps
+# Base Image
+FROM node:20-alpine AS runner
 WORKDIR /app
-COPY package.json yarn.lock* package-lock.json* ./
-RUN npm ci --legacy-peer-deps
 
-# Build stage
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-ENV NODE_OPTIONS="--max-old-space-size=1024"
-RUN npm run build
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
 
-# Production stage
-FROM base AS runner
-WORKDIR /app
-ENV NODE_ENV=production
+# Create a system user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/public ./public
+# Copy prebuilt artifacts
+# These must be generated locally before building this image
+COPY public ./public
+COPY .next/standalone ./
+COPY .next/static ./.next/static
 
 USER nextjs
-EXPOSE 3000
-ENV PORT=3000
 
-CMD ["npm", "start"]
+EXPOSE 3000
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "server.js"]

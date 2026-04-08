@@ -91,6 +91,7 @@ _DEFAULT_LOCAL_TABLES = {
     "community_comments",
     "community_likes",
     "community_members",
+    "fsrs_cards",
 }
 _GLOBAL_MOCK_TABLES: Dict[str, List[Dict[str, Any]]] = {table_name: [] for table_name in _DEFAULT_LOCAL_TABLES}
 
@@ -103,8 +104,9 @@ def clear_global_mock_tables():
 
 
 class _LocalQueryResult:
-    def __init__(self, data: Any):
+    def __init__(self, data: Any, count: Optional[int] = None):
         self.data = data
+        self.count = count
 
     def __await__(self):
         # Allow Result to be used in 'await' expressions
@@ -124,8 +126,9 @@ class _LocalTableQuery:
         self._order = None
         self._columns = "*"
         self._single = False
+        self._count_requested = None
 
-    def select(self, columns: str = "*", **_kwargs):
+    def select(self, columns: str = "*", count: Optional[str] = None, **_kwargs):
         # Only switch to "select" mode for fresh read queries.
         # When chained after insert/update/upsert/delete (e.g. .insert(x).select()),
         # "select" is a Supabase hint to return affected rows — don't override the
@@ -133,6 +136,7 @@ class _LocalTableQuery:
         if self._operation == "select":
             pass  # already in read mode
         self._columns = columns or "*"
+        self._count_requested = count
         return self
 
     def insert(self, payload):
@@ -165,6 +169,14 @@ class _LocalTableQuery:
 
     def in_(self, key: str, values: List[Any]):
         self._filters.append((key, "in", list(values or [])))
+        return self
+
+    def gte(self, key: str, value: Any):
+        self._filters.append((key, "gte", value))
+        return self
+
+    def lte(self, key: str, value: Any):
+        self._filters.append((key, "lte", value))
         return self
 
     def or_(self, expression: str):
@@ -205,6 +217,10 @@ class _LocalTableQuery:
             return str(row_value) != str(value)
         if operator == "in":
             return str(row_value) in {str(item) for item in (value or [])}
+        if operator == "gte":
+            return row_value is not None and row_value >= value
+        if operator == "lte":
+            return row_value is not None and row_value <= value
         return False
 
     def _matches(self, row: Dict[str, Any]) -> bool:
@@ -305,8 +321,9 @@ class _LocalTableQuery:
         
         projected = [self._project_row(r) for r in matched]
         if self._single:
-            return _LocalQueryResult(projected[0] if projected else None)
-        return _LocalQueryResult(projected)
+            return _LocalQueryResult(projected[0], count=len(matched) if self._count_requested else None) if projected else _LocalQueryResult(None, count=0 if self._count_requested else None)
+
+        return _LocalQueryResult(projected, count=len(matched) if self._count_requested else None)
 
 
 class _LocalSupabaseClient:

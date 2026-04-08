@@ -35,7 +35,8 @@ type Role =
   | "counselor"
   | "researcher"
   | "content_creator"
-  | "alumni";
+  | "alumni"
+  | "faculty";
 
 const structuredRoleFlows: SupportedRoleOnboardingRole[] = [
   "teacher",
@@ -46,6 +47,8 @@ const structuredRoleFlows: SupportedRoleOnboardingRole[] = [
   "researcher",
   "content_creator",
   "alumni",
+  "hod",
+  "faculty",
 ];
 
 export default function OnboardingPage() {

@@ -178,9 +178,34 @@ select {
     background-image:
       linear-gradient(rgba(115, 115, 115, 0.08) 1px, transparent 1px),
       linear-gradient(90deg, rgba(115, 115, 115, 0.08) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.95), transparent 80%);
-    animation: mesh-shift 60s linear infinite;
+    background-size: 64px 64px;
+    mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1), transparent 100%);
+    animation: mesh-shift 40s linear infinite;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .neural-mesh-premium {
+    background-image:
+      linear-gradient(rgba(245, 158, 11, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245, 158, 11, 0.05) 1px, transparent 1px);
+    background-size: 80px 80px;
+    mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.8), transparent 100%);
+    animation: mesh-shift 20s linear infinite;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .command-center-bg {
+    background: 
+      radial-gradient(circle at 0% 0%, rgba(245, 158, 11, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(249, 115, 22, 0.06) 0%, transparent 40%),
+      #050505;
+    position: relative;
   }
 
   .glass {

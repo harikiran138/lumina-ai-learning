@@ -6,7 +6,9 @@ export type SupportedRoleOnboardingRole =
   | "counselor"
   | "researcher"
   | "alumni"
-  | "content_creator";
+  | "content_creator"
+  | "hod"
+  | "faculty";
 
 export type SupportedRoleStep = 1 | 2 | 3 | 4 | 5;
 
@@ -521,6 +523,128 @@ const CONFIGS: Record<SupportedRoleOnboardingRole, RoleOnboardingConfig> = {
         description: "Ready to start creating?",
         fields: [
           { key: "agreedToCreatorTerms", label: "I agree to the content creator policy", type: "boolean", helper: "Accept the intellectual property and quality guidelines.", required: true },
+        ],
+      },
+    ],
+  },
+  hod: {
+    label: "HOD Onboarding",
+    intro:
+      "Complete your Department Head profile to manage your faculty and student performance effectively.",
+    completionLabel: "Finish setup",
+    steps: [
+      {
+        id: 1,
+        title: "Department Details",
+        description: "Official administrative credentials",
+        fields: [
+          { key: "fullName", label: "Full name", type: "text", helper: "Your full name for account verification.", placeholder: "Dr. Jane Doe", required: true },
+          { key: "employeeId", label: "Employee ID", type: "text", helper: "Your official institutional employee identifier.", placeholder: "EMP-HOD-1024", required: true },
+          { key: "collegeId", label: "Institution ID", type: "text", helper: "The unique ID of your college or university.", placeholder: "INST-8822", required: true },
+          { key: "department", label: "Department", type: "text", helper: "The department you lead (e.g., Computer Science).", placeholder: "Computer Science", required: true },
+        ],
+      },
+      {
+        id: 2,
+        title: "Leadership Profile",
+        description: "Manage your faculty and academic focus.",
+        fields: [
+          { key: "specialisation", label: "Research specialisation", type: "text", helper: "Your primary academic specialisation.", placeholder: "Cybersecurity & Cryptography" },
+          { key: "facultyCount", label: "Approx. faculty count", type: "number", helper: "Total faculty members in your department.", placeholder: "15" },
+          { key: "managementStyle", label: "Leadership style", type: "select", helper: "How would you describe your department management approach?", options: [
+            { label: "Democratic", value: "democratic" },
+            { label: "Transformational", value: "transformational" },
+            { label: "Laissez-faire", value: "laissez_faire" },
+            { label: "Bureaucratic", value: "bureaucratic" },
+          ]},
+        ],
+      },
+      {
+        id: 3,
+        title: "Experience & Qualifications",
+        description: "Share your academic and leadership background.",
+        fields: [
+          { key: "yearsExperience", label: "Total experience (Years)", type: "number", helper: "Academic and administrative experience.", placeholder: "15" },
+          { key: "qualifications", label: "Qualifications", type: "array", helper: "List your degrees or certifications, one per line.", placeholder: "Ph.D. in Computer Science\nPost-Doc Fellowship" },
+        ],
+      },
+      {
+        id: 4,
+        title: "Platform & Management",
+        description: "Configure your administrative preferences.",
+        fields: [
+          { key: "adminAssistEnabled", label: "Enable AI analytics & automated reporting", type: "boolean", helper: "Allow Lumina AI to generate department performance reports." },
+          { key: "notifyOnCritical", label: "Notify on critical student performance drops", type: "boolean", helper: "Get alerted when student performance in your department falls below threshold." },
+        ],
+      },
+      {
+        id: 5,
+        title: "Final Review",
+        description: "Confirm your HOD profile to access the administrative dashboard.",
+        fields: [
+          { key: "agreedToTerms", label: "I agree to the HOD conduct policy", type: "boolean", helper: "Confirm that you accept the administrative guidelines.", required: true },
+        ],
+      },
+    ],
+  },
+  faculty: {
+    label: "Faculty Onboarding",
+    intro:
+      "Complete your educator profile to manage classes and students on Lumina.",
+    completionLabel: "Finish setup",
+    steps: [
+      {
+        id: 1,
+        title: "Personal Details",
+        description: "Official teaching credentials",
+        fields: [
+          { key: "fullName", label: "Full name", type: "text", helper: "Your full name for account verification.", placeholder: "Jane Doe", required: true },
+          { key: "employeeId", label: "Employee ID", type: "text", helper: "Your official institutional employee identifier.", placeholder: "EMP-1024", required: true },
+          { key: "collegeId", label: "Institution ID", type: "text", helper: "The unique ID of your college or university.", placeholder: "INST-8822", required: true },
+          { key: "department", label: "Department", type: "text", helper: "Your primary department (e.g., Computer Science).", placeholder: "Computer Science", required: true },
+          { key: "designation", label: "Designation", type: "text", helper: "Your current job title (e.g., Assistant Professor).", placeholder: "Assistant Professor", required: true },
+        ],
+      },
+      {
+        id: 2,
+        title: "Teaching Profile",
+        description: "Describe your subject areas and teaching style.",
+        fields: [
+          { key: "subjects", label: "Subjects / disciplines", type: "array", helper: "List the subjects you teach, one per line.", placeholder: "Mathematics\nPhysics" },
+          { key: "specialisation", label: "Specialisation", type: "text", helper: "Your primary academic or research specialisation.", placeholder: "Machine Learning & AI" },
+          { key: "teachingStyle", label: "Teaching style", type: "select", helper: "How would you describe your primary teaching approach?", options: [
+            { label: "Lecture-based", value: "lecture" },
+            { label: "Project-based", value: "project" },
+            { label: "Inquiry / Socratic", value: "inquiry" },
+            { label: "Flipped classroom", value: "flipped" },
+            { label: "Mixed / Hybrid", value: "mixed" },
+          ]},
+        ],
+      },
+      {
+        id: 3,
+        title: "Experience & Qualifications",
+        description: "Share your academic background and years of experience.",
+        fields: [
+          { key: "yearsExperience", label: "Years of teaching experience", type: "number", helper: "Approximate number of years.", placeholder: "5" },
+          { key: "qualifications", label: "Qualifications", type: "array", helper: "List your degrees or certifications, one per line.", placeholder: "M.Ed. – University of Example\nCertified STEM Educator" },
+        ],
+      },
+      {
+        id: 4,
+        title: "Platform Preferences",
+        description: "Let us know how you prefer to use Lumina.",
+        fields: [
+          { key: "aiAssistEnabled", label: "Enable AI teaching & grading assistant", type: "boolean", helper: "Allow Lumina AI to suggest content and assist with grading recommendations." },
+          { key: "notifyOnSubmission", label: "Notify me on student submissions", type: "boolean", helper: "Receive an in-app notification whenever a student submits work." },
+        ],
+      },
+      {
+        id: 5,
+        title: "Final Review",
+        description: "Review and confirm your profile before finishing setup.",
+        fields: [
+          { key: "agreedToTerms", label: "I agree to the teacher conduct policy", type: "boolean", helper: "Confirm that you accept the educator guidelines.", required: true },
         ],
       },
     ],

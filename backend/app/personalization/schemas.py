@@ -356,6 +356,18 @@ class SubmissionScorecard(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class LearnerPathwayProjection(BaseModel):
+    user_id: str
+    course_id: str
+    current_milestone: str
+    next_recommended_topic: str
+    is_accelerated: bool = False
+    needs_remediation: bool = False
+    remediation_topics: List[str] = Field(default_factory=list)
+    confidence_score: float = 0.5
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class InterventionUpdateRequest(BaseModel):
     status: Optional[InterventionStatus] = None
     teacher_notes: Optional[str] = None

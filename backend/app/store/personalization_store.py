@@ -9,20 +9,18 @@ from app.personalization.schemas import (
     RubricDefinition,
     SubmissionScorecard,
 )
+from app.store.base_store import BaseStoreMixin
 
 log = structlog.get_logger()
 
 
-class PersonalizationStore:
+class PersonalizationStore(BaseStoreMixin):
     """
     Supabase persistence layer for learner profiles, learning events,
     interventions, rubrics, and scorecards.
     """
 
     def __init__(self, db=None):
-        from fastapi.params import Depends
-        if isinstance(db, Depends):
-            db = None
         self.db = db or supabase_db
 
     def _supports_remote_user_id(self, user_id: Optional[str]) -> bool:
@@ -220,3 +218,33 @@ class PersonalizationStore:
         except Exception as exc:
             log.warning("scorecard_fetch_failed", submission_id=submission_id, error=str(exc))
         return None
+
+    # --- Pathway Projections ---
+
+    async def upsert_pathway_projection(self, projection_data: Dict[str, Any]) -> bool:
+        """
+        Saves a personalized learner pathway projection.
+        """
+        success, _, error = await self.update_safely(
+            "pathway_projections",
+            projection_data,
+            {"user_id": projection_data["user_id"], "course_id": projection_data["course_id"]},
+            user_id=projection_data["user_id"]
+        )
+        if not success:
+            # Try insert if update failed (on_conflict like)
+            success, _, error = await self.insert_safely(
+                "pathway_projections",
+                projection_data,
+                user_id=projection_data["user_id"]
+            )
+        return success
+
+    async def get_pathway_projection(self, user_id: str, course_id: str) -> Optional[Dict[str, Any]]:
+        success, data, error = await self.fetch_one_safely(
+            "pathway_projections",
+            {"user_id": user_id, "course_id": course_id},
+            user_id=user_id,
+            course_id=course_id
+        )
+        return data if success else None

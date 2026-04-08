@@ -799,19 +799,20 @@ class PersonalizationService:
     async def get_teacher_projection(self, user_id: str) -> Dict[str, Any]:
         """Canonical projection for the teacher dashboard. Includes KPIs and interventions."""
         profile = await self.get_profile(user_id)
-        interventions = await self.get_interventions(user_id)
+        interventions = await self.get_interventions(user_id=user_id)
         return {
-            "user_id": profile.user_id,
             "risk_summary": profile.risk_summary.model_dump(),
-            "performance": profile.performance_summary.model_dump(),
-            "engagement": profile.engagement_summary.model_dump(),
+            "performance_summary": profile.performance_summary.model_dump(),
             "kpi_snapshot": profile.kpi_snapshot.model_dump(),
-            "active_interventions": [i.model_dump() for i in interventions if i.status in (InterventionStatus.OPEN, InterventionStatus.ACKNOWLEDGED)],
-            "weak_topics": profile.weak_topics,
+            "interventions": [i.model_dump() for i in interventions],
         }
 
-    async def get_pathway_projection(self, user_id: str) -> Dict[str, Any]:
-        """Canonical projection for the pathway engine. Includes readiness and limits."""
+    async def get_pathway_projection(self, user_id: str, course_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch the personalized learning pathway projection for a student in a course."""
+        return await self.store.get_pathway_projection(user_id, course_id)
+
+    async def get_profile_projection_for_engine(self, user_id: str) -> Dict[str, Any]:
+        """Canonical projection for the internal adaptive engines (DKT, BKT). Includes readiness and limits."""
         profile = await self.get_profile(user_id)
         return {
             "mastery_state": {topic: cm.model_dump() for topic, cm in profile.mastery_state.items()},

@@ -714,6 +714,27 @@ export class RealAPI {
     })));
 
     return {
+      stats: [
+        { label: "Total Students", value: summary.totalStudents, icon: "GraduationCap", trend: "+12%" },
+        { label: "Active Courses", value: summary.activeCourses, icon: "BookOpen" },
+        { label: "Pending Grading", value: summary.pendingGrading, icon: "ClipboardCheck", trend: "-5%", status: "warning" },
+        { label: "At Risk", value: summary.atRiskStudents, icon: "AlertTriangle", status: "danger" },
+      ],
+      alerts: priorityItems.map(item => ({
+        id: item.id,
+        type: item.tone === "urgent" ? "critical" : "warning",
+        title: item.title,
+        message: item.detail,
+        action: { label: "Review", href: item.href }
+      })),
+      feed: recentAssignments.map(a => ({
+        id: a.id,
+        type: "assignment",
+        title: a.title,
+        detail: `${a.pendingGrading} pending reviews`,
+        timestamp: a.dueDate || "No deadline",
+        status: a.status === "overdue" ? "urgent" : "pending"
+      })),
       summary,
       courses: courseCards,
       recentAssignments,
@@ -734,19 +755,38 @@ export class RealAPI {
     requests: any[],
   ): any {
     const stats = dashboard?.stats || [];
+    const summary = {
+      totalTeachers: this.extractNumericStat(stats, "Teachers"),
+      totalStudents: this.extractNumericStat(stats, "Total Students"),
+      totalPrograms: this.extractNumericStat(stats, "Programs"),
+      pendingRequests: this.extractNumericStat(stats, "Pending Requests"),
+    };
+
     return {
       department: dashboard?.meta?.department || { id: "", department_name: "Department", code: "" },
-      summary: {
-        totalTeachers: this.extractNumericStat(stats, "Teachers"),
-        totalStudents: this.extractNumericStat(stats, "Total Students"),
-        totalPrograms: this.extractNumericStat(stats, "Programs"),
-        pendingRequests: this.extractNumericStat(stats, "Pending Requests"),
-      },
+      stats: [
+        { label: "Faculty Members", value: summary.totalTeachers, icon: "Users" },
+        { label: "Total Students", value: summary.totalStudents, icon: "GraduationCap" },
+        { label: "Active Programs", value: summary.totalPrograms, icon: "Layers" },
+        { label: "Pending Requests", value: summary.pendingRequests, icon: "ClipboardList", status: "warning" },
+      ],
+      alerts: (dashboard.alerts || []).map((a: any) => ({
+        id: a.id || Math.random().toString(),
+        type: a.priority === "high" ? "critical" : "warning",
+        title: a.title,
+        message: a.message,
+        action: a.action
+      })),
+      summary,
       teachers: (teachers || []).map((teacher: any) => ({
         id: teacher?.id,
         name: teacher?.full_name || teacher?.name || teacher?.email || "Teacher",
         email: teacher?.email || "",
         status: teacher?.status || "active",
+        courseCount: teacher?.courseCount || 0,
+        studentCount: teacher?.studentCount || 0,
+        avgMastery: teacher?.avgMastery || 0,
+        avatar: teacher?.avatar || "",
       })),
       programs: (programs || []).map((program: any) => ({
         id: program?.id,

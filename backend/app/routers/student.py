@@ -1,5 +1,6 @@
 import asyncio
 import json
+import traceback
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 import structlog
@@ -32,6 +33,7 @@ import uuid
 import secrets
 from app.routers.ai_tutor import build_tutor_response_payload, WAITING_MESSAGE
 from ai_engine.classifier import classify, RoutingTier, SAFE_INSTANT_WAITING, RESTRICTED_REDIRECT
+from app.services.fsrs_engine import get_due_cards, update_card as fsrs_update_card # Import FSRS engine
 
 router = APIRouter()
 _student_tutor_answers: Dict[str, Dict[str, Any]] = {}
@@ -95,6 +97,12 @@ class BehaviorBatchRequest(BaseModel):
     question_id: Optional[str] = None
     session_id: str
     signals: List[BehaviorSignal]
+
+
+class SpacedRepetitionReviewRequest(BaseModel):
+    cardId: str
+    grade: int
+    responseTimeMs: int = 0
 
 
 class AdaptiveQuestionRequest(BaseModel):
@@ -2548,6 +2556,87 @@ async def get_review_schedule(
         limit=limit,
     )
     return {"schedule": schedule, "count": len(schedule)}
+
+
+@router.get("/spaced-repetition")
+async def get_student_spaced_repetition(
+    limit: int = 10,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """
+    Returns flashcards due for review using the FSRS engine.
+    Matches frontend /api/student/spaced-repetition call.
+    """
+    if current_user.get("role") not in ("student", "peer_tutor"):
+        raise HTTPException(status_code=403, detail="Student access required")
+
+    student_id = current_user["id"]
+    db_client = supabase_db.get_client()
+
+    try:
+        # 1. Fetch due cards from FSRS engine
+        cards = await get_due_cards(db_client, student_id, limit=limit)
+        
+        # 2. Count reviews today
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        reviewed_today_res = await db_client.table("fsrs_cards").select("card_id", count="exact").eq("student_id", student_id).gte("last_reviewed_at", today_start).async_execute()
+        reviewed_today = reviewed_today_res.count if reviewed_today_res.count is not None else 0
+
+        # 3. Format cards for frontend
+        formatted_cards = []
+        for card in cards:
+            formatted_cards.append({
+                "id": card.get("card_id"),
+                "front": card.get("front"),
+                "back": card.get("back"),
+                "category": card.get("source") or "General",
+                "difficulty": "medium" if card.get("difficulty", 0.5) < 0.7 else "hard" if card.get("difficulty", 0.5) >= 0.7 else "easy",
+                "lastReviewed": card.get("last_reviewed_at"),
+                "nextReview": card.get("next_review_date"),
+                "status": "review" if card.get("review_count", 0) > 0 else "new",
+            })
+
+        return {
+            "cards": formatted_cards,
+            "reviewedToday": reviewed_today,
+            "dueToday": len(cards),
+            "streak": 5, # Mock streak, could be fetched from user_stats
+            "nextReviewIn": "Tomorrow at 9:00 AM" if not cards else "Now",
+        }
+    except Exception as exc:
+        logger.error("get_spaced_repetition_failed", user_id=student_id, error=str(exc))
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.post("/spaced-repetition/review")
+async def submit_student_spaced_repetition_review(
+    body: SpacedRepetitionReviewRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """
+    Submits a review for an FSRS card.
+    Matches frontend /api/student/spaced-repetition/review call.
+    """
+    if current_user.get("role") not in ("student", "peer_tutor"):
+        raise HTTPException(status_code=403, detail="Student access required")
+
+    student_id = current_user["id"]
+    db_client = supabase_db.get_client()
+
+    try:
+        updated_card = await fsrs_update_card(
+            db_client,
+            student_id=student_id,
+            card_id=body.cardId,
+            grade=body.grade,
+        )
+        if not updated_card:
+            raise HTTPException(status_code=404, detail="Card not found or update failed")
+            
+        return {"status": "ok", "card": updated_card}
+    except Exception as exc:
+        logger.error("submit_review_failed", user_id=student_id, error=str(exc))
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 # ─── Master Orchestrator Endpoint ─────────────────────────────────────────────

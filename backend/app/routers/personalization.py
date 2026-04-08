@@ -76,7 +76,7 @@ async def get_teacher_projection_for_user(user_id: str, current_user: dict = Dep
 @router.get("/projection/pathway")
 async def get_pathway_projection(current_user: dict = Depends(get_current_user)):
     service = get_personalization_service()
-    projection = await service.get_pathway_projection(current_user["id"])
+    projection = await service.get_profile_projection_for_engine(current_user["id"])
     return projection
 
 
@@ -84,7 +84,23 @@ async def get_pathway_projection(current_user: dict = Depends(get_current_user))
 async def get_pathway_projection_for_user(user_id: str, current_user: dict = Depends(get_current_user)):
     _check_profile_access(current_user, user_id)
     service = get_personalization_service()
-    projection = await service.get_pathway_projection(user_id)
+    projection = await service.get_profile_projection_for_engine(user_id)
+    return projection
+
+
+@router.get("/course/{course_id}/pathway")
+async def get_course_pathway_projection(
+    course_id: str,
+    current_user: dict = Depends(get_current_user),
+    user_id: Optional[str] = Query(None)
+):
+    target_user_id = user_id or current_user["id"]
+    _check_profile_access(current_user, target_user_id)
+    
+    service = get_personalization_service()
+    projection = await service.get_pathway_projection(target_user_id, course_id)
+    if not projection:
+        raise HTTPException(status_code=404, detail="Pathway projection not found for this course")
     return projection
 
 

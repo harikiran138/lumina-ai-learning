@@ -133,15 +133,59 @@ class Module(BaseModel):
     order: int = 0
 
 
+class ConceptNode(BaseModel):
+    id: str
+    label: str
+    description: Optional[str] = None
+    level: str = "core"  # core, advanced, enrichment
+
+
+class ConceptEdge(BaseModel):
+    from_node: str
+    to_node: str
+    relationship: str = "prerequisite"  # prerequisite, relates_to
+
+
 class Course(BaseModel):
     id: str = Field(default_factory=generate_id)
     title: str
     description: str
     instructor_id: str
     modules: List[Module] = []
+    
+    # [NEW] Structured Content Architecture
+    concept_graph: Dict[str, Any] = {
+        "nodes": [],
+        "edges": []
+    }
+    
     published: bool = False
     thumbnail_url: Optional[str] = None
     teacher_limit: Optional[int] = None
+    created_at: str = Field(default_factory=current_time_iso)
+    updated_at: str = Field(default_factory=current_time_iso)
+
+
+class PathwayNode(BaseModel):
+    concept_id: str
+    status: str = "locked"  # locked, available, current, completed
+    mastery_score: float = 0.0
+    recommended_resources: List[str] = []
+    skipped: bool = False
+
+
+class LearnerPathwayProjection(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    user_id: str
+    course_id: str
+    
+    # The personalized sequence of concepts
+    pathway: List[PathwayNode] = []
+    
+    # Learner-specific tuning
+    pacing_preference: str = "standard"  # exploratory, standard, fast_track
+    example_domain: Optional[str] = None  # e.g., "Finance", "Space", "Games"
+    
     created_at: str = Field(default_factory=current_time_iso)
     updated_at: str = Field(default_factory=current_time_iso)
 

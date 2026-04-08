@@ -136,7 +136,7 @@ def is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
     role = normalize_role(user.get("role", "guest"))
 
     # 2. Bypass roles that don't need onboarding wizard
-    BYPASS_ROLES = {"super_admin", "admin", "hod", "system_admin", "institution_admin", "faculty", "teacher", "college_admin"}
+    BYPASS_ROLES = {"super_admin", "admin", "system_admin", "institution_admin"}
     if role in BYPASS_ROLES:
         return True, True
 

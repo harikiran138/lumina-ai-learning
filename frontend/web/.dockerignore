@@ -1,5 +1,5 @@
-node_modules
-.next
+# node_modules
+# .next (Removed because we are using prebuilt artifacts)
 .git
 .DS_Store
 *.log

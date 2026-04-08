@@ -60,7 +60,7 @@ async def get_due_cards(db, student_id: str, limit: int = 5) -> List[dict]:
             await db.table("fsrs_cards")
             .select("*")
             .eq("student_id", student_id)
-            .execute()
+            .async_execute()
         )
         cards: List[dict] = result.data if result and result.data else []
 
@@ -116,7 +116,7 @@ async def update_card(db, card_id: str, grade: int, student_id: str) -> dict:
             .eq("card_id", card_id)
             .eq("student_id", student_id)
             .maybe_single()
-            .execute()
+            .async_execute()
         )
         if not result or not result.data:
             logger.warning("update_card: card not found card_id=%s", card_id)
@@ -171,7 +171,7 @@ async def update_card(db, card_id: str, grade: int, student_id: str) -> dict:
             db.table("fsrs_cards")
             .update(updated)
             .eq("card_id", card_id)
-            .execute()
+            .async_execute()
         )
 
         card.update(updated)
@@ -220,7 +220,7 @@ async def create_card(
         await (
             db.table("fsrs_cards")
             .insert(new_card)
-            .execute()
+            .async_execute()
         )
 
         logger.info("create_card: student=%s concept=%s card_id=%s", student_id, concept_id, card_id)

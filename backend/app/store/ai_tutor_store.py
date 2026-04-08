@@ -12,6 +12,7 @@ from app.core.logging import structlog
 from app.database.supabase_manager import supabase_db
 from app.rag.retrieval import RetrievalService
 from app.services.personalization_service import get_personalization_service
+from app.store.academic_store import AcademicStore
 from app.store.content_store import ContentStore
 
 log = structlog.get_logger()
@@ -218,6 +219,7 @@ class AITutorStore:
         self.read_timeout = settings.OPENROUTER_READ_TIMEOUT
         self.max_retries = settings.OPENROUTER_MAX_RETRIES
         self.retrieval = RetrievalService(provider="auto")
+        self.academic_store = AcademicStore()
         self.content_store = ContentStore()
         if not self.api_key:
             log.warning("ai_tutor_no_api_key", message="OPENROUTER_API_KEY not set")
@@ -240,10 +242,15 @@ class AITutorStore:
 
         # Fetch personalization profile for adaptive prompting
         legacy_profile: Dict[str, Any] = {}
+        pathway_projection: Optional[Dict[str, Any]] = None
         if student_id:
             try:
                 profile_service = get_personalization_service()
                 legacy_profile = await profile_service.get_legacy_state(student_id) or {}
+                
+                course_id = safe_context.get("course_id")
+                if course_id:
+                    pathway_projection = await profile_service.get_pathway_projection(student_id, course_id)
             except Exception as exc:
                 log.warning("ai_tutor_profile_fetch_failed", student_id=student_id, error=str(exc))
 
@@ -258,7 +265,13 @@ class AITutorStore:
         except Exception as exc:
             log.warning("ai_tutor_rag_fetch_failed", error=str(exc))
 
-        system_prompt = self._build_system_prompt(safe_context, normalized_mode, legacy_profile, rag_context)
+        system_prompt = self._build_system_prompt(
+            safe_context, 
+            normalized_mode, 
+            legacy_profile, 
+            rag_context,
+            pathway_projection=pathway_projection
+        )
         messages = self._build_messages(system_prompt, history or [], prompt)
         route_models = resolve_openrouter_models(
             "code" if normalized_mode == "code" else "assessment" if normalized_mode == "quiz" else "tutor",
@@ -687,6 +700,7 @@ class AITutorStore:
         mode: str,
         profile: Optional[Dict[str, Any]] = None,
         rag_context: Optional[List[str]] = None,
+        pathway_projection: Optional[Dict[str, Any]] = None,
     ) -> str:
         profile = profile or {}
         semester = context.get("semester") or context.get("current_semester") or "Not specified"
@@ -736,6 +750,18 @@ class AITutorStore:
             student_context_lines.append(
                 f"Weak Topics (address these if related): {', '.join(str(t) for t in weak_topics[:5])}"
             )
+
+        # Inject Pathway Projection
+        if pathway_projection:
+            milestone = pathway_projection.get("current_milestone", "unknown")
+            next_topic = pathway_projection.get("next_recommended_topic", "unknown")
+            pathway_msg = f"Pathway: {milestone} → Next: {next_topic}"
+            if pathway_projection.get("is_accelerated"):
+                pathway_msg += " (Accelerated)"
+            if pathway_projection.get("needs_remediation"):
+                remediation = ", ".join(pathway_projection.get("remediation_topics", []))
+                pathway_msg += f" (Needs Remediation in: {remediation})"
+            student_context_lines.append(pathway_msg)
         mastery_summary = profile.get("mastery_summary") or ""
         if mastery_summary:
             student_context_lines.append(f"Mastery Summary: {_truncate(mastery_summary, 300)}")
