@@ -211,7 +211,8 @@ def _render_acknowledgement_payload(classification: Dict[str, Any], queue_id: Op
 
 
 class AITutorStore:
-    def __init__(self):
+    def __init__(self, db=None):
+        self.db = db or supabase_db
         self.api_key = settings.OPENROUTER_API_KEY
         self.model = settings.OPENROUTER_MODEL
         self.base_url = settings.OPENROUTER_API_URL
@@ -219,8 +220,8 @@ class AITutorStore:
         self.read_timeout = settings.OPENROUTER_READ_TIMEOUT
         self.max_retries = settings.OPENROUTER_MAX_RETRIES
         self.retrieval = RetrievalService(provider="auto")
-        self.academic_store = AcademicStore()
-        self.content_store = ContentStore()
+        self.academic_store = AcademicStore(db=self.db)
+        self.content_store = ContentStore(db=self.db)
         if not self.api_key:
             log.warning("ai_tutor_no_api_key", message="OPENROUTER_API_KEY not set")
 

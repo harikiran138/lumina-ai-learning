@@ -337,12 +337,35 @@ class UserStore:
             return self._sanitize_user(response.data[0], include_sensitive=include_sensitive)
         return None
 
+    async def get_users_by_ids(self, user_ids: List[str], include_sensitive: bool = False) -> List[dict]:
+        """Fetch multiple users by their IDs."""
+        if not user_ids: return []
+        try:
+            res = await self.db.get_client().table("users").select("*").in_("id", user_ids).async_execute()
+            return [self._sanitize_user(u, include_sensitive=include_sensitive) for u in res.data]
+        except Exception as e:
+            log.error("get_users_by_ids_failed", error=str(e))
+            return []
+
     async def list_all_users(self) -> List[dict]:
         try:
             users = await self.db.fetch_all("users", limit=500)
             return [self._sanitize_user(u) for u in users]
         except Exception as e:
             log.error("list_all_users_failed", error=str(e))
+            return []
+
+    async def get_users_by_batch(self, batch_id: str, role: str = "student", section: Optional[str] = None) -> List[dict]:
+        """Fetch users assigned to a specific batch and role, optionally filtered by section."""
+        try:
+            query = self.db.table("users").select("*").eq("batch_id", batch_id).eq("role", self.to_db_role(role))
+            if section:
+                # Some schemas use 'section', others 'section_id'. We'll check 'section' first.
+                query = query.eq("section", section)
+            res = await query.async_execute()
+            return [self._sanitize_user(u) for u in res.data]
+        except Exception as e:
+            log.error("get_users_by_batch_failed", batch_id=batch_id, error=str(e))
             return []
 
     async def delete_user(self, user_id: str) -> bool:

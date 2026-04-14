@@ -18,10 +18,11 @@ The project is organized into several high-level folders representing different 
 | `infra/` | `06_Deployment` | Infrastructure setup (MinIO, Neo4j, Nginx). |
 
 ## 🔗 Critical Entry Points
-- **Backend**: `backend/app/main.py` -> [[BACKEND_ENTRY]]
-- **Frontend**: `frontend/web/src/app/page.tsx` -> [[FRONTEND_ENTRY]]
-- **Database**: `prisma/schema.prisma` -> [[DATABASE_SCHEMA]]
-- **System Spec**: `DETAIL.md` -> [[LUMINA_BLUEPRINT]]
+- **Backend**: `backend/app/main.py` → [[FULL_PROJECT_CATALOG|Backend Entry Point & Full Catalog]]
+- **Frontend**: `frontend/web/src/app/page.tsx` → [[FRONTEND_SPEC|Frontend Spec]]
+- **Database**: `FINAL_DATABASE_SCHEMA.sql` → [[DATABASE_SCHEMA]]
+- **System Spec**: `DETAIL.md` → [[DETAIL|Lumina Master Blueprint]]
 
 ---
 [[PROJECT_OVERVIEW]] | [[SYSTEM_ARCHITECTURE]] | [[DATA_FLOW]]
+

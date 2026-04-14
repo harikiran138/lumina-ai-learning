@@ -184,6 +184,16 @@ class CourseStore:
         course = await self.db.fetch_one("courses", {"id": course_id})
         return self._normalize_course(course)
 
+    async def get_courses_by_ids(self, course_ids: List[str]) -> List[dict]:
+        """Fetch multiple courses by their IDs."""
+        if not course_ids: return []
+        try:
+            res = await self.db.get_client().table("courses").select("*").in_("id", course_ids).async_execute()
+            return [self._normalize_course(c) for c in res.data]
+        except Exception as e:
+            log.error("get_courses_by_ids_failed", error=str(e))
+            return []
+
     async def update_course(self, course_id: str, updates: dict) -> bool:
         # Cleanup updates for PostgreSQL
         clean_updates = updates.copy()

@@ -7,9 +7,12 @@ class RiskAnalysisService:
     Service for identifying students at risk and generating alerts.
     """
     
+    def __init__(self, db: Optional[Any] = None):
+        self.db = db or supabase_db
+    
     async def get_student_risk(self, student_id: str) -> Dict[str, Any]:
         """Fetch the latest risk score for a specific student."""
-        client = supabase_db.get_client()
+        client = self.db.get_client()
         result = client.table("student_risk_scores")\
             .select("*")\
             .eq("student_id", student_id)\
@@ -53,12 +56,12 @@ class RiskAnalysisService:
             "detected_at": datetime.now(timezone.utc).isoformat()
         }
         
-        await supabase_db.insert("student_risk_scores", analysis)
+        await self.db.insert("student_risk_scores", analysis)
         
         # 4. Trigger intervention if risk is high
         if level in ("high", "critical"):
-             from app.services.personalization_service import get_personalization_service
-             service = get_personalization_service()
+             from app.services.personalization_service import PersonalizationService
+             service = PersonalizationService(db=self.db)
              await service.record_event(
                  student_id, 
                  "RISK_DETECTED",
@@ -68,5 +71,5 @@ class RiskAnalysisService:
              
         return analysis
 
-def get_risk_analysis_service():
-    return RiskAnalysisService()
+def get_risk_analysis_service(db: Optional[Any] = None):
+    return RiskAnalysisService(db=db)

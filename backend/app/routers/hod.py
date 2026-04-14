@@ -1,14 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Dict, Any, Optional
 from app.api.deps import get_current_hod
+from app.dependencies import get_academic_store, get_teacher_store
 from app.store.academic_store import AcademicStore
 from app.store.teacher_store import TeacherStore
 
 router = APIRouter()
-academic_store = AcademicStore()
-teacher_store = TeacherStore()
 @router.get("/dashboard")
-async def get_hod_dashboard(current_user: dict = Depends(get_current_hod)):
+async def get_hod_dashboard(
+    current_user: dict = Depends(get_current_hod),
+    academic_store: AcademicStore = Depends(get_academic_store),
+    teacher_store: TeacherStore = Depends(get_teacher_store)
+):
     dept_id = current_user["resolved_department_id"]
     dept = await academic_store.get_department_by_id(dept_id)
     if not dept:
@@ -62,7 +65,10 @@ async def get_hod_dashboard(current_user: dict = Depends(get_current_hod)):
     }
 
 @router.get("/department")
-async def get_hod_department(current_user: dict = Depends(get_current_hod)):
+async def get_hod_department(
+    current_user: dict = Depends(get_current_hod),
+    academic_store: AcademicStore = Depends(get_academic_store)
+):
     dept_id = current_user["resolved_department_id"]
     dept = await academic_store.get_department_by_id(dept_id)
     if not dept:
@@ -70,17 +76,26 @@ async def get_hod_department(current_user: dict = Depends(get_current_hod)):
     return dept
 
 @router.get("/teachers")
-async def get_department_teachers(current_user: dict = Depends(get_current_hod)):
+async def get_department_teachers(
+    current_user: dict = Depends(get_current_hod),
+    academic_store: AcademicStore = Depends(get_academic_store)
+):
     dept_id = current_user["resolved_department_id"]
     return await academic_store.get_department_teachers(dept_id)
 
 @router.get("/programs")
-async def get_department_programs(current_user: dict = Depends(get_current_hod)):
+async def get_department_programs(
+    current_user: dict = Depends(get_current_hod),
+    academic_store: AcademicStore = Depends(get_academic_store)
+):
     dept_id = current_user["resolved_department_id"]
     return await academic_store.get_department_programs(dept_id)
 
 @router.get("/requests")
-async def get_department_teacher_requests(current_user: dict = Depends(get_current_hod)):
+async def get_department_teacher_requests(
+    current_user: dict = Depends(get_current_hod),
+    teacher_store: TeacherStore = Depends(get_teacher_store)
+):
     dept_id = current_user["resolved_department_id"]
     return await teacher_store.get_pending_requests_by_department(dept_id)
 
@@ -88,7 +103,8 @@ async def get_department_teacher_requests(current_user: dict = Depends(get_curre
 async def update_teacher_request(
     request_id: str,
     payload: Dict[str, str],
-    current_user: dict = Depends(get_current_hod)
+    current_user: dict = Depends(get_current_hod),
+    teacher_store: TeacherStore = Depends(get_teacher_store)
 ):
     dept_id = current_user["resolved_department_id"]
     

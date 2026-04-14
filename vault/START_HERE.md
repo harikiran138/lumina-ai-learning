@@ -35,7 +35,7 @@ See the high-level vision and cross-domain connectivity.
 Operations, debugging, and change impact analysis.
 - → [[DEPENDENCY_MAP|System Dependency Map]]
 - → [[IMPACT|Change Impact Analysis]]
-- → **Debug Playbooks**: [[Features/Auth/DEBUG|Auth]], [[Features/AI/DEBUG|AI]], [[Features/Student/DEBUG|Student]], [[Features/Faculty/DEBUG|Faculty]]
+- → **Debug Playbooks**: [[Features/Auth/DEBUG|Auth]], [[Features/AI/DEBUG|AI]], [[Features/Student/DEBUG|Student]], [[Features/Faculty/DEBUG|Faculty]], [[Features/Governance/DEBUG|Governance]], [[Features/Support/DEBUG|Support]]
 
 ---
 

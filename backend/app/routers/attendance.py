@@ -4,7 +4,8 @@ from datetime import datetime
 import structlog
 
 from app.api.deps import get_current_teacher as get_current_user
-from app.database.scoped_db import get_scoped_db
+from app.dependencies import get_attendance_store
+from app.store.attendance_store import AttendanceStore
 
 router = APIRouter()
 log = structlog.get_logger(__name__)
@@ -12,10 +13,10 @@ log = structlog.get_logger(__name__)
 @router.post("/mark")
 async def mark_attendance(
     records: List[Dict[str, Any]],
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    attendance_store: AttendanceStore = Depends(get_attendance_store)
 ):
     """Mark attendance for a batch/section."""
-    db = get_scoped_db(current_user)
     if not records:
         raise HTTPException(status_code=400, detail="No attendance records provided")
     
@@ -33,19 +34,15 @@ async def mark_attendance(
         "teacher_id": str(current_user["id"]),
         "batch_id": batch_id,
         "section": section,
-        "class_date": class_date,
-        "updated_at": datetime.utcnow().isoformat()
+        "class_date": class_date
     }
     
-    session_res = db.table("attendance_sessions").upsert(
-        session_data, 
-        on_conflict="course_id,batch_id,section,class_date"
-    ).execute()
+    session = await attendance_store.upsert_session(session_data)
     
-    if not session_res.data:
-        raise HTTPException(status_code=500, detail="Failed to create attendance session")
+    if not session:
+        raise HTTPException(status_code=500, detail="Failed to create/update attendance session")
     
-    session_id = session_res.data[0]["id"]
+    session_id = session["id"]
     normalized_records = [{
         "session_id": session_id,
         "student_id": r.get("student_id"),
@@ -53,9 +50,7 @@ async def mark_attendance(
         "created_at": datetime.utcnow().isoformat(),
     } for r in records]
 
-    response = db.table("attendance_records").upsert(
-        normalized_records, 
-        on_conflict="session_id,student_id"
-    ).execute()
+    success = await attendance_store.bulk_upsert_records(normalized_records)
     
-    return {"created": len(response.data or []), "session_id": session_id}
+    return {"status": "success", "session_id": session_id, "record_count": len(normalized_records)}
+

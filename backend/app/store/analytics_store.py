@@ -97,7 +97,7 @@ class AnalyticsStore:
                 query = query.order(order_by, desc=desc)
             if limit:
                 query = query.limit(limit)
-            response = query.async_execute()
+            response = await query.async_execute()
             return response.data or []
         except Exception as e:
             log.warning("analytics_table_read_failed", table=name, error=str(e))
@@ -823,7 +823,8 @@ class AnalyticsStore:
 
     async def get_admin_student_progress_snapshot(self) -> List[Dict]:
         tables = await self._normalized_tables()
-        inst_id = await InstitutionStore().get_primary_institution_id()
+        from app.store.institution_store import InstitutionStore
+        inst_id = await InstitutionStore(db=self.db).get_primary_institution_id()
         departments = [
             item for item in tables["departments"]
             if not inst_id or item.get("institution_id") == inst_id
@@ -1020,7 +1021,8 @@ class AnalyticsStore:
     async def get_admin_dashboard_stats(self) -> Dict:
         tables = await self._normalized_tables()
         all_institutions = tables["institutions"]
-        inst_id = await InstitutionStore().get_primary_institution_id()
+        from app.store.institution_store import InstitutionStore
+        inst_id = await InstitutionStore(db=self.db).get_primary_institution_id()
         primary_inst = (
             next((i for i in all_institutions if i["id"] == inst_id), None)
             if inst_id and all_institutions

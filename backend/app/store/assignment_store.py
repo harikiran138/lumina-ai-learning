@@ -131,3 +131,11 @@ class AssignmentStore:
         except Exception as e:
             log.error("get_student_submission_failed", error=str(e))
             return None
+
+    async def get_pending_submissions(self) -> List[dict]:
+        """Fetch all pending (submitted but not graded) assignments."""
+        try:
+            return await self.db.fetch_all("assignment_submissions", {"status": "submitted"})
+        except Exception as e:
+            log.error("get_pending_submissions_failed", error=str(e))
+            return []

@@ -13,8 +13,8 @@ class ContentStore:
     Persistence for V2.0 Content Pipeline, AI Answer Verification, and Physical Submissions.
     """
 
-    def __init__(self):
-        self.db = supabase_db
+    def __init__(self, db: Optional[Any] = None):
+        self.db = db or supabase_db
 
     async def create_content_upload(self, teacher_id: str, original_filename: str, storage_url: str, file_type: str, file_size_bytes: int) -> Optional[dict]:
         data = {

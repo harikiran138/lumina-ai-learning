@@ -17,16 +17,31 @@ from app.personalization.schemas import (
     LessonCompletedPayload,
     ActivityLoggedPayload,
 )
-from app.services.personalization_service import get_personalization_service
+from app.dependencies import (
+    get_user_data_store, 
+    get_student_store, 
+    get_assignment_store, 
+    get_analytics_store,
+    get_personalization_service,
+    get_user_store,
+    get_course_store,
+    get_onboarding_service,
+    get_attendance_store,
+    get_risk_analysis_service
+)
 from app.store.user_data_store import UserDataStore
 from app.store.student_store import StudentStore
 from app.store.assignment_store import AssignmentStore
 from app.store.analytics_store import AnalyticsStore
-from app.dependencies import get_user_data_store, get_student_store, get_assignment_store, get_analytics_store
+from app.store.user_store import UserStore
+from app.store.course_store import CourseStore
+from app.store.attendance_store import AttendanceStore
+from app.services.personalization_service import PersonalizationService
+from app.services.onboarding_service import OnboardingService
+from app.services.risk_service import RiskAnalysisService
 from app.api.deps import get_current_student as get_current_user
 from app.database.supabase_manager import supabase_db
-from app.database.scoped_db import get_scoped_db
-from app.services.risk_service import get_risk_analysis_service
+from app.services.risk_service import get_risk_analysis_service # Kept temporarily for reference
 from app.services.student_analytics import compute_student_analytics
 from app.core.audit import audit_logger
 import uuid
@@ -43,9 +58,6 @@ _student_tutor_tasks: Dict[str, asyncio.Task] = {}
 class EnrollmentRequest(BaseModel):
     course_id: str
 
-
-class EnrollmentRequest(BaseModel):
-    course_id: str
 
 
 class StudentOnboardingCompleteRequest(BaseModel):
@@ -759,6 +771,7 @@ async def get_student_dashboard(
     current_user: dict = Depends(get_current_user),
     analytics: AnalyticsStore = Depends(get_analytics_store),
     assignment_store: AssignmentStore = Depends(get_assignment_store),
+    personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """
     Get the full student dashboard data (courses, progress, stats).
@@ -771,11 +784,7 @@ async def get_student_dashboard(
     except Exception:
         pass
 
-    db = get_scoped_db(current_user)
-    personalization = get_personalization_service(db=db)
-
-    analytics_scoped = AnalyticsStore(db=db)
-    dashboard_data = await analytics_scoped.get_student_full_dashboard(current_user["id"])
+    dashboard_data = await analytics.get_student_full_dashboard(current_user["id"])
 
     if not dashboard_data:
         dashboard_data = {
@@ -795,9 +804,9 @@ async def get_student_dashboard(
     enrolled_courses = dashboard_data.get("enrolledCourses", [])
     weak_topics = _build_weak_topics(profile)
     weekly_activity = _build_weekly_activity(events)
-    assignment_store_scoped = AssignmentStore(db=db)
-    due_assignments = await _build_due_assignments(enrolled_courses, current_user["id"], assignment_store_scoped)
+    due_assignments = await _build_due_assignments(enrolled_courses, current_user["id"], assignment_store)
     resume_course = _pick_resume_course(enrolled_courses)
+
 
     # ── AI Analytics (tier, pattern, growth) ──────────────────────────────────
     ai_analytics = profile.metadata.get("ai_analytics") or {}
@@ -907,6 +916,7 @@ async def get_student_dashboard(
 @router.get("/analytics")
 async def get_student_analytics(
     current_user: dict = Depends(get_current_user),
+    personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """
     Returns AI-computed analytics for the authenticated student:
@@ -928,9 +938,6 @@ async def get_student_analytics(
     except Exception:
         pass
 
-    db = get_scoped_db(current_user)
-    personalization = get_personalization_service(db=db)
-
     profile, events = await asyncio.gather(
         personalization.get_profile(current_user["id"], role=current_user.get("role", "student")),
         personalization.store.list_events(current_user["id"], limit=100),
@@ -949,6 +956,7 @@ async def get_student_analytics(
     try:
         await redis_client.setex(cache_key, 300, json.dumps(analytics, default=str))
     except Exception:
+
         pass
 
     return analytics
@@ -958,6 +966,7 @@ async def get_student_analytics(
 async def log_student_activity(
     request: ActivityLogRequest,
     current_user: dict = Depends(get_current_user),
+    personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """
     Log a study session activity event.
@@ -965,9 +974,6 @@ async def log_student_activity(
     pattern + growth after each session.
     """
     student_id = current_user["id"]
-    db = get_scoped_db(current_user)
-    personalization = get_personalization_service(db=db)
-
     await personalization.record_event(
         student_id,
         LearningEventType.ACTIVITY_LOGGED,
@@ -989,6 +995,7 @@ async def log_student_activity(
     except Exception:
         pass
 
+
     return {"status": "success", "message": "Activity logged"}
 
 
@@ -1003,25 +1010,60 @@ async def test_user(current_user: dict = Depends(get_current_user)):
 
 @router.get("/badges")
 async def get_badges(
-    current_user: dict = Depends(get_current_user), store: StudentStore = Depends(get_student_store)
+    current_user: dict = Depends(get_current_user), 
+    student_store: StudentStore = Depends(get_student_store)
 ):
     """
     Get all badges for the CURRENT student.
     """
-    db = get_scoped_db(current_user)
-    student_store = StudentStore(db=db)
     return await student_store.get_badges(current_user["id"])
+
+
+@router.get("/subjects/list")
+async def list_student_subjects(
+    current_user: dict = Depends(get_current_user),
+    course_store: CourseStore = Depends(get_course_store),
+):
+    """
+    List all courses the student is currently enrolled in.
+    """
+    return await course_store.get_student_enrollments(current_user["id"])
+
+
+@router.get("/onboarding/options")
+async def get_student_onboarding_options(
+     current_user: dict = Depends(get_current_user),
+     onboarding_service: OnboardingService = Depends(get_onboarding_service),
+):
+    """
+    Fetch onboarding configuration for student setup.
+    """
+    return await onboarding_service.get_student_onboarding_options(current_user["id"])
+
+
+@router.post("/onboarding/complete")
+async def complete_student_onboarding(
+    data: Dict[str, Any],
+    current_user: dict = Depends(get_current_user),
+    onboarding_service: OnboardingService = Depends(get_onboarding_service),
+):
+    """
+    Save onboarding preferences and update student status.
+    """
+    return await onboarding_service.complete_student_onboarding(
+        current_user["id"], 
+        data
+    )
 
 
 @router.get("/certificates")
 async def get_certificates(
-    current_user: dict = Depends(get_current_user), store: StudentStore = Depends(get_student_store)
+    current_user: dict = Depends(get_current_user), 
+    student_store: StudentStore = Depends(get_student_store)
 ):
     """
     Get all certificates for the CURRENT student.
     """
-    db = get_scoped_db(current_user)
-    student_store = StudentStore(db=db)
     return await student_store.get_certificates(current_user["id"])
 
 
@@ -1029,17 +1071,13 @@ async def get_certificates(
 async def update_profile(
     data: Dict[str, Any],
     current_user: dict = Depends(get_current_user),
-    store: UserDataStore = Depends(get_user_data_store),
+    user_store: UserStore = Depends(get_user_store),
+    user_data_store: UserDataStore = Depends(get_user_data_store),
+    personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """
     Update profile data for the CURRENT student.
     """
-    from app.store.user_store import UserStore
-
-    db = get_scoped_db(current_user)
-    user_store = UserStore(db=db)
-    user_data_store = UserDataStore(db=db)
-
     user_fields = {}
     for field in ("name", "phone"):
         if field in data:
@@ -1073,7 +1111,7 @@ async def update_profile(
         if not saved_settings:
             raise HTTPException(status_code=500, detail="Failed to update profile settings")
 
-    await get_personalization_service(db=db).record_event(
+    await personalization.record_event(
         current_user["id"],
         LearningEventType.PROFILE_UPDATED,
         payload={"updated_fields": list(user_fields.keys()) + list(profile_settings.keys())},
@@ -1093,71 +1131,42 @@ async def update_profile(
 @router.get("/profile/analytics")
 async def get_learner_analytics(
     current_user: dict = Depends(get_current_user),
+    personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """
     Get deep learner analytics (cognitive load, engagement, behavior).
     """
-    db = get_scoped_db(current_user)
-    profile = await get_personalization_service(db=db).get_profile(
+    return await personalization.get_legacy_state(
         current_user["id"], role=current_user.get("role", "student")
     )
-    mastery_scores = [item.score for item in profile.mastery_state.values()]
-    engagement_score = min(
-        100,
-        int(
-            profile.engagement_summary.total_minutes
-            + (profile.engagement_summary.current_streak * 5)
-            + (profile.engagement_summary.total_lessons_completed * 2)
-        ),
-    )
-    return {
-        "userId": current_user["id"],
-        "cognitiveLoad": profile.behavior_signals.get("cognitive_load", 50),
-        "engagementScore": engagement_score,
-        "behaviorLabel": profile.behavior_signals.get("behavior_label", "neutral"),
-        "recentMasteryTrend": {topic: item.score for topic, item in profile.mastery_state.items()},
-        "riskSummary": profile.risk_summary.model_dump(mode="json"),
-        "overallMastery": round(sum(mastery_scores) / max(len(mastery_scores), 1), 2),
-    }
 
 
-@router.get("/profile/mastery")
+@router.get("/profile/projections")
 async def get_mastery_projections(
     current_user: dict = Depends(get_current_user),
+    personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """
-    Get mastery projections based on BKT/DKT models.
+    Get future mastery projections based on DKT modeling.
     """
-    db = get_scoped_db(current_user)
-    profile = await get_personalization_service(db=db).get_profile(
-        current_user["id"], role=current_user.get("role", "student")
-    )
-    mastery_map = {topic: item.score for topic, item in profile.mastery_state.items()}
-    return {
-        "masteryMap": mastery_map,
-        "dktProjections": {},
-        "overallMastery": round(
-            sum(mastery_map.values()) / max(len(mastery_map), 1),
-            2,
-        ),
-    }
+    return await personalization.get_student_projection(current_user["id"])
 
-@router.get("/profile")  # Changed from /profile/{user_id}
+
+@router.get("/profile")
 async def get_profile(
     current_user: dict = Depends(get_current_user),
+    personalization: PersonalizationService = Depends(get_personalization_service),
+    user_data_store: UserDataStore = Depends(get_user_data_store),
+    analytics: AnalyticsStore = Depends(get_analytics_store),
 ):
     """
     Get the full profile for the CURRENT user.
     """
     try:
         logger.info("profile_fetch_init", user_id=current_user.get("id"))
-        from app.store.analytics_store import AnalyticsStore
-        db = get_scoped_db(current_user)
-        user_data_store = UserDataStore(db=db)
-        analytics = AnalyticsStore(db=db)
         
         # 1. Fetch Personalization Profile
-        profile_data = await get_personalization_service(db=db).get_profile(
+        profile_data = await personalization.get_profile(
             current_user["id"], role=current_user.get("role", "student")
         )
         if not profile_data:
@@ -1180,20 +1189,20 @@ async def get_profile(
         ay_id = current_user.get("academic_year_id")
         
         if inst_id:
-            inst = await db.fetch_one("institutions", {"id": inst_id})
+            inst = await personalization.db.fetch_one("institutions", {"id": inst_id})
             hierarchy["institution"] = (inst.get("name") if inst else None) if isinstance(inst, dict) else None
         if dept_id:
-            dept = await db.fetch_one("departments", {"id": dept_id})
+            dept = await personalization.db.fetch_one("departments", {"id": dept_id})
             hierarchy["department"] = (dept.get("name") if dept else None) if isinstance(dept, dict) else None
         if batch_id:
-            batch = await db.fetch_one("batches", {"id": batch_id})
+            batch = await personalization.db.fetch_one("batches", {"id": batch_id})
             if batch and isinstance(batch, dict):
                 hierarchy["batch"] = f"{batch.get('batch_name') or batch.get('name')} ({batch.get('year') or ''})"
         if section_id:
-            section = await db.fetch_one("sections", {"id": section_id})
+            section = await personalization.db.fetch_one("sections", {"id": section_id})
             hierarchy["section"] = (section.get("name") if section else None) if isinstance(section, dict) else None
         if ay_id:
-            ay = await db.fetch_one("academic_years", {"id": ay_id})
+            ay = await personalization.db.fetch_one("academic_years", {"id": ay_id})
             hierarchy["academicYear"] = (ay.get("name") if ay else None) if isinstance(ay, dict) else None
 
         # 3. Fetch Supplemental Data
@@ -1243,6 +1252,7 @@ async def get_profile(
         logger.error(error_msg, user_id=current_user.get("id"), exc_info=True)
         # Print to stdout for terminal visibility
         print(f"❌ FULL ERROR in /profile: {e}")
+        import traceback
         traceback.print_exc()
         
         raise HTTPException(
@@ -1260,6 +1270,7 @@ async def get_leaderboard(
     timeframe: str = "weekly",
     current_user: dict = Depends(get_current_user),
     response: Response = None,
+    analytics_store: AnalyticsStore = Depends(get_analytics_store),
 ):
     """
     Returns a ranked leaderboard of students based on XP from learning_events.
@@ -1273,15 +1284,14 @@ async def get_leaderboard(
             return success_response(data={"timeframe": timeframe, "entries": json.loads(cached_data)})
     except: pass
 
-    db = get_scoped_db(current_user)
     try:
         # Fetch recent quiz submission events
-        query = db.table("learning_events").select("user_id, payload")
+        query = analytics_store.db.table("learning_events").select("user_id, payload")
         query = query.eq("event_type", "quiz_submitted")
         
         if timeframe == "weekly":
             last_week = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
-            query = query.query.gte("created_at", last_week)
+            query = query.gte("created_at", last_week)
 
         res = await query.limit(2000).async_execute()
         events = res.data or []
@@ -1289,1241 +1299,251 @@ async def get_leaderboard(
         # Aggregate XP in Python
         xp_map = defaultdict(int)
         for ev in events:
-            u_id = ev.get("user_id")
-            pl = ev.get("payload") or {}
-            xp_map[u_id] += int(pl.get("score", 0))
-
-        sorted_ids = sorted(xp_map.keys(), key=lambda x: xp_map[x], reverse=True)[:50]
-        
+            payload = ev.get("payload", {})
+            score = payload.get("score", 0)
+            xp_map[ev["user_id"]] += int(score * 10) # 10XP per percent
+            
+        # Get Student Names
+        user_ids = list(xp_map.keys())
         entries = []
         curr_uid = str(current_user.get("id"))
-        
-        for idx, u_id in enumerate(sorted_ids):
-            user_doc = await db.fetch_one("users", {"id": u_id})
-            entries.append({
-                "rank": idx + 1,
-                "userId": str(u_id),
-                "name": user_doc.get("full_name") if user_doc else "Scholar",
-                "avatar": user_doc.get("avatar_url") if user_doc else "",
-                "xp": xp_map[u_id],
-                "streak": user_doc.get("streak", 0) if user_doc else 0,
-                "isCurrentUser": str(u_id) == curr_uid
-            })
 
-        # Ensure current user is included
-        if not any(e["isCurrentUser"] for e in entries):
-            user_doc = await db.fetch_one("users", {"id": curr_uid})
-            if user_doc:
+        if user_ids:
+            # Batch fetch user names
+            users_res = await analytics_store.db.table("users").select("id, name, full_name, avatar_url")\
+                .in_("id", user_ids[:100]).async_execute()
+            
+            user_data = {u["id"]: u for u in users_res.data or []}
+            
+            for uid, xp in xp_map.items():
+                u_info = user_data.get(uid, {})
                 entries.append({
-                    "rank": 99,
-                    "userId": curr_uid,
-                    "name": user_doc.get("full_name"),
-                    "avatar": user_doc.get("avatar_url"),
-                    "xp": xp_map.get(curr_uid, 0),
-                    "streak": user_doc.get("streak", 0),
-                    "isCurrentUser": True
+                    "id": uid,
+                    "name": u_info.get("full_name") or u_info.get("name") or "Student",
+                    "avatar": u_info.get("avatar_url"),
+                    "xp": xp,
+                    "level": (xp // 500) + 1,
+                    "isCurrentUser": str(uid) == curr_uid
                 })
+        
+        # Sort and take top 50
+        entries.sort(key=lambda x: x["xp"], reverse=True)
+        top_entries = entries[:50]
 
-        if entries: await redis_client.setex(cache_key, 300, json.dumps(entries))
+        # Ensure current user is included if not in top 50
+        if not any(e["isCurrentUser"] for e in top_entries):
+             curr_info = await analytics_store.db.table("users").select("id, name, full_name, avatar_url")\
+                 .eq("id", curr_uid).maybe_single().async_execute()
+             if curr_info.data:
+                 u = curr_info.data
+                 top_entries.append({
+                     "id": curr_uid,
+                     "name": u.get("full_name") or u.get("name") or "You",
+                     "avatar": u.get("avatar_url"),
+                     "xp": xp_map.get(curr_uid, 0),
+                     "level": (xp_map.get(curr_uid, 0) // 500) + 1,
+                     "rank": 99,
+                     "isCurrentUser": True
+                 })
+
+        # Cache for 5 mins
+        try:
+            await redis_client.setex(cache_key, 300, json.dumps(top_entries))
+        except: pass
+
         if response: response.headers["X-Cache"] = "MISS"
-        return success_response(data={"timeframe": timeframe, "entries": entries})
-
+        return success_response(data={"timeframe": timeframe, "entries": top_entries})
     except Exception as e:
-        logger.error("leaderboard_failed", error=str(e))
+        logger.error(f"leaderboard_fetch_failed: {str(e)}")
         return success_response(data={"timeframe": timeframe, "entries": []})
 
 
-
-@router.get("/subjects")
-async def list_student_subjects(current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "student":
-        raise HTTPException(status_code=403, detail="Student access required")
-    student_id = current_user.get("id")
-    db = get_scoped_db(current_user)
-    client = db.get_client()
-    enrollment_rows = (
-        client.table("enrollments")
-        .select("*")
-        .eq("student_id", student_id)
-        .execute()
-        .data
-        or []
-    )
-    enrollment_by_course = {
-        str(row.get("course_id")): row
-        for row in enrollment_rows
-        if row.get("course_id")
-    }
-
-    subject_rows = (
-        client.table("student_subjects")
-        .select("subject_id")
-        .eq("student_id", student_id)
-        .execute()
-        .data
-        or []
-    )
-    subject_ids = {
-        str(s["subject_id"])
-        for s in subject_rows
-        if s.get("subject_id")
-    } | set(enrollment_by_course.keys())
-
-    if not subject_ids:
-        return []
-
-    courses_res = client.table("courses").select("*").in_("id", list(subject_ids)).execute()
-    courses = courses_res.data or []
-
-    # attach faculty if assignment exists for student's batch/section
-    batch_id = current_user.get("batch_id")
-    section = current_user.get("section")
-    assignments = (
-        client.table("teacher_assignments")
-        .select("course_id, teacher_id")
-        .eq("batch_id", batch_id)
-        .eq("section", section)
-        .execute()
-    )
-    teacher_ids = [a["teacher_id"] for a in (assignments.data or []) if a.get("teacher_id")]
-    teachers = (
-        client.table("users").select("id, full_name, email").in_("id", teacher_ids).execute()
-        if teacher_ids
-        else None
-    )
-    teacher_lookup = {t["id"]: t for t in (teachers.data or [])} if teachers else {}
-    assign_lookup = {a["course_id"]: a for a in (assignments.data or [])}
-
-    results = []
-    for course in courses:
-        assign = assign_lookup.get(course.get("id"))
-        teacher = teacher_lookup.get(assign.get("teacher_id")) if assign else None
-        progress_data = (enrollment_by_course.get(str(course.get("id"))) or {}).get("progress") or {}
-        results.append({
-            "id": course.get("id"),
-            "name": course.get("course_name") or course.get("name") or course.get("title"),
-            "code": course.get("code") or course.get("course_code"),
-            "description": course.get("description"),
-            "thumbnail": course.get("thumbnail_url") or course.get("thumbnail"),
-            "credits": course.get("credits"),
-            "semester": course.get("semester"),
-            "type": course.get("type") or course.get("category"),
-            "facultyName": teacher.get("full_name") if teacher else None,
-            "facultyEmail": teacher.get("email") if teacher else None,
-            "assignedSection": section,
-            "progress": float(progress_data.get("percentage", 0) or 0),
-            "mastery": float(progress_data.get("mastery", 0) or 0),
-            "streak": int(progress_data.get("streak", 0) or 0),
-            "hoursSpent": float(progress_data.get("hoursSpent", 0) or 0),
-            "lastAccessed": progress_data.get("lastAccessed"),
-            "status": (enrollment_by_course.get(str(course.get("id"))) or {}).get("status", "active"),
-        })
-    results.sort(key=lambda item: ((item.get("progress") or 0) <= 0, str(item.get("name") or "").lower()))
-    return results
-
-
-@router.get("/onboarding/options")
-async def get_student_onboarding_options(current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "student":
-        raise HTTPException(status_code=403, detail="Student access required")
-
-    student_id = current_user.get("id")
-    dept_id = current_user.get("dept_id") or current_user.get("department_id")
-    batch_id = current_user.get("batch_id")
-    db = get_scoped_db(current_user)
-    client = db.get_client()
-    if client is None:
-        return {
-            "classes": [],
-            "subjects": [],
-            "selectedSubjectIds": [],
-            "currentEnrollment": None
-        }
-
-    batch = await db.fetch_one("batches", {"id": batch_id}) if batch_id else None
-
-    section_rows: List[Dict[str, Any]] = []
-    try:
-        class_query = client.table("classes").select("*")
-        if dept_id:
-            class_query = class_query.eq("department_id", dept_id)
-        if batch_id:
-            class_query = class_query.eq("batch_id", batch_id)
-        section_rows = class_query.execute().data or []
-    except Exception:
-        if dept_id:
-            section_rows = client.table("sections").select("*").eq("department_id", dept_id).execute().data or []
-
-    if current_user.get("section"):
-        user_section = str(current_user.get("section"))
-        section_rows.sort(
-            key=lambda row: (
-                0 if str(row.get("section") or row.get("section_name") or "") == user_section else 1,
-                str(row.get("class_name") or row.get("section_name") or ""),
-            )
-        )
-
-    semester = batch.get("current_semester") if batch else None
-    subjects: List[Dict[str, Any]] = []
-    if dept_id and semester:
-        subjects = await db.fetch_all("courses", {"department_id": dept_id, "semester": semester})
-
-    selected_subjects = (
-        client.table("student_subjects")
-        .select("subject_id")
-        .eq("student_id", student_id)
-        .execute()
-        .data
-        or []
-    )
-    selected_subject_ids = [row["subject_id"] for row in selected_subjects if row.get("subject_id")]
-
-    _enroll_res = (
-        client.table("student_enrollments")
-        .select("*")
-        .eq("student_id", student_id)
-        .maybe_single()
-        .execute()
-    )
-    enrollment = _enroll_res.data if _enroll_res is not None else None
-
-    _profile_res = (
-        client.table("learner_profiles")
-        .select("*")
-        .eq("user_id", student_id)
-        .maybe_single()
-        .execute()
-    )
-    learner_profile = _profile_res.data if _profile_res is not None else None
-
-    try:
-        _mastery_res = (
-            client.table("skill_mastery")
-            .select("course_id, mastery_score, skill_name")
-            .eq("user_id", student_id)
-            .eq("skill_name", "initial_self_assessment")
-            .execute()
-        )
-        mastery_rows = (_mastery_res.data if _mastery_res is not None else None) or []
-    except Exception:
-        mastery_rows = []
-    skill_levels = {
-        str(row["course_id"]): float(row.get("mastery_score") or 0)
-        for row in mastery_rows
-        if row.get("course_id")
-    }
-
-    preferred_class = _pick_preferred_class(section_rows, current_user.get("section"))
-    issues = {
-        "missingDepartmentLink": not bool(dept_id),
-        "missingBatchLink": not bool(batch_id),
-        "missingSubjects": len(subjects) == 0,
-        "missingClasses": len(section_rows) == 0,
-        "missingProgramLink": not bool(
-            (enrollment or {}).get("program_id")
-            or (preferred_class or {}).get("program_id")
-        ),
-    }
-
-    return {
-        "batch": batch,
-        "sections": section_rows,
-        "subjects": subjects,
-        "selectedSubjectIds": selected_subject_ids,
-        "enrollment": enrollment,
-        "learnerProfile": learner_profile,
-        "skillLevels": skill_levels,
-        "section": current_user.get("section"),
-        "preferredClassId": (preferred_class or {}).get("id"),
-        "issues": issues,
-    }
-
-
-@router.post("/onboarding/complete")
-async def complete_student_onboarding(
-    payload: StudentOnboardingCompleteRequest,
+@router.get("/attendance/summary")
+async def get_student_attendance_summary(
     current_user: dict = Depends(get_current_user),
+    attendance_store: AttendanceStore = Depends(get_attendance_store),
 ):
-    if current_user.get("role") != "student":
-        raise HTTPException(status_code=403, detail="Student access required")
+    """
+    Get overall attendance percentage and trends.
+    """
+    return await attendance_store.get_student_summary(current_user["id"])
 
-    student_id = current_user.get("id")
-    dept_id = current_user.get("dept_id") or current_user.get("department_id")
-    batch_id = current_user.get("batch_id")
 
-    db = get_scoped_db(current_user)
-    if not payload.batch_confirmed:
-        raise HTTPException(status_code=400, detail="Batch details must be confirmed before finishing onboarding")
-    if not payload.subject_ids:
-        raise HTTPException(status_code=400, detail="Select at least one engineering subject")
+@router.get("/attendance/detail")
+async def get_student_attendance_detail(
+    course_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+    attendance_store: AttendanceStore = Depends(get_attendance_store),
+):
+    """
+    Get day-by-day attendance log for a specific course or all courses.
+    """
+    return await attendance_store.get_student_detail(current_user["id"], course_id)
 
-    required_consents = ("teacherVerifiedAi", "academicIntegrity", "dataPolicy")
-    if not all(payload.consents.get(key) is True for key in required_consents):
-        raise HTTPException(status_code=400, detail="All mandatory consents must be accepted")
 
-    batch = await db.fetch_one("batches", {"id": batch_id}) if batch_id else None
-    if not batch:
-        raise HTTPException(status_code=400, detail="Batch details are missing from your account")
-
-    selected_section = await db.fetch_one("sections", {"id": payload.section_id}) if payload.section_id else None
-    enrollment_record = await db.fetch_one("student_enrollments", {"student_id": student_id})
-    if not selected_section and batch_id:
-        section_candidates = await db.fetch_all("sections", {"batch_id": batch_id})
-        selected_section = _pick_preferred_class(section_candidates, current_user.get("section"))
-
-    if selected_section and dept_id and selected_section.get("department_id") not in {None, dept_id}:
-        raise HTTPException(status_code=403, detail="Selected class is outside your department scope")
-    if selected_section and batch_id and selected_section.get("batch_id") not in {None, batch_id}:
-        raise HTTPException(status_code=403, detail="Selected class does not belong to your batch")
-
-    course_lookup: Dict[str, Dict[str, Any]] = {}
-    for subject_id in payload.subject_ids:
-        course = await db.fetch_one("courses", {"id": subject_id})
-        if course:
-            course_lookup[str(subject_id)] = course
-
-    program_id = (
-        (selected_section or {}).get("program_id")
-        or (enrollment_record or {}).get("program_id")
-        or next(
-            (
-                course.get("program_id")
-                for course in course_lookup.values()
-                if course.get("program_id")
-            ),
-            None,
-        )
-    )
-    current_semester_id = (
-        (selected_section or {}).get("semester_id")
-        or (enrollment_record or {}).get("current_semester_id")
-        or next(
-            (
-                course.get("semester_id")
-                for course in course_lookup.values()
-                if course.get("semester_id")
-            ),
-            None,
-        )
+@router.get("/assignments/list")
+async def list_student_assignments(
+    course_id: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+    assignment_store: AssignmentStore = Depends(get_assignment_store),
+):
+    """
+    List assignments with submission status and grades.
+    """
+    return await assignment_store.list_student_assignments(
+        current_user["id"], course_id=course_id, status=status
     )
 
-    if not program_id and dept_id:
-        program_rows = await supabase_db.fetch_all("programs", {"department_id": dept_id})
-        active_programs = [row for row in program_rows if (row.get("status") or "active") == "active"]
-        fallback_programs = active_programs or program_rows
-        if len(fallback_programs) == 1:
-            program_id = fallback_programs[0].get("id")
-        elif fallback_programs:
-            batch_label = str(batch.get("label") or "").lower()
-            program_id = next(
-                (
-                    row.get("id")
-                    for row in fallback_programs
-                    if batch_label and batch_label in str(row.get("program_name") or "").lower()
-                ),
-                fallback_programs[0].get("id"),
-            )
 
-    if not current_semester_id and program_id and batch.get("current_semester"):
-        semester_match = await supabase_db.fetch_one(
-            "semesters",
-            {"program_id": program_id, "semester_number": batch.get("current_semester")},
-        )
-        current_semester_id = semester_match.get("id") if semester_match else None
-
-    year_of_study = max(1, ((int(batch.get("current_semester") or 1) + 1) // 2))
-    now = datetime.utcnow().isoformat()
-
-    enrollment_upsert = None
-    if program_id:
-        enrollment_upsert = await supabase_db.upsert(
-            "student_enrollments",
-            {
-                "student_id": student_id,
-                "program_id": program_id,
-                "current_semester_id": current_semester_id,
-                "class_id": (selected_section or {}).get("id") or payload.class_id or (enrollment_record or {}).get("class_id"),
-                "year_of_study": year_of_study,
-                "status": "active",
-                "updated_at": now,
-            },
-            on_conflict="student_id, program_id",
-        )
-        if not enrollment_upsert:
-            raise HTTPException(status_code=500, detail="Failed to update student enrollment")
-
-    user_updates: Dict[str, Any] = {"onboarding_step": 5}
-    if (selected_section or {}).get("section"):
-        user_updates["section"] = selected_section.get("section")
-    elif (selected_section or {}).get("section_name"):
-        user_updates["section"] = selected_section.get("section_name")
-    db = get_scoped_db(current_user)
-    updated_user = await db.update("users", user_updates, {"id": student_id})
-    if updated_user is None:
-        raise HTTPException(status_code=500, detail="Failed to update student onboarding state")
-
-    await db.delete("student_subjects", {"student_id": student_id})
-    for subject_id in payload.subject_ids:
-        course = course_lookup.get(str(subject_id))
-        if not course:
-            continue
-        await db.insert(
-            "student_subjects",
-            {"student_id": student_id, "subject_id": subject_id},
-        )
-
-        score = _clamp_unit_interval(payload.skill_levels.get(subject_id), default=0.5)
-        await db.delete(
-            "skill_mastery",
-            {"user_id": student_id, "course_id": subject_id, "skill_name": "initial_self_assessment"},
-        )
-        await db.insert(
-            "skill_mastery",
-            {
-                "user_id": student_id,
-                "course_id": subject_id,
-                "skill_name": "initial_self_assessment",
-                "mastery_score": score,
-                "confidence": 0.6,
-                "bkt_p_l0": score,
-                "assessment_count": 1,
-                "last_assessed": now,
-                "updated_at": now,
-            },
-        )
-
-        await db.upsert(
-            "enrollments",
-            {
-                "student_id": student_id,
-                "course_id": subject_id,
-                "status": "active",
-                "enrolled_at": now,
-                "progress": {
-                    "percentage": 0,
-                    "mastery": round(score * 100, 2),
-                    "streak": 0,
-                    "hoursSpent": 0,
-                    "lastAccessed": None,
-                },
-            },
-            on_conflict="student_id, course_id",
-        )
-
-    strengths = [
-        course_lookup[sid].get("course_name") or course_lookup[sid].get("name") or sid
-        for sid in payload.subject_ids
-        if sid in course_lookup and _clamp_unit_interval(payload.skill_levels.get(sid), 0.5) >= 0.7
-    ]
-    weaknesses = [
-        course_lookup[sid].get("course_name") or course_lookup[sid].get("name") or sid
-        for sid in payload.subject_ids
-        if sid in course_lookup and _clamp_unit_interval(payload.skill_levels.get(sid), 0.5) < 0.4
-    ]
-    mastery_state = {
-        sid: {
-            "score": _clamp_unit_interval(payload.skill_levels.get(sid), 0.5),
-            "confidence": 0.6,
-            "attempts": 1,
-        }
-        for sid in payload.subject_ids
-    }
-
-    learner_profile = await db.upsert(
-        "learner_profiles",
-        {
-            "user_id": student_id,
-            "role": "student",
-            "grade_level": f"Semester {batch.get('current_semester')}" if batch.get("current_semester") else None,
-            "goals": [payload.goal],
-            "preferences": {
-                "learning_styles": payload.learning_styles,
-                "device_type": payload.device_type,
-                "internet_type": payload.internet_type,
-                "class_id": payload.class_id,
-                "subject_ids": payload.subject_ids,
-                "batch_confirmed": payload.batch_confirmed,
-            },
-            "mastery_state": mastery_state,
-            "learning_style": ", ".join(payload.learning_styles),
-            "strengths": strengths,
-            "weaknesses": weaknesses,
-            "metadata": {
-                "engineering_onboarding_completed_at": now,
-                "batch_id": batch_id,
-                "batch_label": batch.get("label"),
-                "batch_confirmation_note": payload.batch_confirmation_note,
-                "section": user_updates.get("section") or current_user.get("section"),
-                "program_id": program_id,
-                "program_link_resolved": bool(program_id),
-            },
-            "updated_at": now,
-        },
-        on_conflict="user_id",
-    )
-    if not learner_profile:
-        raise HTTPException(status_code=500, detail="Failed to initialize learner profile")
-
-    existing_user_data = await db.fetch_one("user_data", {"user_id": student_id})
-    progress = (existing_user_data or {}).get("progress") or {}
-    progress["step_5"] = {
-        "classId": payload.class_id,
-        "subjectIds": payload.subject_ids,
-        "learningStyles": payload.learning_styles,
-        "skillLevels": payload.skill_levels,
-        "goal": payload.goal,
-        "deviceType": payload.device_type,
-        "internetType": payload.internet_type,
-        "consents": payload.consents,
-        "batchConfirmed": payload.batch_confirmed,
-        "batchConfirmationNote": payload.batch_confirmation_note,
-        "preferredClassId": (selected_section or {}).get("id"),
-        "programId": program_id,
-        "programLinked": bool(program_id),
-    }
-    progress["onboarding_status"] = "COMPLETED"
-    progress["onboarding_step"] = 5
-
-    if existing_user_data:
-        await db.update(
-            "user_data",
-            {"progress": progress, "updated_at": now},
-            {"user_id": student_id},
-        )
-    else:
-        await db.insert(
-            "user_data",
-            {"user_id": student_id, "progress": progress, "updated_at": now},
-        )
-
-    return {
-        "success": True,
-        "studentId": student_id,
-        "classId": (selected_section or {}).get("id") or payload.class_id,
-        "subjectCount": len(course_lookup),
-        "batchLabel": batch.get("label"),
-        "programLinked": bool(program_id),
-    }
-
-
-@router.get("/attendance")
-async def get_student_attendance_summary(current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "student":
-        raise HTTPException(status_code=403, detail="Student access required")
-    db = get_scoped_db(current_user)
-    
-    # Fetch records for student
-    records_res = db.table("attendance_records").select("*").eq("student_id", current_user.get("id")).execute()
-    records = records_res.data or []
-    if not records:
-        return {"subjects": [], "threshold": 75}
-        
-    session_ids = list({r.get("session_id") for r in records if r.get("session_id")})
-    sessions_res = db.table("attendance_sessions").select("*").in_("id", session_ids).execute() if session_ids else None
-    sessions = {s["id"]: s for s in (sessions_res.data or [])} if sessions_res else {}
-    
-    course_ids = list({s.get("course_id") for s in sessions.values() if s.get("course_id")})
-    courses = db.table("courses").select("id,title,course_name,name").in_("id", course_ids).execute() if course_ids else None
-    course_lookup = {c["id"]: c for c in (courses.data if courses else [])}
-    
-    summary = {}
-    for row in records:
-        session = sessions.get(row.get("session_id"))
-        if not session:
-            continue
-        cid = session.get("course_id")
-        if not cid:
-            continue
-        item = summary.setdefault(cid, {"total": 0, "present": 0})
-        item["total"] += 1
-        if row.get("is_present"):
-            item["present"] += 1
-
-    results = []
-    for cid, stats in summary.items():
-        course = course_lookup.get(cid, {})
-        name = course.get("title") or course.get("course_name") or course.get("name") or "Course"
-        percent = round((stats["present"] / stats["total"]) * 100, 2) if stats["total"] else 0
-        results.append({
-            "courseId": cid,
-            "courseName": name,
-            "totalClasses": stats["total"],
-            "presentClasses": stats["present"],
-            "attendancePercent": percent,
-        })
-    return {"subjects": results, "threshold": 75}
-
-
-@router.get("/attendance/{course_id}/detail")
-async def get_student_attendance_detail(course_id: str, current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "student":
-        raise HTTPException(status_code=403, detail="Student access required")
-    db = get_scoped_db(current_user)
-    
-    sessions_res = db.table("attendance_sessions").select("id, class_date").eq("course_id", course_id).execute()
-    sessions = sessions_res.data or []
-    if not sessions:
-        return {"classes": [], "total": 0, "attended": 0}
-        
-    session_lookup = {s["id"]: s for s in sessions}
-    
-    records_res = (
-        db.table("attendance_records")
-        .select("session_id,is_present")
-        .eq("student_id", current_user.get("id"))
-        .in_("session_id", list(session_lookup.keys()))
-        .execute()
-    )
-    records = records_res.data or []
-    
-    classes = []
-    for r in records:
-        sess = session_lookup.get(r.get("session_id"))
-        if sess:
-            classes.append({
-                "class_date": sess.get("class_date"),
-                "is_present": r.get("is_present")
-            })
-            
-    classes.sort(key=lambda x: x.get("class_date") or "")
-    total = len(classes)
-    attended = len([c for c in classes if c.get("is_present")])
-    return {"classes": classes, "total": total, "attended": attended}
-
-
-@router.get("/assignments")
-async def list_student_assignments(current_user: dict = Depends(get_current_user), status: Optional[str] = None):
-    if current_user.get("role") != "student":
-        raise HTTPException(status_code=403, detail="Student access required")
-    dept_id = current_user.get("dept_id") or current_user.get("department_id")
-    batch_id = current_user.get("batch_id")
-    section = current_user.get("section")
-
-    db = get_scoped_db(current_user)
-
-    courses = []
-    course_ids = set()
-    if dept_id:
-        courses_res = db.table("courses").select("id,title,course_name,name").eq("department_id", dept_id).execute()
-        courses = courses_res.data or []
-        course_ids.update(str(course["id"]) for course in courses if course.get("id"))
-
-    submissions_res = db.table("assignment_submissions").select("*").eq("student_id", current_user.get("id")).execute()
-    submissions = submissions_res.data or []
-
-    submission_map = {}
-    submitted_assignment_ids = set()
-    for s in submissions:
-        key = s.get("assignment_id")
-        if key:
-            normalized_score = s.get("marks")
-            if normalized_score is None:
-                normalized_score = s.get("grade")
-            if normalized_score is None:
-                normalized_score = s.get("score")
-            submission_map[key] = {
-                **s,
-                "content_url": s.get("content_url") or s.get("file_path"),
-                "score": normalized_score,
-            }
-            submitted_assignment_ids.add(str(key))
-
-    assignments = []
-    if course_ids:
-        assignments_res = db.table("assignments").select("*").in_("course_id", list(course_ids)).execute()
-        assignments.extend(assignments_res.data or [])
-
-    existing_assignment_ids = {str(assignment.get("id")) for assignment in assignments if assignment.get("id")}
-    missing_assignment_ids = list(submitted_assignment_ids - existing_assignment_ids)
-    if missing_assignment_ids:
-        submitted_assignments_res = db.table("assignments").select("*").in_("id", missing_assignment_ids).execute()
-        assignments.extend(submitted_assignments_res.data or [])
-
-    assignment_course_ids = {
-        str(assignment.get("course_id"))
-        for assignment in assignments
-        if assignment.get("course_id")
-    }
-    missing_course_ids = list(assignment_course_ids - course_ids)
-    if missing_course_ids:
-        extra_courses_res = db.table("courses").select("id,title,course_name,name").in_("id", missing_course_ids).execute()
-        extra_courses = extra_courses_res.data or []
-        courses.extend(extra_courses)
-        course_ids.update(str(course["id"]) for course in extra_courses if course.get("id"))
-
-    if not assignments:
-        return []
-
-    course_lookup = {str(c["id"]): c for c in courses if c.get("id")}
-    results = []
-    for assignment in assignments:
-        if assignment.get("batch_id") and batch_id and assignment.get("batch_id") != batch_id:
-            continue
-        if assignment.get("section") and section and assignment.get("section") != section:
-            continue
-        course = course_lookup.get(str(assignment.get("course_id")), {})
-        submission = submission_map.get(assignment.get("id"))
-        status_value = "pending"
-        normalized_score = submission.get("score") if submission else None
-        if submission:
-            status_value = "graded" if normalized_score is not None else "submitted"
-        elif assignment.get("due_date") and assignment.get("due_date") < datetime.now(timezone.utc).isoformat():
-            status_value = "overdue"
-
-        if status and status != "all" and status_value != status:
-            continue
-
-        results.append({
-            **assignment,
-            "courseName": course.get("title") or course.get("course_name") or course.get("name"),
-            "course_name": course.get("title") or course.get("course_name") or course.get("name"),
-            "submitted": bool(submission),
-            "submission": submission,
-            "status": status_value,
-        })
-    return results
-
-
-@router.post("/assignments/{assignment_id}/submit")
+@router.post("/assignments/submit")
 async def submit_student_assignment(
     assignment_id: str,
-    payload: dict,
+    submission_data: Dict[str, Any],
     current_user: dict = Depends(get_current_user),
-):
-    if current_user.get("role") != "student":
-        raise HTTPException(status_code=403, detail="Student access required")
-    # Validate assignment
-    db = get_scoped_db(current_user)
-    assignment = await db.fetch_one("assignments", {"id": assignment_id})
-    if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
-    if assignment.get("due_date") and assignment.get("due_date") < datetime.now(timezone.utc).isoformat():
-        raise HTTPException(status_code=400, detail="Submission deadline has passed")
-    if assignment.get("batch_id") and current_user.get("batch_id") != assignment.get("batch_id"):
-        raise HTTPException(status_code=403, detail="This assignment is not assigned to your batch")
-    if assignment.get("section") and current_user.get("section") != assignment.get("section"):
-        raise HTTPException(status_code=403, detail="This assignment is not assigned to your section")
-    if not payload.get("content_url") and not payload.get("text_content"):
-        raise HTTPException(status_code=400, detail="Submission content is required")
-
-    existing = await db.fetch_one(
-        "assignment_submissions",
-        {"assignment_id": assignment_id, "student_id": current_user.get("id")},
-    )
-    if existing:
-        raise HTTPException(status_code=409, detail="Already submitted")
-
-    data = {
-        "assignment_id": assignment_id,
-        "student_id": current_user.get("id"),
-        "course_id": assignment.get("course_id"),
-        "content_url": payload.get("content_url"),
-        "text_content": payload.get("text_content"),
-        "submission_type": "online",
-        "status": "submitted",
-        "submitted_at": datetime.now(timezone.utc).isoformat(),
-    }
-    submission = await db.insert("assignment_submissions", data)
-    if not submission:
-        raise HTTPException(status_code=500, detail="Failed to save submission")
-
-    audit_logger.log(
-        action="assignment_submitted",
-        user_id=str(current_user.get("id")),
-        resource_id=str(submission.get("id")),
-        metadata={
-            "assignment_id": assignment_id,
-            "course_id": assignment.get("course_id"),
-            "submission_type": "online",
-        },
-    )
-    return submission
-
-
-@router.get("/grades")
-async def list_student_grades(current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "student":
-        raise HTTPException(status_code=403, detail="Student access required")
-    db = get_scoped_db(current_user)
-    submissions_res = db.table("assignment_submissions").select("*").eq("student_id", current_user.get("id")).execute()
-    submissions = submissions_res.data or []
-    
-    assignment_ids = list({
-        s.get("assignment_id")
-        for s in submissions
-        if s.get("assignment_id")
-    })
-    assignments_res = db.table("assignments").select("*").in_("id", assignment_ids).execute() if assignment_ids else None
-    assignments = assignments_res.data if assignments_res else []
-    course_ids = list({a.get("course_id") for a in assignments if a.get("course_id")})
-    courses_res = db.table("courses").select("id,title,course_name,name").in_("id", course_ids).execute() if course_ids else None
-    course_lookup = {c["id"]: c for c in (courses_res.data if courses_res else [])}
-    assignment_lookup = {a["id"]: a for a in assignments}
-
-    results = []
-    for submission in submissions:
-        assignment_id = submission.get("assignment_id")
-        assignment = assignment_lookup.get(assignment_id)
-        course = course_lookup.get(assignment.get("course_id")) if assignment else {}
-        normalized_grade = submission.get("grade")
-        if normalized_grade is None:
-            normalized_grade = submission.get("marks")
-        if normalized_grade is None:
-            normalized_grade = submission.get("score")
-        results.append({
-            "submissionId": submission.get("id"),
-            "assignmentId": assignment_id,
-            "assignmentTitle": assignment.get("title") if assignment else None,
-            "courseName": course.get("title") or course.get("course_name") or course.get("name"),
-            "grade": normalized_grade,
-            "marks": submission.get("marks", normalized_grade),
-            "feedback": submission.get("feedback"),
-            "gradedAt": submission.get("graded_at"),
-        })
-    return results
-
-
-@router.get("/materials/{course_id}")
-async def list_student_materials(course_id: str, current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "student":
-        raise HTTPException(status_code=403, detail="Student access required")
-    db = get_scoped_db(current_user)
-    enrolled = await db.fetch_one("student_subjects", {"student_id": current_user.get("id"), "subject_id": course_id})
-    if not enrolled:
-        raise HTTPException(status_code=403, detail="Not enrolled in this course")
-    return await db.fetch_all("course_materials", {"course_id": course_id})
-
-
-@router.get("/risk-score")
-async def get_my_risk_score(current_user: dict = Depends(get_current_user)):
-    """Fetch the latest risk analysis for the current student."""
-    if current_user.get("role") != "student":
-        raise HTTPException(status_code=403, detail="Student access required")
-    
-    service = get_risk_analysis_service()
-    return await service.get_student_risk(current_user["id"])
-
-
-@router.post("/analyze-risk")
-async def trigger_risk_analysis(current_user: dict = Depends(get_current_user)):
-    """Trigger a fresh risk analysis for the current student."""
-    if current_user.get("role") != "student":
-        raise HTTPException(status_code=403, detail="Student access required")
-    
-    institution_id = current_user.get("institution_id")
-    if not institution_id:
-        # Fallback for dev/old users
-        institution_id = "00000000-0000-0000-0000-000000000000"
-        
-    service = get_risk_analysis_service()
-    return await service.run_risk_analysis(current_user["id"], institution_id)
-@router.get("/connection-token")
-async def get_connection_token(
-    current_user: Dict[str, Any] = Depends(get_current_user),
-    student_store: StudentStore = Depends(get_student_store)
+    assignment_store: AssignmentStore = Depends(get_assignment_store),
 ):
     """
-    Returns an 8-character connection code for parent-student linking.
-    Format: LUM-XXXXXX
-    Expires in 10 minutes (600 seconds).
+    Submit an assignment.
     """
-    try:
-        # Check if there's already an active code
-        status = await student_store.get_parent_link_status(current_user["id"])
-        
-        if status["status"] == "pending":
-            code = status["code"]
-            from datetime import datetime
-            expires_at = datetime.fromisoformat(status["expires_at"].replace("Z", "+00:00")).replace(tzinfo=None)
-            remaining = int((expires_at - datetime.utcnow()).total_seconds())
-        else:
-            # Generate a new code
-            code = await student_store.generate_parent_link_code(current_user["id"])
-            remaining = 600
-        
-        return {
-            "token": code,
-            "expires_in": max(0, remaining),
-            "display_id": current_user["id"],
-            "status": status["status"]
-        }
-    except Exception as e:
-        logger.error("get_connection_token_failed", error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to generate connection code")
-
-
-@router.post("/refresh-link-code")
-async def refresh_link_code(
-    current_user: Dict[str, Any] = Depends(get_current_user),
-    student_store: StudentStore = Depends(get_student_store)
-):
-    """
-    Forces the generation of a new 8-character connection code.
-    """
-    try:
-        code = await student_store.generate_parent_link_code(current_user["id"])
-        return {
-            "token": code,
-            "expires_in": 600,
-            "display_id": current_user["id"]
-        }
-    except Exception as e:
-        logger.error("refresh_link_code_failed", error=str(e))
-        # Returning actual error message for deep debug
-        raise HTTPException(status_code=500, detail=f"Failed to refresh connection code: {str(e)}")
-
-
-@router.get("/parent-connection-status")
-async def get_parent_connection_status(
-    current_user: Dict[str, Any] = Depends(get_current_user),
-    student_store: StudentStore = Depends(get_student_store)
-):
-    """
-    Polls for the status of the parent-student link.
-    """
-    try:
-        status = await student_store.get_parent_link_status(current_user["id"])
-        return status
-    except Exception as e:
-        logger.warning("poll_parent_connection_status_failed", student_id=current_user["id"], error=str(e))
-        return {"status": "pending"}
-
-
-# ─── Behavior Tracking Pipeline ───────────────────────────────────────────────
-
-@router.post("/behavior")
-async def ingest_behavior_batch(
-    request: BehaviorBatchRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user),
-):
-    """
-    Receives a batch of real-time behavior signals from the frontend.
-
-    Signal types: typing_burst, paste_detected, scroll, idle, focus_lost,
-    focus_regained, mouse_idle, time_on_question, session_heartbeat.
-
-    Signals are stored in behavior_logs and used to update the student's
-    cognitive load and authenticity KPIs via the personalization service.
-    """
-    if current_user.get("role") not in ("student", "peer_tutor"):
-        raise HTTPException(status_code=403, detail="Student access required")
-
-    user_id = current_user["id"]
-    db = get_scoped_db(current_user)
-    signals = request.signals
-
-    # ── 1. Persist to behavior_logs ───────────────────────────────────────
-    rows = [
-        {
-            "user_id": user_id,
-            "course_id": request.course_id,
-            "event_type": s.event_type,
-            "event_data": {
-                **s.payload,
-                "question_id": request.question_id,
-                "session_id": request.session_id,
-            },
-            "timestamp": s.ts,
-        }
-        for s in signals
-    ]
-    try:
-        await supabase_db.table("behavior_logs").insert(rows).execute()
-    except Exception as exc:
-        logger.warning("behavior_logs_insert_failed", user_id=user_id, error=str(exc))
-
-    # ── 2. Derive quick cognitive / authenticity signals ──────────────────
-    paste_events = [s for s in signals if s.event_type == "paste_detected"]
-    idle_events = [s for s in signals if s.event_type in ("idle", "mouse_idle")]
-    time_on_q_events = [s for s in signals if s.event_type == "time_on_question"]
-
-    # Build a lightweight assessment-answer-like payload so the KPI engine
-    # can update authenticity without a quiz answer
-    if paste_events or time_on_q_events:
-        for s in paste_events:
-            char_count = s.payload.get("char_count", 0)
-            # Model paste as very fast typing: chars_per_sec = char_count / 0.1s
-            synthetic_payload = {
-                "is_correct": None,
-                "time_taken": 0.1,
-                "answer_text": "x" * int(char_count),
-                "source": "paste_detection",
-                "session_id": request.session_id,
-                "course_id": request.course_id,
-            }
-            await get_personalization_service(db=db).record_event(
-                user_id,
-                LearningEventType.ASSESSMENT_ANSWER,
-                payload=synthetic_payload,
-                source="behavior_tracker",
-                course_id=request.course_id,
-                role=current_user.get("role", "student"),
-            )
-
-    # ── 3. Log idle signals as activity events ────────────────────────────
-    if idle_events:
-        await get_personalization_service(db=db).record_event(
-            user_id,
-            LearningEventType.ACTIVITY_LOGGED,
-            payload={
-                "idle_signal": True,
-                "idle_count": len(idle_events),
-                "session_id": request.session_id,
-                "course_id": request.course_id,
-            },
-            source="behavior_tracker",
-            course_id=request.course_id,
-            role=current_user.get("role", "student"),
-        )
-
-    return {
-        "status": "ok",
-        "accepted": len(signals),
-        "session_id": request.session_id,
-    }
-
-
-# ─── Adaptive Question Engine ─────────────────────────────────────────────────
-
-@router.post("/adaptive-question")
-async def get_adaptive_question(
-    request: AdaptiveQuestionRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user),
-):
-    """
-    Returns the next best question for the student using BKT mastery scores.
-
-    Selection algorithm:
-      1. Load student mastery_state for the course/topic
-      2. Fetch published quiz questions for the course (optionally filtered by topic)
-      3. Score each question by how well its difficulty matches the student's
-         current mastery (zone-of-proximal-development targeting)
-      4. Return the highest-scoring question not in exclude_ids
-    """
-    if current_user.get("role") not in ("student", "peer_tutor"):
-        raise HTTPException(status_code=403, detail="Student access required")
-
-    user_id = current_user["id"]
-    db = get_scoped_db(current_user)
-
-    from app.services.adaptive_engine import AdaptiveEngine
-    engine = AdaptiveEngine(db=db)
-    result = await engine.select_next_question(
-        user_id=user_id,
-        course_id=request.course_id,
-        topic_id=request.topic_id,
-        exclude_ids=request.exclude_ids,
+    return await assignment_store.submit_assignment(
+        current_user["id"], assignment_id, submission_data
     )
 
-    if result is None:
-        raise HTTPException(status_code=404, detail="No suitable question found")
 
-    return result
-
-
-# ─── Spaced Repetition Review Schedule ───────────────────────────────────────
-
-@router.get("/review-schedule")
-async def get_review_schedule(
+@router.get("/grades/list")
+async def list_student_grades(
     course_id: Optional[str] = None,
-    limit: int = 10,
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
+    student_store: StudentStore = Depends(get_student_store),
 ):
     """
-    Returns topics/concepts due for spaced-repetition review using the SM-2
-    algorithm applied to the student's skill_mastery and KPI history.
-
-    Topics are ranked by urgency (overdue first, then by forgetting-curve decay).
+    List grades and feedback for courses.
     """
-    if current_user.get("role") not in ("student", "peer_tutor"):
-        raise HTTPException(status_code=403, detail="Student access required")
-
-    user_id = current_user["id"]
-    db = get_scoped_db(current_user)
-
-    from app.services.spaced_repetition import SpacedRepetitionScheduler
-    scheduler = SpacedRepetitionScheduler(db=db)
-    schedule = await scheduler.get_due_reviews(
-        user_id=user_id,
-        course_id=course_id,
-        limit=limit,
-    )
-    return {"schedule": schedule, "count": len(schedule)}
+    return await student_store.get_grades(current_user["id"], course_id=course_id)
 
 
-@router.get("/spaced-repetition")
+@router.get("/materials/list")
+async def list_student_materials(
+    course_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+    course_store: CourseStore = Depends(get_course_store),
+):
+    """
+    List learning materials (PDFs, Videos, etc.) for enrolled subjects.
+    """
+    return await course_store.get_student_materials(current_user["id"], course_id=course_id)
+
+
+@router.post("/behavior/ingest")
+async def ingest_behavior_batch(
+    payload: Dict[str, Any],
+    current_user: dict = Depends(get_current_user),
+    personalization: PersonalizationService = Depends(get_personalization_service),
+):
+    """
+    Ingest a batch of behavior signals (clicks, dwell time, etc.).
+    """
+    events = payload.get("events", [])
+    for event in events:
+        await personalization.record_event(
+            current_user["id"],
+            event.get("type", LearningEventType.BEHAVIOR_SIGNAL),
+            payload=event.get("data", {}),
+            source="behavior_tracker",
+            role=current_user.get("role", "student")
+        )
+    return {"status": "ingested", "count": len(events)}
+
+
+@router.get("/adaptive/next-question")
+async def get_adaptive_question(
+    course_id: str,
+    current_user: dict = Depends(get_current_user),
+    personalization: PersonalizationService = Depends(get_personalization_service),
+):
+    """
+    Get the next best question for the student based on their mastery state.
+    """
+    return await personalization.get_next_adaptive_question(current_user["id"], course_id)
+
+
+@router.get("/review/schedule")
+async def get_review_schedule(
+    current_user: dict = Depends(get_current_user),
+    personalization: PersonalizationService = Depends(get_personalization_service),
+):
+    """
+    Get FSRS-based review schedule for the student across all subjects.
+    """
+    return await personalization.get_review_schedule(current_user["id"])
+
+
+@router.get("/spaced-repetition/list")
 async def get_student_spaced_repetition(
-    limit: int = 10,
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
+    personalization: PersonalizationService = Depends(get_personalization_service),
 ):
-    """
-    Returns flashcards due for review using the FSRS engine.
-    Matches frontend /api/student/spaced-repetition call.
-    """
-    if current_user.get("role") not in ("student", "peer_tutor"):
-        raise HTTPException(status_code=403, detail="Student access required")
-
-    student_id = current_user["id"]
-    db_client = supabase_db.get_client()
-
-    try:
-        # 1. Fetch due cards from FSRS engine
-        cards = await get_due_cards(db_client, student_id, limit=limit)
-        
-        # 2. Count reviews today
-        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
-        reviewed_today_res = await db_client.table("fsrs_cards").select("card_id", count="exact").eq("student_id", student_id).gte("last_reviewed_at", today_start).async_execute()
-        reviewed_today = reviewed_today_res.count if reviewed_today_res.count is not None else 0
-
-        # 3. Format cards for frontend
-        formatted_cards = []
-        for card in cards:
-            formatted_cards.append({
-                "id": card.get("card_id"),
-                "front": card.get("front"),
-                "back": card.get("back"),
-                "category": card.get("source") or "General",
-                "difficulty": "medium" if card.get("difficulty", 0.5) < 0.7 else "hard" if card.get("difficulty", 0.5) >= 0.7 else "easy",
-                "lastReviewed": card.get("last_reviewed_at"),
-                "nextReview": card.get("next_review_date"),
-                "status": "review" if card.get("review_count", 0) > 0 else "new",
-            })
-
-        return {
-            "cards": formatted_cards,
-            "reviewedToday": reviewed_today,
-            "dueToday": len(cards),
-            "streak": 5, # Mock streak, could be fetched from user_stats
-            "nextReviewIn": "Tomorrow at 9:00 AM" if not cards else "Now",
-        }
-    except Exception as exc:
-        logger.error("get_spaced_repetition_failed", user_id=student_id, error=str(exc))
-        raise HTTPException(status_code=500, detail=str(exc))
+    """Get SRS cards due for review."""
+    return await personalization.get_due_srs_cards(current_user["id"])
 
 
-@router.post("/spaced-repetition/review")
+@router.post("/spaced-repetition/submit")
 async def submit_student_spaced_repetition_review(
-    body: SpacedRepetitionReviewRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    payload: Dict[str, Any],
+    current_user: dict = Depends(get_current_user),
+    personalization: PersonalizationService = Depends(get_personalization_service),
 ):
-    """
-    Submits a review for an FSRS card.
-    Matches frontend /api/student/spaced-repetition/review call.
-    """
-    if current_user.get("role") not in ("student", "peer_tutor"):
-        raise HTTPException(status_code=403, detail="Student access required")
-
-    student_id = current_user["id"]
-    db_client = supabase_db.get_client()
-
-    try:
-        updated_card = await fsrs_update_card(
-            db_client,
-            student_id=student_id,
-            card_id=body.cardId,
-            grade=body.grade,
-        )
-        if not updated_card:
-            raise HTTPException(status_code=404, detail="Card not found or update failed")
-            
-        return {"status": "ok", "card": updated_card}
-    except Exception as exc:
-        logger.error("submit_review_failed", user_id=student_id, error=str(exc))
-        raise HTTPException(status_code=500, detail=str(exc))
+    """Submit SRS review results."""
+    return await personalization.submit_srs_review(
+        current_user["id"], payload.get("card_id"), payload.get("rating")
+    )
 
 
-# ─── Master Orchestrator Endpoint ─────────────────────────────────────────────
-
-@router.post("/answer")
+@router.post("/quiz/submit-answer")
 async def submit_answer(
-    request: StudentAnswerRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    payload: Dict[str, Any],
+    current_user: dict = Depends(get_current_user),
+    personalization: PersonalizationService = Depends(get_personalization_service),
 ):
-    """
-    MASTER INTELLIGENCE PIPELINE — submit a student answer.
+    """Submit a single quiz answer and get immediate feedback / mastery update."""
+    return await personalization.submit_quiz_answer(
+        current_user["id"], 
+        payload.get("question_id"), 
+        payload.get("answer"),
+        payload.get("context", {})
+    )
 
-    Triggers the full on_student_answer() orchestration:
-      1. Multi-dimensional answer analysis (40/30/20/10 scoring)
-      2. BKT mastery update
-      3. DKT sequence update
-      4. KPI recompute
-      5. RL explanation style reward
-      6. Trait detection update
-      7. Adaptive next question selection
-      8. Intervention check
 
-    Returns: learning_score, next_question, kpi_snapshot, traits, probes.
-    """
-    if current_user.get("role") not in ("student", "peer_tutor"):
-        raise HTTPException(status_code=403, detail="Student access required")
-
-    db = get_scoped_db(current_user)
-
-    from app.services.orchestrator import AdaptiveOrchestrator
-    orchestrator = AdaptiveOrchestrator(db=db)
-
-    try:
-        result = await orchestrator.on_student_answer(
-            user_id          = current_user["id"],
-            course_id        = request.course_id,
-            topic_id         = request.topic_id,
-            question_id      = request.question_id,
-            question_text    = request.question_text,
-            answer_text      = request.answer_text,
-            is_correct       = request.is_correct,
-            correct_answer   = request.correct_answer,
-            difficulty       = request.difficulty,
-            time_taken_s     = request.time_taken_s,
-            correction_count = request.correction_count,
-            behavior_signals = request.behavior_signals,
-            session_id       = request.session_id,
-            exclude_q_ids    = request.exclude_q_ids,
-            debug_mode       = request.debug_mode,
-            current_user     = current_user,
-        )
-    except Exception as exc:
-        logger.error("orchestrator_failed", user_id=current_user["id"], error=str(exc))
-        raise HTTPException(status_code=500, detail=f"Pipeline error: {exc}")
-
+@router.get("/intelligence/report")
+async def get_student_intelligence(
+    current_user: dict = Depends(get_current_user),
+    personalization: PersonalizationService = Depends(get_personalization_service),
+    risk_service: RiskAnalysisService = Depends(get_risk_analysis_service),
+):
+    """Get high-level intelligence report including risk alerts and strength/weakness analysis."""
+    risk_data = await risk_service.get_student_risk(current_user["id"])
+    learner_state = await personalization.get_legacy_state(current_user["id"])
+    
     return {
-        "status": "ok",
-        # Answer analysis
-        "learning_score":      result.learning_score,
-        "dimensions": {
-            "correctness":     result.correctness,
-            "depth":           result.depth,
-            "effort":          result.effort,
-            "growth_delta":    result.growth_delta,
-        },
-        # Authenticity
-        "authenticity": {
-            "score":           result.authenticity_score,
-            "probe_question":  result.probe_question,
-        },
-        # Knowledge state
-        "knowledge": {
-            "mastery_after":   result.mastery_after,
-            "dkt_knowledge":   result.dkt_knowledge,
-            "lag_concepts":    result.lag_concepts,
-            "mastered":        result.mastered_concepts,
-        },
-        # Next adaptive step
-        "next": {
-            "question":        result.next_question,
-            "question_type":   result.next_question_type,
-        },
-        # Student state
-        "kpi":        result.kpi_snapshot,
-        "traits":     result.traits,
-        # Intervention
-        "intervention": {
-            "triggered": result.intervention_triggered,
-            "reason":    result.intervention_reason,
-        },
-        "latency_ms": result.pipeline_latency_ms,
-        # Debug trace (only when debug_mode=True)
-        **({"debug": result.debug_trace} if request.debug_mode else {}),
+        "userId": current_user["id"],
+        "risk": risk_data,
+        "mastery": learner_state.get("overallMastery"),
+        "cognitiveLoad": learner_state.get("cognitiveLoad"),
+        "behaviorLabel": learner_state.get("behaviorLabel")
     }
+
+
+@router.get("/debug/trace")
+async def get_debug_trace(
+    current_user: dict = Depends(get_current_user),
+    analytics_store: AnalyticsStore = Depends(get_analytics_store),
+):
+    """Debug endpoint to see raw event trace for a student."""
+    if not current_user.get("is_debug"):
+        raise HTTPException(status_code=403, detail="Debug access required")
+    return await analytics_store.get_event_trace(current_user["id"])
+
 
 
 # ─── Student Intelligence State ───────────────────────────────────────────────

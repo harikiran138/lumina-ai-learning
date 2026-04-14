@@ -14,16 +14,18 @@ from app.core.logging import structlog
 
 log = structlog.get_logger()
 
+from app.database.supabase_manager import supabase_db
+
 async def seed_roles():
-    user_store = UserStore()
-    parent_store = ParentStore()
-    mentor_store = MentorStore()
-    counselor_store = CounselorStore()
-    researcher_store = ResearcherStore()
-    creator_store = ContentCreatorStore()
-    student_store = StudentStore()
-    peer_tutor_store = PeerTutorStore()
-    academic_store = AcademicStore()
+    user_store = UserStore(db=supabase_db)
+    parent_store = ParentStore(db=supabase_db)
+    mentor_store = MentorStore(db=supabase_db)
+    counselor_store = CounselorStore(db=supabase_db)
+    researcher_store = ResearcherStore(db=supabase_db)
+    creator_store = ContentCreatorStore(db=supabase_db)
+    student_store = StudentStore(db=supabase_db)
+    peer_tutor_store = PeerTutorStore(db=supabase_db)
+    academic_store = AcademicStore(db=supabase_db)
 
     password = "DemoPassword123!"
     

@@ -12,18 +12,24 @@ from app.store.user_store import UserStore
 from app.store.course_store import CourseStore
 from app.store.analytics_store import AnalyticsStore
 from app.store.institution_store import InstitutionStore
+from app.store.academic_store import AcademicStore
+from app.store.config_store import ConfigStore
+from app.dependencies import (
+    get_user_store, 
+    get_course_store, 
+    get_analytics_store, 
+    get_institution_store, 
+    get_config_store, 
+    get_academic_store
+)
 from app.services.personalization_service import get_personalization_service
 from app.database.supabase_manager import supabase_db
-from app.database.scoped_db import get_scoped_db
+from app.database.scoped_db import get_scoped_db, ScopedSupabase
+
 import structlog
 from app.core.audit import audit_logger
-from app.services.guardian_service import get_guardian_service
-from app.services.compliance_service import get_compliance_service
-from app.database.models import Institution, Department, Stakeholder
-from app.store.academic_store import AcademicStore
-from pydantic import BaseModel
-from app.store.config_store import ConfigStore, config_store
 from app.core.rbac import normalize_role, Role
+from pydantic import BaseModel
 
 class CreateDeptRequest(BaseModel):
     institution_id: str
@@ -57,17 +63,22 @@ def is_admin(current_user: dict = Depends(get_current_college_admin)):
 
 
 @router.get("/config")
-async def get_platform_config(admin: dict = Depends(is_admin)):
+async def get_platform_config(
+    admin: dict = Depends(is_admin),
+    config_store: ConfigStore = Depends(get_config_store)
+):
     """Fetch global platform configuration (Maintenance mode, feature flags)."""
-    db = get_scoped_db(admin)
-    return await ConfigStore(db=db).get_all_config()
+    return await config_store.get_all_config()
 
 
 @router.post("/config")
-async def update_platform_config(config: dict, admin: dict = Depends(is_admin)):
+async def update_platform_config(
+    config: dict, 
+    admin: dict = Depends(is_admin),
+    config_store: ConfigStore = Depends(get_config_store)
+):
     """Update global platform configuration."""
-    db = get_scoped_db(admin)
-    success = await ConfigStore(db=db).update_bulk_config(config)
+    success = await config_store.update_bulk_config(config)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to update configuration")
     
@@ -91,11 +102,12 @@ async def toggle_shadow_mode(target_user_id: Optional[str] = None, admin: dict =
 
 
 @router.get("/dashboard")
-async def get_admin_dashboard(admin: dict = Depends(is_admin)):
+async def get_admin_dashboard(
+    admin: dict = Depends(is_admin),
+    analytics_store: AnalyticsStore = Depends(get_analytics_store)
+):
     """Get high-level system stats for the admin dashboard."""
-    db = get_scoped_db(admin)
-    analytics = AnalyticsStore(db=db)
-    stats = await analytics.get_admin_dashboard_stats()
+    stats = await analytics_store.get_admin_dashboard_stats()
     
     # Standardized response structure
     return {
@@ -152,34 +164,44 @@ async def get_admin_dashboard(admin: dict = Depends(is_admin)):
 
 
 @router.get("/health")
-async def get_system_health(admin: dict = Depends(is_admin)):
+async def get_system_health(
+    admin: dict = Depends(is_admin),
+    analytics_store: AnalyticsStore = Depends(get_analytics_store)
+):
     """Comprehensive system-wide health audit."""
-    db = get_scoped_db(admin)
-    return await AnalyticsStore(db=db).get_system_health_audit()
+    return await analytics_store.get_system_health_audit()
 
 
 @router.get("/queue-health")
-async def get_queue_health(admin: dict = Depends(is_admin)):
+async def get_queue_health(
+    admin: dict = Depends(is_admin),
+    analytics_store: AnalyticsStore = Depends(get_analytics_store)
+):
     """AI verification backlog and throughput signals."""
-    db = get_scoped_db(admin)
-    return await AnalyticsStore(db=db).get_verification_queue_stats()
+    return await analytics_store.get_verification_queue_stats()
 
 
 @router.get("/guardian")
 async def get_guardian_signals(admin: dict = Depends(is_admin)):
     """Fetch active Guardian agent flagging signals."""
-    return await get_guardian_service().get_active_signals()
+    return await get_guardian_service(db=db).get_active_signals()
 
 
 @router.get("/roles/matrix")
-async def get_role_matrix(admin: dict = Depends(is_admin)):
+async def get_role_matrix(
+    admin: dict = Depends(is_admin),
+    config_store: ConfigStore = Depends(get_config_store)
+):
     """Fetch the functional role-per-permission matrix."""
-    db = get_scoped_db(admin)
-    return await ConfigStore(db=db).get_role_matrix()
+    return await config_store.get_role_matrix()
 
 
 @router.post("/roles/matrix")
-async def update_role_matrix(data: dict, admin: dict = Depends(is_admin)):
+async def update_role_matrix(
+    data: dict, 
+    admin: dict = Depends(is_admin),
+    config_store: ConfigStore = Depends(get_config_store)
+):
     """Update the role-permission matrix. Validates structure then persists."""
     roles = data.get("roles")
     permissions = data.get("permissions")
@@ -196,8 +218,7 @@ async def update_role_matrix(data: dict, admin: dict = Depends(is_admin)):
         if unknown:
             raise HTTPException(status_code=400, detail=f"Unknown roles in '{perm}': {unknown}")
 
-    db = get_scoped_db(admin)
-    success = await ConfigStore(db=db).update_role_matrix(data)
+    success = await config_store.update_role_matrix(data)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to update role matrix")
 
@@ -210,15 +231,18 @@ async def update_role_matrix(data: dict, admin: dict = Depends(is_admin)):
 
 
 @router.get("/users")
-async def get_all_users(admin: dict = Depends(is_admin)):
+async def get_all_users(
+    admin: dict = Depends(is_admin),
+    user_store: UserStore = Depends(get_user_store)
+):
     """List all users in the system."""
-    db = get_scoped_db(admin)
-    user_store = UserStore(db=db)
     return await user_store.list_all_users()
 
 
 @router.post("/users")
-async def create_user(data: dict, admin: dict = Depends(is_admin)):
+async def create_user(data: dict, admin: dict = Depends(is_admin),
+    user_store: UserStore = Depends(get_user_store)
+):
     """Create a user without replacing the admin session."""
     role = _normalize_admin_role(data.get("role"))
 
@@ -240,9 +264,7 @@ async def create_user(data: dict, admin: dict = Depends(is_admin)):
             status_code=400,
             detail="name, email, and password are required",
         )
-
-    db = get_scoped_db(admin)
-    user_store = UserStore(db=db)
+    user_store = user_store
     try:
         user = await user_store.create_user(email, password, full_name, role, phone)
         if data.get("department_id"):
@@ -259,10 +281,11 @@ async def create_user(data: dict, admin: dict = Depends(is_admin)):
 
 
 @router.delete("/users/{user_id}")
-async def delete_user(user_id: str, admin: dict = Depends(is_admin)):
+async def delete_user(user_id: str, admin: dict = Depends(is_admin),
+    user_store: UserStore = Depends(get_user_store)
+):
     """Delete a user from the system."""
-    db = get_scoped_db(admin)
-    user_store = UserStore(db=db)
+    user_store = user_store
     target_user = await user_store.get_user_by_id(user_id)
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -289,7 +312,9 @@ async def delete_user(user_id: str, admin: dict = Depends(is_admin)):
 
 
 @router.post("/users/{user_id}/status")
-async def update_user_status(user_id: str, status: str, admin: dict = Depends(is_admin)):
+async def update_user_status(user_id: str, status: str, admin: dict = Depends(is_admin),
+    user_store: UserStore = Depends(get_user_store)
+):
     """Update a user's active status."""
     normalized_status = (status or "").strip().lower()
     if normalized_status not in {"active", "inactive", "suspended"}:
@@ -297,9 +322,7 @@ async def update_user_status(user_id: str, status: str, admin: dict = Depends(is
             status_code=400,
             detail="Invalid status. Must be active, inactive, or suspended",
         )
-
-    db = get_scoped_db(admin)
-    user_store = UserStore(db=db)
+    user_store = user_store
     target_user = await user_store.get_user_by_id(user_id)
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -317,15 +340,15 @@ async def update_user_status(user_id: str, status: str, admin: dict = Depends(is
 
 
 @router.post("/users/{user_id}/role")
-async def update_user_role(user_id: str, role: str, admin: dict = Depends(is_admin)):
+async def update_user_role(user_id: str, role: str, admin: dict = Depends(is_admin),
+    user_store: UserStore = Depends(get_user_store)
+):
     """Change a user's role."""
     role = _normalize_admin_role(role)
     valid_roles = {r.value for r in Role}
     if role not in valid_roles:
         raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(sorted(valid_roles))}")
-
-    db = get_scoped_db(admin)
-    user_store = UserStore(db=db)
+    user_store = user_store
     target_user = await user_store.get_user_by_id(user_id)
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -352,14 +375,14 @@ async def update_user_role(user_id: str, role: str, admin: dict = Depends(is_adm
 
 
 @router.patch("/users/by-email")
-async def assign_user_dept_by_email(data: dict, admin: dict = Depends(is_admin)):
+async def assign_user_dept_by_email(data: dict, admin: dict = Depends(is_admin),
+    user_store: UserStore = Depends(get_user_store)
+):
     """Update dept_id / college_id for a user identified by email. Used by demo setup."""
     email = (data.get("email") or "").strip().lower()
     if not email:
         raise HTTPException(status_code=400, detail="email is required")
-
-    db = get_scoped_db(admin)
-    user_store = UserStore(db=db)
+    user_store = user_store
     target = await user_store.get_user_by_email(email)
     if not target:
         raise HTTPException(status_code=404, detail=f"User {email} not found")
@@ -377,15 +400,17 @@ async def assign_user_dept_by_email(data: dict, admin: dict = Depends(is_admin))
 
 
 @router.get("/courses")
-async def get_all_courses(admin: dict = Depends(is_admin)):
+async def get_all_courses(admin: dict = Depends(is_admin),
+    course_store: CourseStore = Depends(get_course_store),
+    institution_store: InstitutionStore = Depends(get_institution_store)
+):
     """List courses scoped to the primary institution."""
-    db = get_scoped_db(admin)
-    store = InstitutionStore(db=db)
+    store = institution_store
     inst_id = await store.get_primary_institution_id()
     if not inst_id:
         return []
 
-    course_store = CourseStore(db=db)
+    course_store = course_store
     all_courses = await course_store.list_courses()
     
     # In single-tenant mode, we assume all courses belong to the primary inst if defined.
@@ -395,26 +420,29 @@ async def get_all_courses(admin: dict = Depends(is_admin)):
 
 
 @router.get("/teachers")
-async def get_all_teachers(admin: dict = Depends(is_admin)):
+async def get_all_teachers(admin: dict = Depends(is_admin),
+    analytics_store: AnalyticsStore = Depends(get_analytics_store)
+):
     """List teacher and HOD performance statistics for the admin workspace."""
-    db = get_scoped_db(admin)
-    analytics = AnalyticsStore(db=db)
+    analytics = analytics_store
     institution_id = admin.get("resolved_institution_id")
     return await analytics.get_all_teacher_stats(institution_id)
 
 
 @router.get("/students")
-async def get_all_students(admin: dict = Depends(is_admin)):
+async def get_all_students(admin: dict = Depends(is_admin),
+    analytics_store: AnalyticsStore = Depends(get_analytics_store)
+):
     """List student progress and risk signals for the admin workspace."""
-    db = get_scoped_db(admin)
-    analytics = AnalyticsStore(db=db)
+    analytics = analytics_store
     return await analytics.get_admin_student_progress_snapshot()
 
 
 @router.get("/logs/ai")
-async def get_ai_logs(admin: dict = Depends(is_admin)):
+async def get_ai_logs(admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """Fetch AI interaction logs."""
-    db = get_scoped_db(admin)
     try:
         response = db.table("ai_logs").select("*").order("timestamp", desc=True).limit(100).execute()
         return response.data
@@ -422,9 +450,10 @@ async def get_ai_logs(admin: dict = Depends(is_admin)):
         return []
 
 @router.delete("/logs/ai/{log_id}")
-async def delete_ai_log(log_id: str, admin: dict = Depends(is_admin)):
+async def delete_ai_log(log_id: str, admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """Delete a specific AI log entry."""
-    db = get_scoped_db(admin)
     try:
         res = db.table("ai_logs").delete().eq("id", log_id).execute()
         if not res.data:
@@ -435,9 +464,10 @@ async def delete_ai_log(log_id: str, admin: dict = Depends(is_admin)):
 
 
 @router.get("/logs/chat")
-async def get_chat_logs(admin: dict = Depends(is_admin)):
+async def get_chat_logs(admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """Fetch AI tutor chat conversation logs."""
-    db = get_scoped_db(admin)
     try:
         response = db.table("conversations").select("*").order("last_updated", desc=True).limit(100).execute()
         return response.data
@@ -446,16 +476,18 @@ async def get_chat_logs(admin: dict = Depends(is_admin)):
 
 
 @router.get("/students-progress")
-async def get_students_progress(admin: dict = Depends(is_admin)):
+async def get_students_progress(admin: dict = Depends(is_admin),
+    analytics_store: AnalyticsStore = Depends(get_analytics_store)
+):
     """Get progress data for all students."""
-    db = get_scoped_db(admin)
-    return await AnalyticsStore(db=db).get_admin_student_progress_snapshot()
+    return await analytics_store.get_admin_student_progress_snapshot()
 
 
 @router.get("/interventions")
-async def get_interventions(admin: dict = Depends(is_admin)):
+async def get_interventions(admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """List open intervention recommendations generated by the personalization engine."""
-    db = get_scoped_db(admin)
     p_service = get_personalization_service(db=db)
     return [
         item.model_dump(mode="json")
@@ -466,18 +498,21 @@ async def get_interventions(admin: dict = Depends(is_admin)):
 # --- Institution & Connection Management ---
 
 @router.get("/institutions")
-async def get_institutions(admin: dict = Depends(is_admin)):
+async def get_institutions(admin: dict = Depends(is_admin),
+    institution_store: InstitutionStore = Depends(get_institution_store)
+):
     """List institutions (limited to primary in single-tenant mode)."""
-    db = get_scoped_db(admin)
-    store = InstitutionStore(db=db)
+    store = institution_store
     primary = await store.get_primary_institution()
     return [primary] if primary else []
 
 
 @router.post("/institutions")
-async def create_institution(data: dict, admin: dict = Depends(is_admin)):
+async def create_institution(data: dict, admin: dict = Depends(is_admin),
+    institution_store: InstitutionStore = Depends(get_institution_store)
+):
     """Create a new institution (restricted to one in single-tenant mode)."""
-    store = InstitutionStore()
+    store = institution_store
     existing = await store.list_institutions()
     if existing:
         raise HTTPException(
@@ -488,14 +523,14 @@ async def create_institution(data: dict, admin: dict = Depends(is_admin)):
 
 
 @router.patch("/institutions/{inst_id}/status")
-async def update_institution_status(inst_id: str, data: dict, admin: dict = Depends(is_admin)):
+async def update_institution_status(inst_id: str, data: dict, admin: dict = Depends(is_admin),
+    institution_store: InstitutionStore = Depends(get_institution_store)
+):
     """Explicitly update the onboarding status of an institution."""
     status = data.get("status")
     if not status:
         raise HTTPException(status_code=400, detail="status field is required")
-    
-    db = get_scoped_db(admin)
-    success = await InstitutionStore(db=db).update_institution_status(inst_id, status)
+    success = await institution_store.update_institution_status(inst_id, status)
     if not success:
         raise HTTPException(status_code=404, detail="Institution not found or update failed")
     
@@ -508,18 +543,20 @@ async def update_institution_status(inst_id: str, data: dict, admin: dict = Depe
 
 
 @router.get("/institutions/{inst_id}/departments")
-async def get_departments(inst_id: str, admin: dict = Depends(is_admin)):
+async def get_departments(inst_id: str, admin: dict = Depends(is_admin),
+    institution_store: InstitutionStore = Depends(get_institution_store)
+):
     """List all departments for an institution."""
-    db = get_scoped_db(admin)
-    return await InstitutionStore(db=db).list_departments(inst_id)
+    return await institution_store.list_departments(inst_id)
 
 
 @router.post("/institutions/{inst_id}/departments")
-async def create_department(inst_id: str, data: dict, admin: dict = Depends(is_admin)):
+async def create_department(inst_id: str, data: dict, admin: dict = Depends(is_admin),
+    institution_store: InstitutionStore = Depends(get_institution_store)
+):
     """Create a new department."""
     data["institution_id"] = inst_id
-    db = get_scoped_db(admin)
-    return await InstitutionStore(db=db).create_department(data)
+    return await institution_store.create_department(data)
 
 
 @router.patch("/institutions/{inst_id}/departments/{dept_id}")
@@ -528,6 +565,7 @@ async def update_department(
     dept_id: str,
     data: dict,
     admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
 ):
     """Update department metadata and limits."""
     allowed = {
@@ -544,7 +582,6 @@ async def update_department(
         raise HTTPException(status_code=400, detail="No valid fields to update")
 
     payload["updated_at"] = datetime.utcnow().isoformat()
-    db = get_scoped_db(admin)
     result = await db.update(
         "departments",
         payload,
@@ -561,14 +598,14 @@ async def assign_hod(
     dept_id: str,
     data: dict,
     admin: dict = Depends(is_admin),
+    user_store: UserStore = Depends(get_user_store),
+    db: ScopedSupabase = Depends(get_scoped_db)
 ):
     """Assign or update HOD for a department."""
     hod_id = data.get("hod_id")
     if not hod_id:
         raise HTTPException(status_code=400, detail="Missing hod_id")
 
-    db = get_scoped_db(admin)
-    user_store = UserStore(db=db)
     hod_user = await user_store.get_user_by_id(hod_id)
     if not hod_user:
         raise HTTPException(status_code=404, detail="HOD user not found")
@@ -578,7 +615,6 @@ async def assign_hod(
     await user_store.update_user_fields(hod_id, {"department_id": dept_id})
 
     # Update department
-    db = get_scoped_db(admin)
     res = await db.update(
         "departments",
         {"hod_id": hod_id, "updated_at": datetime.utcnow().isoformat()},
@@ -590,36 +626,42 @@ async def assign_hod(
 
 
 @router.get("/teachers/stats", response_model=List[dict])
-async def get_teacher_stats(inst_id: Optional[str] = None, admin: dict = Depends(is_admin)):
+async def get_teacher_stats(inst_id: Optional[str] = None, admin: dict = Depends(is_admin),
+    analytics_store: AnalyticsStore = Depends(get_analytics_store)
+):
     """Fetch teacher utilization and risk metrics."""
-    db = get_scoped_db(admin)
-    return await AnalyticsStore(db=db).get_all_teacher_stats(inst_id)
+    return await analytics_store.get_all_teacher_stats(inst_id)
 
 
 @router.get("/institutions/{inst_id}/programs")
-async def list_programs(inst_id: str, admin: dict = Depends(is_admin)):
+async def list_programs(inst_id: str, admin: dict = Depends(is_admin),
+    institution_store: InstitutionStore = Depends(get_institution_store)
+):
     """List all programs for an institution."""
-    db = get_scoped_db(admin)
-    return await InstitutionStore(db=db).list_programs(inst_id)
+    return await institution_store.list_programs(inst_id)
 
 
 @router.post("/institutions/{inst_id}/programs")
-async def create_program(inst_id: str, data: dict, admin: dict = Depends(is_admin)):
+async def create_program(inst_id: str, data: dict, admin: dict = Depends(is_admin),
+    institution_store: InstitutionStore = Depends(get_institution_store)
+):
     """Create a new program under an institution (and optional department)."""
     data["institution_id"] = inst_id
-    db = get_scoped_db(admin)
-    return await InstitutionStore(db=db).create_program(data)
+    return await institution_store.create_program(data)
 
 
 @router.get("/programs/{program_id}/semesters")
-async def list_semesters(program_id: str, admin: dict = Depends(is_admin)):
+async def list_semesters(program_id: str, admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """List semesters for a program."""
-    db = get_scoped_db(admin)
     return await db.fetch_all("semesters", {"program_id": program_id})
 
 
 @router.post("/programs/{program_id}/semesters")
-async def create_semester(program_id: str, data: dict, admin: dict = Depends(is_admin)):
+async def create_semester(program_id: str, data: dict, admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """Create a semester under a program."""
     semester_number = data.get("semester_number")
     if semester_number is None:
@@ -629,12 +671,13 @@ async def create_semester(program_id: str, data: dict, admin: dict = Depends(is_
         "semester_number": semester_number,
         "title": data.get("title"),
     }
-    db = get_scoped_db(admin)
     return await db.insert("semesters", payload)
 
 
 @router.patch("/classes/{class_id}")
-async def update_class(class_id: str, data: dict, admin: dict = Depends(is_admin)):
+async def update_class(class_id: str, data: dict, admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """Update class metadata and limits."""
     allowed = {
         "section_name",
@@ -654,7 +697,6 @@ async def update_class(class_id: str, data: dict, admin: dict = Depends(is_admin
         raise HTTPException(status_code=400, detail="No valid fields to update")
 
     payload["updated_at"] = datetime.utcnow().isoformat()
-    db = get_scoped_db(admin)
     result = await db.update("classes", payload, {"id": class_id})
     if not result:
         raise HTTPException(status_code=404, detail="Class not found")
@@ -662,9 +704,10 @@ async def update_class(class_id: str, data: dict, admin: dict = Depends(is_admin
 
 
 @router.get("/classes/{class_id}/summary")
-async def class_summary(class_id: str, admin: dict = Depends(is_admin)):
+async def class_summary(class_id: str, admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """Summarize class capacity usage and assignments."""
-    db = get_scoped_db(admin)
     students = (
         db.table("student_enrollments")
         .select("id")
@@ -705,17 +748,20 @@ async def class_summary(class_id: str, admin: dict = Depends(is_admin)):
 
 
 @router.post("/connections/link")
-async def link_stakeholder(data: dict, admin: dict = Depends(is_admin)):
+async def link_stakeholder(data: dict, admin: dict = Depends(is_admin),
+    institution_store: InstitutionStore = Depends(get_institution_store)
+):
     """Link a user as a stakeholder to an institution or program."""
-    db = get_scoped_db(admin)
-    return await InstitutionStore(db=db).create_stakeholder(data)
+    return await institution_store.create_stakeholder(data)
 
 
 @router.get("/connections")
-async def get_connections(inst_id: Optional[str] = None, program_id: Optional[str] = None, admin: dict = Depends(is_admin)):
+async def get_connections(inst_id: Optional[str] = None, program_id: Optional[str] = None, admin: dict = Depends(is_admin),
+    user_store: UserStore = Depends(get_user_store),
+    institution_store: InstitutionStore = Depends(get_institution_store)
+):
     """List stakeholder connections (scoped to primary institution)."""
-    store = InstitutionStore()
-    db = get_scoped_db(admin)
+    store = institution_store
     
     # Enforce single-institution scope if no inst_id provided
     if not inst_id:
@@ -734,7 +780,7 @@ async def get_connections(inst_id: Optional[str] = None, program_id: Optional[st
             program_records.extend(await store.list_programs(institution["id"]))
     for item in program_records:
         programs[item["id"]] = item
-    user_store = UserStore(db=db)
+    user_store = user_store
     users = {item["id"]: item for item in await user_store.list_all_users()}
 
     enriched = []
@@ -757,9 +803,10 @@ async def get_connections(inst_id: Optional[str] = None, program_id: Optional[st
 
 
 @router.get("/compliance/deletions")
-async def get_deletion_requests(admin: dict = Depends(is_admin)):
+async def get_deletion_requests(admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """List pending and completed data deletion requests."""
-    db = get_scoped_db(admin)
     try:
         response = db.table("deletion_requests").select("*").order("created_at", desc=True).execute()
         return response.data
@@ -768,15 +815,16 @@ async def get_deletion_requests(admin: dict = Depends(is_admin)):
 
 
 @router.post("/compliance/deletions/{request_id}/process")
-async def process_deletion_request(request_id: str, admin: dict = Depends(is_admin)):
+async def process_deletion_request(request_id: str, admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """Approve and process a data deletion request."""
     # Fetch request to get user_id
-    db = get_scoped_db(admin)
     try:
         req_res = db.table("deletion_requests").select("user_id").eq("id", request_id).single().execute()
         user_id = req_res.data.get("user_id") if req_res.data else "unknown"
         
-        success = await get_compliance_service().process_deletion_pipeline(request_id, user_id)
+        success = await get_compliance_service(db=db).process_deletion_pipeline(request_id, user_id)
         if not success:
             raise HTTPException(status_code=500, detail="Pipeline execution failed")
 
@@ -790,9 +838,10 @@ async def process_deletion_request(request_id: str, admin: dict = Depends(is_adm
 
 
 @router.get("/compliance/audit-logs")
-async def get_compliance_audit_logs(admin: dict = Depends(is_admin)):
+async def get_compliance_audit_logs(admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """Fetch immutable audit logs for compliance tracking."""
-    db = get_scoped_db(admin)
     try:
         response = db.table("audit_logs").select("*").order("created_at", desc=True).limit(200).execute()
         return response.data
@@ -801,9 +850,10 @@ async def get_compliance_audit_logs(admin: dict = Depends(is_admin)):
 
 
 @router.get("/compliance")
-async def get_compliance_summary(admin: dict = Depends(is_admin)):
+async def get_compliance_summary(admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """Return deletion and audit-log summary for the admin compliance dashboard."""
-    db = get_scoped_db(admin)
 
     try:
         deletions = (
@@ -852,18 +902,20 @@ async def get_compliance_summary(admin: dict = Depends(is_admin)):
 
 
 @router.get("/guardian-log")
-async def get_guardian_log(admin: dict = Depends(is_admin)):
+async def get_guardian_log(admin: dict = Depends(is_admin),
+    analytics_store: AnalyticsStore = Depends(get_analytics_store)
+):
     """Return Guardian moderation and intervention signals for the admin dashboard."""
-    db = get_scoped_db(admin)
-    analytics = AnalyticsStore(db=db)
+    analytics = analytics_store
     return await analytics.get_guardian_signals()
 
 
 @router.get("/reports")
-async def get_admin_reports(admin: dict = Depends(is_admin)):
+async def get_admin_reports(admin: dict = Depends(is_admin),
+    analytics_store: AnalyticsStore = Depends(get_analytics_store)
+):
     """Aggregate report-ready operational metrics for the admin dashboard."""
-    db = get_scoped_db(admin)
-    analytics = AnalyticsStore(db=db)
+    analytics = analytics_store
 
     dashboard = await analytics.get_admin_dashboard_stats()
     queue = await analytics.get_verification_queue_stats()
@@ -884,10 +936,11 @@ async def get_admin_reports(admin: dict = Depends(is_admin)):
 # --- Academic Management ---
 
 @router.get("/students/{student_id}/enrollment")
-async def get_student_enrollment(student_id: str, admin: dict = Depends(is_admin)):
+async def get_student_enrollment(student_id: str, admin: dict = Depends(is_admin),
+    academic_store: AcademicStore = Depends(get_academic_store)
+):
     """Fetch student's current enrollment and academic placement."""
-    db = get_scoped_db(admin)
-    store = AcademicStore(db=db)
+    store = academic_store
     enrollment = await store.get_student_enrollment(student_id)
     if not enrollment:
         raise HTTPException(status_code=404, detail="Enrollment not found")
@@ -895,10 +948,11 @@ async def get_student_enrollment(student_id: str, admin: dict = Depends(is_admin
 
 
 @router.post("/students/{student_id}/promote")
-async def promote_student(student_id: str, admin: dict = Depends(is_admin)):
+async def promote_student(student_id: str, admin: dict = Depends(is_admin),
+    academic_store: AcademicStore = Depends(get_academic_store)
+):
     """Promote student to the next academic semester."""
-    db = get_scoped_db(admin)
-    store = AcademicStore(db=db)
+    store = academic_store
     result = await store.promote_student(student_id)
     if not result:
         raise HTTPException(
@@ -909,10 +963,11 @@ async def promote_student(student_id: str, admin: dict = Depends(is_admin)):
 
 
 @router.get("/students/{student_id}/credits")
-async def get_student_credits(student_id: str, admin: dict = Depends(is_admin)):
+async def get_student_credits(student_id: str, admin: dict = Depends(is_admin),
+    academic_store: AcademicStore = Depends(get_academic_store)
+):
     """Fetch student credit history across semesters."""
-    db = get_scoped_db(admin)
-    store = AcademicStore(db=db)
+    store = academic_store
     return await store.get_student_credits(student_id)
 
 
@@ -922,17 +977,19 @@ async def update_student_credits(
     semester_id: str, 
     earned: int, 
     total: int, 
-    admin: dict = Depends(is_admin)
+    admin: dict = Depends(is_admin),
+    academic_store: AcademicStore = Depends(get_academic_store)
 ):
     """Update student credits for a specific semester."""
-    db = get_scoped_db(admin)
-    store = AcademicStore(db=db)
-    result = await store.update_credits(student_id, semester_id, earned, total)
+    result = await academic_store.update_credits(student_id, semester_id, earned, total)
     if not result:
         raise HTTPException(status_code=500, detail="Failed to update credits")
 @router.post("/bulk-enrollment")
 async def bulk_enrollment(
-    file: UploadFile = File(...), admin: dict = Depends(is_admin)
+    file: UploadFile = File(...), 
+    admin: dict = Depends(is_admin),
+    user_store: UserStore = Depends(get_user_store),
+    db: ScopedSupabase = Depends(get_scoped_db)
 ):
     """
     Process CSV for bulk user enrollment and invite generation.
@@ -945,8 +1002,6 @@ async def bulk_enrollment(
     decoded = content.decode("utf-8")
     reader = csv.DictReader(io.StringIO(decoded))
 
-    db = get_scoped_db(admin)
-    user_store = UserStore(db=db)
     total_processed = 0
     users_created = 0
     enrollment_errors = []
@@ -966,7 +1021,6 @@ async def bulk_enrollment(
             if not user:
                 # 2. Basic User Creation (Inactive)
                 user_id = str(uuid.uuid4())
-                db = get_scoped_db(admin)
                 await db.insert(
                     "users",
                     {
@@ -1023,21 +1077,26 @@ async def bulk_enrollment(
 # --- Hierarchy Management ---
 
 @router.get("/departments", response_model=List[dict])
-async def list_all_departments(admin: dict = Depends(is_admin)):
+async def list_all_departments(admin: dict = Depends(is_admin),
+    institution_store: InstitutionStore = Depends(get_institution_store),
+    academic_store: AcademicStore = Depends(get_academic_store)
+):
     """Fetch all departments across institutions."""
     # For now, we assume a single primary institution if no ID is passed, 
     # but a full admin should see all.
-    inst_store = InstitutionStore()
+    inst_store = institution_store
     inst = await inst_store.get_primary_institution()
     if not inst:
         return []
-    academic_store = AcademicStore()
+    academic_store = academic_store
     return await academic_store.get_departments(inst["id"])
 
 
 @router.post("/departments")
-async def create_new_department(payload: CreateDeptRequest, admin: dict = Depends(is_admin)):
-    academic_store = AcademicStore()
+async def create_new_department(payload: CreateDeptRequest, admin: dict = Depends(is_admin),
+    academic_store: AcademicStore = Depends(get_academic_store)
+):
+    academic_store = academic_store
     dept = await academic_store.create_department(payload.dict())
     if not dept:
         raise HTTPException(status_code=500, detail="Failed to create department")
@@ -1045,8 +1104,10 @@ async def create_new_department(payload: CreateDeptRequest, admin: dict = Depend
 
 
 @router.delete("/departments/{dept_id}")
-async def delete_department(dept_id: str, admin: dict = Depends(is_admin)):
-    academic_store = AcademicStore()
+async def delete_department(dept_id: str, admin: dict = Depends(is_admin),
+    academic_store: AcademicStore = Depends(get_academic_store)
+):
+    academic_store = academic_store
     success = await academic_store.delete_department(dept_id)
     if not success:
         raise HTTPException(status_code=404, detail="Department not found or delete failed")
@@ -1054,14 +1115,18 @@ async def delete_department(dept_id: str, admin: dict = Depends(is_admin)):
 
 
 @router.get("/classes", response_model=List[dict])
-async def list_all_classes(admin: dict = Depends(is_admin)):
-    academic_store = AcademicStore()
+async def list_all_classes(admin: dict = Depends(is_admin),
+    academic_store: AcademicStore = Depends(get_academic_store)
+):
+    academic_store = academic_store
     return await academic_store.list_all_classes()
 
 
 @router.post("/classes")
-async def create_new_class(payload: CreateClassRequest, admin: dict = Depends(is_admin)):
-    academic_store = AcademicStore()
+async def create_new_class(payload: CreateClassRequest, admin: dict = Depends(is_admin),
+    academic_store: AcademicStore = Depends(get_academic_store)
+):
+    academic_store = academic_store
     new_cls = await academic_store.create_class(payload.dict())
     if not new_cls:
         raise HTTPException(status_code=500, detail="Failed to create class")
@@ -1069,8 +1134,10 @@ async def create_new_class(payload: CreateClassRequest, admin: dict = Depends(is
 
 
 @router.delete("/classes/{class_id}")
-async def delete_class(class_id: str, admin: dict = Depends(is_admin)):
-    academic_store = AcademicStore()
+async def delete_class(class_id: str, admin: dict = Depends(is_admin),
+    academic_store: AcademicStore = Depends(get_academic_store)
+):
+    academic_store = academic_store
     success = await academic_store.delete_class(class_id)
     if not success:
         raise HTTPException(status_code=404, detail="Class not found or delete failed")
@@ -1080,36 +1147,42 @@ async def delete_class(class_id: str, admin: dict = Depends(is_admin)):
 # --- AI Configuration Endpoints ---
 
 @router.get("/ai/prompts")
-async def get_ai_prompts(admin: dict = Depends(is_admin)):
+async def get_ai_prompts(admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """List configured AI system prompts."""
     try:
-        response = supabase_db.client.table("ai_prompts").select("*").order("created_at", desc=True).execute()
+        response = db.client.table("ai_prompts").select("*").order("created_at", desc=True).execute()
         return response.data or []
     except Exception:
         return []
 
 
 @router.get("/ai/models")
-async def get_ai_models(admin: dict = Depends(is_admin)):
+async def get_ai_models(admin: dict = Depends(is_admin),
+    analytics_store: AnalyticsStore = Depends(get_analytics_store)
+):
     """List available AI model configurations with live metrics."""
-    db = get_scoped_db(admin)
-    analytics = AnalyticsStore(db=db)
+    analytics = analytics_store
     return await analytics.get_ai_model_metrics()
 
 
 @router.get("/ai/costs")
-async def get_ai_costs(admin: dict = Depends(is_admin)):
-    db = get_scoped_db(admin)
-    analytics = AnalyticsStore(db=db)
+async def get_ai_costs(admin: dict = Depends(is_admin),
+    analytics_store: AnalyticsStore = Depends(get_analytics_store)
+):
+
+    analytics = analytics_store
     return await analytics.get_ai_cost_analysis()
 
 
 # --- Parent Management ---
 
 @router.get("/parents/pending-verification")
-async def get_pending_parent_links(admin: dict = Depends(is_admin)):
+async def get_pending_parent_links(admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """List parent-student links awaiting admin verification (Item 1: Security)."""
-    db = get_scoped_db(admin)
     try:
         # Fetch links that are status='linked' but not yet verified
         res = await db.client.table("parent_student_links").select("*, parent:parent_id(full_name, email), student:student_id(full_name, email)").eq("status", "linked").eq("verified_by_admin", False).async_execute()
@@ -1120,9 +1193,10 @@ async def get_pending_parent_links(admin: dict = Depends(is_admin)):
 
 
 @router.post("/parents/verify/{link_id}")
-async def verify_parent_link(link_id: str, admin: dict = Depends(is_admin)):
+async def verify_parent_link(link_id: str, admin: dict = Depends(is_admin),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
     """Manually verify a parent-student link after checking ID/Email (Item 1: Security)."""
-    db = get_scoped_db(admin)
     try:
         now = datetime.utcnow().isoformat()
         res = await db.client.table("parent_student_links").update({

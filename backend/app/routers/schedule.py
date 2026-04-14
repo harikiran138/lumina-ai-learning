@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional, Dict, Any
-from app.api.deps import is_admin, get_current_user
+from app.api.deps import get_current_college_admin, get_current_user
 from app.database.scoped_db import get_scoped_db
 import structlog
 
@@ -24,7 +24,7 @@ async def get_academic_years(
 @router.post("/academic-years")
 async def create_academic_year(
     payload: Dict[str, Any],
-    admin: dict = Depends(is_admin)
+    admin: dict = Depends(get_current_college_admin)
 ):
     """Create a new academic year entry."""
     db = get_scoped_db(admin)
@@ -52,7 +52,7 @@ async def get_sections(
 @router.post("/sections")
 async def create_section(
     payload: Dict[str, Any],
-    admin: dict = Depends(is_admin)
+    admin: dict = Depends(get_current_college_admin)
 ):
     """Define a new section within a batch."""
     db = get_scoped_db(admin)

@@ -146,6 +146,36 @@ class InstitutionStore:
             log.error("list_programs_failed", error=str(e), inst_id=inst_id)
             return []
 
+    async def get_programs_by_ids(self, program_ids: List[str]) -> List[dict]:
+        """Fetch multiple programs by their IDs."""
+        if not program_ids: return []
+        try:
+            res = await self.db.get_client().table("programs").select("*").in_("id", program_ids).async_execute()
+            return res.data or []
+        except Exception as e:
+            log.error("get_programs_by_ids_failed", error=str(e))
+            return []
+
+    async def get_batches_by_ids(self, batch_ids: List[str]) -> List[dict]:
+        """Fetch multiple batches by their IDs."""
+        if not batch_ids: return []
+        try:
+            res = await self.db.get_client().table("batches").select("*").in_("id", batch_ids).async_execute()
+            return res.data or []
+        except Exception as e:
+            log.error("get_batches_by_ids_failed", error=str(e))
+            return []
+
+    async def get_classes_by_ids(self, class_ids: List[str]) -> List[dict]:
+        """Fetch multiple classes by their IDs."""
+        if not class_ids: return []
+        try:
+            res = await self.db.get_client().table("classes").select("*").in_("id", class_ids).async_execute()
+            return res.data or []
+        except Exception as e:
+            log.error("get_classes_by_ids_failed", error=str(e))
+            return []
+
     # --- Stakeholder CRUD (Connections) ---
 
     async def create_stakeholder(self, data: dict) -> dict:

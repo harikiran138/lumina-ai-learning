@@ -120,6 +120,39 @@ class StudentStore(BaseStoreMixin):
             log.error("complete_lesson_failed", student_id=student_id, lesson_id=lesson_id, error=str(e))
             return {"success": False}
 
+    async def get_enrollments_by_class(self, class_id: str) -> List[dict]:
+        """Fetch all student enrollments for a specific class/section."""
+        try:
+            # Table is 'student_enrollments' in some schemas, 'enrollments' in others.
+            # BaseStoreMixin typically handles mapping, but we'll try 'student_enrollments' first as it's the specific join table for classes.
+            response = await self.db.table("student_enrollments").select("*").eq("class_id", class_id).async_execute()
+            return response.data or []
+        except Exception as e:
+            log.error("get_enrollments_by_class_failed", class_id=class_id, error=str(e))
+            return []
+
+    async def get_enrollments_by_batch_and_section(self, batch_id: str, section: Optional[str] = None) -> List[dict]:
+        """Fetch student enrollments for a batch, optionally filtered by section."""
+        try:
+            query = self.db.table("student_enrollments").select("*").eq("batch_id", batch_id)
+            if section:
+                query = query.eq("section", section)
+            res = await query.async_execute()
+            return res.data or []
+        except Exception as e:
+            log.error("get_enrollments_by_batch_and_section_failed", batch_id=batch_id, section=section, error=str(e))
+            return []
+
+    async def get_enrollments_by_student_ids(self, student_ids: List[str]) -> List[dict]:
+        """Fetch all enrollments for a list of student IDs."""
+        if not student_ids: return []
+        try:
+            res = await self.db.table("student_enrollments").select("*").in_("student_id", student_ids).async_execute()
+            return res.data or []
+        except Exception as e:
+            log.error("get_enrollments_by_student_ids_failed", error=str(e))
+            return []
+
     async def get_certificates(self, student_id: str) -> List[Dict]:
         """
         Fetches certificates (stored in progress metadata or separate table).

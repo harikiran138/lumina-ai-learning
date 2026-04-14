@@ -3,23 +3,36 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Literal, Optional, Dict, Any
 
-from app.services.personalization_service import get_personalization_service
-from app.services.onboarding_service import OnboardingService
-from app.personalization.schemas import InterventionUpdateRequest, InterventionStatus, InterventionPriority
 from app.api.deps import get_current_teacher as get_current_user
+from app.personalization.schemas import InterventionUpdateRequest, InterventionStatus, InterventionPriority
+from app.services.personalization_service import PersonalizationService
+from app.services.onboarding_service import OnboardingService
+
+from app.dependencies import (
+    get_content_store, 
+    get_course_store, 
+    get_assignment_store, 
+    get_teacher_store,
+    get_student_store,
+    get_institution_store,
+    get_user_store,
+    get_user_data_store,
+    get_personalization_service,
+    get_ocr_service,
+    get_grader_service,
+    get_onboarding_service
+)
+
 from app.store.content_store import ContentStore
 from app.store.course_store import CourseStore
 from app.store.assignment_store import AssignmentStore
 from app.store.teacher_store import TeacherStore
-from app.services.ocr_service import ocr_service
-from app.services.grader_service import grader_service
-from app.database.scoped_db import get_scoped_db
+from app.store.student_store import StudentStore
+from app.store.institution_store import InstitutionStore
+from app.store.user_store import UserStore
+from app.store.user_data_store import UserDataStore
 
 router = APIRouter()
-content_store = ContentStore()
-course_store = CourseStore()
-assignment_store = AssignmentStore()
-teacher_store = TeacherStore()
 
 # --- Schemas ---
 
@@ -80,36 +93,41 @@ def _build_assignment_views(
 
 @router.get("/dashboard")
 async def get_teacher_dashboard(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    teacher_store: TeacherStore = Depends(get_teacher_store),
+    course_store: CourseStore = Depends(get_course_store),
+    student_store: StudentStore = Depends(get_student_store),
+    assignment_store: AssignmentStore = Depends(get_assignment_store),
+    personalization_service: PersonalizationService = Depends(get_personalization_service)
 ):
     check_teacher_role(current_user)
-    db = get_scoped_db(current_user)
     teacher_id = str(current_user.get("id"))
 
     # Courses the teacher owns directly + courses they have assignments for
-    owned_courses = await db.fetch_all("courses", {"teacher_id": teacher_id}) or []
+    owned_courses = await course_store.get_courses_by_teacher(teacher_id)
     
     # Assignments the teacher owns
-    assignments = await db.fetch_all("teacher_assignments", {"teacher_id": teacher_id}) or []
+    assignments = await teacher_store.get_teacher_assignments(teacher_id)
     assigned_course_ids = {str(item.get("course_id")) for item in assignments if item.get("course_id")}
-    class_ids  = list({str(item.get("class_id"))  for item in assignments if item.get("class_id")})
+    class_ids = list({str(item.get("class_id")) for item in assignments if item.get("class_id")})
 
     # Combine owned courses with any assigned courses
     owned_course_ids = {str(c.get("id")) for c in owned_courses}
-    all_course_ids = list(owned_course_ids.union(assigned_course_ids))
     
     courses_data = owned_courses
     if assigned_course_ids - owned_course_ids:
         missing_ids = list(assigned_course_ids - owned_course_ids)
-        extra_courses = db.table("courses").select("*").in_("id", missing_ids).execute().data or []
-        courses_data.extend(extra_courses)
+        for mid in missing_ids:
+            course = await course_store.get_course_by_id(mid)
+            if course:
+                courses_data.append(course)
 
     # Student headcount across ALL assigned classes
     total_students = 0
     enrolled_student_ids = set()
     if class_ids:
         for class_id in class_ids:
-            rows = await db.fetch_all("student_enrollments", {"class_id": class_id}) or []
+            rows = await student_store.get_enrollments_by_class(class_id)
             for r in rows:
                 if r.get("student_id"):
                     enrolled_student_ids.add(str(r["student_id"]))
@@ -117,14 +135,13 @@ async def get_teacher_dashboard(
     total_students = len(enrolled_student_ids)
 
     # Pending submissions
-    pending_submissions = await db.fetch_all("assignment_submissions", {"status": "submitted"}) or []
+    pending_submissions = await assignment_store.get_pending_submissions()
     pending_count = len(pending_submissions)
 
     # At-risk interventions
     active_alerts: List[Dict[str, Any]] = []
     try:
-        service = get_personalization_service(db=db)
-        interventions = await service.get_interventions()
+        interventions = await personalization_service.get_interventions()
         active_alerts = [
             {
                 "id": str(i.id),
@@ -193,20 +210,26 @@ async def get_teacher_dashboard(
 # --- Onboarding ---
 
 @router.get("/onboarding/options")
-async def get_teacher_onboarding_options(current_user: dict = Depends(get_current_user)):
+async def get_teacher_onboarding_options(
+    current_user: dict = Depends(get_current_user),
+    teacher_store: TeacherStore = Depends(get_teacher_store),
+    course_store: CourseStore = Depends(get_course_store),
+    institution_store: InstitutionStore = Depends(get_institution_store),
+    user_store: UserStore = Depends(get_user_store),
+    user_data_store: UserDataStore = Depends(get_user_data_store)
+):
     check_teacher_role(current_user)
 
     teacher_id = str(current_user.get("id"))
-    db = get_scoped_db(current_user)
-    assignments = await db.fetch_all("teacher_assignments", {"teacher_id": teacher_id})
+    assignments = await teacher_store.get_teacher_assignments(teacher_id)
 
     course_ids = list({item.get("course_id") for item in assignments if item.get("course_id")})
     class_ids = list({item.get("class_id") for item in assignments if item.get("class_id")})
     batch_ids = list({item.get("batch_id") for item in assignments if item.get("batch_id")})
 
-    courses = db.table("courses").select("*").in_("id", course_ids).execute().data or [] if course_ids else []
-    classes = db.table("classes").select("*").in_("id", class_ids).execute().data or [] if class_ids else []
-    batches = db.table("batches").select("*").in_("id", batch_ids).execute().data or [] if batch_ids else []
+    courses = await course_store.get_courses_by_ids(course_ids)
+    classes = await institution_store.get_classes_by_ids(class_ids)
+    batches = await institution_store.get_batches_by_ids(batch_ids)
 
     program_ids = list(
         {
@@ -215,19 +238,17 @@ async def get_teacher_onboarding_options(current_user: dict = Depends(get_curren
             if item.get("program_id")
         }
     )
-    programs = (
-        db.table("programs").select("*").in_("id", program_ids).execute().data or []
-        if program_ids
-        else []
-    )
+    programs = await institution_store.get_programs_by_ids(program_ids)
 
+    # Simplified profile fetch - teacher_store or user_store could handle this more cleanly
+    # but for now we follow the existing logic using injected stores
     teacher_profile = (
-        await db.fetch_one("teacher_profiles", {"employee_id": current_user.get("employee_id")})
+        await teacher_store.db.fetch_one("teacher_profiles", {"employee_id": current_user.get("employee_id")})
         if current_user.get("employee_id")
         else None
     )
-    dashboard_preferences = await db.fetch_all("dashboard_preferences", {"user_id": teacher_id})
-    existing_user_data = await db.fetch_one("user_data", {"user_id": teacher_id})
+    dashboard_preferences = await user_store.db.fetch_all("dashboard_preferences", {"user_id": teacher_id})
+    existing_user_data = await user_data_store.get_user_data(teacher_id)
     progress = (existing_user_data or {}).get("progress") or {}
 
     return {
@@ -241,6 +262,11 @@ async def get_teacher_onboarding_options(current_user: dict = Depends(get_curren
 async def complete_teacher_onboarding(
     payload: TeacherOnboardingCompleteRequest,
     current_user: dict = Depends(get_current_user),
+    teacher_store: TeacherStore = Depends(get_teacher_store),
+    course_store: CourseStore = Depends(get_course_store),
+    institution_store: InstitutionStore = Depends(get_institution_store),
+    user_data_store: UserDataStore = Depends(get_user_data_store),
+    onboarding_service: OnboardingService = Depends(get_onboarding_service)
 ):
     check_teacher_role(current_user)
 
@@ -252,9 +278,8 @@ async def complete_teacher_onboarding(
 
     teacher_id = str(current_user.get("id"))
     employee_id = current_user.get("employee_id")
-    db = get_scoped_db(current_user)
     
-    assignments = await db.fetch_all("teacher_assignments", {"teacher_id": teacher_id})
+    assignments = await teacher_store.get_teacher_assignments(teacher_id)
     assignment_lookup = {str(item.get("id")): item for item in assignments if item.get("id")}
 
     if assignments and not payload.confirmed_assignment_ids:
@@ -274,15 +299,15 @@ async def complete_teacher_onboarding(
     class_ids = list({item.get("class_id") for item in confirmed_assignments if item.get("class_id")})
     batch_ids = list({item.get("batch_id") for item in confirmed_assignments if item.get("batch_id")})
 
-    courses = db.table("courses").select("*").in_("id", course_ids).execute().data or [] if course_ids else []
-    classes = db.table("classes").select("*").in_("id", class_ids).execute().data or [] if class_ids else []
-    batches = db.table("batches").select("*").in_("id", batch_ids).execute().data or [] if batch_ids else []
+    courses = await course_store.get_courses_by_ids(course_ids)
+    classes = await institution_store.get_classes_by_ids(class_ids)
+    batches = await institution_store.get_batches_by_ids(batch_ids)
 
     program_ids = list({item.get("program_id") for item in [*courses, *classes] if item.get("program_id")})
-    programs = db.table("programs").select("*").in_("id", program_ids).execute().data or [] if program_ids else []
+    programs = await institution_store.get_programs_by_ids(program_ids)
 
     assignment_views = _build_assignment_views(confirmed_assignments, courses, classes, batches, programs)
-    existing_user_data = await db.fetch_one("user_data", {"user_id": teacher_id})
+    existing_user_data = await user_data_store.get_user_data(teacher_id)
     progress = (existing_user_data or {}).get("progress") or {}
     step_1 = progress.get("step_1") or {}
     step_3 = progress.get("step_3") or {}
@@ -318,7 +343,6 @@ async def complete_teacher_onboarding(
         }
     }
 
-    onboarding_service = OnboardingService(db=db)
     result = await onboarding_service.complete_onboarding(
         user_id=teacher_id,
         role="teacher",
@@ -334,14 +358,17 @@ async def complete_teacher_onboarding(
 # --- Subjects & Students ---
 
 @router.get("/subjects")
-async def list_teacher_subjects(current_user: dict = Depends(get_current_user)):
+async def list_teacher_subjects(
+    current_user: dict = Depends(get_current_user),
+    teacher_store: TeacherStore = Depends(get_teacher_store),
+    course_store: CourseStore = Depends(get_course_store)
+):
     check_teacher_role(current_user)
-    db = get_scoped_db(current_user)
-    assignments = await db.fetch_all("teacher_assignments", {"teacher_id": current_user.get("id")})
+    assignments = await teacher_store.get_teacher_assignments(current_user.get("id"))
     if not assignments:
         return []
     course_ids = list({item.get("course_id") for item in assignments if item.get("course_id")})
-    courses = db.table("courses").select("*").in_("id", course_ids).execute().data or [] if course_ids else []
+    courses = await course_store.get_courses_by_ids(course_ids)
     course_lookup = {c["id"]: c for c in courses}
     return [{"assignment": a, "course": course_lookup.get(a.get("course_id"))} for a in assignments]
 
@@ -350,27 +377,35 @@ async def list_batch_students(
     batch_id: str,
     section: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
+    user_store: UserStore = Depends(get_user_store),
+    student_store: StudentStore = Depends(get_student_store)
 ):
     check_teacher_role(current_user)
-    db = get_scoped_db(current_user)
-    filters = {"batch_id": batch_id, "role": "student"}
-    if section:
-        filters["section"] = section
-    students = await db.fetch_all("users", filters)
-    enriched = []
-    for student in students:
-        enrollments = await db.fetch_all("student_enrollments", {"student_id": student.get("id")})
-        enriched.append({**student, "enrollments": enrollments or []})
-    return enriched
+    students = await user_store.get_users_by_batch(batch_id, role="student", section=section)
+    if not students:
+        return []
+    
+    student_ids = [s["id"] for s in students if s.get("id")]
+    enrollments = await student_store.get_enrollments_by_student_ids(student_ids)
+    
+    from collections import defaultdict
+    enrollment_map = defaultdict(list)
+    for e in enrollments:
+        enrollment_map[e["student_id"]].append(e)
+        
+    return [
+        {**s, "enrollments": enrollment_map.get(s["id"]) or []}
+        for s in students
+    ]
 
 # --- Interventions ---
 
 @router.get("/interventions/queue")
 async def get_intervention_queue(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    service: PersonalizationService = Depends(get_personalization_service)
 ):
     check_teacher_role(current_user)
-    service = get_personalization_service()
     interventions = await service.get_interventions(user_id=None)
     active = [
         item.model_dump(mode="json") 
@@ -383,10 +418,10 @@ async def get_intervention_queue(
 async def update_intervention_status(
     intervention_id: str,
     update: InterventionUpdateRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    service: PersonalizationService = Depends(get_personalization_service)
 ):
     check_teacher_role(current_user)
-    service = get_personalization_service()
     updated = await service.update_intervention(
         intervention_id=intervention_id,
         status=update.status,
@@ -401,10 +436,10 @@ async def update_intervention_status(
 async def get_course_heatmap(
     course_id: str,
     student_ids: List[str] = Query(..., alias="student_id"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    service: PersonalizationService = Depends(get_personalization_service)
 ):
     check_teacher_role(current_user)
-    service = get_personalization_service()
     return await service.get_concept_heatmap(user_ids=student_ids, course_id=course_id)
 
 # --- Content Pipeline ---
@@ -415,7 +450,8 @@ async def log_content_upload(
     storage_url: str,
     file_type: str,
     file_size_bytes: int,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    content_store: ContentStore = Depends(get_content_store)
 ):
     check_teacher_role(current_user)
     upload = await content_store.create_content_upload(
@@ -430,7 +466,8 @@ async def log_content_upload(
 @router.get("/content/scaffold/{upload_id}")
 async def get_uploaded_scaffold(
     upload_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    content_store: ContentStore = Depends(get_content_store)
 ):
     check_teacher_role(current_user)
     upload = await content_store.get_content_upload(upload_id)
@@ -441,7 +478,9 @@ async def get_uploaded_scaffold(
 @router.post("/content/scaffold/approve/{upload_id}")
 async def approve_scaffold(
     upload_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    content_store: ContentStore = Depends(get_content_store),
+    course_store: CourseStore = Depends(get_course_store)
 ):
     check_teacher_role(current_user)
     upload = await content_store.get_content_upload(upload_id)
@@ -472,21 +511,29 @@ async def get_verification_queue(
 @router.post("/submissions/physical/process/{submission_id}")
 async def process_physical_submission(
     submission_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    content_store: ContentStore = Depends(get_content_store),
+    assignment_store: AssignmentStore = Depends(get_assignment_store),
+    ocr_service: Any = Depends(get_ocr_service),
+    grader_service: Any = Depends(get_grader_service)
 ):
     check_teacher_role(current_user)
+    import httpx
     submission = await content_store.get_physical_submission(submission_id)
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
     
     await content_store.update_physical_submission(submission_id, {"assessment_status": "processing"})
-    extracted_texts = []
-    for img_url in submission.get("submission_images", []):
-        try:
-            text = ocr_service.digitize_image(img_url)
-            extracted_texts.append(text)
-        except Exception as e:
-            extracted_texts.append(f"[OCR Error: {str(e)}]")
+    async with httpx.AsyncClient() as client:
+        for img_url in submission.get("submission_images", []):
+            try:
+                resp = await client.get(img_url)
+                resp.raise_for_status()
+                image = Image.open(io.BytesIO(resp.content))
+                ocr_result = await ocr_service.extract_text(image)
+                extracted_texts.append(ocr_result.text)
+            except Exception as e:
+                extracted_texts.append(f"[OCR Error: {str(e)}]")
     
     full_text = "\n\n".join(extracted_texts)
     grading_result = {"score": 0, "feedback": "Assignment context not found."}
@@ -507,34 +554,24 @@ async def process_physical_submission(
     return {"status": "graded", "score": grading_result.get("score")}
 
 # --- Attendance ---
-
-@router.post("/attendance/mark")
-async def mark_attendance(
-    records: List[Dict[str, Any]],
-    current_user: dict = Depends(get_current_user)
-):
-    check_teacher_role(current_user)
-    db = get_scoped_db(current_user)
-# Attendance marking moved to attendance.py
-
 # --- Analytics ---
 
 @router.get("/analytics/misconceptions")
 async def get_misconception_clusters(
     student_ids: List[str] = Query(..., alias="student_id"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    service: PersonalizationService = Depends(get_personalization_service)
 ):
     check_teacher_role(current_user)
-    service = get_personalization_service()
     return await service.get_cohort_misconceptions(student_ids)
 
 @router.get("/analytics/growth")
 async def get_growth_trajectories(
     student_ids: List[str] = Query(..., alias="student_id"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    service: PersonalizationService = Depends(get_personalization_service)
 ):
     check_teacher_role(current_user)
-    service = get_personalization_service()
     return await service.get_growth_trajectories(student_ids)
 
 @router.get("/students/{student_id}/analytics")
@@ -550,7 +587,8 @@ async def get_student_detail_analytics(
 
 @router.get("/requests")
 async def get_teacher_requests(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    teacher_store: TeacherStore = Depends(get_teacher_store)
 ):
     if current_user["role"] != "admin":
          raise HTTPException(status_code=403, detail="Admin access required")
@@ -560,7 +598,8 @@ async def get_teacher_requests(
 async def update_teacher_request(
     request_id: str,
     payload: Dict[str, str],
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    teacher_store: TeacherStore = Depends(get_teacher_store)
 ):
     if current_user["role"] != "admin":
          raise HTTPException(status_code=403, detail="Admin access required")
@@ -581,7 +620,8 @@ async def update_teacher_request(
 @router.post("/assignments/request")
 async def request_teacher_assignment(
     payload: Dict[str, str],
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    teacher_store: TeacherStore = Depends(get_teacher_store)
 ):
     check_teacher_role(current_user)
     course_id = payload.get("course_id")
@@ -591,8 +631,9 @@ async def request_teacher_assignment(
     return await teacher_store.create_request(str(current_user["id"]), course_id, class_id)
 
 @router.get("/assignments")
-async def get_teacher_assignments(
-    current_user: dict = Depends(get_current_user)
+async def get_teacher_assignments_list(
+    current_user: dict = Depends(get_current_user),
+    teacher_store: TeacherStore = Depends(get_teacher_store)
 ):
     check_teacher_role(current_user)
     return await teacher_store.get_teacher_assignments(str(current_user["id"]))

@@ -11,10 +11,12 @@ Use this guide to diagnose issues with the institutional approval chain and poli
     - **Status**: Check if the request is correctly flagged for the specific HOD's department.
 - **Resolution**: Re-trigger the approval signal or manually update the `approval_status` if the HOD is unreachable.
 
-### 2. Admin Final Resolution Failure
-- **Symptoms**: Disputed grades (Admin level) aren't resolving back to the student portal.
-- **Check**: [admin.py](file:///Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/routers/admin.py). Verify the `resolve_dispute` endpoint logic.
-- **Log**: `admin_resolution_error`.
+### 2. Teacher Request Approval Loop
+- **Symptoms**: Teacher request stuck even after HOD approval.
+- **Check**: [faculties.py](file:///Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/routers/faculties.py). 
+    - **Logic**: HOD approval sets status to `PENDING_ADMIN`.
+    - **Verify**: `SELECT status FROM teacher_requests WHERE id = '...';`
+- **Manual Override**: If the system doesn't auto-promote, check [teacher_store.py](file:///Users/chepuriharikiran/Desktop/github/lumina-ai-learning/backend/app/store/teacher_store.py) → `approve_request_by_admin()`.
 
 ### 3. Policy Block (R-003 Compliance)
 - **Symptoms**: Requests are being rejected unexpectedly.

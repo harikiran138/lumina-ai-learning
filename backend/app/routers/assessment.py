@@ -4,8 +4,16 @@ from pydantic import BaseModel
 from datetime import datetime
 import structlog
 
+import io
+import httpx
+from PIL import Image
 from app.api.deps import get_current_user
+from app.dependencies import get_user_data_store, get_content_store, get_assignment_store
 from app.store.user_data_store import UserDataStore
+from app.store.content_store import ContentStore
+from app.store.assignment_store import AssignmentStore
+from app.services.ocr_service import ocr_service
+from app.services.grader_service import grader_service
 from app.personalization.schemas import (
     LearningEventType,
     QuizResultPayload,
@@ -18,8 +26,7 @@ from app.api.deps import get_current_teacher as get_current_teacher
 
 router = APIRouter()
 log = structlog.get_logger(__name__)
-content_store = ContentStore()
-assignment_store = AssignmentStore()
+# Stores are now retrieved via dependencies
 
 class QuizResultRequest(BaseModel):
     topic: Optional[str] = None
@@ -51,6 +58,8 @@ async def process_physical_submission(
     current_user: dict = Depends(get_current_user)
 ):
     """Process a physical paper submission using OCR and AI grading."""
+    content_store = get_content_store()
+    assignment_store = get_assignment_store()
     db = get_scoped_db(current_user)
     submission = await content_store.get_physical_submission(submission_id)
     if not submission:
@@ -58,17 +67,26 @@ async def process_physical_submission(
     
     await content_store.update_physical_submission(submission_id, {"assessment_status": "processing"})
     extracted_texts = []
-    for img_url in submission.get("submission_images", []):
-        try:
-            text = ocr_service.digitize_image(img_url)
-            extracted_texts.append(text)
-        except Exception as e:
-            log.warn("ocr_failed", error=str(e), image_url=img_url)
-            extracted_texts.append(f"[OCR Error: {str(e)}]")
+    
+    # We need a client to fetch images
+    async with httpx.AsyncClient() as client:
+        for img_url in submission.get("submission_images", []):
+            try:
+                # 1. Fetch Image
+                resp = await client.get(img_url)
+                resp.raise_for_status()
+                image = Image.open(io.BytesIO(resp.content))
+                
+                # 2. Transcribe
+                ocr_result = await ocr_service.extract_text(image)
+                extracted_texts.append(ocr_result.text)
+            except Exception as e:
+                log.warn("ocr_failed", error=str(e), image_url=img_url)
+                extracted_texts.append(f"[OCR Error: {str(e)}]")
     
     full_text = "\n\n".join(extracted_texts)
     grading_result = {"score": 0, "feedback": "Assignment context not found."}
-    assignment = await assignment_store.get_assignment_by_id(submission.get("assignment_id"))
+    assignment = await assignment_store.get_assignment(submission.get("assignment_id"))
     
     if assignment:
         expected = assignment.get("description") or assignment.get("title")
@@ -91,8 +109,8 @@ async def save_quiz_result(
     current_user: dict = Depends(get_current_student),
 ):
     """Save the result of a quiz attempt for the current student."""
+    user_data_store = get_user_data_store()
     db = get_scoped_db(current_user)
-    user_data_store = UserDataStore(db=db)
     payload = request.model_dump()
     
     await user_data_store.add_quiz_attempt(current_user["id"], payload)

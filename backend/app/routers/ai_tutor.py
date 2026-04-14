@@ -10,8 +10,9 @@ from app.store.academic_store import AcademicStore
 from app.core.logging import structlog
 from datetime import datetime
 
+from app.database.scoped_db import ScopedSupabase, get_scoped_db
+
 router = APIRouter()
-academic_store = AcademicStore()
 log = structlog.get_logger()
 
 _MAX_PROMPT_LENGTH = 2000  # characters
@@ -37,22 +38,19 @@ def _normalize_history(history_raw: list) -> list:
     """
     normalized = []
     for msg in (history_raw or []):
-        # Determine role
         if "role" in msg:
             role = "user" if msg["role"] == "user" else "assistant"
         elif "sender" in msg:
             role = "user" if msg["sender"] == "me" else "assistant"
         else:
-            continue  # skip malformed entries
+            continue
 
-        # Determine content
         content = msg.get("content") or msg.get("text") or ""
         if not content:
             continue
 
         normalized.append({"role": role, "content": str(content)})
-
-    return normalized[-_MAX_HISTORY_ITEMS:]  # cap history size
+    return normalized[-_MAX_HISTORY_ITEMS:]
 
 
 def _merge_context(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -66,7 +64,6 @@ def _merge_context(payload: Dict[str, Any]) -> Dict[str, Any]:
         context.setdefault("topic", payload["topic"])
     if payload.get("subject"):
         context.setdefault("subject", payload["subject"])
-
     return context
 
 
@@ -99,7 +96,6 @@ def _ensure_serialized_response(response_text: Any, mode: str) -> str:
 
 
 def _extract_meta(response_str: str) -> Dict[str, Any]:
-    """Extract meta block from A2UI JSON for top-level response envelope."""
     try:
         parsed = json.loads(response_str)
         if isinstance(parsed, dict) and isinstance(parsed.get("meta"), dict):
@@ -110,7 +106,6 @@ def _extract_meta(response_str: str) -> Dict[str, Any]:
 
 
 def _restricted_content(mode: str) -> str:
-    """Return an A2UI-serialized redirect message for RESTRICTED questions."""
     return json.dumps({
         "meta": {"topic": "off-topic"},
         "flow": [{"type": "text", "content": RESTRICTED_REDIRECT}],
@@ -128,6 +123,8 @@ _MODE_TO_TYPE = {
 async def build_tutor_response_payload(
     payload: Dict[str, Any],
     current_user: Dict[str, Any],
+    db: ScopedSupabase,
+    academic_store: AcademicStore
 ) -> Dict[str, Any]:
     prompt_raw = payload.get("prompt") or payload.get("question") or payload.get("message") or ""
     if not prompt_raw:
@@ -139,17 +136,15 @@ async def build_tutor_response_payload(
     history_raw: list = payload.get("history") or []
     formatted_history = _normalize_history(history_raw)
 
-    tutor_store = AITutorStore()
+    tutor_store = AITutorStore(db=db)
     role = str(current_user.get("role") or "").lower()
 
     if role == "student":
         clf = classify(prompt, context)
         tier = clf["tier"]
 
-        # ── RESTRICTED: instant redirect, no LLM, no queue ───────────────────
         if tier == RoutingTier.RESTRICTED:
             redirect_str = _restricted_content(mode)
-            # Log restricted interaction
             log.warning("restricted_interaction", student_id=str(current_user.get("id")), prompt=prompt)
             return {
                 "success": True,
@@ -162,8 +157,6 @@ async def build_tutor_response_payload(
                 "classification": {"mode": mode, **clf},
             }
 
-        # ── INSTANT LEARNING (Turn-key AI-first Model): Direct LLM ───────────
-        # This bypasses the old ACADEMIC_VERIFIED queue to ensure < 1.5s response.
         response_text = await tutor_store.get_response(
             prompt=prompt,
             history=formatted_history,
@@ -173,22 +166,19 @@ async def build_tutor_response_payload(
         )
         response_str = _ensure_serialized_response(response_text, mode)
         
-        # Calculate Mastery Gain (Simulated heuristic for demo)
         mastery_gain = 2.5
         topic_id = context.get("topic") or context.get("topic_id") or "general"
         
-        # Persist Mastery Tracking
         await academic_store.update_mastery(str(current_user.get("id")), topic_id, mastery_gain)
 
-        # Log for Governance Monitoring (Retrospective Teacher Oversight)
         try:
-            client = academic_store.db.get_client()
+            client = db.get_client()
             client.table("ai_answer_queue").insert({
                 "student_id": str(current_user.get("id")),
                 "student_question": prompt,
                 "ai_generated_answer": response_str,
                 "question_topic": topic_id,
-                "status": "INSTANT_VOICE",  # Special status for AI-first model
+                "status": "INSTANT_VOICE",
                 "created_at": datetime.utcnow().isoformat()
             }).execute()
         except Exception as e:
@@ -215,7 +205,6 @@ async def build_tutor_response_payload(
             "classification": {"mode": mode, **clf},
         }
 
-    # Non-student (teacher, admin): direct LLM response
     response_text = await tutor_store.get_response(
         prompt=prompt,
         history=formatted_history,
@@ -242,16 +231,10 @@ async def ai_tutor_chat(
     request: Request,
     payload: Dict[str, Any] = Body(...),
     current_user: dict = Depends(get_current_active_user),
+    db: ScopedSupabase = Depends(get_scoped_db)
 ):
     """
     AI Tutor chat endpoint.
-
-    Accepted payload keys:
-    - prompt: str (required)
-    - history: List[{sender, text}] | List[{role, content}]  (optional)
-    - context_filters: dict  — student/course context from frontend router
-    - context: dict          — legacy flat context object
-    - mode: str              — "explain" | "quiz" | "code" | "interactive"
-    - topic: str             — current topic hint
     """
-    return await build_tutor_response_payload(payload, current_user)
+    academic_store_inj = AcademicStore(db=db)
+    return await build_tutor_response_payload(payload, current_user, db, academic_store_inj)
