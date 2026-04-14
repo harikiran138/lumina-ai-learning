@@ -54,6 +54,7 @@ async def create_assignment(
     
     db = get_scoped_db(current_user)
     assignment = HandwrittenAssignment(
+        institution_id=current_user.get("institution_id"),
         teacher_id=current_user["id"],
         title=title,
         description=description,
@@ -117,6 +118,7 @@ async def upload_submission(
 
     # 3. Create Submission Record
     submission = HandwrittenSubmission(
+        institution_id=current_user.get("institution_id"),
         assignment_id=assignment_id,
         student_id=current_user["id"],
         original_file_path=file_path,

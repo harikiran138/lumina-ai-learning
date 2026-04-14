@@ -1,33 +1,43 @@
-from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, List
-from app.routers.auth import get_current_user
-from app.pathway.curriculum_policy import CurriculumPolicyEngine
-from app.core.logging import structlog
-from uuid import UUID
+from fastapi import APIRouter, HTTPException, Depends
+from typing import List, Dict, Any, Optional
+from datetime import datetime
+import structlog
 
-router = APIRouter(prefix="/curriculum", tags=["curriculum"])
-log = structlog.get_logger()
-policy_engine = CurriculumPolicyEngine()
+from app.api.deps import is_admin
+from app.store.institution_store import InstitutionStore
+from app.store.course_store import CourseStore
+from app.database.scoped_db import get_scoped_db
 
-@router.get("/scope")
-async def get_curriculum_scope(current_user: dict = Depends(get_current_user)) -> Dict:
-    """
-    Returns the student's curriculum scope (current semester, allowed courses).
-    """
-    if current_user.get("role") != "student":
-        raise HTTPException(status_code=403, detail="Only students have a curriculum scope.")
-        
-    student_id = UUID(current_user["id"])
-    scope = await policy_engine.get_student_scope(student_id)
-    
-    if "error" in scope:
-        raise HTTPException(status_code=500, detail=scope["error"])
-        
-    return scope
+router = APIRouter()
+log = structlog.get_logger(__name__)
 
-@router.get("/semesters/{program_id}")
-async def get_semesters(program_id: str, current_user: dict = Depends(get_current_user)):
-    """Fetch all semesters for a specific program."""
-    from app.store.curriculum_store import CurriculumStore
-    store = CurriculumStore()
-    return await store.get_semesters(UUID(program_id))
+@router.get("/programs")
+async def list_programs(inst_id: str, admin: dict = Depends(is_admin)):
+    """List all academic programs (e.g., B.Tech, M.Tech) for an institution."""
+    db = get_scoped_db(admin)
+    try:
+        res = db.table("programs").select("*").eq("institution_id", inst_id).execute()
+        return res.data or []
+    except Exception as e:
+        log.error("list_programs_failed", error=str(e), institution_id=inst_id)
+        return []
+
+@router.post("/programs")
+async def create_program(inst_id: str, data: dict, admin: dict = Depends(is_admin)):
+    """Create a new academic program."""
+    db = get_scoped_db(admin)
+    data["institution_id"] = inst_id
+    data["created_at"] = datetime.utcnow().isoformat()
+    try:
+        res = db.table("programs").insert(data).execute()
+        return res.data[0]
+    except Exception as e:
+        log.error("create_program_failed", error=str(e))
+        raise HTTPException(status_code=500, detail="Failed to create program")
+
+@router.get("/courses")
+async def list_curriculum_courses(admin: dict = Depends(is_admin)):
+    """List courses with curriculum mapping details."""
+    db = get_scoped_db(admin)
+    course_store = CourseStore(db=db)
+    return await course_store.list_courses()

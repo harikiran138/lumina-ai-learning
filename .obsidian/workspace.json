@@ -1,0 +1,218 @@
+{
+  "main": {
+    "id": "3bd88c23d9930f0c",
+    "type": "split",
+    "children": [
+      {
+        "id": "ad78c6518d8fc918",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "6da165bf0e64fca6",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "c990581878a265f2",
+    "type": "split",
+    "children": [
+      {
+        "id": "9febdb89444002c7",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "9754ac1e8faa5011",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "b8acc9937ecde6b7",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "f803f14dc54ed7a3",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "5b24f2e931f892e1",
+    "type": "split",
+    "children": [
+      {
+        "id": "3fb8b6eeabb7d714",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "cd4604690dfc8a16",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "c909261231c516bd",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "57ebda4682668b29",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "8c38b20d5fe7706f",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "6d06924f977b1289",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "6da165bf0e64fca6",
+  "lastOpenFiles": [
+    "frontend/web/node_modules/which-builtin-type/node_modules/isarray/README.md",
+    "frontend/web/node_modules/react/README.md",
+    "vault/Features/Support/DEBUG.md",
+    "vault/Features/Governance/DEBUG.md",
+    "vault/Features/Faculty/DEBUG.md",
+    "vault/Features/Student/DEBUG.md",
+    "vault/Features/AI/DEBUG.md",
+    "vault/Features/Auth/DEBUG.md",
+    "vault/IMPACT.md",
+    "vault/DEPENDENCY_MAP.md",
+    "LUMINA_INDUSTRY_READINESS_VERIFICATION.md",
+    "vault/00_Meta/MODULE_MAP.md",
+    "Untitled.base",
+    "vault/USE_CASES.md",
+    "vault/DECISION_FLOW.md",
+    "vault/SYSTEM_MAP.md",
+    "vault/START_HERE.md",
+    "vault/Features/Support/Flow.md",
+    "vault/Features/Support/Frontend.md",
+    "vault/Features/Support/Backend.md",
+    "vault/Features/Support/API.md",
+    "vault/Features/Support/Overview.md",
+    "vault/Features/Governance/Flow.md",
+    "vault/Features/Governance/Frontend.md",
+    "vault/Features/Governance/Backend.md",
+    "vault/Features/Governance/API.md",
+    "vault/Features/Governance/Overview.md",
+    "vault/Features/Student",
+    "vault/Features/Support",
+    "vault/Features/Auth",
+    "vault/Features/Governance",
+    "vault/Features/Faculty",
+    "vault/Features/AI",
+    "vault/Features/Admin",
+    "vault/Features",
+    "vault/Files/frontend/web/src/features/handwritten/app/api/history"
+  ]
+}

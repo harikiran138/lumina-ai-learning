@@ -66,54 +66,59 @@ if settings.SENTRY_DSN:
     )
 
 from app.routers import (  # noqa: E402
-    ai,
-    ai_governance,
-    handwriting_simple as handwriting,
-    assignments,
-    courses,
-    auth,
-    hybrid,
-    student,
-    personalization,
-    community,
     admin,
-    pathway,
-    teacher,
-    knowledge_graph,
-    generation,
-    parent,
-    mentor,
-    peer_tutor,
-    counselor,
-    content_creator,
-    content_designer,
-    researcher,
+    ai,
+    ai_agents,
+    ai_governance,
+    ai_tutor,
     alumni,
+    analytics,
+    assessment,
+    assignments,
+    attendance,
+    auth,
+    community,
+    content_creator,
+    counselor,
+    courses,
     curriculum,
-    academic,
+    departments,
+    enrollments,
+    faculties,
+    flashcards,
+    fsrs,
+    gamification,
+    generation,
     hod,
+    hybrid,
+    institutions,
+    knowledge_graph,
+    mentor,
+    notifications,
     onboarding,
-    college_architecture,
-    ai_queue,
+    parent,
+    pathway,
+    peer_tutor,
+    personalization,
+    realtime,
+    researcher,
+    schedule,
+    student,
+    teacher,
+    users,
+    wellbeing,
+    progress,
+    study_groups,
+    exam_mode,
+    ai_tools,
+    core_extensions,
     unit_pipeline,
     handwritten,
     paper_info,
-    ai_tutor,
-    flashcards,
-    core_extensions,
-    notifications,
-    realtime,
-    generation,
-    gamification,
-    fsrs,
-    ai_tools,
-    exam_mode,
-    progress,
-    study_groups,
-    wellbeing,
+    ai_queue,
 )
 
-from app.assessment.api.router import router as assessment_router  # noqa: E402
+# from app.assessment.api.router import router as assessment_router  # noqa: E402
 from app.api.routers.automation import router as automation_router  # noqa: E402
 
 # Polyfill for older Python runtimes that do not expose asyncio.to_thread
@@ -321,55 +326,54 @@ app.add_middleware(CacheControlMiddleware)
 
 Instrumentator().instrument(app).expose(app)
 
-app.include_router(ai.router, prefix="/api", tags=["AI"])
-app.include_router(generation.router, prefix="/api/generation", tags=["Generation"])
-app.include_router(unit_pipeline.router, prefix="/api/v1/unit-pipeline", tags=["Knowledge Pipeline"])
-app.include_router(handwritten.router, prefix="/api/v1/handwritten", tags=["Handwriting & OCR"])
-app.include_router(paper_info.router, prefix="/api/v1/paper-info", tags=["Research & Papers"])
-app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignments"])
-
-
-app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
-
-
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(users.router, prefix="/api/users", tags=["Users"])
+app.include_router(institutions.router, prefix="/api/institutions", tags=["Institutions"])
+app.include_router(departments.router, prefix="/api/departments", tags=["Departments"])
+app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
+app.include_router(curriculum.router, prefix="/api/curriculum", tags=["Curriculum"])
+app.include_router(schedule.router, prefix="/api/schedule", tags=["Schedule"])
+app.include_router(enrollments.router, prefix="/api/enrollments", tags=["Enrollments"])
+app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
+app.include_router(assessment.router, prefix="/api/assessment", tags=["Assessment"])
+app.include_router(faculties.router, prefix="/api/faculties", tags=["Faculties"])
+app.include_router(ai_agents.router, prefix="/api/ai-agents", tags=["AI Agents"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
+app.include_router(onboarding.router, prefix="/api/onboarding", tags=["Onboarding"])
 
-
-app.include_router(assessment_router, prefix="/api/assessment", tags=["Assessment"])
-
-
+app.include_router(ai.router, prefix="/api", tags=["AI"])
 app.include_router(hybrid.router, prefix="/api/ai", tags=["Hybrid AI"])
+app.include_router(generation.router, prefix="/api/generation", tags=["Generation"])
 
+app.include_router(student.router, prefix="/api/student", tags=["Student (Legacy)"])
+app.include_router(teacher.router, prefix="/api/teacher", tags=["Teacher (Legacy)"])
+app.include_router(admin.router, prefix="/api/admin", tags=["Admin (Legacy)"])
+app.include_router(hod.router, prefix="/api/hod", tags=["HOD (Legacy)"])
 
-app.include_router(student.router, prefix="/api/student", tags=["Student Data"])
 app.include_router(personalization.router, prefix="/api/personalization", tags=["Personalization"])
-app.include_router(automation_router)
 app.include_router(community.router, prefix="/api/community", tags=["Community"])
+app.include_router(knowledge_graph.router, prefix="/api/knowledge-graph", tags=["Knowledge Graph"])
+app.include_router(pathway.router, prefix="/api/pathway", tags=["Pathway"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+app.include_router(realtime.router, prefix="/ws", tags=["Real-time"])
+
+# Role-specific Shells
 app.include_router(parent.router, prefix="/api/parent", tags=["Parent"])
 app.include_router(mentor.router, prefix="/api/mentor", tags=["Mentor"])
 app.include_router(peer_tutor.router, prefix="/api/peer_tutor", tags=["Peer Tutor"])
 app.include_router(counselor.router, prefix="/api/counselor", tags=["Counselor"])
 app.include_router(content_creator.router, prefix="/api/content_creator", tags=["Content Creator"])
-app.include_router(content_designer.router, prefix="/api")
 app.include_router(researcher.router, prefix="/api/researcher", tags=["Researcher"])
 app.include_router(alumni.router, prefix="/api/alumni", tags=["Alumni"])
-app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
-app.include_router(curriculum.router, prefix="/api", tags=["Curriculum"])
-app.include_router(pathway.router, prefix="/api/pathway", tags=["Pathway"])
-app.include_router(teacher.router, prefix="/api/teacher", tags=["Teacher Dashboard"])
-app.include_router(academic.router, prefix="/api/academic", tags=["Academic Hierarchy"])
-app.include_router(hod.router, prefix="/api/hod", tags=["HOD Dashboard"])
-app.include_router(knowledge_graph.router, prefix="/api/knowledge-graph", tags=["Knowledge Graph"])
-app.include_router(onboarding.router, prefix="/api/onboarding", tags=["Onboarding"])
-app.include_router(college_architecture.router, prefix="/api", tags=["College Architecture"])
+
+# Infrastructure & Tools
+app.include_router(automation_router)
 app.include_router(ai_queue.router, prefix="/api", tags=["AI Queue"])
 app.include_router(ai_governance.router, prefix="/api/monitoring", tags=["AI Monitoring"])
-app.include_router(unit_pipeline.router, prefix="/api/teacher", tags=["Unit Pipeline"])
-app.include_router(ai_tutor.router, prefix="/api/ai-tutor", tags=["AI Tutor"])
+app.include_router(unit_pipeline.router, prefix="/api/v1/unit-pipeline", tags=["Knowledge Pipeline"])
+app.include_router(handwritten.router, prefix="/api/v1/handwritten", tags=["OCR"])
+app.include_router(paper_info.router, prefix="/api/v1/paper-info", tags=["Research"])
 app.include_router(flashcards.router)
-app.include_router(core_extensions.router)
-app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
-app.include_router(realtime.router, prefix="/ws", tags=["Real-time WebSocket"])
 app.include_router(gamification.router, prefix="/api/gamification", tags=["Gamification"])
 app.include_router(fsrs.router, prefix="/api/fsrs", tags=["FSRS"])
 app.include_router(ai_tools.router, prefix="/api/ai-tools", tags=["AI Tools"])

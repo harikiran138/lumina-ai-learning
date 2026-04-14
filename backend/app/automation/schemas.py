@@ -26,6 +26,7 @@ class AutomationJobStatus(str, Enum):
 
 class AutomationJob(BaseModel):
     job_id: str = Field(default_factory=generate_id)
+    institution_id: str = Field(..., description="The ID of the institution this job belongs to")
     job_type: AutomationJobType
     status: AutomationJobStatus = AutomationJobStatus.PENDING
     scheduled_at: datetime = Field(default_factory=datetime.utcnow)
@@ -36,6 +37,7 @@ class AutomationJob(BaseModel):
 
 
 class RemediationPlan(BaseModel):
+    institution_id: str
     user_id: str
     triggered_by_score: float
     weak_concepts: List[str]
@@ -44,6 +46,7 @@ class RemediationPlan(BaseModel):
 
 
 class ClassDigest(BaseModel):
+    institution_id: str
     course_id: str
     week_start: datetime
     at_risk_count: int
@@ -55,6 +58,7 @@ class ClassDigest(BaseModel):
 
 
 class InactivityAlert(BaseModel):
+    institution_id: str
     user_id: str
     last_activity_at: Optional[datetime]
     hours_inactive: float
@@ -63,6 +67,7 @@ class InactivityAlert(BaseModel):
 
 
 class StudentProgressDigest(BaseModel):
+    institution_id: str
     user_id: str
     current_streak: int
     mastered_this_week: List[str]

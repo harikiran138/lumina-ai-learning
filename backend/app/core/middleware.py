@@ -91,6 +91,7 @@ class SentinelMiddleware(BaseHTTPMiddleware):
             # Handle both singular 'role' (new) and plural 'roles' (legacy)
             user_role = decoded_payload.get("role")
             user_roles = decoded_payload.get("roles", [])
+            institution_id = decoded_payload.get("collegeId") or decoded_payload.get("institution_id")
             
             # Consolidate into a list for RBAC check
             all_user_roles = []
@@ -107,7 +108,13 @@ class SentinelMiddleware(BaseHTTPMiddleware):
             # Store in request state for downstream use
             request.state.user_id = user_id
             request.state.roles = all_user_roles
-            request.state.user = {"id": user_id, "roles": all_user_roles, "role": user_role}
+            request.state.institution_id = institution_id
+            request.state.user = {
+                "id": user_id, 
+                "roles": all_user_roles, 
+                "role": user_role,
+                "institution_id": institution_id
+            }
             
         except JWTError as e:
             logger.error("jwt_verification_failed", error=str(e), path=path)

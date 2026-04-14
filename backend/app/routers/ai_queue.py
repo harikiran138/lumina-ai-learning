@@ -470,7 +470,7 @@ async def _generate_ai_answer(queue_id: str, request_payload: Dict[str, Any]) ->
                 "ai_request_log": result.request_log,
                 "ai_response_log": result.response_log,
                 "prompt_signature": result.prompt_signature,
-                "released_to_student": True,  # Instant release
+                "released_to_student": False,  # TILA Pattern: Wait for teacher approval
                 "status": "ai_answered",
             },
         )

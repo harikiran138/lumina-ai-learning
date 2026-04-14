@@ -339,6 +339,7 @@ class HandwrittenQuestion(BaseModel):
 
 class HandwrittenAssignment(BaseModel):
     id: str = Field(default_factory=generate_id)
+    institution_id: Optional[str] = None
     teacher_id: str
     title: str
     description: str = ""
@@ -376,6 +377,7 @@ class HandwrittenSubmissionQuestion(BaseModel):
 
 class HandwrittenSubmission(BaseModel):
     id: str = Field(default_factory=generate_id)
+    institution_id: Optional[str] = None
     assignment_id: str
     student_id: str
     status: str = SubmissionStatus.PENDING

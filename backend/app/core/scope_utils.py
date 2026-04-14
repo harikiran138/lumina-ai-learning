@@ -14,16 +14,16 @@ class ScopeManager:
         if role == "super_admin":
             return query
             
-        college_id = current_user.get("institution_id") or current_user.get("college_id")
-        if not college_id:
-            raise HTTPException(status_code=403, detail="No college scope found for user")
+        institution_id = current_user.get("institution_id") or current_user.get("college_id")
+        if not institution_id:
+            raise HTTPException(status_code=403, detail="No institution scope found for user")
             
-        return query.eq("institution_id", college_id)
+        return query.eq("institution_id", institution_id)
 
     @staticmethod
     def apply_dept_scope(query: Any, current_user: dict) -> Any:
         role = current_user.get("role")
-        # Admins see everything in the college
+        # Admins see everything in the institution
         if role in {"super_admin", "college_admin", "admin"}:
             return ScopeManager.apply_college_scope(query, current_user)
             
@@ -31,7 +31,7 @@ class ScopeManager:
         if not dept_id:
             raise HTTPException(status_code=403, detail="No department scope found for user")
             
-        # First ensure it's at least college scoped
+        # First ensure it's at least institution scoped
         query = ScopeManager.apply_college_scope(query, current_user)
         return query.eq("department_id", dept_id)
 
@@ -42,12 +42,12 @@ class ScopeManager:
         if role == "super_admin":
             return {}
             
-        college_id = current_user.get("institution_id") or current_user.get("college_id")
+        institution_id = current_user.get("institution_id") or current_user.get("college_id")
         dept_id = current_user.get("department_id") or current_user.get("dept_id")
         
         filters = {}
-        if college_id:
-            filters["institution_id"] = college_id
+        if institution_id:
+            filters["institution_id"] = institution_id
         
         if role not in {"college_admin", "admin"} and dept_id:
             filters["department_id"] = dept_id

@@ -40,35 +40,12 @@ _student_tutor_answers: Dict[str, Dict[str, Any]] = {}
 _student_tutor_tasks: Dict[str, asyncio.Task] = {}
 
 
-class QuizResultRequest(BaseModel):
-    # user_id: str  <-- REMOVED (Security Fix)
-    topic: Optional[str] = None
-    difficulty: str
-    score: float
-    total_questions: Optional[int] = None
-    correct_count: Optional[int] = None
-    course_id: Optional[str] = None
-    details: Optional[Dict[str, Any]] = None
-
-
-class NoteRequest(BaseModel):
-    title: Optional[str] = "Untitled Note"
-    subject: Optional[str] = "General"
-    content: str
-
-
 class EnrollmentRequest(BaseModel):
     course_id: str
 
 
-class LessonCompletionRequest(BaseModel):
+class EnrollmentRequest(BaseModel):
     course_id: str
-    lesson_id: str
-
-
-class ActivityLogRequest(BaseModel):
-    course_id: str
-    duration_minutes: int
 
 
 class StudentOnboardingCompleteRequest(BaseModel):
@@ -647,114 +624,8 @@ def _build_achievement_summary(
     }
 
 
-@router.post("/quiz-result")
-async def save_quiz_result(
-    request: QuizResultRequest,
-    current_user: dict = Depends(get_current_user),
-    store: UserDataStore = Depends(get_user_data_store),
-):
-    """
-    Save the result of a quiz attempt for the CURRENT user.
-    """
-    # Use ID from token, not request body
-    payload = request.model_dump()
-    db = get_scoped_db(current_user)
-    await store.add_quiz_attempt(current_user["id"], payload)
-    await get_personalization_service(db=db).record_event(
-        current_user["id"],
-        LearningEventType.QUIZ_RESULT,
-        payload=QuizResultPayload(**payload).model_dump(exclude_none=True),
-        source="student_router",
-        course_id=request.course_id,
-        topic_id=request.topic,
-        role=current_user.get("role", "student"),
-    )
-    return {"status": "success", "message": "Quiz result saved"}
 
-
-@router.get("/notes")
-async def get_notes(
-    current_user: dict = Depends(get_current_user),
-    store: UserDataStore = Depends(get_user_data_store),
-):
-    """
-    Get all notes for the CURRENT user.
-    """
-    return await store.get_notes(current_user["id"])
-
-
-@router.post("/notes")
-async def save_note(
-    request: NoteRequest,
-    current_user: dict = Depends(get_current_user),
-    store: UserDataStore = Depends(get_user_data_store),
-):
-    """
-    Save a student note for the CURRENT user.
-    """
-    # Note: add_note was updated to support ID generation, title, and subject
-    note = await store.add_note(
-        current_user["id"], 
-        request.content, 
-        title=request.title, 
-        subject=request.subject
-    )
-    
-    if not note:
-        raise HTTPException(status_code=500, detail="Failed to save note")
-
-    db = get_scoped_db(current_user)
-    await get_personalization_service(db=db).record_event(
-        current_user["id"],
-        LearningEventType.NOTE_ADDED,
-        payload=NoteAddedPayload(
-            title=request.title,
-            subject=request.subject,
-            content=request.content,
-        ).model_dump(exclude_none=True),
-        source="student_router",
-        role=current_user.get("role", "student"),
-    )
-    return {"status": "success", "success": True, "id": note["id"], "message": "Note saved"}
-
-
-@router.put("/notes/{note_id}")
-async def update_note(
-    note_id: str,
-    request: NoteRequest,
-    current_user: dict = Depends(get_current_user),
-    store: UserDataStore = Depends(get_user_data_store),
-):
-    """
-    Update an existing note for the CURRENT user.
-    """
-    success = await store.update_note(
-        current_user["id"], 
-        note_id, 
-        request.content, 
-        title=request.title, 
-        subject=request.subject
-    )
-    if not success:
-        raise HTTPException(status_code=404, detail="Note not found")
-    
-    return {"status": "success", "message": "Note updated"}
-
-
-@router.delete("/notes/{note_id}")
-async def delete_note(
-    note_id: str,
-    current_user: dict = Depends(get_current_user),
-    store: UserDataStore = Depends(get_user_data_store),
-):
-    """
-    Delete a note for the CURRENT user.
-    """
-    success = await store.delete_note(current_user["id"], note_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Note not found")
-    
-    return {"status": "success", "message": "Note deleted"}
+# Endpoints migrated to specialized routers (assessment.py, personalization.py)
 
 
 @router.post("/tutor/ask")
@@ -1121,86 +992,8 @@ async def log_student_activity(
     return {"status": "success", "message": "Activity logged"}
 
 
-@router.post("/enroll")
-async def enroll_in_course(
-    request: EnrollmentRequest,
-    current_user: dict = Depends(get_current_user),
-    store: StudentStore = Depends(get_student_store),
-):
-    """
-    Enroll the CURRENT student in a course.
-    """
-    db = get_scoped_db(current_user)
-    student_store = StudentStore(db=db)
-    success = await student_store.enroll_in_course(current_user["id"], request.course_id)
-    if not success:
-        print(f"ENROLLMENT FAILED for student={current_user.get('id')} course={request.course_id}")
-        raise HTTPException(status_code=400, detail="Enrollment failed or already enrolled")
 
-    return {"status": "success", "message": "Enrolled successfully"}
-
-
-@router.post("/complete-lesson")
-async def complete_lesson(
-    request: LessonCompletionRequest,
-    current_user: dict = Depends(get_current_user),
-    store: StudentStore = Depends(get_student_store),
-):
-    """
-    Mark a lesson as complete for the CURRENT student.
-    """
-    db = get_scoped_db(current_user)
-    student_store = StudentStore(db=db)
-    result = await student_store.complete_lesson(current_user["id"], request.course_id, request.lesson_id)
-    if not result.get("success"):
-        raise HTTPException(status_code=500, detail="Failed to mark lesson as complete")
-
-    await get_personalization_service(db=db).record_event(
-        current_user["id"],
-        LearningEventType.LESSON_COMPLETED,
-        payload=LessonCompletedPayload(
-            lesson_id=request.lesson_id,
-            course_id=request.course_id,
-            progress=result.get("progress", 0),
-        ).model_dump(exclude_none=True),
-        source="student_router",
-        course_id=request.course_id,
-        role=current_user.get("role", "student"),
-    )
-
-    return {"status": "success", "message": "Lesson completed"}
-
-
-@router.post("/log-activity")
-async def log_activity(
-    request: ActivityLogRequest,
-    current_user: dict = Depends(get_current_user),
-    store: StudentStore = Depends(get_student_store),
-):
-    """
-    Log student activity time and update streak.
-    """
-    db = get_scoped_db(current_user)
-    student_store = StudentStore(db=db)
-    success = await student_store.log_activity(
-        current_user["id"], request.course_id, request.duration_minutes
-    )
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to log activity")
-
-    await get_personalization_service(db=db).record_event(
-        current_user["id"],
-        LearningEventType.ACTIVITY_LOGGED,
-        payload=ActivityLoggedPayload(
-            course_id=request.course_id,
-            duration_minutes=request.duration_minutes,
-        ).model_dump(exclude_none=True),
-        source="student_router",
-        course_id=request.course_id,
-        role=current_user.get("role", "student"),
-    )
-
-    return {"status": "success", "message": "Activity logged"}
+# Enrollment and activity logic moved to enrollment.py and personalization.py
 
 
 @router.get("/test-user")

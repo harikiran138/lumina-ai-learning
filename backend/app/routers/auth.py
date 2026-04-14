@@ -172,6 +172,8 @@ def build_claims(user: dict) -> dict:
         "email": user.get("email"),
         "fullName": user.get("full_name") or user.get("name", "Unknown"),
         "role": normalize_role(user.get("role", "guest")),
+        "institution_id": user.get("institution_id") or user.get("college_id"),
+        "institutionId": user.get("institution_id") or user.get("college_id"),
         "collegeId": user.get("college_id"),
         "deptId": user.get("dept_id") or user.get("department_id"),
         "batchId": user.get("batch_id"),

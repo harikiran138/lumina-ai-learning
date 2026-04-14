@@ -3,6 +3,8 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 from app.api.deps import get_current_active_user, get_current_teacher, get_current_hod
 from app.database.supabase_manager import supabase_db
+from app.store.content_store import ContentStore
+from app.database.scoped_db import get_scoped_db
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -104,3 +106,31 @@ async def teacher_intervene(
         raise HTTPException(status_code=404, detail="Interaction not found")
         
     return {"message": "Intervention recorded. Student will see the corrected answer."}
+
+# ---------------------------------------------------------------------------
+# Human-in-the-loop Verification
+# ---------------------------------------------------------------------------
+
+@router.get("/verification/queue")
+async def get_verification_queue(
+    current_user: dict = Depends(get_current_teacher)
+):
+    """Get the queue of student questions requiring teacher verification."""
+    db = get_scoped_db(current_user)
+    content_store = ContentStore(db=db)
+    return await content_store.get_verification_queue(str(current_user["id"]))
+
+@router.patch("/verification/queue/{item_id}")
+async def update_verification_answer(
+    item_id: str,
+    status: str,
+    teacher_edited_answer: Optional[str] = None,
+    current_user: dict = Depends(get_current_teacher)
+):
+    """Approve or correct an AI-generated answer in the verification queue."""
+    db = get_scoped_db(current_user)
+    content_store = ContentStore(db=db)
+    updated = await content_store.update_verification_status(item_id, status, teacher_edited_answer)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Queue item not found")
+    return updated
