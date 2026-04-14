@@ -1,8 +1,11 @@
 import boto3
 import os
 import shutil
+import structlog
 from fastapi import UploadFile
 from botocore.exceptions import NoCredentialsError
+
+logger = structlog.get_logger(__name__)
 
 
 class StorageService:
@@ -18,14 +21,14 @@ class StorageService:
         self.use_s3 = all([self.aws_access_key, self.aws_secret_key, self.bucket_name])
 
         if self.use_s3:
-            print("[INFO] S3 Storage Enabled")
+            logger.info("S3 Storage Enabled")
             self.s3_client = boto3.client(
                 "s3",
                 aws_access_key_id=self.aws_access_key,
                 aws_secret_access_key=self.aws_secret_key,
             )
         else:
-            print("[WARN] AWS Credentials missing. Falling back to local storage (data/uploads)")
+            logger.warning("AWS Credentials missing. Falling back to local storage (data/uploads)")
 
     def upload_file(self, file_obj: UploadFile, file_name: str) -> str:
         """
@@ -37,7 +40,7 @@ class StorageService:
                 self.s3_client.upload_fileobj(file_obj.file, self.bucket_name, file_name)
                 return f"s3://{self.bucket_name}/{file_name}"
             except Exception as e:
-                print(f"[ERROR] S3 Upload Failed: {e}")
+                logger.error("S3 Upload Failed", error=str(e))
                 raise e
         else:
             # Local Fallback
@@ -62,7 +65,7 @@ class StorageService:
                 )
                 return f"s3://{self.bucket_name}/{file_name}"
             except Exception as e:
-                print(f"[ERROR] S3 Byte Upload Failed: {e}")
+                logger.error("S3 Byte Upload Failed", error=str(e))
                 raise e
         else:
             file_path = os.path.join(self.upload_dir, file_name)

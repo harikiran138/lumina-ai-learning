@@ -2,6 +2,7 @@ import sys
 import io
 import importlib.metadata
 from dotenv import load_dotenv
+import structlog
 
 # Force UTF-8 for stdout and stderr on Windows
 if sys.platform == "win32":
@@ -29,7 +30,6 @@ import functools  # noqa: E402
 import contextvars  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
 
-import structlog  # noqa: E402
 import sentry_sdk  # noqa: E402
 from fastapi import FastAPI, Request, HTTPException  # noqa: E402
 from fastapi.responses import JSONResponse  # noqa: E402
@@ -156,19 +156,19 @@ async def lifespan(app: FastAPI):
         from app.database.supabase_manager import supabase_db
 
         if supabase_db.client is not None:
-            print("Connected to Supabase")
+            logger.info("Database Connection Status", connected=True)
         else:
-            print("Starting in limited functionality mode (local fallback store).")
+            logger.info("Fallback Mode Enabled", mode="limited")
     except Exception as e:
-        print(f"WARNING: Could not connect to database: {e}")
-        print("Starting in limited functionality mode.")
+        logger.warning("Database Connection Failed", error=str(e))
+        logger.info("Fallback Mode Enabled", mode="limited")
 
     # 3. Startup automation scheduler
     try:
         from app.automation.scheduler import setup_scheduled_jobs
         setup_scheduled_jobs(app)
     except Exception as e:
-        print(f"WARNING: Scheduler not started: {e}")
+        logger.warning("Scheduler not started", error=str(e))
 
     yield
 
