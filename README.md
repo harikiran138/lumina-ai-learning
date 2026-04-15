@@ -20,9 +20,8 @@ Lumina is an AI-assisted learning platform for institutional teaching workflows.
 
 ## Repo Organization
 
-- `deploy/`: operational deployment assets and nginx support
-- `deployment/aws/`: AWS-specific provisioning and deployment automation
-- `migrations/`: manual or supplemental root-level SQL patches kept for reconciliation, separate from `supabase/migrations`
+- `deploy/`: all deployment assets — `nginx/` (host/VM configs), `aws/` (cloud provisioning & bootstrap scripts)
+- `supabase/migrations/`: all versioned SQL migrations managed by the Supabase CLI
 - `Analytics-Agent/`, `ml/`, `pathway agent/`, `training/`: supporting or experimental subsystems retained intentionally
 
 ## Local Start
