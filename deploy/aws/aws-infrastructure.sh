@@ -191,5 +191,5 @@ EOF
 echo "✅ Configuration saved."
 echo ""
 echo "Next Steps:"
-echo "  1. Run './deployment/aws/install-docker.sh $PUBLIC_IP' to set up the environment."
-echo "  2. Run './deployment/aws/deploy-to-aws.sh' to deploy the Lumina project."
+echo "  1. Run './deploy/aws/install-docker.sh $PUBLIC_IP' to set up the environment."
+echo "  2. Run './deploy/aws/deploy-to-aws.sh' to deploy the Lumina project."

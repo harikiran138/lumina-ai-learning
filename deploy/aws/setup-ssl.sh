@@ -21,7 +21,7 @@ DOMAIN="${1:?Usage: $0 <domain> <email>}"
 EMAIL="${2:?Usage: $0 <domain> <email>}"
 APP_DIR="${APP_DIR:-/opt/lumina}"
 COMPOSE_FILE="$APP_DIR/docker-compose.lumina.yml"
-NGINX_CONF="$APP_DIR/deployment/aws/nginx.conf"
+NGINX_CONF="$APP_DIR/deploy/aws/nginx.conf"
 
 echo "=== SSL Setup for $DOMAIN ==="
 

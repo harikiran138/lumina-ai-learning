@@ -9,7 +9,7 @@
 # Environment variables:
 #   APP_DIR          - deployment root  (default: /opt/lumina)
 #   REPO_DIR         - git repo path    (default: $APP_DIR/lumina-ai-learning)
-#   COMPOSE_FILE     - compose file     (default: deployment/aws/docker-compose.full.yml in repo)
+#   COMPOSE_FILE     - compose file     (default: deploy/aws/docker-compose.full.yml in repo)
 #   ENV_FILE         - env file         (default: $APP_DIR/.env)
 #   GIT_BRANCH       - branch to deploy (default: main)
 #   BACKEND_IMAGE    - if set, use this GHCR image instead of building
@@ -75,7 +75,7 @@ fi
 cd "$REPO_DIR"
 
 # ─── Determine compose file ──────────────────────────────────
-COMPOSE_FILE="${COMPOSE_FILE:-$REPO_DIR/deployment/aws/docker-compose.full.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-$REPO_DIR/deploy/aws/docker-compose.full.yml}"
 echo "Compose file: $COMPOSE_FILE"
 
 # ─── Load environment variables into the shell for interpolation ───
@@ -91,7 +91,7 @@ else
 fi
 
 # Synced copy for Docker Compose
-cp "$ENV_FILE" "$REPO_DIR/deployment/aws/.env"
+cp "$ENV_FILE" "$REPO_DIR/deploy/aws/.env"
 
 # ─── IMAGE mode: pull from GHCR ─────────────────────────────
 if [[ -n "${BACKEND_IMAGE:-}" ]]; then
@@ -136,7 +136,7 @@ echo ""
 echo "--- Running containers ---"
 docker compose \
   --project-name lumina \
-  --env-file "$REPO_DIR/deployment/aws/.env" \
+  --env-file "$REPO_DIR/deploy/aws/.env" \
   -f "$COMPOSE_FILE" \
   ps
 

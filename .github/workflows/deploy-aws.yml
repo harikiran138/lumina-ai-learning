@@ -203,10 +203,10 @@ jobs:
               "export GHCR_USER=\$(printf '%s' '${GHCR_USER_B64}' | base64 -d)",
               "export GHCR_TOKEN=\$(printf '%s' '${GHCR_TOKEN_B64}' | base64 -d)",
               "printf '%s' '${ENV_B64}' | base64 -d > /opt/lumina/.env",
-              "curl -fsSL ${RAW_BASE}/deployment/aws/bootstrap-ec2.sh -o /tmp/bootstrap-ec2.sh",
-              "curl -fsSL ${RAW_BASE}/deployment/aws/deploy-on-ec2.sh  -o /tmp/deploy-on-ec2.sh",
-              "curl -fsSL ${RAW_BASE}/deployment/aws/docker-compose.full.yml -o /opt/lumina/docker-compose.full.yml",
-              "curl -fsSL ${RAW_BASE}/deployment/aws/nginx.conf -o /opt/lumina/nginx.conf",
+              "curl -fsSL ${RAW_BASE}/deploy/aws/bootstrap-ec2.sh -o /tmp/bootstrap-ec2.sh",
+              "curl -fsSL ${RAW_BASE}/deploy/aws/deploy-on-ec2.sh  -o /tmp/deploy-on-ec2.sh",
+              "curl -fsSL ${RAW_BASE}/deploy/aws/docker-compose.full.yml -o /opt/lumina/docker-compose.full.yml",
+              "curl -fsSL ${RAW_BASE}/deploy/aws/nginx.conf -o /opt/lumina/nginx.conf",
               "bash /tmp/bootstrap-ec2.sh",
               "APP_DIR=/opt/lumina REPO_DIR=/opt/lumina/lumina-ai-learning GIT_BRANCH=main ENV_FILE=/opt/lumina/.env COMPOSE_FILE=/opt/lumina/docker-compose.full.yml bash /tmp/deploy-on-ec2.sh"
             ]

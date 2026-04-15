@@ -10,14 +10,14 @@ BACKEND_IMAGE="${BACKEND_IMAGE:-ghcr.io/harikiran138/lumina-ai-learning-backend:
 FRONTEND_IMAGE="${FRONTEND_IMAGE:-ghcr.io/harikiran138/lumina-ai-learning-frontend:latest}"
 
 if [ ! -f "$CONFIG_FILE" ]; then
-  echo "aws-config.env not found. Run deployment/aws/aws-infrastructure.sh first." >&2
+  echo "aws-config.env not found. Run deploy/aws/aws-infrastructure.sh first." >&2
   exit 1
 fi
 
 source "$CONFIG_FILE"
 
 SSH_KEY="${KEY_FILE:-deploy/lumina-v4-key.pem}"
-ENV_FILE="${PROJECT_DIR}/deployment/aws/.env.production"
+ENV_FILE="${PROJECT_DIR}/deploy/aws/.env.production"
 
 if [ ! -f "$SSH_KEY" ]; then
   echo "SSH key not found: $SSH_KEY" >&2
@@ -26,16 +26,16 @@ fi
 
 if [ ! -f "$ENV_FILE" ]; then
   echo "Local env file missing: $ENV_FILE" >&2
-  echo "Create it from deployment/aws/.env.production.example before manual deploys." >&2
+  echo "Create it from deploy/aws/.env.production.example before manual deploys." >&2
   exit 1
 fi
 
 ssh -i "$SSH_KEY" -o ConnectTimeout=10 -o StrictHostKeyChecking=no "$REMOTE_USER@$PUBLIC_IP" "echo connected" >/dev/null
 
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=no \
-  "${PROJECT_DIR}/deployment/aws/bootstrap-ec2.sh" \
-  "${PROJECT_DIR}/deployment/aws/deploy-on-ec2.sh" \
-  "${PROJECT_DIR}/deployment/aws/docker-compose.ec2.yml" \
+  "${PROJECT_DIR}/deploy/aws/bootstrap-ec2.sh" \
+  "${PROJECT_DIR}/deploy/aws/deploy-on-ec2.sh" \
+  "${PROJECT_DIR}/deploy/aws/docker-compose.ec2.yml" \
   "$ENV_FILE" \
   "$REMOTE_USER@$PUBLIC_IP:/tmp/"
 
