@@ -1,18 +1,38 @@
 # General
-node_modules/
+.DS_Store
 .env
 *.log
+*.pid
+*.pem
+*.tsbuildinfo
 *.tar.gz
 *.zip
+
+# Node / frontend
+node_modules/
+.next/
+.turbo/
+.vercel/
+.firebase/
+dist/
+build/
+playwright-report/
+test-results/
 
 # Python
 .venv/
 venv/
 __pycache__/
 .pytest_cache/
+.ruff_cache/
 
-# Frontend
-.next/
-dist/
-build/
-.turbo/
+# Runtime / generated data
+backend/data/uploads/
+backend/uploads/
+data/uploads/
+static/presentations/
+backend/static/presentations/
+backend/db/chroma/
+backend/backend/db/chroma/
+output/
+tmp/

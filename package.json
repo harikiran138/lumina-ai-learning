@@ -1,25 +1,14 @@
 {
-    "name": "team-22-root-build",
+    "name": "lumina-ai-learning",
     "version": "1.0.0",
-    "description": "Root build script for Vercel deployment",
+    "description": "Root scripts for the Lumina web frontend",
     "scripts": {
         "dev": "cd frontend/web && npm run dev",
         "start": "cd frontend/web && npm run start",
         "build": "export NODE_OPTIONS=--max-old-space-size=4096 && cd frontend/web && npm install --legacy-peer-deps && npm run build",
-        "vercel-build": "export NODE_OPTIONS=--max-old-space-size=4096 && cd frontend/web && npm install --legacy-peer-deps && npm run build",
-        "test": "npm run test:frontend && npm run test:backend && npm run test:e2e",
-        "test:frontend": "cd frontend/web && npm test",
-        "test:backend": "cd backend && ../.venv/bin/python -m pytest tests",
-        "test:e2e": "cd frontend/web && npm run test:e2e:playwright"
-    },
-    "devDependencies": {
-        "next": "^15.1.0",
-        "vitest": "^4.0.18"
+        "vercel-build": "export NODE_OPTIONS=--max-old-space-size=4096 && cd frontend/web && npm install --legacy-peer-deps && npm run build"
     },
     "engines": {
         "node": "20.x"
-    },
-    "dependencies": {
-        "@supabase/supabase-js": "^2.99.1"
     }
 }
