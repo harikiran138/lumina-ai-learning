@@ -1,4 +1,4 @@
-# Institution Admin
+ # Institution Admin
 
 > **File:** `02-roles/02-institution-admin.md`
 > **Related:** [[02-roles/00-roles-index]], [[02-roles/01-super-admin]], [[02-roles/03-instructor]]

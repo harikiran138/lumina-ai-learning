@@ -11,7 +11,7 @@ API design conventions, base URL, authentication, versioning, and common pattern
 ## Base URL
 
 ```
-Development:  http://localhost:8000
+Development:  http://localhost:9000
 Production:   https://<institution-domain>/api
 ```
 
@@ -19,7 +19,7 @@ All API routes are prefixed with `/api`. No `/v1` versioning prefix is used — 
 
 ## Authentication
 
-All endpoints except `POST /api/auth/login` and `GET /api/health/*` require a valid JWT access token delivered via HttpOnly cookie named `access_token`.
+All endpoints except `POST /api/auth/login` and `GET /health` require a valid JWT access token delivered via HttpOnly cookie named `access_token`.
 
 No Bearer token in Authorization header — Lumina uses cookies exclusively to prevent token leakage via JavaScript.
 
