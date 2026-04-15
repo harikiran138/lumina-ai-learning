@@ -177,19 +177,6 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const isAuthHydrating = useAuthStore((state) => state.isLoading);
 
-  // 🔄 FIX: Prevents infinite refresh loop by checking token presence directly
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
-      const isLoggingOut = searchParams.get("logout") === "true";
-      const hasReason = searchParams.get("reason");
-      
-      if (token && !isLoggingOut && !hasReason) {
-        console.log("[AUTH] Token found, redirecting to dashboard...");
-        router.push("/student/dashboard");
-      }
-    }
-  }, [router, searchParams]);
 
   useEffect(() => {
     if (searchParams.get("logout") === "true") {

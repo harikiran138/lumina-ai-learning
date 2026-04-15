@@ -14,6 +14,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 interface AuditCourse {
   id: string;
@@ -29,35 +30,23 @@ export default function CourseAudit() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mocking audit data
-    const mockData: AuditCourse[] = [
-      {
-        id: "c-1",
-        title: "Introduction to Advanced Algorithms",
-        code: "CS402",
-        status: "reviewed",
-        last_audit: "2 days ago",
-        quality_score: 98
-      },
-      {
-        id: "c-2",
-        title: "Ethical AI & Society",
-        code: "PHI201",
-        status: "flagged",
-        last_audit: "5 hours ago",
-        quality_score: 64
-      },
-      {
-        id: "c-3",
-        title: "Principles of Macroeconomics",
-        code: "ECON101",
-        status: "pending",
-        last_audit: "Never",
-        quality_score: 0
+    const loadAuditCourses = async () => {
+      try {
+        const rows = await api.getAdminContentAudit();
+        const normalized: AuditCourse[] = (rows || []).map((row: any, idx: number) => ({
+          id: String(row.id || `course-${idx}`),
+          title: String(row.title || "Untitled Course"),
+          code: String(row.code || "N/A"),
+          status: ((row.status || "pending").toLowerCase()) as AuditCourse["status"],
+          last_audit: String(row.last_audit || row.updated_at || "N/A"),
+          quality_score: Number(row.quality_score || 0),
+        }));
+        setCourses(normalized);
+      } finally {
+        setLoading(false);
       }
-    ];
-    setCourses(mockData);
-    setLoading(false);
+    };
+    loadAuditCourses();
   }, []);
 
   return (

@@ -61,23 +61,36 @@ async def process_physical_submission(
     content_store = get_content_store()
     assignment_store = get_assignment_store()
     db = get_scoped_db(current_user)
+    
     submission = await content_store.get_physical_submission(submission_id)
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
     
+    # 🚨 SECURITY CHECK: IDOR Prevention
+    user_id = str(current_user["id"])
+    role = current_user.get("role", "student")
+    
+    # Students can only process their own submissions
+    if role == "student" and str(submission.get("student_id")) != user_id:
+        raise HTTPException(status_code=403, detail="Access denied: Cannot process another student's submission")
+    
+    # Teachers can only process submissions for students they are linked to
+    if role == "teacher":
+        from app.store.academic_store import AcademicStore
+        academic = AcademicStore(db=db)
+        if not await academic.verify_teacher_student_link(user_id, str(submission.get("student_id"))):
+            raise HTTPException(status_code=403, detail="Access denied: Student is not in your assigned classes")
+
     await content_store.update_physical_submission(submission_id, {"assessment_status": "processing"})
     extracted_texts = []
     
-    # We need a client to fetch images
+    # Rest of the logic...
     async with httpx.AsyncClient() as client:
         for img_url in submission.get("submission_images", []):
             try:
-                # 1. Fetch Image
                 resp = await client.get(img_url)
                 resp.raise_for_status()
                 image = Image.open(io.BytesIO(resp.content))
-                
-                # 2. Transcribe
                 ocr_result = await ocr_service.extract_text(image)
                 extracted_texts.append(ocr_result.text)
             except Exception as e:
@@ -113,6 +126,7 @@ async def save_quiz_result(
     db = get_scoped_db(current_user)
     payload = request.model_dump()
     
+    # Strictly scope by current_user.id
     await user_data_store.add_quiz_attempt(current_user["id"], payload)
     await get_personalization_service(db=db).record_event(
         current_user["id"],
@@ -134,6 +148,14 @@ async def teacher_intervene(
     teacher_id = str(current_user["id"])
     db = get_scoped_db(current_user)
 
+    # 🚨 SECURITY CHECK: Teacher-Student Link
+    from app.store.academic_store import AcademicStore
+    academic = AcademicStore(db=db)
+    if not await academic.verify_teacher_student_link(teacher_id, req.student_id):
+        # Super Admins and HODs (checked in get_current_teacher) bypass link check if role matches
+        if current_user.get("role") not in {"super_admin", "hod"}:
+             raise HTTPException(status_code=403, detail="Access denied: Cannot intervene with students outside your assigned classes")
+
     record = {
         "teacher_id": teacher_id,
         "student_id": req.student_id,
@@ -152,7 +174,7 @@ async def teacher_intervene(
     except Exception as exc:
         log.warning("teacher_interventions_insert_failed", error=str(exc))
 
-    # Broadcast to student's adaptive channel via WebSocket manager
+    # Broadcast to student's adaptive channel
     try:
         from app.routers.realtime import broadcast_adaptive_event
         await broadcast_adaptive_event(
@@ -176,6 +198,16 @@ async def override_student_question(
     current_user: dict = Depends(get_current_teacher),
 ):
     """Replace the next question for a student in an active session."""
+    teacher_id = str(current_user["id"])
+    db = get_scoped_db(current_user)
+
+    # 🚨 SECURITY CHECK: Teacher-Student Link
+    from app.store.academic_store import AcademicStore
+    academic = AcademicStore(db=db)
+    if not await academic.verify_teacher_student_link(teacher_id, req.student_id):
+        if current_user.get("role") not in {"super_admin", "hod"}:
+            raise HTTPException(status_code=403, detail="Access denied: Cannot override questions for students outside your assigned classes")
+
     import json as _json
     payload = _json.dumps({
         "student_id": req.student_id,
@@ -184,7 +216,7 @@ async def override_student_question(
         "concept_id": req.concept_id,
         "question_type": req.question_type,
         "difficulty": req.difficulty,
-        "overridden_by": str(current_user["id"]),
+        "overridden_by": teacher_id,
         "created_at": datetime.utcnow().isoformat(),
     })
 

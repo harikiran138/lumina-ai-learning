@@ -13,6 +13,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 interface ComplianceLog {
   id: string;
@@ -28,35 +29,23 @@ export default function ComplianceAuditLogs() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mocking compliance audit logs
-    const mockData: ComplianceLog[] = [
-      {
-        id: "cl-1",
-        action: "Exported Grade Snapshot",
-        user: "Admin (Hari)",
-        impact_area: "Student Records",
-        timestamp: "10m ago",
-        severity: "low"
-      },
-      {
-        id: "cl-2",
-        action: "Modified Retention Policy",
-        user: "System Architect",
-        impact_area: "Database Infrastructure",
-        timestamp: "2h ago",
-        severity: "high"
-      },
-      {
-        id: "cl-3",
-        action: "Authorized Data Deletion",
-        user: "Compliance Officer",
-        impact_area: "User Privacy",
-        timestamp: "5h ago",
-        severity: "medium"
+    const loadComplianceLogs = async () => {
+      try {
+        const rows = await api.getAdminComplianceAuditLogs();
+        const normalized: ComplianceLog[] = (rows || []).map((row: any, idx: number) => ({
+          id: String(row.id || `cl-${idx}`),
+          action: String(row.action || row.action_type || "Compliance Action"),
+          user: String(row.user || row.admin_user_id || "Admin"),
+          impact_area: String(row.impact_area || row.resource_name || "System"),
+          timestamp: String(row.timestamp || row.created_at || "N/A"),
+          severity: ((row.severity || "low").toLowerCase()) as ComplianceLog["severity"],
+        }));
+        setLogs(normalized);
+      } finally {
+        setLoading(false);
       }
-    ];
-    setLogs(mockData);
-    setLoading(false);
+    };
+    loadComplianceLogs();
   }, []);
 
   return (

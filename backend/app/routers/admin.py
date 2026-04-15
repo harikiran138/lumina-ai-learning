@@ -138,18 +138,14 @@ async def get_admin_dashboard(
         "alerts": stats.get("summary", {}).get("attention_queue", stats.get("attention_queue", [])),
         "activity": stats.get("activity_feed", []),
         "services": stats.get("system_services", []),
-        "charts": {
+        "charts": stats.get("charts", {
             "userGrowth": [
-                {"month": "Jan", "users": 1200},
-                {"month": "Feb", "users": 1500},
-                {"month": "Mar", "users": 1800},
-                {"month": "Apr", "users": stats.get("total_users", stats.get("totalUsers", 0))},
+                {"month": "N/A", "users": 0}
             ],
             "roleDistribution": [
-                {"role": "Student", "count": stats.get("totalStudents", 0)},
-                {"role": "Faculty", "count": stats.get("totalTeachers", 0)},
+                {"role": "N/A", "count": 0}
             ]
-        }
+        })
     }
 
 

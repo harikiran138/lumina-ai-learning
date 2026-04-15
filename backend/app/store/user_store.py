@@ -229,7 +229,9 @@ class UserStore:
                         data = {k: v for k, v in data.items() if k in cols}
                     
                     if method == "upsert":
-                        await self.db.table(table).upsert(data).async_execute()
+                        # Most specialized profile tables use user_id as their primary key
+                        # and do not have an auto-increment ID column.
+                        await self.db.table(table).upsert(data, on_conflict='user_id').async_execute()
                     else:
                         await self.db.table(table).insert(data).async_execute()
                 except Exception as ex:

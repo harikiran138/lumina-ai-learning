@@ -106,13 +106,7 @@ def get_config_store(db: ScopedSupabase = Depends(get_scoped_db)) -> ConfigStore
     return ConfigStore(db=db)
 
 def get_content_store(db: ScopedSupabase = Depends(get_scoped_db)) -> ContentStore:
-    return ContentStore(db=_resolve_db(db))
-
-def get_academic_store(db: ScopedSupabase = Depends(get_scoped_db)) -> AcademicStore:
-    return AcademicStore(db=_resolve_db(db))
-
-def get_config_store(db: ScopedSupabase = Depends(get_scoped_db)) -> ConfigStore:
-    return ConfigStore(db=_resolve_db(db))
+    return ContentStore(db=db)
 
 # ── Service Providers ──────────────────────────────────────────────────────────
 

@@ -942,17 +942,34 @@ class AnalyticsStore:
             total_tokens = sum(item.get("tokens_used", 0) for item in data)
             total_cost = sum(item.get("estimated_cost", 0) for item in data)
             
+            # Real model breakdown
+            from collections import Counter
+            model_tokens = Counter()
+            model_costs = Counter()
+            for item in data:
+                m = item.get("model_name") or "unknown"
+                model_tokens[m] += item.get("tokens_used", 0)
+                model_costs[m] += item.get("estimated_cost", 0)
+
+            breakdown = [
+                {
+                    "model": m, 
+                    "tokens": f"{model_tokens[m]/1000:.1f}K", 
+                    "cost": f"${model_costs[m]:.2f}"
+                }
+                for m in sorted(model_tokens.keys())
+            ]
+
             return {
                 "total_tokens": total_tokens,
                 "total_cost": f"${total_cost:.2f}",
-                "monthly_budget": "$5,000.00",
-                "usage_percentage": f"{(total_cost / 5000 * 100):.1f}%" if total_cost > 0 else "0%",
-                "breakdown_by_model": [
-                    {"model": "gpt-4o", "tokens": "800K", "cost": "$120.00"},
-                    {"model": "claude-3.5", "tokens": "300K", "cost": "$45.00"}
-                ]
+                "monthly_budget": "$1,000.00", # Configurable
+                "usage_percentage": f"{(total_cost / 1000 * 100):.1f}%" if total_cost > 0 else "0%",
+                "breakdown_by_model": breakdown
             }
-        except Exception:
+        except Exception as e:
+            log.error("ai_cost_analysis_failed", error=str(e))
+            return {"total_tokens": 0, "total_cost": "$0.00", "breakdown_by_model": []}
             return {"total_tokens": 0, "total_cost": "$0.00", "usage_percentage": "0%"}
 
     async def get_system_health_audit(self) -> Dict:
@@ -999,14 +1016,34 @@ class AnalyticsStore:
             client = self.db.get_client()
             res = await client.table("ai_answer_queue").select("*").async_execute()
             data = res.data or []
+            
+            pending = [item for item in data if item.get("status") == "pending"]
+            verified = [item for item in data if item.get("status") == "verified"]
+            
+            # Calculate real avg verification time
+            avg_time_str = "N/A"
+            if verified:
+                total_seconds = 0
+                count = 0
+                for item in verified:
+                    created = self._parse_datetime(item.get("created_at"))
+                    v_at = self._parse_datetime(item.get("verified_at"))
+                    if created and v_at:
+                        total_seconds += (v_at - created).total_seconds()
+                        count += 1
+                if count > 0:
+                    avg_hours = (total_seconds / count) / 3600
+                    avg_time_str = f"{avg_hours:.1f} hours"
+
             return {
-                "total_pending": sum(1 for item in data if item.get("status") == "pending"),
-                "total_verified": sum(1 for item in data if item.get("status") == "verified"),
-                "avg_verification_time": "1.4 hours",
-                "backlog_trend": "decreasing",
+                "total_pending": len(pending),
+                "total_verified": len(verified),
+                "avg_verification_time": avg_time_str,
+                "backlog_trend": "stable" if len(pending) < 10 else "increasing",
                 "queue_items": data[:20]
             }
-        except Exception:
+        except Exception as e:
+            log.error("verification_queue_stats_failed", error=str(e))
             return {"total_pending": 0, "total_verified": 0, "queue_items": []}
 
     async def get_guardian_signals(self) -> List[Dict]:
@@ -1275,33 +1312,57 @@ class AnalyticsStore:
         total_students = role_distribution.get("student", 0)
         total_faculty = sum(role_distribution.get(role, 0) for role in ("teacher", "hod", "faculty"))
         active_users = status_distribution.get("active", 0)
+        
+        # Generate real dynamic charts
+        from datetime import timedelta
+        now = datetime.utcnow()
+        last_4_months = [(now - timedelta(days=30*i)) for i in range(3, -1, -1)]
+        
+        # User Growth (real calculation based on created_at)
+        user_growth = []
+        for dt in last_4_months:
+            month_name = dt.strftime("%b")
+            # For simplicity, count users added up to this month
+            # In production, this would be a cumulative sum or snapshot
+            limit_date = (dt + timedelta(days=31)).replace(day=1)
+            count = sum(1 for u in users if (self._parse_datetime(u.get("created_at")) or now).replace(tzinfo=None) < limit_date.replace(tzinfo=None))
+            user_growth.append({"month": month_name, "users": count})
+
+        # Role Distribution
+        role_dist_data = [
+            {"role": "Student", "count": role_distribution.get("student", 0)},
+            {"role": "Faculty", "count": sum(role_distribution.get(r, 0) for r in staff_roles)},
+            {"role": "Admin", "count": sum(role_distribution.get(r, 0) for r in privileged_roles)},
+        ]
 
         summary = {
             "totalUsers": len(users),
             "activeUsers": active_users,
             "totalStudents": total_students,
             "totalTeachers": total_faculty,
-            "totalFaculty": total_faculty,
             "totalCourses": len(courses),
             "activeCourses": active_courses,
-            "draftCourses": draft_courses,
-            "totalInstitutions": len(enriched_institutions) or len(all_institutions),
-            "totalConnections": len(stakeholders),
             "systemHealthScore": system_health_score,
             "systemHealthLabel": f"{system_health_score}%",
             "securityAlerts": sum(1 for item in attention_queue if item["severity"] == "high"),
             "attentionRequired": len(attention_queue),
+            "systemStatus": system_status,
         }
 
         return {
-            **summary,
             "summary": summary,
+            "stats": summary, # for backward compatibility
+            "totalUsers": len(users),
+            "activeUsers": active_users,
+            "totalStudents": total_students,
+            "totalTeachers": total_faculty,
+            "totalCourses": len(courses),
+            "activeCourses": active_courses,
+            "systemHealthScore": system_health_score,
+            "systemHealthLabel": f"{system_health_score}%",
             "systemStatus": system_status,
             "activeSessions": len(activity_feed),
-            "roleDistribution": [
-                {"role": role, "count": count}
-                for role, count in sorted(role_distribution.items(), key=lambda item: item[0])
-            ],
+            "roleDistribution": role_dist_data,
             "statusDistribution": [
                 {"status": status, "count": count}
                 for status, count in sorted(status_distribution.items(), key=lambda item: item[0])
@@ -1313,6 +1374,10 @@ class AnalyticsStore:
             "activityFeed": activity_feed,
             "attentionQueue": attention_queue,
             "systemServices": system_services,
+            "charts": {
+                "userGrowth": user_growth,
+                "roleDistribution": role_dist_data
+            }
         }
 
     async def get_student_dashboard_stats(self, student_id: str) -> Dict:

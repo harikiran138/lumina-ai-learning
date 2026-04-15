@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 Bell,
 CheckCircle2,
@@ -16,6 +16,7 @@ Settings2,
 Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 /* ================= TYPES ================= */
 
@@ -30,38 +31,6 @@ category: "system" | "academic" | "ai" | "user";
 timestamp: string;
 read: boolean;
 }
-
-/* ================= DATA ================= */
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-{
-id: "1",
-title: "AI Quota Alert",
-message: "CS dept used 95% tokens",
-severity: "warning",
-category: "ai",
-timestamp: "10 min ago",
-read: false,
-},
-{
-id: "2",
-title: "System Error",
-message: "API downtime detected",
-severity: "critical",
-category: "system",
-timestamp: "1 hr ago",
-read: false,
-},
-{
-id: "3",
-title: "New Faculty",
-message: "Faculty added",
-severity: "success",
-category: "user",
-timestamp: "2 hr ago",
-read: true,
-},
-];
 
 /* ================= CONFIG ================= */
 
@@ -82,8 +51,25 @@ user: Users,
 /* ================= COMPONENT ================= */
 
 export default function NotificationsPage() {
-const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+const [notifications, setNotifications] = useState<Notification[]>([]);
 const [filter, setFilter] = useState<"all" | "unread" | Severity>("all");
+
+useEffect(() => {
+  const loadNotifications = async () => {
+    const rows = await api.getAdminNotifications();
+    const normalized: Notification[] = (rows || []).map((row: any, idx: number) => ({
+      id: String(row.id || `notif-${idx}`),
+      title: String(row.title || "Notification"),
+      message: String(row.message || ""),
+      severity: (row.severity || "info") as Severity,
+      category: (row.category || "system") as Notification["category"],
+      timestamp: String(row.timestamp || row.created_at || new Date().toISOString()),
+      read: Boolean(row.read),
+    }));
+    setNotifications(normalized);
+  };
+  loadNotifications();
+}, []);
 
 const markRead = (id: string) =>
 setNotifications((prev) =>

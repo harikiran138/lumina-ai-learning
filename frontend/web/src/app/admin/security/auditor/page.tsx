@@ -14,6 +14,7 @@ import {
   Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 interface AuditLog {
   id: string;
@@ -31,40 +32,25 @@ export default function SecurityAuditor() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, we'd fetch from /api/admin/audit-logs
-    // For now we'll mock some data based on the schema we just created
-    const mockLogs: AuditLog[] = [
-      {
-        id: "1",
-        admin_user_id: "admin-123",
-        action_type: "LOGIN_SUCCESS",
-        resource_name: "auth_service",
-        ip_address: "192.168.1.45",
-        payload: { device: "MacBook Pro" },
-        created_at: new Date().toISOString()
-      },
-      {
-        id: "2",
-        admin_user_id: "admin-123",
-        action_type: "ROLE_CHANGE",
-        resource_name: "user_789",
-        ip_address: "192.168.1.45",
-        payload: { old: "student", new: "teacher" },
-        created_at: new Date(Date.now() - 3600000).toISOString()
-      },
-      {
-        id: "3",
-        admin_user_id: "admin-456",
-        action_type: "DATA_EXPORT",
-        institution_id: "inst-999",
-        resource_name: "analytics_report",
-        ip_address: "172.16.0.12",
-        payload: { type: "CSV", size: "12MB" },
-        created_at: new Date(Date.now() - 7200000).toISOString()
+    const loadLogs = async () => {
+      try {
+        const rows = await api.getAdminSecurityAuditLogs();
+        const normalized: AuditLog[] = (rows || []).map((row: any, idx: number) => ({
+          id: String(row.id || `audit-${idx}`),
+          admin_user_id: String(row.admin_user_id || row.user_id || "admin"),
+          institution_id: row.institution_id || undefined,
+          action_type: String(row.action_type || row.action || "UNKNOWN"),
+          resource_name: String(row.resource_name || row.resource || "system"),
+          ip_address: String(row.ip_address || "N/A"),
+          payload: row.payload || {},
+          created_at: String(row.created_at || new Date().toISOString()),
+        }));
+        setLogs(normalized);
+      } finally {
+        setLoading(false);
       }
-    ];
-    setLogs(mockLogs);
-    setLoading(false);
+    };
+    loadLogs();
   }, []);
 
   return (

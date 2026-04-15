@@ -12,6 +12,7 @@ import logging
 import re
 from app.core.rbac import normalize_role, SELF_SIGNUP_ROLES, INVITE_ONLY_ROLES, ALL_ROLES, VALID_ROLES
 from app.core.limiter import limiter
+from app.api.deps import get_current_user
 from app.core.blacklist import blacklist_token, is_token_revoked
 
 logger = logging.getLogger("uvicorn.error")
@@ -863,86 +864,6 @@ async def refresh_token(
         "expiresIn": int(access_token_expires.total_seconds())
     }
 
-
-async def get_current_user(
-    request: Request,
-    token: Optional[str] = Depends(oauth2_scheme),
-    user_store: UserStore = Depends(get_user_store_public),
-):
-    # Support both Authorization Header (Bearer) and HTTP-only Cookie
-    auth_token = token or request.cookies.get("access_token")
-    
-    if not auth_token:
-        # Check if it's an invited user with a temp token in the header
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            auth_token = auth_header.split(" ")[1]
-            
-    if not auth_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    try:
-        from jose import jwt
-        # Decode with unified SECRET_KEY
-        try:
-            decoded_payload = jwt.decode(auth_token, settings.SECRET_KEY, algorithms=["HS256"])
-        except Exception:
-            decoded_payload = None
-
-        if not decoded_payload:
-            raise HTTPException(status_code=401, detail="Invalid token signature")
-
-        # Prioritize sub as user ID, then check custom userId, then email
-        user_id = decoded_payload.get("userId") or decoded_payload.get("sub") or decoded_payload.get("id")
-        email = decoded_payload.get("email") or decoded_payload.get("sub")
-        jti = decoded_payload.get("jti")
-        
-        if jti and is_token_revoked(jti):
-            raise HTTPException(status_code=401, detail="Token has been revoked.")
-            
-        if not user_id and not email:
-            raise HTTPException(status_code=401, detail="Invalid token: no user identifier")
-            
-    except Exception as e:
-        logger.warning(f"token_validation_failed: {str(e)} path={request.url.path}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired session. Please log in again.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    user = None
-    # Try ID lookup first (preferred)
-    if user_id:
-        try:
-            # Check if it looks like a UUID
-            import uuid
-            uuid.UUID(user_id)
-            user = await user_store.get_user_by_id(user_id, include_sensitive=True)
-        except (ValueError, TypeError):
-            # If not a UUID, it might be an email stored in sub (legacy)
-            if "@" in user_id:
-                user = await user_store.get_user_by_email(user_id, include_sensitive=True)
-    
-    # Fallback to email claim if ID failed
-    if not user and email:
-        user = await user_store.get_user_by_email(email, include_sensitive=True)
-        
-    if user is None:
-        raise HTTPException(status_code=401, detail="User session not found")
-
-    _require_active_user(user)
-
-    # ATTACH ACCESS TOKEN for ScopedSupabase
-    # The auth_token variable is available from the parent closure in get_current_user
-    user["access_token"] = auth_token
-
-    request.state.user = user
-    return user
 
 
 class ChangePasswordRequest(BaseModel):

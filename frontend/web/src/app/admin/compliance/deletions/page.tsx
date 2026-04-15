@@ -14,6 +14,7 @@ import {
   Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 interface DeletionRequest {
   id: string;
@@ -29,35 +30,23 @@ export default function DeletionRequests() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mocking deletion requests
-    const mockData: DeletionRequest[] = [
-      {
-        id: "del-901",
-        user_email: "st123@university.edu",
-        requested_at: "2 hours ago",
-        status: "pending",
-        type: "full_purge",
-        sla_deadline: "29 days left"
-      },
-      {
-        id: "del-905",
-        user_email: "t.jones@college.in",
-        requested_at: "1 day ago",
-        status: "processing",
-        type: "pii_redaction",
-        sla_deadline: "28 days left"
-      },
-      {
-        id: "del-880",
-        user_email: "alum.99@school.org",
-        requested_at: "5 days ago",
-        status: "completed",
-        type: "full_purge",
-        sla_deadline: "N/A"
+    const loadRequests = async () => {
+      try {
+        const rows = await api.getAdminDeletionRequests();
+        const normalized: DeletionRequest[] = (rows || []).map((row: any, idx: number) => ({
+          id: String(row.id || `del-${idx}`),
+          user_email: String(row.user_email || row.email || "unknown@lumina.ai"),
+          requested_at: String(row.requested_at || row.created_at || "N/A"),
+          status: ((row.status || "pending").toLowerCase()) as DeletionRequest["status"],
+          type: ((row.type || "full_purge").toLowerCase()) as DeletionRequest["type"],
+          sla_deadline: String(row.sla_deadline || row.deadline || "N/A"),
+        }));
+        setRequests(normalized);
+      } finally {
+        setLoading(false);
       }
-    ];
-    setRequests(mockData);
-    setLoading(false);
+    };
+    loadRequests();
   }, []);
 
   if (loading) return (
