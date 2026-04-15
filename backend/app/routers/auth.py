@@ -5,7 +5,7 @@ from datetime import timedelta, datetime, timezone
 from app.core.security import create_access_token, verify_password, get_password_hash
 from app.core.config import settings
 from app.store.user_store import UserStore
-from app.dependencies import get_user_store
+from app.dependencies import get_user_store, get_user_store_public
 from app.database.supabase_manager import supabase_db
 from app.core.audit import audit_logger
 import logging
@@ -72,12 +72,26 @@ class UserResponse(BaseModel):
     mustChangePassword: Optional[bool] = False
 
 
-class LoginRequest(BaseModel):
-    # Accepts either 'identifier' (new path) or 'email' (backward-compat).
+class NestedUser(BaseModel):
     identifier: Optional[str] = None
     email: Optional[str] = None
     password: str
+
+class NestedPayload(BaseModel):
+    role: Optional[str] = None
+    college_id: Optional[str] = None
+
+class LoginRequest(BaseModel):
+    # NEW: Accepts nested structure {user: {...}, payload: {...}}
+    user: Optional[NestedUser] = None
+    payload: Optional[NestedPayload] = None
+    
+    # LEGACY: Backward-compat for flat structure
+    identifier: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
     role_hint: Optional[str] = None
+    college_id: Optional[str] = None
 
 
 class AcceptInvite(BaseModel):
@@ -396,7 +410,7 @@ def _decode_reset_token(token: str) -> dict:
 
 # ── Routes ─────────────────────────────────────────────────────────────────────
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register(user: UserCreate, user_store: UserStore = Depends(get_user_store)):
+async def register(user: UserCreate, user_store: UserStore = Depends(get_user_store_public)):
     try:
         requested_role = str(user.role).strip().lower()
         normalized_role = normalize_role(requested_role)
@@ -594,11 +608,26 @@ def login_json(
     payload: LoginRequest,
     request: Request,
     response: Response,
-    user_store: UserStore = Depends(get_user_store),
+    user_store: UserStore = Depends(get_user_store_public),
 ):
-    raw_identifier = (payload.identifier or payload.email or "").strip()
+    # Handle both nested and flat request structures
+    if payload.user:
+        # NEW: Nested structure {user: {identifier/email, password}, payload: {role, college_id}}
+        raw_identifier = (payload.user.identifier or payload.user.email or "").strip()
+        password = payload.user.password
+        role_hint = payload.payload.role if payload.payload else None
+        college_id = payload.payload.college_id if payload.payload else None
+    else:
+        # LEGACY: Flat structure (backward compatibility)
+        raw_identifier = (payload.identifier or payload.email or "").strip()
+        password = payload.password
+        role_hint = payload.role_hint
+        college_id = payload.college_id
     if not raw_identifier:
         raise HTTPException(status_code=400, detail="Identifier or email is required")
+
+    if not raw_identifier or not password:
+        raise HTTPException(status_code=400, detail="Identifier/email and password are required")
 
     ip_address = (request.client.host if request.client else "0.0.0.0")  # nosec B104
     user_agent = request.headers.get("user-agent", "")
@@ -615,7 +644,7 @@ def login_json(
     identifier_type = _get_identifier_type(raw_identifier)
     user = _resolve_identifier(raw_identifier, user_store)
 
-    if not user or not verify_password(payload.password, user.get("password_hash", "")):
+    if not user or not verify_password(password, user.get("password_hash", "")):
         _record_failed_attempt(raw_identifier, ip_address)
         _log_login_history(
             user_id=user.get("id") if user else None,

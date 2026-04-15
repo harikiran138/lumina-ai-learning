@@ -26,9 +26,15 @@ from app.store.attendance_store import AttendanceStore
 from app.store.teacher_store import TeacherStore
 from app.store.academic_store import AcademicStore
 from app.store.config_store import ConfigStore
+from app.database.supabase_manager import supabase_db
 
 
 # ── Store Providers ────────────────────────────────────────────────────────────
+
+# ✅ Unauthenticated user store for public endpoints (signup, login, etc.)
+def get_user_store_public() -> UserStore:
+    """Get user store without authentication requirement - for signup/login endpoints"""
+    return UserStore(db=supabase_db)
 
 def get_user_store(db: ScopedSupabase = Depends(get_scoped_db)) -> UserStore:
     return UserStore(db=db)
@@ -93,14 +99,20 @@ def get_alumni_store(db: ScopedSupabase = Depends(get_scoped_db)) -> AlumniStore
 def get_teacher_store(db: ScopedSupabase = Depends(get_scoped_db)) -> TeacherStore:
     return TeacherStore(db=db)
 
-def get_content_store(db: ScopedSupabase = Depends(get_scoped_db)) -> ContentStore:
-    return ContentStore(db=db)
-
 def get_academic_store(db: ScopedSupabase = Depends(get_scoped_db)) -> AcademicStore:
     return AcademicStore(db=db)
 
 def get_config_store(db: ScopedSupabase = Depends(get_scoped_db)) -> ConfigStore:
     return ConfigStore(db=db)
+
+def get_content_store(db: ScopedSupabase = Depends(get_scoped_db)) -> ContentStore:
+    return ContentStore(db=_resolve_db(db))
+
+def get_academic_store(db: ScopedSupabase = Depends(get_scoped_db)) -> AcademicStore:
+    return AcademicStore(db=_resolve_db(db))
+
+def get_config_store(db: ScopedSupabase = Depends(get_scoped_db)) -> ConfigStore:
+    return ConfigStore(db=_resolve_db(db))
 
 # ── Service Providers ──────────────────────────────────────────────────────────
 

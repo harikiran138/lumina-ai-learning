@@ -295,5 +295,11 @@ class ScopedSupabase:
         except Exception as e:
             return {"success": False, "data": None, "error": str(e)}
 
-def get_scoped_db(user: dict) -> ScopedSupabase:
+from app.api.deps import get_current_user
+from fastapi import Depends
+
+def get_scoped_db(user: dict = Depends(get_current_user)) -> ScopedSupabase:
+    """
+    Dependency to get a database client scoped to the current user's college.
+    """
     return ScopedSupabase(user)

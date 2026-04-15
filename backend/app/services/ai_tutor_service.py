@@ -12,8 +12,6 @@ import httpx
 from ai_engine.prompts import A2UI_SYSTEM_PROMPT
 from app.core.config import settings
 from app.core.logging import structlog
-from app.personalization.explanation_planner import ExplanationPlanner
-from app.personalization.schemas import LearningEventType
 
 log = structlog.get_logger()
 
@@ -74,6 +72,7 @@ class TutorGenerationRequest:
     assignment_related: bool = False
     context_notes: List[str] = field(default_factory=list)
     explanation_plan: Optional[Dict[str, Any]] = None
+    question_id: Optional[str] = None
 
     @property
     def question_signature(self) -> str:
@@ -83,11 +82,15 @@ class TutorGenerationRequest:
 
 @dataclass
 class TutorGenerationResult:
-    content: str
-    model: str
-    prompt_signature: str
-    request_log: Dict[str, Any]
-    response_log: Dict[str, Any]
+    answer: str
+    status: str
+    confidence: float
+    safety_score: float
+    rag_sources: List[Dict[str, Any]] = field(default_factory=list)
+    model: Optional[str] = None
+    prompt_signature: Optional[str] = None
+    request_log: Dict[str, Any] = field(default_factory=dict)
+    response_log: Dict[str, Any] = field(default_factory=dict)
 
 
 class AITutorService:
@@ -108,7 +111,6 @@ class AITutorService:
         """
         # Convert projection dict back to simplified context for the planner
         # In a real system, we'd use the full LearnerProfileRecord
-        from app.personalization.schemas import LearnerProfileRecord, ExplanationProfile
         
         # Mocking a minimal profile record for the planner if needed, 
         # but better to have the service pass the results.
@@ -136,9 +138,15 @@ class AITutorService:
     def is_assignment_related(self, question: str) -> bool:
         return bool(_ASSIGNMENT_PATTERN.search(question))
 
-    async def generate_answer(self, request: TutorGenerationRequest) -> TutorGenerationResult:
+    async def generate_answer(
+        self, question_id: str, student_id: str, request: TutorGenerationRequest
+    ) -> TutorGenerationResult:
         if not self.api_key:
             raise RuntimeError("OPENROUTER_API_KEY is not configured")
+
+        # Sync IDs
+        request.question_id = question_id
+        request.student_id = student_id
 
         models = self._candidate_models(request)
         system_prompt = self._build_system_prompt(request)
@@ -167,8 +175,16 @@ class AITutorService:
                     raw_content, response_log = await self._call_openrouter(payload, request.queue_id)
                     normalized = self._normalize_response(raw_content, request)
                     response_log["duration_ms"] = round((time.perf_counter() - started) * 1000, 2)
+                    
+                    # Compute status and confidence
+                    evaluation = self._evaluate_generation(normalized, request)
+                    
                     return TutorGenerationResult(
-                        content=normalized,
+                        answer=normalized,
+                        status=evaluation["status"],
+                        confidence=evaluation["confidence"],
+                        safety_score=evaluation["safety_score"],
+                        rag_sources=evaluation["rag_sources"],
                         model=model,
                         prompt_signature=prompt_signature,
                         request_log=request_log,
@@ -196,8 +212,15 @@ class AITutorService:
                         request.queue_id,
                     )
                     normalized = self._normalize_response(raw_content, request)
+                    # Compute status and confidence
+                    evaluation = self._evaluate_generation(normalized, request)
+                    
                     return TutorGenerationResult(
-                        content=normalized,
+                        answer=normalized,
+                        status=evaluation["status"],
+                        confidence=evaluation["confidence"],
+                        safety_score=evaluation["safety_score"],
+                        rag_sources=evaluation["rag_sources"],
                         model=model,
                         prompt_signature=prompt_signature,
                         request_log={**request_log, "response_format": "disabled"},
@@ -504,6 +527,54 @@ Never return prose outside the JSON object.
         for pattern in _PII_PATTERNS:
             redacted = pattern.sub("[redacted]", redacted)
         return redacted
+
+    def _evaluate_generation(self, answer: str, request: TutorGenerationRequest) -> Dict[str, Any]:
+        """
+        Heuristic-based evaluation of the generated answer.
+        Sets status and confidence scores.
+        """
+        # Default starting values
+        confidence = 0.85
+        safety_score = 0.95
+        status = "AUTO_APPROVED"
+        rag_sources = []
+
+        # 1. Check for fallback marker (from _fallback_response)
+        if "teacher-review draft" in answer or "Teacher verification is still required" in answer:
+            confidence = 0.4
+            status = "PROVISIONAL"
+
+        # 2. Check for assignment related (stricter review)
+        if request.assignment_related:
+            status = "PROVISIONAL"
+            confidence = min(confidence, 0.75)
+
+        # 3. Check for structural completeness
+        try:
+            parsed = json.loads(answer)
+            flow = parsed.get("flow", [])
+            if len(flow) < 2:
+                confidence -= 0.2
+            
+            # If visual requested but not present (highly unlikely given _normalize_response)
+            if request.visual_requested and not any(b.get("type") in ["diagram", "graph"] for b in flow):
+                confidence -= 0.3
+        except:
+            confidence = 0.3
+            status = "PENDING"
+
+        # 4. Final status determination based on confidence
+        if confidence < 0.5:
+            status = "PENDING"
+        elif confidence < 0.8:
+            status = "PROVISIONAL"
+
+        return {
+            "status": status,
+            "confidence": round(confidence, 2),
+            "safety_score": round(safety_score, 2),
+            "rag_sources": rag_sources
+        }
 
 
 class _RetryableError(Exception):

@@ -139,6 +139,53 @@ function clearStoredToken(): void {
   }
 }
 
+export type LoginInput = {
+   email: string;
+   password: string;
+   role?: string;
+};
+
+/**
+ * Validates login request format before sending to backend.
+ * Returns { isValid, error } for proper error handling.
+ */
+function validateLoginRequest(params: { identifier?: string; email?: string; password?: string; role_hint?: string; college_id?: string }): { isValid: boolean; error?: string } {
+  const identifier = params.identifier || params.email;
+  if (!identifier || !identifier.trim()) {
+    return { isValid: false, error: "Email, roll number, or employee ID is required" };
+  }
+  if (!params.password || params.password.length === 0) {
+    return { isValid: false, error: "Password is required" };
+  }
+  return { isValid: true };
+}
+
+/**
+ * Validates signup request format before sending to backend.
+ * Returns { isValid, error } for proper error handling.
+ */
+function validateSignupRequest(params: { name?: string; email?: string; password?: string; role?: string }): { isValid: boolean; error?: string } {
+  if (!params.name || params.name.trim().length < 2) {
+    return { isValid: false, error: "Full name must be at least 2 characters" };
+  }
+  if (!params.email || !params.email.includes('@')) {
+    return { isValid: false, error: "Valid email is required" };
+  }
+  if (!params.password || params.password.length < 8) {
+    return { isValid: false, error: "Password must be at least 8 characters" };
+  }
+  if (!/[A-Z]/.test(params.password)) {
+    return { isValid: false, error: "Password must contain at least one uppercase letter" };
+  }
+  if (!/[0-9]/.test(params.password)) {
+    return { isValid: false, error: "Password must contain at least one number" };
+  }
+  if (!params.role || !['student', 'teacher', 'parent', 'mentor', 'peer_tutor', 'researcher', 'alumni', 'content_creator', 'counselor'].includes(params.role.toLowerCase())) {
+    return { isValid: false, error: "Valid role is required" };
+  }
+  return { isValid: true };
+}
+
 // ── Fetch with retry + timeout ────────────────────────────────────────────────
 async function fetchWithRetry(
   url: string,
@@ -857,18 +904,49 @@ export class RealAPI {
         ? { identifier: paramsOrIdentifier, password: maybePassword }
         : paramsOrIdentifier;
     const { identifier, password, role_hint, college_id } = params;
-    if (!password) throw new Error("Password is required for login.");
+    
+    // 🔍 CLIENT-SIDE VALIDATION
+    const validation = validateLoginRequest({ identifier, password, role_hint, college_id });
+    if (!validation.isValid) {
+      throw new Error(validation.error);
+    }
 
     const url = this.buildUrl(requireAuthBase(), "/api/auth/login");
+    
+    // 📝 BUILD REQUEST BODY - Wrapped in { user: {}, payload: {} } structure
+    const loginBody = {
+      user: {
+        email: identifier.trim(), // Backend explicitly wants 'email' in the nested user object
+        password: password,
+      },
+      payload: {
+        role: role_hint || "student",
+        college_id: college_id || undefined,
+      }
+    };
+    
+    // Remove undefined fields from payload
+    if (loginBody.payload.college_id === undefined) {
+      delete loginBody.payload.college_id;
+    }
+    
+    console.log("LOGIN BODY:", { 
+      user: { email: loginBody.user.email, password: '***' },
+      payload: loginBody.payload
+    });
+
     const res = await fetchWithRetry(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identifier, password, role_hint, college_id }),
+      headers: { 
+        "Content-Type": "application/json" 
+      },
+      body: JSON.stringify(loginBody),
       credentials: "include",
     }, 2, 30000);
 
     if (!res.ok) {
       const error = await parseJsonSafe(res);
+      console.error("[AUTH] Login failed with status", res.status, error);
       throw new Error(extractApiErrorMessage(error, `Authentication failed (${res.status})`));
     }
     const tokenData = await parseJsonSafe(res);
@@ -962,22 +1040,46 @@ export class RealAPI {
 
   async createUser(userData: Partial<User> & { password?: string }): Promise<any> {
     if (!userData.password) throw new Error("Password is required for signup.");
+    
+    // 🔍 CLIENT-SIDE VALIDATION
+    const validation = validateSignupRequest({
+      name: userData.name,
+      email: userData.email,
+      password: userData.password,
+      role: userData.role
+    });
+    if (!validation.isValid) {
+      throw new Error(validation.error);
+    }
+
     const url = this.buildUrl(requireAuthBase(), "/api/auth/register");
+    
+    // 📝 BUILD REQUEST BODY - Properly structured
+    const signupBody = {
+      email: userData.email,
+      password: userData.password,
+      full_name: userData.name,
+      role: userData.role || "student",
+    };
+    
+    console.log("[AUTH] Sending signup request:", {
+      url,
+      body: { ...signupBody, password: '***' } // Log without password
+    });
+
     const res = await fetchWithRetry(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({
-        email: userData.email,
-        password: userData.password,
-        full_name: userData.name,
-        role: userData.role || "student",
-      }),
+      body: JSON.stringify(signupBody),
     });
+    
     if (!res.ok) {
       const error = await parseJsonSafe(res);
+      console.error("[AUTH] Signup failed with status", res.status, error);
       throw new Error(extractApiErrorMessage(error, "Registration failed"));
     }
+    
     return this.login(userData.email!, userData.password);
   }
 

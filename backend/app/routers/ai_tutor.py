@@ -2,11 +2,11 @@ import asyncio
 import json
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Body, BackgroundTasks
-from app.api.deps import get_current_active_user, get_current_student
+from app.api.deps import get_current_active_user
 from app.store.ai_tutor_store import AITutorStore
 from app.core.limiter import limiter
 from starlette.requests import Request
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any
 from ai_engine.classifier import classify, RoutingTier, RESTRICTED_REDIRECT
 from app.store.academic_store import AcademicStore
 from app.core.logging import structlog
@@ -407,8 +407,8 @@ async def _generate_ai_answer_background(
 @limiter.limit("30/minute")
 async def ai_tutor_chat(
     request: Request,
-    payload: Dict[str, Any] = Body(...),
     background_tasks: BackgroundTasks,
+    payload: Dict[str, Any] = Body(...),
     current_user: dict = Depends(get_current_active_user),
     db: ScopedSupabase = Depends(get_scoped_db)
 ):

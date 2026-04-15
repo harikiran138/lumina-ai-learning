@@ -220,17 +220,22 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
     setStatusMessage("Signing you in...");
 
     try {
-      const loggedInUser = await api.login({
+      // 🔍 DEBUG: Log request body structure
+      const loginPayload = {
         identifier: identifier.trim(),
         password,
-        role_hint: activeRole ?? undefined,
-      });
+        role_hint: activeRole || "student",
+      };
+      console.log("[AUTH] Login payload:", loginPayload);
 
+      const loggedInUser = await api.login(loginPayload);
+
+      console.log("[AUTH] Login successful:", loggedInUser.email, "Role:", loggedInUser.role);
       setStatusMessage("Redirecting to your workspace...");
       setUser(loggedInUser);
       redirectAfterAuth(router, loggedInUser);
     } catch (err: any) {
-      console.error("Login error:", err);
+      console.error("[AUTH] Login error:", err);
       // More descriptive error messages based on context
       let message = err.message || "Invalid credentials. Please try again.";
       
@@ -240,6 +245,8 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
         message = `Incorrect password for ${identifier}. Please try again.`;
       } else if (message.includes("404") || message.toLowerCase().includes("not found")) {
         message = `Account not found for ${identifier}. Check your email or sign up.`;
+      } else if (message.includes("422") || message.toLowerCase().includes("unprocessable")) {
+        message = `Invalid login format. Please check your input and try again.`;
       }
       
       setError(message);
@@ -262,18 +269,34 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
     setStatusMessage("Creating your account...");
 
     try {
-      const createdUser = await api.createUser({
+      // 🔍 DEBUG: Log signup payload
+      const signupPayload = {
         name: signupForm.name.trim(),
         email: signupForm.email.trim(),
         password: signupForm.password,
-        role: signupForm.role,
-      });
+        role: signupForm.role || "student",
+      };
+      console.log("[AUTH] Signup payload:", signupPayload);
 
+      const createdUser = await api.createUser(signupPayload);
+
+      console.log("[AUTH] Signup successful:", createdUser.email, "Role:", createdUser.role);
       setStatusMessage("Launching onboarding...");
       setUser(createdUser);
       redirectAfterAuth(router, createdUser);
     } catch (err: any) {
-      setError(err?.message || "Unable to create your account right now.");
+      console.error("[AUTH] Signup error:", err);
+      let message = err?.message || "Unable to create your account right now.";
+      
+      if (message.includes("400") || message.toLowerCase().includes("already exists") || message.toLowerCase().includes("email")) {
+        message = `Email ${signupForm.email} is already registered. Please sign in instead.`;
+      } else if (message.includes("422") || message.toLowerCase().includes("unprocessable") || message.toLowerCase().includes("field required")) {
+        message = `Please check all required fields are filled correctly.`;
+      } else if (message.includes("403") || message.toLowerCase().includes("requires an invitation")) {
+        message = `Registration as '${signupForm.role}' requires an admin invitation.`;
+      }
+      
+      setError(message);
       setStatusMessage(null);
     } finally {
       setIsLoading(false);
