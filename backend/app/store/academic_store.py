@@ -120,6 +120,30 @@ class AcademicStore:
             log.error("promote_student_failed", error=str(e), student_id=student_id)
             return None
 
+    async def verify_teacher_student_link(self, teacher_id: str, student_id: str) -> bool:
+        """
+        Verifies if a teacher is assigned to any class that the student is enrolled in.
+        Strict relationship check for data scoping.
+        """
+        try:
+            # 1. Get student's class_id
+            enrollment = await self.db.fetch_one("student_enrollments", {"student_id": student_id})
+            if not enrollment or not enrollment.get("class_id"):
+                return False
+            
+            student_class_id = enrollment["class_id"]
+
+            # 2. Check teacher assignments for this class
+            assignment = await self.db.fetch_one("teacher_assignments", {
+                "teacher_id": teacher_id,
+                "class_id": student_class_id
+            })
+            
+            return assignment is not None
+        except Exception as e:
+            log.error("teacher_student_link_verification_failed", teacher_id=teacher_id, student_id=student_id, error=str(e))
+            return False
+
     # --- Department Methods ---
 
     async def get_departments(self, institution_id: str) -> List[dict]:
