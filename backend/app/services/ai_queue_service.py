@@ -14,6 +14,12 @@ from typing import Any, Dict, List, Optional
 
 from app.core.logging import structlog
 from app.database.supabase_manager import supabase_db
+from app.schemas.ai_queue_schema import (
+    AIQueueStudentView,
+    AIQueueTeacherView,
+    AIQueueAdminView,
+    AIQueueStatus,
+)
 
 log = structlog.get_logger()
 
@@ -37,6 +43,39 @@ class AIQueueService:
         """Return current timestamp in ISO format."""
         return datetime.now(timezone.utc).isoformat()
 
+    async def get_pending_for_student(self, student_id: str) -> List[AIQueueStudentView]:
+        """
+        Student polls their own pending/answered questions.
+        Returns only the AIQueueStudentView shape — no draft answers or teacher notes.
+        """
+        try:
+            response = await self.client.table("ai_answer_queue").select(
+                "id, student_question, status, created_at, teacher_edited_answer, ai_generated_answer"
+            ).eq("student_id", student_id).order("created_at", desc=False).async_execute()
+            rows = response.data or []
+            return [AIQueueStudentView.from_item(row) for row in rows]
+        except Exception as exc:
+            log.error("get_pending_for_student_failed", student_id=student_id, error=str(exc))
+            return []
+
+    async def get_all_for_admin(
+        self, class_id: Optional[str] = None, course_id: Optional[str] = None
+    ) -> List[AIQueueAdminView]:
+        """
+        Admin sees all queue items. Optionally scoped to a class or course.
+        Returns AIQueueAdminView shape.
+        """
+        try:
+            query = self.client.table("ai_answer_queue").select("*").order("created_at", desc=True)
+            if course_id:
+                query = query.eq("course_id", course_id)
+            response = await query.async_execute()
+            rows = response.data or []
+            return [AIQueueAdminView.from_item(row) for row in rows]
+        except Exception as exc:
+            log.error("get_all_for_admin_failed", error=str(exc))
+            return []
+
     async def get_queue(
         self,
         teacher_id: str,
@@ -45,94 +84,88 @@ class AIQueueService:
     ) -> Dict[str, Any]:
         """
         Retrieve pending/provisional questions for teacher review.
-        
-        Args:
-            teacher_id: Teacher's user ID
-            course_id: Optional filter by course
-            role: User role (teacher, hod, admin)
-        
-        Returns:
-            {
-                "items": [queue items],
-                "total_pending": count,
-                "avg_wait_time_sec": float
-            }
         """
-        # Query AI answer queue - filter by status and teacher/role
-        query = self.client.table("ai_answer_queue").select("*").order("created_at", desc=True)
-        rows = query.execute().data or []
+        try:
+            # Query AI answer queue using async_execute to avoid blocking the event loop
+            query = self.client.table("ai_answer_queue").select("*").order("created_at", desc=True)
+            response = await query.async_execute()
+            rows = response.data or []
 
-        # Filter by role and permissions
-        if role == "teacher":
-            rows = [
-                row for row in rows
-                if str(row.get("teacher_id")) == str(teacher_id)
-                and not bool(row.get("released_to_student", False))
-                and row.get("status") in {"pending", "ai_answered", "escalated_to_faculty"}
-            ]
-        elif role == "hod":
-            rows = [row for row in rows if row.get("status") == "escalated_to_hod"]
-        else:
-            # Admin sees all
-            rows = [row for row in rows if not bool(row.get("released_to_student", False))]
+            # Filter by role and permissions
+            if role == "teacher":
+                rows = [
+                    row for row in rows
+                    if str(row.get("teacher_id")) == str(teacher_id)
+                    and not bool(row.get("released_to_student", False))
+                    and row.get("status") in {"pending", "ai_answered", "escalated_to_faculty"}
+                ]
+            elif role == "hod":
+                rows = [row for row in rows if row.get("status") == "escalated_to_hod"]
+            else:
+                # Admin sees all
+                rows = [row for row in rows if not bool(row.get("released_to_student", False))]
 
-        # Optional: filter by course
-        if course_id:
-            rows = [row for row in rows if str(row.get("course_id")) == str(course_id)]
+            # Optional: filter by course
+            if course_id:
+                rows = [row for row in rows if str(row.get("course_id")) == str(course_id)]
 
-        # Enrich with student info
-        student_ids = [row.get("student_id") for row in rows if row.get("student_id")]
-        students = (
-            self.client.table("users")
-            .select("id, full_name, email")
-            .in_("id", student_ids)
-            .execute()
-            .data
-            if student_ids
-            else []
-        )
-        student_lookup = {str(item.get("id")): item for item in students or []}
+            # Enrich with student info
+            student_ids = [row.get("student_id") for row in rows if row.get("student_id")]
+            students: List[Dict[str, Any]] = []
+            if student_ids:
+                student_resp = await (
+                    self.client.table("users")
+                    .select("id, full_name, email")
+                    .in_("id", student_ids)
+                    .async_execute()
+                )
+                students = student_resp.data or []
+            student_lookup = {str(item.get("id")): item for item in students}
 
-        # Format items
-        items: List[Dict[str, Any]] = []
-        created_times = []
+            # Format items
+            items: List[Dict[str, Any]] = []
+            created_times = []
 
-        for row in rows:
-            student = student_lookup.get(str(row.get("student_id")), {})
-            items.append(
-                {
-                    "id": row.get("id"),
-                    "question_id": row.get("id"),
-                    "question_text": row.get("student_question", ""),
-                    "student_name": student.get("full_name") or student.get("email") or "Student",
-                    "student_email": student.get("email") or "",
-                    "course_id": row.get("course_id"),
-                    "course_name": f"Course {row.get('course_id', '')}",
-                    "ai_draft": row.get("ai_generated_answer", ""),
-                    "ai_confidence": row.get("ai_confidence"),
-                    "status": row.get("status", "pending"),
-                    "created_at": row.get("created_at"),
-                    "time_pending_sec": self._calc_pending_time(row.get("created_at")),
-                    "released_to_student": bool(row.get("released_to_student", False)),
-                    "request_mode": row.get("request_mode"),
-                }
+            for row in rows:
+                student = student_lookup.get(str(row.get("student_id")), {})
+                items.append(
+                    {
+                        "id": row.get("id"),
+                        "question_id": row.get("id"),
+                        "question_text": row.get("student_question", ""),
+                        "student_name": student.get("full_name") or student.get("email") or "Student",
+                        "student_email": student.get("email") or "",
+                        "course_id": row.get("course_id"),
+                        "course_name": f"Course {row.get('course_id', '')}",
+                        "ai_draft": row.get("ai_generated_answer", ""),
+                        "ai_confidence": row.get("ai_confidence"),
+                        "status": row.get("status", "pending"),
+                        "created_at": row.get("created_at"),
+                        "time_pending_sec": self._calc_pending_time(row.get("created_at")),
+                        "released_to_student": bool(row.get("released_to_student", False)),
+                        "request_mode": row.get("request_mode"),
+                    }
+                )
+                if row.get("created_at"):
+                    created_times.append(self._calc_pending_time(row.get("created_at")))
+
+            total_pending = sum(
+                1
+                for item in items
+                if item["status"] in {"pending", "ai_answered", "escalated_to_faculty", "escalated_to_hod"}
             )
-            if row.get("created_at"):
-                created_times.append(self._calc_pending_time(row.get("created_at")))
 
-        total_pending = sum(
-            1
-            for item in items
-            if item["status"] in {"pending", "ai_answered", "escalated_to_faculty", "escalated_to_hod"}
-        )
+            avg_wait = sum(created_times) / len(created_times) if created_times else 0
 
-        avg_wait = sum(created_times) / len(created_times) if created_times else 0
+            return {
+                "items": items,
+                "total_pending": total_pending,
+                "avg_wait_time_sec": int(avg_wait),
+            }
 
-        return {
-            "items": items,
-            "total_pending": total_pending,
-            "avg_wait_time_sec": int(avg_wait),
-        }
+        except Exception as exc:
+            log.error("get_queue_failed", teacher_id=teacher_id, error=str(exc))
+            return {"items": [], "total_pending": 0, "avg_wait_time_sec": 0}
 
     @staticmethod
     def _calc_pending_time(created_at: Optional[str]) -> int:
@@ -346,15 +379,15 @@ class AIQueueService:
     def _safe_update_queue_item(self, queue_id: str, updates: Dict[str, Any]) -> None:
         """Safely update queue item with fallback for missing columns."""
         EXISTING_QUEUE_COLUMNS = {
-            "student_id",
-            "teacher_id",
-            "course_id",
-            "student_question",
-            "ai_generated_answer",
-            "teacher_edited_answer",
-            "status",
-            "created_at",
-            "verified_at",
+            "id", "student_id", "teacher_id", "course_id", "student_question",
+            "ai_generated_answer", "teacher_edited_answer", "status",
+            "created_at", "verified_at", "priority_score", "question_id",
+            "ai_model", "ai_confidence", "ai_sources", "final_answer",
+            "faculty_note", "college_id", "reviewed_by", "reviewed_at",
+            "ai_draft", "is_deleted", "deleted_at", "released_to_student",
+            "released_at", "added_to_bank", "added_to_bank_at",
+            "teacher_custom_answer", "priority_factors", "rejection_reason",
+            "student_acknowledged", "student_acked_at"
         }
 
         try:
@@ -426,15 +459,19 @@ class AIQueueService:
                 new_confidence = max(original_confidence - 0.1, 0.0)
 
             # Update metrics table (if it exists)
-            self.client.table("ai_model_metrics").insert(
-                {
-                    "question_type": question_type,
-                    "original_confidence": original_confidence,
-                    "adjusted_confidence": new_confidence,
-                    "teacher_feedback": "approved" if feedback else "rejected",
-                    "recorded_at": self._now_iso(),
-                }
-            ).execute()
+            try:
+                self.client.table("ai_model_metrics").insert(
+                    {
+                        "model_id": queue_item.get("ai_model") or "unknown",
+                        "question_type": question_type,
+                        "original_confidence": original_confidence,
+                        "adjusted_confidence": new_confidence,
+                        "teacher_feedback": "approved" if feedback else "rejected",
+                        "recorded_at": self._now_iso(),
+                    }
+                ).execute()
+            except Exception as e:
+                log.warning("ai_model_metrics_table_missing", error=str(e))
 
             log.info(
                 "model_confidence_updated",

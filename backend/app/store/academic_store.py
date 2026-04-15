@@ -244,6 +244,28 @@ class AcademicStore:
             
         return res
 
+    async def get_student_enrollments_compat(
+        self, student_id: str, class_id: str = None, semester_id: str = None
+    ) -> list:
+        """
+        Canonical enrollment read. Replaces all direct queries to the legacy
+        `enrollments` table. All new code must use this function.
+        """
+        filters = {"student_id": student_id}
+        if class_id:
+            filters["class_id"] = class_id
+        if semester_id:
+            filters["semester_id"] = semester_id
+        return await self.db.fetch_all("student_enrollments", filters)
+
+    async def get_class_by_id(self, class_id: str) -> Optional[dict]:
+        """Fetch a class by its canonical class_id."""
+        return await self.db.fetch_one("classes", {"id": class_id})
+
+    async def get_teacher_assignments_for_class(self, class_id: str) -> list:
+        """Fetch all teacher assignments for a given class."""
+        return await self.db.fetch_all("teacher_assignments", {"class_id": class_id})
+
     async def update_mastery(self, student_id: str, topic_id: str, performance_gain: float):
         """Update a student's mastery level for a specific topic/concept."""
         try:

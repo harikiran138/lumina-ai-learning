@@ -41,6 +41,8 @@ from app.services.onboarding_service import OnboardingService
 from app.services.risk_service import RiskAnalysisService
 from app.api.deps import get_current_student as get_current_user
 from app.database.supabase_manager import supabase_db
+from app.database.scoped_db import get_scoped_db, ScopedSupabase
+from app.store.academic_store import AcademicStore
 from app.services.risk_service import get_risk_analysis_service # Kept temporarily for reference
 from app.services.student_analytics import compute_student_analytics
 from app.core.audit import audit_logger
@@ -814,19 +816,15 @@ async def get_tutor_answer(
 async def get_pending_ai_answers(
     current_user: dict = Depends(get_current_user),
 ):
-    """Return pending/provisional AI answers for the current student."""
+    """
+    Return all AI answers for the current student using the canonical
+    AIQueueStudentView shape (no draft answers or teacher notes exposed).
+    """
+    from app.services.ai_queue_service import AIQueueService
     try:
-        result = (
-            supabase_db.get_client()
-            .table("ai_answer_queue")
-            .select("id, student_question, status, created_at, confidence_score")
-            .eq("student_id", str(current_user.get("id") or ""))
-            .in_("status", ["PENDING", "PROVISIONAL"])
-            .order("created_at", desc=False)
-            .execute()
-        )
-        items = result.data or []
-        return {"items": items, "count": len(items)}
+        service = AIQueueService()
+        items = await service.get_pending_for_student(str(current_user.get("id") or ""))
+        return {"items": [item.model_dump() for item in items], "count": len(items)}
     except Exception as exc:
         logger.warning("student_pending_ai_answers_failed", error=str(exc))
         raise HTTPException(status_code=500, detail="Failed to load pending AI answers")
@@ -1582,7 +1580,8 @@ async def submit_answer(
 
 
 @router.get("/intelligence/report")
-async def get_student_intelligence(
+async def get_student_intelligence_report(
+    # Renamed from get_student_intelligence to avoid collision with /intelligence route below.
     current_user: dict = Depends(get_current_user),
     personalization: PersonalizationService = Depends(get_personalization_service),
     risk_service: RiskAnalysisService = Depends(get_risk_analysis_service),
@@ -1590,7 +1589,7 @@ async def get_student_intelligence(
     """Get high-level intelligence report including risk alerts and strength/weakness analysis."""
     risk_data = await risk_service.get_student_risk(current_user["id"])
     learner_state = await personalization.get_legacy_state(current_user["id"])
-    
+
     return {
         "userId": current_user["id"],
         "risk": risk_data,
@@ -1601,7 +1600,8 @@ async def get_student_intelligence(
 
 
 @router.get("/debug/trace")
-async def get_debug_trace(
+async def get_student_debug_trace(
+    # Renamed from get_debug_trace to avoid collision with /intelligence/debug/{question_id} route below.
     current_user: dict = Depends(get_current_user),
     analytics_store: AnalyticsStore = Depends(get_analytics_store),
 ):
@@ -1615,7 +1615,7 @@ async def get_debug_trace(
 # ─── Student Intelligence State ───────────────────────────────────────────────
 
 @router.get("/intelligence")
-async def get_student_intelligence(
+async def get_student_intelligence_state(
     course_id: Optional[str] = None,
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
@@ -1681,7 +1681,7 @@ async def get_student_intelligence(
 # ─── Debug Trace Endpoint ──────────────────────────────────────────────────────
 
 @router.get("/intelligence/debug/{question_id}")
-async def get_debug_trace(
+async def get_intelligence_debug_trace(
     question_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):

@@ -154,10 +154,41 @@ async def get_current_college_admin(current_user: dict = Depends(get_current_act
     _ensure_2fa(current_user)
     return current_user
 
-async def get_current_hod(current_user: dict = Depends(get_current_active_user)) -> dict:
+async def get_current_hod(
+    request: Request,
+    current_user: dict = Depends(get_current_active_user),
+) -> dict:
+    """
+    HOD dependency. Validates role AND enriches the user object with
+    resolved_department_id fetched from the departments table.
+    Every HOD route must use this dependency — it is the single source
+    of department scoping for all HOD endpoints.
+    """
     role = _ensure_valid_role(current_user)
     if role not in {"hod", "college_admin", "super_admin"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="HOD privileges required")
+
+    # Enrich with resolved_department_id so every HOD route can read it safely.
+    from app.database.supabase_manager import supabase_db
+    dept = None
+    try:
+        dept = await supabase_db.fetch_one("departments", {"hod_id": current_user["id"]})
+        if not dept:
+            dept = await supabase_db.fetch_one("departments", {"hod_user_id": current_user["id"]})
+    except Exception:
+        pass
+
+    if dept:
+        current_user["resolved_department_id"] = dept["id"]
+    elif role in {"college_admin", "super_admin"}:
+        # Admins may have no department — not an error
+        current_user.setdefault("resolved_department_id", None)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No department assigned to this HOD account.",
+        )
+
     return current_user
 
 async def get_current_teacher(current_user: dict = Depends(get_current_active_user)) -> dict:

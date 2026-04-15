@@ -462,7 +462,8 @@ class AITutorStore:
         course_id = requested_course_id
         class_id = context.get("class_id")
 
-        section_id = context.get("section_id") or context.get("class_id") # class_id is legacy for section
+        # Canonical: use class_id; section_id is a legacy alias
+        class_id = context.get("class_id") or context.get("section_id")
         academic_year_id = context.get("academic_year_id")
         section_name = "Not specified"
         academic_year_name = "Not specified"
@@ -471,11 +472,12 @@ class AITutorStore:
             enrollment = await supabase_db.fetch_one("student_enrollments", {"student_id": student_id})
             if enrollment:
                 course_id = enrollment.get("course_id")
-                section_id = section_id or enrollment.get("section_id") or enrollment.get("class_id")
+                class_id = class_id or enrollment.get("class_id") or enrollment.get("section_id")
                 academic_year_id = academic_year_id or enrollment.get("academic_year_id")
 
-        if section_id:
-            section = await supabase_db.fetch_one("sections", {"id": section_id})
+        if class_id:
+            # Canonical: query `classes` table, not legacy `sections`
+            section = await supabase_db.fetch_one("classes", {"id": class_id})
             if section:
                 section_name = section.get("name") or section_name
 
@@ -495,12 +497,13 @@ class AITutorStore:
                     or course_name
                 )
 
-        if section_id and course_id:
+        if class_id and course_id:
             try:
+                # Canonical: use class_id column in teacher_assignments
                 assignments = (
                     client.table("teacher_assignments")
                     .select("teacher_id")
-                    .eq("section_id", section_id) # Using new section_id
+                    .eq("class_id", class_id)
                     .eq("course_id", course_id)
                     .limit(1)
                     .execute()
@@ -522,7 +525,8 @@ class AITutorStore:
             "course_id": course_id,
             "course_name": course_name,
             "teacher_id": teacher_id,
-            "section_id": section_id,
+            "class_id": class_id,          # canonical key
+            "section_id": class_id,        # legacy alias — kept for backward compat
             "section_name": section_name,
             "academic_year_id": academic_year_id,
             "academic_year": academic_year_name,

@@ -57,13 +57,16 @@ class AIQueueAnalytics:
             start_date = end_date - timedelta(days=days)
             
             # Get raw metrics from queue_metrics table
-            response = await self.db.client.from_("queue_metrics").select(
-                "*"
-            ).gte("date", start_date.date().isoformat()).lte(
-                "date", end_date.date().isoformat()
-            ).execute()
-            
-            metrics_rows = response.data or []
+            try:
+                response = await self.db.client.from_("queue_metrics").select(
+                    "*"
+                ).gte("date", start_date.date().isoformat()).lte(
+                    "date", end_date.date().isoformat()
+                ).execute()
+                metrics_rows = response.data or []
+            except Exception as e:
+                log.warning("queue_metrics_table_missing_or_failed", error=str(e))
+                metrics_rows = []
             
             if not metrics_rows:
                 return self._empty_metrics(days)
@@ -79,26 +82,32 @@ class AIQueueAnalytics:
             ) or 1
             
             # Get decision/confidence details from queue table
-            decision_response = await self.db.client.from_("ai_answer_decisions").select(
-                "status, confidence"
-            ).gte(
-                "created_at", start_date.isoformat()
-            ).execute()
-            
-            decisions = decision_response.data or []
+            try:
+                decision_response = await self.db.client.from_("ai_answer_decisions").select(
+                    "status, confidence"
+                ).gte(
+                    "created_at", start_date.isoformat()
+                ).execute()
+                decisions = decision_response.data or []
+            except Exception as e:
+                log.warning("ai_answer_decisions_table_missing", error=str(e))
+                decisions = []
             avg_confidence = (
                 sum(d.get("confidence", 0) for d in decisions) / len(decisions)
                 if decisions else 0.0
             )
             
             # Get safety scores
-            safety_response = await self.db.client.from_("ai_answer_queue").select(
-                "safety_score"
-            ).gte(
-                "created_at", start_date.isoformat()
-            ).execute()
-            
-            queues = safety_response.data or []
+            try:
+                safety_response = await self.db.client.from_("ai_answer_queue").select(
+                    "safety_score"
+                ).gte(
+                    "created_at", start_date.isoformat()
+                ).execute()
+                queues = safety_response.data or []
+            except Exception as e:
+                log.warning("ai_answer_queue_table_missing_or_failed", error=str(e))
+                queues = []
             avg_safety = (
                 sum(q.get("safety_score", 0) for q in queues) / len(queues)
                 if queues else 0.0
@@ -153,12 +162,14 @@ class AIQueueAnalytics:
         """
         try:
             response = await self.db.client.from_("ai_answer_decisions").select(
-                "status, count('*')", count="exact"
-            ).group_by("status").execute()
+                "status"
+            ).execute()
             
+            data = response.data or []
             result = {}
-            for row in response.data or []:
-                result[row.get("status", "UNKNOWN")] = row.get("count", 0)
+            for row in data:
+                status = row.get("status", "UNKNOWN")
+                result[status] = result.get(status, 0) + 1
             
             return result
         
@@ -189,11 +200,15 @@ class AIQueueAnalytics:
             }
         """
         try:
-            response = await self.db.client.from_("ai_answer_decisions").select(
-                "confidence"
-            ).execute()
+            try:
+                response = await self.db.client.from_("ai_answer_decisions").select(
+                    "confidence"
+                ).execute()
+                data = response.data or []
+            except Exception:
+                data = []
             
-            confidences = [d.get("confidence", 0) for d in (response.data or [])]
+            confidences = [d.get("confidence", 0) for d in data]
             
             if not confidences:
                 return {"bins": [], "mean": 0, "median": 0, "std_dev": 0}
@@ -233,11 +248,15 @@ class AIQueueAnalytics:
     ) -> Dict[str, Any]:
         """Similar to confidence distribution but for safety scores."""
         try:
-            response = await self.db.client.from_("ai_answer_queue").select(
-                "safety_score"
-            ).execute()
-            
-            safety_scores = [q.get("safety_score", 0) for q in (response.data or [])]
+            try:
+                response = await self.db.client.from_("ai_answer_queue").select(
+                    "safety_score"
+                ).execute()
+                data = response.data or []
+            except Exception:
+                data = []
+                
+            safety_scores = [q.get("safety_score", 0) for q in data]
             
             if not safety_scores:
                 return {"bins": [], "mean": 0, "median": 0, "std_dev": 0}
@@ -286,11 +305,13 @@ class AIQueueAnalytics:
         """
         try:
             # Get PROVISIONAL answers that were reviewed
-            response = await self.db.client.from_("ai_answer_decisions").select(
-                "created_at, reviewed_at"
-            ).eq("status", "PROVISIONAL").not_.is_("reviewed_at", "null").execute()
-            
-            decisions = response.data or []
+            try:
+                response = await self.db.client.from_("ai_answer_decisions").select(
+                    "created_at, reviewed_at"
+                ).eq("status", "PROVISIONAL").not_.is_("reviewed_at", "null").execute()
+                decisions = response.data or []
+            except Exception:
+                decisions = []
             
             if not decisions:
                 return {
@@ -320,11 +341,13 @@ class AIQueueAnalytics:
             sla_met_pct = (sla_met / len(decisions) * 100) if decisions else 0
             
             # Get pending PROVISIONAL answers
-            pending_response = await self.db.client.from_("ai_answer_decisions").select(
-                "created_at"
-            ).eq("status", "PROVISIONAL").is_("reviewed_at", "null").execute()
-            
-            pending = pending_response.data or []
+            try:
+                pending_response = await self.db.client.from_("ai_answer_decisions").select(
+                    "created_at"
+                ).eq("status", "PROVISIONAL").is_("reviewed_at", "null").execute()
+                pending = pending_response.data or []
+            except Exception:
+                pending = []
             pending_count = len(pending)
             
             # Oldest pending
@@ -362,23 +385,25 @@ class AIQueueAnalytics:
         """
         try:
             # Get unique students and their question counts
-            response = await self.db.client.from_("ai_answer_queue").select(
-                "student_id, count('*')", count="exact"
-            ).group_by("student_id").order("count", desc=True).limit(10).execute()
+            try:
+                response = await self.db.client.from_("ai_answer_queue").select(
+                    "student_id"
+                ).execute()
+                data = response.data or []
+            except Exception:
+                data = []
+
+            # Group by student_id manually since Supabase limit on group_by/count can be tricky
+            student_counts = {}
+            for row in data:
+                sid = str(row.get("student_id"))
+                student_counts[sid] = student_counts.get(sid, 0) + 1
             
-            top_students = []
-            for row in response.data or []:
-                top_students.append({
-                    "student_id": row.get("student_id"),
-                    "questions": row.get("count", 0)
-                })
+            sorted_students = sorted(student_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+            top_students = [{"student_id": k, "questions": v} for k, v in sorted_students]
             
             # Total questions
-            total_response = await self.db.client.from_("ai_answer_queue").select(
-                "count", count="exact"
-            ).execute()
-            
-            total_questions = total_response.count or 0
+            total_questions = len(data)
             unique_students = len(top_students)
             avg_per_student = total_questions / unique_students if unique_students > 0 else 0
             

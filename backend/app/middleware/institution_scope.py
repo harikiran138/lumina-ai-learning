@@ -1,6 +1,14 @@
 from fastapi import Request, HTTPException
 from typing import Optional
 
+# Role authorization is handled exclusively in deps.py via FastAPI dependencies.
+# Do not add role checks here. Middleware handles only:
+#   - Token extraction and institution_id injection into request.state
+#   - Request logging / audit
+#   - Rate limiting, CORS
+# Any role-based allow/deny logic belongs in get_current_student / get_current_teacher /
+# get_current_hod / get_current_college_admin / get_current_super_admin in deps.py.
+
 async def institution_scope_middleware(request: Request, call_next):
     """
     Extracts institution_id from JWT claims and injects it into request.state.

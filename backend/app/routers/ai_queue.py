@@ -214,7 +214,7 @@ def _lookup_course(client: Any, student_id: str, course_id: Optional[str], quest
         course_res = client.table("courses").select("*").eq("id", course_id).limit(1).execute()
         return ((course_res.data or [None])[0], [course_res.data[0]] if course_res.data else [])
 
-    enrollments = client.table("enrollments").select("course_id, progress").eq("student_id", student_id).execute().data or []
+    enrollments = client.table("student_enrollments").select("course_id, class_id").eq("student_id", student_id).execute().data or []
     subject_rows = client.table("student_subjects").select("subject_id").eq("student_id", student_id).execute().data or []
     course_ids = {
         str(row.get("course_id"))

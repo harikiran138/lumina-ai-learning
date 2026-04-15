@@ -73,7 +73,12 @@ class StudentStore(BaseStoreMixin):
         return success
 
     async def get_enrollment(self, student_id: str, course_id: str) -> Optional[dict]:
+        """Fetch course-level enrollment record (course progress tracking)."""
         try:
+            response = await self.db.table("student_enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).async_execute()
+            if response.data:
+                return response.data[0]
+            # Fallback to legacy table if student_enrollments has no course_id column yet
             response = await self.db.table("enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).async_execute()
             return response.data[0] if response.data else None
         except Exception as e:
