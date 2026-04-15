@@ -15,6 +15,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 interface Report {
   id: string;
@@ -30,35 +31,23 @@ export default function ReportBuilder() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mocking report templates
-    const mockReports: Report[] = [
-      {
-        id: "rep-001",
-        name: "Quarterly Academic Growth",
-        type: "Performance",
-        last_generated: "2 days ago",
-        schedule: "Monthly",
-        format: "PDF, XLSX"
-      },
-      {
-        id: "rep-002",
-        name: "NAAC Standard Compliance",
-        type: "Compliance",
-        last_generated: "15 days ago",
-        schedule: "On Demand",
-        format: "PDF"
-      },
-      {
-        id: "rep-003",
-        name: "AI Tutor Token Utilization",
-        type: "Operational",
-        last_generated: "1 hour ago",
-        schedule: "Weekly",
-        format: "CSV"
+    const loadReports = async () => {
+      try {
+        const rows = await api.getAdminReports();
+        const normalized: Report[] = (rows || []).map((row: any, idx: number) => ({
+          id: String(row.id || `report-${idx}`),
+          name: String(row.name || row.title || "Untitled Report"),
+          type: String(row.type || row.category || "Operational"),
+          last_generated: String(row.last_generated || row.generated_at || row.updated_at || "N/A"),
+          schedule: String(row.schedule || "On Demand"),
+          format: String(row.format || "PDF"),
+        }));
+        setReports(normalized);
+      } finally {
+        setLoading(false);
       }
-    ];
-    setReports(mockReports);
-    setLoading(false);
+    };
+    loadReports();
   }, []);
 
   if (loading) return (

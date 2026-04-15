@@ -36,11 +36,12 @@ class AcademicStore:
         if semester_id:
             filters["semester_id"] = semester_id
             
-        sections = await self.db.fetch_all("sections", filters)
-        return [s for s in (self._normalize_section(s) for s in sections) if s is not None]
+        classes = await self.db.fetch_all("classes", filters)
+        return [s for s in (self._normalize_section(s) for s in classes) if s is not None]
 
     async def get_section_by_id(self, section_id: str) -> Optional[dict]:
-        sec = await self.db.fetch_one("sections", {"id": section_id})
+        """Fetch a specific class/section by ID."""
+        sec = await self.db.fetch_one("classes", {"id": section_id})
         return self._normalize_section(sec)
 
     async def create_class(self, data: Dict[str, Any]) -> Optional[dict]:

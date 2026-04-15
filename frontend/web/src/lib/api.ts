@@ -108,7 +108,7 @@ function getStoredToken(): string | null {
   if (typeof window === 'undefined') return null;
   
   try {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
     if (!token) return null;
     
     if (isTokenExpired(token)) {
@@ -131,6 +131,7 @@ function clearStoredToken(): void {
   if (typeof window === 'undefined') return;
   
   try {
+    localStorage.removeItem('token');
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     console.log('[JWT] Cleared stored tokens');
@@ -179,6 +180,9 @@ function validateSignupRequest(params: { name?: string; email?: string; password
   }
   if (!/[0-9]/.test(params.password)) {
     return { isValid: false, error: "Password must contain at least one number" };
+  }
+  if (!/[^A-Za-z0-9]/.test(params.password)) {
+    return { isValid: false, error: "Password must contain at least one special character" };
   }
   if (!params.role || !['student', 'teacher', 'parent', 'mentor', 'peer_tutor', 'researcher', 'alumni', 'content_creator', 'counselor'].includes(params.role.toLowerCase())) {
     return { isValid: false, error: "Valid role is required" };
@@ -357,7 +361,7 @@ export class RealAPI {
 
   private constructor() {
     if (typeof window !== "undefined") {
-      this.token = localStorage.getItem("access_token") || localStorage.getItem("auth_token");
+      this.token = localStorage.getItem("token") || localStorage.getItem("access_token") || localStorage.getItem("auth_token");
     }
   }
 
@@ -390,9 +394,11 @@ export class RealAPI {
     if (typeof window !== "undefined") {
       if (token) {
         setAuthCookie(token);
-        localStorage.setItem("access_token", token); // 🔥 Use access_token for consistency with backend
+        localStorage.setItem("token", token);
+        localStorage.setItem("access_token", token); 
       } else {
         // Clear all possible token variations
+        localStorage.removeItem("token");
         localStorage.removeItem("access_token");
         localStorage.removeItem("auth_token");
         localStorage.removeItem("refresh_token");
@@ -980,8 +986,8 @@ export class RealAPI {
     // Some deployment configurations return the access token in the JSON response
     // body in addition to (or instead of) setting it as an HTTP-only cookie.
     // Persist it here so that fetchAuthorized can attach it as a Bearer header.
-    if (tokenData.accessToken) {
-      this.persistToken(tokenData.accessToken);
+    if (tokenData.token || tokenData.accessToken) {
+      this.persistToken(tokenData.token || tokenData.accessToken);
     }
 
     this.currentUser = this.toUser(userData, identifier);
@@ -1532,6 +1538,36 @@ export class RealAPI {
 
   async getAdminInterventions(): Promise<any[]> {
     const res = await this.fetchAuthorized("/api/admin/interventions");
+    return res.ok ? (await parseJsonSafe(res) ?? []) : [];
+  }
+
+  async getAdminReports(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/reports");
+    return res.ok ? (await parseJsonSafe(res) ?? []) : [];
+  }
+
+  async getAdminSecurityAuditLogs(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/security/audit-logs");
+    return res.ok ? (await parseJsonSafe(res) ?? []) : [];
+  }
+
+  async getAdminNotifications(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/notifications");
+    return res.ok ? (await parseJsonSafe(res) ?? []) : [];
+  }
+
+  async getAdminDeletionRequests(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/compliance/deletions");
+    return res.ok ? (await parseJsonSafe(res) ?? []) : [];
+  }
+
+  async getAdminComplianceAuditLogs(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/compliance/audit-logs");
+    return res.ok ? (await parseJsonSafe(res) ?? []) : [];
+  }
+
+  async getAdminContentAudit(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/admin/content/audit");
     return res.ok ? (await parseJsonSafe(res) ?? []) : [];
   }
 

@@ -37,9 +37,12 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
-    full_name: str = Field(min_length=2)
+    full_name: str = Field(min_length=2, alias="fullName")
     role: str = "student"
     phone: Optional[str] = None
+
+    class Config:
+        populate_by_name = True
 
     @field_validator('password')
     @classmethod
@@ -48,6 +51,8 @@ class UserCreate(BaseModel):
             raise ValueError('Password must contain at least one uppercase letter')
         if not re.search(r"[0-9]", v):
             raise ValueError('Password must contain at least one number')
+        if not re.search(r"[^A-Za-z0-9]", v):
+            raise ValueError('Password must contain at least one special character')
         return v
 
 
@@ -79,7 +84,10 @@ class NestedUser(BaseModel):
 
 class NestedPayload(BaseModel):
     role: Optional[str] = None
-    college_id: Optional[str] = None
+    college_id: Optional[str] = Field(None, alias="collegeId")
+
+    class Config:
+        populate_by_name = True
 
 class LoginRequest(BaseModel):
     # NEW: Accepts nested structure {user: {...}, payload: {...}}
@@ -90,8 +98,11 @@ class LoginRequest(BaseModel):
     identifier: Optional[str] = None
     email: Optional[str] = None
     password: Optional[str] = None
-    role_hint: Optional[str] = None
-    college_id: Optional[str] = None
+    role_hint: Optional[str] = Field(None, alias="roleHint")
+    college_id: Optional[str] = Field(None, alias="collegeId")
+
+    class Config:
+        populate_by_name = True
 
 
 class AcceptInvite(BaseModel):
@@ -114,6 +125,8 @@ class ResetPasswordRequest(BaseModel):
             raise ValueError('Password must contain at least one uppercase letter')
         if not re.search(r"[0-9]", v):
             raise ValueError('Password must contain at least one number')
+        if not re.search(r"[^A-Za-z0-9]", v):
+            raise ValueError('Password must contain at least one special character')
         return v
 
 
@@ -854,7 +867,7 @@ async def refresh_token(
 async def get_current_user(
     request: Request,
     token: Optional[str] = Depends(oauth2_scheme),
-    user_store: UserStore = Depends(get_user_store),
+    user_store: UserStore = Depends(get_user_store_public),
 ):
     # Support both Authorization Header (Bearer) and HTTP-only Cookie
     auth_token = token or request.cookies.get("access_token")

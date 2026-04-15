@@ -78,7 +78,8 @@ export interface UseAdaptiveAssessmentOptions {
 function authHeaders(): HeadersInit {
   const token =
     typeof window !== "undefined"
-      ? localStorage.getItem("access_token") ||
+      ? localStorage.getItem("token") ||
+        localStorage.getItem("access_token") ||
         sessionStorage.getItem("access_token")
       : null;
   return {

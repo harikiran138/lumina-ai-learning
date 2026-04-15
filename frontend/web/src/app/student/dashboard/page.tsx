@@ -128,6 +128,11 @@ export default function StudentDashboard() {
   };
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
     loadDashboard();
   }, []);
 

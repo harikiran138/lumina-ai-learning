@@ -536,7 +536,7 @@ Never return prose outside the JSON object.
         # Default starting values
         confidence = 0.85
         safety_score = 0.95
-        status = "AUTO_APPROVED"
+        status = "PROVISIONAL"
         rag_sources = []
 
         # 1. Check for fallback marker (from _fallback_response)

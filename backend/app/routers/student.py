@@ -153,13 +153,52 @@ async def _run_student_tutor_answer(
     job["status"] = "processing"
     job["updated_at"] = _student_tutor_timestamp()
 
+    class _InMemoryBackgroundTasks:
+        def add_task(self, func, *args, **kwargs):
+            try:
+                result = func(*args, **kwargs)
+                if asyncio.iscoroutine(result):
+                    asyncio.create_task(result)
+            except Exception as exc:
+                logger.warning("student_tutor_add_task_failed", error=str(exc))
+
     try:
-        result = await build_tutor_response_payload(payload, current_user)
+        from app.database.scoped_db import ScopedSupabase
+
+        scoped_db = ScopedSupabase(current_user)
+        academic_store = AcademicStore(db=scoped_db)
+        personalization = PersonalizationService(db=scoped_db)
+        bg = _InMemoryBackgroundTasks()
+
+        result = await build_tutor_response_payload(
+            payload,
+            current_user,
+            scoped_db,
+            academic_store,
+            personalization,
+            bg,
+        )
         # "content" is the canonical key (Agent 1); fall back to "response" for compatibility
         response_text = result.get("content") or result.get("response") or ""
         # Prefer the type already resolved by the router; fall back to parsing
         answer_type = result.get("type") or _infer_tutor_answer_type(response_text)
         answer_meta = result.get("meta") or {}
+
+        if result.get("queued", False):
+            # Keep job pending when answer is held for teacher verification.
+            job.update(
+                {
+                    "status": "pending",
+                    "message": WAITING_MESSAGE,
+                    "response": response_text,
+                    "mode": result.get("mode"),
+                    "type": answer_type,
+                    "meta": answer_meta,
+                    "queued": True,
+                    "updated_at": _student_tutor_timestamp(),
+                }
+            )
+            return
 
         job.update(
             {
@@ -769,6 +808,28 @@ async def get_tutor_answer(
         "completed_at": job.get("completed_at"),
         "poll_url": job.get("poll_url"),
     }
+
+
+@router.get("/ai-tutor/pending")
+async def get_pending_ai_answers(
+    current_user: dict = Depends(get_current_user),
+):
+    """Return pending/provisional AI answers for the current student."""
+    try:
+        result = (
+            supabase_db.get_client()
+            .table("ai_answer_queue")
+            .select("id, student_question, status, created_at, confidence_score")
+            .eq("student_id", str(current_user.get("id") or ""))
+            .in_("status", ["PENDING", "PROVISIONAL"])
+            .order("created_at", desc=False)
+            .execute()
+        )
+        items = result.data or []
+        return {"items": items, "count": len(items)}
+    except Exception as exc:
+        logger.warning("student_pending_ai_answers_failed", error=str(exc))
+        raise HTTPException(status_code=500, detail="Failed to load pending AI answers")
 
 
 @router.get("/dashboard")

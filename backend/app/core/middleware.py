@@ -43,6 +43,8 @@ RBAC_RULES = {
     "/api/mentor": ["mentor", "admin", "super_admin"],
     "/api/counselor": ["counselor", "admin", "super_admin"],
     "/api/alumni": ["alumni", "admin", "super_admin"],
+    "/api/content_creator": ["content_creator", "admin", "super_admin"],
+    "/api/peer_tutor": ["peer_tutor", "student", "admin", "super_admin"],
     "/api/content-creator": ["content_creator", "admin", "super_admin"],
     "/api/researcher": ["researcher", "admin", "super_admin"],
     "/api/peer-tutor": ["peer_tutor", "student", "admin", "super_admin"],
@@ -78,11 +80,11 @@ class SentinelMiddleware(BaseHTTPMiddleware):
             
         # 3. Verify JWT
         try:
-            # Decode with unified SECRET_KEY
+            # Decode with primary JWT secret and legacy fallback.
             try:
-                decoded_payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+                decoded_payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
             except JWTError:
-                decoded_payload = None
+                decoded_payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
 
             if not decoded_payload:
                 raise JWTError("Invalid token signature")

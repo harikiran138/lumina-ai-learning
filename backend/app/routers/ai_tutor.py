@@ -13,6 +13,7 @@ from app.core.logging import structlog
 from app.database.scoped_db import ScopedSupabase, get_scoped_db
 from app.services.ai_tutor_service import AITutorService, TutorGenerationRequest
 from app.services.realtime_service import RealtimeService
+from app.services.personalization_service import PersonalizationService
 
 router = APIRouter()
 log = structlog.get_logger()
@@ -127,6 +128,7 @@ async def build_tutor_response_payload(
     current_user: Dict[str, Any],
     db: ScopedSupabase,
     academic_store: AcademicStore,
+    personalization: PersonalizationService,
     background_tasks: BackgroundTasks
 ) -> Dict[str, Any]:
     """
@@ -172,6 +174,15 @@ async def build_tutor_response_payload(
                 "classification": {"mode": mode, **clf},
             }
 
+    # Fetch student personalization context
+    personalization_context = {}
+    if role == "student":
+        try:
+            proj = await personalization.get_tutor_projection(str(current_user.get("id")))
+            personalization_context = proj
+        except Exception as e:
+            log.warning("failed_to_fetch_personalization", error=str(e), student_id=str(current_user.get("id")))
+
     # Create tutor request object for service
     service_request = TutorGenerationRequest(
         question=prompt,
@@ -181,9 +192,9 @@ async def build_tutor_response_payload(
         course_id=context.get("course_id") or "general",
         course_name=context.get("course_name") or "General",
         subject=context.get("subject") or "General",
-        student_level="intermediate",  # Could fetch from profile
-        weak_topics=[],  # Could fetch from profile
-        allowed_concepts=[],
+        student_level=personalization_context.get("behavior_label", "intermediate"),
+        weak_topics=personalization_context.get("weak_topics", []),
+        allowed_concepts=list(personalization_context.get("mastery_scores", {}).keys()),
         visual_requested=False,
         assignment_related=False,
     )
@@ -286,6 +297,10 @@ async def _generate_ai_answer_background(
             student_id=student_id,
             request=service_request
         )
+
+        # Strict human-in-the-loop guarantee: never release AI output directly.
+        if result.status == "AUTO_APPROVED":
+            result.status = "PROVISIONAL"
         
         log.info(
             "ai_answer_generation_success",
@@ -419,4 +434,12 @@ async def ai_tutor_chat(
     For others: Returns immediate response
     """
     academic_store_inj = AcademicStore(db=db)
-    return await build_tutor_response_payload(payload, current_user, db, academic_store_inj, background_tasks)
+    personalization_inj = PersonalizationService(db=db)
+    return await build_tutor_response_payload(
+        payload, 
+        current_user, 
+        db, 
+        academic_store_inj, 
+        personalization_inj,
+        background_tasks
+    )

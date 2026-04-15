@@ -57,4 +57,4 @@ fi
 # Start FastAPI with uvicorn
 # Start FastAPI with uvicorn on port 9000 (Avoiding AirPlay port 8000 conflict)
 echo "Starting uvicorn on port 9000..."
-python -m uvicorn app.main:app --host 127.0.0.1 --port 9000 --reload
+python -m uvicorn app.main:app --host 127.0.0.1 --port 9000 --reload --reload-exclude '.venv/*'

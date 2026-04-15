@@ -10,7 +10,7 @@ from app.core.rbac import normalize_role, ALL_ROLES
 
 logger = logging.getLogger("uvicorn.error")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token", auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token", auto_error=False)
 
 
 def _ensure_valid_role(current_user: dict) -> str:
@@ -18,6 +18,14 @@ def _ensure_valid_role(current_user: dict) -> str:
     if role not in ALL_ROLES and role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid user role")
     return role
+def _ensure_2fa(current_user: dict):
+    if not current_user.get("two_factor_verified"):
+        logger.error(f"administrative_2fa_block: user_id={current_user.get('id')} role={current_user.get('role')}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Mandatory 2FA verification required for administrative access."
+        )
+
 
 def get_db() -> Generator:
     """
@@ -28,16 +36,21 @@ def get_db() -> Generator:
 async def get_current_user(
     request: Request,
     token: Optional[str] = Depends(oauth2_scheme),
-):
-    from app.dependencies import get_user_store
-    user_store = get_user_store()
-    """
-    Dependency to get current authenticated user with real JWT validation.
-    """
-    # Support both Authorization Header (Bearer) and HTTP-only Cookie
-    auth_token = token or request.cookies.get("access_token")
-    
-    if not auth_token:
+    try:
+        # Decode with JWT_SECRET first; fall back to legacy SECRET_KEY.
+        try:
+            payload = jwt.decode(auth_token, settings.JWT_SECRET, algorithms=["HS256"])
+        except Exception:
+            payload = jwt.decode(auth_token, settings.SECRET_KEY, algorithms=["HS256"])
+
+        sub = payload.get("sub")
+        user_id = payload.get("user_id") or payload.get("userId") or payload.get("id")
+        if not user_id and isinstance(sub, str) and "@" not in sub:
+            user_id = sub
+
+        email = payload.get("email")
+        if not email and isinstance(sub, str) and "@" in sub:
+            email = sub
         # Fallback to Authorization header if token dependency failed
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
@@ -58,18 +71,28 @@ async def get_current_user(
             # Fallback to legacy SECRET_KEY if JWT_SECRET fails (Lumina Shield)
             payload = jwt.decode(auth_token, settings.JWT_SECRET or settings.SECRET_KEY, algorithms=["HS256"])
             
+        # Standard OAuth2 'sub' can be ID or Email. Platform standard is user ID.
+        raw_sub = payload.get("sub")
         user_id = payload.get("user_id") or payload.get("userId") or payload.get("id")
-        email = payload.get("sub") or payload.get("email")
+        email = payload.get("email")
         
+        # Heuristic: if sub looks like email, use as email. Otherwise use as ID.
+        if raw_sub:
+            if "@" in str(raw_sub):
+                email = email or raw_sub
+            else:
+                user_id = user_id or raw_sub
+
         if not user_id and not email:
             raise HTTPException(status_code=401, detail="Invalid token: no user identifier")
             
         # Real lookup against UserStore
-        user = (
-            await user_store.get_user_by_id(user_id, include_sensitive=True)
-            if user_id
-            else await user_store.get_user_by_email(email, include_sensitive=True)
-        )
+        user = None
+        if user_id:
+            user = await user_store.get_user_by_id(user_id, include_sensitive=True)
+            
+        if not user and email:
+            user = await user_store.get_user_by_email(email, include_sensitive=True)
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
             
@@ -78,6 +101,8 @@ async def get_current_user(
         
         return user
             
+    except HTTPException:
+        raise
     except Exception as e:
         logger.warning(f"token_validation_failed: {str(e)} path={request.url.path}")
         raise HTTPException(
@@ -102,12 +127,14 @@ async def get_current_super_admin(current_user: dict = Depends(get_current_activ
     role = _ensure_valid_role(current_user)
     if role != "super_admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Super Admin privileges required")
+    _ensure_2fa(current_user)
     return current_user
 
 async def get_current_college_admin(current_user: dict = Depends(get_current_active_user)) -> dict:
     role = _ensure_valid_role(current_user)
     if role not in {"admin", "college_admin", "super_admin"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="College Admin privileges required")
+    _ensure_2fa(current_user)
     
     inst_id = current_user.get("college_id") or current_user.get("institution_id")
     if not inst_id and role != "super_admin":
@@ -120,6 +147,7 @@ async def get_current_hod(current_user: dict = Depends(get_current_active_user))
     role = _ensure_valid_role(current_user)
     if role not in {"hod", "college_admin", "super_admin"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="HOD privileges required")
+    _ensure_2fa(current_user)
     
     dept_id = current_user.get("dept_id") or current_user.get("department_id")
     if not dept_id and role != "super_admin":
