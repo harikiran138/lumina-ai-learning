@@ -1342,157 +1342,142 @@ class AnalyticsStore:
             log.error("student_stats_aggregation_failed", student_id=student_id, error=str(e))
             return {"avg_score": 0, "total_sessions": 0, "topic_count": 0}
 
-    async def get_student_full_dashboard(self, student_id: str) -> Dict:
+    async def get_student_full_dashboard(self, student_id: str) -> Dict[str, Any]:
+        """
+        Fetches the complete student dashboard, strictly scoped by class_id and course enrollments.
+        Integrates results from the Adaptive Learning Engine.
+        """
         try:
             client = self.db.get_client()
 
-            # Fetch enrollments for this student (our real schema)
+            # 1. Fetch Student Institutional Context (Strict Scoping)
+            # This is the "Golden Schema" check from student_enrollments
+            enrollment_context_resp = await client.table("student_enrollments").select("*").eq("student_id", student_id).async_execute()
+            enrollment_context = enrollment_context_resp.data[0] if enrollment_context_resp.data else {}
+            
+            class_id = enrollment_context.get("class_id")
+            program_id = enrollment_context.get("program_id")
+
+            # 2. Fetch Course Enrollments (Progress Tracking)
             enrollment_response = await client.table("enrollments").select("*").eq("student_id", student_id).async_execute()
             enrollments = enrollment_response.data or []
 
-            if not enrollments:
-                try:
-                    progress_response = await client.table("student_progress").select("*").eq(
-                        "student_id", student_id
-                    ).async_execute()
-                    progress_rows = progress_response.data or []
-                    enrollments = [
-                        {
-                            "student_id": row.get("student_id"),
-                            "course_id": row.get("course_id"),
-                            "status": "active",
-                            "completed_lessons": row.get("completed_lessons", []),
-                            "progress": {
-                                "percentage": 0,
-                                "mastery": row.get("mastery", 0),
-                                "streak": row.get("streak", 0),
-                                "lastAccessed": row.get("last_accessed"),
-                                "hoursSpent": row.get("hours_spent", 0),
-                            },
-                        }
-                        for row in progress_rows
-                        if row.get("course_id")
-                    ]
-                except Exception as e:
-                    log.warning("dashboard_progress_fallback_failed", error=str(e))
+            # 3. Fetch Class-related details
+            class_info = {"name": None, "batch": None}
+            if class_id:
+                class_resp = await client.table("classes").select("*").eq("id", class_id).async_execute()
+                if class_resp.data:
+                    c_data = class_resp.data[0]
+                    class_info["name"] = c_data.get("class_name") or c_data.get("section_name")
+                    class_info["batch"] = c_data.get("batch_name") or c_data.get("batch")
 
-            if not enrollments:
-                try:
-                    subject_response = await client.table("student_subjects").select("subject_id").eq(
-                        "student_id", student_id
-                    ).async_execute()
-                    subject_ids = [
-                        str(row.get("subject_id"))
-                        for row in (subject_response.data or [])
-                        if row.get("subject_id")
-                    ]
-                    enrollments = [
-                        {
-                            "student_id": student_id,
-                            "course_id": subject_id,
-                            "status": "active",
-                            "progress": {
-                                "percentage": 0,
-                                "mastery": 0,
-                                "streak": 0,
-                                "lastAccessed": None,
-                                "hoursSpent": 0,
-                            },
-                        }
-                        for subject_id in subject_ids
-                    ]
-                except Exception as e:
-                    log.warning("dashboard_subjects_fallback_failed", error=str(e))
+            # 4. Filter or Fetch Courses based on Class Scoping
+            # A student should only see courses assigned to their specific class via teacher_assignments
+            course_ids = []
+            if class_id:
+                assignment_resp = await client.table("teacher_assignments").select("course_id").eq("class_id", class_id).async_execute()
+                course_ids = list({str(row["course_id"]) for row in (assignment_resp.data or []) if row.get("course_id")})
+            
+            # Allow fallback to direct enrollments if class-scoped assignments are missing
+            if not course_ids:
+                course_ids = list({str(e.get("course_id")) for e in enrollments if e.get("course_id")})
 
-            log.info("dashboard_enrollment_check", student_id=student_id, count=len(enrollments))
-
-            if not enrollments:
-                return {
-                    "currentStreak": 0,
-                    "enrolledCourses": [],
-                    "overallMastery": 0,
-                    "totalHours": 0,
-                    "className": None,
-                    "batch": None,
-                    "badges": [],
-                }
-
-
-            # Get all unique course IDs
-            course_ids = list({str(e.get("course_id")) for e in enrollments if e.get("course_id")})
-
-            # Batch fetch courses
+            # 5. Fetch Actual Course Data
             courses_map = {}
             if course_ids:
                 courses_response = await client.table("courses").select("*").in_("id", course_ids).async_execute()
                 for c in courses_response.data:
                     courses_map[str(c.get("id"))] = c
 
+            # 6. Build Enrolled Courses List
             enrolled_courses = []
-            for enrollment in enrollments:
-                cid = str(enrollment.get("course_id") or "")
-                if not cid or cid not in courses_map:
+            total_mastery = 0
+            total_hours = 0
+            
+            # Map enrollments for quick lookup
+            enrollment_map = {str(e["course_id"]): e for e in enrollments if e.get("course_id")}
+
+            for cid_str in course_ids:
+                if cid_str not in courses_map:
                     continue
 
-                course = courses_map[cid]
-                course_name = course.get("title") or course.get("course_name") or course.get("name") or "Untitled Course"
-                progress_data = enrollment.get("progress") or {}
+                course = courses_map[cid_str]
+                enrollment = enrollment_map.get(cid_str, {})
                 
-                # Calculate progress percentage dynamically
-                percentage = float(progress_data.get("percentage", 0) or 0)
-                if percentage == 0:
-                    completed = enrollment.get("completed_lessons") or []
-                    modules = course.get("modules") or []
-                    total_lessons = 0
-                    for m in modules:
-                        total_lessons += len(m.get("lessons", []))
-                    if total_lessons > 0:
-                        percentage = (len(completed) / total_lessons) * 100
+                course_name = course.get("title") or course.get("course_name") or "Untitled Course"
+                progress_payload = enrollment.get("progress") or {}
+                if not isinstance(progress_payload, dict):
+                    progress_payload = {}
+                
+                # Dynamic Percentage Calculation
+                percentage = float(progress_payload.get("percentage", 0) or enrollment.get("progress_percentage", 0))
+                mastery = float(progress_payload.get("mastery", 0) or enrollment.get("mastery_score", 0))
+                
+                completed_lessons = enrollment.get("completed_lessons") or []
+                modules = course.get("modules") or []
+                total_lessons = sum(len(m.get("lessons", [])) for m in modules if isinstance(m, dict))
+                
+                if percentage == 0 and total_lessons > 0:
+                    percentage = (len(completed_lessons) / (total_lessons or 1)) * 100
 
                 enrolled_courses.append({
-                    "id": cid,
-                    "name": course_name,
+                    "id": cid_str,
                     "title": course_name,
-                    "code": course.get("code") or course.get("course_code"),
-                    "description": course.get("description"),
+                    "name": course_name,
+                    "progress": round(percentage, 1),
+                    "mastery": round(mastery, 1),
+                    "lastAccessed": progress_payload.get("lastAccessed") or enrollment.get("updated_at"),
                     "thumbnail": course.get("thumbnail_url"),
-                    "progress": round(percentage, 2),
-                    "mastery": float(progress_data.get("mastery", 0) or 0),
-                    "streak": int(progress_data.get("streak", 0) or 0),
-                    "lastAccessed": progress_data.get("lastAccessed"),
-                    "hoursSpent": float(progress_data.get("hoursSpent", 0) or 0),
-                    "status": enrollment.get("status", "active"),
+                    "instructor": course.get("instructor_name") or "AI Faculty",
+                    "status": enrollment.get("status", "enrolled")
                 })
+                
+                total_mastery += mastery
+                total_hours += float(progress_payload.get("hoursSpent", 0) or enrollment.get("hours_spent", 0))
 
-            current_streak = max([c.get("streak", 0) for c in enrolled_courses] + [0])
-            avg_mastery = (
-                round(sum([c.get("mastery", 0) for c in enrolled_courses]) / len(enrolled_courses))
-                if enrolled_courses
-                else 0
-            )
-            total_hours = round(sum([c.get("hoursSpent", 0) for c in enrolled_courses]), 2)
+            avg_mastery = total_mastery / (len(enrolled_courses) or 1)
 
-            # Fetch Class/Section details for this student
-            enrollment_record = await client.table("student_enrollments").select("class_id").eq("student_id", student_id).maybe_single().async_execute()
-            class_info = {"name": None, "batch": None}
-            if enrollment_record.data and enrollment_record.data.get("class_id"):
-                c_res = await client.table("classes").select("class_name, batch, section_name, batch_name").eq("id", enrollment_record.data["class_id"]).maybe_single().async_execute()
-                if c_res.data:
-                    class_info["name"] = c_res.data.get("class_name") or c_res.data.get("section_name")
-                    class_info["batch"] = c_res.data.get("batch") or c_res.data.get("batch_name")
-
-            return {
-                "currentStreak": current_streak,
-                "enrolledCourses": enrolled_courses,
-                "overallMastery": avg_mastery,
-                "totalHours": total_hours,
-                "className": class_info["name"],
-                "batch": class_info["batch"],
-                "badges": [],
+            # 7. Get Adaptive Recommendation
+            adaptive_rec = {
+                "recommendation": "Start your learning journey!",
+                "action": "CONTINUE_LEARNING",
+                "type": "TUTOR"
             }
+            try:
+                from app.services.adaptive_question_service import get_adaptive_question_service
+                aqs = get_adaptive_question_service()
+                # Use the last course accessed or the first available course as topic
+                target_topic = next((e["course_id"] for e in enrollments if e.get("course_id")), 
+                                   (course_ids[0] if course_ids else "general"))
+                
+                rec_payload = await aqs.get_next_interactive_step(student_id, target_topic)
+                if rec_payload:
+                    adaptive_rec = rec_payload
+            except Exception as e:
+                log.warning("dashboard_adaptive_rec_failed", error=str(e))
+
+            result = {
+                "currentStreak": enrollment_context.get("streak", 0),
+                "enrolledCourses": enrolled_courses,
+                "overallMastery": round(avg_mastery, 1),
+                "totalHours": round(total_hours, 1),
+                "className": class_info.get("name"),
+                "batch": class_info.get("batch"),
+                "institutionalContext": {
+                    "program_id": program_id,
+                    "class_id": class_id
+                },
+                "adaptiveRecommendation": adaptive_rec,
+                "badges": enrollment_context.get("badges", [])
+            }
+            return result
         except Exception as e:
-            log.error("student_full_dashboard_failed", student_id=student_id, error=str(e), traceback=True)
-            return {}
+            log.error("student_full_dashboard_failed", student_id=student_id, error=str(e))
+            return {
+                "error": "Failed to fetch dashboard data",
+                "detail": str(e)
+            }
+
 
     async def get_top_performing_topics(self, limit: int = 5) -> List[Dict]:
         try:
