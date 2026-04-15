@@ -104,3 +104,49 @@ class CounselorOnboardingService(BaseOnboardingService):
             5: ["accept_confidentiality_agreement"],
         }
         return required.get(step, [])
+
+    async def _post_onboarding_setup(self, user_id: str, current_user: Dict[str, Any]) -> None:
+        """
+        Setup counselor profile after onboarding.
+        - Create counselor profile record
+        - Set license verification pending
+        - Initialize audit logging
+        
+        NOTE: verification_status set by base_service._set_verification_status()
+              which creates verification_request with status='pending'
+        """
+        from datetime import datetime
+        
+        try:
+            # Get step data from onboarding_progress
+            progress = await self._get_progress(user_id)
+            step_data = progress.get("step_data", {})
+            
+            # Collect counselor data from steps
+            step_1_data = step_data.get("step_1", {})
+            step_2_data = step_data.get("step_2", {})
+            step_3_data = step_data.get("step_3", {})
+            
+            now = datetime.utcnow().isoformat()
+            
+            # Create counselor profile
+            counselor_profile = {
+                "user_id": user_id,
+                "license_number": step_1_data.get("license_number", ""),
+                "specialization": step_2_data.get("specialization", ""),
+                "assigned_institution": step_3_data.get("assigned_institution", ""),
+                "assigned_department": step_3_data.get("assigned_department", ""),
+                "certification_document_url": step_2_data.get("certification_document", ""),
+                "years_of_experience": step_2_data.get("years_of_experience", 0),
+                "is_active": True,
+                "created_at": now,
+                "updated_at": now,
+            }
+            
+            await self.db.table("counselor_profiles").insert(counselor_profile).execute()
+            self.logger.info("counselor_profile_created", user_id=user_id)
+            
+        except Exception as e:
+            self.logger.error("counselor_profile_creation_failed", user_id=user_id, error=str(e))
+            # Don't fail onboarding if profile creation fails
+            pass

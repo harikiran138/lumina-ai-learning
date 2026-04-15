@@ -98,6 +98,7 @@ from app.routers import (  # noqa: E402
     mentor,
     notifications,
     onboarding,
+    onboarding_unified,
     parent,
     pathway,
     peer_tutor,
@@ -342,7 +343,7 @@ app.include_router(assessment.router, prefix="/api/assessment", tags=["Assessmen
 app.include_router(faculties.router, prefix="/api/faculties", tags=["Faculties"])
 app.include_router(ai_agents.router, prefix="/api/ai-agents", tags=["AI Agents"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
-app.include_router(onboarding.router, prefix="/api/onboarding", tags=["Onboarding"])
+app.include_router(onboarding_unified.router, prefix="/api/onboarding", tags=["Onboarding"])
 
 app.include_router(ai.router, prefix="/api", tags=["AI"])
 app.include_router(hybrid.router, prefix="/api/ai", tags=["Hybrid AI"])

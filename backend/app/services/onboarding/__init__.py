@@ -16,6 +16,9 @@ from .counselor_service import CounselorOnboardingService
 from .content_creator_service import ContentCreatorOnboardingService
 from .researcher_service import ResearcherOnboardingService
 from .admin_service import AdminOnboardingService
+from .alumni_service import AlumniOnboardingService
+from .hod_service import HODOnboardingService
+from .validators import FieldValidators, BatchValidators
 
 __all__ = [
     "BaseOnboardingService",
@@ -28,4 +31,8 @@ __all__ = [
     "ContentCreatorOnboardingService",
     "ResearcherOnboardingService",
     "AdminOnboardingService",
+    "AlumniOnboardingService",
+    "HODOnboardingService",
+    "FieldValidators",
+    "BatchValidators",
 ]

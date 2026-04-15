@@ -117,12 +117,59 @@ class AdminOnboardingService(BaseOnboardingService):
     async def _post_onboarding_setup(self, user_id: str, current_user: Dict[str, Any]) -> None:
         """
         Setup admin systems after onboarding:
-        - Generate API keys
+        - Create admin profile record
+        - Generate API key for integrations
         - Initialize admin dashboard
         - Set up audit logging
         """
+        from datetime import datetime
+        import secrets
+        import base64
+        
         try:
-            self.logger.info("admin_setup_initialized", user_id=user_id)
+            # Get step data from onboarding_progress
+            progress = await self._get_progress(user_id)
+            step_data = progress.get("step_data", {})
+            
+            # Collect admin data from steps
+            step_1_data = step_data.get("step_1", {})
+            step_2_data = step_data.get("step_2", {})
+            step_3_data = step_data.get("step_3", {})
+            step_4_data = step_data.get("step_4", {})
+            
+            # Generate API key (format: admin_RANDOM_32_CHARS)
+            api_key_secret = secrets.token_urlsafe(32)
+            api_key_id = f"admin_{base64.urlsafe_b64encode(secrets.token_bytes(16)).decode().rstrip('=')[:20]}"
+            
+            now = datetime.utcnow().isoformat()
+            
+            # Create admin profile
+            admin_profile = {
+                "user_id": user_id,
+                "admin_role": step_1_data.get("admin_role", ""),
+                "institution_id": step_2_data.get("institution_id"),
+                "system_region": step_2_data.get("system_region", ""),
+                "department_name": step_3_data.get("department_name", ""),
+                "permission_groups": step_4_data.get("permission_groups", []),
+                "api_key_id": api_key_id,
+                "two_factor_enabled": step_5_data.get("two_factor_enabled", True),
+                "audit_logging_enabled": True,
+                "is_active": True,
+                "created_at": now,
+                "updated_at": now,
+            }
+            
+            # Get step_5_data for 2FA setting
+            step_5_data = step_data.get("step_5", {})
+            admin_profile["two_factor_enabled"] = step_5_data.get("two_factor_enabled", True)
+            
+            await self.db.table("admin_profiles").insert(admin_profile).execute()
+            self.logger.info("admin_profile_created", user_id=user_id, api_key_id=api_key_id)
+            
+            # Note: API key secret should be returned to admin only once
+            # Store the hashed key in a separate secure table if needed
+            
         except Exception as e:
             self.logger.error("admin_setup_failed", user_id=user_id, error=str(e))
+            # Don't fail onboarding if admin setup fails
             pass

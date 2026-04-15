@@ -83,21 +83,35 @@ class PeerTutorOnboardingService(BaseOnboardingService):
                 errors.append("Last name is required")
 
         elif step == 2:
+            # HARD GATE: Verify subject expertise with database lookup
             if not data.get("tutor_subjects") or not isinstance(data["tutor_subjects"], list):
                 errors.append("At least one subject must be selected")
             elif len(data["tutor_subjects"]) > 6:
                 errors.append("Maximum 6 subjects can be selected")
-            
-            # Check mastery scores (must be > 0.80)
-            mastery_scores = data.get("expertise_levels", {})
-            for subject, score in mastery_scores.items():
-                if subject in data.get("tutor_subjects", []):
-                    try:
-                        mastery = float(score)
-                        if mastery < 0.80:
-                            errors.append(f"Mastery in {subject} must be at least 80%")
-                    except (ValueError, TypeError):
-                        errors.append(f"Invalid mastery score for {subject}")
+            else:
+                # Check mastery scores against actual database values (HARD GATE)
+                try:
+                    # Get user's actual mastery scores from database
+                    result = await self.db.from_("user_data").select(
+                        "metadata"
+                    ).eq("user_id", data.get("_user_id", "")).single().execute()
+                    
+                    actual_mastery = result.data.get("metadata", {}).get("subject_mastery", {}) if result else {}
+                    
+                    # Verify each subject has >= 80% mastery
+                    for subject in data.get("tutor_subjects", []):
+                        db_mastery = float(actual_mastery.get(subject, 0.0))
+                        
+                        if db_mastery < 0.80:
+                            errors.append(
+                                f"Your mastery in {subject} is {db_mastery*100:.1f}%. "
+                                f"You need at least 80% mastery to tutor this subject. Keep practicing!"
+                            )
+                except Exception as e:
+                    logger.warning("mastery_lookup_failed", subject=None, error=str(e))
+                    errors.append(
+                        "Could not verify your mastery. Please run a diagnostic test first."
+                    )
 
         elif step == 3:
             if not data.get("availability"):

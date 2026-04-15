@@ -98,3 +98,47 @@ class ContentCreatorOnboardingService(BaseOnboardingService):
             4: ["accept_quality_standards", "accept_copyright_agreement"],
         }
         return required.get(step, [])
+
+    async def _post_onboarding_setup(self, user_id: str, current_user: Dict[str, Any]) -> None:
+        """
+        Setup content creator profile after onboarding.
+        - Create content creator profile record
+        - Set portfolio approval pending
+        - Initialize quality audit trail
+        
+        NOTE: verification_status set by base_service._set_verification_status()
+              which creates verification_request with status='pending'
+        """
+        from datetime import datetime
+        
+        try:
+            # Get step data from onboarding_progress
+            progress = await self._get_progress(user_id)
+            step_data = progress.get("step_data", {})
+            
+            # Collect creator data from steps
+            step_2_data = step_data.get("step_2", {})
+            step_3_data = step_data.get("step_3", {})
+            
+            now = datetime.utcnow().isoformat()
+            
+            # Create content creator profile
+            creator_profile = {
+                "user_id": user_id,
+                "content_types": step_2_data.get("content_types", []),
+                "subject_domains": step_2_data.get("subject_domains", []),
+                "experience_level": step_2_data.get("experience_level", ""),
+                "portfolio_samples": step_3_data.get("portfolio_samples", []),
+                "approval_status": "pending",  # Will be updated when verification is approved
+                "is_active": True,
+                "created_at": now,
+                "updated_at": now,
+            }
+            
+            await self.db.table("content_creator_profiles").insert(creator_profile).execute()
+            self.logger.info("content_creator_profile_created", user_id=user_id)
+            
+        except Exception as e:
+            self.logger.error("content_creator_profile_creation_failed", user_id=user_id, error=str(e))
+            # Don't fail onboarding if profile creation fails
+            pass

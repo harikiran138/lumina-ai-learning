@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional
 import structlog
 from datetime import datetime
 from .base_service import BaseOnboardingService
+from .validators import FieldValidators
 from app.services.personalization_service import PersonalizationService
 
 logger = structlog.get_logger(__name__)
@@ -108,19 +109,13 @@ class StudentOnboardingService(BaseOnboardingService):
         errors: List[str] = []
 
         if step == 1:
-            # Personal info validation
-            if not data.get("first_name", "").strip():
-                errors.append("First name is required")
-            if not data.get("last_name", "").strip():
-                errors.append("Last name is required")
-            if data.get("date_of_birth"):
-                try:
-                    dob = datetime.fromisoformat(data["date_of_birth"])
-                    age = (datetime.now() - dob).days // 365
-                    if age < 5 or age > 100:
-                        errors.append("Please enter a valid date of birth")
-                except Exception:
-                    errors.append("Invalid date of birth format")
+            # Personal info validation using centralized validators
+            if error := FieldValidators.validate_name(data.get("first_name"), "First name"):
+                errors.append(error)
+            if error := FieldValidators.validate_name(data.get("last_name"), "Last name"):
+                errors.append(error)
+            if error := FieldValidators.validate_dob(data.get("date_of_birth"), "Date of birth"):
+                errors.append(error)
 
         elif step == 2:
             # Education validation

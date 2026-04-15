@@ -97,3 +97,52 @@ class ResearcherOnboardingService(BaseOnboardingService):
             4: ["accept_ethics_guidelines", "accept_data_privacy"],
         }
         return required.get(step, [])
+
+    async def _post_onboarding_setup(self, user_id: str, current_user: Dict[str, Any]) -> None:
+        """
+        Setup researcher profile after onboarding.
+        - Create researcher profile record
+        - Set IRB compliance pending
+        - Initialize data access audit
+        
+        NOTE: verification_status set by base_service._set_verification_status()
+              which creates verification_request with status='pending'
+        """
+        from datetime import datetime
+        
+        try:
+            # Get step data from onboarding_progress
+            progress = await self._get_progress(user_id)
+            step_data = progress.get("step_data", {})
+            
+            # Collect researcher data from all steps
+            step_1_data = step_data.get("step_1", {})
+            step_2_data = step_data.get("step_2", {})
+            step_3_data = step_data.get("step_3", {})
+            step_4_data = step_data.get("step_4", {})
+            
+            now = datetime.utcnow().isoformat()
+            
+            # Create researcher profile
+            researcher_profile = {
+                "user_id": user_id,
+                "institution_name": step_2_data.get("institution_name", ""),
+                "research_department": step_2_data.get("research_department", ""),
+                "research_purpose": step_2_data.get("research_purpose", ""),
+                "publication_links": step_2_data.get("publication_links", []),
+                "irb_approval_document_url": step_3_data.get("irb_approval_document", ""),
+                "data_access_agreement_signed": step_3_data.get("data_access_agreement_signed", False),
+                "approved_data_categories": step_4_data.get("data_categories_needed", []),
+                "compliance_status": "pending",  # Will be updated when verification is approved
+                "is_active": True,
+                "created_at": now,
+                "updated_at": now,
+            }
+            
+            await self.db.table("researcher_profiles").insert(researcher_profile).execute()
+            self.logger.info("researcher_profile_created", user_id=user_id)
+            
+        except Exception as e:
+            self.logger.error("researcher_profile_creation_failed", user_id=user_id, error=str(e))
+            # Don't fail onboarding if profile creation fails
+            pass

@@ -28,7 +28,10 @@ from app.services.onboarding import (
     ContentCreatorOnboardingService,
     ResearcherOnboardingService,
     AdminOnboardingService,
+    AlumniOnboardingService,
+    HODOnboardingService,
 )
+from app.services.onboarding.base_service import StandardOnboardingResponse
 
 router = APIRouter()
 logger = structlog.get_logger(__name__)
@@ -46,12 +49,12 @@ SERVICE_MAP = {
     "counselor": CounselorOnboardingService,
     "content_creator": ContentCreatorOnboardingService,
     "researcher": ResearcherOnboardingService,
+    "alumni": AlumniOnboardingService,
     "college_admin": AdminOnboardingService,
     "super_admin": AdminOnboardingService,
     "system_admin": AdminOnboardingService,
     "institution_admin": AdminOnboardingService,
-    "hod": TeacherOnboardingService,  # HOD uses teacher flow with admin features
-    "alumni": StudentOnboardingService,  # Simplified student flow
+    "hod": HODOnboardingService,
 }
 
 
@@ -109,10 +112,14 @@ async def get_onboarding_options(
         
         if step:
             if step < 1 or step > service.TOTAL_STEPS:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid step {step}. Valid range: 1-{service.TOTAL_STEPS}"
-                )
+                return StandardOnboardingResponse.from_dict({
+                    "success": False,
+                    "role": role,
+                    "step": step,
+                    "status": "error",
+                    "errors": [f"Invalid step {step}. Valid range: 1-{service.TOTAL_STEPS}"],
+                    "message": "Invalid step number",
+                })
             options = await service.get_options(step)
         else:
             # Return overview of all steps
@@ -128,16 +135,26 @@ async def get_onboarding_options(
                 ]
             }
         
-        return {
+        return StandardOnboardingResponse.from_dict({
             "success": True,
-            "data": options
-        }
+            "role": role,
+            "step": step,
+            "status": "ready",
+            "message": f"Options available for {role} onboarding",
+            "required_fields": options.get("required_fields", []),
+        }) | {"options": options}  # Add options field separately
     
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error("get_options_failed", role=role, error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to get onboarding options")
+        logger.error("get_options_failed", role=role, error=str(e), exc_info=True)
+        return StandardOnboardingResponse.from_dict({
+            "success": False,
+            "role": role,
+            "status": "error",
+            "errors": ["Failed to get onboarding options"],
+            "message": "Server error while retrieving options",
+        })
 
 
 @router.post(
@@ -149,7 +166,7 @@ async def get_onboarding_options(
 async def submit_onboarding_step(
     role: str = Path(..., description="User role"),
     step: int = Path(..., description="Step number"),
-    request: StepSubmissionRequest = None,
+    request: StepSubmissionRequest = Body(..., description="Step data to submit"),
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -163,21 +180,79 @@ async def submit_onboarding_step(
         user_id = str(current_user.get("id"))
         service = get_onboarding_service(role)
         
+        # Validate step number
+        if step < 1 or step > service.TOTAL_STEPS:
+            return StandardOnboardingResponse.from_dict({
+                "success": False,
+                "role": role,
+                "step": step,
+                "status": "error",
+                "errors": [f"Invalid step {step}. Valid range: 1-{service.TOTAL_STEPS}"],
+                "message": f"Step {step} is not valid for {role} onboarding",
+            })
+        
+        # Validate request body is not empty
+        if not request or not request.data:
+            return StandardOnboardingResponse.from_dict({
+                "success": False,
+                "role": role,
+                "step": step,
+                "status": "error",
+                "errors": ["Step data cannot be empty"],
+                "message": "Request body must contain step data",
+            })
+        
+        # Get current status first
+        try:
+            progress = await service._get_progress(user_id)
+            current_step = progress.get("current_step", 1)
+            completed_steps = progress.get("completed_steps", [])
+        except:
+            current_step = 1
+            completed_steps = []
+        
         result = await service.save_step(user_id, step, request.data)
         
         if not result.get("success"):
-            raise HTTPException(status_code=400, detail=result.get("error") or str(result.get("errors")))
+            return StandardOnboardingResponse.from_dict({
+                "success": False,
+                "role": role,
+                "step": step,
+                "current_step": current_step,
+                "completed_steps": completed_steps,
+                "status": "error",
+                "errors": result.get("errors", [result.get("error", "Unknown error")]),
+                "message": result.get("error") or "Validation failed",
+            })
         
-        return {
+        # Get updated status
+        next_step = min(step + 1, service.TOTAL_STEPS)
+        updated_completed = list(set(completed_steps + [step]))
+        
+        return StandardOnboardingResponse.from_dict({
             "success": True,
-            "data": result
-        }
+            "role": role,
+            "step": step,
+            "current_step": current_step,
+            "completed_steps": sorted(updated_completed),
+            "next_step": next_step if step < service.TOTAL_STEPS else None,
+            "progress_percent": result.get("progress_percent", 0),
+            "status": "in_progress",
+            "message": f"Step {step} completed successfully",
+        })
     
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error("submit_step_failed", role=role, step=step, error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to submit step")
+        logger.error("submit_step_failed", role=role, step=step, error=str(e), exc_info=True)
+        return StandardOnboardingResponse.from_dict({
+            "success": False,
+            "role": role,
+            "step": step,
+            "status": "error",
+            "errors": ["Failed to submit step. Please try again."],
+            "message": "Server error while processing step",
+        })
 
 
 @router.get(
@@ -197,16 +272,27 @@ async def get_onboarding_status(
         
         status = await service.get_status(user_id)
         
-        return {
+        return StandardOnboardingResponse.from_dict({
             "success": True,
-            "data": status
-        }
+            "role": role,
+            "current_step": status.get("current_step", 1),
+            "completed_steps": status.get("completed_steps", []),
+            "progress_percent": status.get("progress_percent", 0),
+            "status": status.get("status", "in_progress"),
+            "message": f"{role.title()} onboarding progress",
+        })
     
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error("get_status_failed", role=role, error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to get onboarding status")
+        logger.error("get_status_failed", role=role, error=str(e), exc_info=True)
+        return StandardOnboardingResponse.from_dict({
+            "success": False,
+            "role": role,
+            "status": "error",
+            "errors": ["Failed to get onboarding status"],
+            "message": "Server error while checking status",
+        })
 
 
 @router.post(
@@ -217,7 +303,7 @@ async def get_onboarding_status(
 )
 async def complete_onboarding(
     role: str = Path(..., description="User role"),
-    request: OnboardingCompleteRequest = None,
+    request: OnboardingCompleteRequest = Body(None),
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -225,7 +311,9 @@ async def complete_onboarding(
     
     - Marks all steps as completed
     - Triggers role-specific post-onboarding setup
-    - Sets onboarding_completed flag
+    - Assigns role in RBAC system
+    - Syncs permissions
+    - Sets up verification pipelines if needed
     - Returns success confirmation
     """
     try:
@@ -235,20 +323,36 @@ async def complete_onboarding(
         result = await service.complete(user_id, current_user)
         
         if not result.get("success"):
-            raise HTTPException(status_code=400, detail=result.get("error"))
+            return StandardOnboardingResponse.from_dict({
+                "success": False,
+                "role": role,
+                "status": "error",
+                "errors": [result.get("error", "Failed to complete onboarding")],
+                "message": result.get("error"),
+            })
         
-        logger.info("onboarding_completed", user_id=user_id, role=role)
+        logger.info("onboarding_completed_with_systems", user_id=user_id, role=role)
         
-        return {
+        return StandardOnboardingResponse.from_dict({
             "success": True,
-            "data": result
-        }
+            "role": role,
+            "status": "completed",
+            "message": f"{role.title()} onboarding completed. Systems initialized.",
+            "completed_steps": list(range(1, service.TOTAL_STEPS + 1)),
+            "progress_percent": 100.0,
+        })
     
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error("complete_failed", role=role, error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to complete onboarding")
+        logger.error("complete_failed", role=role, error=str(e), exc_info=True)
+        return StandardOnboardingResponse.from_dict({
+            "success": False,
+            "role": role,
+            "status": "error",
+            "errors": ["Failed to complete onboarding. Please contact support."],
+            "message": "Server error while completing onboarding",
+        })
 
 
 # ═══════════════════════════════════════════════════════════════════════════
