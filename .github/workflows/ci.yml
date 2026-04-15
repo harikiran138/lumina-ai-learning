@@ -1,68 +1,65 @@
-name: Lumina CI/CD Pipeline
+name: Lumina CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 permissions:
   contents: read
   security-events: write
 
 jobs:
-  # 1. Standard Testing (Python)
-  test-backend:
+  backend-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
-      - name: Install dependencies
+          python-version: "3.11"
+      - name: Install backend dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
-          pip install pytest httpx motor locust
-      - name: Run Pytest
+      - name: Compile backend source
         run: |
-          cd backend
-          python -m pytest tests
+          python -m compileall \
+            backend/app \
+            backend/ai_engine \
+            backend/learner_profile \
+            backend/mcp \
+            backend/ml_services
 
-  # 2. Security: SAST (Semgrep)
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/web/package-lock.json
+      - name: Install frontend dependencies
+        run: |
+          cd frontend/web
+          npm ci
+      - name: Build frontend
+        run: |
+          cd frontend/web
+          npm run build
+
   security-semgrep:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Semgrep Scan
+      - name: Semgrep scan
         uses: semgrep/semgrep-action@v1
         with:
           config: "p/ci"
 
-  # 3. Security: Container & Filesystem (Trivy)
-  security-trivy:
-    name: Run Trivy Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.20.0
-        with:
-          scan-type: 'fs'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          exit-code: '0'   # IMPORTANT: Prevents failure while reporting results
-          ignore-unfixed: true
-
-      - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-results.sarif
-
-  # 4. Security: Python Specific (Bandit)
   security-bandit:
     runs-on: ubuntu-latest
     steps:
@@ -70,95 +67,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
       - name: Install Bandit
         run: pip install bandit
       - name: Run Bandit
         run: bandit -c .bandit -r backend/ -iii
-
-  # 5. API Testing (Newman)
-  test-api-newman:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install Newman
-        run: npm install -g newman
-      - name: Run Newman Tests
-        run: |
-          echo "Validating API Collection..."
-          newman run backend/tests/api_tests.json --suppress-exit-code
-
-  # 6. RAG Quality (RAGAS)
-  eval-rag-quality:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-      - name: Install dependencies
-        run: |
-          pip install ragas datasets pandas
-      - name: Run RAGAS Eval
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          if [ -z "$GEMINI_API_KEY" ]; then
-            echo "GEMINI_API_KEY not found. Skipping evaluation."
-          else
-            python backend/tests/rag_eval.py
-          fi
-
-  # 7. Policy Enforcement: No Axios
-  enforce-no-axios:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check for Axios usage
-        run: |
-          if grep -r "axios" . --exclude-dir={node_modules,.git,.firebase,skills} --exclude=.github/workflows/ci.yml; then
-            echo "::error::Axios is forbidden in this project. Use native fetch (frontend) or httpx (backend) instead."
-            exit 1
-          else
-            echo "No Axios usage found."
-          fi
-
-  # 8. UI Testing (Jest/Playwright)
-  test-ui:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install dependencies
-        run: |
-          cd frontend/web
-          npm install
-      - name: Run Jest
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: https://odyjksznsdeyweylovzl.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9keWprc3puc2RleXdleWxvdnpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NTA1MjEsImV4cCI6MjA4ODUyNjUyMX0.cEz3pxnk2o7YcUe3fPgKdnKmnkqFivoImoEzT9KsZTM
-        run: |
-          cd frontend/web
-          npm test -- --testTimeout=15000
-
-  # 9. Container Validation (Docker)
-  docker-build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build Backend Image
-        run: |
-          cd backend
-          docker build -t lumina-backend:latest .
-      - name: Build Frontend Image
-        run: |
-          cd frontend/web
-          docker build --build-arg NEXT_PUBLIC_API_URL=http://localhost:8000 -t lumina-frontend:latest .

@@ -8,8 +8,6 @@ from typing import List, Dict, Any, Optional
 from ai_engine.classifier import classify, RoutingTier, RESTRICTED_REDIRECT
 from app.store.academic_store import AcademicStore
 from app.core.logging import structlog
-from datetime import datetime
-
 from app.database.scoped_db import ScopedSupabase, get_scoped_db
 
 router = APIRouter()
@@ -157,49 +155,37 @@ async def build_tutor_response_payload(
                 "classification": {"mode": mode, **clf},
             }
 
-        response_text = await tutor_store.get_response(
+        queue_result = await tutor_store.queue_student_request(
             prompt=prompt,
             history=formatted_history,
             context=context,
-            mode=mode,
             student_id=str(current_user.get("id")),
+            requested_mode=mode,
         )
-        response_str = _ensure_serialized_response(response_text, mode)
-        
-        mastery_gain = 2.5
-        topic_id = context.get("topic") or context.get("topic_id") or "general"
-        
-        await academic_store.update_mastery(str(current_user.get("id")), topic_id, mastery_gain)
+        topic_id = context.get("topic") or context.get("topic_id") or queue_result.get("classification", {}).get("concept") or "general"
 
-        try:
-            client = db.get_client()
-            client.table("ai_answer_queue").insert({
-                "student_id": str(current_user.get("id")),
-                "student_question": prompt,
-                "ai_generated_answer": response_str,
-                "question_topic": topic_id,
-                "status": "INSTANT_VOICE",
-                "created_at": datetime.utcnow().isoformat()
-            }).execute()
-        except Exception as e:
-            log.warning("governance_log_failed", error=str(e))
+        await academic_store.update_mastery(str(current_user.get("id")), topic_id, 0.25)
 
-        log.info("ai_interaction_student",
-                 student_id=str(current_user.get("id")),
-                 student_name=current_user.get("name"),
-                 question=prompt,
-                 answer=response_str,
-                 flags=["Confused"] if clf["confidence"] < 0.8 else [],
-                 topic=topic_id,
-                 tier=tier)
-
+        log.info(
+            "ai_interaction_student_queued",
+            student_id=str(current_user.get("id")),
+            student_name=current_user.get("name"),
+            question=prompt,
+            topic=topic_id,
+            tier="ACADEMIC_VERIFIED",
+            queue_id=queue_result.get("queue_id"),
+        )
         return {
             "success": True,
-            "queued": False,
-            "tier": RoutingTier.SAFE_INSTANT,
+            "queued": True,
+            "tier": "ACADEMIC_VERIFIED",
             "type": _MODE_TO_TYPE.get(mode, "text"),
-            "content": response_str,
-            "meta": {**_extract_meta(response_str), "mastery_gain": mastery_gain},
+            "content": queue_result["response"],
+            "meta": {
+                **_extract_meta(queue_result["response"]),
+                "queue_id": queue_result.get("queue_id"),
+                "delivery_status": queue_result.get("delivery_status"),
+            },
             "role": "assistant",
             "mode": mode,
             "classification": {"mode": mode, **clf},

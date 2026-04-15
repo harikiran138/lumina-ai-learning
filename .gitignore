@@ -36,3 +36,8 @@ backend/db/chroma/
 backend/backend/db/chroma/
 output/
 tmp/
+!backend/data/uploads/.gitkeep
+!backend/uploads/.gitkeep
+!data/uploads/.gitkeep
+!static/presentations/.gitkeep
+!backend/static/presentations/.gitkeep

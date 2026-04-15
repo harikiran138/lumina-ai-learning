@@ -88,6 +88,11 @@ class BehaviorBatchRequest(BaseModel):
     signals: List[BehaviorSignal]
 
 
+class ActivityLogRequest(BaseModel):
+    course_id: Optional[str] = None
+    duration_minutes: int = 0
+
+
 class SpacedRepetitionReviewRequest(BaseModel):
     cardId: str
     grade: int

@@ -1,51 +1,35 @@
-# Welcome to Lumina AI Learning
+# Start Here
 
-**Lumina AI Learning** is a production-grade Learning Management System (LMS) specifically architected for Indian engineering institutions. It leverages advanced AI (RAG, BKT, DKT) to provide personalized learning pathways and automated, teacher-verified assessments.
+This vault has a lot of historical material. Start with the canonical documents below if you want the current repository, current code layout, and current doc-to-code mapping.
 
----
+## Canonical Docs
 
-## 🧭 Discover the System
-Choose your path to begin exploring the architecture and implementation:
+1. [[01_Core/PROJECT_STRUCTURE|PROJECT_STRUCTURE]]
+2. [[01_Core/SYSTEM_DOCUMENTATION|SYSTEM_DOCUMENTATION]]
+3. [[01_Core/DOC_CODE_RELATIONSHIP_MAP|DOC_CODE_RELATIONSHIP_MAP]]
+4. [[00_Meta/MODULE_MAP|MODULE_MAP]]
 
-### 🛠 For Backend Developers
-Understand the domain-driven architecture, API routes, and data persistence layers.
-- → [[Features/AI/Backend|Intelligence Engine]]
-- → [[Features/Student/Backend|Dashboard Orchestration]]
-- → [[Features/Governance/Backend|Approval Cascades]]
-- → [[00_Meta/DATABASE_SCHEMA|Database Schema]]
+## Use These For Current Work
 
-### 🎨 For Frontend Developers
-Explore the stakeholder portals, component architecture, and responsive UI flows.
-- → [[Features/Student/Frontend|Student Portal]]
-- → [[Features/Faculty/Frontend|Teacher Dashboard]]
-- → [[00_Meta/MODULE_MAP|Frontend Module Map]]
+- Frontend structure: [[02_Technical_Specs/FRONTEND_SPEC|FRONTEND_SPEC]]
+- Backend structure: [[02_Technical_Specs/BACKEND_SPEC|BACKEND_SPEC]]
+- Database structure: [[02_Technical_Specs/DATABASE_SCHEMA|DATABASE_SCHEMA]]
+- Local setup: [[03_Infrastructure/LOCAL_SETUP|LOCAL_SETUP]]
+- Deployment setup: [[03_Infrastructure/DEPLOYMENT_GUIDE|DEPLOYMENT_GUIDE]]
 
-### 🧠 For AI Engineers
-Deep dive into the orchestration of TILA (Terminal Interface Learning Agent) and the A2UI protocol.
-- → [[Features/AI/Flow|AI Orchestration Flow]]
-- → [[Features/AI/Backend|3-Tier Routing Logic]]
+## Important Rule
 
-### 🏛 For System Architects
-See the high-level vision and cross-domain connectivity.
-- → [[SYSTEM_MAP]]
-- → [[DECISION_FLOW]]
-- → [[00_Meta/SYSTEM_ARCHITECTURE|Core Architecture]]
+If an older report, backlog, or audit note conflicts with the canonical docs above, treat the older note as historical.
 
-### ⚙️ For DevOps & SRE (System Control)
-Operations, debugging, and change impact analysis.
-- → [[DEPENDENCY_MAP|System Dependency Map]]
-- → [[IMPACT|Change Impact Analysis]]
-- → **Debug Playbooks**: [[Features/Auth/DEBUG|Auth]], [[Features/AI/DEBUG|AI]], [[Features/Student/DEBUG|Student]], [[Features/Faculty/DEBUG|Faculty]], [[Features/Governance/DEBUG|Governance]], [[Features/Support/DEBUG|Support]]
+## Historical Material
 
----
+- Historical audits and snapshots: [[05_Reports/README|05_Reports/README]]
+- Older task lists and backlog notes: `vault/01_Core/*TASK*`, `vault/05_Reports/*`
 
-## 🏗 System Clusters
-The system is organized into 5 primary functional clusters:
-1. **[[Features/Student/Overview|Learning]]**: The core student journey.
-2. **[[Features/AI/Overview|Intelligence]]**: The AI-driven personalization engine.
-3. **[[Features/Faculty/Overview|Teaching]]**: Faculty monitoring and grading tools.
-4. **[[Features/Governance/Overview|Governance]]**: Institutional oversight and approvals.
-5. **[[Features/Support/Overview|Support]]**: Parental advocacy and goal alignment.
+## Runtime Summary
 
----
-**Root Hub** | [[SYSTEM_MAP]] | [[USE_CASES]] | [[DECISION_FLOW]]
+- Main frontend: `frontend/web`
+- Main backend: `backend/app`
+- Supporting ML: `ml`, `backend/ai_engine`, `backend/ml_services`
+- Supporting agents: `Analytics-Agent`, `pathway agent`
+- Database and migrations: `supabase`, `backend/app/database`, `migrations`
