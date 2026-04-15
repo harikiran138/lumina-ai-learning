@@ -7,6 +7,7 @@ from app.api.deps import get_current_teacher as get_current_user
 from app.personalization.schemas import InterventionUpdateRequest, InterventionStatus, InterventionPriority
 from app.services.personalization_service import PersonalizationService
 from app.services.onboarding_service import OnboardingService
+from app.database.scoped_db import get_scoped_db
 
 from app.dependencies import (
     get_content_store, 
@@ -643,3 +644,567 @@ async def get_teacher_assignments_list(
 
 
 # Live intervention and question override moved to assessment.py
+
+
+# --- AI Tutor Answer Queue Management ---
+
+from app.services.ai_tutor_service import AITutorService
+from app.services.realtime_service import RealtimeService
+from app.core.logging import structlog
+
+log = structlog.get_logger()
+
+
+class QueueFilterOptions(BaseModel):
+    status: Optional[Literal["PROVISIONAL", "PENDING", "APPROVED", "REJECTED"]] = None
+    student_id: Optional[str] = None
+    subject: Optional[str] = None
+    confidence_min: Optional[float] = None
+    sort_by: Literal["created_at", "confidence", "student_id"] = "created_at"
+    limit: int = 50
+    offset: int = 0
+
+
+@router.get("/ai-queue")
+async def get_ai_queue(
+    status: Optional[Literal["PROVISIONAL", "PENDING", "APPROVED", "REJECTED"]] = Query(None),
+    student_id: Optional[str] = Query(None),
+    confidence_min: Optional[float] = Query(None),
+    sort_by: Literal["created_at", "confidence", "student_id"] = Query("created_at"),
+    limit: int = Query(50),
+    offset: int = Query(0),
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_scoped_db)
+):
+    """
+    Get AI answer queue for teacher review.
+    
+    Only returns PROVISIONAL and PENDING answers that need teacher review.
+    Auto-approved answers are not shown here.
+    
+    Query Parameters:
+        - status: Filter by answer status (PROVISIONAL, PENDING, APPROVED, REJECTED)
+        - student_id: Filter by specific student
+        - confidence_min: Filter by minimum confidence score
+        - sort_by: Sort by created_at (default), confidence, or student_id
+        - limit: Max results (default 50)
+        - offset: Pagination offset (default 0)
+    
+    Returns:
+        {
+            "total": 156,
+            "showing": 25,
+            "items": [
+                {
+                    "queue_id": "q123",
+                    "student_id": "s456",
+                    "ai_answer": "The process by which...",
+                    "status": "PROVISIONAL",
+                    "confidence": 0.87,
+                    "safety_score": 0.98,
+                    "created_at": "2026-04-15T10:20:00Z",
+                    "rag_sources": [...]
+                }
+            ]
+        }
+    """
+    check_teacher_role(current_user)
+    
+    try:
+        # Base query with join to get decision status and confidence
+        query = db.client.from_("ai_answer_queue").select(
+            "id, student_id, question, ai_answer, safety_score, created_at, rag_sources, "
+            "ai_answer_decisions(status, confidence)"
+        )
+        
+        # Filter for PROVISIONAL or PENDING by default
+        if status:
+            query = query.eq("ai_answer_decisions.status", status)
+        else:
+            query = query.in_("ai_answer_decisions.status", ["PROVISIONAL", "PENDING"])
+        
+        # Apply student filter
+        if student_id:
+            query = query.eq("student_id", student_id)
+        
+        # Apply confidence filter
+        if confidence_min is not None:
+            query = query.gte("ai_answer_decisions.confidence", confidence_min)
+        
+        # Sorting
+        sort_field = "created_at" if sort_by == "created_at" else (
+            "ai_answer_decisions.confidence" if sort_by == "confidence" else "student_id"
+        )
+        sort_order = sort_by == "created_at"  # True for DESC, False for ASC
+        
+        # Get total count
+        count_response = query.execute()
+        total = len(count_response.data) if count_response.data else 0
+        
+        # Apply pagination
+        query = query.order(sort_field, desc=(sort_by == "created_at")).range(offset, offset + limit - 1)
+        
+        response = query.execute()
+        items = response.data or []
+        
+        log.info(
+            "teacher_ai_queue_fetched",
+            teacher_id=current_user["id"],
+            count=len(items),
+            filters={
+                "status": status,
+                "student_id": student_id,
+                "confidence_min": confidence_min
+            }
+        )
+        
+        return {
+            "total": total,
+            "showing": len(items),
+            "items": items
+        }
+        
+    except Exception as exc:
+        log.error(
+            "teacher_ai_queue_error",
+            teacher_id=current_user["id"],
+            error=str(exc)
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch queue")
+
+
+@router.post("/ai-queue/{queue_id}/approve")
+async def approve_ai_answer(
+    queue_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_scoped_db)
+):
+    """
+    Teacher approves a provisional or pending AI answer.
+    
+    Updates:
+    1. ai_answer_decisions.status → APPROVED
+    2. ai_answer_review record created
+    3. Event broadcast to student's WebSocket
+    4. Queue metrics updated
+    
+    Response:
+        {
+            "success": true,
+            "queue_id": "q123",
+            "status": "APPROVED",
+            "student_id": "s456",
+            "message": "Answer approved successfully"
+        }
+    """
+    check_teacher_role(current_user)
+    
+    try:
+        teacher_id = str(current_user["id"])
+        realtime = RealtimeService()
+        
+        # Fetch queue item
+        response = await db.client.from_("ai_answer_queue").select(
+            "id, student_id, ai_answer, question"
+        ).eq("id", queue_id).single().execute()
+        
+        queue_item = response.data
+        if not queue_item:
+            raise HTTPException(status_code=404, detail="Queue item not found")
+        
+        student_id = queue_item["student_id"]
+        
+        # Update decision status
+        await db.client.from_("ai_answer_decisions").update({
+            "status": "APPROVED",
+            "teacher_id": teacher_id,
+            "reviewed_at": datetime.utcnow().isoformat()
+        }).eq("queue_id", queue_id).execute()
+        
+        # Create review record
+        await db.client.from_("ai_answer_review").insert({
+            "queue_id": queue_id,
+            "teacher_id": teacher_id,
+            "action": "APPROVED",
+            "notes": None,
+            "created_at": datetime.utcnow().isoformat()
+        }).execute()
+        
+        # Emit event to student via RealtimeService
+        realtime = RealtimeService()
+        await realtime.emit_answer_approved(
+            question_id=queue_id,
+            student_id=student_id,
+            answer=queue_item["ai_answer"],
+            teacher_name=current_user.get("fullName", "Teacher"),
+            teacher_feedback=None,
+            source="teacher_approved"
+        )
+        
+        # Update metrics
+        await db.client.from_("queue_metrics").insert({
+            "date": datetime.utcnow().date().isoformat(),
+            "approved_count": 1,
+            "rejected_count": 0,
+            "auto_approved_count": 0
+        }).execute()
+        
+        log.info(
+            "ai_answer_approved",
+            queue_id=queue_id,
+            teacher_id=teacher_id,
+            student_id=student_id
+        )
+        
+        return {
+            "success": True,
+            "queue_id": queue_id,
+            "status": "APPROVED",
+            "student_id": student_id,
+            "message": "Answer approved successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as exc:
+        log.error(
+            "ai_answer_approval_failed",
+            queue_id=queue_id,
+            teacher_id=current_user["id"],
+            error=str(exc)
+        )
+        raise HTTPException(status_code=500, detail="Failed to approve answer")
+
+
+@router.post("/ai-queue/{queue_id}/reject")
+async def reject_ai_answer(
+    queue_id: str,
+    payload: Dict[str, str],
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_scoped_db)
+):
+    """
+    Teacher rejects an AI answer.
+    
+    Request body:
+        {
+            "reason": "Incomplete answer",
+            "notes": "Student should expand on photosynthesis process"
+        }
+    
+    Updates:
+    1. ai_answer_decisions.status → REJECTED
+    2. ai_answer_review record created
+    3. Event broadcast to student
+    4. Queue item remains for student re-submission
+    """
+    check_teacher_role(current_user)
+    
+    try:
+        teacher_id = str(current_user["id"])
+        reason = payload.get("reason", "Not specified")
+        notes = payload.get("notes", "")
+        
+        # Fetch queue item
+        response = await db.client.from_("ai_answer_queue").select(
+            "id, student_id, ai_answer"
+        ).eq("id", queue_id).single().execute()
+        
+        queue_item = response.data
+        if not queue_item:
+            raise HTTPException(status_code=404, detail="Queue item not found")
+        
+        student_id = queue_item["student_id"]
+        
+        # Update decision status
+        await db.client.from_("ai_answer_decisions").update({
+            "status": "REJECTED",
+            "teacher_id": teacher_id,
+            "reviewed_at": datetime.utcnow().isoformat(),
+            "rejection_reason": reason
+        }).eq("queue_id", queue_id).execute()
+        
+        # Create review record
+        await db.client.from_("ai_answer_review").insert({
+            "queue_id": queue_id,
+            "teacher_id": teacher_id,
+            "action": "REJECTED",
+            "notes": notes,
+            "created_at": datetime.utcnow().isoformat()
+        }).execute()
+        
+        # Emit event to student via RealtimeService
+        realtime = RealtimeService()
+        await realtime.emit_answer_rejected(
+            question_id=queue_id,
+            student_id=student_id,
+            teacher_name=current_user.get("fullName", "Teacher"),
+            rejection_reason=reason,
+            teacher_feedback=notes
+        )
+        
+        log.info(
+            "ai_answer_rejected",
+            queue_id=queue_id,
+            teacher_id=teacher_id,
+            student_id=student_id,
+            reason=reason
+        )
+        
+        return {
+            "success": True,
+            "queue_id": queue_id,
+            "status": "REJECTED",
+            "student_id": student_id,
+            "reason": reason,
+            "message": "Answer rejected successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as exc:
+        log.error(
+            "ai_answer_rejection_failed",
+            queue_id=queue_id,
+            teacher_id=current_user["id"],
+            error=str(exc)
+        )
+        raise HTTPException(status_code=500, detail="Failed to reject answer")
+
+
+# --- AI Queue Analytics ---
+
+from app.services.ai_queue_analytics import AIQueueAnalytics
+
+
+@router.get("/ai-queue/analytics/summary")
+async def get_queue_analytics_summary(
+    days: int = Query(7),
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_scoped_db)
+):
+    """
+    Get high-level AI queue analytics summary.
+    
+    Query Parameters:
+        - days: Number of days to analyze (default 7)
+    
+    Returns:
+        {
+            "period_days": 7,
+            "total_questions": 1250,
+            "auto_approved": 875,
+            "auto_approved_rate": 0.70,
+            "avg_confidence": 0.82,
+            "avg_safety_score": 0.96,
+            "avg_response_time_seconds": 12.5,
+            ...
+        }
+    """
+    check_teacher_role(current_user)
+    
+    try:
+        analytics = AIQueueAnalytics(db)
+        metrics = await analytics.get_queue_metrics(days=days)
+        
+        log.info(
+            "queue_analytics_summary_fetched",
+            teacher_id=current_user["id"],
+            days=days
+        )
+        
+        return metrics
+        
+    except Exception as exc:
+        log.error(
+            "queue_analytics_summary_error",
+            teacher_id=current_user["id"],
+            error=str(exc)
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch analytics")
+
+
+@router.get("/ai-queue/analytics/decisions")
+async def get_decisions_distribution(
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_scoped_db)
+):
+    """
+    Get decision distribution across all statuses.
+    
+    Returns:
+        {
+            "AUTO_APPROVED": 875,
+            "PROVISIONAL": 250,
+            "PENDING": 125,
+            "APPROVED": 200,
+            "REJECTED": 50
+        }
+    """
+    check_teacher_role(current_user)
+    
+    try:
+        analytics = AIQueueAnalytics(db)
+        distribution = await analytics.get_decision_distribution()
+        
+        return distribution
+        
+    except Exception as exc:
+        log.error(
+            "decisions_distribution_error",
+            teacher_id=current_user["id"],
+            error=str(exc)
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch distribution")
+
+
+@router.get("/ai-queue/analytics/confidence")
+async def get_confidence_distribution(
+    bins: int = Query(10),
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_scoped_db)
+):
+    """
+    Get confidence score distribution histogram.
+    
+    Query Parameters:
+        - bins: Number of histogram bins (default 10)
+    
+    Returns:
+        {
+            "bins": [
+                {"range": "0.0-0.1", "count": 5},
+                ...
+            ],
+            "mean": 0.82,
+            "median": 0.85,
+            "std_dev": 0.12
+        }
+    """
+    check_teacher_role(current_user)
+    
+    try:
+        analytics = AIQueueAnalytics(db)
+        distribution = await analytics.get_confidence_distribution(bins=bins)
+        
+        return distribution
+        
+    except Exception as exc:
+        log.error(
+            "confidence_distribution_error",
+            teacher_id=current_user["id"],
+            error=str(exc)
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch distribution")
+
+
+@router.get("/ai-queue/analytics/safety")
+async def get_safety_distribution(
+    bins: int = Query(10),
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_scoped_db)
+):
+    """
+    Get safety score distribution histogram.
+    
+    Query Parameters:
+        - bins: Number of histogram bins (default 10)
+    
+    Returns:
+        {
+            "bins": [...],
+            "mean": 0.96,
+            "median": 0.98,
+            "std_dev": 0.04
+        }
+    """
+    check_teacher_role(current_user)
+    
+    try:
+        analytics = AIQueueAnalytics(db)
+        distribution = await analytics.get_safety_score_distribution(bins=bins)
+        
+        return distribution
+        
+    except Exception as exc:
+        log.error(
+            "safety_distribution_error",
+            teacher_id=current_user["id"],
+            error=str(exc)
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch distribution")
+
+
+@router.get("/ai-queue/analytics/sla")
+async def get_teacher_sla_metrics(
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_scoped_db)
+):
+    """
+    Get teacher review SLA metrics.
+    
+    Returns:
+        {
+            "avg_review_latency_hours": 2.3,
+            "median_review_latency_hours": 1.8,
+            "sla_met_percent": 65.5,
+            "pending_count": 42,
+            "pending_oldest_hours": 4.2
+        }
+    """
+    check_teacher_role(current_user)
+    
+    try:
+        analytics = AIQueueAnalytics(db)
+        sla_metrics = await analytics.get_teacher_review_slas()
+        
+        log.info(
+            "sla_metrics_fetched",
+            teacher_id=current_user["id"]
+        )
+        
+        return sla_metrics
+        
+    except Exception as exc:
+        log.error(
+            "sla_metrics_error",
+            teacher_id=current_user["id"],
+            error=str(exc)
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch SLA metrics")
+
+
+@router.get("/ai-queue/analytics/throughput")
+async def get_student_throughput(
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_scoped_db)
+):
+    """
+    Get student engagement and throughput metrics.
+    
+    Returns:
+        {
+            "unique_students": 234,
+            "total_questions_asked": 1250,
+            "avg_questions_per_student": 5.3,
+            "top_students": [
+                {"student_id": "s1", "questions": 45},
+                ...
+            ]
+        }
+    """
+    check_teacher_role(current_user)
+    
+    try:
+        analytics = AIQueueAnalytics(db)
+        throughput = await analytics.get_student_throughput()
+        
+        return throughput
+        
+    except Exception as exc:
+        log.error(
+            "throughput_metrics_error",
+            teacher_id=current_user["id"],
+            error=str(exc)
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch throughput metrics")

@@ -19,8 +19,10 @@ processes when the service is horizontally scaled.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Set
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
@@ -28,6 +30,7 @@ from jose import jwt, JWTError
 
 from app.core.config import settings
 from app.store.ai_tutor_store import AITutorStore
+from app.services.realtime_service import RealtimeService
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -42,6 +45,7 @@ class _ConnectionManager:
 
     def __init__(self) -> None:
         self._channels: Dict[str, Set[WebSocket]] = {}
+        self.realtime_service: Optional[RealtimeService] = None
 
     async def connect(self, channel: str, ws: WebSocket) -> None:
         await ws.accept()
@@ -59,6 +63,11 @@ class _ConnectionManager:
                 dead.append(ws)
         for ws in dead:
             self.disconnect(channel, ws)
+    
+    async def broadcast_to_user(self, user_id: str, payload: dict) -> None:
+        """Broadcast event to specific user's ai-tutor-updates channel."""
+        channel = f"ai-tutor-updates/{user_id}"
+        await self.broadcast(channel, payload)
 
 
 manager = _ConnectionManager()
@@ -245,6 +254,82 @@ async def ai_tutor_ws(
 
 
 # ---------------------------------------------------------------------------
+# AI Tutor Status Updates channel  
+# INTEGRATED: Receives real-time events from RealtimeService
+# ---------------------------------------------------------------------------
+
+@router.websocket("/ai-tutor-updates/{user_id}")
+async def ai_tutor_updates_ws(
+    ws: WebSocket,
+    user_id: str,
+    access_token: Optional[str] = Query(default=None),
+):
+    """
+    WebSocket endpoint for AI tutor status updates.
+    
+    Students connect here to receive real-time notifications about:
+    - Answer ready (auto-approved or provisional)
+    - Answer approved by teacher
+    - Answer rejected by teacher
+    - Queue position updates
+    
+    Event format (server → client):
+        {
+            "event": "answer.auto_approved",
+            "timestamp": "2026-04-15T10:30:45Z",
+            "data": {
+                "question_id": "xyz",
+                "answer": "...",
+                "confidence": 0.87,
+                "source": "ai_auto"
+            }
+        }
+    """
+    payload = _auth_ws(ws, access_token)
+    if not payload:
+        await ws.accept()
+        await ws.send_json({"type": "error", "detail": "Authentication required"})
+        await ws.close(code=4001)
+        return
+
+    token_user_id = str(payload.get("id") or payload.get("sub", ""))
+    if token_user_id != user_id:
+        await ws.accept()
+        await ws.send_json({"type": "error", "detail": "Token / user mismatch"})
+        await ws.close(code=4003)
+        return
+
+    channel = f"ai-tutor-updates/{user_id}"
+    await manager.connect(channel, ws)
+    log.info("ws_ai_tutor_updates_connected", user_id=user_id)
+
+    try:
+        # Keep connection alive and listen for events
+        # Events are pushed by RealtimeService via manager.broadcast_to_user()
+        while True:
+            # Receive any client keepalive messages
+            try:
+                data = await asyncio.wait_for(ws.receive_text(), timeout=300)  # 5 min keepalive
+                try:
+                    msg = json.loads(data)
+                    if msg.get("type") == "ping":
+                        await ws.send_json({"type": "pong"})
+                except json.JSONDecodeError:
+                    pass
+            except asyncio.TimeoutError:
+                # No messages for 5 minutes, send keepalive
+                try:
+                    await ws.send_json({"type": "keepalive", "timestamp": datetime.now(timezone.utc).isoformat()})
+                except Exception:
+                    manager.disconnect(channel, ws)
+                    break
+
+    except WebSocketDisconnect:
+        manager.disconnect(channel, ws)
+        log.info("ws_ai_tutor_updates_disconnected", user_id=user_id)
+
+
+# ---------------------------------------------------------------------------
 # Adaptive learning events channel
 # ---------------------------------------------------------------------------
 
@@ -310,6 +395,28 @@ async def adaptive_events_ws(
 async def broadcast_adaptive_event(class_id: str, event: dict) -> None:
     """Push an event to all subscribers of the adaptive:{class_id} channel."""
     await manager.broadcast(f"adaptive:{class_id}", event)
+
+
+# ---------------------------------------------------------------------------
+# AI Tutor Updates Integration - Called by RealtimeService
+# ---------------------------------------------------------------------------
+
+async def broadcast_ai_tutor_event(user_id: str, event: dict) -> None:
+    """
+    Broadcast AI tutor event to specific student's WebSocket.
+    
+    Called by RealtimeService when:
+    - Answer ready (auto-approved or provisional)
+    - Answer approved by teacher
+    - Answer rejected  
+    - Queue position updated
+    
+    Args:
+        user_id: Student receiving the update
+        event: Event payload with "event", "timestamp", "data" keys
+    """
+    await manager.broadcast_to_user(user_id, event)
+    log.info("ai_tutor_event_broadcast", user_id=user_id, event_type=event.get("event"))
 
 
 # ---------------------------------------------------------------------------

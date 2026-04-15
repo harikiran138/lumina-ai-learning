@@ -4,6 +4,10 @@ Teacher-verified AI Tutor interaction.
 Core rule:
 Students submit questions, AI drafts answers, and faculty approve or edit
 before any answer is released to the student.
+
+INTEGRATION: This router is now clean - it delegates all business logic to services:
+- AIQueueService: Teacher queue operations
+- RealtimeService: Event broadcasting to students
 """
 
 from datetime import datetime, timezone
@@ -22,10 +26,15 @@ from app.core.limiter import limiter
 from app.core.logging import structlog
 from app.database.supabase_manager import supabase_db
 from app.services.ai_tutor_service import AITutorService, TutorGenerationRequest
+from app.services.ai_queue_service import AIQueueService
+from app.services.realtime_service import RealtimeService
+from app.routers.realtime import broadcast_ai_tutor_event
 
 log = structlog.get_logger()
 router = APIRouter()
 tutor_service = AITutorService()
+queue_service = AIQueueService()
+realtime_service = RealtimeService()
 
 _EXISTING_QUEUE_COLUMNS = {
     "student_id",
@@ -747,56 +756,20 @@ async def question_status(
 
 @router.get("/teacher/ai-queue")
 async def teacher_queue(current_user: Dict[str, Any] = Depends(get_current_teacher)):
-    client = _client()
-    role = current_user.get("role")
-    rows = client.table("ai_answer_queue").select("*").order("created_at", desc=True).execute().data or []
-    if role == "teacher":
-        rows = [
-            row for row in rows
-            if str(row.get("teacher_id")) == str(current_user.get("id"))
-            and not bool(row.get("released_to_student", False))
-            and row.get("status") in {"pending", "ai_answered", "escalated_to_faculty"}
-        ]
-    elif role == "hod":
-        rows = [row for row in rows if row.get("status") == "escalated_to_hod"]
-    else:
-        rows = [row for row in rows if not bool(row.get("released_to_student", False))]
-    student_ids = [row.get("student_id") for row in rows if row.get("student_id")]
-    students = (
-        client.table("users").select("id, full_name, email").in_("id", student_ids).execute().data
-        if student_ids
-        else []
-    )
-    student_lookup = {str(item.get("id")): item for item in students or []}
-
-    items: List[Dict[str, Any]] = []
-    for row in rows:
-        student = student_lookup.get(str(row.get("student_id")), {})
-        items.append(
-            {
-                "id": row.get("id"),
-                "question_id": row.get("id"),
-                "question_text": row.get("student_question", ""),
-                "student_name": student.get("full_name") or student.get("email") or "Student",
-                "student_identifier": student.get("email") or "",
-                "course_name": f"Course {row.get('course_id', '')}",
-                "lecture_context": "",
-                "ai_draft": row.get("ai_generated_answer", ""),
-                "ai_confidence": None,
-                "ai_sources": [],
-                "status": row.get("status", "pending"),
-                "created_at": row.get("created_at"),
-                "released_to_student": bool(row.get("released_to_student", False)),
-                "request_mode": row.get("request_mode"),
-            }
+    """
+    Get queue of pending AI answers for teacher review.
+    
+    INTEGRATED: Uses AIQueueService.get_queue()
+    """
+    try:
+        result = await queue_service.get_queue(
+            teacher_id=str(current_user["id"]),
+            role=current_user.get("role", "teacher")
         )
-
-    total_pending = sum(
-        1
-        for item in items
-        if item["status"] in {"pending", "ai_answered", "escalated_to_faculty", "escalated_to_hod"}
-    )
-    return {"items": items, "total_pending": total_pending}
+        return result
+    except Exception as exc:
+        log.error("teacher_queue_failed", error=str(exc))
+        raise HTTPException(status_code=500, detail="Failed to retrieve queue")
 
 
 @router.post("/teacher/ai-queue/{queue_id}/approve")
@@ -804,38 +777,66 @@ async def approve_queue_item(
     queue_id: str,
     current_user: Dict[str, Any] = Depends(get_current_teacher),
 ):
-    client = _client()
-    existing = client.table("ai_answer_queue").select("*").eq("id", queue_id).execute()
-    if not existing.data:
-        raise HTTPException(status_code=404, detail="Queue item not found")
-
-    item = existing.data[0]
-    approved_answer = item.get("ai_generated_answer") or item.get("teacher_edited_answer")
-    if not approved_answer:
-        raise HTTPException(status_code=400, detail="No AI draft available to approve")
-
-    _safe_update_queue_item(
-        client,
-        queue_id,
-        {
-            "status": "approved",
-            "teacher_edited_answer": approved_answer,
-            "verified_at": _now_iso(),
-            "released_to_student": True,
-            "reviewed_by": current_user.get("id"),
-            "teacher_note": None,
-        },
-    )
-
-    _bank_verified_answer(client, item, approved_answer, str(current_user.get("id")))
-
-    audit_logger.log(
-        action="ai_answer_approved",
-        user_id=str(current_user["id"]),
-        resource_id=str(queue_id),
-        metadata={"course_id": item.get("course_id"), "approval_type": "direct"},
-    )
-    return {"success": True, "status": "approved"}
+    """
+    Teacher approves AI-generated answer.
+    
+    INTEGRATED:
+    1. Uses AIQueueService.approve_answer()
+    2. Emits real-time event via RealtimeService.emit_answer_approved()
+    3. Broadcasts to student WebSocket via broadcast_ai_tutor_event()
+    4. Student receives notification in real-time
+    """
+    try:
+        # Fetch item to get student ID
+        client = supabase_db.get_client()
+        existing = client.table("ai_answer_queue").select("*").eq("id", queue_id).execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Queue item not found")
+        
+        item = existing.data[0]
+        student_id = item.get("student_id")
+        
+        # Use service to approve
+        result = await queue_service.approve_answer(
+            question_id=queue_id,
+            teacher_id=str(current_user["id"]),
+            feedback=None
+        )
+        
+        # Create event payload
+        event_payload = {
+            "event": "answer.approved_by_teacher",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "data": {
+                "question_id": queue_id,
+                "answer": item.get("ai_generated_answer", ""),
+                "teacher_name": current_user.get("full_name", "Teacher"),
+                "teacher_feedback": None,
+                "source": "teacher_approved"
+            }
+        }
+        
+        # Emit to event store (DB)
+        await realtime_service.emit_answer_approved(
+            question_id=queue_id,
+            student_id=student_id,
+            answer=item.get("ai_generated_answer", ""),
+            teacher_name=current_user.get("full_name", "Teacher"),
+            teacher_feedback=None,
+            source="teacher_approved"
+        )
+        
+        # Broadcast to student's WebSocket
+        await broadcast_ai_tutor_event(student_id, event_payload)
+        
+        log.info("answer_approved_with_event", queue_id=queue_id, student_id=student_id)
+        return {"success": True, "status": "approved"}
+        
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        log.error("answer_approval_failed", error=str(exc))
+        raise HTTPException(status_code=500, detail="Failed to approve answer")
 
 
 @router.post("/teacher/ai-queue/{queue_id}/edit-approve")
@@ -844,34 +845,68 @@ async def edit_approve_queue_item(
     body: EditApproveRequest,
     current_user: Dict[str, Any] = Depends(get_current_teacher),
 ):
-    client = _client()
-    existing = client.table("ai_answer_queue").select("*").eq("id", queue_id).execute()
-    if not existing.data:
-        raise HTTPException(status_code=404, detail="Queue item not found")
-
-    item = existing.data[0]
-    _safe_update_queue_item(
-        client,
-        queue_id,
-        {
-            "status": "edited_approved",
-            "teacher_edited_answer": body.final_answer,
-            "verified_at": _now_iso(),
-            "released_to_student": True,
-            "reviewed_by": current_user.get("id"),
-            "teacher_note": body.teacher_note,
-        },
-    )
-
-    _bank_verified_answer(client, item, body.final_answer, str(current_user.get("id")))
-
-    audit_logger.log(
-        action="ai_answer_approved",
-        user_id=str(current_user["id"]),
-        resource_id=str(queue_id),
-        metadata={"course_id": item.get("course_id"), "approval_type": "edited"},
-    )
-    return {"success": True, "status": "edited_approved"}
+    """
+    Teacher edits and approves AI-generated answer.
+    
+    INTEGRATED:
+    1. Uses AIQueueService.edit_approve_answer()
+    2. Emits real-time event via RealtimeService.emit_answer_approved()
+    3. Broadcasts to student WebSocket via broadcast_ai_tutor_event()
+    4. Student receives approved answer in real-time with teacher edits
+    """
+    try:
+        # Fetch item to get student ID
+        client = supabase_db.get_client()
+        existing = client.table("ai_answer_queue").select("*").eq("id", queue_id).execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Queue item not found")
+        
+        item = existing.data[0]
+        student_id = item.get("student_id")
+        
+        # Use service to edit and approve
+        result = await queue_service.edit_approve_answer(
+            question_id=queue_id,
+            teacher_id=str(current_user["id"]),
+            final_answer=body.final_answer,
+            teacher_note=body.teacher_note
+        )
+        
+        # Create event payload
+        event_payload = {
+            "event": "answer.approved_by_teacher",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "data": {
+                "question_id": queue_id,
+                "answer": body.final_answer,
+                "teacher_name": current_user.get("full_name", "Teacher"),
+                "teacher_feedback": body.teacher_note,
+                "source": "teacher_approved",
+                "edited": True
+            }
+        }
+        
+        # Emit to event store (DB)
+        await realtime_service.emit_answer_approved(
+            question_id=queue_id,
+            student_id=student_id,
+            answer=body.final_answer,
+            teacher_name=current_user.get("full_name", "Teacher"),
+            teacher_feedback=body.teacher_note,
+            source="teacher_approved"
+        )
+        
+        # Broadcast to student's WebSocket
+        await broadcast_ai_tutor_event(student_id, event_payload)
+        
+        log.info("answer_edited_approved_with_event", queue_id=queue_id, student_id=student_id)
+        return {"success": True, "status": "edited_approved"}
+        
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        log.error("answer_edit_approve_failed", error=str(exc))
+        raise HTTPException(status_code=500, detail="Failed to edit and approve answer")
 
 
 @router.post("/teacher/ai-queue/{queue_id}/reject")
@@ -880,30 +915,65 @@ async def reject_queue_item(
     body: RejectRequest,
     current_user: Dict[str, Any] = Depends(get_current_teacher),
 ):
-    client = _client()
-    existing = client.table("ai_answer_queue").select("id").eq("id", queue_id).execute()
-    if not existing.data:
-        raise HTTPException(status_code=404, detail="Queue item not found")
-
-    _safe_update_queue_item(
-        client,
-        queue_id,
-        {
-            "status": "rejected",
-            "verified_at": _now_iso(),
-            "released_to_student": False,
-            "reviewed_by": current_user.get("id"),
-            "teacher_note": body.teacher_note,
-        },
-    )
-
-    audit_logger.log(
-        action="ai_answer_rejected",
-        user_id=str(current_user["id"]),
-        resource_id=str(queue_id),
-        metadata={"reason": body.teacher_note},
-    )
-    return {"success": True, "status": "rejected"}
+    """
+    Teacher rejects AI-generated answer.
+    
+    INTEGRATED:
+    1. Uses AIQueueService.reject_answer()
+    2. Emits real-time event via RealtimeService.emit_answer_rejected()
+    3. Broadcasts to student WebSocket via broadcast_ai_tutor_event()
+    4. Student receives rejection notification in real-time
+    """
+    try:
+        # Fetch item to get student ID
+        client = supabase_db.get_client()
+        existing = client.table("ai_answer_queue").select("*").eq("id", queue_id).execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Queue item not found")
+        
+        item = existing.data[0]
+        student_id = item.get("student_id")
+        
+        # Use service to reject
+        result = await queue_service.reject_answer(
+            question_id=queue_id,
+            teacher_id=str(current_user["id"]),
+            reason=body.teacher_note,
+            suggestion=None
+        )
+        
+        # Create event payload
+        event_payload = {
+            "event": "answer.rejected",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "data": {
+                "question_id": queue_id,
+                "reason": body.teacher_note,
+                "teacher_name": current_user.get("full_name", "Teacher"),
+                "suggestion": None
+            }
+        }
+        
+        # Emit to event store (DB)
+        await realtime_service.emit_answer_rejected(
+            question_id=queue_id,
+            student_id=student_id,
+            reason=body.teacher_note,
+            teacher_name=current_user.get("full_name", "Teacher"),
+            suggestion=None
+        )
+        
+        # Broadcast to student's WebSocket
+        await broadcast_ai_tutor_event(student_id, event_payload)
+        
+        log.info("answer_rejected_with_event", queue_id=queue_id, student_id=student_id)
+        return {"success": True, "status": "rejected"}
+        
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        log.error("answer_rejection_failed", error=str(exc))
+        raise HTTPException(status_code=500, detail="Failed to reject answer")
 
 
 @router.post("/faculty/ai-queue/{queue_id}/escalate")
