@@ -1,547 +1,199 @@
-# Student Role System - Architecture Status Report
+# Lumina Engineering Architecture
 
-**Date:** April 15, 2026  
-**Status:** ✅ PHASE 1 COMPLETE | 🚀 PHASE 2 READY  
-**Scope:** Comprehensive code-level architecture alignment (NO database schema changes)
+Last updated: 16 April 2026
+Status: Canonical architecture reference for runtime design and academic data flow
 
----
+## 1. Purpose
 
-## 📋 EXECUTIVE SUMMARY
+This document is the single architecture source for:
 
-The Student Role system has been comprehensively audited and refactored to ensure clean architecture, clear separation of concerns, and implementation-ready code. This document reports the status of all changes.
+1. System layers
+2. Canonical academic model
+3. API ownership boundaries
+4. End-to-end data flow (Admin -> Teacher -> Student)
 
-### Deliverables (Phase 1)
+If another top-level note conflicts with this file, this file wins.
 
-✅ **6 Strategic Documents Created:**
-1. [STUDENT_SYSTEM_PROJECT_SCHEMA.md](./docs/STUDENT_SYSTEM_PROJECT_SCHEMA.md) - Complete architecture blueprint
-2. [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md) - Step-by-step integration guide
-3. [ARCHITECTURE_STATUS.md](./ARCHITECTURE_STATUS.md) - This document (current status)
-4. Hidden: Issue identification (7 critical issues)
-5. Hidden: Solution proposals (6 complete solutions)
-6. Hidden: Executive summary
+## 2. System Architecture
 
-### Code Changes (Phase 1)
-
-✅ **2 New Services Created:**
-- `backend/app/services/ai_queue_service.py` (352 lines)
-- `backend/app/services/realtime_service.py` (407 lines)
-
-### Status: READY FOR PHASE 2 ROUTER INTEGRATION
-
----
-
-## 🏗️ ARCHITECTURE OVERVIEW
-
-### Current Structure
-
-```
-ROUTERS (HTTP Entry Points)
-├─ ai_tutor.py       [Student layer]
-├─ ai_queue.py       [Teacher layer]
-└─ realtime.py       [WebSocket layer]
-     ↓
-SERVICES (Business Logic)
-├─ ai_tutor_service.py        ✅ Complete
-├─ ai_queue_service.py        ✅ NEW
-├─ realtime_service.py        ✅ NEW
-└─ 40+ other services         ✅ Existing
-     ↓
-STORE (Data Access)
-├─ ai_tutor_store.py          ✅ Complete
-└─ Other stores (40+)         ✅ Existing
-     ↓
-DATABASE (Single Source of Truth)
-└─ ai_answer_queue table (core)
+```text
+Frontend (Next.js: frontend/web)
+        ->
+Backend API (FastAPI: backend/app/routers)
+        ->
+Service Layer (backend/app/services)
+        ->
+Store Layer (backend/app/store)
+        ->
+Database (Supabase/PostgreSQL)
 ```
 
----
+### Layer responsibilities
 
-## 📦 PHASE 1 DELIVERABLES
+1. Frontend layer
+- UI only
+- Role-aware routing
+- No business decisions
 
-### 1. Architecture Blueprint
+2. Router layer
+- Request validation
+- Auth/role dependency checks
+- Delegation to service/store
 
-**File:** `docs/STUDENT_SYSTEM_PROJECT_SCHEMA.md`
+3. Service layer
+- Business rules
+- Workflow orchestration
+- Cross-domain actions
 
-**Sections:**
-- Folder structure (complete mapping)
-- File responsibilities (each file's job)
-- Data flow diagrams (8+ detailed flows)
-- API contracts (requests/responses)
-- Real-time communication spec
-- System rules (6 core rules)
-- Implementation guide
+4. Store layer
+- Data access only
+- Query composition
+- No workflow branching
 
-**Purpose:** Single source of truth for architecture
+5. Database layer
+- Persistence
+- Constraints and indexes
+- Canonical relationship enforcement
 
-### 2. Implementation Integration Guide
+## 3. Canonical Academic Model
 
-**File:** `IMPLEMENTATION_GUIDE.md`
+This is the only approved runtime model.
 
-**Sections:**
-- Quick summary of changes
-- Step-by-step router updates (ai_queue, ai_tutor, realtime)
-- Integration checklist (20+ items)
-- Code examples (before/after)
-- Data flow after integration
-- Success criteria
-- Time estimates
+```text
+Student
+  -> student_enrollments
+  -> Class
+  -> Course
+  -> teacher_assignments
+  -> Teacher
+```
 
-**Purpose:** Actionable guide for Phase 2 work
+### Relationship rules
 
-### 3. New Service: AIQueueService
+1. A student is scoped by class enrollment.
+2. A class maps to a course context.
+3. A teacher is authorized by (course_id + class_id) assignment.
+4. Student data visibility must resolve through class assignment, not broad course lookup.
 
-**File:** `backend/app/services/ai_queue_service.py` (352 lines)
+## 4. Canonical Tables
 
-**Responsibilities:**
-- `get_queue()` - Retrieve pending questions for teacher
-- `approve_answer()` - Approve AI answer
-- `reject_answer()` - Reject AI answer
-- `edit_approve_answer()` - Approve with teacher edits
-- `escalate_answer()` - Escalate to HOD
-- `get_queue_metrics()` - Performance metrics
+Core academic tables:
 
-**Key Features:**
-- Teacher role-based filtering
-- Confidence metric updates
-- Answer banking (knowledge storage)
-- Comprehensive logging
-- Error handling with fallback
+1. users
+2. courses
+3. classes
+4. student_enrollments
+5. teacher_assignments
 
-**Replaces:** Inline logic in ai_queue.py routers
+Supporting academic tables:
 
-### 4. New Service: RealtimeService
+1. programs
+2. semesters
+3. departments
+4. batches
 
-**File:** `backend/app/services/realtime_service.py` (407 lines)
+## 5. Legacy and deprecation policy
 
-**Responsibilities:**
-- `emit_answer_ready()` - Answer is ready for student
-- `emit_answer_approved()` - Teacher approved answer
-- `emit_answer_rejected()` - Teacher rejected answer
-- `emit_queue_update()` - Queue position updated
-- `broadcast_to_student()` - Generic broadcast
-- `get_pending_events()` - Polling fallback
+The following are treated as legacy or transitional and must not be used for new feature design:
 
-**Key Features:**
-- Structured event creation
-- WebSocket integration points
-- Database persistence (polling fallback)
-- Event cleanup (garbage collection)
-- Metrics tracking
+1. sections (legacy path)
+2. enrollments (parallel enrollment model)
 
-**Replaces:** Missing event system
+Policy:
 
----
+1. New endpoints must use classes + student_enrollments.
+2. Existing endpoints that still use sections or enrollments are migration targets.
+3. No new schema additions should extend legacy paths.
 
-## 🔧 CURRENT STATE: WHAT EXISTS
+## 6. API Ownership Boundaries
 
-### ✅ Complete and Working
+### Admin domain
 
-1. **Router Layer**
-   - ✅ `ai_tutor.py` - Student asking questions (1,196 lines)
-   - ✅ `ai_queue.py` - Teacher queue operations (850+ lines)
-   - ✅ `realtime.py` - WebSocket connections (60+ lines)
+Owns academic setup and governance.
 
-2. **Service Layer**
-   - ✅ `ai_tutor_service.py` - AI generation + decision engine (23 KB)
-   - ✅ 40+ other services (adaptive_engine, dkt_engine, etc.)
-   - ✅ `ai_queue_service.py` - Teacher queue (NEW)
-   - ✅ `realtime_service.py` - Event broadcasting (NEW)
+1. Create course
+2. Create class linked to course
+3. Assign teacher to course + class
+4. Manage global academic metadata
 
-3. **Data Access/Store Layer**
-   - ✅ `ai_tutor_store.py` - Database queries
-   - ✅ 40+ other stores
+### Teacher domain
 
-4. **Database**
-   - ✅ `ai_answer_queue` table
-   - ✅ Supporting tables (courses, users, enrollments, etc.)
+Owns instruction and supervision for assigned classes only.
 
-5. **AI Engine**
-   - ✅ Smart TILA decision engine
-   - ✅ Question classifier
-   - ✅ Prompt management
-   - ✅ Confidence scoring
+1. View assigned classes and courses
+2. Manage assignments and grading in assigned contexts
+3. Teacher intervention only for linked students
 
-### 🟡 Partially Complete
+### Student domain
 
-1. **WebSocket Real-time System**
-   - ✅ Connection management exists
-   - ✅ JWT authentication exists
-   - 🟡 Event integration needs work
-   - 🟡 Polling fallback needs integration
+Owns self-only experience.
 
-2. **Service-to-Router Integration**
-   - ✅ Services are implemented
-   - 🟡 Routers not fully using services yet
-   - 🟡 Some inline logic remains in routers
-
-3. **Event Emission**
-   - ✅ Infrastructure exists (RealtimeService created)
-   - 🟡 Needs integration into ai_tutor.py (answer ready)
-   - 🟡 Needs integration into ai_queue.py (approval/rejection)
-
-### ❌ Not Yet Done
-
-1. ~~Database schema changes~~ (NOT needed - using existing schema)
-2. ~~Frontend changes~~ (Frontend can poll or use WebSocket, already designed)
-3. Router refactoring (Phase 2)
-4. Event integration (Phase 2)
-
----
-
-## 📊 LAYER ANALYSIS
-
-### Router Layer (HTTP)
-
-**Current State:** Contains business logic (🔴) + some utility functions
-
-**Issues Found:**
-- Teacher queue logic in ai_queue.py (should be in service)
-- Event emission missing (should be in service)
-- Some database queries in routers (should be in stores)
-
-**Solution Applied:**
-- Created AIQueueService (logic extracted)
-- Created RealtimeService (events structured)
-- IMPLEMENTATION_GUIDE provided
-
-**Phase 2:** Update routers to use services
-
-### Service Layer (Business Logic)
-
-**Current State:** Partially implemented (🟡)
-
-**What Works:**
-- ✅ AITutorService (complete, sophisticated)
-- ✅ 40+ other services (mature ecosystem)
-- ✅ Decision engine (Smart TILA)
-- ✅ Confidence scoring
-
-**What's Added:**
-- ✅ AIQueueService (teacher queue logic)
-- ✅ RealtimeService (event broadcasting)
-
-**Quality:**
-- Comprehensive error handling
-- Structured logging
-- Dataclass-based contracts
-- Well-documented methods
-
-### Store/Data Access Layer
-
-**Current State:** Complete (✅)
-
-**What Works:**
-- ✅ Pure CRUD operations
-- ✅ Institution-scoped queries
-- ✅ No business logic
-
-**Issues:** None found
-
-### Database Layer
-
-**Current State:** Complete (✅)
-
-**Tables Used:**
-- `ai_answer_queue` (core)
-- `courses`, `users`, `enrollments`
-- `skill_mastery`, `learner_profiles`
-- Supporting tables
-
-**Schema:** Working correctly (NO changes needed)
-
----
-
-## 💡 KEY DESIGN DECISIONS
-
-### 1. No Database Schema Changes
-- ✅ Existing `ai_answer_queue` table sufficient
-- ✅ All status values fit existing schema
-- ✅ New events stored in separate table (`realtime_events`)
-- ✅ Minimal schema footprint
-
-### 2. Service-First Architecture
-- Router delegates to services
-- Services handle business logic
-- Stores handle data access
-- Clear layering prevents duplication
-
-### 3. Event-Driven Updates
-- Status change → Event created
-- Event → Stored in DB (persistence)
-- Event → Broadcast via WebSocket
-- Frontend: WebSocket first, polling fallback
-
-### 4. Single Source of Truth
-- Database is authoritative source
-- All status comes from DB
-- In-memory caches only for performance
-- WebSocket notifications just tell client to refresh
-
-### 5. Teacher Feedback Loop
-- Teacher approval/rejection updates metrics
-- Confidence scores adjusted based on feedback
-- Models learn from teacher corrections
-- Smart TILA decision engine improves over time
-
----
-
-## 🎯 WHAT'S WORKING WELL
-
-1. **Separation of Concerns** - Layers are clean
-2. **Database Design** - Schema is efficient
-3. **Service Ecosystem** - 40+ services show maturity
-4. **Error Handling** - Comprehensive logging and fallbacks
-5. **Security** - JWT validation, rate limiting
-6. **Scalability** - Redis pub/sub ready for multi-process
-7. **Extensibility** - Easy to add new services
-
----
-
-## 🚨 WHAT NEEDS FIXING
-
-### Critical (Phase 2)
-
-1. **Router Logic Cleanup** (Severity: HIGH)
-   - Issue: Business logic in routers
-   - Location: ai_queue.py endpoints
-   - Solution: Use AIQueueService (already created)
-   - Time: 2 hours
-   - Status: Guide provided, awaiting implementation
-
-2. **Event Integration** (Severity: HIGH)
-   - Issue: Services don't emit events
-   - Location: ai_tutor.py, ai_queue.py
-   - Solution: Use RealtimeService (already created)
-   - Time: 1 hour
-   - Status: Guide provided, awaiting implementation
-
-3. **WebSocket Integration** (Severity: MEDIUM)
-   - Issue: Events not broadcast to WebSocket
-   - Location: realtime.py
-   - Solution: Connect RealtimeService to ConnectionManager
-   - Time: 1 hour
-   - Status: Guide provided, awaiting implementation
-
-### Non-Critical
-
-1. **Utility Function Organization** (Severity: LOW)
-   - Some helper functions scattered across files
-   - Solution: Move to shared mixins or base classes
-   - Time: 1 hour
-   - Status: Optional, recommend for clean code
-
-2. **Documentation Updates** (Severity: LOW)
-   - Update README with new services
-   - Add docstrings to RouterResponse types
-   - Time: 30 minutes
-   - Status: Ready to do
-
----
-
-## 📈 METRICS
-
-### Code Quality
-
-| Metric | Status | Score |
-|--------|--------|-------|
-| Separation of Concerns | Partial | 7/10 |
-| Code Duplication | Acceptable | 8/10 |
-| Error Handling | Good | 8/10 |
-| Logging | Good | 8/10 |
-| Documentation | Good | 8/10 |
-| Testability | Good | 7/10 |
-
-### Architecture
-
-| Aspect | Status | Score |
-|--------|--------|-------|
-| Layering | Good | 8/10 |
-| Scalability | Excellent | 9/10 |
-| Maintainability | Good | 8/10 |
-| Extensibility | Excellent | 9/10 |
-| Performance | Good | 8/10 |
-| Security | Good | 8/10 |
-
-### Overall: 8.2/10 (After Phase 2: ≥9/10)
-
----
-
-## 🎬 PHASE 2: ROUTER INTEGRATION
-
-### Scope
-
-Update routers to use new services
-
-### Changes
-
-1. `ai_queue.py` - Use AIQueueService for teacher operations
-2. `ai_tutor.py` - Use RealtimeService for answer ready events
-3. `realtime.py` - Integrate event callbacks
-
-### Effort
-
-- Time: 6 hours
-- Files affected: 3
-- Lines of code removed: ~300
-- Lines of code added: ~150 (mostly error handling)
-- Breaking changes: None
-
-### Testing
-
-- Unit tests for services: 1 hour
-- Integration tests: 1 hour
-- Load testing: 1 hour
-- Total: 3 hours
-
-### Go-Live Checklist
-
-- [ ] All router endpoints using services
-- [ ] No business logic in routers
-- [ ] Events emitted on status changes
-- [ ] WebSocket receives events
-- [ ] Polling fallback works
-- [ ] Teacher approval triggers notifications
-- [ ] Student receives real-time updates
-- [ ] Load test: 5,000+ concurrent users
-- [ ] 95% answer delivery < 7 sec
-- [ ] No logic duplication
-
----
-
-## 📚 DOCUMENTATION GENERATED
-
-### For Developers
-
-1. **STUDENT_SYSTEM_PROJECT_SCHEMA.md** (500+ lines)
-   - Complete architecture blueprint
-   - Data flows with ASCII diagrams
-   - API contracts with examples
-   - System rules and constraints
-
-2. **IMPLEMENTATION_GUIDE.md** (300+ lines)
-   - Step-by-step integration guide
-   - Code examples (before/after)
-   - Integration checklist
-   - Time estimates
-
-3. **ARCHITECTURE_STATUS.md** (This file)
-   - Current state of system
-   - What's complete, what's pending
-   - Phase 2 roadmap
-
-### For Operations
-
-- API contracts document (for frontend teams)
-- Event schema documentation (for monitoring)
-- Database table documentation (for admins)
-- Performance metrics (for ops teams)
-
----
-
-## 🚀 NEXT STEPS
-
-### Immediate (Week 1)
-
-1. **Review** - Team reviews Project Schema and Implementation Guide
-2. **Approve** - Stakeholders approve Phase 2 approach
-3. **Plan** - Assign developers to Phase 2 tasks
-
-### Short-term (Week 2-3)
-
-1. **Update ai_queue.py** - Router integration (2 hours)
-2. **Update ai_tutor.py** - Event integration (1 hour)
-3. **Update realtime.py** - WebSocket integration (1 hour)
-4. **Test** - Complete testing suite (3 hours)
-5. **Deploy** - Staging/production deployment
-
-### Quality Gates
-
-Before going live:
-- ✅ All tests passing
-- ✅ Code review completed
-- ✅ Performance testing done (5,000 concurrent users)
-- ✅ Security audit passed
-- ✅ Documentation updated
-- ✅ Rollback plan ready
-
----
-
-## 📋 REFERENCE DOCUMENTS
-
-### Architecture Documents
-
-- [Project Schema](./docs/STUDENT_SYSTEM_PROJECT_SCHEMA.md) - Blueprint
-- [Implementation Guide](./IMPLEMENTATION_GUIDE.md) - How-to guide
-- [This Document](./ARCHITECTURE_STATUS.md) - Status report
-
-### Code Files
-
-- [AIQueueService](./backend/app/services/ai_queue_service.py) - Teacher queue logic
-- [RealtimeService](./backend/app/services/realtime_service.py) - Event broadcasting
-- [AITutorService](./backend/app/services/ai_tutor_service.py) - AI generation (reference)
-- [ai_queue.py Router](./backend/app/routers/ai_queue.py) - To be updated
-- [ai_tutor.py Router](./backend/app/routers/ai_tutor.py) - To be updated
-- [realtime.py Router](./backend/app/routers/realtime.py) - To be updated
-
----
-
-## ✨ SYSTEM READY FOR PRODUCTION
-
-### Requirements Met
-
-✅ No database schema changes  
-✅ Implementation-ready code  
-✅ Clear architecture documented  
-✅ All flows defined  
-✅ API contracts specified  
-✅ Services created and tested  
-✅ Event system designed  
-✅ Fallback mechanisms in place  
-
-### Quality Standards
-
-✅ Code follows FastAPI best practices  
-✅ Comprehensive error handling  
-✅ Structured logging throughout  
-✅ Type hints on all functions  
-✅ Docstrings on public methods  
-✅ Dependency injection used  
-✅ No hardcoded values  
-
-### Production Ready
-
-**After Phase 2:**
-- ✅ System is implementation ready
-- ✅ Deployment can proceed
-- ✅ Monitoring can be activated
-- ✅ Support team can go on-call
-
----
-
-## 🎓 LESSONS LEARNED
-
-### What Went Well
-1. Clean layer separation exists
-2. Service layer is mature
-3. Database schema is efficient
-4. Error handling is comprehensive
-
-### What Could Be Better
-1. Some inline logic in routers (being fixed)
-2. Event system was missing (now created)
-3. Some documentation outdated (being updated)
-
-### For Future
-
-1. **Enforce LayeringSeparation** - Code review for logic in routers
-2. **Service-First Design** - All new features start in services
-3. **Event-Driven** - All status changes emit events
-4. **Database Monitoring** - Track query performance
-5. **Load Testing** - Regular stress testing
-
----
-
-**Report Generated:** April 15, 2026  
-**Status:** ✅ COMPLETE & READY FOR PHASE 2  
-**Next Review:** After Phase 2 integration (Week 3)
-
+1. View own class-scoped courses
+2. Submit assignments and responses
+3. Receive AI assistance in allowed course scope
+
+## 7. End-to-End Data Flow
+
+```text
+1) Admin creates Course
+        ->
+2) Admin creates Class linked to Course
+        ->
+3) Admin approves Teacher assignment for (Course + Class)
+        ->
+4) Student is enrolled in Class (student_enrollments)
+        ->
+5) Student dashboard resolves Class -> Course
+        ->
+6) Teacher operations resolve Teacher -> (Course + Class)
+        ->
+7) Student/Teacher interaction remains scoped and auditable
+```
+
+## 8. Runtime Mapping (Code)
+
+Primary runtime folders:
+
+1. frontend/web
+2. backend/app
+3. supabase/migrations
+4. vault/01_Core
+
+Current creation and linkage surfaces:
+
+1. Class creation API: backend/app/routers/admin.py
+2. Class store write path: backend/app/store/academic_store.py
+3. Teacher assignment path: backend/app/store/teacher_store.py
+4. Student class enrollment checks: backend/app/store/academic_store.py
+5. Class-course hardening migration: supabase/migrations/20260415000001_class_course_relationship_hardening.sql
+
+## 9. Security and Access Rules
+
+1. Student endpoints must resolve current user only.
+2. Teacher endpoints must verify teacher-student link via class assignment.
+3. Admin endpoints require college admin or higher role checks.
+4. Cross-class access is forbidden unless elevated role explicitly allows it.
+
+## 10. Engineering Quality Rules
+
+1. One concept, one model, one source.
+2. No duplicated models for the same lifecycle.
+3. No business rules in frontend components.
+4. No store-level logic that bypasses role scoping.
+5. Every new endpoint must map to canonical academic model.
+
+## 11. Migration Backlog (Required for full consistency)
+
+1. Remove or map remaining sections paths to classes.
+2. Remove or map remaining enrollments paths to student_enrollments.
+3. Audit all student course queries to ensure class-scoped resolution.
+4. Audit all teacher actions to ensure teacher_assignments-based authorization.
+
+## 12. Definition of done for architecture
+
+Architecture is considered clean when:
+
+1. All academic flows use classes and student_enrollments.
+2. No endpoint relies on duplicate enrollment model.
+3. Teacher access checks are class-linked everywhere.
+4. Documentation and runtime behavior match exactly.

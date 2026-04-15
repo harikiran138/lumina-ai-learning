@@ -38,3 +38,4 @@ docker-compose up --build
 - Structure reference: `vault/01_Core/PROJECT_STRUCTURE.md`
 - Runtime reference: `vault/01_Core/SYSTEM_DOCUMENTATION.md`
 - Doc-to-code map: `vault/01_Core/DOC_CODE_RELATIONSHIP_MAP.md`
+- Engineering architecture: `ARCHITECTURE_STATUS.md`

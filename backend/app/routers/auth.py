@@ -139,7 +139,7 @@ class LoginResponse(BaseModel):
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
-def _is_adaptive_onboarding_completed(user: dict) -> bool:
+async def _is_adaptive_onboarding_completed(user: dict) -> bool:
     """Check if the user has completed the adaptive learning style profile."""
     user_id = str(user.get("id") or "")
     if not user_id:
@@ -149,7 +149,7 @@ def _is_adaptive_onboarding_completed(user: dict) -> bool:
         # Check user_data table for existence of 'learning_style' or similar
         # If record exists, we consider it done.
         client = supabase_db.get_client()
-        result = client.table("user_data").select("user_id").eq("user_id", user_id).limit(1).execute()
+        result = await client.table("user_data").select("user_id").eq("user_id", user_id).limit(1).async_execute()
         if result.data:
             return True
     except Exception:
@@ -158,7 +158,7 @@ def _is_adaptive_onboarding_completed(user: dict) -> bool:
     return False
 
 
-def is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
+async def is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
     """Returns (onboarding_completed, adaptive_completed)."""
     # 1. Standardize role
     role = normalize_role(user.get("role", "guest"))
@@ -172,7 +172,7 @@ def is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
     if user.get("onboarding_completed") is True:
         # For students, still verify the adaptive phase
         if role == "student":
-            adaptive = _is_adaptive_onboarding_completed(user)
+            adaptive = await _is_adaptive_onboarding_completed(user)
             return adaptive, adaptive
         return True, True
 
@@ -183,7 +183,7 @@ def is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
     
     if onboarding_step >= required_steps:
         if role == "student":
-            adaptive = _is_adaptive_onboarding_completed(user)
+            adaptive = await _is_adaptive_onboarding_completed(user)
             return adaptive, adaptive
         return True, True
 
@@ -236,39 +236,39 @@ def _get_identifier_type(identifier: str) -> str:
     return "email"
 
 
-def _resolve_identifier(identifier: str, user_store: UserStore) -> Optional[dict]:
+async def _resolve_identifier(identifier: str, user_store: UserStore) -> Optional[dict]:
     """Resolve a login identifier (roll number / employee ID / email) to a user row."""
     identifier = identifier.strip()
     
     # 1. If it looks like an email, jump straight to the fast indexed path
     if "@" in identifier:
-        return user_store.get_user_by_email_sync(identifier, include_sensitive=True)
+        return await user_store.get_user_by_email(identifier, include_sensitive=True)
 
     # 2. Try secondary identifiers (roll_number, employee_id)
     try:
         client = supabase_db.get_client()
         if _ROLL_RE.match(identifier):
-            r = client.table("users").select("*, user_roles(roles(name))").eq("roll_number", identifier).limit(1).execute()
+            r = await client.table("users").select("*, user_roles(roles(name))").eq("roll_number", identifier).limit(1).async_execute()
             if r.data:
                 return user_store._sanitize_user(r.data[0], include_sensitive=True)
         elif _EMP_RE.match(identifier):
-            r = client.table("users").select("*, user_roles(roles(name))").eq("employee_id", identifier).limit(1).execute()
+            r = await client.table("users").select("*, user_roles(roles(name))").eq("employee_id", identifier).limit(1).async_execute()
             if r.data:
                 return user_store._sanitize_user(r.data[0], include_sensitive=True)
     except Exception:
         pass
         
     # 3. Last fallback: try as email anyway (might be a malformed email or custom username)
-    return user_store.get_user_by_email_sync(identifier, include_sensitive=True)
+    return await user_store.get_user_by_email(identifier, include_sensitive=True)
 
 
-def _check_college_login_policy(user: dict):
+async def _check_college_login_policy(user: dict):
     college_id = user.get("college_id")
     if not college_id:
         return
     try:
         client = supabase_db.get_client()
-        college_resp = client.table("institutions").select("*").eq("id", college_id).limit(1).execute()
+        college_resp = await client.table("institutions").select("*").eq("id", college_id).limit(1).async_execute()
         college = college_resp.data[0] if college_resp.data else None
     except Exception:
         college = None
@@ -295,16 +295,16 @@ _LOCK_MINUTES = 15
 
 
 # ── Brute-force helpers (non-blocking — swallow all DB errors) ─────────────────
-def _check_brute_force(identifier: str, ip_address: str) -> Optional[int]:
+async def _check_brute_force(identifier: str, ip_address: str) -> Optional[int]:
     """Returns None if OK, or seconds remaining until the lock expires."""
     try:
         client = supabase_db.get_client()
-        r = (client.table("login_attempts")
+        r = await (client.table("login_attempts")
              .select("locked_until")
              .eq("identifier", identifier)
              .eq("ip_address", ip_address)
              .limit(1)
-             .execute())
+             .async_execute())
         if r.data:
             locked_until = r.data[0].get("locked_until")
             if locked_until:
@@ -323,15 +323,15 @@ def _check_brute_force(identifier: str, ip_address: str) -> Optional[int]:
     return None
 
 
-def _record_failed_attempt(identifier: str, ip_address: str):
+async def _record_failed_attempt(identifier: str, ip_address: str):
     try:
         client = supabase_db.get_client()
-        r = (client.table("login_attempts")
+        r = await (client.table("login_attempts")
              .select("id,attempts")
              .eq("identifier", identifier)
              .eq("ip_address", ip_address)
              .limit(1)
-             .execute())
+             .async_execute())
         now = datetime.now(timezone.utc).isoformat()
         if r.data:
             row = r.data[0]
@@ -341,31 +341,32 @@ def _record_failed_attempt(identifier: str, ip_address: str):
                 lock_until = (datetime.now(timezone.utc)
                               + timedelta(minutes=_LOCK_MINUTES)).isoformat()
                 upd["locked_until"] = lock_until
-            client.table("login_attempts").update(upd).eq("id", row["id"]).execute()
+            await client.table("login_attempts").update(upd).eq("id", row["id"]).async_execute()
         else:
-            client.table("login_attempts").insert({
-                "identifier": identifier,
-                "ip_address": ip_address,
-                "attempts": 1,
-                "last_attempt": now,
-            }).execute()
+            await (client.table("login_attempts")
+             .insert({
+                 "identifier": identifier,
+                 "ip_address": ip_address,
+                 "attempts": 1,
+                 "last_attempt": now,
+             }).async_execute())
     except Exception:
         pass
 
 
-def _clear_login_attempts(identifier: str, ip_address: str):
+async def _clear_login_attempts(identifier: str, ip_address: str):
     try:
-        (supabase_db.get_client()
-         .table("login_attempts")
+        client = supabase_db.get_client()
+        await (client.table("login_attempts")
          .delete()
          .eq("identifier", identifier)
          .eq("ip_address", ip_address)
-         .execute())
+         .async_execute())
     except Exception:
         pass
 
 
-def _log_login_history(
+async def _log_login_history(
     user_id: Optional[str],
     identifier: str,
     identifier_type: str,
@@ -479,7 +480,7 @@ async def register(user: UserCreate, user_store: UserStore = Depends(get_user_st
 
 
 @router.post("/token", response_model=Token)
-def login_for_access_token(
+async def login_for_access_token(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     user_store: UserStore = Depends(get_user_store),
@@ -487,25 +488,25 @@ def login_for_access_token(
     ip_address = (request.client.host if request.client else "0.0.0.0")  # nosec B104
     
     # ── Brute-force lock check ────────────────────────────────────────────────
-    remaining = _check_brute_force(form_data.username, ip_address)
+    remaining = await _check_brute_force(form_data.username, ip_address)
     if remaining is not None:
         raise HTTPException(
             status_code=423,
             detail=f"Too many failed attempts. Try again in {remaining} seconds.",
         )
 
-    user = user_store.get_user_by_email_sync(form_data.username, include_sensitive=True)
+    user = await user_store.get_user_by_email(form_data.username, include_sensitive=True)
     if not user:
-        _record_failed_attempt(form_data.username, ip_address)
+        await _record_failed_attempt(form_data.username, ip_address)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     _require_active_user(user)
-    _check_college_login_policy(user)
+    await _check_college_login_policy(user)
     if not verify_password(form_data.password, user.get("password_hash", "")):
-        _record_failed_attempt(form_data.username, ip_address)
+        await _record_failed_attempt(form_data.username, ip_address)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -618,7 +619,7 @@ async def reset_password(
 
 @router.post("/login", response_model=LoginResponse)
 @limiter.limit("15/minute")
-def login_json(
+async def login_json(
     payload: LoginRequest,
     request: Request,
     response: Response,
@@ -647,7 +648,7 @@ def login_json(
     user_agent = request.headers.get("user-agent", "")
 
     # ── Brute-force lock check ────────────────────────────────────────────────
-    remaining = _check_brute_force(raw_identifier, ip_address)
+    remaining = await _check_brute_force(raw_identifier, ip_address)
     if remaining is not None:
         raise HTTPException(
             status_code=423,
@@ -656,11 +657,11 @@ def login_json(
 
     # ── Resolve identifier → user ─────────────────────────────────────────────
     identifier_type = _get_identifier_type(raw_identifier)
-    user = _resolve_identifier(raw_identifier, user_store)
+    user = await _resolve_identifier(raw_identifier, user_store)
 
     if not user or not verify_password(password, user.get("password_hash", "")):
-        _record_failed_attempt(raw_identifier, ip_address)
-        _log_login_history(
+        await _record_failed_attempt(raw_identifier, ip_address)
+        await _log_login_history(
             user_id=user.get("id") if user else None,
             identifier=raw_identifier,
             identifier_type=identifier_type,
@@ -677,10 +678,10 @@ def login_json(
         )
 
     _require_active_user(user)
-    _check_college_login_policy(user)
+    await _check_college_login_policy(user)
 
     # ── Clear failed attempts on successful auth ──────────────────────────────
-    _clear_login_attempts(raw_identifier, ip_address)
+    await _clear_login_attempts(raw_identifier, ip_address)
 
     # ── Force-password-change flow ────────────────────────────────────────────
     if normalize_role(user.get("role")) == "student" and user.get("must_change_password"):
@@ -689,7 +690,7 @@ def login_json(
             expires_delta=timedelta(minutes=30),
             extra_claims={"type": "temp_password", "userId": user.get("id")},
         )
-        _log_login_history(
+        await _log_login_history(
             user_id=user.get("id"), identifier=raw_identifier,
             identifier_type=identifier_type, success=True, failure_reason=None,
             ip_address=ip_address, user_agent=user_agent,
@@ -743,7 +744,7 @@ def login_json(
         path="/",
     )
 
-    user_store.update_user_fields_sync(user["id"], {"last_login_at": datetime.now(timezone.utc).isoformat()})
+    await user_store.update_user_fields(user["id"], {"last_login_at": datetime.now(timezone.utc).isoformat()})
     audit_logger.log(
         action="user_login",
         user_id=str(user.get("id")),
@@ -754,7 +755,7 @@ def login_json(
         },
     )
 
-    onboarding_completed, adaptive_completed = is_onboarding_complete(user)
+    onboarding_completed, adaptive_completed = await is_onboarding_complete(user)
 
     return {
         "accessToken": access_token,

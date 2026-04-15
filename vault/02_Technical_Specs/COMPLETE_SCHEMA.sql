@@ -37,11 +37,52 @@ CREATE TYPE intervention_reason AS ENUM ('low_mastery', 'inactivity', 'misconcep
 -- 3. TABLES (in dependency order)
 -- ================================================
 
+-- Table: institutions
+-- Purpose: Higher-level entities (colleges, schools) for multi-tenancy.
+CREATE TABLE institutions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT UNIQUE NOT NULL,
+  domain TEXT UNIQUE, -- e.g., 'stanford.edu'
+  is_active BOOLEAN DEFAULT true,
+  login_policy TEXT DEFAULT 'email_password' CHECK (login_policy IN ('email_password', 'sso', 'oauth_allowed')),
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+-- Table: login_attempts
+-- Purpose: Brute-force prevention tracking.
+CREATE TABLE login_attempts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  identifier TEXT NOT NULL, -- email or username
+  ip_address TEXT NOT NULL,
+  attempts INTEGER DEFAULT 1,
+  last_attempt TIMESTAMP DEFAULT now(),
+  locked_until TIMESTAMP,
+  created_at TIMESTAMP DEFAULT now()
+);
+
+-- Table: login_history
+-- Purpose: Audit log for all successful and failed logins.
+CREATE TABLE login_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  identifier TEXT NOT NULL,
+  identifier_type TEXT,
+  success BOOLEAN NOT NULL,
+  failure_reason TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  role TEXT,
+  college_id UUID REFERENCES institutions(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT now()
+);
+
 -- Table: users
 -- Purpose: Core identity table. Stores all user accounts with profile info and permissions.
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE NOT NULL,
+  college_id UUID REFERENCES institutions(id) ON DELETE SET NULL,
   password_hash TEXT NOT NULL,
   name TEXT NOT NULL,
   role user_role NOT NULL DEFAULT 'student',
@@ -603,6 +644,20 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_is_active ON users(is_active);
 CREATE INDEX idx_users_created_at ON users(created_at);
+CREATE INDEX idx_users_college_id ON users(college_id);
+
+-- institutions
+CREATE INDEX idx_institutions_name ON institutions(name);
+CREATE INDEX idx_institutions_is_active ON institutions(is_active);
+
+-- login_attempts
+CREATE INDEX idx_login_attempts_lookup ON login_attempts(identifier, ip_address);
+CREATE INDEX idx_login_attempts_locked ON login_attempts(locked_until) WHERE locked_until IS NOT NULL;
+
+-- login_history
+CREATE INDEX idx_login_history_user_id ON login_history(user_id);
+CREATE INDEX idx_login_history_identifier ON login_history(identifier);
+CREATE INDEX idx_login_history_created_at ON login_history(created_at);
 
 -- sessions
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
