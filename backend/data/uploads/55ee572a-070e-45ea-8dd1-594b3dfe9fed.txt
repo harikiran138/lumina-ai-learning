@@ -1,1 +1,0 @@
-Newton's Second Law: F = ma. When force doubles, acceleration doubles.

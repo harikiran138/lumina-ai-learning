@@ -2,6 +2,7 @@ import sys
 import io
 import importlib.metadata
 from dotenv import load_dotenv
+import structlog
 
 # Force UTF-8 for stdout and stderr on Windows
 if sys.platform == "win32":
@@ -29,7 +30,6 @@ import functools  # noqa: E402
 import contextvars  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
 
-import structlog  # noqa: E402
 import sentry_sdk  # noqa: E402
 from fastapi import FastAPI, Request, HTTPException  # noqa: E402
 from fastapi.responses import JSONResponse  # noqa: E402
@@ -61,8 +61,8 @@ log = logger # Alias for compatibility
 if settings.SENTRY_DSN:
     sentry_sdk.init(
         dsn=settings.SENTRY_DSN,
-        traces_sample_rate=1.0,
-        profiles_sample_rate=1.0,  # Enable profiling
+        traces_sample_rate=0.1,
+        profiles_sample_rate=0.1,
     )
 
 from app.routers import (  # noqa: E402
@@ -77,12 +77,14 @@ from app.routers import (  # noqa: E402
     assignments,
     attendance,
     auth,
+    batches,
     community,
     content_creator,
     counselor,
     courses,
     curriculum,
     departments,
+    dropout,
     enrollments,
     faculties,
     flashcards,
@@ -156,19 +158,19 @@ async def lifespan(app: FastAPI):
         from app.database.supabase_manager import supabase_db
 
         if supabase_db.client is not None:
-            print("Connected to Supabase")
+            logger.info("Database Connection Status", connected=True)
         else:
-            print("Starting in limited functionality mode (local fallback store).")
+            logger.info("Fallback Mode Enabled", mode="limited")
     except Exception as e:
-        print(f"WARNING: Could not connect to database: {e}")
-        print("Starting in limited functionality mode.")
+        logger.warning("Database Connection Failed", error=str(e))
+        logger.info("Fallback Mode Enabled", mode="limited")
 
     # 3. Startup automation scheduler
     try:
         from app.automation.scheduler import setup_scheduled_jobs
         setup_scheduled_jobs(app)
     except Exception as e:
-        print(f"WARNING: Scheduler not started: {e}")
+        logger.warning("Scheduler not started", error=str(e))
 
     yield
 
@@ -330,6 +332,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(institutions.router, prefix="/api/institutions", tags=["Institutions"])
 app.include_router(departments.router, prefix="/api/departments", tags=["Departments"])
+app.include_router(batches.router, prefix="/api/departments", tags=["Batches"])
 app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
 app.include_router(curriculum.router, prefix="/api/curriculum", tags=["Curriculum"])
 app.include_router(schedule.router, prefix="/api/schedule", tags=["Schedule"])
@@ -376,6 +379,7 @@ app.include_router(paper_info.router, prefix="/api/v1/paper-info", tags=["Resear
 app.include_router(flashcards.router)
 app.include_router(gamification.router, prefix="/api/gamification", tags=["Gamification"])
 app.include_router(fsrs.router, prefix="/api/fsrs", tags=["FSRS"])
+app.include_router(dropout.router, prefix="/api/dropout", tags=["Dropout Risk"])
 app.include_router(ai_tools.router, prefix="/api/ai-tools", tags=["AI Tools"])
 app.include_router(exam_mode.router, prefix="/api/exam-mode", tags=["Exam Mode"])
 app.include_router(progress.router, prefix="/api/progress", tags=["Progress"])

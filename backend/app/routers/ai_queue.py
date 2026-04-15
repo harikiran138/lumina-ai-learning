@@ -1,9 +1,9 @@
 """
-Teacher-monitored AI Tutor interaction.
+Teacher-verified AI Tutor interaction.
 
 Core rule:
-AI answers are delivered to students instantly.
-Teachers and HODs monitor the interaction logs for accuracy and safety.
+Students submit questions, AI drafts answers, and faculty approve or edit
+before any answer is released to the student.
 """
 
 from datetime import datetime, timezone
@@ -41,7 +41,10 @@ _EXISTING_QUEUE_COLUMNS = {
 
 
 class AskQuestionRequest(BaseModel):
-    question_text: str = Field(min_length=3, max_length=2000)
+    question_text: Optional[str] = Field(default=None, min_length=3, max_length=2000)
+    prompt: Optional[str] = None
+    question: Optional[str] = None
+    message: Optional[str] = None
     course_id: Optional[str] = None
     mode: Optional[str] = None
     topic: Optional[str] = None
@@ -336,11 +339,53 @@ def _queue_status_message(row: Dict[str, Any]) -> str:
     status = row.get("status", "pending")
     if status in {"approved", "edited_approved"} and row.get("released_to_student", True):
         return "Your teacher approved the answer."
-    if status == "pending":
+    if status == "ai_answered" and row.get("released_to_student", False):
+        return "A verified answer is ready."
+    if status in {"pending", "ai_answered"}:
         return "Your answer is waiting for teacher review."
     if status == "escalated_to_hod":
         return "Your answer has been escalated for senior academic review."
+    if status == "rejected":
+        return "Your teacher rejected the draft answer."
     return "Your teacher is reviewing the answer."
+
+
+def _student_delivery_payload(row: Dict[str, Any]) -> Dict[str, Any]:
+    raw_status = str(row.get("status") or "pending")
+    released = bool(row.get("released_to_student", False))
+    answer_text = None
+
+    if released and raw_status in {"approved", "edited_approved", "ai_answered"}:
+        answer_text = row.get("teacher_edited_answer") or row.get("ai_generated_answer")
+
+    if released and answer_text:
+        status = "completed"
+    elif raw_status == "rejected":
+        status = "failed"
+    elif raw_status == "pending":
+        placeholder = row.get("ai_generated_answer")
+        status = "generating" if not placeholder or placeholder == "Generating AI response..." else "pending"
+    else:
+        status = "pending"
+
+    return {
+        "question_id": row.get("id"),
+        "id": row.get("id"),
+        "answer_id": row.get("id"),
+        "status": status,
+        "queue_status": raw_status,
+        "released_to_student": released,
+        "final_answer": answer_text,
+        "answer": {
+            "content": answer_text,
+            "type": row.get("request_mode") or "text",
+        } if answer_text else None,
+        "content": answer_text,
+        "response": answer_text,
+        "message": _queue_status_message(row),
+        "answered_at": row.get("verified_at"),
+        "course_id": row.get("course_id"),
+    }
 
 
 def _build_tutor_request(
@@ -350,7 +395,10 @@ def _build_tutor_request(
     forced_course_id: Optional[str] = None,
 ) -> Tuple[TutorGenerationRequest, Optional[Dict[str, Any]], Optional[str], List[Dict[str, Any]]]:
     student_id = str(current_user["id"])
-    clean_question = _normalize_question(body.question_text)
+    raw_question = body.question_text or body.prompt or body.question or body.message
+    clean_question = _normalize_question(raw_question or "")
+    if len(clean_question) < 3:
+        raise HTTPException(status_code=400, detail="Question text is required")
     course, all_courses = _lookup_course(client, student_id, forced_course_id or body.course_id, clean_question)
     if not course:
         raise HTTPException(status_code=400, detail="No enrolled course could be resolved for this tutor request.")
@@ -475,7 +523,7 @@ async def _generate_ai_answer(queue_id: str, request_payload: Dict[str, Any]) ->
             },
         )
         _log_ai_interaction(client, request.student_id, request.question, result.content, request.subject)
-        log.info("ai_queue_answer_generated_and_released", queue_id=queue_id, model=result.model)
+        log.info("ai_queue_answer_generated", queue_id=queue_id, model=result.model)
     except Exception as exc:
         fallback_content = tutor_service._fallback_response(  # noqa: SLF001
             request,
@@ -556,6 +604,8 @@ async def _submit_question(
     )
 
     return {
+        "id": queue_id,
+        "answer_id": queue_id,
         "question_id": queue_id,
         "status": "released" if cached_row else "generating",
         "queue_status": "ai_answered" if cached_row else "pending",
@@ -621,20 +671,7 @@ async def get_student_tutor_answer(
     if str(row.get("student_id")) != str(current_user.get("id")):
         raise HTTPException(status_code=403, detail="Not your tutor question")
 
-    released = bool(row.get("released_to_student", False))
-    final_answer = None
-    if released and row.get("status") in {"approved", "edited_approved"}:
-        final_answer = row.get("teacher_edited_answer") or row.get("ai_generated_answer")
-
-    return {
-        "question_id": question_id,
-        "status": row.get("status", "pending"),
-        "released_to_student": released,
-        "final_answer": final_answer,
-        "message": _queue_status_message(row),
-        "answered_at": row.get("verified_at"),
-        "course_id": row.get("course_id"),
-    }
+    return _student_delivery_payload(row)
 
 
 @router.post("/courses/{course_id}/questions")
@@ -671,11 +708,9 @@ async def list_course_questions(
         if not is_teacher:
             if str(row.get("student_id")) != str(current_user.get("id")):
                 continue
-            if not released or status not in {"approved", "edited_approved"}:
-                continue
 
         answer = None
-        if released and status in {"approved", "edited_approved"}:
+        if released and status in {"approved", "edited_approved", "ai_answered"}:
             answer = {
                 "final_answer": row.get("teacher_edited_answer") or row.get("ai_generated_answer"),
                 "verified_at": row.get("verified_at"),
@@ -700,20 +735,32 @@ async def question_status(
     question_id: str,
     current_user: Dict[str, Any] = Depends(get_current_student),
 ):
-    return await get_student_tutor_answer(Request, question_id, current_user)  # type: ignore[arg-type]
+    client = _client()
+    res = client.table("ai_answer_queue").select("*").eq("id", question_id).limit(1).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Question not found")
+    row = res.data[0]
+    if str(row.get("student_id")) != str(current_user.get("id")):
+        raise HTTPException(status_code=403, detail="Not your tutor question")
+    return _student_delivery_payload(row)
 
 
 @router.get("/teacher/ai-queue")
 async def teacher_queue(current_user: Dict[str, Any] = Depends(get_current_teacher)):
     client = _client()
-    query = client.table("ai_answer_queue").select("*")
     role = current_user.get("role")
+    rows = client.table("ai_answer_queue").select("*").order("created_at", desc=True).execute().data or []
     if role == "teacher":
-        query = query.eq("status", "pending")
+        rows = [
+            row for row in rows
+            if str(row.get("teacher_id")) == str(current_user.get("id"))
+            and not bool(row.get("released_to_student", False))
+            and row.get("status") in {"pending", "ai_answered", "escalated_to_faculty"}
+        ]
     elif role == "hod":
-        query = query.eq("status", "escalated_to_hod")
-
-    rows = query.order("created_at", desc=True).execute().data or []
+        rows = [row for row in rows if row.get("status") == "escalated_to_hod"]
+    else:
+        rows = [row for row in rows if not bool(row.get("released_to_student", False))]
     student_ids = [row.get("student_id") for row in rows if row.get("student_id")]
     students = (
         client.table("users").select("id, full_name, email").in_("id", student_ids).execute().data
@@ -747,7 +794,7 @@ async def teacher_queue(current_user: Dict[str, Any] = Depends(get_current_teach
     total_pending = sum(
         1
         for item in items
-        if item["status"] in {"pending", "escalated_to_faculty", "escalated_to_hod"}
+        if item["status"] in {"pending", "ai_answered", "escalated_to_faculty", "escalated_to_hod"}
     )
     return {"items": items, "total_pending": total_pending}
 
@@ -854,7 +901,7 @@ async def reject_queue_item(
         action="ai_answer_rejected",
         user_id=str(current_user["id"]),
         resource_id=str(queue_id),
-        metadata={"reason": body.faculty_note},
+        metadata={"reason": body.teacher_note},
     )
     return {"success": True, "status": "rejected"}
 

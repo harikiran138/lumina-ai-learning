@@ -10,16 +10,7 @@
     "build:analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy": "firebase deploy",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui",
-    "test:e2e": "playwright test",
-    "test:e2e:playwright": "playwright test",
-    "test:e2e:cypress": "cypress run",
-    "analyze": "ANALYZE=true npm run build",
-    "lighthouse": "lighthouse http://localhost:3000 --output=json --output-path=./lighthouse-report.json --chrome-flags='--headless'"
+    "analyze": "ANALYZE=true npm run build"
   },
   "repository": {
     "type": "git",
@@ -36,24 +27,9 @@
     "node": "20.x"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
     "@types/three": "^0.181.0",
-    "@vitejs/plugin-react": "^5.2.0",
-    "@vitest/coverage-v8": "^4.1.1",
-    "baseline-browser-mapping": "^2.10.12",
-    "buffer": "^6.0.3",
-    "critters": "^0.0.23",
-    "cypress": "^15.9.0",
     "eslint": "^9.17.0",
     "eslint-config-next": "15.1.0",
-    "jsdom": "^27.4.0",
-    "lighthouse": "^12.8.2",
-    "msw": "^2.12.14",
-    "vitest": "^4.1.1",
     "webpack-bundle-analyzer": "^4.10.2"
   },
   "dependencies": {

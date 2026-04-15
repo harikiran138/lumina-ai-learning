@@ -163,23 +163,34 @@ def is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
 
 
 def build_claims(user: dict) -> dict:
-    """Standardizes JWT claims as per platform architecture."""
+    """Standardizes JWT claims as per platform architecture.
+    
+    ⚠️  SECURITY: JWT payload is base64-decodable client-side.
+    Only essential claims to minimize PII exposure:
+    - sub: user ID (required by OAuth2) 
+    - role: for authorization
+    - onboarding flags: for UX flow
+    
+    Sensitive data (email, name, collegeId, etc.) fetched via /auth/me endpoint.
+    """
     onboarding_step = int(user.get("onboarding_step") or 0)
     onboarding_completed, adaptive_completed = is_onboarding_complete(user)
     return {
-        "sub": str(user.get("id")),
-        "id": str(user.get("id")),
-        "email": user.get("email"),
-        "fullName": user.get("full_name") or user.get("name", "Unknown"),
-        "role": normalize_role(user.get("role", "guest")),
-        "institution_id": user.get("institution_id") or user.get("college_id"),
-        "institutionId": user.get("institution_id") or user.get("college_id"),
-        "collegeId": user.get("college_id"),
-        "deptId": user.get("dept_id") or user.get("department_id"),
-        "batchId": user.get("batch_id"),
+        # ✓ Essential claims only
+        "sub": str(user.get("id")),  # Required by OAuth2
+        "role": normalize_role(user.get("role", "guest")),  # For RBAC
+        
+        # ✓ Onboarding flow indicators (not PII)
         "onboardingStep": onboarding_step,
         "onboardingCompleted": onboarding_completed,
         "adaptiveOnboardingCompleted": adaptive_completed,
+        
+        # ✗ REMOVED PII (was exposed):
+        # - "email": user.get("email"),  # PII: fetch via /auth/me
+        # - "fullName": user.get("full_name"),  # PII: fetch via /auth/me
+        # - "collegeId": user.get("college_id"),  # PII: fetch via /auth/me
+        # - "deptId": user.get("dept_id"),  # PII: fetch via /auth/me
+        # - "batchId": user.get("batch_id"),  # PII: fetch via /auth/me
     }
 
 

@@ -24,7 +24,7 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          cd frontend
+          cd frontend/web
           vercel pull --yes --environment=production
           vercel build --prod
           vercel deploy --prod --prebuilt

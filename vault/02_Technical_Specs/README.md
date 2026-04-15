@@ -1,6 +1,14 @@
-# Lumina AI-Powered LMS Documentation
+# Lumina Technical Specs
 
-Welcome to the comprehensive documentation for **Lumina**, an AI-powered, self-hosted Learning Management System that revolutionizes personalized education at scale.
+This folder contains detailed product, architecture, and implementation specifications.
+
+Important note:
+
+- The canonical current repo structure lives in `vault/01_Core/PROJECT_STRUCTURE.md`
+- The canonical current runtime boundary lives in `vault/01_Core/SYSTEM_DOCUMENTATION.md`
+- The canonical doc-to-code mapping lives in `vault/01_Core/DOC_CODE_RELATIONSHIP_MAP.md`
+
+Use this `02_Technical_Specs` folder for deep design details, not as the only source of truth for whether a path still exists in the cleaned repository.
 
 ## Quick Start
 

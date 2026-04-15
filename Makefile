@@ -1,65 +1,25 @@
-.PHONY: test security ai-eval report help
+.PHONY: help dev frontend backend docker-up docker-down
 
-# Default target
 help:
-	@echo "Lumina Project Command Center (Pro Target)"
-	@echo "----------------------------------------"
-	@echo "make test          - Run backend pytest suite"
-	@echo "make security      - Run SAST (Semgrep) & Secret scanning"
-	@echo "make security-py   - Run Bandit security analysis (Backend)"
-	@echo "make test-api      - Run Newman API lifecycle tests"
-	@echo "make eval-rag      - Run RAGAS quality evaluation (Faithfulness/Relevancy)"
-	@echo "make docker-build  - Validate container images locally"
-	@echo "make report        - View terminal summary of all audits"
+	@echo "Lumina Command Center"
+	@echo "---------------------"
+	@echo "make dev        - Start backend and frontend together"
+	@echo "make backend    - Start the FastAPI backend on port 9000"
+	@echo "make frontend   - Start the Next.js frontend on port 3000"
+	@echo "make docker-up  - Start the Docker stack"
+	@echo "make docker-down - Stop the Docker stack"
 
-test:
-	@echo "🚀 Running Backend Tests..."
-	@cd backend && python -m pytest tests
+dev:
+	@./run_local.sh
 
-security:
-	@echo "🛡️ Running Semgrep Security Scan..."
-	@semgrep scan --config auto
+backend:
+	@./start_backend.sh
 
-security-py:
-	@echo "🐍 Running Bandit Security Scan..."
-	@bandit -r backend/ -x backend/.venv -ll
+frontend:
+	@./start_frontend.sh
 
-test-api:
-	@echo "📡 Running Newman API Tests..."
-	@newman run backend/tests/api_tests.json
+docker-up:
+	@docker-compose up --build
 
-eval-rag:
-	@echo "🧠 Running RAGAS Evaluation..."
-	@python backend/tests/rag_eval.py
-
-dev-local:
-	@echo "⚙️ Setting up Local AI Environment..."
-	@./setup_local_ai.sh
-
-ui-fix:
-	@echo "✨ Applying UI Enhancements..."
-	@# Command placeholder for any automatic UI refactors
-
-report:
-	@echo "📊 Project Integrity Report"
-	@echo "-------------------------"
-	@echo "Tests: run \`make test\` or targeted pytest suites for current status"
-	@echo "Security: review migrations + bandit/semgrep output for current status"
-	@echo "AI Pipeline: teacher-verified flow required for student-facing outputs"
-
-monitor:
-	@echo "🌸 Starting Flower Monitoring..."
-	@docker-compose up -d flower
-	@open http://localhost:5555
-
-load-test:
-	@echo "📈 Starting Locust Load Test (100 Jobs)..."
-	@locust -f stress_worker.py --host http://localhost:8000 --users 10 --spawn-rate 2
-
-seed:
-	@echo "🌱 Seeding Database..."
-	@cd backend && python -m app.seed
-
-seed-clear:
-	@echo "🧹 Clearing and Seeding Database..."
-	@cd backend && python -m app.seed --clear
+docker-down:
+	@docker-compose down

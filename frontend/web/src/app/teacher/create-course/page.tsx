@@ -76,9 +76,7 @@ export default function CreateCoursePage() {
     setPreviewBlueprint(null);
 
     try {
-      console.log("📤 Uploading file for blueprint:", aiFile.name, aiFile.type, aiFile.size);
       const res = await api.generateBlueprintFromFile(aiFile);
-      console.log("📥 AI Blueprint response:", res);
 
       // Normalize: backend always returns { blueprint: { title, description, level, modules } }
       const bp = res?.blueprint;
