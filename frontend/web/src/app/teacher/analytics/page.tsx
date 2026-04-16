@@ -108,38 +108,38 @@ function StatCard({
   trend?: "up" | "down" | "neutral";
 }) {
   return (
-    <div className="glass-v2 border-white/5 p-6 rounded-2xl">
+    <div className="glass-v2 border-border p-6 rounded-2xl">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-gray-400">{title}</p>
-          <p className="text-3xl font-bold text-white mt-2">{value}</p>
+          <p className="text-sm text-text-muted">{title}</p>
+          <p className="text-3xl font-bold text-foreground mt-2">{value}</p>
           {change !== undefined && (
             <div className="flex items-center gap-1 mt-2">
               {trend === "up" ? (
-                <ArrowUpRight className="w-4 h-4 text-yellow-400" />
+                <ArrowUpRight className="w-4 h-4 text-warning" />
               ) : trend === "down" ? (
-                <ArrowDownRight className="w-4 h-4 text-red-400" />
+                <ArrowDownRight className="w-4 h-4 text-danger" />
               ) : null}
               <span
                 className={cn(
                   "text-sm",
                   trend === "up"
-                    ? "text-yellow-400"
+                    ? "text-warning"
                     : trend === "down"
-                    ? "text-red-400"
-                    : "text-gray-400"
+                    ? "text-danger"
+                    : "text-text-muted"
                 )}
               >
                 {change > 0 ? "+" : ""}
                 {change}%
               </span>
               {changeLabel && (
-                <span className="text-sm text-gray-500 ml-1">{changeLabel}</span>
+                <span className="text-sm text-text-secondary ml-1">{changeLabel}</span>
               )}
             </div>
           )}
         </div>
-        <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400">
+        <div className="p-3 rounded-xl bg-warning/10 text-warning">
           <Icon className="w-6 h-6" />
         </div>
       </div>
@@ -157,10 +157,10 @@ function ProgressBar({
   size?: "sm" | "md" | "lg";
 }) {
   const colors = {
-    amber: "bg-amber-400",
-    yellow: "bg-yellow-400",
-    gold: "bg-lumina-highlight",
-    red: "bg-red-400",
+    amber: "bg-warning",
+    yellow: "bg-warning",
+    gold: "bg-primary",
+    red: "bg-danger",
   };
   const heights = {
     sm: "h-1.5",
@@ -168,7 +168,7 @@ function ProgressBar({
     lg: "h-3",
   };
   return (
-    <div className={cn("w-full rounded-full bg-white/10", heights[size])}>
+    <div className={cn("w-full rounded-full bg-surface", heights[size])}>
       <div
         className={cn("rounded-full transition-all duration-500", colors[color])}
         style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
@@ -188,19 +188,19 @@ function SimpleBarChart({
     <div className="space-y-3">
       {data.map((item, i) => (
         <div key={i} className="flex items-center gap-3">
-          <span className="text-xs text-gray-400 w-8 text-right">{item.label}</span>
+          <span className="text-xs text-text-muted w-8 text-right">{item.label}</span>
           <div className="flex-1">
-            <div className="h-8 rounded-lg bg-white/5 overflow-hidden">
+            <div className="h-8 rounded-lg bg-surface overflow-hidden">
               <div
                 className={cn(
                   "h-full rounded-lg transition-all duration-500",
-                  item.color || "bg-amber-500/60"
+                  item.color || "bg-warning/60"
                 )}
                 style={{ width: `${(item.value / maxValue) * 100}%` }}
               />
             </div>
           </div>
-          <span className="text-sm text-white w-8">{item.value}</span>
+          <span className="text-sm text-foreground w-8">{item.value}</span>
         </div>
       ))}
     </div>
