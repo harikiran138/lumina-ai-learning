@@ -69,15 +69,15 @@ function A2UIHeader({ parsed }: { parsed: A2UIRenderable }) {
   }
 
   return (
-    <div className="mb-4 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
+    <div className="mb-4 rounded-2xl border border-border bg-surface-elevated px-4 py-3">
       <div className="flex flex-wrap items-center gap-2">
         {title && (
-          <h3 className="text-base font-semibold tracking-tight text-white">
+          <h3 className="text-base font-semibold tracking-tight text-text">
             {title}
           </h3>
         )}
         {meta?.topic && meta.topic !== title && (
-          <Badge variant="outline" className="border-amber-400/30 text-amber-200">
+          <Badge variant="outline" className="border-primary/30 text-primary">
             {meta.topic}
           </Badge>
         )}
@@ -87,23 +87,23 @@ function A2UIHeader({ parsed }: { parsed: A2UIRenderable }) {
             className={cn(
               "uppercase tracking-[0.2em]",
               meta.difficulty === "hard"
-                ? "border-red-400/30 text-red-200"
+                ? "border-red-500/30 text-red-500"
                 : meta.difficulty === "medium"
-                  ? "border-amber-400/30 text-amber-200"
-                  : "border-emerald-400/30 text-emerald-200",
+                  ? "border-primary/30 text-primary"
+                  : "border-green-500/30 text-green-500",
             )}
           >
             {meta.difficulty}
           </Badge>
         )}
         {typeof meta?.estimatedTimeMin === "number" && (
-          <Badge variant="outline" className="border-white/10 text-slate-300">
+          <Badge variant="outline" className="border-border text-text-secondary">
             {meta.estimatedTimeMin} min
           </Badge>
         )}
       </div>
       {summary && (
-        <p className="mt-2 text-sm leading-relaxed text-slate-300">{summary}</p>
+        <p className="mt-2 text-sm leading-relaxed text-text-secondary">{summary}</p>
       )}
     </div>
   );
@@ -114,7 +114,7 @@ export const A2UIRendererV2: React.FC<A2UIRendererV2Props> = ({ content }) => {
 
   if (!parsedResponse) {
     return (
-      <div className="prose prose-invert max-w-none text-zinc-200 leading-relaxed">
+      <div className="prose dark:prose-invert max-w-none text-text-secondary leading-relaxed">
         <ReactMarkdown>{content}</ReactMarkdown>
       </div>
     );

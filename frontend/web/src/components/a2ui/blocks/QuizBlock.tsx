@@ -36,17 +36,17 @@ export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
   return (
     <div className="my-6 space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <BrainCircuit className="h-5 w-5 text-amber-300" />
-        <h3 className="font-semibold text-white">
+        <BrainCircuit className="h-5 w-5 text-primary" />
+        <h3 className="font-semibold text-text">
           {block.content.title || "Knowledge check"}
         </h3>
         {block.content.difficulty && (
-          <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-amber-100">
+          <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">
             {block.content.difficulty}
           </span>
         )}
         {answeredCount > 0 && (
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-text-secondary">
             Score: {correctCount}/{answeredCount}
           </span>
         )}
@@ -62,15 +62,15 @@ export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
           <div
             key={`${question.prompt}-${questionIndex}`}
             className={cn(
-              "rounded-2xl border p-5 shadow-sm",
+              "rounded-2xl border p-5 shadow-sm transition-all",
               isSubmitted
                 ? isCorrect
-                  ? "border-emerald-400/20 bg-emerald-400/10"
-                  : "border-red-400/20 bg-red-400/10"
-                : "border-white/8 bg-white/[0.03]",
+                  ? "border-green-500/20 bg-green-500/10"
+                  : "border-red-500/20 bg-red-500/10"
+                : "border-border bg-surface-elevated",
             )}
           >
-            <p className="mb-4 text-sm font-medium leading-relaxed text-white">
+            <p className="mb-4 text-sm font-medium leading-relaxed text-text">
               {question.prompt}
             </p>
 
@@ -95,35 +95,35 @@ export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
                     className={cn(
                       "w-full rounded-xl border px-4 py-3 text-left text-sm transition-all",
                       !isSubmitted &&
-                        "border-white/8 bg-black/10 text-slate-200 hover:border-amber-300/30 hover:bg-amber-300/10",
+                        "border-border bg-surface text-text-secondary hover:border-primary/30 hover:bg-primary/5",
                       !isSubmitted &&
                         isSelected &&
-                        "border-amber-300/40 bg-amber-300/10 text-white",
+                        "border-primary/40 bg-primary/10 text-text",
                       isSubmitted &&
                         isSelected &&
                         isCorrect &&
-                        "border-emerald-400/40 bg-emerald-400/10 text-emerald-100",
+                        "border-green-500/40 bg-green-500/10 text-green-700 dark:text-green-300",
                       isSubmitted &&
                         isSelected &&
                         !isCorrect &&
-                        "border-red-400/40 bg-red-400/10 text-red-100",
+                        "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300",
                       isSubmitted &&
                         isAnswer &&
                         !isSelected &&
-                        "border-emerald-400/30 bg-emerald-400/5 text-emerald-100",
+                        "border-green-500/30 bg-green-500/5 text-green-700 dark:text-green-300",
                       isSubmitted &&
                         !isSelected &&
                         !isAnswer &&
-                        "border-white/5 bg-white/[0.02] text-slate-400",
+                        "border-border/50 bg-surface/40 text-text-muted",
                     )}
                   >
                     <div className="flex items-center justify-between gap-4">
                       <span>{option}</span>
                       {isSubmitted && isSelected && isCorrect && (
-                        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-200" />
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
                       )}
                       {isSubmitted && isSelected && !isCorrect && (
-                        <XCircle className="h-4 w-4 shrink-0 text-red-200" />
+                        <XCircle className="h-4 w-4 shrink-0 text-red-500" />
                       )}
                     </div>
                   </button>
@@ -136,7 +136,7 @@ export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-amber-300/20 bg-transparent text-amber-100 hover:bg-amber-300/10"
+                  className="border-primary/20 bg-transparent text-primary hover:bg-primary/10"
                   onClick={() =>
                     setHintOpen((current) => ({
                       ...current,
@@ -150,7 +150,7 @@ export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
               )}
               <Button
                 type="button"
-                className="bg-amber-300 text-black hover:bg-amber-200"
+                variant="primary"
                 onClick={() =>
                   setSubmitted((current) => ({ ...current, [questionIndex]: true }))
                 }
@@ -161,13 +161,17 @@ export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
             </div>
 
             {question.hint && hintOpen[questionIndex] && (
-              <div className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-sm text-amber-100">
+              <motion.div 
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-primary"
+              >
                 {question.hint}
-              </div>
+              </motion.div>
             )}
 
             {isSubmitted && question.explanation && (
-              <div className="mt-3 rounded-xl border border-white/6 bg-black/10 px-3 py-2 text-sm text-slate-200">
+              <div className="mt-3 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
                 {question.explanation}
               </div>
             )}
@@ -176,29 +180,29 @@ export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
       })}
 
       {allSubmitted && (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-5 py-4">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated px-5 py-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-300">Final score:</span>
+            <span className="text-sm text-text-secondary">Final score:</span>
             <span
               className={cn(
                 "text-lg font-bold",
                 correctCount === totalQuestions
-                  ? "text-emerald-300"
+                  ? "text-green-500"
                   : correctCount >= totalQuestions / 2
-                    ? "text-amber-300"
-                    : "text-red-300",
+                    ? "text-primary"
+                    : "text-red-500",
               )}
             >
               {correctCount}/{totalQuestions}
             </span>
             {correctCount === totalQuestions && (
-              <span className="text-sm text-emerald-300">Perfect!</span>
+              <span className="text-sm text-green-500 font-medium">Perfect!</span>
             )}
           </div>
           <Button
             type="button"
             variant="outline"
-            className="border-white/10 bg-transparent text-slate-300 hover:border-amber-300/30 hover:text-amber-100"
+            className="border-border bg-transparent text-text-secondary hover:border-primary hover:text-primary"
             onClick={handleReset}
           >
             <RotateCcw className="mr-2 h-4 w-4" />
@@ -207,5 +211,6 @@ export const QuizResult: React.FC<QuizResultProps> = ({ block }) => {
         </div>
       )}
     </div>
+
   );
 };

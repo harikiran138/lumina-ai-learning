@@ -61,11 +61,11 @@ export function TutorConversation({
   };
 
   return (
-    <div className="flex flex-col h-full relative font-sans">
+    <div className="flex flex-col h-full relative font-sans bg-surface">
       {/* Chat Stream */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-[5%] md:px-[10%] xl:px-[15%] py-8 space-y-6 scrollbar-thin scrollbar-thumb-white/10"
+        className="flex-1 overflow-y-auto px-[5%] md:px-[10%] xl:px-[15%] py-8 space-y-6 scrollbar-thin scrollbar-thumb-border"
       >
         <AnimatePresence initial={false}>
           {messages.length === 0 && (
@@ -74,25 +74,25 @@ export function TutorConversation({
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col items-center justify-center h-full text-center"
             >
-              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-lumina-primary/10 to-transparent border border-lumina-primary/20 flex items-center justify-center mb-8 shadow-[0_0_50px_-12px_rgba(255,215,0,0.3)] animate-float">
-                <Bot className="w-10 h-10 text-lumina-primary" />
+              <div className="w-24 h-24 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-8 shadow-sm">
+                <Bot className="w-10 h-10 text-primary" />
               </div>
-              <h3 className="text-3xl font-light text-white mb-3 tracking-tight">
+              <h3 className="text-3xl font-light text-text mb-3 tracking-tight">
                 Lumina Tutor{" "}
-                <span className="font-semibold text-lumina-primary">AI</span>
+                <span className="font-semibold text-primary">AI</span>
               </h3>
-              <p className="text-sm text-gray-400 max-w-sm mb-10 leading-relaxed">
+              <p className="text-sm text-text-secondary max-w-sm mb-10 leading-relaxed">
                 Your personal AI mentor for mastering concepts, assignments, and
                 study plans. Ask me to{" "}
-                <span className="text-gray-200 border-b border-white/10 pb-0.5">
+                <span className="text-text border-b border-border pb-0.5">
                   explain concepts
                 </span>
                 ,{" "}
-                <span className="text-gray-200 border-b border-white/10 pb-0.5">
+                <span className="text-text border-b border-border pb-0.5">
                   build a quiz
                 </span>
                 , or{" "}
-                <span className="text-gray-200 border-b border-white/10 pb-0.5">
+                <span className="text-text border-b border-border pb-0.5">
                   simplify a difficult topic
                 </span>
                 .
@@ -104,10 +104,10 @@ export function TutorConversation({
                     <button
                       key={i}
                       onClick={() => onSuggestionClick?.(s)}
-                      className="p-4 text-sm text-gray-400 glass-card bg-surface-800/40 hover:bg-surface-800/80 transition-all duration-300 text-left flex items-center gap-3 group border-white/5 hover:border-lumina-primary/30"
+                      className="p-4 text-sm text-text-secondary bg-surface border border-border rounded-xl hover:bg-surface-elevated hover:border-primary/30 transition-all duration-300 text-left flex items-center gap-3 group"
                     >
-                      <div className="w-2 h-2 rounded-full bg-lumina-primary/30 group-hover:bg-lumina-primary group-hover:shadow-[0_0_10px_rgba(255,215,0,0.5)] transition-all" />
-                      <span className="group-hover:text-white transition-colors">
+                      <div className="w-2 h-2 rounded-full bg-primary/30 group-hover:bg-primary transition-all" />
+                      <span className="group-hover:text-text transition-colors">
                         {s}
                       </span>
                     </button>
@@ -128,10 +128,10 @@ export function TutorConversation({
               )}
             >
               <div className="flex items-center gap-2 mb-1 px-1 opacity-50">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
                   {msg.sender === "me" ? "You" : "Lumina AI"}
                 </span>
-                <span className="text-[10px] text-gray-600">
+                <span className="text-[10px] text-text-muted">
                   {new Date(msg.timestamp).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -140,16 +140,16 @@ export function TutorConversation({
               </div>
 
               {msg.sender === "me" ? (
-                <div className="chat-bubble-me max-w-[85%] text-sm leading-relaxed shadow-lg shadow-lumina-primary/5">
+                <div className="bg-primary text-primary-foreground px-5 py-3 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm">
                   {msg.text}
                 </div>
               ) : (
                 <div className="w-full max-w-3xl flex gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                  <div className="w-8 h-8 rounded-xl bg-surface-800 border border-white/10 flex-shrink-0 flex items-center justify-center mt-1 shadow-lg">
-                    <Bot className="w-4 h-4 text-lumina-primary" />
+                  <div className="w-8 h-8 rounded-xl bg-surface-elevated border border-border flex-shrink-0 flex items-center justify-center mt-1 shadow-sm">
+                    <Bot className="w-4 h-4 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="chat-bubble-ai text-sm leading-relaxed glass-panel !bg-surface-900/40 !border-white/5 shadow-none">
+                    <div className="text-sm leading-relaxed p-5 bg-surface-elevated border border-border rounded-2xl">
                       <A2UIRendererV2 content={msg.text} />
                     </div>
                   </div>
@@ -164,17 +164,17 @@ export function TutorConversation({
               animate={{ opacity: 1 }}
               className="flex items-start gap-4 w-full max-w-3xl pl-1"
             >
-              <div className="w-8 h-8 rounded-xl bg-surface-800 border border-white/10 flex-shrink-0 flex items-center justify-center shadow-lg">
-                <Bot className="w-4 h-4 text-lumina-primary animate-pulse" />
+              <div className="w-8 h-8 rounded-xl bg-surface-elevated border border-border flex-shrink-0 flex items-center justify-center shadow-sm">
+                <Bot className="w-4 h-4 text-primary animate-pulse" />
               </div>
-              <div className="chat-bubble-ai flex items-center gap-3 px-5 py-4 glass-panel !bg-surface-900/40 !border-white/5">
+              <div className="flex items-center gap-3 px-5 py-4 bg-surface-elevated border border-border rounded-2xl">
                 <div className="flex gap-1.5">
-                  <div className="w-1.5 h-1.5 bg-lumina-primary/80 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                  <div className="w-1.5 h-1.5 bg-lumina-primary/80 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                  <div className="w-1.5 h-1.5 bg-lumina-primary/80 rounded-full animate-bounce" />
+                  <div className="w-1.5 h-1.5 bg-primary/80 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <div className="w-1.5 h-1.5 bg-primary/80 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <div className="w-1.5 h-1.5 bg-primary/80 rounded-full animate-bounce" />
                 </div>
-                <span className="text-xs text-gray-500 font-medium tracking-wide">
-                  Teacher is reviewing your answer
+                <span className="text-xs text-text-muted font-medium tracking-wide">
+                  AI is processing...
                 </span>
               </div>
             </motion.div>
@@ -183,15 +183,15 @@ export function TutorConversation({
       </div>
 
       {/* Input Area (Sticky Bottom) */}
-      <div className="p-6 pb-8 bg-gradient-to-t from-[#02040a] via-[#02040a] to-transparent z-10 w-full flex flex-col items-center gap-4 backdrop-blur-sm">
+      <div className="p-6 pb-8 bg-surface border-t border-border z-10 w-full flex flex-col items-center gap-4 backdrop-blur-sm">
         {/* Dynamic Suggestions */}
         {messages.length > 0 && suggestions.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto max-w-3xl w-full pb-2 scrollbar-none mask-fade-sides">
+          <div className="flex gap-2 overflow-x-auto max-w-3xl w-full pb-2 scrollbar-none">
             {suggestions.map((s, i) => (
               <button
                 key={i}
                 onClick={() => onSuggestionClick?.(s)}
-                className="px-4 py-1.5 text-xs font-medium text-gray-400 bg-surface-800/50 border border-white/10 rounded-full hover:bg-lumina-primary/10 hover:border-lumina-primary/30 hover:text-white transition-all whitespace-nowrap backdrop-blur-md"
+                className="px-4 py-1.5 text-xs font-medium text-text-secondary bg-surface border border-border rounded-full hover:bg-primary/10 hover:border-primary/30 hover:text-text transition-all whitespace-nowrap"
               >
                 {s}
               </button>
@@ -201,13 +201,13 @@ export function TutorConversation({
 
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-3xl relative flex items-center gap-2 glass-panel !rounded-2xl p-2 !bg-surface-900/60 transition-all focus-within:border-lumina-primary/30 focus-within:shadow-[0_0_30px_-10px_rgba(255,215,0,0.1)] focus-within:bg-black/80"
+          className="w-full max-w-3xl relative flex items-center gap-2 bg-surface-elevated border border-border rounded-2xl p-2 transition-all focus-within:border-primary/30 focus-within:shadow-lg focus-within:bg-surface"
         >
           <button
             type="button"
-            className="p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-xl transition-colors group"
+            className="p-3 text-text-muted hover:text-text hover:bg-surface rounded-xl transition-colors group"
           >
-            <Paperclip className="w-5 h-5 group-hover:text-lumina-primary transition-colors" />
+            <Paperclip className="w-5 h-5 group-hover:text-primary transition-colors" />
           </button>
 
           <input
@@ -216,14 +216,14 @@ export function TutorConversation({
             onChange={(e) => setInput(e.target.value)}
             aria-label="Ask Lumina Tutor"
             placeholder="Ask about a concept, assignment, weak topic, or quiz..."
-            className="flex-1 bg-transparent border-none outline-none text-base text-gray-100 placeholder-gray-600 h-10 px-2 font-light tracking-wide focus:ring-0"
+            className="flex-1 bg-transparent border-none outline-none text-base text-text placeholder:text-text-muted h-10 px-2 font-light tracking-wide focus:ring-0"
           />
 
           <button
             type="button"
-            className="p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-xl transition-colors group"
+            className="p-3 text-text-muted hover:text-text hover:bg-surface rounded-xl transition-colors group"
           >
-            <Mic className="w-5 h-5 group-hover:text-lumina-primary transition-colors" />
+            <Mic className="w-5 h-5 group-hover:text-primary transition-colors" />
           </button>
 
           <button
@@ -233,15 +233,15 @@ export function TutorConversation({
             className={cn(
               "p-3 rounded-xl transition-all duration-300 flex items-center justify-center",
               input.trim() && !isLoading
-                ? "bg-lumina-primary text-black shadow-lg shadow-lumina-primary/20 hover:scale-105 active:scale-95 hover:bg-lumina-secondary"
-                : "bg-white/5 text-gray-600 cursor-not-allowed",
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-105 active:scale-95"
+                : "bg-surface text-text-muted cursor-not-allowed",
             )}
           >
             <Send className="w-5 h-5" />
           </button>
         </form>
 
-        <p className="text-[10px] text-gray-600 font-medium tracking-wide">
+        <p className="text-[10px] text-text-muted font-medium tracking-wide">
           Lumina AI can make mistakes. Please verify important information.
         </p>
       </div>

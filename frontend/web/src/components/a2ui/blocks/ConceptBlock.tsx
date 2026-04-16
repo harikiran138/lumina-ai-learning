@@ -10,16 +10,16 @@ interface ConceptResultProps {
 
 export const ConceptResult: React.FC<ConceptResultProps> = ({ block }) => {
   return (
-    <div className="my-4 rounded-2xl border border-white/8 bg-white/[0.03] p-5 shadow-sm">
+    <div className="my-4 rounded-2xl border border-border bg-surface-elevated p-5 shadow-sm">
       <div className="mb-3 flex items-center gap-2">
-        <div className="rounded-xl bg-amber-400/10 p-2">
-          <Lightbulb className="h-5 w-5 text-amber-300" />
+        <div className="rounded-xl bg-primary/10 p-2">
+          <Lightbulb className="h-5 w-5 text-primary" />
         </div>
-        <h3 className="text-lg font-semibold text-white">
+        <h3 className="text-lg font-semibold text-text">
           {block.content.title}
         </h3>
       </div>
-      <p className="mb-4 text-sm leading-relaxed text-slate-200">
+      <p className="mb-4 text-sm leading-relaxed text-text-secondary">
         {block.content.summary}
       </p>
       {block.content.keyPoints && block.content.keyPoints.length > 0 && (
@@ -27,9 +27,9 @@ export const ConceptResult: React.FC<ConceptResultProps> = ({ block }) => {
           {block.content.keyPoints.map((point, index) => (
             <li
               key={`${point}-${index}`}
-              className="flex items-start gap-2 text-sm text-slate-300"
+              className="flex items-start gap-2 text-sm text-text-secondary"
             >
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-300" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
               <span>{point}</span>
             </li>
           ))}

@@ -42,10 +42,10 @@ type AdaptiveResult = {
 };
 
 const shellClass =
-  "rounded-[28px] border border-amber-200/10 bg-[linear-gradient(180deg,rgba(250,204,21,0.10),rgba(10,10,10,0.96)_20%,rgba(10,10,10,0.99))] p-6 shadow-[0_25px_100px_rgba(0,0,0,0.45)]";
+  "rounded-[28px] border border-border bg-surface-elevated p-6 shadow-xl";
 
 const optionClass =
-  "rounded-[24px] border border-white/8 bg-white/[0.03] p-4 text-left transition hover:border-white/15 hover:bg-white/[0.06]";
+  "rounded-[24px] border border-border bg-surface p-4 text-left transition hover:border-primary/30 hover:bg-surface-elevated";
 
 export default function AdaptiveOnboardingPanel({ onComplete }: { onComplete: () => void }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -148,7 +148,7 @@ export default function AdaptiveOnboardingPanel({ onComplete }: { onComplete: ()
   if (isLoading) {
     return (
       <div className={shellClass}>
-        <div className="flex items-center gap-3 rounded-2xl border border-amber-300/15 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+        <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-primary">
           <Loader2 className="h-4 w-4 animate-spin" />
           Preparing adaptive calibration
         </div>
@@ -162,13 +162,13 @@ export default function AdaptiveOnboardingPanel({ onComplete }: { onComplete: ()
       <div className="space-y-6">
         <div className={shellClass}>
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-300 text-black">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
               <CheckCircle2 className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200/70">Adaptive Calibration</p>
-              <h3 className="mt-2 text-2xl font-semibold text-white">Your starting profile is ready.</h3>
-              <p className="mt-3 text-sm leading-6 text-zinc-300">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">Adaptive Calibration</p>
+              <h3 className="mt-2 text-2xl font-semibold text-text">Your starting profile is ready.</h3>
+              <p className="mt-3 text-sm leading-6 text-text-secondary">
                 Lumina now has a first-pass difficulty level, learning-style profile, and knowledge graph seed for your tutor experience.
               </p>
             </div>
@@ -191,14 +191,14 @@ export default function AdaptiveOnboardingPanel({ onComplete }: { onComplete: ()
             />
           </div>
 
-          <div className="mt-6 rounded-[24px] border border-white/8 bg-black/30 p-5">
-            <p className="text-sm font-semibold text-white">Recommended tutor behavior</p>
-            <div className="mt-3 space-y-2 text-sm leading-6 text-zinc-300">
+          <div className="mt-6 rounded-[24px] border border-border bg-surface p-5">
+            <p className="text-sm font-semibold text-text">Recommended tutor behavior</p>
+            <div className="mt-3 space-y-2 text-sm leading-6 text-text-secondary">
               {(result.recommendations || []).map((item) => (
                 <p key={item}>{item}</p>
               ))}
             </div>
-            <p className="mt-4 text-xs uppercase tracking-[0.2em] text-zinc-500">
+            <p className="mt-4 text-xs uppercase tracking-[0.2em] text-text-muted">
               Primary learning mode: {(result.learningStyle?.primary || "examples").replace(/_/g, " ")}
             </p>
           </div>
@@ -208,7 +208,7 @@ export default function AdaptiveOnboardingPanel({ onComplete }: { onComplete: ()
           <button
             type="button"
             onClick={onComplete}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(90deg,#facc15,#fde68a)] px-6 py-3 text-sm font-semibold text-black transition hover:brightness-105"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:brightness-110 shadow-lg shadow-primary/20"
           >
             Continue to dashboard
             <ChevronRight className="h-4 w-4" />
@@ -223,22 +223,22 @@ export default function AdaptiveOnboardingPanel({ onComplete }: { onComplete: ()
       <div className={shellClass}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200/70">Adaptive Calibration</p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">One short diagnostic before we launch your dashboard.</h3>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-300">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">Adaptive Calibration</p>
+            <h3 className="mt-2 text-2xl font-semibold text-text">One short diagnostic before we launch your dashboard.</h3>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
               This is the role-aware intelligence layer from your onboarding spec: dynamic follow-ups, learning-style detection, and baseline knowledge mapping.
             </p>
           </div>
-          <div className="rounded-3xl border border-white/8 bg-black/35 px-5 py-4 text-sm text-zinc-300">
-            <p className="font-medium text-white">
+          <div className="rounded-3xl border border-border bg-surface px-5 py-4 text-sm text-text-secondary">
+            <p className="font-medium text-text">
               {session?.questionsAnswered || 0}/{session?.estimatedTotalQuestions || 0} answered
             </p>
-            <p className="mt-1 text-xs uppercase tracking-[0.2em] text-zinc-500">Adaptive sequence</p>
+            <p className="mt-1 text-xs uppercase tracking-[0.2em] text-text-muted">Adaptive sequence</p>
           </div>
         </div>
 
         {error ? (
-          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-red-400/20 bg-red-500/10 p-4 text-sm text-red-100">
+          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-100">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>{error}</p>
           </div>
@@ -246,20 +246,20 @@ export default function AdaptiveOnboardingPanel({ onComplete }: { onComplete: ()
 
         {question ? (
           <div className="mt-8 space-y-6">
-            <div className="rounded-[24px] border border-amber-300/15 bg-black/30 p-5">
-              <div className="flex items-center gap-3 text-amber-100">
+            <div className="rounded-[24px] border border-border bg-surface p-5">
+              <div className="flex items-center gap-3 text-primary">
                 <BrainCircuit className="h-5 w-5" />
                 <p className="text-xs font-semibold uppercase tracking-[0.25em]">
                   Question {question.sequence || (session?.questionsAnswered || 0) + 1}
                 </p>
               </div>
-              <h4 className="mt-3 text-xl font-semibold text-white">{question.prompt}</h4>
-              {question.helper ? <p className="mt-3 text-sm leading-6 text-zinc-400">{question.helper}</p> : null}
+              <h4 className="mt-3 text-xl font-semibold text-text">{question.prompt}</h4>
+              {question.helper ? <p className="mt-3 text-sm leading-6 text-text-muted">{question.helper}</p> : null}
             </div>
 
             {question.responseType === "text" ? (
               <textarea
-                className="min-h-[180px] w-full rounded-[24px] border border-amber-200/10 bg-zinc-950/90 px-4 py-4 text-sm text-white outline-none transition focus:border-amber-300 focus:ring-2 focus:ring-amber-300/20 placeholder:text-zinc-500"
+                className="min-h-[180px] w-full rounded-[24px] border border-border bg-surface px-4 py-4 text-sm text-text outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-text-muted"
                 placeholder="Write your answer here"
                 value={textAnswer}
                 onChange={(event) => setTextAnswer(event.target.value)}
@@ -275,10 +275,10 @@ export default function AdaptiveOnboardingPanel({ onComplete }: { onComplete: ()
                       key={option.value}
                       type="button"
                       onClick={() => setSingleAnswer(option.value)}
-                      className={`${optionClass} ${selected ? "border-amber-300/50 bg-amber-300/10" : ""}`}
+                      className={`${optionClass} ${selected ? "border-primary/50 bg-primary/10" : ""}`}
                     >
-                      <p className="text-base font-semibold text-white">{option.label}</p>
-                      {option.helper ? <p className="mt-2 text-sm leading-6 text-zinc-400">{option.helper}</p> : null}
+                      <p className="text-base font-semibold text-text">{option.label}</p>
+                      {option.helper ? <p className="mt-2 text-sm leading-6 text-text-secondary">{option.helper}</p> : null}
                     </button>
                   );
                 })}
@@ -294,10 +294,10 @@ export default function AdaptiveOnboardingPanel({ onComplete }: { onComplete: ()
                       key={option.value}
                       type="button"
                       onClick={() => toggleMulti(option.value)}
-                      className={`${optionClass} ${selected ? "border-amber-300/50 bg-amber-300/10" : ""}`}
+                      className={`${optionClass} ${selected ? "border-primary/50 bg-primary/10" : ""}`}
                     >
-                      <p className="text-base font-semibold text-white">{option.label}</p>
-                      {option.helper ? <p className="mt-2 text-sm leading-6 text-zinc-400">{option.helper}</p> : null}
+                      <p className="text-base font-semibold text-text">{option.label}</p>
+                      {option.helper ? <p className="mt-2 text-sm leading-6 text-text-secondary">{option.helper}</p> : null}
                     </button>
                   );
                 })}
@@ -309,7 +309,7 @@ export default function AdaptiveOnboardingPanel({ onComplete }: { onComplete: ()
                 type="button"
                 onClick={submitAnswer}
                 disabled={!canSubmit || isSubmitting}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(90deg,#facc15,#fde68a)] px-6 py-3 text-sm font-semibold text-black transition hover:brightness-105 disabled:opacity-45"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:brightness-110 disabled:opacity-45 shadow-lg shadow-primary/20"
               >
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Submit answer
@@ -325,24 +325,31 @@ export default function AdaptiveOnboardingPanel({ onComplete }: { onComplete: ()
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[24px] border border-white/8 bg-black/30 p-5">
-      <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">{label}</p>
-      <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
+    <div className="rounded-[24px] border border-border bg-surface p-5">
+      <p className="text-xs uppercase tracking-[0.25em] text-text-muted">{label}</p>
+      <p className="mt-3 text-2xl font-semibold text-text">{value}</p>
     </div>
   );
 }
 
 function ListCard({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-[24px] border border-white/8 bg-black/30 p-5">
-      <p className="text-sm font-semibold text-white">{title}</p>
-      <div className="mt-3 space-y-2 text-sm leading-6 text-zinc-300">
+    <div className="rounded-[24px] border border-border bg-surface p-5">
+      <p className="text-sm font-semibold text-text">{title}</p>
+      <div className="mt-3 space-y-2 text-sm leading-6 text-text-secondary">
         {items.map((item) => (
           <p key={item}>{item}</p>
         ))}
       </div>
     </div>
   );
+}
+
+function formatScore(value?: number) {
+  if (typeof value !== "number") {
+    return "0.00";
+  }
+  return value.toFixed(2);
 }
 
 function formatScore(value?: number) {
