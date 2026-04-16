@@ -24,6 +24,18 @@
   --color-accent: var(--color-accent);
   --color-accent-foreground: #ffffff;
 
+  --color-warning: var(--color-warning);
+  --color-warning-foreground: var(--color-warning-foreground);
+
+  --color-danger: var(--color-danger);
+  --color-danger-foreground: var(--color-danger-foreground);
+
+  --color-success: var(--color-success);
+  --color-success-foreground: var(--color-success-foreground);
+
+  --color-info: var(--color-info);
+  --color-info-foreground: var(--color-info-foreground);
+
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
 
@@ -80,6 +92,16 @@
   /* Accent */
   --color-accent: #3B82F6;
 
+  /* Semantic */
+  --color-warning: #F59E0B;
+  --color-warning-foreground: #111827;
+  --color-danger: #EF4444;
+  --color-danger-foreground: #FFFFFF;
+  --color-success: #14B8A6;
+  --color-success-foreground: #FFFFFF;
+  --color-info: #3B82F6;
+  --color-info-foreground: #FFFFFF;
+
   /* Particles */
   --color-particle: rgba(22, 163, 74, 0.15);
 
@@ -122,6 +144,16 @@
 
   /* Accent - Orange */
   --color-accent: #F97316;
+
+  /* Semantic */
+  --color-warning: #FBBF24;
+  --color-warning-foreground: #111827;
+  --color-danger: #F87171;
+  --color-danger-foreground: #111827;
+  --color-success: #2DD4BF;
+  --color-success-foreground: #04111A;
+  --color-info: #60A5FA;
+  --color-info-foreground: #04111A;
 
   /* Particles */
   --color-particle: rgba(255, 255, 255, 0.15);

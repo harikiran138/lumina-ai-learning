@@ -113,7 +113,7 @@ async def run(args: argparse.Namespace):
             procs.append(frontend_proc)
 
     log("Waiting for backend to become ready ...")
-    backend_up = await wait_for_port("Backend", 8000)
+    backend_up = await wait_for_port("Backend", 9000)
     results["backend_up"] = backend_up
 
     if not backend_up:

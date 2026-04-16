@@ -190,6 +190,39 @@ class AIQueueService:
         await self._bank_verified_answer(item, final_answer, teacher_id)
         return {"success": True, "status": "edited_approved"}
 
+    async def process_decision(
+        self,
+        question_id: str,
+        teacher_id: str,
+        decision: str,
+        modification: Optional[str] = None,
+        feedback: Optional[str] = None,
+        suggestion: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Consolidated decision point for teacher review.
+        Handles 'approve', 'edit_approve', 'reject', and 'escalate'.
+        """
+        decision_lower = decision.lower().strip()
+        
+        if decision_lower == 'approve':
+            return await self.approve_answer(question_id, teacher_id, feedback)
+        
+        if decision_lower == 'reject':
+            # Use feedback as rejection note if teacher_note is not provided separately
+            return await self.reject_answer(question_id, teacher_id, feedback or "Answer rejected by teacher", suggestion)
+            
+        if decision_lower == 'edit_approve' or decision_lower == 'modified_approved':
+            if not modification:
+                raise ValueError("Modification text required for edit_approve decision")
+            return await self.edit_approve_answer(question_id, teacher_id, modification, feedback)
+            
+        if decision_lower == 'escalate':
+            # Escalation logic depends on role usually, but here we just update status
+            return await self.escalate_answer(question_id, teacher_id, "teacher", feedback)
+            
+        raise ValueError(f"Invalid decision type: {decision}")
+
     async def escalate_answer(self, question_id: str, escalator_id: str, escalator_role: str, reason: Optional[str] = None) -> Dict[str, Any]:
         new_status = "escalated_to_faculty" if escalator_role == "teacher" else "escalated_to_hod"
         updates = {

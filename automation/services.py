@@ -38,8 +38,8 @@ async def wait_for_port(name: str, port: int, timeout: int = SERVICE_STARTUP_TIM
 
 def preflight(project_root: Path):
     """Kill stale processes, verify .env, check required tools."""
-    log("Preflight: killing stale processes on :8000 / :3000 ...")
-    for port in (8000, 3000):
+    log("Preflight: killing stale processes on :9000 / :3000 ...")
+    for port in (9000, 3000):
         if _port_open(port):
             subprocess.run(
                 f"lsof -ti :{port} | xargs kill -9 2>/dev/null || true",
@@ -62,8 +62,8 @@ def preflight(project_root: Path):
 # ── Backend ────────────────────────────────────────────────────────────────────
 
 def start_backend(project_root: Path) -> Optional[subprocess.Popen]:
-    if _port_open(8000):
-        ok("Backend already running on :8000 — skipping start")
+    if _port_open(9000):
+        ok("Backend already running on :9000 — skipping start")
         return None
 
     backend_dir = project_root / "backend"
@@ -74,7 +74,7 @@ def start_backend(project_root: Path) -> Optional[subprocess.Popen]:
     log("Starting FastAPI backend (uvicorn)...")
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "app.main:app",
-         "--host", "0.0.0.0", "--port", "8000"],
+         "--host", "0.0.0.0", "--port", "9000"],
         cwd=str(backend_dir),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

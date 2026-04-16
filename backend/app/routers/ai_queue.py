@@ -70,6 +70,13 @@ class EscalateRequest(BaseModel):
     reason: Optional[str] = None
 
 
+class DecisionRequest(BaseModel):
+    decision: str = Field(description="Possible values: approve, reject, edit_approve, escalate")
+    teacher_modification: Optional[str] = None
+    teacher_feedback: Optional[str] = None
+    suggestion: Optional[str] = None
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -634,3 +641,60 @@ async def escalate_queue_item(
     except Exception as exc:
         log.error("answer_escalate_failed", error=str(exc))
         raise HTTPException(status_code=500, detail="Failed to escalate answer")
+
+
+@router.patch("/teacher/ai-queue/{queue_id}/decision")
+async def process_queue_decision(
+    queue_id: str,
+    body: DecisionRequest,
+    teacher: dict = Depends(get_current_teacher),
+    service: AIQueueService = Depends(get_ai_queue_service)
+):
+    """
+    Consolidated endpoint for teacher decisions on AI answers.
+    Supports approval, rejection, editing, and escalation.
+    """
+    try:
+        result = await service.process_decision(
+            question_id=queue_id,
+            teacher_id=str(teacher["id"]),
+            decision=body.decision,
+            modification=body.teacher_modification,
+            feedback=body.teacher_feedback,
+            suggestion=body.suggestion
+        )
+        
+        # Emit real-time event based on result
+        item = await service.get_item_details(queue_id)
+        if item:
+            student_id = str(item.get("student_id"))
+            event_map = {
+                "approved": "answer.approved_by_teacher",
+                "edited_approved": "answer.approved_by_teacher",
+                "rejected": "answer.rejected",
+                "escalated_to_faculty": "answer.escalated",
+                "escalated_to_hod": "answer.escalated",
+            }
+            
+            event_type = event_map.get(result.get("status"))
+            if event_type:
+                event_payload = {
+                    "event": event_type,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "data": {
+                        "question_id": queue_id,
+                        "answer": item.get("teacher_edited_answer") or item.get("ai_generated_answer"),
+                        "status": result.get("status"),
+                        "teacher_name": teacher.get("full_name", "Teacher"),
+                        "feedback": body.teacher_feedback,
+                        "edited": result.get("status") == "edited_approved"
+                    }
+                }
+                await broadcast_ai_tutor_event(student_id, event_payload)
+        
+        return result
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        log.error("decision_processing_failed", queue_id=queue_id, error=str(exc))
+        raise HTTPException(status_code=500, detail="Failed to process decision")

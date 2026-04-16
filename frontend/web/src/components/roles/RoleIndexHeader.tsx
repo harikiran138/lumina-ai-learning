@@ -9,24 +9,24 @@ const RoleIndexHeader = () => (
     <motion.div 
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-lumina-highlight/10 border border-lumina-highlight/20 mb-6"
+      className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 mb-6"
     >
-      <Sparkles className="w-4 h-4 text-lumina-highlight" />
-      <span className="text-lumina-highlight text-[10px] font-black uppercase tracking-widest">Ecosystem Deep Dive</span>
+      <Sparkles className="w-4 h-4 text-primary" />
+      <span className="text-primary text-[10px] font-black uppercase tracking-widest">Ecosystem Deep Dive</span>
     </motion.div>
     <motion.h1 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="text-5xl lg:text-7xl font-black mb-6 font-display tracking-tight"
+      className="text-5xl lg:text-7xl font-black mb-6 font-display tracking-tight text-text"
     >
-      The <span className="gradient-text-gold">Role Architecture</span>
+      The <span className="text-primary">Role Architecture</span>
     </motion.h1>
     <motion.p 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.2 }}
-      className="text-zinc-400 max-w-2xl mx-auto text-lg leading-relaxed"
+      className="text-text-secondary max-w-2xl mx-auto text-lg leading-relaxed font-sans"
     >
       Lumina is built on a foundation of clearly defined boundaries and synergistic relationships. 
       Select a role below to explore its specific capabilities, data access, and system-wide impact.

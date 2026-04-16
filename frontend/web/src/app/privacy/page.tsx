@@ -16,25 +16,25 @@ import Footer from "@/components/layout/Footer";
 
 export default function PrivacyPage() {
   return (
-    <div className="text-white min-h-screen bg-neutral-950 selection:bg-lumina-highlight/30 selection:text-white">
+    <div className="text-foreground min-h-screen bg-background selection:bg-primary/20 selection:text-foreground">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-neutral-950/50 backdrop-blur-2xl">
+      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-border bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            <Link href="/" className="text-2xl font-black text-white flex items-center font-display tracking-tight">
+            <Link href="/" className="text-2xl font-black text-foreground flex items-center font-display tracking-tight">
               <span className="gradient-text">Lumina</span>
               <span className="ml-1 text-lumina-highlight">AI</span>
             </Link>
             
             <nav className="hidden md:flex items-center space-x-8">
-              <Link href="/platform" className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">Platform</Link>
-              <Link href="/technology" className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">Technology</Link>
-              <Link href="/privacy" className="text-xs font-bold uppercase tracking-widest text-white">Privacy</Link>
+              <Link href="/platform" className="text-xs font-bold uppercase tracking-widest text-text-muted hover:text-foreground transition-colors">Platform</Link>
+              <Link href="/technology" className="text-xs font-bold uppercase tracking-widest text-text-muted hover:text-foreground transition-colors">Technology</Link>
+              <Link href="/privacy" className="text-xs font-bold uppercase tracking-widest text-foreground">Privacy</Link>
             </nav>
 
             <Link
               href="/login"
-              className="bg-lumina-highlight text-black text-xs font-bold uppercase tracking-[0.2em] py-3 px-6 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all shadow-lg"
+              className="bg-primary text-primary-foreground text-xs font-bold uppercase tracking-[0.2em] py-3 px-6 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all shadow-lg"
             >
               Get Started
             </Link>
@@ -53,14 +53,14 @@ export default function PrivacyPage() {
               Privacy is not a feature. <br />
               <span className="text-lumina-highlight border-b-8 border-lumina-highlight/20">It&apos;s the foundation.</span>
             </h1>
-            <p className="text-xl text-gray-400 leading-relaxed max-w-2xl">
+            <p className="text-xl text-text-secondary leading-relaxed max-w-2xl">
               Lumina was architected with a strict privacy-first mandate. We never sell student data, we don&apos;t use private content for general model training, and you maintain complete sovereignty.
             </p>
           </div>
         </section>
 
         {/* Principles Grid */}
-        <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-white/5">
+        <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-border">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <PrivacyCard 
                icon={EyeOff}
@@ -116,15 +116,15 @@ export default function PrivacyPage() {
         <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center mb-20">
             <h2 className="text-2xl font-display font-bold mb-8">Ready for a deeper dive?</h2>
             <div className="flex flex-wrap justify-center gap-6">
-                <Link href="#" className="flex items-center gap-2 text-gray-400 hover:text-lumina-highlight transition-colors font-bold uppercase tracking-widest text-xs">
+          <Link href="#" className="flex items-center gap-2 text-text-secondary hover:text-primary transition-colors font-bold uppercase tracking-widest text-xs">
                    Download Privacy Whitepaper
                    <ArrowRight className="w-3 h-3" />
                 </Link>
-                <Link href="#" className="flex items-center gap-2 text-gray-400 hover:text-lumina-highlight transition-colors font-bold uppercase tracking-widest text-xs">
+                <Link href="#" className="flex items-center gap-2 text-text-secondary hover:text-primary transition-colors font-bold uppercase tracking-widest text-xs">
                    View Compliance Dashboard
                    <ArrowRight className="w-3 h-3" />
                 </Link>
-                <Link href="/contact" className="flex items-center gap-2 text-gray-400 hover:text-lumina-highlight transition-colors font-bold uppercase tracking-widest text-xs">
+                <Link href="/contact" className="flex items-center gap-2 text-text-secondary hover:text-primary transition-colors font-bold uppercase tracking-widest text-xs">
                    Question for our DPO
                    <ArrowRight className="w-3 h-3" />
                 </Link>
@@ -141,11 +141,11 @@ export default function PrivacyPage() {
 function PrivacyCard({ icon: Icon, title, detail }: { icon: any, title: string, detail: string }) {
     return (
         <div className="group">
-            <div className="h-12 w-12 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400 group-hover:text-lumina-highlight transition-all border border-white/5 mb-6 group-hover:scale-110">
+            <div className="h-12 w-12 rounded-2xl bg-surface flex items-center justify-center text-text-secondary group-hover:text-primary transition-all border border-border mb-6 group-hover:scale-110">
                 <Icon className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-3">{title}</h3>
-            <p className="text-sm text-gray-500 leading-relaxed">{detail}</p>
+            <h3 className="text-lg font-bold text-foreground mb-3">{title}</h3>
+            <p className="text-sm text-text-secondary leading-relaxed">{detail}</p>
         </div>
     );
 }
@@ -154,13 +154,13 @@ function GovernanceItem({ icon: Icon, title, detail }: { icon: any, title: strin
     return (
         <div className="flex gap-6">
             <div className="flex-shrink-0 mt-1">
-                <div className="h-10 w-10 rounded-xl bg-lumina-highlight/10 flex items-center justify-center text-lumina-highlight">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                     <Icon className="w-5 h-5" />
                 </div>
             </div>
             <div>
-                <h4 className="text-xl font-bold text-white mb-2">{title}</h4>
-                <p className="text-gray-400 leading-relaxed">{detail}</p>
+                <h4 className="text-xl font-bold text-foreground mb-2">{title}</h4>
+                <p className="text-text-secondary leading-relaxed">{detail}</p>
             </div>
         </div>
     );

@@ -23,7 +23,7 @@ export default function GlobalError({
           <p className="text-text-secondary mb-6 text-sm">
             A critical error occurred in the application.
             <br />
-            <span className="font-mono text-xs opacity-70">
+              <span className="font-mono text-xs text-text-secondary">
               {error.name}: {error.message}
             </span>
           </p>

@@ -20,19 +20,33 @@ async def get_video_analytics(
     service = get_video_service()
     return await service.get_video_analytics(course_id, institution_id)
 
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+
 @router.post("/video/analyze")
 async def analyze_video(
     course_id: str,
     video_url: str,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user)
 ):
     """Trigger AI analysis for a new video (Faculty only)."""
-    if current_user.get("role") not in ("faculty", "teacher", "admin"):
+    if current_user.get("role") not in ("faculty", "teacher", "admin", "supervisor"):
         raise HTTPException(status_code=403, detail="Unauthorized")
         
     institution_id = current_user.get("institution_id")
     service = get_video_service()
-    return await service.analyze_video(course_id, video_url, institution_id)
+    
+    # Run in background to avoid blocking the request
+    background_tasks.add_task(service.analyze_video, course_id, video_url, institution_id)
+    
+    return {
+        "message": "AI Video analysis has been queued and is processing in the background.",
+        "status": "processing",
+        "scoping": {
+            "course_id": course_id,
+            "institution_id": institution_id
+        }
+    }
 
 # Support Ticket Endpoints
 @router.post("/support/tickets")

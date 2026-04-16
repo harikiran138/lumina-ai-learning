@@ -351,10 +351,3 @@ function formatScore(value?: number) {
   }
   return value.toFixed(2);
 }
-
-function formatScore(value?: number) {
-  if (typeof value !== "number") {
-    return "0.00";
-  }
-  return value.toFixed(2);
-}

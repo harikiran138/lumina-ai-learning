@@ -41,9 +41,10 @@ interface AIQueueItem {
 }
 
 interface DecisionPayload {
-  status: "APPROVED" | "REJECTED" | "MODIFIED_APPROVED";
-  modification?: string;
-  feedback?: string;
+  decision: "approve" | "reject" | "edit_approve" | "escalate";
+  teacher_modification?: string;
+  teacher_feedback?: string;
+  suggestion?: string;
 }
 
 const CONFIDENCE_COLOR = (conf: number | null) => {
@@ -245,7 +246,7 @@ export default function AIQueueWidget() {
                   <div className="flex gap-2 pt-1">
                     {/* APPROVE */}
                     <button
-                      onClick={() => submitDecision(item.id, { status: "APPROVED" })}
+                      onClick={() => submitDecision(item.id, { decision: "approve" })}
                       disabled={isProcessing}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-xs font-medium hover:bg-emerald-500/25 transition-colors disabled:opacity-50"
                     >
@@ -309,8 +310,8 @@ export default function AIQueueWidget() {
                 </button>
                 <button
                   onClick={() => submitDecision(modifyModal.item.id, {
-                    status: "MODIFIED_APPROVED",
-                    modification: modifyModal.text,
+                    decision: "edit_approve",
+                    teacher_modification: modifyModal.text,
                   })}
                   disabled={!modifyModal.text.trim() || deciding === modifyModal.item.id}
                   className="flex-1 py-2.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-400 text-sm font-medium hover:bg-amber-500/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
@@ -357,8 +358,8 @@ export default function AIQueueWidget() {
                 </button>
                 <button
                   onClick={() => submitDecision(rejectModal.item.id, {
-                    status: "REJECTED",
-                    feedback: rejectModal.feedback,
+                    decision: "reject",
+                    teacher_feedback: rejectModal.feedback,
                   })}
                   disabled={deciding === rejectModal.item.id}
                   className="flex-1 py-2.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"

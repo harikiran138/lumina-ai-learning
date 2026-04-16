@@ -3,13 +3,13 @@ Lumina Automation — Shared Configuration
 """
 
 # ── Service URLs ───────────────────────────────────────────────────────────────
-BASE_URL      = "http://localhost:8000"
+BASE_URL      = "http://localhost:9000"
 FRONTEND_URL  = "http://localhost:3000"
 API           = f"{BASE_URL}/api"
 
 # ── Demo Credentials ───────────────────────────────────────────────────────────
 # Password meets complexity: 1 uppercase + 1 number
-DEMO_PASSWORD = "Lumina@138800"
+DEMO_PASSWORD = "Password@123"
 
 USERS = {
     "admin": {

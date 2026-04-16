@@ -76,14 +76,14 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="text-foreground min-h-screen bg-background selection:bg-primary/20 selection:text-foreground">
-      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-border bg-background/80 backdrop-blur-2xl">
+    <div className="text-text min-h-screen bg-surface selection:bg-primary/20 selection:text-text">
+      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-border bg-surface/80 backdrop-blur-2xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex-shrink-0">
-              <Link href="/" className="text-2xl font-black text-foreground flex items-center font-display tracking-tight group">
-                <span className="gradient-text transition-all duration-300 group-hover:drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]">Lumina</span>
-                <span className="ml-1 text-lumina-highlight">AI</span>
+              <Link href="/" className="text-2xl font-black text-text flex items-center font-display tracking-tight group">
+                <span className="text-primary transition-all duration-300 group-hover:drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]">Lumina</span>
+                <span className="ml-1 text-primary">AI</span>
               </Link>
             </div>
 
@@ -98,7 +98,7 @@ export default function Home() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-lumina-highlight transition-all duration-300"
+                  className="text-xs font-bold uppercase tracking-widest text-text-secondary hover:text-primary transition-all duration-300"
                 >
                   {item.label}
                 </Link>
@@ -110,7 +110,7 @@ export default function Home() {
                 <>
                   <Link
                     href={user.onboardingCompleted ? getRoleHome(user.role) : "/onboarding"}
-                    className="glass-button-highlight text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all"
+                    className="bg-primary text-black dark:text-black text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl shadow-lg hover:scale-[1.05] active:scale-[0.98] transition-all"
                   >
                     Go to Dashboard
                   </Link>
@@ -119,13 +119,13 @@ export default function Home() {
                 <>
                   <Link
                     href="/login"
-                    className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
+                    className="text-xs font-bold uppercase tracking-widest text-text-secondary hover:text-text transition-colors hidden sm:block"
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/register"
-                    className="glass-button-highlight text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all"
+                    className="bg-primary text-black dark:text-black text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl shadow-lg hover:scale-[1.05] active:scale-[0.98] transition-all"
                   >
                     Get Started
                   </Link>

@@ -56,7 +56,7 @@ const GlassCard: React.FC<{ className?: string; children: React.ReactNode }> = (
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5 }}
     className={cn(
-      'rounded-3xl border border-white/5 bg-white/[0.03] backdrop-blur-2xl shadow-premium overflow-hidden',
+      'rounded-3xl border border-border bg-surface-elevated backdrop-blur-2xl shadow-sm overflow-hidden',
       className
     )}
   >
@@ -67,9 +67,9 @@ const GlassCard: React.FC<{ className?: string; children: React.ReactNode }> = (
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="rounded-xl border border-white/10 bg-black/80 backdrop-blur-md p-4 shadow-2xl">
-        <p className="text-xs text-gray-400 font-medium">Monthly Activity</p>
-        <p className="text-lg font-bold text-lumina-highlight">{payload[0].value} Sessions</p>
+      <div className="rounded-xl border border-border bg-surface-elevated backdrop-blur-md p-4 shadow-2xl">
+        <p className="text-xs text-text-secondary font-medium">Monthly Activity</p>
+        <p className="text-lg font-bold text-primary">{payload[0].value} Sessions</p>
       </div>
     );
   }
@@ -100,22 +100,22 @@ export default function MentorDashboard() {
   }, []);
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-8 pb-12 text-foreground">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-display font-bold text-white tracking-tight">
+          <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
             Mentor <span className="gradient-text">Dashboard</span>
           </h1>
-          <p className="text-gray-400 mt-1 font-medium italic">Empowering the next generation of innovators</p>
+          <p className="text-text-secondary mt-1 font-medium italic">Empowering the next generation of innovators</p>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/mentor/sessions">
-            <button className="px-6 py-2.5 rounded-xl bg-lumina-highlight text-black font-bold text-sm hover:scale-105 transition-transform shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+            <button className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:scale-105 transition-transform shadow-lg">
               Schedule Session
             </button>
           </Link>
-          <button className="p-2.5 rounded-xl glass-v2 border-white/10 text-gray-400 hover:text-white transition-colors">
+          <button className="p-2.5 rounded-xl bg-surface-elevated border border-border text-text-secondary hover:text-foreground transition-colors">
             <MoreVertical className="w-5 h-5" />
           </button>
         </div>
@@ -124,9 +124,9 @@ export default function MentorDashboard() {
       {/* Impact Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {impactMetrics.map((metric, idx) => (
-          <GlassCard key={metric.label} className="p-6 group hover:border-white/10 transition-colors">
+          <GlassCard key={metric.label} className="p-6 group hover:border-primary/20 transition-colors">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{metric.label}</span>
+              <span className="text-xs font-bold text-text-muted uppercase tracking-widest">{metric.label}</span>
               <div className={cn(
                 "p-1.5 rounded-lg",
                 metric.trend === 'up' ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
@@ -135,7 +135,7 @@ export default function MentorDashboard() {
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-white group-hover:text-lumina-highlight transition-all">{metric.value}</span>
+              <span className="text-3xl font-bold text-foreground group-hover:text-primary transition-all">{metric.value}</span>
               <span className={cn(
                 "text-xs font-bold",
                 metric.trend === 'up' ? "text-green-500" : "text-red-500"
@@ -150,54 +150,54 @@ export default function MentorDashboard() {
         <GlassCard className="lg:col-span-2 p-8">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-lumina-highlight/10">
-                <Users className="w-6 h-6 text-lumina-highlight" />
+              <div className="p-3 rounded-2xl bg-primary/10">
+                <Users className="w-6 h-6 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold text-white">Mentee Matches</h2>
+              <h2 className="text-2xl font-bold text-foreground">Mentee Matches</h2>
             </div>
-            <Link href="/mentor/matches" className="text-xs font-bold text-lumina-highlight hover:underline uppercase tracking-tighter">View All Potential</Link>
+            <Link href="/mentor/matches" className="text-xs font-bold text-primary hover:underline uppercase tracking-tighter">View All Potential</Link>
           </div>
           
           <div className="space-y-4">
             {loading ? (
               <div className="h-64 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-lumina-highlight"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : matches.length > 0 ? (
               matches.slice(0, 4).map((mentee) => (
-                <div key={mentee.id} className="flex items-center gap-5 p-5 rounded-2xl glass-v2 border-white/5 hover:bg-white/[0.05] transition-all group">
+                <div key={mentee.id} className="flex items-center gap-5 p-5 rounded-2xl bg-surface-elevated border border-border hover:bg-surface transition-all group">
                   <div className="relative">
                     <img 
                       src={mentee.avatar || `https://ui-avatars.com/api/?name=${mentee.name}&background=random`} 
-                      className="w-14 h-14 rounded-full object-cover border-2 border-white/10 group-hover:border-lumina-highlight/30 transition-colors" 
+                      className="w-14 h-14 rounded-full object-cover border-2 border-border group-hover:border-primary/30 transition-colors" 
                       alt={mentee.name} 
                     />
-                    <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-black border border-white/10">
+                    <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-background border border-border">
                       <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-white text-lg truncate mb-1">{mentee.name}</h4>
+                    <h4 className="font-bold text-foreground text-lg truncate mb-1">{mentee.name}</h4>
                     <div className="flex flex-wrap gap-2">
                        {(mentee.skills || ['AI', 'Python']).map((s: string) => (
-                         <span key={s} className="px-2 py-0.5 rounded-md bg-white/5 text-[10px] text-gray-400 font-bold border border-white/5">{s}</span>
+                         <span key={s} className="px-2 py-0.5 rounded-md bg-surface text-[10px] text-text-secondary font-bold border border-border">{s}</span>
                        ))}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="flex items-center gap-1.5 justify-end mb-1">
-                      <Target className="w-4 h-4 text-lumina-highlight" />
-                      <span className="text-lg font-bold text-white">{mentee.alignmentScore || '94'}%</span>
+                      <Target className="w-4 h-4 text-primary" />
+                      <span className="text-lg font-bold text-foreground">{mentee.alignmentScore || '94'}%</span>
                     </div>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Alignment Score</p>
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-tight">Alignment Score</p>
                   </div>
-                  <button className="p-2 rounded-xl bg-white/5 hover:bg-lumina-highlight/20 hover:text-lumina-highlight transition-all ml-2">
+                  <button className="p-2 rounded-xl bg-surface hover:bg-primary/10 hover:text-primary transition-all ml-2">
                     <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
               ))
             ) : (
-              <div className="h-32 flex flex-col items-center justify-center text-gray-500 glass-v2 rounded-2xl border-dashed border-white/10">
+              <div className="h-32 flex flex-col items-center justify-center text-text-muted bg-surface-elevated rounded-2xl border border-border border-dashed">
                 <Users className="w-8 h-8 mb-2 opacity-30" />
                 <p className="text-sm font-medium">No matches found at the moment</p>
               </div>
@@ -210,9 +210,9 @@ export default function MentorDashboard() {
           <GlassCard className="p-8">
             <div className="flex items-center gap-3 mb-8">
               <div className="p-3 rounded-2xl bg-yellow-500/10">
-                <Calendar className="w-6 h-6 text-yellow-400" />
+                <Calendar className="w-6 h-6 text-primary" />
               </div>
-              <h2 className="text-xl font-bold text-white">Sessions</h2>
+              <h2 className="text-xl font-bold text-foreground">Sessions</h2>
             </div>
             
             <div className="space-y-4">
@@ -222,38 +222,38 @@ export default function MentorDashboard() {
                 </div>
               ) : sessions.length > 0 ? (
                 sessions.slice(0, 3).map((session) => (
-                  <div key={session.id} className="p-5 rounded-2xl glass-v2 border-white/5 hover:border-yellow-500/20 transition-all cursor-pointer">
+                  <div key={session.id} className="p-5 rounded-2xl bg-surface-elevated border border-border hover:border-primary/20 transition-all cursor-pointer">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="px-2 py-1 rounded-lg bg-yellow-500/10 text-yellow-400 text-[10px] font-bold uppercase tracking-wider">
+                      <span className="px-2 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
                         {session.time || '2:00 PM'}
                       </span>
-                      <span className="text-[10px] text-gray-400 font-bold">{session.date || 'Today'}</span>
+                      <span className="text-[10px] text-text-muted font-bold">{session.date || 'Today'}</span>
                     </div>
-                    <h4 className="font-bold text-white mb-1 truncate">{session.topic || 'Portfolio Review'}</h4>
-                    <p className="text-xs text-gray-500 flex items-center gap-1.5 font-medium">
+                    <h4 className="font-bold text-foreground mb-1 truncate">{session.topic || 'Portfolio Review'}</h4>
+                    <p className="text-xs text-text-secondary flex items-center gap-1.5 font-medium">
                       <Users className="w-3 h-3" /> {session.menteeName || 'Sarah Chen'}
                     </p>
                   </div>
                 ))
               ) : (
                 <div className="p-10 flex flex-col items-center justify-center text-center">
-                  <Clock className="w-10 h-10 text-gray-600 mb-4 opacity-50" />
-                  <p className="text-gray-500 text-sm font-medium mb-4">No upcoming sessions</p>
-                  <button className="text-xs font-bold text-yellow-400 hover:underline">Pick a slot</button>
+                  <Clock className="w-10 h-10 text-text-muted mb-4 opacity-50" />
+                  <p className="text-text-muted text-sm font-medium mb-4">No upcoming sessions</p>
+                  <button className="text-xs font-bold text-primary hover:underline">Pick a slot</button>
                 </div>
               )}
             </div>
           </GlassCard>
 
-          <GlassCard className="p-8 bg-gradient-to-br from-lumina-highlight/10 to-transparent">
+          <GlassCard className="p-8 bg-gradient-to-br from-primary/10 to-transparent">
              <div className="flex items-center gap-3 mb-6">
-               <Award className="w-6 h-6 text-lumina-highlight" />
-               <h3 className="font-bold text-white">Mentor Pro</h3>
+               <Award className="w-6 h-6 text-primary" />
+               <h3 className="font-bold text-foreground">Mentor Pro</h3>
              </div>
-             <p className="text-sm text-gray-400 leading-relaxed mb-6">
-               You are in the top <span className="text-white font-bold">5%</span> of mentors this month. Your mentees show a <span className="text-lumina-highlight font-bold">42%</span> faster skill acquisition rate.
+             <p className="text-sm text-text-secondary leading-relaxed mb-6">
+               You are in the top <span className="text-foreground font-bold">5%</span> of mentors this month. Your mentees show a <span className="text-primary font-bold">42%</span> faster skill acquisition rate.
              </p>
-             <button className="w-full py-2.5 rounded-xl border border-white/10 text-xs font-bold text-white hover:bg-white/5 transition-colors uppercase tracking-widest">
+             <button className="w-full py-2.5 rounded-xl border border-border text-xs font-bold text-foreground hover:bg-surface transition-colors uppercase tracking-widest">
                View Performance Insights
              </button>
           </GlassCard>
@@ -265,12 +265,12 @@ export default function MentorDashboard() {
         <GlassCard className="p-8">
            <div className="flex items-center justify-between mb-8">
              <div className="flex items-center gap-3">
-               <div className="p-3 rounded-2xl bg-yellow-500/10">
-                 <FileText className="w-6 h-6 text-yellow-400" />
+               <div className="p-3 rounded-2xl bg-primary/10">
+                 <FileText className="w-6 h-6 text-primary" />
                </div>
-               <h2 className="text-xl font-bold text-white">Review Queue</h2>
+               <h2 className="text-xl font-bold text-foreground">Review Queue</h2>
              </div>
-             <span className="px-2 py-1 rounded-lg bg-yellow-500/10 text-yellow-400 text-[10px] font-bold">3 PENDING</span>
+             <span className="px-2 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-bold">3 PENDING</span>
            </div>
            
            <div className="space-y-4">
@@ -278,15 +278,15 @@ export default function MentorDashboard() {
                { id: 1, name: 'Sarah Chen', title: 'AI Ethics Paper', time: '2h ago' },
                { id: 2, name: 'Marcus J.', title: 'Neural Net Viz', time: '5h ago' }
              ].map((item) => (
-               <div key={item.id} className="flex items-center gap-4 p-4 rounded-2xl glass-v2 border-white/5 hover:bg-white/5 transition-all group cursor-pointer">
-                 <div className="w-10 h-10 rounded-xl bg-lumina-highlight/20 flex items-center justify-center font-bold text-lumina-highlight text-xs">
+              <div key={item.id} className="flex items-center gap-4 p-4 rounded-2xl bg-surface-elevated border border-border hover:bg-surface transition-all group cursor-pointer">
+                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center font-bold text-primary text-xs">
                     {item.name[0]}
                  </div>
                  <div className="flex-1 min-w-0">
-                    <h5 className="text-sm font-bold text-white truncate">{item.title}</h5>
-                    <p className="text-[10px] text-gray-500 font-medium">{item.name} • {item.time}</p>
+                  <h5 className="text-sm font-bold text-foreground truncate">{item.title}</h5>
+                  <p className="text-[10px] text-text-muted font-medium">{item.name} • {item.time}</p>
                  </div>
-                  <button className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-lumina-highlight text-black transition-all">
+                <button className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-primary text-primary-foreground transition-all">
                    <ChevronRight className="w-4 h-4" />
                  </button>
                </div>
@@ -297,14 +297,14 @@ export default function MentorDashboard() {
         <GlassCard className="lg:col-span-2 p-8">
            <div className="flex items-center justify-between mb-8">
              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-2xl bg-lumina-highlight/10">
-                  <Zap className="w-6 h-6 text-lumina-highlight" />
+                <div className="p-3 rounded-2xl bg-primary/10">
+                  <Zap className="w-6 h-6 text-primary" />
                </div>
-               <h2 className="text-2xl font-bold text-white">Mentorship Impact</h2>
+               <h2 className="text-2xl font-bold text-foreground">Mentorship Impact</h2>
              </div>
              <div className="flex items-center gap-2">
                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map(m => (
-                 <span key={m} className="w-1.5 h-1.5 rounded-full bg-white/5"></span>
+                 <span key={m} className="w-1.5 h-1.5 rounded-full bg-border"></span>
                ))}
              </div>
            </div>
@@ -319,12 +319,12 @@ export default function MentorDashboard() {
                         <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(107,114,128,0.15)" />
                     <XAxis 
                       dataKey="month" 
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: '#4b5563', fontSize: 12, fontWeight: 600 }}
+                      tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 600 }}
                     />
                     <YAxis hide />
                     <Tooltip content={<CustomTooltip />} />

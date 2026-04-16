@@ -32,7 +32,7 @@ const GlassCard: React.FC<{ className?: string; children: React.ReactNode }> = (
     initial={{ opacity: 0, y: 16 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.4 }}
-    className={cn('rounded-3xl border border-white/5 bg-white/[0.03] backdrop-blur-2xl shadow-premium overflow-hidden', className)}
+    className={cn('rounded-3xl border border-border bg-surface-elevated shadow-premium overflow-hidden', className)}
   >
     {children}
   </motion.div>
@@ -64,9 +64,9 @@ const activityDrop = [
 
 const metrics = [
   { label: 'Avg Login / Week', value: '3.75', trend: -38, icon: LogIn,        color: 'text-amber-400',  bg: 'bg-amber-500/10' },
-  { label: 'Avg Study Hours',  value: '2.2h', trend: -42, icon: Clock,        color: 'text-red-400',    bg: 'bg-red-500/10' },
-  { label: 'Activity Score',   value: '34%',  trend: -28, icon: Activity,     color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
-  { label: 'Q&A Engagement',   value: '7.25', trend: -55, icon: MessageSquare,color: 'text-teal-400',   bg: 'bg-teal-500/10' },
+  { label: 'Avg Study Hours',  value: '2.2h', trend: -42, icon: Clock,        color: 'text-danger',    bg: 'bg-danger/10' },
+  { label: 'Activity Score',   value: '34%',  trend: -28, icon: Activity,     color: 'text-info', bg: 'bg-info/10' },
+  { label: 'Q&A Engagement',   value: '7.25', trend: -55, icon: MessageSquare,color: 'text-success',   bg: 'bg-success/10' },
 ];
 
 export default function BehaviorAnalytics() {
@@ -75,10 +75,10 @@ export default function BehaviorAnalytics() {
   return (
     <div className="space-y-8 pb-12">
       <div>
-        <h1 className="text-4xl font-display font-bold text-white tracking-tight">
+        <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
           Behavior <span className="gradient-text">Analytics</span>
         </h1>
-        <p className="text-gray-400 mt-1 font-medium italic">
+        <p className="text-text-muted mt-1 font-medium italic">
           Pattern change detection — normal → deviation → risk
         </p>
       </div>
@@ -93,7 +93,7 @@ export default function BehaviorAnalytics() {
               'px-5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest border transition-all',
               activeStudent === name
                 ? 'bg-lumina-highlight/10 text-lumina-highlight border-lumina-highlight/30'
-                : 'bg-white/5 text-gray-500 border-white/10 hover:text-white',
+                : 'bg-surface text-text-muted border-border hover:text-foreground',
             )}
           >
             {name}
@@ -109,12 +109,12 @@ export default function BehaviorAnalytics() {
               <div className={cn('p-2.5 rounded-xl', m.bg)}>
                 <m.icon className={cn('w-4 h-4', m.color)} />
               </div>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{m.label}</p>
+              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{m.label}</p>
             </div>
-            <p className="text-3xl font-black text-white">{m.value}</p>
+            <p className="text-3xl font-black text-foreground">{m.value}</p>
             <div className="flex items-center gap-1.5 mt-2">
-              <TrendingDown className="w-3.5 h-3.5 text-red-400" />
-              <span className="text-[10px] font-bold text-red-400">{m.trend}% vs baseline</span>
+              <TrendingDown className="w-3.5 h-3.5 text-danger" />
+              <span className="text-[10px] font-bold text-danger">{m.trend}% vs baseline</span>
             </div>
           </GlassCard>
         ))}
@@ -123,17 +123,17 @@ export default function BehaviorAnalytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Login Frequency */}
         <GlassCard className="p-8">
-          <h3 className="text-lg font-bold text-white mb-1 lowercase tracking-tighter">Login Frequency</h3>
-          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-6">Weekly logins over last 4 weeks</p>
+          <h3 className="text-lg font-bold text-foreground mb-1 lowercase tracking-tighter">Login Frequency</h3>
+          <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mb-6">Weekly logins over last 4 weeks</p>
           <div className="h-48">
             <ClientOnlyChart>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={loginFrequency}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                  <XAxis dataKey="week" tick={{ fill: '#6b7280', fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <XAxis dataKey="week" tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
                   <YAxis hide />
-                  <Tooltip contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 11 }} />
-                  <Bar dataKey="logins" fill="#F59E0B" radius={[6, 6, 0, 0]} name="Logins" />
+                  <Tooltip contentStyle={{ backgroundColor: 'var(--color-surface-elevated)', border: '1px solid var(--color-border)', borderRadius: 12, fontSize: 11, color: 'var(--color-text)' }} />
+                  <Bar dataKey="logins" fill="var(--color-warning)" radius={[6, 6, 0, 0]} name="Logins" />
                 </BarChart>
               </ResponsiveContainer>
             </ClientOnlyChart>
@@ -142,23 +142,23 @@ export default function BehaviorAnalytics() {
 
         {/* Study Time */}
         <GlassCard className="p-8">
-          <h3 className="text-lg font-bold text-white mb-1 lowercase tracking-tighter">Study Time</h3>
-          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-6">Daily study hours this week</p>
+          <h3 className="text-lg font-bold text-foreground mb-1 lowercase tracking-tighter">Study Time</h3>
+          <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mb-6">Daily study hours this week</p>
           <div className="h-48">
             <ClientOnlyChart>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={studyTimeData}>
                   <defs>
                     <linearGradient id="studyGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#14B8A6" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#14B8A6" stopOpacity={0} />
+                      <stop offset="5%"  stopColor="var(--color-success)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                  <XAxis dataKey="day" tick={{ fill: '#6b7280', fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <XAxis dataKey="day" tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
                   <YAxis hide />
-                  <Tooltip contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 11 }} />
-                  <Area type="monotone" dataKey="hours" stroke="#14B8A6" fill="url(#studyGrad)" strokeWidth={2} name="Hours" />
+                  <Tooltip contentStyle={{ backgroundColor: 'var(--color-surface-elevated)', border: '1px solid var(--color-border)', borderRadius: 12, fontSize: 11, color: 'var(--color-text)' }} />
+                  <Area type="monotone" dataKey="hours" stroke="var(--color-success)" fill="url(#studyGrad)" strokeWidth={2} name="Hours" />
                 </AreaChart>
               </ResponsiveContainer>
             </ClientOnlyChart>
@@ -167,28 +167,28 @@ export default function BehaviorAnalytics() {
 
         {/* Activity Drop */}
         <GlassCard className="p-8 lg:col-span-2">
-          <h3 className="text-lg font-bold text-white mb-1 lowercase tracking-tighter">Activity Drop Analysis</h3>
-          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-6">Questions, submissions & peer interactions over 4 weeks</p>
+          <h3 className="text-lg font-bold text-foreground mb-1 lowercase tracking-tighter">Activity Drop Analysis</h3>
+          <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mb-6">Questions, submissions & peer interactions over 4 weeks</p>
           <div className="h-48">
             <ClientOnlyChart>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={activityDrop}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                  <XAxis dataKey="week" tick={{ fill: '#6b7280', fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <XAxis dataKey="week" tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
                   <YAxis hide />
-                  <Tooltip contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 11 }} />
-                  <Line type="monotone" dataKey="questions"   stroke="#F59E0B" strokeWidth={2} dot={false} name="Questions" />
-                  <Line type="monotone" dataKey="submissions" stroke="#ef4444" strokeWidth={2} dot={false} name="Submissions" />
-                  <Line type="monotone" dataKey="peer"        stroke="#6366f1" strokeWidth={2} dot={false} name="Peer Activity" />
+                  <Tooltip contentStyle={{ backgroundColor: 'var(--color-surface-elevated)', border: '1px solid var(--color-border)', borderRadius: 12, fontSize: 11, color: 'var(--color-text)' }} />
+                  <Line type="monotone" dataKey="questions"   stroke="var(--color-warning)" strokeWidth={2} dot={false} name="Questions" />
+                  <Line type="monotone" dataKey="submissions" stroke="var(--color-danger)" strokeWidth={2} dot={false} name="Submissions" />
+                  <Line type="monotone" dataKey="peer"        stroke="var(--color-info)" strokeWidth={2} dot={false} name="Peer Activity" />
                 </LineChart>
               </ResponsiveContainer>
             </ClientOnlyChart>
           </div>
           <div className="flex items-center gap-6 mt-4">
-            {([['#F59E0B', 'Questions'], ['#ef4444', 'Submissions'], ['#6366f1', 'Peer Activity']] as const).map(([color, label]) => (
+            {([['var(--color-warning)', 'Questions'], ['var(--color-danger)', 'Submissions'], ['var(--color-info)', 'Peer Activity']] as const).map(([color, label]) => (
               <div key={label} className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{label}</span>
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest">{label}</span>
               </div>
             ))}
           </div>

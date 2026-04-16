@@ -483,6 +483,7 @@ export default function TeacherDashboardContent() {
              </Link>
           </div>
         </div>
+      </div>
     </div>
   );
 }

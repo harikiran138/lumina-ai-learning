@@ -16,8 +16,8 @@ export default function MentorLayout({ children }: { children: React.ReactNode }
 
   if (isAuthLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-primary" />
       </div>
     );
   }
@@ -29,11 +29,11 @@ export default function MentorLayout({ children }: { children: React.ReactNode }
   return (
     <RoleGuard allowedRoles={["mentor"]}>
       <InstitutionGuard>
-        <div className="min-h-screen relative overflow-hidden bg-black text-gray-100">
+        <div className="min-h-screen relative overflow-hidden bg-background text-foreground">
           <BGPattern
             variant="grid"
             size={32}
-            fill="rgba(100, 100, 100, 0.05)"
+            fill="rgba(16, 185, 129, 0.08)"
             className="fixed inset-0 z-0 pointer-events-none opacity-20"
           />
           <Sidebar
@@ -48,7 +48,7 @@ export default function MentorLayout({ children }: { children: React.ReactNode }
             />
             {sidebarOpen && (
               <div
-                className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                className="fixed inset-0 bg-background/70 backdrop-blur-sm z-40 lg:hidden"
                 onClick={() => setSidebarOpen(false)}
               />
             )}

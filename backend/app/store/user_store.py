@@ -208,40 +208,21 @@ class UserStore:
             # Always use canonical role
             canonical_role = self.normalize_role(role)
             
-            # 1. Learner Profile (Primary fallback for all roles as it's the standard Lumina metadata sink)
-            import random
-            import string
-            
             # Generate Parent Link Code for students
             parent_link_code = None
             if canonical_role == "student":
+                import random
+                import string
                 parent_link_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
                 log.info("generating_parent_link_code", user_id=user_id, code=parent_link_code)
-
-            # Helper for robust insert/upsert to secondary tables
-            async def _robust_write(table: str, data: dict, method: str = "upsert"):
-                try:
-                    # Column discovery
-                    client = self.db.get_client()
-                    sample = await client.table(table).select("*").limit(1).async_execute()
-                    if sample.data:
-                        cols = set(sample.data[0].keys())
-                        data = {k: v for k, v in data.items() if k in cols}
-                    
-                    if method == "upsert":
-                        # Most specialized profile tables use user_id as their primary key
-                        # and do not have an auto-increment ID column.
-                        await self.db.table(table).upsert(data, on_conflict='user_id').async_execute()
-                    else:
-                        await self.db.table(table).insert(data).async_execute()
-                except Exception as ex:
-                    log.error(f"{table}_write_failed", error=str(ex), user_id=user_id)
 
             # 1. Learner Profile
             learner_data = {
                 "user_id": user_id,
                 "role": canonical_role,
-                "full_name": metadata.get("name") or metadata.get("full_name") or "Unnamed",
+                "metadata": {
+                    "full_name": metadata.get("name") or metadata.get("full_name") or "Unnamed",
+                },
                 "preferences": {
                     "onboarding_complete": False,
                     "parent_link_code": parent_link_code
@@ -249,7 +230,8 @@ class UserStore:
             }
             if metadata.get("college_id"): learner_data["institution_id"] = metadata["college_id"]
             
-            await _robust_write("learner_profiles", learner_data)
+            # Use insert_safe for multi-table resilience
+            await self.db.insert_safe("learner_profiles", learner_data)
 
             # 2. Specialized Roles
             if canonical_role == "student":
@@ -258,32 +240,30 @@ class UserStore:
                     "roll_number": metadata.get("roll_number") or "N/A",
                     "current_section_id": metadata.get("section_id"),
                 }
-                await _robust_write("student_profiles", student_data)
+                await self.db.insert_safe("student_profiles", student_data)
             
             elif canonical_role == "teacher":
                 teacher_data = {
                     "user_id": user_id,
                     "employee_id": metadata.get("empid") or metadata.get("employee_id") or "N/A",
-                    "designation": metadata.get("designation") or "Professor",
                     "department_id": metadata.get("dept_id") or metadata.get("department_id")
                 }
-                await _robust_write("teacher_profiles", teacher_data)
+                await self.db.insert_safe("teacher_profiles", teacher_data)
                 log.info("teacher_profile_persisted", user_id=user_id)
 
             # 3. Onboarding Profile (Legacy alignment)
             try:
-                await self.db.table("onboarding_profiles").upsert({
+                onboarding_data = {
                     "user_id": user_id,
                     "role": canonical_role,
                     "institution_id": metadata.get("college_id"),
                     "onboarding_step": 1
-                }).async_execute()
+                }
+                await self.db.insert_safe("onboarding_profiles", onboarding_data)
             except:
                 pass 
 
         except Exception as e:
-            # We don't want to fail the whole registration if profile creation fails, 
-            # but we should log it heavily.
             log.error("profile_metadata_persistence_failed", user_id=user_id, error=str(e))
 
 

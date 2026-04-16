@@ -21,7 +21,7 @@ const GlassCard: React.FC<{ className?: string; children: React.ReactNode }> = (
     initial={{ opacity: 0, y: 16 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.4 }}
-    className={cn('rounded-3xl border border-white/5 bg-white/[0.03] backdrop-blur-2xl shadow-premium overflow-hidden', className)}
+    className={cn('rounded-3xl border border-border bg-surface-elevated shadow-premium overflow-hidden', className)}
   >
     {children}
   </motion.div>
@@ -49,10 +49,10 @@ export default function CounselorSettings() {
   return (
     <div className="space-y-8 pb-12">
       <div>
-        <h1 className="text-4xl font-display font-bold text-white tracking-tight">
+        <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">
           Counselor <span className="gradient-text">Settings</span>
         </h1>
-        <p className="text-gray-400 mt-1 font-medium italic">Manage your profile, notifications, privacy, and security preferences</p>
+        <p className="text-text-muted mt-1 font-medium italic">Manage your profile, notifications, privacy, and security preferences</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -66,7 +66,7 @@ export default function CounselorSettings() {
                 'w-full flex items-center gap-3 px-5 py-3 rounded-2xl text-sm font-bold transition-all text-left',
                 activeTab === key
                   ? 'bg-lumina-highlight/10 text-lumina-highlight border border-lumina-highlight/20'
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white border border-transparent',
+                  : 'text-text-secondary hover:bg-surface hover:text-foreground border border-transparent',
               )}
             >
               <Icon className="w-4 h-4" />
@@ -80,7 +80,7 @@ export default function CounselorSettings() {
           <GlassCard className="p-8">
             {activeTab === 'profile' && (
               <div className="space-y-6">
-                <h2 className="text-xl font-bold text-white lowercase tracking-tighter">Profile Information</h2>
+                <h2 className="text-xl font-bold text-foreground lowercase tracking-tighter">Profile Information</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {[
                     { label: 'Full Name',        placeholder: 'Dr. Sarah Smith',            type: 'text' },
@@ -89,20 +89,20 @@ export default function CounselorSettings() {
                     { label: 'Employee ID',       placeholder: 'EMP-2024-0045',              type: 'text' },
                   ].map((field) => (
                     <div key={field.label} className="space-y-2">
-                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{field.label}</label>
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{field.label}</label>
                       <input
                         type={field.type}
                         placeholder={field.placeholder}
-                        className="w-full px-4 py-3 rounded-2xl bg-black/40 border border-white/10 text-white text-sm placeholder:text-gray-700 focus:outline-none focus:border-lumina-highlight/40 transition-all"
+                        className="w-full px-4 py-3 rounded-2xl bg-surface border border-border text-foreground text-sm placeholder:text-text-muted focus:outline-none focus:border-primary transition-all"
                       />
                     </div>
                   ))}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Bio</label>
+                  <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Bio</label>
                   <textarea
                     placeholder="Brief professional bio…"
-                    className="w-full h-24 px-4 py-3 rounded-2xl bg-black/40 border border-white/10 text-white text-sm placeholder:text-gray-700 focus:outline-none focus:border-lumina-highlight/40 transition-all resize-none"
+                    className="w-full h-24 px-4 py-3 rounded-2xl bg-surface border border-border text-foreground text-sm placeholder:text-text-muted focus:outline-none focus:border-primary transition-all resize-none"
                   />
                 </div>
               </div>
@@ -110,7 +110,7 @@ export default function CounselorSettings() {
 
             {activeTab === 'notifications' && (
               <div className="space-y-6">
-                <h2 className="text-xl font-bold text-white lowercase tracking-tighter">Notification Preferences</h2>
+                <h2 className="text-xl font-bold text-foreground lowercase tracking-tighter">Notification Preferences</h2>
                 {[
                   { label: 'High-risk alerts',          desc: 'Notify immediately when a student reaches high-risk threshold.',   default: true },
                   { label: 'Intervention reminders',    desc: 'Remind me before scheduled sessions and follow-ups.',              default: true },
@@ -118,14 +118,14 @@ export default function CounselorSettings() {
                   { label: 'Weekly risk summary',       desc: 'Receive weekly cohort wellness digest every Monday.',              default: false },
                   { label: 'System announcements',      desc: 'Platform updates, maintenance windows, and policy changes.',       default: false },
                 ].map((item) => (
-                  <div key={item.label} className="flex items-start justify-between gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                  <div key={item.label} className="flex items-start justify-between gap-4 p-4 rounded-2xl bg-surface border border-border">
                     <div>
-                      <p className="font-bold text-white text-sm">{item.label}</p>
-                      <p className="text-[10px] text-gray-500 font-medium mt-0.5">{item.desc}</p>
+                      <p className="font-bold text-foreground text-sm">{item.label}</p>
+                      <p className="text-[10px] text-text-muted font-medium mt-0.5">{item.desc}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
                       <input type="checkbox" defaultChecked={item.default} className="sr-only peer" />
-                      <div className="w-10 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-lumina-highlight" />
+                      <div className="w-10 h-5 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
                     </label>
                   </div>
                 ))}
@@ -134,11 +134,11 @@ export default function CounselorSettings() {
 
             {activeTab === 'privacy' && (
               <div className="space-y-6">
-                <h2 className="text-xl font-bold text-white lowercase tracking-tighter">Privacy Controls</h2>
-                <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20">
+                <h2 className="text-xl font-bold text-foreground lowercase tracking-tighter">Privacy Controls</h2>
+                <div className="p-4 rounded-2xl bg-warning/10 border border-warning/20">
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-                    <p className="text-[11px] text-amber-400/80 font-medium leading-relaxed">
+                    <AlertTriangle className="w-4 h-4 text-warning mt-0.5 shrink-0" />
+                    <p className="text-[11px] text-warning font-medium leading-relaxed">
                       Counselor notes are end-to-end encrypted by default. Modifying privacy settings will be logged as a safeguarding event.
                     </p>
                   </div>
@@ -151,15 +151,15 @@ export default function CounselorSettings() {
                 ].map((item) => (
                   <div key={item.label} className="flex items-start justify-between gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                     <div className="flex items-start gap-3">
-                      {item.locked && <Lock className="w-3.5 h-3.5 text-lumina-highlight mt-0.5 shrink-0" />}
+                      {item.locked && <Lock className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />}
                       <div>
-                        <p className="font-bold text-white text-sm">{item.label}</p>
-                        <p className="text-[10px] text-gray-500 font-medium mt-0.5">{item.desc}</p>
+                        <p className="font-bold text-foreground text-sm">{item.label}</p>
+                        <p className="text-[10px] text-text-muted font-medium mt-0.5">{item.desc}</p>
                       </div>
                     </div>
                     <label className={cn('relative inline-flex items-center shrink-0 mt-1', item.locked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer')}>
                       <input type="checkbox" defaultChecked={item.enabled} disabled={item.locked} className="sr-only peer" />
-                      <div className="w-10 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-lumina-highlight" />
+                      <div className="w-10 h-5 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
                     </label>
                   </div>
                 ))}
@@ -168,43 +168,43 @@ export default function CounselorSettings() {
 
             {activeTab === 'security' && (
               <div className="space-y-6">
-                <h2 className="text-xl font-bold text-white lowercase tracking-tighter">Security Settings</h2>
+                <h2 className="text-xl font-bold text-foreground lowercase tracking-tighter">Security Settings</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Current Password</label>
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Current Password</label>
                     <div className="relative">
                       <input
                         type={showPass ? 'text' : 'password'}
                         placeholder="Enter current password"
-                        className="w-full px-4 py-3 rounded-2xl bg-black/40 border border-white/10 text-white text-sm placeholder:text-gray-700 focus:outline-none focus:border-lumina-highlight/40 transition-all pr-11"
+                        className="w-full px-4 py-3 rounded-2xl bg-surface border border-border text-foreground text-sm placeholder:text-text-muted focus:outline-none focus:border-primary transition-all pr-11"
                       />
-                      <button onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors">
+                      <button onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-foreground transition-colors">
                         {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">New Password</label>
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">New Password</label>
                     <input
                       type="password"
                       placeholder="Enter new password"
-                      className="w-full px-4 py-3 rounded-2xl bg-black/40 border border-white/10 text-white text-sm placeholder:text-gray-700 focus:outline-none focus:border-lumina-highlight/40 transition-all"
+                      className="w-full px-4 py-3 rounded-2xl bg-surface border border-border text-foreground text-sm placeholder:text-text-muted focus:outline-none focus:border-primary transition-all"
                     />
                   </div>
                 </div>
-                <div className="p-5 rounded-2xl bg-teal-500/5 border border-teal-500/20 flex items-start gap-3">
-                  <Shield className="w-4 h-4 text-teal-400 mt-0.5 shrink-0" />
+                <div className="p-5 rounded-2xl bg-success/10 border border-success/20 flex items-start gap-3">
+                  <Shield className="w-4 h-4 text-success mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm font-bold text-teal-400">Two-Factor Authentication — Active</p>
-                    <p className="text-[10px] text-teal-400/70 font-medium mt-0.5">Your account is protected by 2FA. All counselor accounts require 2FA by policy.</p>
+                    <p className="text-sm font-bold text-success">Two-Factor Authentication — Active</p>
+                    <p className="text-[10px] text-success font-medium mt-0.5">Your account is protected by 2FA. All counselor accounts require 2FA by policy.</p>
                   </div>
                 </div>
               </div>
             )}
 
-            <div className="pt-8 border-t border-white/5 mt-8 flex items-center justify-between">
+            <div className="pt-8 border-t border-border mt-8 flex items-center justify-between">
               {saved && (
-                <div className="flex items-center gap-2 text-teal-400">
+                <div className="flex items-center gap-2 text-success">
                   <CheckCircle2 className="w-4 h-4" />
                   <span className="text-[10px] font-bold uppercase tracking-widest">Saved successfully</span>
                 </div>
@@ -212,7 +212,7 @@ export default function CounselorSettings() {
               {!saved && <div />}
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-lumina-highlight text-black font-bold text-sm hover:scale-105 transition-all shadow-lg"
+                className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-primary-foreground font-bold text-sm hover:scale-105 transition-all shadow-lg"
               >
                 <Save className="w-4 h-4" /> Save Changes
               </button>

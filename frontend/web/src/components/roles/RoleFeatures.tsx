@@ -15,13 +15,13 @@ interface RoleFeaturesProps {
 
 const RoleFeatures = ({ features }: RoleFeaturesProps) => {
   return (
-    <section className="py-24 bg-white/[0.02]">
+    <section className="py-24 bg-surface/60">
       <div className="container mx-auto px-6">
         <div className="mb-16">
-          <h2 className="text-4xl font-black text-white font-display tracking-tight mb-4">
-            Key <span className="gradient-text-gold">Functionalities</span>
+          <h2 className="text-4xl font-black text-text font-display tracking-tight mb-4">
+            Key <span className="text-primary">Functionalities</span>
           </h2>
-          <p className="text-zinc-500 max-w-xl">
+          <p className="text-text-muted max-w-xl">
             Deeply integrated features powered by the Lumina Agentic AI Engine.
           </p>
         </div>
@@ -34,13 +34,13 @@ const RoleFeatures = ({ features }: RoleFeaturesProps) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className="p-8 rounded-3xl bg-white/[0.03] border border-white/[0.08] hover:border-lumina-highlight/30 transition-all duration-500 group"
+              className="p-8 rounded-3xl bg-surface-elevated border border-border hover:border-primary/40 transition-all duration-500 group"
             >
-              <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-6 group-hover:bg-lumina-highlight/10 transition-colors">
-                <Cpu className="w-6 h-6 text-zinc-400 group-hover:text-lumina-highlight" />
+              <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mb-6 group-hover:bg-primary/10 transition-colors border border-border">
+                <Cpu className="w-6 h-6 text-text-muted group-hover:text-primary" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-4 uppercase tracking-tight">{feature.name}</h3>
-              <p className="text-zinc-400 text-sm leading-relaxed mb-6">
+              <h3 className="text-xl font-bold text-text mb-4 uppercase tracking-tight font-display">{feature.name}</h3>
+              <p className="text-text-secondary text-sm leading-relaxed mb-6 font-sans">
                 {feature.explanation}
               </p>
             </motion.div>

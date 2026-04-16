@@ -29,6 +29,14 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
     const scene = new THREE.Scene();
     scene.fog = new THREE.Fog(0x000000, 2000, 10000);
 
+    const particleColorValue = getComputedStyle(document.documentElement)
+      .getPropertyValue("--color-particle")
+      .trim();
+    const particleColor = new THREE.Color(
+      particleColorValue ||
+        (isDark ? "rgba(255,255,255,1)" : "rgba(22,163,74,1)"),
+    );
+
     const camera = new THREE.PerspectiveCamera(
       60,
       window.innerWidth / window.innerHeight,
@@ -46,10 +54,6 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
     renderer.setClearColor(0x000000, 0);
 
     containerRef.current.appendChild(renderer.domElement);
-
-    const particleColor = new THREE.Color(
-      isDark ? "rgba(255,255,255,1)" : "rgba(22,163,74,1)",
-    );
 
     const positions: number[] = [];
     const colors: number[] = [];
