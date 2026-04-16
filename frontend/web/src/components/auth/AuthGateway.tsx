@@ -28,11 +28,12 @@ import {
 } from "lucide-react";
 import { api, type User as AuthUser } from "@/lib/api";
 import { registerSchema } from "@/lib/schemas/auth";
-import { getRoleHome, ROLE_HOME_ROUTES } from "@/lib/role-routing";
+import { getRoleHome, ROLE_HOME_ROUTES, normalizeRole } from "@/lib/role-routing";
 import { useAuthStore } from "@/store/useAuthStore";
+import { Role } from "@/lib/rbac/roles";
 
-type LoginRole = "student" | "teacher" | "faculty" | "hod" | "admin" | "parent" | "mentor" | "peer_tutor" | "counselor" | "researcher" | "alumni" | "content_creator";
-type SignupRole = "student" | "teacher" | "parent" | "mentor" | "peer_tutor" | "counselor" | "researcher" | "alumni" | "content_creator";
+type LoginRole = Role;
+type SignupRole = Role;
 type AuthMode = "login" | "signup";
 
 type SignupForm = {
@@ -44,34 +45,29 @@ type SignupForm = {
 };
 
 const loginRoleHints: Array<{
-  id: LoginRole;
+  id: Role;
   label: string;
   icon: typeof GraduationCap;
   helper: string;
 }> = [
-  { id: "student", label: "Student", icon: GraduationCap, helper: "Roll number or student email" },
-  { id: "teacher", label: "Teacher", icon: BookOpen, helper: "Teacher email or ID" },
-  { id: "faculty", label: "Faculty", icon: School, helper: "Faculty ID or institutional email" },
-  { id: "hod", label: "HOD", icon: Crown, helper: "Department head credentials" },
-  { id: "admin", label: "Admin", icon: ShieldCheck, helper: "Administrative email access" },
-  { id: "parent", label: "Parent", icon: Users, helper: "Parent portal email" },
-  { id: "mentor", label: "Mentor", icon: Compass, helper: "Mentor email" },
-  { id: "counselor", label: "Counselor", icon: Heart, helper: "Counselor email" },
-  { id: "researcher", label: "Researcher", icon: FlaskConical, helper: "Research portal access" },
-  { id: "alumni", label: "Alumni", icon: School, helper: "Alumni network login" },
-  { id: "content_creator", label: "Content Creator", icon: Compass, helper: "Studio access" },
+  { id: Role.STUDENT, label: "Student", icon: GraduationCap, helper: "Roll number or student email" },
+  { id: Role.FACULTY, label: "Faculty", icon: BookOpen, helper: "Faculty ID or institutional email" },
+  { id: Role.HOD, label: "HOD", icon: Crown, helper: "Department head credentials" },
+  { id: Role.ADMIN, label: "Campus Admin", icon: ShieldCheck, helper: "Administrative access" },
+  { id: Role.PARENT, label: "Parent", icon: Users, helper: "Linked email" },
+  { id: Role.COUNSELOR, label: "Counselor", icon: Heart, helper: "Wellness portal email" },
+  { id: Role.PEER_MENTOR, label: "Peer Mentor", icon: Compass, helper: "Mentor login" },
+  { id: Role.ALUMNI, label: "Alumni", icon: School, helper: "Alumni ID" },
+  { id: Role.SUPER_ADMIN, label: "Platform Admin", icon: Lock, helper: "Global root access" },
 ];
 
-const signupRoleOptions: Array<{ id: SignupRole; label: string; icon: typeof GraduationCap; desc: string }> = [
-  { id: "student", label: "Student", icon: GraduationCap, desc: "Adaptive learning & AI tutor" },
-  { id: "teacher", label: "Teacher / Faculty", icon: BookOpen, desc: "Content creation & AI verification" },
-  { id: "counselor", label: "Counselor", icon: Heart, desc: "Student wellbeing & support" },
-  { id: "parent", label: "Parent", icon: Users, desc: "Monitor child progress" },
-  { id: "mentor", label: "Mentor", icon: Compass, desc: "Guidance & career support" },
-  { id: "peer_tutor", label: "Peer Tutor", icon: HeartHandshake, desc: "Collaborative learning" },
-  { id: "researcher", label: "Researcher", icon: FlaskConical, desc: "Educational impact studies" },
-  { id: "alumni", label: "Alumni", icon: School, desc: "Professional network & mentorship" },
-  { id: "content_creator", label: "Content Creator", icon: Compass, desc: "Build & share educational content" },
+const signupRoleOptions: Array<{ id: Role; label: string; icon: typeof GraduationCap; desc: string }> = [
+  { id: Role.STUDENT, label: "Student", icon: GraduationCap, desc: "Adaptive AI learning" },
+  { id: Role.FACULTY, label: "Faculty", icon: BookOpen, desc: "Content & Verification" },
+  { id: Role.PARENT, label: "Parent", icon: Users, desc: "Monitor your child" },
+  { id: Role.COUNSELOR, label: "Counselor", icon: Heart, desc: "Wellness support" },
+  { id: Role.PEER_MENTOR, label: "Peer Mentor", icon: Compass, desc: "Lead fellow scholars" },
+  { id: Role.ALUMNI, label: "Alumni", icon: School, desc: "Legacy & Networking" },
 ];
 
 const featurePillars = [
@@ -95,18 +91,19 @@ function isValidEmail(value: string) {
 }
 
 function redirectAfterAuth(router: ReturnType<typeof useRouter>, user: AuthUser) {
-  // Only redirect to /onboarding when the backend explicitly says onboarding
-  // is not complete (onboardingCompleted === false).
-  // We intentionally do NOT fall back on onboardingStep < 5 — that value is
-  // unreliable for roles that complete in fewer than 5 steps (college_admin
-  // finishes at step 2, etc.) and causes repeated redirect loops for users
-  // who have already finished onboarding but have a stale step counter.
-  const bypassOnboarding = ["super_admin", "admin", "hod", "system_admin", "institution_admin"].includes(user.role);
-  const requiredSteps = user.role === "college_admin" ? 2 : 5;
-
+  // Use normalization to ensure we match correctly
+  const canonicalRole = normalizeRole(user.role);
+  
+  // Platform admins and system roles usually bypass common onboarding or have special flows
+  const bypassOnboarding = [Role.SUPER_ADMIN, Role.ADMIN].includes(canonicalRole as Role);
+  
+  // In our new 9-role system, onboarding is strictly defined in lib/role-onboarding.ts
+  // The backend onboardingCompleted flag is the primary source of truth.
   let isComplete = user.onboardingCompleted;
+  
+  // Fallback for demo users or legacy sessions
   if (isComplete === undefined) {
-    isComplete = (user.onboardingStep ?? 0) >= requiredSteps;
+    isComplete = (user.onboardingStep ?? 0) >= 2; // All roles now have at least 1-2 steps
   }
 
   const needsOnboarding = !bypassOnboarding && isComplete === false;
@@ -122,8 +119,6 @@ function redirectAfterAuth(router: ReturnType<typeof useRouter>, user: AuthUser)
     return;
   }
 
-  // Force a full location reload so the middleware sees the updated cookie
-  // rather than a cached version of the previous navigation state.
   window.location.href = destination;
 }
 

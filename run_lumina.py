@@ -184,7 +184,7 @@ async def run(args: argparse.Namespace):
         teacher_ctx = await run_teacher_flow(
             client,
             teacher_token,
-            dept_id=academic_ctx.get("dept_id"),
+            department_id=academic_ctx.get("dept_id"),
         )
         results["teacher"] = teacher_ctx
 

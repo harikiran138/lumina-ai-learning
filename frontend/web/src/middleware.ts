@@ -40,36 +40,25 @@ function decodeToken(token: string): Record<string, unknown> | null {
 
 // Protected path prefixes → the canonical role required to access them.
 // super_admin can access every path (checked below).
+// Protected path prefixes → the canonical role required to access them.
+// super_admin can access every path (checked below).
 const PROTECTED_PATHS: Record<string, string> = {
-  '/admin':           'college_admin',
-  '/college':         'college_admin',
-  '/hod':             'hod',
-  '/teacher':         'teacher',
-  '/student':         'student',
-  '/parent':          'parent',
-  '/mentor':          'mentor',
-  '/peer_tutor':      'peer_tutor',
-  '/counselor':       'counselor',
-  '/content_creator': 'content_creator',
-  '/researcher':      'researcher',
-  '/alumni':          'alumni',
-  '/auditor':         'auditor',
+  '/dashboard/admin':       'ADMIN',
+  '/dashboard/faculty':     'FACULTY',
+  '/dashboard/hod':         'HOD',
+  '/dashboard/student':     'STUDENT',
+  '/dashboard/parent':      'PARENT',
+  '/dashboard/counselor':   'COUNSELOR',
+  '/dashboard/peer-mentor': 'PEER_MENTOR',
+  '/dashboard/alumni':      'ALUMNI',
+  '/dashboard/super-admin': 'SUPER_ADMIN',
 }
 
-// Roles that may access /admin/* in addition to super_admin.
 const ADMIN_ALLOWED = new Set([
-  'super_admin', 'college_admin', 'institution_admin', 'system_admin', 'admin', 'hod',
+  'SUPER_ADMIN', 'ADMIN', 'HOD',
 ])
 
-// Supervisor routes: supervisor gets all teacher routes PLUS these
-const SUPERVISOR_EXTRA_PATHS = new Set([
-  '/teacher/coordination',
-  '/teacher/verification-queue',
-  '/teacher/courses/coordinator',
-])
-
-// Auditor allowed roles
-const AUDITOR_ALLOWED = new Set(['auditor', 'super_admin', 'system_admin'])
+const AUDITOR_ALLOWED = new Set(['ADMIN', 'SUPER_ADMIN'])
 
 // Public routes where guest session tracking applies
 const PUBLIC_TRACKABLE_PATHS = ['/courses/catalog', '/courses']
@@ -175,10 +164,8 @@ export function middleware(request: NextRequest) {
   // Roles that may require a wizard-style onboarding.
   // If a role is NOT in this set, and onboardingCompleted is false, they go to /onboarding.
   const ONBOARDING_BYPASS_ROLES = new Set([
-    'super_admin', 'admin', 'system_admin', 'institution_admin', 'hod',
-    'supervisor', 'auditor', 'finance',
-    'teacher', 'content_creator', 'alumni'
-  ])
+     'SUPER_ADMIN', 'ADMIN'
+   ])
   const onboardingCompleted =
     payload.onboardingCompleted === true || ONBOARDING_BYPASS_ROLES.has(role)
 
@@ -218,23 +205,7 @@ export function middleware(request: NextRequest) {
   // ── 6. Role-based access control ─────────────────────────────────────────────
   for (const [pathPrefix, expectedRole] of Object.entries(PROTECTED_PATHS)) {
     if (pathname === pathPrefix || pathname.startsWith(`${pathPrefix}/`)) {
-      let allowed: boolean
-
-      if (pathPrefix === '/admin') {
-        allowed = ADMIN_ALLOWED.has(role)
-      } else if (pathPrefix === '/auditor') {
-        allowed = AUDITOR_ALLOWED.has(role)
-      } else if (pathPrefix === '/teacher') {
-        // Supervisor inherits all teacher routes; also gets its extra paths
-        allowed =
-          role === 'super_admin' ||
-          role === 'teacher' ||
-          role === 'supervisor' ||
-          (expectedRole === 'teacher' && ADMIN_ALLOWED.has(role)) ||
-          SUPERVISOR_EXTRA_PATHS.has(pathname)
-      } else {
-        allowed = role === 'super_admin' || role === expectedRole
-      }
+      const allowed = role === 'SUPER_ADMIN' || role === expectedRole;
 
       if (!allowed) {
         const url = request.nextUrl.clone()

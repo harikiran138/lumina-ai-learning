@@ -18,8 +18,23 @@ import {
   AlertTriangle,
   FileText,
   AlertCircle,
-  FileCheck
+  FileCheck,
+  Building,
+  Key,
+  Database,
+  Cpu,
+  Activity,
+  CreditCard,
+  Settings,
+  Server,
+  Heart,
+  HeartPulse,
+  Award,
+  Trophy,
+  MessageCircle,
+  UserCheck
 } from "lucide-react";
+import { Role } from "@/lib/rbac/roles";
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { cn } from "@/lib/utils";
@@ -38,7 +53,21 @@ const ICON_MAP: Record<string, LucideIcon> = {
   FileText,
   AlertCircle,
   FileCheck,
-  BarChart3
+  BarChart3,
+  Building,
+  Key,
+  Database,
+  Cpu,
+  Activity,
+  CreditCard,
+  Settings,
+  Server,
+  Heart,
+  HeartPulse,
+  Award,
+  Trophy,
+  MessageCircle,
+  UserCheck
 };
 
 interface DashboardStat {
@@ -107,7 +136,7 @@ export function StandardDashboard({
             {headerAction && <div className="mt-8">{headerAction}</div>}
           </div>
           
-          {meta?.role === "student" && meta?.overallMastery !== undefined && (
+          {meta?.role === Role.STUDENT && meta?.overallMastery !== undefined && (
             <div className="shrink-0 z-10">
                {/* Large Mastery Display could go here */}
             </div>

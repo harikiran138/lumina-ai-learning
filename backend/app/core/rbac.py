@@ -4,25 +4,38 @@ from typing import Any, Set
 
 class Role(str, Enum):
     """
-    Standardized core roles for Lumina AI LMS.
-    Consolidated from 12+ roles to 6 core roles for simplicity and security.
+    Standardized core roles for Lumina AI LMS (B.Tech Edition).
     """
-    SUPER_ADMIN = "super_admin"   # Platform-wide management
-    ADMIN = "admin"               # Institutional management (Admins, HODs, Supervisors)
-    TEACHER = "teacher"           # Instructional staff (Teachers, Mentors, Content Creators)
-    STUDENT = "student"           # Learners (Students, Researchers, Peer Tutors)
-    PARENT = "parent"             # Guardians
-    AUDITOR = "auditor"           # Read-only oversight
+    STUDENT = "student"
+    FACULTY = "faculty"
+    HOD = "hod"
+    ADMIN = "admin"
+    PARENT = "parent"
+    COUNSELOR = "counselor"
+    MENTOR = "mentor"
+    PEER_TUTOR = "peer_tutor"
+    RESEARCHER = "researcher"
+    ALUMNI = "alumni"
+    CONTENT_CREATOR = "content_creator"
+    PEER_MENTOR = "peer_mentor"
+    SUPER_ADMIN = "super_admin"
 
 
 # Role hierarchy: higher number = more authority
 ROLE_HIERARCHY: dict[str, int] = {
     Role.SUPER_ADMIN: 100,
     Role.ADMIN: 80,
-    Role.AUDITOR: 50,
-    Role.TEACHER: 40,
+    Role.HOD: 60,
+    Role.FACULTY: 50,
+    Role.RESEARCHER: 45,
+    Role.COUNSELOR: 40,
+    Role.CONTENT_CREATOR: 35,
+    Role.MENTOR: 30,
+    Role.PEER_MENTOR: 28,
+    Role.PEER_TUTOR: 25,
     Role.STUDENT: 20,
-    Role.PARENT: 15,
+    Role.ALUMNI: 15,
+    Role.PARENT: 10,
 }
 
 # Supervisor-specific permissions
@@ -35,98 +48,66 @@ SUPERVISOR_PERMISSIONS = frozenset([
 ])
 
 
-# Canonical end-user roles used by auth and onboarding.
-VALID_ROLES: Set[str] = {
-    Role.STUDENT.value,
-    Role.TEACHER.value,
-    Role.ADMIN.value,
-    Role.PARENT.value,
-}
+# Canonical end-user roles
+VALID_ROLES: Set[str] = {r.value for r in Role}
 
 # Roles that require an admin invite
 INVITE_ONLY_ROLES = {
     Role.ADMIN.value,
     Role.SUPER_ADMIN.value,
-    Role.AUDITOR.value,
+    Role.HOD.value,
+    Role.FACULTY.value,
 }
 
-PLATFORM_ROLES: Set[str] = {
-    Role.SUPER_ADMIN.value,
-    Role.ADMIN.value,
-    Role.AUDITOR.value,
-}
-
-# Roles that can self-register via /api/auth/register
+# Roles that can self-register
 SELF_SIGNUP_ROLES = {
     Role.STUDENT.value,
-    Role.TEACHER.value,
     Role.PARENT.value,
+    Role.ALUMNI.value,
+    Role.PEER_TUTOR.value,
+    Role.MENTOR.value,
+    Role.RESEARCHER.value,
+    Role.CONTENT_CREATOR.value,
+    Role.COUNSELOR.value,
 }
 
-# All valid role strings, including legacy aliases that are normalized later.
-ALL_ROLES = VALID_ROLES | PLATFORM_ROLES
+ALL_ROLES = VALID_ROLES
 
 
 def normalize_role(role: Any) -> str:
-    """Normalize a raw role string to a standard role string.
-
-    Maps common aliases to canonical role names.
-    Canonical teaching role is `teacher`.
-    """
+    """Normalize a raw role string to one of the 9 core roles."""
     if not role:
         return Role.STUDENT.value
 
-    raw = str(role).strip().lower()
+    raw = str(role).strip().lower().replace("-", "_")
 
-    if raw == "admin" or raw == "administrator":
-        return Role.SUPER_ADMIN.value
-
-    # Direct matches
-    if raw in ALL_ROLES:
-        return raw
-
-    # Alias mappings (Mapping 12 legacy roles to 6 core roles)
+    # Map legacy/alias strings to core roles
     alias_map = {
-        # Super Admins
-        "super_admin": Role.SUPER_ADMIN.value,
-        "superadmin": Role.SUPER_ADMIN.value,
+        "teacher": Role.FACULTY.value,
+        "prof": Role.FACULTY.value,
+        "mentor": Role.PEER_MENTOR.value,
+        "peer tutor": Role.PEER_MENTOR.value,
+        "peer_tutor": Role.PEER_MENTOR.value,
         "system_admin": Role.SUPER_ADMIN.value,
-        
-        # Institutional Admins
-        "admin": Role.ADMIN.value,
         "institution_admin": Role.ADMIN.value,
-        "hod": Role.ADMIN.value,
-        "supervisor": Role.ADMIN.value,
-        "finance": Role.ADMIN.value,
         "college_admin": Role.ADMIN.value,
-
-        # Teaching Staff
-        "teacher": Role.TEACHER.value,
-        "faculty": Role.TEACHER.value,
-        "mentor": Role.TEACHER.value,
-        "content_creator": Role.TEACHER.value,
-        "counselor": Role.TEACHER.value,
-
-        # Students
-        "student": Role.STUDENT.value,
-        "researcher": Role.STUDENT.value,
-        "peer_tutor": Role.STUDENT.value,
-        "alumni": Role.STUDENT.value,
-
-        # Guardians & Oversight
-        "parent": Role.PARENT.value,
-        "auditor": Role.AUDITOR.value,
+        "auditor": Role.ADMIN.value,
     }
 
     if raw in alias_map:
         return alias_map[raw]
 
-    # Handle common prefixes
-    if "admin" in raw: return Role.ADMIN.value
-    if "student" in raw: return Role.STUDENT.value
-    if "teacher" in raw or "prof" in raw: return Role.TEACHER.value
+    # Pre-verified roles
+    for r in Role:
+        if raw == r.value:
+            return raw
 
     return Role.STUDENT.value  # Default safe fallback
+
+
+def get_permission_role(role: Any) -> str:
+    """Collapse a granular role to the permission-level core role."""
+    return normalize_role(role)
 
 
 def to_db_role(role: Any) -> str:

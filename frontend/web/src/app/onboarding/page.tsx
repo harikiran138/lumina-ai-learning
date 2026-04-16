@@ -24,32 +24,19 @@ import RoleOnboardingFlow from "@/components/onboarding/RoleOnboardingFlow";
 import { getRoleHome } from "@/lib/role-routing";
 import type { SupportedRoleOnboardingRole } from "@/lib/role-onboarding";
 
-type Role =
-  | "super_admin"
-  | "college_admin"
-  | "hod"
-  | "teacher"
-  | "student"
-  | "parent"
-  | "mentor"
-  | "peer_tutor"
-  | "counselor"
-  | "researcher"
-  | "content_creator"
-  | "alumni"
-  | "faculty";
+import { Role as UserRoleMember } from "@/lib/rbac/roles";
 
-const structuredRoleFlows: SupportedRoleOnboardingRole[] = [
-  "teacher",
-  "parent",
-  "mentor",
-  "peer_tutor",
-  "counselor",
-  "researcher",
-  "content_creator",
-  "alumni",
-  "hod",
-  "faculty",
+type Role = UserRoleMember;
+
+const structuredRoleFlows: Role[] = [
+  UserRoleMember.FACULTY,
+  UserRoleMember.PARENT,
+  UserRoleMember.PEER_MENTOR,
+  UserRoleMember.COUNSELOR,
+  UserRoleMember.ALUMNI,
+  UserRoleMember.HOD,
+  UserRoleMember.ADMIN,
+  UserRoleMember.SUPER_ADMIN,
 ];
 
 export default function OnboardingPage() {

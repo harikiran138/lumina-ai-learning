@@ -1,50 +1,56 @@
+import { Role } from './rbac/roles';
+
 export const ROLE_HOME_ROUTES: Record<string, string> = {
-  super_admin: "/admin/dashboard",
-  admin: "/admin/dashboard",
-  system_admin: "/admin/dashboard",
-  institution_admin: "/admin/dashboard",
-  college_admin: "/college",
-  hod: "/hod/dashboard",
-  supervisor: "/teacher/dashboard",   // Supervisor uses teacher portal + extra items
-  teacher: "/teacher/dashboard",
-  auditor: "/auditor/dashboard",
-  finance: "/admin/dashboard",
-  student: "/student/dashboard",
-  parent: "/parent/dashboard",
-  mentor: "/mentor/dashboard",
-  peer_tutor: "/peer_tutor/dashboard",
-  "peer-tutor": "/peer_tutor/dashboard",
-  counselor: "/counselor/dashboard",
-  content_creator: "/content_creator/dashboard",
-  researcher: "/researcher/dashboard",
-  alumni: "/alumni/dashboard",
-}
+  [Role.STUDENT]: "/dashboard/student",
+  [Role.FACULTY]: "/dashboard/faculty",
+  [Role.HOD]: "/dashboard/hod",
+  [Role.ADMIN]: "/dashboard/admin",
+  [Role.PARENT]: "/dashboard/parent",
+  [Role.COUNSELOR]: "/dashboard/counselor",
+  [Role.MENTOR]: "/dashboard/mentor",
+  [Role.PEER_TUTOR]: "/dashboard/peer-tutor",
+  [Role.RESEARCHER]: "/dashboard/researcher",
+  [Role.ALUMNI]: "/dashboard/alumni",
+  [Role.CONTENT_CREATOR]: "/dashboard/content-creator",
+  [Role.SUPER_ADMIN]: "/dashboard/super-admin"
+};
 
 const ROLE_PATH_PREFIXES: Record<string, string[]> = {
-  super_admin: ["/admin"],
-  college_admin: ["/admin", "/college"],
-  institution_admin: ["/admin", "/college"],
-  hod: ["/hod"],
-  supervisor: ["/teacher"],    // Supervisor navigates the teacher portal
-  teacher: ["/teacher"],
-  auditor: ["/auditor"],
-  student: ["/student"],
-  parent: ["/parent"],
-  mentor: ["/mentor"],
-  peer_tutor: ["/peer_tutor", "/peer-tutor"],
-  counselor: ["/counselor"],
-  content_creator: ["/content-creator", "/content_creator", "/creator"],
-  researcher: ["/researcher"],
-  alumni: ["/alumni"],
-}
+  [Role.STUDENT]: ["/dashboard/student", "/student"],
+  [Role.FACULTY]: ["/dashboard/faculty", "/teacher"],
+  [Role.HOD]: ["/dashboard/hod", "/hod"],
+  [Role.ADMIN]: ["/dashboard/admin", "/admin"],
+  [Role.PARENT]: ["/dashboard/parent", "/parent"],
+  [Role.COUNSELOR]: ["/dashboard/counselor", "/counselor"],
+  [Role.MENTOR]: ["/dashboard/mentor", "/mentor"],
+  [Role.PEER_TUTOR]: ["/dashboard/peer-tutor", "/peer-tutor", "/peer_tutor"],
+  [Role.RESEARCHER]: ["/dashboard/researcher", "/researcher"],
+  [Role.ALUMNI]: ["/dashboard/alumni", "/alumni"],
+  [Role.CONTENT_CREATOR]: ["/dashboard/content-creator", "/content-creator", "/content_creator"],
+  [Role.SUPER_ADMIN]: ["/dashboard/super-admin", "/super-admin"],
+};
 
 export function normalizeRole(role?: string | null): string {
-  if (role === "faculty") return "teacher"
-  if (role === "admin") return "super_admin"
-  if (role === "peer-tutor") return "peer_tutor"
-  // institution_admin and system_admin are now distinct roles — do NOT collapse to college_admin
-  if (role === "inst_admin") return "institution_admin"
-  return role || ""
+  if (!role) return Role.STUDENT;
+  const raw = role.toUpperCase().replace("-", "_");
+  
+  if (raw === "TEACHER") return Role.FACULTY;
+  if (raw === "MENTOR") return Role.PEER_MENTOR;
+  if (raw === "PEER TUTOR") return Role.PEER_MENTOR;
+  if (raw === "PEER_TUTOR") return Role.PEER_MENTOR;
+  
+  // Direct match
+  if (Object.values(Role).includes(raw as Role)) {
+    return raw;
+  }
+  
+  // Catch case-insensitive or mixed cases
+  const normalized = raw as Role;
+  if (Object.values(Role).some(r => r === normalized)) {
+      return normalized;
+  }
+
+  return Role.STUDENT;
 }
 
 export function getRoleHome(role?: string | null): string {
@@ -67,29 +73,20 @@ export function getExpectedRoleForPath(pathname: string): string | null {
 }
 
 export function getCanonicalPath(pathname: string): string | null {
-  if (pathname === "/content_creator/studio" || pathname.startsWith("/content_creator/studio/")) {
-    return pathname.replace("/content_creator/studio", "/content_creator/dashboard")
-  }
+  if (pathname.startsWith("/teacher/")) return pathname.replace("/teacher/", "/dashboard/faculty/");
+  if (pathname.startsWith("/student/")) return pathname.replace("/student/", "/dashboard/student/");
+  if (pathname.startsWith("/hod/")) return pathname.replace("/hod/", "/dashboard/hod/");
+  if (pathname.startsWith("/admin/")) return pathname.replace("/admin/", "/dashboard/admin/");
+  if (pathname.startsWith("/parent/")) return pathname.replace("/parent/", "/dashboard/parent/");
+  if (pathname.startsWith("/counselor/")) return pathname.replace("/counselor/", "/dashboard/counselor/");
+  if (pathname.startsWith("/mentor/")) return pathname.replace("/mentor/", "/dashboard/mentor/");
+  if (pathname.startsWith("/peer-tutor/")) return pathname.replace("/peer-tutor/", "/dashboard/peer-tutor/");
+  if (pathname.startsWith("/peer_tutor/")) return pathname.replace("/peer_tutor/", "/dashboard/peer-tutor/");
+  if (pathname.startsWith("/researcher/")) return pathname.replace("/researcher/", "/dashboard/researcher/");
+  if (pathname.startsWith("/alumni/")) return pathname.replace("/alumni/", "/dashboard/alumni/");
+  if (pathname.startsWith("/content-creator/")) return pathname.replace("/content-creator/", "/dashboard/content-creator/");
+  if (pathname.startsWith("/content_creator/")) return pathname.replace("/content_creator/", "/dashboard/content-creator/");
+  if (pathname.startsWith("/super-admin/")) return pathname.replace("/super-admin/", "/dashboard/super-admin/");
 
-  if (pathname === "/researcher/portal" || pathname.startsWith("/researcher/portal/")) {
-    return pathname.replace("/researcher/portal", "/researcher/dashboard")
-  }
-
-  if (pathname === "/peer-tutor" || pathname.startsWith("/peer-tutor/")) {
-    return pathname.replace("/peer-tutor", "/peer_tutor")
-  }
-
-  if (pathname === "/creator" || pathname.startsWith("/creator/")) {
-    return pathname.replace("/creator", "/content_creator")
-  }
-
-  if (pathname === "/content-creator" || pathname.startsWith("/content-creator/")) {
-    return pathname.replace("/content-creator", "/content_creator")
-  }
-
-  if (pathname === "/faculty" || pathname.startsWith("/faculty/")) {
-    return pathname.replace("/faculty", "/teacher")
-  }
-
-  return null
+  return null;
 }

@@ -3,29 +3,39 @@
  * Frontend role hierarchy, permissions, and type definitions.
  */
 
-export const ROLE_HIERARCHY = {
-  super_admin: 100,
-  system_admin: 95,
-  college_admin: 90,
-  institution_admin: 85,
-  admin: 80,
-  hod: 60,
-  supervisor: 50,    // Between HOD and teacher — faculty coordinator
-  auditor: 45,
-  teacher: 40,
-  finance: 35,
-  counselor: 35,
-  content_creator: 35,
-  researcher: 30,
-  mentor: 30,
-  peer_tutor: 25,
-  student: 20,
-  parent: 15,
-  alumni: 10,
-  guest: 0,
-} as const;
+export enum Role {
+  STUDENT = 'STUDENT',
+  FACULTY = 'FACULTY',
+  HOD = 'HOD',
+  ADMIN = 'ADMIN',
+  PARENT = 'PARENT',
+  COUNSELOR = 'COUNSELOR',
+  MENTOR = 'MENTOR',
+  PEER_TUTOR = 'PEER_TUTOR',
+  RESEARCHER = 'RESEARCHER',
+  ALUMNI = 'ALUMNI',
+  CONTENT_CREATOR = 'CONTENT_CREATOR',
+  PEER_MENTOR = 'PEER_MENTOR',
+  SUPER_ADMIN = 'SUPER_ADMIN'
+}
 
-export type UserRole = keyof typeof ROLE_HIERARCHY;
+export const ROLE_HIERARCHY: Record<Role, number> = {
+  [Role.SUPER_ADMIN]: 100,
+  [Role.ADMIN]: 80,
+  [Role.HOD]: 60,
+  [Role.FACULTY]: 50,
+  [Role.RESEARCHER]: 45,
+  [Role.COUNSELOR]: 40,
+  [Role.CONTENT_CREATOR]: 35,
+  [Role.MENTOR]: 30,
+  [Role.PEER_MENTOR]: 28,
+  [Role.PEER_TUTOR]: 25,
+  [Role.STUDENT]: 20,
+  [Role.ALUMNI]: 15,
+  [Role.PARENT]: 10,
+};
+
+export type UserRole = Role;
 
 /** Returns true if roleA has strictly higher authority than roleB */
 export function hasHigherAuthority(roleA: string, roleB: string): boolean {
@@ -64,39 +74,34 @@ export const AUDITOR_PERMISSIONS = [
 // ─── Role groups ─────────────────────────────────────────────────────────────
 
 /** All roles that can access /admin/* routes */
-export const ADMIN_ROLES: UserRole[] = [
-  'super_admin', 'system_admin', 'college_admin', 'institution_admin', 'admin',
+export const ADMIN_ROLES: Role[] = [
+  Role.SUPER_ADMIN, Role.ADMIN,
 ];
 
-/** All faculty roles (teacher-level and above) */
-export const FACULTY_ROLES: UserRole[] = [
-  'super_admin', 'system_admin', 'college_admin', 'institution_admin', 'admin',
-  'hod', 'supervisor', 'teacher',
+/** All faculty roles (faculty-level and above) */
+export const FACULTY_ROLES: Role[] = [
+  Role.SUPER_ADMIN, Role.ADMIN, Role.HOD, Role.FACULTY,
 ];
 
 /** Roles that can review/grade student work */
-export const GRADING_ROLES: UserRole[] = [
-  'super_admin', 'system_admin', 'college_admin', 'institution_admin', 'admin',
-  'hod', 'supervisor', 'teacher',
+export const GRADING_ROLES: Role[] = [
+  Role.SUPER_ADMIN, Role.ADMIN, Role.HOD, Role.FACULTY,
 ];
 
 /** Roles that can approve AI answers in TILA queue */
-export const TILA_REVIEWER_ROLES: UserRole[] = [
-  'super_admin', 'system_admin', 'college_admin', 'institution_admin', 'admin',
-  'hod', 'supervisor', 'teacher',
+export const TILA_REVIEWER_ROLES: Role[] = [
+  Role.SUPER_ADMIN, Role.ADMIN, Role.HOD, Role.FACULTY,
 ];
 
 // ─── Route access map ─────────────────────────────────────────────────────────
 
-export const ROLE_ROUTE_MAP: Record<string, UserRole[]> = {
-  '/teacher/verification-queue': ['supervisor', 'hod', 'admin', 'college_admin', 'institution_admin', 'system_admin', 'super_admin'],
-  '/teacher/coordination':       ['supervisor', 'hod', 'admin', 'college_admin', 'institution_admin', 'system_admin', 'super_admin'],
-  '/teacher/courses':            ['supervisor', 'teacher', 'hod', 'admin', 'college_admin', 'institution_admin', 'system_admin', 'super_admin'],
-  '/teacher/grading':            ['supervisor', 'teacher', 'hod', 'admin', 'college_admin', 'institution_admin', 'system_admin', 'super_admin'],
-  '/teacher/video-analysis':     ['supervisor', 'teacher', 'hod', 'admin', 'college_admin', 'institution_admin', 'system_admin', 'super_admin'],
-  '/auditor/dashboard':          ['auditor', 'super_admin', 'system_admin'],
-  '/auditor/logs':               ['auditor', 'super_admin', 'system_admin'],
-  '/auditor/security':           ['auditor', 'super_admin', 'system_admin'],
+export const ROLE_ROUTE_MAP: Record<string, Role[]> = {
+  '/teacher/verification-queue': [Role.HOD, Role.ADMIN, Role.SUPER_ADMIN],
+  '/teacher/coordination':       [Role.HOD, Role.ADMIN, Role.SUPER_ADMIN],
+  '/teacher/courses':            [Role.FACULTY, Role.HOD, Role.ADMIN, Role.SUPER_ADMIN],
+  '/teacher/grading':            [Role.FACULTY, Role.HOD, Role.ADMIN, Role.SUPER_ADMIN],
+  '/teacher/video-analysis':     [Role.FACULTY, Role.HOD, Role.ADMIN, Role.SUPER_ADMIN],
+  '/counselor/dashboard':        [Role.COUNSELOR, Role.SUPER_ADMIN],
 };
 
 /** Supervisor nav items (appended to teacher nav) */

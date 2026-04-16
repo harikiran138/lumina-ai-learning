@@ -1,0 +1,2625 @@
+{
+  "generated_at": "2026-04-16T10:47:34.410470Z",
+  "total_tests": 286,
+  "total_passed": 263,
+  "total_failed": 23,
+  "total_missing_features": 0,
+  "verdicts": {
+    "ALL": "\u2705 ALL CLEAR",
+    "STUDENT": "\u26a0\ufe0f  MOSTLY CLEAR",
+    "TEACHER": "\u26a0\ufe0f  MOSTLY CLEAR",
+    "HOD": "\u26a0\ufe0f  MOSTLY CLEAR",
+    "ADMIN": "\u2705 ALL CLEAR",
+    "PARENT": "\u2705 ALL CLEAR",
+    "MENTOR": "\u26a0\ufe0f  MOSTLY CLEAR",
+    "PEER_TUTOR": "\u26a0\ufe0f  MOSTLY CLEAR",
+    "COUNSELOR": "\u26a0\ufe0f  MOSTLY CLEAR",
+    "CONTENT_CREATOR": "\u26a0\ufe0f  MOSTLY CLEAR",
+    "RESEARCHER": "\u26a0\ufe0f  MOSTLY CLEAR",
+    "ALUMNI": "\u26a0\ufe0f  MOSTLY CLEAR",
+    "AUDITOR": "\u2705 ALL CLEAR"
+  },
+  "missing_features": [],
+  "by_test_type": {
+    "unit": {
+      "total": 29,
+      "passed": 29
+    },
+    "integration": {
+      "total": 33,
+      "passed": 25
+    },
+    "system": {
+      "total": 35,
+      "passed": 35
+    },
+    "acceptance": {
+      "total": 28,
+      "passed": 28
+    },
+    "black_box": {
+      "total": 58,
+      "passed": 44
+    },
+    "white_box": {
+      "total": 103,
+      "passed": 102
+    }
+  },
+  "detailed_results": [
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'auth.py' exists & non-empty",
+      "passed": true,
+      "detail": "39031 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'student.py' exists & non-empty",
+      "passed": true,
+      "detail": "65461 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'teacher.py' exists & non-empty",
+      "passed": true,
+      "detail": "29524 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'hod.py' exists & non-empty",
+      "passed": true,
+      "detail": "5617 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'admin.py' exists & non-empty",
+      "passed": true,
+      "detail": "47793 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'parent.py' exists & non-empty",
+      "passed": true,
+      "detail": "8483 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'mentor.py' exists & non-empty",
+      "passed": true,
+      "detail": "2666 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'peer_tutor.py' exists & non-empty",
+      "passed": true,
+      "detail": "1447 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'counselor.py' exists & non-empty",
+      "passed": true,
+      "detail": "12234 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'content_creator.py' exists & non-empty",
+      "passed": true,
+      "detail": "2111 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'researcher.py' exists & non-empty",
+      "passed": true,
+      "detail": "1054 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'alumni.py' exists & non-empty",
+      "passed": true,
+      "detail": "1451 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'assignments.py' exists & non-empty",
+      "passed": true,
+      "detail": "13108 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'onboarding.py' exists & non-empty",
+      "passed": true,
+      "detail": "2800 bytes",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Backend router 'onboarding_unified.py' exists & non-empty",
+      "passed": true,
+      "detail": "14363 bytes",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/student/dashboard' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/student/assignments' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/student/courses' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/student/ai_tutor' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/student/grades' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/student/attendance' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/student/progress' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/student/profile' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/student/settings' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/teacher/dashboard' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/teacher/assignments' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/teacher/courses' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/teacher/grading' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/teacher/students' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/teacher/analytics' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/teacher/attendance' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/teacher/gradebook' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/hod/dashboard' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/hod/faculty-performance' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/hod/curriculum' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/hod/at-risk' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/hod/teachers' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/hod/programs' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/admin/dashboard' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/admin/users' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/admin/departments' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/admin/courses' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/admin/analytics' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/admin/settings' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "PARENT",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/parent' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "MENTOR",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/mentor' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "PEER_TUTOR",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/peer_tutor' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "COUNSELOR",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/counselor' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "CONTENT_CREATOR",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/content_creator' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "RESEARCHER",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/researcher' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALUMNI",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/alumni' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "AUTH",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/login' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "AUTH",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/register' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "AUTH",
+      "type": "white_box",
+      "category": "route_structure",
+      "name": "Route '/onboarding' exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "white_box",
+      "category": "onboarding",
+      "name": "Onboarding handler for 'student' in page.tsx",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "COLLEGE_ADMIN",
+      "type": "white_box",
+      "category": "onboarding",
+      "name": "Onboarding handler for 'college_admin' in page.tsx",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "white_box",
+      "category": "onboarding",
+      "name": "Onboarding handler for 'teacher' in page.tsx",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "white_box",
+      "category": "onboarding",
+      "name": "Onboarding handler for 'hod' in page.tsx",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "PARENT",
+      "type": "white_box",
+      "category": "onboarding",
+      "name": "Onboarding handler for 'parent' in page.tsx",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "MENTOR",
+      "type": "white_box",
+      "category": "onboarding",
+      "name": "Onboarding handler for 'mentor' in page.tsx",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "PEER_TUTOR",
+      "type": "white_box",
+      "category": "onboarding",
+      "name": "Onboarding handler for 'peer_tutor' in page.tsx",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "COUNSELOR",
+      "type": "white_box",
+      "category": "onboarding",
+      "name": "Onboarding handler for 'counselor' in page.tsx",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "RESEARCHER",
+      "type": "white_box",
+      "category": "onboarding",
+      "name": "Onboarding handler for 'researcher' in page.tsx",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "CONTENT_CREATOR",
+      "type": "white_box",
+      "category": "onboarding",
+      "name": "Onboarding handler for 'content_creator' in page.tsx",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALUMNI",
+      "type": "white_box",
+      "category": "onboarding",
+      "name": "Onboarding handler for 'alumni' in page.tsx",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: /admin \u2192 college_admin",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: /hod guard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: /teacher guard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: /student guard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: /parent guard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: /mentor guard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: /peer_tutor guard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: /counselor guard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: /researcher guard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: /alumni guard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: /auditor guard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: Onboarding gate",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: JWT decode in edge",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: ADMIN_ALLOWED set",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: Session expired redirect",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "rbac",
+      "name": "Middleware guard: Guest tracking",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Password complexity validator",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Brute-force lock check",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Brute-force attempt recorder",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Brute-force clear on success",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Account active check",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Institution policy enforcement",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: JWT blacklisting on logout",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Refresh token rotation",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Password min length 8",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Invite-only roles blocked on register",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Audit logging on login",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Login history table write",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Force password change flow",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Roll-number regex identifier",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "security",
+      "name": "Auth: Employee-ID regex identifier",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Router 'auth' registered in main.py",
+      "passed": false,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Router 'student' registered in main.py",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Router 'teacher' registered in main.py",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Router 'hod' registered in main.py",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Router 'admin' registered in main.py",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Router 'assignments' registered in main.py",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "white_box",
+      "category": "architecture",
+      "name": "Router 'onboarding' registered in main.py",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Student Dashboard \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Assignments page \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "AI Tutor page \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Grades page \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['score']",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Attendance page \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['absent']",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Progress page \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['complete']",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Courses page \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['subject']",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Profile page \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Settings page \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['password']",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Spaced repetition route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Exam readiness route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Leaderboard route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Teacher Dashboard \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Assignment Management \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['deadline']",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Grading \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['rubric']",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Gradebook \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Attendance Management \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Student Management \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['profile', 'performance']",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Analytics \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "black_box",
+      "category": "feature",
+      "name": "AI content generator route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Question bank route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Live class route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "black_box",
+      "category": "feature",
+      "name": "HOD Dashboard \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Faculty Performance \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['rating']",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Curriculum Management \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['syllabus']",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "black_box",
+      "category": "feature",
+      "name": "At-Risk Students \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Teacher Management \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "black_box",
+      "category": "feature",
+      "name": "SLA monitor route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Syllabus tracker route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Alumni feedback route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Admin Dashboard \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "black_box",
+      "category": "feature",
+      "name": "User Management \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Department Management \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['faculty']",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Analytics \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Settings \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['configuration', 'system']",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Compliance route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Security route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "black_box",
+      "category": "feature",
+      "name": "AI usage monitor route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "PARENT",
+      "type": "black_box",
+      "category": "route_structure",
+      "name": "/parent directory exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "PARENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "/parent has at least one page.tsx",
+      "passed": true,
+      "detail": "found 9 file(s)",
+      "missing": false
+    },
+    {
+      "role": "MENTOR",
+      "type": "black_box",
+      "category": "route_structure",
+      "name": "/mentor directory exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "MENTOR",
+      "type": "black_box",
+      "category": "feature",
+      "name": "/mentor has at least one page.tsx",
+      "passed": true,
+      "detail": "found 5 file(s)",
+      "missing": false
+    },
+    {
+      "role": "PEER_TUTOR",
+      "type": "black_box",
+      "category": "route_structure",
+      "name": "/peer_tutor directory exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "PEER_TUTOR",
+      "type": "black_box",
+      "category": "feature",
+      "name": "/peer_tutor has at least one page.tsx",
+      "passed": true,
+      "detail": "found 12 file(s)",
+      "missing": false
+    },
+    {
+      "role": "COUNSELOR",
+      "type": "black_box",
+      "category": "route_structure",
+      "name": "/counselor directory exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "COUNSELOR",
+      "type": "black_box",
+      "category": "feature",
+      "name": "/counselor has at least one page.tsx",
+      "passed": true,
+      "detail": "found 11 file(s)",
+      "missing": false
+    },
+    {
+      "role": "CONTENT_CREATOR",
+      "type": "black_box",
+      "category": "route_structure",
+      "name": "/content_creator directory exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "CONTENT_CREATOR",
+      "type": "black_box",
+      "category": "feature",
+      "name": "/content_creator has at least one page.tsx",
+      "passed": true,
+      "detail": "found 1 file(s)",
+      "missing": false
+    },
+    {
+      "role": "RESEARCHER",
+      "type": "black_box",
+      "category": "route_structure",
+      "name": "/researcher directory exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "RESEARCHER",
+      "type": "black_box",
+      "category": "feature",
+      "name": "/researcher has at least one page.tsx",
+      "passed": true,
+      "detail": "found 2 file(s)",
+      "missing": false
+    },
+    {
+      "role": "ALUMNI",
+      "type": "black_box",
+      "category": "route_structure",
+      "name": "/alumni directory exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALUMNI",
+      "type": "black_box",
+      "category": "feature",
+      "name": "/alumni has at least one page.tsx",
+      "passed": true,
+      "detail": "found 11 file(s)",
+      "missing": false
+    },
+    {
+      "role": "AUDITOR",
+      "type": "black_box",
+      "category": "route_structure",
+      "name": "/auditor directory exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "AUDITOR",
+      "type": "black_box",
+      "category": "feature",
+      "name": "/auditor has at least one page.tsx",
+      "passed": true,
+      "detail": "found 1 file(s)",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Login page \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['email', 'password', 'sign']",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Register page \u2014 contains expected content",
+      "passed": false,
+      "detail": "missing: ['email', 'password']",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "black_box",
+      "category": "feature",
+      "name": "Onboarding dispatcher page \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "auth",
+      "name": "Valid password accepted",
+      "passed": true,
+      "detail": "pw='Test1234!' expected=pass got=pass",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "auth",
+      "name": "Too-short password rejected",
+      "passed": true,
+      "detail": "pw='short1!' expected=fail got=fail",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "auth",
+      "name": "No uppercase \u2192 rejected",
+      "passed": true,
+      "detail": "pw='alllower1!' expected=fail got=fail",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "auth",
+      "name": "No lowercase \u2014 accepted anyway (only uppercase req)",
+      "passed": true,
+      "detail": "pw='NOLOWER123!' expected=pass got=pass",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "auth",
+      "name": "No digit \u2192 rejected",
+      "passed": true,
+      "detail": "pw='NoNum!chars' expected=fail got=fail",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "auth",
+      "name": "No special char \u2192 rejected",
+      "passed": true,
+      "detail": "pw='NoSpecial1A' expected=fail got=fail",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "auth",
+      "name": "Empty password rejected",
+      "passed": true,
+      "detail": "pw='' expected=fail got=fail",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "unit",
+      "category": "auth",
+      "name": "Roll number detected",
+      "passed": true,
+      "detail": "'22NU1A0001' \u2192 roll_number",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "unit",
+      "category": "auth",
+      "name": "Employee ID (FAC) detected",
+      "passed": true,
+      "detail": "'FAC001' \u2192 employee_id",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "unit",
+      "category": "auth",
+      "name": "Employee ID (HOD) detected",
+      "passed": true,
+      "detail": "'HOD001' \u2192 employee_id",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "unit",
+      "category": "auth",
+      "name": "Employee ID (ADM) detected",
+      "passed": true,
+      "detail": "'ADM001' \u2192 employee_id",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "auth",
+      "name": "Email identifier detected",
+      "passed": true,
+      "detail": "'user@college.edu' \u2192 email",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "auth",
+      "name": "Unknown \u2192 email fallback",
+      "passed": true,
+      "detail": "'notAnything' \u2192 email",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "unit",
+      "category": "auth",
+      "name": "Student JWT: correct claims, no PII",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "unit",
+      "category": "auth",
+      "name": "Teacher JWT: no email in payload",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "rbac",
+      "name": "RBAC module exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "rbac",
+      "name": "normalize_role defined",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "rbac",
+      "name": "SELF_SIGNUP_ROLES defined",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "rbac",
+      "name": "INVITE_ONLY_ROLES defined",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "rbac",
+      "name": "ALL_ROLES defined",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "rbac",
+      "name": "faculty alias handled",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "rbac",
+      "name": "college_admin alias handled",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "unit",
+      "category": "architecture",
+      "name": "student.py has substantial code",
+      "passed": true,
+      "detail": "65461 bytes (min 10000)",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "unit",
+      "category": "architecture",
+      "name": "teacher.py has substantial code",
+      "passed": true,
+      "detail": "29524 bytes (min 5000)",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "unit",
+      "category": "architecture",
+      "name": "admin.py has substantial code",
+      "passed": true,
+      "detail": "47793 bytes (min 5000)",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "unit",
+      "category": "architecture",
+      "name": "hod.py has substantial code",
+      "passed": true,
+      "detail": "5617 bytes (min 2000)",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "architecture",
+      "name": "auth.py has substantial code",
+      "passed": true,
+      "detail": "39031 bytes (min 10000)",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "architecture",
+      "name": "assignments.py has substantial code",
+      "passed": true,
+      "detail": "13108 bytes (min 5000)",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "unit",
+      "category": "architecture",
+      "name": "onboarding_unified.py has logic",
+      "passed": true,
+      "detail": "14363 bytes (min 5000)",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "architecture",
+      "name": "get_user_store defined",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "architecture",
+      "name": "get_user_store_public defined",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "architecture",
+      "name": "SupabaseManager used",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "database",
+      "name": "user_store.py exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "database",
+      "name": "UserStore class defined",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "database",
+      "name": "create_user method defined",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "database",
+      "name": "assignment_store.py exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "database",
+      "name": "AssignmentStore class defined",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "database",
+      "name": "create_assignment method defined",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "api_client",
+      "name": "API client file exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "api_client",
+      "name": "login() method",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "api_client",
+      "name": "logout() method",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "api_client",
+      "name": "getCurrentUser() method",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "api_client",
+      "name": "getOnboardingStatus()",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "api_client",
+      "name": "completeOnboarding()",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "api_client",
+      "name": "BASE_URL env var used",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "routing",
+      "name": "role-routing module exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "routing",
+      "name": "getRoleHome() defined",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "routing",
+      "name": "normalizeRole() defined",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "routing",
+      "name": "getCanonicalPath() defined",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "routing",
+      "name": "student route mapped",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "routing",
+      "name": "teacher route mapped",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "routing",
+      "name": "hod route mapped",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "black_box",
+      "category": "feature",
+      "name": "StudentOnboardingFlow component \u2014 contains expected content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "integration",
+      "category": "onboarding",
+      "name": "RoleOnboardingFlow component exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "integration",
+      "category": "onboarding",
+      "name": "RoleOnboardingFlow handles 'teacher'",
+      "passed": false,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "PARENT",
+      "type": "integration",
+      "category": "onboarding",
+      "name": "RoleOnboardingFlow handles 'parent'",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "MENTOR",
+      "type": "integration",
+      "category": "onboarding",
+      "name": "RoleOnboardingFlow handles 'mentor'",
+      "passed": false,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "PEER_TUTOR",
+      "type": "integration",
+      "category": "onboarding",
+      "name": "RoleOnboardingFlow handles 'peer_tutor'",
+      "passed": false,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "COUNSELOR",
+      "type": "integration",
+      "category": "onboarding",
+      "name": "RoleOnboardingFlow handles 'counselor'",
+      "passed": false,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "RESEARCHER",
+      "type": "integration",
+      "category": "onboarding",
+      "name": "RoleOnboardingFlow handles 'researcher'",
+      "passed": false,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "CONTENT_CREATOR",
+      "type": "integration",
+      "category": "onboarding",
+      "name": "RoleOnboardingFlow handles 'content_creator'",
+      "passed": false,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALUMNI",
+      "type": "integration",
+      "category": "onboarding",
+      "name": "RoleOnboardingFlow handles 'alumni'",
+      "passed": false,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "integration",
+      "category": "onboarding",
+      "name": "RoleOnboardingFlow handles 'hod'",
+      "passed": false,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Register page exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Onboarding student flow exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Student dashboard exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Student assignments accessible",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "system",
+      "category": "user_journey",
+      "name": "AI Tutor accessible",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Grades accessible",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Attendance accessible",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Teacher can access dashboard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Teacher can manage assignments",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Teacher can grade submissions",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Teacher can view attendance",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Teacher has gradebook",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Teacher has analytics",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Teacher has AI generator",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "system",
+      "category": "user_journey",
+      "name": "HOD has dashboard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "system",
+      "category": "user_journey",
+      "name": "HOD can monitor faculty",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "system",
+      "category": "user_journey",
+      "name": "HOD can track curriculum",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "system",
+      "category": "user_journey",
+      "name": "HOD can identify at-risk students",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "system",
+      "category": "user_journey",
+      "name": "HOD can manage teacher roster",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Admin has dashboard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Admin can manage all users",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Admin can manage departments",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Admin can view system analytics",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Admin has security controls",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "system",
+      "category": "user_journey",
+      "name": "Admin has compliance view",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "system",
+      "category": "auth_flow",
+      "name": "Login page exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "system",
+      "category": "auth_flow",
+      "name": "Register page exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "system",
+      "category": "auth_flow",
+      "name": "Password reset route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "system",
+      "category": "auth_flow",
+      "name": "Change password route exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "system",
+      "category": "auth_flow",
+      "name": "Onboarding page exists",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "system",
+      "category": "auth_flow",
+      "name": "Backend /auth/login endpoint",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "system",
+      "category": "auth_flow",
+      "name": "Backend /auth/register endpoint",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "system",
+      "category": "auth_flow",
+      "name": "Backend /auth/logout endpoint",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "system",
+      "category": "auth_flow",
+      "name": "Backend /auth/refresh endpoint",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "system",
+      "category": "auth_flow",
+      "name": "Backend /auth/forgot-password",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Student can view AI-generated learning path",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Student has gamification/leaderboard",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Student has spaced repetition study tool",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "STUDENT",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Student can view handwriting analysis",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Teacher can generate AI quiz/content",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Teacher has knowledge graph view",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Teacher can do video analysis",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "TEACHER",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Teacher has live class support",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "HOD has knowledge graph view",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "HOD",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "HOD can plan interventions",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Admin can configure platform",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Admin has AI governance/monitoring",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ADMIN",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Admin can manage integrations",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Onboarding for every role implemented",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Role-based access middleware",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "JWT-based authentication backend",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "AI tutor backend endpoint",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Assessment/quiz system backend",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Personalization engine backend",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "business_requirement",
+      "name": "Realtime notifications backend",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "security",
+      "name": "Password complexity enforced (uppercase+digit+special)",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "security",
+      "name": "Brute-force protection on login",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "security",
+      "name": "JWT token blacklisting on logout",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "security",
+      "name": "Rate limiting on auth endpoints",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "security",
+      "name": "Refresh token separate secret",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "security",
+      "name": "RBAC middleware on all role routes",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "security",
+      "name": "No PII in JWT payload",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    },
+    {
+      "role": "ALL",
+      "type": "acceptance",
+      "category": "security",
+      "name": "Audit logging for all login events",
+      "passed": true,
+      "detail": "",
+      "missing": false
+    }
+  ]
+}

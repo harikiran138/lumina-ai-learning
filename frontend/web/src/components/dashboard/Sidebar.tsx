@@ -38,6 +38,7 @@ Zap,
 Lock,
 Share2,
 BarChart,
+Briefcase,
 
 } from "lucide-react";
 
@@ -90,6 +91,25 @@ counselor: [
 { name: "Settings", href: "/counselor/settings", icon: Settings },
 ],
 
+mentor: [
+{ name: "Dashboard", href: "/mentor/dashboard", icon: LayoutDashboard },
+{ name: "Mentees", href: "/mentor/matches", icon: Users },
+{ name: "Sessions", href: "/mentor/sessions", icon: Calendar },
+{ name: "Reviews", href: "/mentor/reviews", icon: Star },
+{ name: "Settings", href: "/mentor/settings", icon: Settings },
+],
+
+alumni: [
+{ name: "Dashboard", href: "/alumni/dashboard", icon: LayoutDashboard },
+{ name: "Mentees", href: "/alumni/mentees", icon: Users },
+{ name: "Sessions", href: "/alumni/sessions", icon: Calendar },
+{ name: "Mock Interviews", href: "/alumni/mock-interviews", icon: MessageSquare },
+{ name: "Job Board", href: "/alumni/job-board", icon: Briefcase },
+{ name: "Network", href: "/alumni/network", icon: Network },
+{ name: "Curriculum Feedback", href: "/alumni/curriculum-feedback", icon: FileText },
+{ name: "Settings", href: "/alumni/settings", icon: Settings },
+],
+
 teacher: [
 { name: "Dashboard", href: "/teacher/dashboard", icon: LayoutDashboard },
 { name: "Students", href: "/teacher/students", icon: Users },
@@ -111,6 +131,8 @@ parent: "/parent/settings",
 peer_tutor: "/peer_tutor/settings",
 counselor: "/counselor/settings",
 teacher: "/teacher/settings",
+mentor: "/mentor/settings",
+alumni: "/alumni/settings",
 admin: "/admin/platform/profile",
 };
 

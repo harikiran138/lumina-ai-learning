@@ -174,8 +174,6 @@ async def run_physical_grading_task(
         }).eq("id", job_id).async_execute()
         await content_store.update_physical_submission(submission_id, {"assessment_status": "failed"})
 
-)}
-
 @router.post("/quiz-result")
 async def save_quiz_result(
     request: QuizResultRequest,
