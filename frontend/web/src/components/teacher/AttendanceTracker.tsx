@@ -14,10 +14,12 @@ import {
   ChevronLeft,
   CalendarDays,
   UserCheck,
+  ArrowRightLeft,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import RequestOverrideModal from "./RequestOverrideModal";
 
 interface AttendanceTrackerProps {
   initialCourseId?: string;
@@ -48,11 +50,14 @@ export default function AttendanceTracker({
   const [loading, setLoading] = useState(false);
   const [fetchingStudents, setFetchingStudents] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [overrideStudent, setOverrideStudent] = useState<any | null>(null);
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
 
   useEffect(() => {
     const loadMetadata = async () => {
       try {
         const user = await api.getCurrentUser();
+        setCurrentUser(user);
         if (!user) return;
 
         const [courseList, batchList] = await Promise.all([
@@ -324,6 +329,15 @@ export default function AttendanceTracker({
                                 <span className="text-[9px] font-black uppercase tracking-tighter">{status.label}</span>
                               </button>
                             ))}
+                            {/* Override Trigger */}
+                            <button
+                              onClick={() => setOverrideStudent(student)}
+                              className="ml-2 p-2 rounded-xl bg-surface-elevated border border-border text-text-muted hover:text-primary hover:border-primary/30 transition-all flex items-center gap-2"
+                              title="Request Override Review"
+                            >
+                              <ArrowRightLeft size={16} />
+                              <span className="text-[9px] font-black uppercase tracking-tighter hidden md:inline">Request Review</span>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -356,6 +370,14 @@ export default function AttendanceTracker({
             Select a course stream and batch hub above to initialize the attendance intelligence session.
           </p>
         </div>
+      )}
+
+      {overrideStudent && (
+        <RequestOverrideModal
+          student={overrideStudent}
+          currentStatus={attendance[overrideStudent.id]}
+          onClose={() => setOverrideStudent(null)}
+        />
       )}
     </div>
   );

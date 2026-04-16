@@ -36,6 +36,7 @@ import {
 import { StatCard } from "@/components/dashboard/StatCard";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import AttendanceOverrideReview from "@/components/hod/AttendanceOverrideReview";
 
 interface DepartmentInfo {
   id: string;
@@ -518,6 +519,14 @@ export default function HODDashboard() {
           <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-yellow-400" />Faculty Issue</span>
           <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-400" />Student Issue</span>
         </div>
+      </Panel>
+
+      {/* ── Attendance Override Requests ─────────────────────────────────────── */}
+      <Panel
+        title="🛡️ Attendance Governance"
+        subtitle="Review and approve attendance override requests submitted by counselors/faculty."
+      >
+        <AttendanceOverrideReview />
       </Panel>
 
       {/* ── Syllabus Completion Tracker ─────────────────────────────────────── */}

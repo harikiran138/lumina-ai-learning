@@ -4,6 +4,8 @@
 set -e
 
 echo "🐍 Starting Lumina Backend..."
+# Ensure port 9000 is clean
+lsof -ti :9000 | xargs kill -9 2>/dev/null || true
 
 # Navigate to backend directory
 cd "$(dirname "$0")/backend"

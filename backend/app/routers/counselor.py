@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_scope, get_api_user
+from app.core.rbac import Role
 from app.store.counselor_store import CounselorStore
 from app.database.models import (
     RevealRequest,
@@ -16,18 +17,36 @@ import uuid
 
 router = APIRouter(tags=["counselor"])
 
-# Injected store dependency for future unit testing
 def get_counselor_store():
     return CounselorStore()
 
+async def get_counselor_access(
+    current_user: Optional[dict] = Depends(get_current_user),
+    api_user: Optional[dict] = Depends(get_api_user)
+):
+    """
+    Unified access for counselors. 
+    Human counselors require 'teacher' or 'admin' role.
+    API Users require 'counselor.read' scope.
+    """
+    if current_user:
+        user_role = current_user.get("role")
+        if user_role in [Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN]:
+            return {"type": "user", "id": current_user["id"], "institution_id": current_user.get("institution_id")}
+    
+    if api_user:
+        if "counselor.read" in api_user.get("scopes", []):
+            return {"type": "api", "id": api_user["id"], "institution_id": api_user["institution_id"]}
+            
+    raise HTTPException(status_code=403, detail="Counselor access required (or missing counselor.read scope)")
+
 @router.get("/risk-alerts", response_model=List[RiskAlertAnonymized])
 async def get_risk_alerts(
-    current_user: dict = Depends(get_current_user),
+    access: dict = Depends(get_counselor_access),
     store: CounselorStore = Depends(get_counselor_store)
 ):
     """Fetch anonymized risk signals for immediate intervention."""
-    if current_user.get("role") not in ["counselor", "admin"]:
-        raise HTTPException(status_code=403, detail="Forbidden: Counselor role required")
+    # access dict contains 'id' and 'institution_id'
     
     alerts = await store.get_risk_alerts()
     # Masking sensitive info by default
@@ -37,18 +56,16 @@ async def get_risk_alerts(
 async def reveal_student_identity(
     alert_id: str,
     request: RevealRequest,
-    current_user: dict = Depends(get_current_user),
+    access: dict = Depends(get_counselor_access),
     store: CounselorStore = Depends(get_counselor_store)
 ):
     """Deanonymize student risk signal with mandatory audit reason."""
-    if current_user.get("role") not in ["counselor", "admin"]:
-        raise HTTPException(status_code=403, detail="Forbidden: Counselor role required")
     
     # Audit log reason must be provided
     if not request.reason.strip():
         raise HTTPException(status_code=400, detail="Reason is required for deanonymization")
     
-    student_identity = await store.reveal_student_identity(current_user["id"], alert_id, request.reason)
+    student_identity = await store.reveal_student_identity(access["id"], alert_id, request.reason)
     if not student_identity:
         raise HTTPException(status_code=404, detail="Risk alert not found or reveal failed")
     
@@ -57,12 +74,10 @@ async def reveal_student_identity(
 @router.post("/notes", response_model=Dict[str, Any])
 async def add_counseling_note(
     request: EncryptedNoteCreate,
-    current_user: dict = Depends(get_current_user),
+    access: dict = Depends(get_counselor_access),
     store: CounselorStore = Depends(get_counselor_store)
 ):
     """Store client-side encrypted notes (AES-256-GCM). Plaintext never touches the server."""
-    if current_user.get("role") not in ["counselor", "admin"]:
-        raise HTTPException(status_code=403, detail="Forbidden: Counselor role required")
     
     note_data = {
         "encrypted_blob": request.encrypted_blob,
@@ -70,7 +85,7 @@ async def add_counseling_note(
         "auth_tag": request.auth_tag
     }
     
-    note = await store.add_encrypted_note(current_user["id"], request.student_id, note_data)
+    note = await store.add_encrypted_note(access["id"], request.student_id, note_data)
     if not note:
         raise HTTPException(status_code=500, detail="Failed to save encrypted note")
     
@@ -79,14 +94,12 @@ async def add_counseling_note(
 @router.get("/notes/{student_id}", response_model=List[CounselorNote])
 async def get_counseling_notes(
     student_id: str,
-    current_user: dict = Depends(get_current_user),
+    access: dict = Depends(get_counselor_access),
     store: CounselorStore = Depends(get_counselor_store)
 ):
     """Fetch encrypted history for a student."""
-    if current_user.get("role") not in ["counselor", "admin"]:
-        raise HTTPException(status_code=403, detail="Forbidden: Counselor role required")
     
-    return await store.get_encrypted_notes(current_user["id"], student_id)
+    return await store.get_encrypted_notes(access["id"], student_id)
 
 @router.post("/risk-alerts/{alert_id}/suppress")
 async def suppress_risk_alert(
@@ -109,7 +122,7 @@ async def suppress_risk_alert(
 async def update_follow_up_task(
     task_id: str,
     update_data: Dict[str, Any],
-    current_user: dict = Depends(get_current_user),
+    access: dict = Depends(get_counselor_access),
     store: CounselorStore = Depends(get_counselor_store)
 ):
     """Update follow-up task status (e.g., set to 'acknowledged' or 'completed')."""
@@ -131,15 +144,13 @@ async def update_follow_up_task(
 async def get_at_risk_students(
     severity: Optional[str] = Query(default=None, description="Filter by risk level: low|medium|high|critical"),
     limit: int = Query(default=50, le=100),
-    current_user: dict = Depends(get_current_user),
+    access: dict = Depends(get_counselor_access),
     store: CounselorStore = Depends(get_counselor_store)
 ):
     """
     Returns anonymized at-risk student list with risk scores.
     Names are NOT included by default - counselor must use /reveal endpoint.
     """
-    if current_user.get("role") not in ["counselor", "admin"]:
-        raise HTTPException(status_code=403, detail="Forbidden: Counselor role required")
 
     try:
         client = supabase_db.get_client()
@@ -197,19 +208,17 @@ class SafeguardingEventRequest(BaseModel):
 @router.post("/interventions")
 async def create_intervention(
     request: CreateInterventionRequest,
-    current_user: dict = Depends(get_current_user),
+    access: dict = Depends(get_counselor_access),
     store: CounselorStore = Depends(get_counselor_store)
 ):
     """Create a new intervention record."""
-    if current_user.get("role") not in ["counselor", "admin"]:
-        raise HTTPException(status_code=403, detail="Forbidden: Counselor role required")
 
     now = datetime.now(timezone.utc).isoformat()
     record_id = str(uuid.uuid4())
 
     payload = {
         "id": record_id,
-        "counselor_id": current_user["id"],
+        "counselor_id": access["id"],
         "student_id": request.student_id,
         "intervention_type": request.intervention_type,
         "notes": request.notes,
@@ -234,7 +243,7 @@ async def create_intervention(
             follow_up_payload = {
                 "id": str(uuid.uuid4()),
                 "student_id": request.student_id,
-                "counselor_id": current_user["id"],
+                "counselor_id": access["id"],
                 "status": "pending",
                 "due_at": request.due_at,
                 "created_at": now,
@@ -252,19 +261,17 @@ async def create_intervention(
 @router.get("/follow-up")
 async def get_follow_up_tasks(
     status: Optional[str] = Query(default=None, description="Filter by task status"),
-    current_user: dict = Depends(get_current_user),
+    access: dict = Depends(get_counselor_access),
     store: CounselorStore = Depends(get_counselor_store)
 ):
     """List follow-up tasks for this counselor, ordered by due_at ASC (most urgent first)."""
-    if current_user.get("role") not in ["counselor", "admin"]:
-        raise HTTPException(status_code=403, detail="Forbidden: Counselor role required")
 
     try:
         client = supabase_db.get_client()
         query = (
             client.table("follow_up_tasks")
             .select("*")
-            .eq("counselor_id", current_user["id"])
+            .eq("counselor_id", access["id"])
         )
         if status:
             query = query.eq("status", status)
@@ -278,17 +285,15 @@ async def get_follow_up_tasks(
 @router.post("/safeguarding/log")
 async def log_safeguarding_event(
     request: SafeguardingEventRequest,
-    current_user: dict = Depends(get_current_user),
+    access: dict = Depends(get_counselor_access),
     store: CounselorStore = Depends(get_counselor_store)
 ):
     """Log a safeguarding event (audit trail for formal reports)."""
-    if current_user.get("role") not in ["counselor", "admin"]:
-        raise HTTPException(status_code=403, detail="Forbidden: Counselor role required")
 
     now = datetime.now(timezone.utc).isoformat()
     payload = {
         "id": str(uuid.uuid4()),
-        "counselor_id": current_user["id"],
+        "counselor_id": access["id"],
         "student_id": request.student_id,
         "event_type": request.event_type,
         "reason": request.reason,

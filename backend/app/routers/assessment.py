@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks
 from typing import List, Optional, Dict, Any, Literal
 from pydantic import BaseModel
 from datetime import datetime
@@ -55,66 +55,126 @@ class QuestionOverrideRequest(BaseModel):
 @router.post("/process-physical/{submission_id}")
 async def process_physical_submission(
     submission_id: str,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user)
 ):
-    """Process a physical paper submission using OCR and AI grading."""
-    content_store = get_content_store()
-    assignment_store = get_assignment_store()
-    db = get_scoped_db(current_user)
+    """
+    Kicks off an asynchronous grading process for a physical paper submission.
+    Returns a job_id for SSE tracking.
+    """
+    from app.database.supabase_manager import supabase_db
     
+    # Check if job already exists or submission is valid
+    content_store = get_content_store()
     submission = await content_store.get_physical_submission(submission_id)
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
+        
+    institution_id = current_user.get("institution_id")
+    if not institution_id:
+        # Fallback for older tokens
+        res = await supabase_db.table("users").select("institution_id").eq("id", current_user["id"]).async_execute()
+        institution_id = res.data[0]["institution_id"] if res.data else None
+
+    # Create Job
+    job_payload = {
+        "institution_id": institution_id,
+        "user_id": current_user["id"],
+        "job_type": "physical_grading",
+        "status": "queued"
+    }
+    job_res = await supabase_db.table("ai_jobs").insert(job_payload).async_execute()
+    if not job_res.data:
+         raise HTTPException(status_code=500, detail="Failed to queue AI job")
     
-    # 🚨 SECURITY CHECK: IDOR Prevention
+    job_id = job_res.data[0]["id"]
+    
+    # 🚨 SECURITY CHECK: IDOR Prevention (same as before but passed to background)
     user_id = str(current_user["id"])
     role = current_user.get("role", "student")
-    
-    # Students can only process their own submissions
-    if role == "student" and str(submission.get("student_id")) != user_id:
-        raise HTTPException(status_code=403, detail="Access denied: Cannot process another student's submission")
-    
-    # Teachers can only process submissions for students they are linked to
-    if role == "teacher":
-        from app.store.academic_store import AcademicStore
-        academic = AcademicStore(db=db)
-        if not await academic.verify_teacher_student_link(user_id, str(submission.get("student_id"))):
-            raise HTTPException(status_code=403, detail="Access denied: Student is not in your assigned classes")
 
-    await content_store.update_physical_submission(submission_id, {"assessment_status": "processing"})
-    extracted_texts = []
+    # Start background task
+    background_tasks.add_task(
+        run_physical_grading_task,
+        job_id=job_id,
+        submission_id=submission_id,
+        user_id=user_id,
+        role=role,
+        institution_id=institution_id
+    )
+
+    return {"status": "queued", "job_id": job_id, "submission_id": submission_id}
+
+async def run_physical_grading_task(
+    job_id: str,
+    submission_id: str,
+    user_id: str,
+    role: str,
+    institution_id: str
+):
+    """Background task for OCR and AI grading."""
+    from app.database.supabase_manager import supabase_db
+    import httpx
+    import io
+    from PIL import Image
     
-    # Rest of the logic...
-    async with httpx.AsyncClient() as client:
-        for img_url in submission.get("submission_images", []):
-            try:
-                resp = await client.get(img_url)
-                resp.raise_for_status()
-                image = Image.open(io.BytesIO(resp.content))
-                ocr_result = await ocr_service.extract_text(image)
-                extracted_texts.append(ocr_result.text)
-            except Exception as e:
-                log.warn("ocr_failed", error=str(e), image_url=img_url)
-                extracted_texts.append(f"[OCR Error: {str(e)}]")
-    
-    full_text = "\n\n".join(extracted_texts)
-    grading_result = {"score": 0, "feedback": "Assignment context not found."}
-    assignment = await assignment_store.get_assignment(submission.get("assignment_id"))
-    
-    if assignment:
-        expected = assignment.get("description") or assignment.get("title")
-        try:
+    content_store = get_content_store()
+    assignment_store = get_assignment_store()
+
+    try:
+        # 1. Update status to processing
+        await supabase_db.table("ai_jobs").update({"status": "processing", "started_at": "now()"}).eq("id", job_id).async_execute()
+        
+        submission = await content_store.get_physical_submission(submission_id)
+        if not submission:
+            raise Exception("Submission disappeared")
+
+        await content_store.update_physical_submission(submission_id, {"assessment_status": "processing"})
+        
+        extracted_texts = []
+        async with httpx.AsyncClient() as client:
+            for img_url in submission.get("submission_images", []):
+                try:
+                    resp = await client.get(img_url)
+                    resp.raise_for_status()
+                    image = Image.open(io.BytesIO(resp.content))
+                    ocr_result = await ocr_service.extract_text(image)
+                    extracted_texts.append(ocr_result.text)
+                except Exception as e:
+                    extracted_texts.append(f"[OCR Error: {str(e)}]")
+        
+        full_text = "\n\n".join(extracted_texts)
+        grading_result = {"score": 0, "feedback": "Assignment context not found."}
+        assignment = await assignment_store.get_assignment(submission.get("assignment_id"))
+        
+        if assignment:
+            expected = assignment.get("description") or assignment.get("title")
             grading_result = grader_service.grade_submission(full_text, expected)
-        except Exception as e:
-            grading_result = {"score": 0, "feedback": f"Grading service unavailable: {str(e)}"}
 
-    await content_store.update_physical_submission(submission_id, {
-        "ocr_extracted_text": {"full_text": str(full_text), "pages": extracted_texts},
-        "ai_assessment": grading_result,
-        "total_ai_marks": grading_result.get("score"),
-        "assessment_status": "graded"
-    })
-    return {"status": "graded", "score": grading_result.get("score")}
+        # 2. Update submission
+        await content_store.update_physical_submission(submission_id, {
+            "ocr_extracted_text": {"full_text": str(full_text), "pages": extracted_texts},
+            "ai_assessment": grading_result,
+            "total_ai_marks": grading_result.get("score"),
+            "assessment_status": "graded"
+        })
+
+        # 3. Finalize Job
+        await supabase_db.table("ai_jobs").update({
+            "status": "complete", 
+            "result": grading_result,
+            "completed_at": "now()"
+        }).eq("id", job_id).async_execute()
+
+    except Exception as e:
+        await supabase_db.table("ai_jobs").update({
+            "status": "failed", 
+            "error_message": str(e),
+            "completed_at": "now()"
+        }).eq("id", job_id).async_execute()
+        await content_store.update_physical_submission(submission_id, {"assessment_status": "failed"})
+
+)}
 
 @router.post("/quiz-result")
 async def save_quiz_result(

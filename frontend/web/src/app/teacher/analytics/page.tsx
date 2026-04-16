@@ -317,7 +317,7 @@ export default function TeacherAnalytics() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500" />
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-warning" />
       </div>
     );
   }
@@ -327,8 +327,8 @@ export default function TeacherAnalytics() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Analytics & Reports</h1>
-          <p className="text-gray-400">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Analytics & Reports</h1>
+          <p className="text-text-muted">
             Track student progress, course performance, and learning outcomes
           </p>
         </div>
@@ -336,15 +336,15 @@ export default function TeacherAnalytics() {
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value as any)}
-            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-amber-500"
+            className="px-4 py-2 bg-surface border border-border rounded-lg text-foreground focus:outline-none focus:border-warning"
           >
-            <option value="week" className="bg-gray-800">This Week</option>
-            <option value="month" className="bg-gray-800">This Month</option>
-            <option value="semester" className="bg-gray-800">This Semester</option>
+            <option value="week" className="bg-background">This Week</option>
+            <option value="month" className="bg-background">This Month</option>
+            <option value="semester" className="bg-background">This Semester</option>
           </select>
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-warning hover:bg-warning/80 text-warning-foreground font-semibold rounded-lg transition-colors"
           >
             <Download className="w-4 h-4" />
             Export
@@ -402,11 +402,11 @@ export default function TeacherAnalytics() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Course Performance */}
-        <div className="lg:col-span-2 glass-v2 border-white/5 rounded-2xl p-6">
+        <div className="lg:col-span-2 glass-v2 border-border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white">Course Performance</h2>
-            <button className="p-2 hover:bg-white/5 rounded-lg transition-colors">
-              <Filter className="w-5 h-5 text-gray-400" />
+            <h2 className="text-xl font-bold text-foreground">Course Performance</h2>
+            <button className="p-2 hover:bg-surface rounded-lg transition-colors">
+              <Filter className="w-5 h-5 text-text-secondary" />
             </button>
           </div>
           <div className="space-y-4">
@@ -414,32 +414,32 @@ export default function TeacherAnalytics() {
               data.coursePerformance.map((course) => (
                 <div
                   key={course.id}
-                  className="p-4 rounded-xl bg-white/5 border border-white/5"
+                  className="p-4 rounded-xl bg-surface border border-border"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="font-semibold text-white">{course.name}</h3>
-                      <p className="text-sm text-gray-400">{course.students} students</p>
+                      <h3 className="font-semibold text-foreground">{course.name}</h3>
+                      <p className="text-sm text-text-muted">{course.students} students</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-2xl font-bold text-foreground">
                         {course.avgMastery}%
                       </span>
-                      <p className="text-xs text-gray-400">avg mastery</p>
+                      <p className="text-xs text-text-muted">avg mastery</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-400">Progress</span>
-                        <span className="text-white">{course.avgProgress}%</span>
+                        <span className="text-text-muted">Progress</span>
+                        <span className="text-foreground">{course.avgProgress}%</span>
                       </div>
                       <ProgressBar value={course.avgProgress} color="amber" size="sm" />
                     </div>
                     <div>
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-400">Completion</span>
-                        <span className="text-white">{course.completionRate}%</span>
+                        <span className="text-text-muted">Completion</span>
+                        <span className="text-foreground">{course.completionRate}%</span>
                       </div>
                       <ProgressBar value={course.completionRate} color="gold" size="sm" />
                     </div>
@@ -447,7 +447,7 @@ export default function TeacherAnalytics() {
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-8 text-text-muted">
                 No course data available
               </div>
             )}
@@ -455,26 +455,26 @@ export default function TeacherAnalytics() {
         </div>
 
         {/* Weekly Activity */}
-        <div className="glass-v2 border-white/5 rounded-2xl p-6">
-          <h2 className="text-xl font-bold text-white mb-6">Weekly Activity</h2>
+        <div className="glass-v2 border-border rounded-2xl p-6">
+          <h2 className="text-xl font-bold text-foreground mb-6">Weekly Activity</h2>
           <SimpleBarChart
             data={data.weeklyActivity.map((d) => ({
               label: d.day,
               value: d.submissions,
-              color: "bg-amber-500/60",
+              color: "bg-warning/60",
             }))}
             maxValue={Math.max(...data.weeklyActivity.map((d) => d.submissions), 1)}
           />
-          <div className="mt-6 pt-6 border-t border-white/10">
+          <div className="mt-6 pt-6 border-t border-border">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-400">Total Submissions</span>
-              <span className="text-white font-semibold">
+              <span className="text-text-muted">Total Submissions</span>
+              <span className="text-foreground font-semibold">
                 {data.weeklyActivity.reduce((sum, d) => sum + d.submissions, 0)}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm mt-2">
-              <span className="text-gray-400">Active Students</span>
-              <span className="text-white font-semibold">
+              <span className="text-text-muted">Active Students</span>
+              <span className="text-foreground font-semibold">
                 {Math.max(...data.weeklyActivity.map((d) => d.activeStudents), 0)}
               </span>
             </div>
@@ -485,32 +485,32 @@ export default function TeacherAnalytics() {
       {/* Students Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Performers */}
-        <div className="glass-v2 border-white/5 rounded-2xl p-6">
-          <h2 className="text-xl font-bold text-white mb-6">Top Performers</h2>
+        <div className="glass-v2 border-border rounded-2xl p-6">
+          <h2 className="text-xl font-bold text-foreground mb-6">Top Performers</h2>
           <div className="space-y-3">
             {data.topPerformers.length > 0 ? (
               data.topPerformers.map((student, index) => (
                 <div
                   key={student.id}
-                  className="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5"
+                  className="flex items-center gap-4 p-3 rounded-xl bg-surface border border-border"
                 >
-                  <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm">
+                  <div className="w-8 h-8 rounded-full bg-warning/20 text-warning flex items-center justify-center font-bold text-sm">
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white truncate">{student.name}</p>
-                    <p className="text-xs text-gray-400">{student.course}</p>
+                    <p className="font-medium text-foreground truncate">{student.name}</p>
+                    <p className="text-xs text-text-muted">{student.course}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-yellow-400">
+                    <p className="text-sm font-semibold text-warning">
                       {student.mastery}%
                     </p>
-                    <p className="text-xs text-gray-400">mastery</p>
+                    <p className="text-xs text-text-muted">mastery</p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-8 text-text-muted">
                 No top performers data available
               </div>
             )}
@@ -518,35 +518,35 @@ export default function TeacherAnalytics() {
         </div>
 
         {/* Students Needing Attention */}
-        <div className="glass-v2 border-white/5 rounded-2xl p-6">
-          <h2 className="text-xl font-bold text-white mb-6">Needs Attention</h2>
+        <div className="glass-v2 border-border rounded-2xl p-6">
+          <h2 className="text-xl font-bold text-foreground mb-6">Needs Attention</h2>
           <div className="space-y-3">
             {data.strugglingStudents.length > 0 ? (
               data.strugglingStudents.map((student) => (
                 <div
                   key={student.id}
-                  className="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5"
+                  className="flex items-center gap-4 p-3 rounded-xl bg-surface border border-border"
                 >
-                  <div className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center font-bold">
+                  <div className="w-10 h-10 rounded-full bg-danger/20 text-danger flex items-center justify-center font-bold">
                     {student.name.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white truncate">{student.name}</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="font-medium text-foreground truncate">{student.name}</p>
+                    <p className="text-xs text-text-muted">
                       Last active: {student.lastActive
                         ? new Date(student.lastActive).toLocaleDateString()
                         : "Never"}
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-danger/20 text-danger">
                       At Risk
                     </span>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-8 text-text-muted">
                 No students need attention
               </div>
             )}
@@ -556,20 +556,20 @@ export default function TeacherAnalytics() {
 
       {/* Topic Mastery */}
       {data.topicMastery.length > 0 && (
-        <div className="glass-v2 border-white/5 rounded-2xl p-6">
-          <h2 className="text-xl font-bold text-white mb-6">Topic Mastery Overview</h2>
+        <div className="glass-v2 border-border rounded-2xl p-6">
+          <h2 className="text-xl font-bold text-foreground mb-6">Topic Mastery Overview</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {data.topicMastery.map((topic) => (
               <div
                 key={topic.topic}
-                className="p-4 rounded-xl bg-white/5 border border-white/5"
+                className="p-4 rounded-xl bg-surface border border-border"
               >
-                <p className="text-sm text-gray-400 mb-2">{topic.topic}</p>
+                <p className="text-sm text-text-muted mb-2">{topic.topic}</p>
                 <div className="flex items-end justify-between">
-                  <span className="text-2xl font-bold text-white">
+                  <span className="text-2xl font-bold text-foreground">
                     {topic.avgMastery}%
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-text-secondary">
                     {topic.studentCount} students
                   </span>
                 </div>

@@ -642,3 +642,31 @@ class StudentKPIProfile(BaseModel):
     improvement_rate: float = 0.0
     engagement_score: float = 0.0
     last_updated: str = Field(default_factory=current_time_iso)
+
+
+# --- 12. ATTENDANCE OVERRIDE SYSTEM ---
+
+
+class AttendanceOverrideRequest(BaseModel):
+    id: str = Field(default_factory=generate_id)
+    institution_id: str
+    counselor_id: str
+    student_id: str
+    original_status: str
+    requested_status: str
+    reason: str
+    hod_id: Optional[str] = None
+    status: str = "PENDING"  # PENDING | APPROVED | REJECTED
+    created_at: str = Field(default_factory=current_time_iso)
+    updated_at: str = Field(default_factory=current_time_iso)
+
+
+class AttendanceOverrideCreate(BaseModel):
+    student_id: str
+    original_status: str
+    requested_status: str
+    reason: str
+
+
+class AttendanceOverrideUpdate(BaseModel):
+    status: str  # APPROVED | REJECTED

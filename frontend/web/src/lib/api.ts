@@ -1714,6 +1714,41 @@ export class RealAPI {
     return await parseJsonSafe(res);
   }
 
+  // --- Attendance Override Review Loop ---
+  async getPendingOverrideRequests(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/attendance/override/pending");
+    return res.ok ? (await parseJsonSafe(res) ?? []) : [];
+  }
+
+  async reviewOverrideRequest(requestId: string, status: "APPROVED" | "REJECTED"): Promise<any> {
+    const res = await this.fetchAuthorized(`/api/attendance/override/${requestId}/review`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+      const e = await parseJsonSafe(res);
+      throw new Error(e?.detail || "Failed to review override request");
+    }
+    return await parseJsonSafe(res);
+  }
+
+  async requestAttendanceOverride(payload: {
+    student_id: string;
+    original_status: string;
+    requested_status: string;
+    reason: string;
+  }): Promise<any> {
+    const res = await this.fetchAuthorized("/api/attendance/override/request", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const e = await parseJsonSafe(res);
+      throw new Error(e?.detail || "Failed to submit override request");
+    }
+    return await parseJsonSafe(res);
+  }
+
   async gradeSubmission(assignmentId: string, submissionId: string, data: { score: number; feedback?: string }) {
     const res = await this.fetchAuthorized(`/api/assignments/${assignmentId}/submissions/${submissionId}/score`, {
       method: "PUT",

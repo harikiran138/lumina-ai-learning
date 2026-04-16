@@ -14,6 +14,10 @@ logger = logging.getLogger("uvicorn.error")
 # OAuth2 scheme for token extraction
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token", auto_error=False)
 
+# API Key scheme for integrations
+from fastapi.security import APIKeyHeader
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
 def _ensure_valid_role(current_user: dict) -> str:
     role = normalize_role(current_user.get("role"))
     if role not in ALL_ROLES and role != "admin":
@@ -254,6 +258,57 @@ async def get_current_researcher(current_user: dict = Depends(get_current_active
     if role not in {"researcher", "super_admin"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Researcher privileges required")
     return current_user
+
+async def get_current_counselor(current_user: dict = Depends(get_current_active_user)) -> dict:
+    role = _ensure_valid_role(current_user)
+    if role not in {"counselor", "super_admin", "institution_admin"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Counselor privileges required")
+    return current_user
+
+async def get_current_attendance_reviewer(current_user: dict = Depends(get_current_active_user)) -> dict:
+    role = _ensure_valid_role(current_user)
+    if role not in {"hod", "institution_admin", "super_admin"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="HOD or Admin privileges required")
+    return current_user
+
+# --- API Scope Verification (Integrations) ---
+
+async def get_api_user(
+    api_key: Optional[str] = Depends(api_key_header)
+) -> dict:
+    """Validate API key and return API user with scopes."""
+    if not api_key:
+        raise HTTPException(status_code=401, detail="API Key required")
+    
+    from app.database.supabase_manager import supabase_db
+    import hashlib
+    
+    key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    
+    result = await supabase_db.table("api_users").select("*").eq("token_hash", key_hash).eq("is_active", True).async_execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=401, detail="Invalid or inactive API Key")
+        
+    api_user = result.data[0]
+    # Update last used
+    try:
+        await supabase_db.table("api_users").update({"last_used": "now()"}).eq("id", api_user["id"]).async_execute()
+    except Exception:
+        pass
+        
+    return api_user
+
+def require_scope(scope: str):
+    """Enforce a specific scope for an API user."""
+    async def checker(api_user: dict = Depends(get_api_user)):
+        if scope not in api_user.get("scopes", []):
+            raise HTTPException(
+                status_code=403, 
+                detail=f"Scope '{scope}' not granted to this token"
+            )
+        return api_user
+    return checker
 
 # Aliases for compatibility
 get_current_admin = get_current_institution_admin

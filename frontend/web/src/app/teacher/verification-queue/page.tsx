@@ -162,23 +162,23 @@ export default function VerificationQueuePage() {
       <motion.section 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-v2 border-white/5 overflow-hidden"
+        className="glass-v2 border-border overflow-hidden"
       >
         <div className="p-8 relative">
           <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-            <Sparkles className="w-32 h-32 text-lumina-highlight" />
+            <Sparkles className="w-32 h-32 text-primary" />
           </div>
           
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-lumina-highlight">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-primary">
             AI Quality Gate
           </p>
-          <h1 className="text-4xl font-display font-bold tracking-tight text-white md:text-5xl">
+          <h1 className="text-4xl font-display font-bold tracking-tight text-foreground md:text-5xl">
             AI Answer{" "}
-            <span className="text-lumina-highlight border-b-4 border-lumina-highlight/30">
+            <span className="text-primary border-b-4 border-primary/30">
               Verification Queue
             </span>
           </h1>
-          <p className="mt-4 max-w-2xl text-lg text-gray-400 leading-relaxed">
+          <p className="mt-4 max-w-2xl text-lg text-text-muted leading-relaxed">
             Every AI-generated answer must be reviewed before students can see
             it. Approve, edit, or reject — you are the final quality gate.
           </p>
@@ -186,35 +186,35 @@ export default function VerificationQueuePage() {
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <motion.div 
               whileHover={{ scale: 1.02 }}
-              className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 backdrop-blur-sm"
+              className="rounded-2xl border border-warning/20 bg-warning/5 p-5 backdrop-blur-sm"
             >
-              <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Pending Review</p>
-              <p className="mt-2 text-4xl font-bold text-amber-300">{pendingCount}</p>
+              <p className="text-xs uppercase tracking-[0.22em] text-text-secondary">Pending Review</p>
+              <p className="mt-2 text-4xl font-bold text-warning">{pendingCount}</p>
             </motion.div>
             <motion.div 
               whileHover={{ scale: 1.02 }}
-              className="rounded-2xl border border-lumina-highlight/20 bg-lumina-highlight/5 p-5 backdrop-blur-sm"
+              className="rounded-2xl border border-primary/20 bg-primary/5 p-5 backdrop-blur-sm"
             >
-              <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Approved</p>
-              <p className="mt-2 text-4xl font-bold text-lumina-highlight">
+              <p className="text-xs uppercase tracking-[0.22em] text-text-secondary">Approved</p>
+              <p className="mt-2 text-4xl font-bold text-primary">
                 {queue.filter((q) => q.status === "approved").length}
               </p>
             </motion.div>
             <motion.div 
               whileHover={{ scale: 1.02 }}
-              className="rounded-2xl border border-blue-400/20 bg-blue-400/5 p-5 backdrop-blur-sm"
+              className="rounded-2xl border border-info/20 bg-info/5 p-5 backdrop-blur-sm"
             >
-              <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Edited</p>
-              <p className="mt-2 text-4xl font-bold text-blue-300">
+              <p className="text-xs uppercase tracking-[0.22em] text-text-secondary">Edited</p>
+              <p className="mt-2 text-4xl font-bold text-info">
                 {queue.filter((q) => q.status === "edited" || q.status === "edited_approved").length}
               </p>
             </motion.div>
             <motion.div 
               whileHover={{ scale: 1.02 }}
-              className="rounded-2xl border border-red-400/20 bg-red-400/5 p-5 backdrop-blur-sm"
+              className="rounded-2xl border border-danger/20 bg-danger/5 p-5 backdrop-blur-sm"
             >
-              <p className="text-xs uppercase tracking-[0.22em] text-gray-500">Rejected</p>
-              <p className="mt-2 text-4xl font-bold text-red-300">
+              <p className="text-xs uppercase tracking-[0.22em] text-text-secondary">Rejected</p>
+              <p className="mt-2 text-4xl font-bold text-danger">
                 {queue.filter((q) => q.status === "rejected").length}
               </p>
             </motion.div>
@@ -223,13 +223,13 @@ export default function VerificationQueuePage() {
       </motion.section>
 
       {/* Info banner */}
-      <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 px-6 py-4 flex items-start gap-4">
-        <Sparkles className="h-5 w-5 text-amber-300 shrink-0 mt-0.5" />
+      <div className="rounded-2xl border border-warning/20 bg-warning/5 px-6 py-4 flex items-start gap-4">
+        <Sparkles className="h-5 w-5 text-warning shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-semibold text-amber-200">
+          <p className="text-sm font-semibold text-warning">
             Lumina Core Principle — Faculty is the only AI gatekeeper
           </p>
-          <p className="mt-1 text-sm text-gray-400">
+          <p className="mt-1 text-sm text-text-muted">
             Students never receive unverified AI answers. Every response passes
             through this queue first. Your edits and rejections also train the AI
             to improve future responses.
@@ -246,13 +246,13 @@ export default function VerificationQueuePage() {
             className={cn(
               "rounded-full border px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition-all",
               filter === f
-                ? "border-lumina-highlight/40 bg-lumina-highlight/10 text-lumina-highlight"
-                : "border-white/10 text-gray-400 hover:border-white/20 hover:text-white",
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border text-text-muted hover:border-border/80 hover:text-foreground",
             )}
           >
             {f}
             {f === "pending" && pendingCount > 0 && (
-              <span className="ml-2 rounded-full bg-amber-400/20 px-1.5 py-0.5 text-amber-300">
+              <span className="ml-2 rounded-full bg-warning/20 px-1.5 py-0.5 text-warning">
                 {pendingCount}
               </span>
             )}
@@ -261,7 +261,7 @@ export default function VerificationQueuePage() {
         <button
           onClick={fetchQueue}
           disabled={loading}
-          className="ml-auto rounded-full border border-white/10 px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:border-white/20 transition-all flex items-center gap-1.5 disabled:opacity-50"
+          className="ml-auto rounded-full border border-border px-3 py-1.5 text-xs text-text-muted hover:text-foreground hover:border-border/80 transition-all flex items-center gap-1.5 disabled:opacity-50"
         >
           <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
           Refresh
@@ -270,19 +270,19 @@ export default function VerificationQueuePage() {
 
       {/* Loading / Error states */}
       {loading && (
-        <div className="flex items-center justify-center py-16 gap-3 text-gray-400">
+        <div className="flex items-center justify-center py-16 gap-3 text-text-muted">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span>Loading queue...</span>
         </div>
       )}
 
       {!loading && error && (
-        <div className="rounded-2xl border border-red-400/20 bg-red-400/5 p-6 text-center">
-          <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-red-400" />
-          <p className="text-sm text-red-300">{error}</p>
+        <div className="rounded-2xl border border-danger/20 bg-danger/5 p-6 text-center">
+          <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-danger" />
+          <p className="text-sm text-danger">{error}</p>
           <button
             onClick={fetchQueue}
-            className="mt-4 rounded-xl border border-white/10 px-4 py-2 text-xs text-gray-400 hover:text-white"
+            className="mt-4 rounded-xl border border-border px-4 py-2 text-xs text-text-muted hover:text-foreground"
           >
             Try again
           </button>
@@ -296,13 +296,13 @@ export default function VerificationQueuePage() {
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="rounded-3xl border border-dashed border-white/10 bg-white/[0.02] p-12 text-center"
+              className="rounded-3xl border border-dashed border-border bg-background/20 p-12 text-center"
             >
-              <CheckCircle className="mx-auto mb-4 h-12 w-12 text-lumina-highlight/50" />
-              <h3 className="text-lg font-semibold text-white">
+              <CheckCircle className="mx-auto mb-4 h-12 w-12 text-primary/50" />
+              <h3 className="text-lg font-semibold text-foreground">
                 {filter === "pending" ? "All caught up!" : "Nothing here yet"}
               </h3>
-              <p className="mt-2 text-sm text-gray-400">
+              <p className="mt-2 text-sm text-text-muted">
                 {filter === "pending"
                   ? "No pending AI answers waiting for your review."
                   : `No ${filter} answers found.`}
@@ -325,15 +325,15 @@ export default function VerificationQueuePage() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ delay: idx * 0.05 }}
                     className={cn(
-                      "rounded-3xl border bg-white/[0.03] transition-all overflow-hidden",
+                      "rounded-3xl border bg-surface transition-all overflow-hidden",
                       isPending
-                        ? "border-amber-400/20"
+                        ? "border-warning/20"
                         : item.status === "approved"
-                          ? "border-lumina-highlight/20"
+                          ? "border-primary/20"
                           : item.status === "edited" || item.status === "edited_approved"
-                            ? "border-blue-400/20"
-                            : "border-red-400/20",
-                      isExpanded && "ring-1 ring-white/10"
+                            ? "border-info/20"
+                            : "border-danger/20",
+                      isExpanded && "ring-1 ring-border/10"
                     )}
                   >
                   {/* Card header */}
@@ -347,27 +347,27 @@ export default function VerificationQueuePage() {
                           className={cn(
                             "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em]",
                             isPending
-                              ? "border-amber-400/30 bg-amber-400/10 text-amber-300"
+                              ? "border-warning/30 bg-warning/10 text-warning"
                               : item.status === "approved"
-                                ? "border-lumina-highlight/30 bg-lumina-highlight/10 text-lumina-highlight"
+                                ? "border-primary/30 bg-primary/10 text-primary"
                                 : item.status === "edited" || item.status === "edited_approved"
-                                  ? "border-blue-400/30 bg-blue-400/10 text-blue-300"
-                                  : "border-red-400/30 bg-red-400/10 text-red-300",
+                                  ? "border-info/30 bg-info/10 text-info"
+                                  : "border-danger/30 bg-danger/10 text-danger",
                           )}
                         >
                           {item.status === "edited_approved" ? "edited" : item.status}
                         </span>
-                        <span className="text-xs text-gray-500">{item.courseTitle}</span>
+                        <span className="text-xs text-text-secondary">{item.courseTitle}</span>
                         {item.topicName && (
-                          <span className="text-xs text-gray-600">• {item.topicName}</span>
+                          <span className="text-xs text-text-muted">• {item.topicName}</span>
                         )}
                       </div>
 
-                      <p className="text-base font-semibold text-white">
+                      <p className="text-base font-semibold text-foreground">
                         {item.questionText}
                       </p>
 
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <div className="flex items-center gap-4 text-xs text-text-secondary">
                         <span className="flex items-center gap-1">
                           <Users className="h-3.5 w-3.5" />
                           {item.studentName}
@@ -385,7 +385,7 @@ export default function VerificationQueuePage() {
                       </div>
                     </div>
 
-                    <div className="shrink-0 text-gray-500 hover:text-white transition-colors">
+                    <div className="shrink-0 text-text-secondary hover:text-foreground transition-colors">
                       {isExpanded ? (
                         <ChevronUp className="h-5 w-5" />
                       ) : (
@@ -401,19 +401,19 @@ export default function VerificationQueuePage() {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        className="border-t border-white/5"
+                        className="border-t border-border"
                       >
                         <div className="p-6 space-y-5">
                           {/* AI Answer */}
                           <div>
                             <div className="flex items-center justify-between mb-2">
-                              <p className="text-xs font-bold uppercase tracking-[0.25em] text-gray-500">
+                              <p className="text-xs font-bold uppercase tracking-[0.25em] text-text-secondary">
                                 AI Generated Answer
                               </p>
                               {item.confidence !== null && (
-                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-lumina-highlight animate-pulse" />
-                                  <span className="text-[10px] text-gray-400 font-medium">Confidence: {Math.round(item.confidence * 100)}%</span>
+                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface border border-border">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                  <span className="text-[10px] text-text-muted font-medium">Confidence: {Math.round(item.confidence * 100)}%</span>
                                 </div>
                               )}
                             </div>
@@ -422,12 +422,12 @@ export default function VerificationQueuePage() {
                                 value={editText}
                                 onChange={(e) => setEditText(e.target.value)}
                                 rows={6}
-                                className="w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-lumina-highlight/50 focus:outline-none resize-none"
+                                className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-foreground placeholder:text-text-muted focus:border-primary/50 focus:outline-none resize-none"
                               />
                             ) : (
-                              <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 text-sm leading-relaxed text-gray-200">
+                              <div className="rounded-2xl border border-border bg-background/20 px-5 py-4 text-sm leading-relaxed text-foreground">
                                 {item.aiAnswer || (
-                                  <span className="italic text-gray-500">AI answer not yet generated — still processing.</span>
+                                  <span className="italic text-text-muted">AI answer not yet generated — still processing.</span>
                                 )}
                               </div>
                             )}
@@ -439,7 +439,7 @@ export default function VerificationQueuePage() {
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                             >
-                              <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-gray-500">
+                              <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-text-secondary">
                                 Faculty Note (optional)
                               </p>
                               <input
@@ -447,14 +447,14 @@ export default function VerificationQueuePage() {
                                 value={noteText}
                                 onChange={(e) => setNoteText(e.target.value)}
                                 placeholder="Add a note explaining your edit..."
-                                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-lumina-highlight/50 focus:outline-none"
+                                className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-foreground placeholder:text-text-muted focus:border-primary/50 focus:outline-none"
                               />
                             </motion.div>
                           )}
 
                           {item.facultyNote && !isEditing && (
-                            <div className="rounded-2xl border border-blue-400/20 bg-blue-400/5 px-4 py-3">
-                              <p className="text-xs text-gray-500">Faculty note: {item.facultyNote}</p>
+                            <div className="rounded-2xl border border-info/20 bg-info/5 px-4 py-3">
+                              <p className="text-xs text-text-muted">Faculty note: {item.facultyNote}</p>
                             </div>
                           )}
 
@@ -467,7 +467,7 @@ export default function VerificationQueuePage() {
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => handleAction(item.id, "approved")}
                                     disabled={isProcessing || !item.aiAnswer}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-lumina-highlight/30 bg-lumina-highlight/10 px-5 py-2.5 text-sm font-bold text-lumina-highlight hover:bg-lumina-highlight/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-5 py-2.5 text-sm font-bold text-primary hover:bg-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                                     Approve
@@ -476,7 +476,7 @@ export default function VerificationQueuePage() {
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => startEdit(item)}
                                     disabled={isProcessing}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-blue-400/30 bg-blue-400/10 px-5 py-2.5 text-sm font-bold text-blue-300 hover:bg-blue-400/20 transition-all disabled:opacity-50"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-info/30 bg-info/10 px-5 py-2.5 text-sm font-bold text-info hover:bg-info/20 transition-all disabled:opacity-50"
                                   >
                                     <Edit2 className="h-4 w-4" />
                                     Edit &amp; Approve
@@ -485,7 +485,7 @@ export default function VerificationQueuePage() {
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => handleAction(item.id, "rejected", undefined, "Rejected by faculty")}
                                     disabled={isProcessing}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-red-400/30 bg-red-400/10 px-5 py-2.5 text-sm font-bold text-red-300 hover:bg-red-400/20 transition-all disabled:opacity-50"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-danger/30 bg-danger/10 px-5 py-2.5 text-sm font-bold text-danger hover:bg-danger/20 transition-all disabled:opacity-50"
                                   >
                                     <XCircle className="h-4 w-4" />
                                     Reject
@@ -499,7 +499,7 @@ export default function VerificationQueuePage() {
                                       handleAction(item.id, "edited", editText, noteText)
                                     }
                                     disabled={isProcessing || !editText.trim()}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-lumina-highlight/30 bg-lumina-highlight/10 px-5 py-2.5 text-sm font-bold text-lumina-highlight hover:bg-lumina-highlight/20 transition-all disabled:opacity-50"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-5 py-2.5 text-sm font-bold text-primary hover:bg-primary/20 transition-all disabled:opacity-50"
                                   >
                                     {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                                     Save &amp; Approve Edited Answer
@@ -511,7 +511,7 @@ export default function VerificationQueuePage() {
                                       setEditText("");
                                       setNoteText("");
                                     }}
-                                    className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-bold text-gray-400 hover:text-white transition-all"
+                                    className="rounded-xl border border-border px-5 py-2.5 text-sm font-bold text-text-muted hover:text-foreground transition-all"
                                   >
                                     Cancel
                                   </motion.button>
@@ -519,7 +519,7 @@ export default function VerificationQueuePage() {
                               )}
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2 text-xs text-gray-500 pt-2">
+                            <div className="flex items-center gap-2 text-xs text-text-secondary pt-2">
                               <RefreshCw className="h-3.5 w-3.5" />
                               This answer has been {item.status === "edited_approved" ? "edited & approved" : item.status} and is{" "}
                               {item.status === "rejected"
@@ -540,15 +540,15 @@ export default function VerificationQueuePage() {
       )}
 
       {/* AI training feedback note */}
-      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6">
-        <h3 className="text-sm font-semibold text-white mb-1">AI Training Feedback Loop</h3>
-        <p className="text-sm text-gray-400">
+      <div className="rounded-2xl border border-border bg-background/20 p-6">
+        <h3 className="text-sm font-semibold text-foreground mb-1">AI Training Feedback Loop</h3>
+        <p className="text-sm text-text-muted">
           Every edit and rejection you make is logged and used to improve future AI answers.
           The more you interact with this queue, the smarter Lumina becomes for your students.
         </p>
         <Link
           href="/teacher/analytics"
-          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-lumina-highlight hover:text-white transition-colors"
+          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-foreground transition-colors"
         >
           View AI performance analytics
           <ArrowRight className="h-4 w-4" />

@@ -9,6 +9,8 @@ import structlog
 from datetime import datetime
 import time
 import re
+import asyncio
+from fastapi.responses import StreamingResponse
 
 from ai_engine.llm import get_llm_provider
 from ai_engine.rag import get_rag_engine
@@ -24,6 +26,43 @@ from app.core.audit import audit_logger
 # Initialize router and logger
 router = APIRouter()
 logger = structlog.get_logger()
+
+# --- AI Job Hub ---
+
+@router.get("/jobs/{job_id}/stream")
+async def stream_job_status(job_id: str):
+    """
+    Server-Sent Events (SSE) endpoint to stream status updates for a specific AI job.
+    State machine: queued -> processing -> complete/failed
+    """
+    from app.database.supabase_manager import supabase_db
+
+    async def event_generator():
+        last_status = None
+        while True:
+            try:
+                result = await supabase_db.table("ai_jobs").select("status, result, error_message").eq("id", job_id).async_execute()
+                if not result.data:
+                    yield f"data: {json.dumps({'error': 'Job not found'})}\n\n"
+                    break
+
+                job = result.data[0]
+                status = job["status"]
+
+                # Only emit if status changed
+                if status != last_status:
+                    yield f"data: {json.dumps({'status': status, 'result': job.get('result'), 'error': job.get('error_message')})}\n\n"
+                    last_status = status
+
+                if status in ["complete", "failed"]:
+                    break
+
+                await asyncio.sleep(1.5) # Poll frequency
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                break
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 class CourseGenerationRequest(BaseModel):
