@@ -329,7 +329,7 @@ export default function StudentDashboard() {
           icon={Bot}
         >
           {coachInsight ? (
-            <p className="p-6 rounded-[2rem] bg-primary/5 border border-primary/10">
+            <div className="p-6 rounded-[2rem] bg-primary/5 border border-primary/10">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
                   <Bot className="w-6 h-6" />

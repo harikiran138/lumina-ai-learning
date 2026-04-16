@@ -142,9 +142,9 @@ export default function GradebookPage() {
 
   const getScoreColor = (score: number, maxScore: number) => {
     const percentage = (score / maxScore) * 100;
-    if (percentage >= 80) return "text-yellow-400";
-    if (percentage >= 60) return "text-amber-400";
-    return "text-red-400";
+    if (percentage >= 80) return "text-warning";
+    if (percentage >= 60) return "text-warning/70";
+    return "text-danger";
   };
 
   const getStatusIcon = (status: string) => {
