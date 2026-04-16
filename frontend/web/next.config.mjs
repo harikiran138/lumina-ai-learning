@@ -1,5 +1,21 @@
 import path from "node:path";
 
+function validateRequiredEnv() {
+  if (process.env.NODE_ENV !== "production") {
+    return;
+  }
+
+  const required = ["NEXT_PUBLIC_API_URL"];
+  const missing = required.filter((name) => !process.env[name]?.trim());
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required production environment variables: ${missing.join(", ")}`,
+    );
+  }
+}
+
+validateRequiredEnv();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,

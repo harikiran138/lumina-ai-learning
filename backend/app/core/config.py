@@ -69,6 +69,11 @@ class Settings(BaseSettings):
             "JWT_SECRET": self.JWT_SECRET,
             "JWT_REFRESH_SECRET": self.JWT_REFRESH_SECRET
         }
+
+        required_runtime = {
+            "DATABASE_URL": os.getenv("DATABASE_URL"),
+            "REDIS_URL": os.getenv("REDIS_URL"),
+        }
         
         missing = [k for k, v in secrets.items() if not v or (is_prod and len(v) < 32)]
         
@@ -85,6 +90,18 @@ class Settings(BaseSettings):
                 self.SECRET_KEY = dev_secret
                 self.JWT_SECRET = self.JWT_SECRET or dev_secret
                 self.JWT_REFRESH_SECRET = self.JWT_REFRESH_SECRET or dev_secret
+
+        if is_prod:
+            missing_runtime = [k for k, v in required_runtime.items() if not v or not v.strip()]
+            if missing_runtime:
+                import logging
+                logger = logging.getLogger("uvicorn.error")
+                logger.critical(
+                    f"SECURITY ALERT: Missing runtime env vars in PRODUCTION ({', '.join(missing_runtime)}). Deployment blocked."
+                )
+                raise ValueError(
+                    f"PRODUCTION REQUIREMENT: missing runtime environment variables: {', '.join(missing_runtime)}"
+                )
 
 
 settings = Settings()

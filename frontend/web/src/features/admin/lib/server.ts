@@ -59,7 +59,39 @@ export async function getAdminViewer(): Promise<AdminUser> {
 }
 
 export async function getAdminDashboardData(): Promise<AdminDashboardResponse> {
-  return fetchJsonOrDefault<AdminDashboardResponse>("/api/admin/dashboard", {});
+  const raw = await fetchJsonOrDefault<any>("/api/admin/dashboard", {});
+
+  const summary =
+    raw?.summary && !Array.isArray(raw.summary)
+      ? raw.summary
+      : {};
+  const attentionQueue = Array.isArray(raw?.attentionQueue)
+    ? raw.attentionQueue
+    : Array.isArray(raw?.alerts)
+      ? raw.alerts
+      : [];
+  const activityFeed = Array.isArray(raw?.activityFeed)
+    ? raw.activityFeed
+    : Array.isArray(raw?.activity)
+      ? raw.activity
+      : [];
+  const systemServices = Array.isArray(raw?.systemServices)
+    ? raw.systemServices
+    : Array.isArray(raw?.services)
+      ? raw.services
+      : [];
+
+  return {
+    ...raw,
+    summary,
+    attentionQueue,
+    activityFeed,
+    systemServices,
+    courseOverview: Array.isArray(raw?.courseOverview) ? raw.courseOverview : [],
+    charts: raw?.charts || { userGrowth: [], roleDistribution: [] },
+    institutions: Array.isArray(raw?.institutions) ? raw.institutions : [],
+    connections: Array.isArray(raw?.connections) ? raw.connections : [],
+  };
 }
 
 export async function getAdminAiUsageData(): Promise<{

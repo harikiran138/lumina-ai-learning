@@ -134,3 +134,52 @@ class timed:
 
     def __exit__(self, *args):
         self.elapsed = time.perf_counter() - self._start
+
+
+class _BoundCounter:
+    def __init__(self, metric_name: str, label_values: dict):
+        self.metric_name = metric_name
+        self.label_values = label_values
+
+    def inc(self, amount: float = 1.0):
+        publish_metric(
+            self.metric_name,
+            amount,
+            "Count",
+            [{"Name": k, "Value": str(v)} for k, v in self.label_values.items()],
+        )
+
+
+class _BoundHistogram:
+    def __init__(self, metric_name: str, label_values: dict):
+        self.metric_name = metric_name
+        self.label_values = label_values
+
+    def observe(self, value: float):
+        publish_metric(
+            self.metric_name,
+            float(value),
+            "Seconds",
+            [{"Name": k, "Value": str(v)} for k, v in self.label_values.items()],
+        )
+
+
+class _CounterCompat:
+    def __init__(self, metric_name: str):
+        self.metric_name = metric_name
+
+    def labels(self, **kwargs):
+        return _BoundCounter(self.metric_name, kwargs)
+
+
+class _HistogramCompat:
+    def __init__(self, metric_name: str):
+        self.metric_name = metric_name
+
+    def labels(self, **kwargs):
+        return _BoundHistogram(self.metric_name, kwargs)
+
+
+# Backward-compatible symbols for older router code paths.
+AI_REQUESTS = _CounterCompat("AIRequestCount")
+AI_LATENCY = _HistogramCompat("AILatencySeconds")

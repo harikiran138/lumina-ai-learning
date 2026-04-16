@@ -1,5 +1,6 @@
 export type AdminRole =
   | "super_admin"
+  | "system_admin"
   | "college_admin"
   | "institution_admin"
   | "admin";
@@ -33,6 +34,8 @@ export interface AdminDashboardResponse {
     draftCourses?: number;
     securityAlerts?: number;
     systemHealthScore?: number;
+    activeUsers?: number;
+    systemStatus?: string;
   };
   attentionQueue?: Array<{
     id: string;
@@ -64,5 +67,31 @@ export interface AdminDashboardResponse {
     assignmentCount: number;
     pendingGrading: number;
   }>;
+  charts?: {
+    userGrowth?: Array<{
+      month: string;
+      users: number;
+    }>;
+    roleDistribution?: Array<{
+      role: string;
+      count: number;
+    }>;
+  };
+  institutions?: Array<{
+    id: string;
+    institution_name?: string;
+    departmentCount?: number;
+    programCount?: number;
+    stakeholderCount?: number;
+    health?: string;
+  }>;
+  connections?: Array<{
+    id: string;
+    userName?: string;
+    userEmail?: string;
+    userRole?: string;
+    institutionName?: string;
+    programName?: string;
+    created_at?: string | null;
+  }>;
 }
-

@@ -5,8 +5,8 @@
     "scripts": {
         "dev": "cd frontend/web && npm run dev",
         "start": "cd frontend/web && npm run start",
-        "build": "export NODE_OPTIONS=--max-old-space-size=4096 && cd frontend/web && npm install --legacy-peer-deps && npm run build",
-        "vercel-build": "export NODE_OPTIONS=--max-old-space-size=4096 && cd frontend/web && npm install --legacy-peer-deps && npm run build"
+        "build": "export NODE_OPTIONS=--max-old-space-size=4096 && cd frontend/web && npm ci && npm run build",
+        "vercel-build": "export NODE_OPTIONS=--max-old-space-size=4096 && cd frontend/web && npm ci && npm run build"
     },
     "engines": {
         "node": "20.x"

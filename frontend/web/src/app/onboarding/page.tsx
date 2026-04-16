@@ -15,7 +15,8 @@ import {
   Mail, 
   Users, 
   Trash2,
-  LogOut, 
+  LogOut,
+  AlertTriangle,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import StudentOnboardingFlow from "@/components/onboarding/StudentOnboardingFlow";
@@ -70,15 +71,33 @@ export default function OnboardingPage() {
 
   const [departments, setDepartments] = useState<any[]>([]);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
+    let mounted = true;
+    const controller = new AbortController();
+
     const init = async () => {
+      // Safety timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        if (mounted) {
+          setError("Onboarding verification is taking longer than expected. Please check your connection or try again.");
+          setLoading(false);
+        }
+      }, 10000);
+
       try {
         const user = await api.getCurrentUser();
+        if (!mounted) return;
+
         if (!user) {
-          router.push("/login");
+          router.push("/login?reason=unauthorized");
           return;
         }
+
         const status = await api.getOnboardingStatus();
+        if (!mounted) return;
+
         const currentRole = (status.role || user.role) as Role;
 
         // Roles with no defined onboarding flow get sent straight to their dashboard.
@@ -88,27 +107,39 @@ export default function OnboardingPage() {
           structuredRoleFlows.includes(currentRole as SupportedRoleOnboardingRole);
 
         if (!hasDefinedFlow) {
-          // Sync with the backend and then move the user to their respective home.
-          // This prevents the middleware from catching them in a redirect loop.
           try {
             await api.completeOnboarding();
           } catch (e) {
             console.error("completeOnboarding failed", e);
           }
-          routeByRole(currentRole);
+          if (mounted) routeByRole(currentRole);
           return;
         }
 
         setRole(currentRole);
         setCollegeId(status.collegeId || user.collegeId || null);
         setCurrentStep(status.step || 1);
+        setError(null);
       } catch (err: any) {
+        console.error("Onboarding init failed:", err);
+        if (mounted) {
+          setError("Failed to load your onboarding status. Please try again.");
+        }
         toast.error("Failed to load onboarding status");
       } finally {
-        setLoading(false);
+        clearTimeout(timeoutId);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
+
     init();
+
+    return () => {
+      mounted = false;
+      controller.abort();
+    };
   }, [router]);
 
   const routeByRole = (r: Role) => {
@@ -198,8 +229,47 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen bg-[#090909] px-6 py-12 text-white">
         <div className="mx-auto flex min-h-[70vh] max-w-5xl items-center justify-center">
-          <div className="rounded-full border border-amber-300/15 bg-amber-300/10 px-5 py-3 text-sm text-amber-100">
-            Loading onboarding
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 border-4 border-lumina-primary/20 rounded-full" />
+              <div className="absolute inset-0 border-4 border-lumina-primary rounded-full border-t-transparent animate-spin" />
+            </div>
+            <div className="rounded-full border border-white/5 bg-white/5 px-6 py-2 text-sm text-gray-400">
+              Verifying your profile
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#090909] px-6 py-12 text-white flex items-center justify-center">
+        <div className="max-w-md w-full text-center space-y-8 p-10 backdrop-blur-3xl bg-white/[0.02] border border-white/10 rounded-[2.5rem]">
+          <div className="rounded-full w-20 h-20 bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto text-red-500">
+             <AlertTriangle className="w-10 h-10" />
+          </div>
+          <div className="space-y-3">
+            <h2 className="text-2xl font-bold">Onboarding Delayed</h2>
+            <p className="text-gray-400 text-sm leading-relaxed">{error}</p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full py-4 bg-white text-black font-bold rounded-2xl hover:bg-gray-200 transition-all active:scale-[0.98]"
+            >
+              Try Again
+            </button>
+            <button 
+              onClick={() => {
+                api.logout();
+                window.location.href = "/login";
+              }}
+              className="w-full py-4 bg-white/5 border border-white/10 text-white font-medium rounded-2xl hover:bg-white/10 transition-all text-sm"
+            >
+              Sign out and switch accounts
+            </button>
           </div>
         </div>
       </div>

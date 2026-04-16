@@ -838,7 +838,7 @@ export class RealAPI {
         id: a.id || Math.random().toString(),
         type: a.priority === "high" ? "critical" : "warning",
         title: a.title,
-        message: a.message,
+        message: a.message || a.description || a.detail || "",
         action: a.action
       })),
       summary,
@@ -884,26 +884,36 @@ export class RealAPI {
   }
 
   private async getHodDashboardData(): Promise<any> {
-    const [department, teachers, programs, requests] = await Promise.all([
+    const [dashboard, department, teachers, programs, requests]: any[] = await Promise.all([
+      this.fetchJsonOrDefault("/api/hod/dashboard", {}),
       this.fetchJsonOrDefault("/api/hod/department", null),
       this.fetchJsonOrDefault("/api/hod/teachers", []),
       this.fetchJsonOrDefault("/api/hod/programs", []),
       this.fetchJsonOrDefault("/api/hod/requests", []),
     ]);
 
-    const dashboard = {
+    const normalizedDashboard = {
+      ...dashboard,
       stats: [
-        { label: "Teachers", value: String(this.toArray(teachers).length) },
-        { label: "Total Students", value: "0" },
-        { label: "Programs", value: String(this.toArray(programs).length) },
-        { label: "Pending Requests", value: String(this.toArray(requests).length) },
+        ...(Array.isArray(dashboard?.stats) && dashboard.stats.length > 0
+          ? dashboard.stats
+          : [
+              { label: "Teachers", value: String(this.toArray(teachers).length) },
+              { label: "Total Students", value: "0" },
+              { label: "Programs", value: String(this.toArray(programs).length) },
+              { label: "Pending Requests", value: String(this.toArray(requests).length) },
+            ]),
       ],
       meta: {
-        department: department || { id: "", department_name: "Department", code: "" },
+        ...(dashboard?.meta || {}),
+        department:
+          department ||
+          dashboard?.meta?.department ||
+          { id: "", department_name: "Department", code: "" },
       },
     };
 
-    return this.normalizeHodDashboard(dashboard, teachers, programs, requests);
+    return this.normalizeHodDashboard(normalizedDashboard, teachers, programs, requests);
   }
 
   // --- Auth APIs ---
@@ -1169,9 +1179,18 @@ export class RealAPI {
 
   // --- Onboarding & Status ---
   async getOnboardingStatus(): Promise<any> {
+    const role = this.currentUser?.role;
+    // Try role-specific endpoint if we have a role, otherwise fallback to generic
+    const path = role ? `/api/onboarding/${role}/status` : "/api/onboarding/status";
+    
     try {
-      const res = await this.fetchAuthorized("/api/onboarding/status");
+      const res = await this.fetchAuthorized(path);
       if (!res.ok) {
+        // If role-specific fails, try generic as final fallback before giving up
+        if (role) {
+          const fallbackRes = await this.fetchAuthorized("/api/onboarding/status");
+          if (fallbackRes.ok) return await fallbackRes.json();
+        }
         console.warn(`[api] Onboarding API failed with status ${res.status}`);
         return { status: "not_started", step: 0, isComplete: false, progress: {} };
       }
@@ -1455,11 +1474,24 @@ export class RealAPI {
   }
 
   async completeOnboarding() {
+    const role = this.currentUser?.role;
+    const path = role ? `/api/onboarding/${role}/complete` : "/api/onboarding/complete";
+
     try {
-      const res = await this.fetchAuthorized("/api/onboarding/complete", {
+      const res = await this.fetchAuthorized(path, {
         method: "POST"
       });
       if (!res.ok) {
+        // Fallback for roles that might not have a specific complete route yet
+        if (role) {
+          const fallbackRes = await this.fetchAuthorized("/api/onboarding/complete", { method: "POST" });
+          if (fallbackRes.ok) {
+             const data = await parseJsonSafe(fallbackRes);
+             if (data?.accessToken) this.persistToken(data.accessToken);
+             await this.getCurrentUser(true);
+             return data;
+          }
+        }
         throw new Error("Failed to complete onboarding");
       }
       const data = await parseJsonSafe(res);
@@ -2011,12 +2043,32 @@ export class RealAPI {
     return res.ok ? await res.json() : [];
   }
 
+  async getHodDepartment(): Promise<any | null> {
+    const res = await this.fetchAuthorized("/api/hod/department");
+    return res.ok ? await parseJsonSafe(res) : null;
+  }
+
+  async getHodTeachers(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/hod/teachers");
+    return res.ok ? (await parseJsonSafe(res) ?? []) : [];
+  }
+
+  async getHodPrograms(): Promise<any[]> {
+    const res = await this.fetchAuthorized("/api/hod/programs");
+    return res.ok ? (await parseJsonSafe(res) ?? []) : [];
+  }
+
   async updateTeacherRequest(requestId: string, status: string): Promise<any> {
+    const normalizedStatus = String(status).trim().toUpperCase();
     const res = await this.fetchAuthorized(`/api/hod/requests/${requestId}`, {
       method: "PATCH",
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status: normalizedStatus }),
     });
-    return await parseJsonSafe(res) ?? {};
+    const payload = await parseJsonSafe(res);
+    if (!res.ok) {
+      throw new Error(extractApiErrorMessage(payload, "Unable to update teacher request"));
+    }
+    return payload ?? {};
   }
 
   // --- Assignments & Submissions Internal ---
@@ -2479,7 +2531,20 @@ export class RealAPI {
       JSON.stringify(user).toLowerCase().includes(normalized),
     );
   }
-  async listTeachersByDept(_deptId?: string, ..._args: any[]): Promise<any> { return []; }
+  async listTeachersByDept(_deptId?: string, ..._args: any[]): Promise<any> {
+    const teachers = await this.getHodTeachers();
+    return this.toArray(teachers).map((teacher: any) => ({
+      ...teacher,
+      id: teacher?.id,
+      name: teacher?.full_name || teacher?.name || teacher?.email || "Teacher",
+      full_name: teacher?.full_name || teacher?.name || teacher?.email || "Teacher",
+      email: teacher?.email || "",
+      status: teacher?.status || (teacher?.is_active ? "active" : "pending"),
+      is_active: teacher?.is_active ?? teacher?.status === "active",
+      onboarding_step: teacher?.onboarding_step ?? 0,
+      department_id: teacher?.department_id || teacher?.dept_id || null,
+    }));
+  }
   async inviteStudent(..._args: any[]): Promise<any> { return { success: false }; }
   async approveTeacherRequest(requestId: string, ..._args: any[]): Promise<any> {
     return this.updateTeacherRequest(requestId, "approved");

@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function CurriculumMapPage() {
+  const [department, setDepartment] = useState<any | null>(null);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
@@ -42,19 +43,22 @@ export default function CurriculumMapPage() {
 
   const fetchData = async () => {
     try {
-      const user = await api.getCurrentUser();
-      if (user?.deptId) {
-        const [subjData, teachData, batchData] = await Promise.all([
-          api.listSubjects(user.deptId),
-          api.listTeachersByDept(user.deptId),
-          api.listBatches(user.deptId)
-        ]);
-        setSubjects(subjData || []);
-        setTeachers(teachData || []);
-        setBatches(batchData || []);
+      const hodDepartment = await api.getHodDepartment();
+      if (!hodDepartment?.id) {
+        throw new Error("No department is linked to this HOD account");
       }
+
+      const [subjData, teachData, batchData] = await Promise.all([
+        api.listSubjects(hodDepartment.id),
+        api.listTeachersByDept(),
+        api.listBatches(hodDepartment.id)
+      ]);
+      setDepartment(hodDepartment);
+      setSubjects(subjData || []);
+      setTeachers(teachData || []);
+      setBatches(batchData || []);
     } catch (error: any) {
-      toast.error("Failed to fetch curriculum data");
+      toast.error(error?.message || "Failed to fetch curriculum data");
     } finally {
       setLoading(false);
     }
@@ -69,8 +73,11 @@ export default function CurriculumMapPage() {
 
     setIsAssigning(true);
     try {
-        const user = await api.getCurrentUser();
-        await api.createSubject(user.deptId, {
+        if (!department?.id) {
+            throw new Error("Department scope is unavailable");
+        }
+
+        await api.createSubject(department.id, {
             code: newSubject.code,
             name: newSubject.name,
             credits: Number(newSubject.credits),
@@ -97,7 +104,9 @@ export default function CurriculumMapPage() {
             <BookMarked className="w-8 h-8 text-lumina-primary" />
             Curriculum Map
           </h1>
-          <p className="text-gray-400 mt-1 font-medium">Map departmental subjects to batches and assign faculty owners.</p>
+          <p className="text-gray-400 mt-1 font-medium">
+            Map live subjects in {department?.department_name || "your department"} to batches and assign faculty owners.
+          </p>
         </div>
         <button 
           onClick={() => setShowAddSubject(true)}
@@ -167,7 +176,7 @@ export default function CurriculumMapPage() {
                                                     <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/10 overflow-hidden">
                                                         {subject.faculty_id ? (
                                                             <img 
-                                                                src={`https://ui-avatars.com/api/?name=${teachers.find(f => f.id === subject.faculty_id)?.full_name || 'T'}&background=random`}
+                                                                src={`https://ui-avatars.com/api/?name=${teachers.find(f => f.id === subject.faculty_id)?.name || 'T'}&background=random`}
                                                                 className="w-full h-full object-cover"
                                                                 alt="Teacher"
                                                             />
@@ -178,7 +187,7 @@ export default function CurriculumMapPage() {
                                                     <div>
                                                         <p className="text-[10px] text-gray-500 font-black uppercase">Assignee</p>
                                                         <p className="text-sm font-bold text-white">
-                                                            {teachers.find(f => f.id === subject.faculty_id)?.full_name || "Unassigned"}
+                                                            {teachers.find(f => f.id === subject.faculty_id)?.name || "Unassigned"}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -283,7 +292,7 @@ export default function CurriculumMapPage() {
                             >
                                 <option value="" className="bg-black text-gray-500">Unassigned</option>
                                 {teachers.map(f => (
-                                    <option key={f.id} value={f.id} className="bg-black">{f.full_name}</option>
+                                    <option key={f.id} value={f.id} className="bg-black">{f.name}</option>
                                 ))}
                             </select>
                         </div>

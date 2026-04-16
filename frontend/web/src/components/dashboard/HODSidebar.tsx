@@ -55,13 +55,34 @@ export default function HODSidebar({
 
   const { user: storeUser, setUser: setStoreUser, clearAuth } = useAuthStore();
   const [user, setUser] = useState<any>(storeUser ?? null);
-  const notificationCount = 5;
+  const [localHovering, setLocalHovering] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const expanded = Boolean(isOpen || isHovering || localHovering);
 
   useEffect(() => {
-    if (storeUser) { setUser(storeUser); return; }
-    api.getCurrentUser().then((data) => {
-      if (data) { setUser(data); setStoreUser(data as any); }
+    let active = true;
+
+    if (storeUser) {
+      setUser(storeUser);
+    } else {
+      api.getCurrentUser().then((data) => {
+        if (active && data) {
+          setUser(data);
+          setStoreUser(data as any);
+        }
+      }).catch(() => undefined);
+    }
+
+    api.getTeacherRequests().then((requests) => {
+      if (!active) return;
+      setNotificationCount(Array.isArray(requests) ? requests.length : 0);
+    }).catch(() => {
+      if (active) setNotificationCount(0);
     });
+
+    return () => {
+      active = false;
+    };
   }, [storeUser, setStoreUser]);
 
   const handleLogout = useCallback(async () => {
@@ -72,11 +93,17 @@ export default function HODSidebar({
 
   return (
     <aside
-      onMouseEnter={() => onHoverChange?.(true)}
-      onMouseLeave={() => onHoverChange?.(false)}
+      onMouseEnter={() => {
+        setLocalHovering(true);
+        onHoverChange?.(true);
+      }}
+      onMouseLeave={() => {
+        setLocalHovering(false);
+        onHoverChange?.(false);
+      }}
       className={cn(
         "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 flex flex-col transition-all duration-300 ease-in-out",
-        isHovering ? "w-64" : "w-20",
+        expanded ? "w-64" : "w-20",
         isOpen
           ? "translate-x-0 bg-black/95 w-64 flex"
           : "-translate-x-[120%] lg:translate-x-0 hidden lg:flex",
@@ -85,13 +112,13 @@ export default function HODSidebar({
       {/* ── Logo header ── */}
       <div className={cn(
         "flex items-center border-b border-white/5 shrink-0 transition-all duration-300",
-        isHovering ? "h-20 px-6" : "h-16 px-4 justify-center"
+        expanded ? "h-20 px-6" : "h-16 px-4 justify-center"
       )}>
         <Link href="/" className="font-display font-black text-2xl flex items-center select-none truncate">
           <span className="text-white shrink-0">L</span>
           <span className={cn(
             "text-white transition-all duration-300 overflow-hidden whitespace-nowrap",
-            isHovering ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0"
+            expanded ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0"
           )}>umina</span>
           <span className="text-lumina-highlight">AI</span>
         </Link>
@@ -117,7 +144,7 @@ export default function HODSidebar({
               aria-label={item.name}
               className={cn(
                 "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
-                isHovering ? "px-4" : "justify-center px-0",
+                expanded ? "px-4" : "justify-center px-0",
                 isActive
                   ? "bg-lumina-highlight/15 text-lumina-highlight border border-lumina-highlight/30 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                   : "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
@@ -126,13 +153,13 @@ export default function HODSidebar({
               <item.icon
                 className={cn(
                   "h-5 w-5 transition-all duration-300 shrink-0",
-                  isHovering ? "mr-3" : "mr-0",
+                  expanded ? "mr-3" : "mr-0",
                   isActive ? "text-lumina-highlight" : "text-gray-500 group-hover:text-gray-300",
                 )}
               />
               <span className={cn(
                 "transition-all duration-300 overflow-hidden whitespace-nowrap truncate",
-                isHovering ? "max-w-[200px] opacity-100" : "max-w-0 opacity-0"
+                expanded ? "max-w-[200px] opacity-100" : "max-w-0 opacity-0"
               )}>
                 {item.name}
               </span>
@@ -144,26 +171,26 @@ export default function HODSidebar({
       {/* ── Bottom ── */}
       <div className={cn(
         "p-4 border-t border-white/10 space-y-3 shrink-0 transition-all duration-300",
-        !isHovering && "px-3"
+        !expanded && "px-3"
       )}>
         <Link
           href="/hod/alerts"
           className={cn(
             "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
-            isHovering ? "px-4" : "justify-center px-0",
+            expanded ? "px-4" : "justify-center px-0",
             "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
           )}
         >
           <div className="relative shrink-0">
             <Bell className={cn(
               "h-5 w-5 transition-all duration-300",
-              isHovering ? "mr-3" : "mr-0",
+              expanded ? "mr-3" : "mr-0",
               "text-gray-500 group-hover:text-gray-300"
             )} />
             {notificationCount > 0 && (
               <span className={cn(
                 "absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center",
-                !isHovering && "right-[-4px]"
+                !expanded && "right-[-4px]"
               )}>
                 {notificationCount}
               </span>
@@ -171,7 +198,7 @@ export default function HODSidebar({
           </div>
           <span className={cn(
             "transition-all duration-300 overflow-hidden whitespace-nowrap truncate",
-            isHovering ? "max-w-[200px] opacity-100" : "max-w-0 opacity-0"
+            expanded ? "max-w-[200px] opacity-100" : "max-w-0 opacity-0"
           )}>
             Notifications
           </span>
@@ -182,7 +209,7 @@ export default function HODSidebar({
             href="/hod/dashboard"
             className={cn(
               "flex items-center rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer overflow-hidden",
-              isHovering ? "p-3 gap-3" : "p-2 justify-center"
+              expanded ? "p-3 gap-3" : "p-2 justify-center"
             )}
           >
             <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
@@ -194,7 +221,7 @@ export default function HODSidebar({
             </div>
             <div className={cn(
               "transition-all duration-300 overflow-hidden min-w-0",
-              isHovering ? "max-w-[150px] opacity-100" : "max-w-0 opacity-0"
+              expanded ? "max-w-[150px] opacity-100" : "max-w-0 opacity-0"
             )}>
               <p className="text-xs font-bold text-white truncate">{user.name}</p>
               <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
@@ -206,16 +233,16 @@ export default function HODSidebar({
           onClick={handleLogout}
           className={cn(
             "flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-300",
-            isHovering ? "px-4" : "justify-center px-0"
+            expanded ? "px-4" : "justify-center px-0"
           )}
         >
           <LogOut className={cn(
             "h-4 w-4 transition-all duration-300 shrink-0",
-            isHovering ? "mr-3" : "mr-0"
+            expanded ? "mr-3" : "mr-0"
           )} />
           <span className={cn(
             "transition-all duration-300 overflow-hidden whitespace-nowrap",
-            isHovering ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0"
+            expanded ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0"
           )}>
             Sign Out
           </span>

@@ -244,3 +244,6 @@ async def get_current_researcher(current_user: dict = Depends(get_current_active
     if role not in {"researcher", "super_admin"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Researcher privileges required")
     return current_user
+
+# Aliases for compatibility
+get_current_admin = get_current_college_admin

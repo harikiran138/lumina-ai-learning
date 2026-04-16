@@ -91,7 +91,7 @@ class OnboardingCompleteRequest(BaseModel):
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.get(
-    "/onboarding/{role}/options",
+    "/{role}/options",
     summary="Get onboarding options for a role",
     description="Returns role-specific onboarding options, steps, and requirements",
     tags=["Onboarding"]
@@ -158,7 +158,7 @@ async def get_onboarding_options(
 
 
 @router.post(
-    "/onboarding/{role}/step/{step}",
+    "/{role}/step/{step}",
     summary="Submit onboarding step",
     description="Validate and save a specific onboarding step",
     tags=["Onboarding"]
@@ -256,7 +256,7 @@ async def submit_onboarding_step(
 
 
 @router.get(
-    "/onboarding/{role}/status",
+    "/{role}/status",
     summary="Get onboarding status",
     description="Check current onboarding progress for a role",
     tags=["Onboarding"]
@@ -296,7 +296,7 @@ async def get_onboarding_status(
 
 
 @router.post(
-    "/onboarding/{role}/complete",
+    "/{role}/complete",
     summary="Complete onboarding",
     description="Mark onboarding as complete for a role",
     tags=["Onboarding"]

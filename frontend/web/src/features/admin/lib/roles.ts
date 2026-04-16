@@ -2,6 +2,7 @@ import type { AdminRole } from "@/features/admin/types";
 
 const ADMIN_ROLES: Set<string> = new Set<AdminRole>([
   "super_admin",
+  "system_admin",
   "college_admin",
   "institution_admin",
   "admin",
@@ -9,6 +10,7 @@ const ADMIN_ROLES: Set<string> = new Set<AdminRole>([
 
 const ADMIN_ROLE_LABELS: Record<string, string> = {
   super_admin: "Super Admin",
+  system_admin: "System Admin",
   college_admin: "College Admin",
   institution_admin: "Institution Admin",
   admin: "Admin",

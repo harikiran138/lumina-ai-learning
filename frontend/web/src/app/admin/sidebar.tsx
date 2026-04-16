@@ -92,7 +92,7 @@ export default function Sidebar({
               )} />
               <span className={cn(
                 "transition-all duration-300 overflow-hidden whitespace-nowrap truncate",
-                isHovering ? "max-width-[200px] opacity-100" : "max-w-0 opacity-0"
+                isHovering ? "max-w-[200px] opacity-100" : "max-w-0 opacity-0"
               )}>{item.label}</span>
             </Link>
           );
@@ -131,7 +131,7 @@ export default function Sidebar({
                   )} />
                   <span className={cn(
                     "transition-all duration-300 overflow-hidden whitespace-nowrap truncate",
-                    isHovering ? "max-width-[200px] opacity-100" : "max-w-0 opacity-0"
+                    isHovering ? "max-w-[200px] opacity-100" : "max-w-0 opacity-0"
                   )}>{item.label}</span>
                 </Link>
               );
@@ -170,11 +170,10 @@ export default function Sidebar({
           <LogOut className="h-4 w-4 shrink-0" />
           <span className={cn(
             "transition-all duration-300 overflow-hidden whitespace-nowrap",
-            isHovering ? "max-width-[100px] opacity-100" : "max-w-0 opacity-0"
+            isHovering ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0"
           )}>Logout</span>
         </button>
       </div>
     </aside>
   );
 }
-

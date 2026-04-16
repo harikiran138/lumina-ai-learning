@@ -108,47 +108,43 @@ async def get_admin_dashboard(
     analytics_store: AnalyticsStore = Depends(get_analytics_store)
 ):
     """Get high-level system stats for the admin dashboard."""
-    stats = await analytics_store.get_admin_dashboard_stats()
-    
-    # Standardized response structure using live statistics
+    dashboard = await analytics_store.get_admin_dashboard_stats()
+    summary = dashboard.get("summary", {})
+
+    stats_cards = [
+        {
+            "label": "Total Students",
+            "value": str(summary.get("totalStudents", dashboard.get("totalStudents", 0))),
+            "trend": f"+{summary.get('activeUsers', dashboard.get('activeUsers', 0))} active",
+            "icon": "Users",
+        },
+        {
+            "label": "System Courses",
+            "value": str(summary.get("totalCourses", dashboard.get("totalCourses", 0))),
+            "trend": f"{summary.get('activeCourses', dashboard.get('activeCourses', 0))} Live",
+            "icon": "BookOpen",
+        },
+        {
+            "label": "Overall Health",
+            "value": summary.get("systemHealthLabel", dashboard.get("systemHealthLabel", "95%")),
+            "trend": str(summary.get("systemStatus", dashboard.get("systemStatus", "Healthy"))).capitalize(),
+            "icon": "TrendingUp",
+        },
+        {
+            "label": "Security State",
+            "value": "Hardened" if summary.get("securityAlerts", 0) == 0 else "Watch",
+            "trend": f"{summary.get('securityAlerts', 0)} High Alerts",
+            "icon": "ShieldCheck",
+        },
+    ]
+
     return {
-        "stats": [
-            {
-                "label": "Total Students", 
-                "value": str(stats.get("totalStudents", stats.get("total_users", 0))), 
-                "trend": f"+{stats.get('activeUsers', 0)} active", 
-                "icon": "Users"
-            },
-            {
-                "label": "System Courses", 
-                "value": str(stats.get("totalCourses", stats.get("total_courses", 0))), 
-                "trend": f"{stats.get('activeCourses', 0)} Live", 
-                "icon": "BookOpen"
-            },
-            {
-                "label": "Overall Health", 
-                "value": stats.get("systemHealthLabel", "95%"), 
-                "trend": stats.get("systemStatus", "Healthy").capitalize(), 
-                "icon": "TrendingUp"
-            },
-            {
-                "label": "Security State", 
-                "value": "Hardened" if stats.get("securityAlerts", 0) == 0 else "Watch", 
-                "trend": f"{stats.get('securityAlerts', 0)} High Alerts", 
-                "icon": "ShieldCheck"
-            },
-        ],
-        "alerts": stats.get("summary", {}).get("attention_queue", stats.get("attention_queue", [])),
-        "activity": stats.get("activity_feed", []),
-        "services": stats.get("system_services", []),
-        "charts": stats.get("charts", {
-            "userGrowth": [
-                {"month": "N/A", "users": 0}
-            ],
-            "roleDistribution": [
-                {"role": "N/A", "count": 0}
-            ]
-        })
+        **dashboard,
+        "stats": stats_cards,
+        "alerts": dashboard.get("attentionQueue", []),
+        "activity": dashboard.get("activityFeed", []),
+        "services": dashboard.get("systemServices", []),
+        "charts": dashboard.get("charts", {"userGrowth": [], "roleDistribution": []}),
     }
 
 

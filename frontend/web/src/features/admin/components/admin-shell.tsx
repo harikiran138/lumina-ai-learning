@@ -7,7 +7,7 @@ import { AdminTopbar } from "@/features/admin/components/admin-topbar";
 import type { AdminUser } from "@/features/admin/types";
 import { useAdminShellStore } from "@/features/admin/store/use-admin-shell-store";
 import { cn } from "@/lib/utils";
-import Sidebar from "@/app/(admin)/sidebar";
+import Sidebar from "@/app/admin/sidebar";
 import { RoleGuard } from "@/components/shared/RoleGuard";
 
 export function AdminShell({
@@ -22,7 +22,7 @@ export function AdminShell({
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
   return (
-    <RoleGuard allowedRoles={["admin", "super_admin"]}>
+    <RoleGuard allowedRoles={["admin", "super_admin", "system_admin", "institution_admin", "college_admin"]}>
       <div className="relative min-h-screen bg-neutral-950 text-white">
         <AdminStoreHydrator user={initialUser} />
         <BGPattern
@@ -60,4 +60,3 @@ export function AdminShell({
     </RoleGuard>
   );
 }
-

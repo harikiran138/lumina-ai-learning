@@ -75,6 +75,16 @@ interface TeacherRequest {
 
 interface HODDashboardData {
   department: DepartmentInfo;
+  alerts: Array<{
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    action?: {
+      label?: string;
+      href?: string;
+    };
+  }>;
   summary: HODSummary;
   teachers: Teacher[];
   programs: Program[];
@@ -249,6 +259,8 @@ export default function HODDashboard() {
 
   const load = async () => {
     try {
+      setLoading(true);
+      setError(null);
       const payload = await api.getHODDashboard();
       setData(payload);
     } catch (err: any) {
@@ -300,11 +312,26 @@ export default function HODDashboard() {
 
   if (!data) return null;
 
-  const slaBreachCount = SLA_DATA.filter((s) => s.slaBreached).length;
+  const liveAlerts = data.alerts.length > 0
+    ? data.alerts.slice(0, 4).map((alert: any) => ({
+        id: alert.id,
+        type: alert.type || "warning",
+        title: alert.title,
+        desc: alert.message || "Department attention required.",
+        time: alert.action?.label || "Pending",
+      }))
+    : ALERTS_DATA.slice(0, 4);
+
+  const slaBreachCount = data.summary.pendingRequests > 0
+    ? data.summary.pendingRequests
+    : SLA_DATA.filter((s) => s.slaBreached).length;
   const atRiskCount = AT_RISK_DATA.length;
   const avgMastery = 64;
   const passRatePrediction = 78;
   const syllabusAvg = Math.round(SYLLABUS_DATA.reduce((a, s) => a + s.covered, 0) / SYLLABUS_DATA.length);
+  const departmentLabel = data.department.code
+    ? `${data.department.department_name} (${data.department.code})`
+    : data.department.department_name;
 
   return (
     <div className="space-y-8">
@@ -321,7 +348,7 @@ export default function HODDashboard() {
                 Academic Intelligence Command Center
               </p>
               <h1 className="text-3xl font-display font-bold text-white">
-                {data.department.department_name} ({data.department.code})
+                {departmentLabel}
               </h1>
             </div>
           </div>
@@ -333,9 +360,9 @@ export default function HODDashboard() {
             <div className="mt-6 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/5 px-5 py-3">
               <AlertOctagon className="h-5 w-5 shrink-0 text-red-400" />
               <p className="text-sm text-red-300">
-                <span className="font-bold">{slaBreachCount} SLA breach{slaBreachCount > 1 ? "es" : ""}</span> detected — students are waiting on faculty responses.
+                <span className="font-bold">{slaBreachCount} teacher request{slaBreachCount > 1 ? "s are" : " is"}</span> waiting for HOD action.
               </p>
-              <Link href="/hod/sla-monitor" className="ml-auto text-xs font-bold text-red-400 hover:underline flex items-center gap-1">
+              <Link href="/hod/dashboard#teacher-requests" className="ml-auto text-xs font-bold text-red-400 hover:underline flex items-center gap-1">
                 View <ChevronRight className="h-3 w-3" />
               </Link>
             </div>
@@ -415,7 +442,7 @@ export default function HODDashboard() {
         action={<SectionLink href="/hod/alerts" label="All Alerts" />}
       >
         <div className="space-y-3">
-          {ALERTS_DATA.slice(0, 4).map((alert) => (
+          {liveAlerts.map((alert) => (
             <div
               key={alert.id}
               className={cn(
@@ -717,7 +744,7 @@ export default function HODDashboard() {
       </Panel>
 
       {/* ── Teacher Requests & Faculty Overview ──────────────────────────────── */}
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div id="teacher-requests" className="grid gap-6 xl:grid-cols-2 scroll-mt-24">
         <Panel
           title="Teacher Assignment Requests"
           subtitle="Course and section assignment approval requests from faculty."

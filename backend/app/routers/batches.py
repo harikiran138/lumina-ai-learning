@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -19,11 +19,32 @@ class BatchCreateRequest(BaseModel):
     is_lateral: bool = False
 
 
+class SubjectCreateRequest(BaseModel):
+    code: str = Field(min_length=2, max_length=50)
+    name: str = Field(min_length=2, max_length=255)
+    credits: int = Field(default=4, ge=0, le=20)
+    type: str = Field(default="Theory", min_length=2, max_length=50)
+    batch_id: Optional[str] = None
+    faculty_id: Optional[str] = None
+
+
 def _ensure_department_access(current_user: Dict[str, Any], dept_id: str) -> None:
     role = str(current_user.get("role") or "").lower()
     resolved_dept = current_user.get("dept_id") or current_user.get("department_id") or current_user.get("resolved_department_id")
     if role in {"hod", "teacher"} and str(resolved_dept) != str(dept_id):
         raise HTTPException(status_code=403, detail="You do not have access to this department")
+
+
+def _normalize_subject(row: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        **row,
+        "name": row.get("course_name") or row.get("name") or row.get("title") or "Untitled Subject",
+        "code": row.get("course_code") or row.get("code") or "",
+        "credits": row.get("credits") or 0,
+        "type": row.get("type") or row.get("subject_type") or "Theory",
+        "batch_id": row.get("batch_id"),
+        "faculty_id": row.get("teacher_id") or row.get("faculty_id"),
+    }
 
 
 @router.get("/{dept_id}/batches")
@@ -68,3 +89,62 @@ async def create_batch(
     if not created:
         raise HTTPException(status_code=500, detail="Failed to create batch")
     return created
+
+
+@router.get("/{dept_id}/subjects")
+async def list_subjects(
+    dept_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_teacher),
+    db: ScopedSupabase = Depends(get_scoped_db),
+):
+    _ensure_department_access(current_user, dept_id)
+    rows = await db.fetch_all("courses", {"department_id": dept_id}, limit=200)
+    if not rows:
+        rows = await db.fetch_all("courses", {"dept_id": dept_id}, limit=200)
+    normalized = [_normalize_subject(row) for row in rows]
+    return sorted(normalized, key=lambda item: ((item.get("name") or "").lower(), item.get("code") or ""))
+
+
+@router.post("/{dept_id}/subjects")
+async def create_subject(
+    dept_id: str,
+    payload: SubjectCreateRequest,
+    current_user: Dict[str, Any] = Depends(get_current_hod),
+    db: ScopedSupabase = Depends(get_scoped_db),
+):
+    _ensure_department_access(current_user, dept_id)
+    college_id = current_user.get("college_id") or current_user.get("institution_id")
+
+    data = {
+        "name": payload.name.strip(),
+        "title": payload.name.strip(),
+        "course_name": payload.name.strip(),
+        "code": payload.code.strip().upper(),
+        "course_code": payload.code.strip().upper(),
+        "department_id": dept_id,
+        "dept_id": dept_id,
+        "teacher_id": payload.faculty_id,
+        "faculty_id": payload.faculty_id,
+        "batch_id": payload.batch_id,
+        "credits": payload.credits,
+        "type": payload.type.strip(),
+        "subject_type": payload.type.strip(),
+        "college_id": college_id,
+        "institution_id": college_id,
+        "created_at": datetime.utcnow().isoformat(),
+        "updated_at": datetime.utcnow().isoformat(),
+    }
+
+    try:
+        client = db.get_client()
+        sample_res = await client.table("courses").select("*").limit(1).async_execute()
+        if sample_res.data:
+            valid_cols = set(sample_res.data[0].keys())
+            data = {key: value for key, value in data.items() if key in valid_cols and value is not None}
+    except Exception:
+        data = {key: value for key, value in data.items() if value is not None}
+
+    created = await db.insert("courses", data)
+    if not created:
+        raise HTTPException(status_code=500, detail="Failed to create subject")
+    return _normalize_subject(created)

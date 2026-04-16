@@ -31,6 +31,7 @@ celery==5.3.6
 structlog==24.1.0
 sentry-sdk[fastapi]==1.40.6
 slowapi==0.1.9
+prometheus-fastapi-instrumentator==6.1.0
 rank-bm25==0.2.2
 qdrant-client
 supabase==2.13.0
@@ -47,4 +48,3 @@ opencv-python-headless==4.8.1.78
 # pre-commit, black, ruff, mypy         → linting
 # bandit, semgrep                        → security scanning
 # ragas                                  → LLM eval framework
-# prometheus-fastapi-instrumentator      → replaced by CloudWatch

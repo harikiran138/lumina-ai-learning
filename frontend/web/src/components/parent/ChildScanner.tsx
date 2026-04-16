@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import QrScanner from 'react-qr-scanner';
+import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Camera, X, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -10,14 +10,37 @@ interface ChildScannerProps {
   onClose?: () => void;
 }
 
+const QrScanner = dynamic(
+  () => import('@yudiel/react-qr-scanner').then((mod) => mod.Scanner),
+  { ssr: false }
+);
+
+interface DetectedBarcode {
+  rawValue: string;
+}
+
 export const ChildScanner: React.FC<ChildScannerProps> = ({ onSuccess, onClose }) => {
   const [scanning, setScanning] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successData, setSuccessData] = useState<{ child_id: string } | null>(null);
 
-  const handleScan = async (data: any) => {
-    if (data && scanning && !loading) {
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    if (!window.isSecureContext && !isLocalhost) {
+      setError('QR scanner requires HTTPS in production. Open this page over https:// and try again.');
+      setScanning(false);
+    }
+  }, []);
+
+  const handleScan = async (detectedCodes: DetectedBarcode[]) => {
+    const scannedCode = detectedCodes?.[0]?.rawValue;
+
+    if (scannedCode && scanning && !loading) {
       setScanning(false);
       setLoading(true);
       setError(null);
@@ -26,7 +49,7 @@ export const ChildScanner: React.FC<ChildScannerProps> = ({ onSuccess, onClose }
         const response = await fetch('/api/parent/connection/connect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: data.text }),
+          body: JSON.stringify({ token: scannedCode }),
         });
 
         const result = await response.json();
@@ -50,7 +73,7 @@ export const ChildScanner: React.FC<ChildScannerProps> = ({ onSuccess, onClose }
 
   const handleError = (err: any) => {
     console.error('Scanner error:', err);
-    setError('Camera access denied or not available');
+    setError('Camera access denied or unavailable. Allow camera permission in your browser settings and reload this page.');
     setScanning(false);
   };
 
@@ -100,7 +123,7 @@ export const ChildScanner: React.FC<ChildScannerProps> = ({ onSuccess, onClose }
                 <AlertCircle className="w-10 h-10 text-red-600" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-lg font-bold">Failed to Connect</h3>
+                <h3 className="text-lg font-bold">Scanner Unavailable</h3>
                 <p className="text-sm text-muted-foreground">{error}</p>
               </div>
               <Button variant="outline" onClick={resetScanner} className="w-full mt-4">
@@ -111,12 +134,16 @@ export const ChildScanner: React.FC<ChildScannerProps> = ({ onSuccess, onClose }
             <>
               {scanning && (
                 <QrScanner
-                  delay={300}
+                  scanDelay={300}
                   onError={handleError}
                   onScan={handleScan}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  formats={['qr_code']}
+                  styles={{
+                    container: { width: '100%', height: '100%' },
+                    video: { width: '100%', height: '100%', objectFit: 'cover' },
+                  }}
                   constraints={{
-                    video: { facingMode: 'environment' }
+                    facingMode: 'environment'
                   }}
                 />
               )}
