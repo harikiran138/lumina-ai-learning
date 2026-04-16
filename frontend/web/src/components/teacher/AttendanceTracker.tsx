@@ -155,23 +155,23 @@ export default function AttendanceTracker({
       {standalone && (
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
-              <UserCheck className="text-lumina-highlight" />
+            <h2 className="text-2xl font-display font-bold text-text flex items-center gap-3">
+              <UserCheck className="text-primary" />
               Attendance Intel
             </h2>
-            <p className="text-sm text-gray-400">Mark and synchronize student presence for the intelligence grid.</p>
+            <p className="text-sm text-text-secondary">Mark and synchronize student presence for the intelligence grid.</p>
           </div>
           <div className="flex items-center gap-3">
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-lumina-highlight/50 transition-all text-sm"
+              className="p-2.5 bg-surface border border-border rounded-xl text-text outline-none focus:border-primary/50 transition-all text-sm"
             />
             <button
               onClick={handleSave}
               disabled={loading || students.length === 0}
-              className="flex items-center gap-2 px-5 py-2.5 bg-lumina-highlight hover:brightness-110 text-black font-bold rounded-xl transition-all shadow-lg shadow-lumina-highlight/20 disabled:opacity-50 text-sm whitespace-nowrap"
+              className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:brightness-110 text-primary-foreground font-black rounded-xl transition-all shadow-lg shadow-primary/20 disabled:opacity-50 text-sm whitespace-nowrap"
             >
               {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <CheckCircle2 size={18} />}
               {loading ? "Syncing..." : "Sync Attendance"}
@@ -181,13 +181,13 @@ export default function AttendanceTracker({
       )}
 
       {/* Control Panel */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/[0.03] p-5 rounded-2xl border border-white/5 backdrop-blur-md">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-surface-elevated p-5 rounded-2xl border border-border">
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Course Stream</label>
+          <label className="text-[10px] font-black uppercase tracking-widest text-text-muted ml-1">Course Stream</label>
           <select
             value={selectedCourse}
             onChange={(e) => setSelectedCourse(e.target.value)}
-            className="w-full p-2.5 bg-black/40 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-lumina-highlight/50 transition-all appearance-none cursor-pointer"
+            className="w-full p-2.5 bg-surface border border-border rounded-xl text-text text-sm outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
           >
             <option value="">Select Stream</option>
             {courses.map((c) => (
@@ -199,14 +199,14 @@ export default function AttendanceTracker({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Academic Batch</label>
+          <label className="text-[10px] font-black uppercase tracking-widest text-text-muted ml-1">Academic Batch</label>
           <select
             value={selectedBatch}
             onChange={(e) => {
               setSelectedBatch(e.target.value);
               setSelectedSection("");
             }}
-            className="w-full p-2.5 bg-black/40 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-lumina-highlight/50 transition-all appearance-none cursor-pointer"
+            className="w-full p-2.5 bg-surface border border-border rounded-xl text-text text-sm outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
           >
             <option value="">Select Batch</option>
             {batches.map((b) => (
@@ -218,12 +218,12 @@ export default function AttendanceTracker({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Section Hub</label>
+          <label className="text-[10px] font-black uppercase tracking-widest text-text-muted ml-1">Section Hub</label>
           <select
             value={selectedSection}
             onChange={(e) => setSelectedSection(e.target.value)}
             disabled={!selectedBatch}
-            className="w-full p-2.5 bg-black/40 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-lumina-highlight/50 transition-all disabled:opacity-30 appearance-none cursor-pointer"
+            className="w-full p-2.5 bg-surface border border-border rounded-xl text-text text-sm outline-none focus:border-primary/50 transition-all disabled:opacity-30 appearance-none cursor-pointer"
           >
             <option value="">Select Section</option>
             {sections.map((s: string) => (
@@ -239,61 +239,61 @@ export default function AttendanceTracker({
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-1">
             <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
                 type="text"
                 placeholder="Find student..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white outline-none focus:border-lumina-highlight/30 transition-all"
+                className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded-xl text-sm text-text outline-none focus:border-primary/30 transition-all"
               />
             </div>
             
             <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-tighter whitespace-nowrap">Bulk Actions:</span>
+              <span className="text-xs font-bold text-text-muted uppercase tracking-tighter whitespace-nowrap">Bulk Actions:</span>
               <button
                 onClick={() => markAll("present")}
-                className="px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-all text-[10px] font-black uppercase tracking-widest whitespace-nowrap"
+                className="px-3 py-1.5 rounded-lg bg-green-500/10 text-green-500 dark:text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-all text-[10px] font-black uppercase tracking-widest whitespace-nowrap"
               >
                 All Present
               </button>
               <button
                 onClick={() => markAll("absent")}
-                className="px-3 py-1.5 rounded-lg bg-red-400/10 text-red-400 border border-red-400/20 hover:bg-red-400/20 transition-all text-[10px] font-black uppercase tracking-widest whitespace-nowrap"
+                className="px-3 py-1.5 rounded-lg bg-red-400/10 text-red-500 dark:text-red-400 border border-red-400/20 hover:bg-red-400/20 transition-all text-[10px] font-black uppercase tracking-widest whitespace-nowrap"
               >
                 All Absent
               </button>
             </div>
           </div>
 
-          <div className="glass-v2 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-xl">
+          <div className="bg-surface border border-border rounded-3xl overflow-hidden shadow-sm">
             {fetchingStudents ? (
               <div className="flex flex-col items-center justify-center py-24 gap-4">
-                <Loader2 className="w-10 h-10 text-lumina-highlight animate-spin" />
-                <p className="text-sm text-gray-400 font-medium animate-pulse">Accessing class data...</p>
+                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                <p className="text-sm text-text-secondary font-medium animate-pulse">Accessing class data...</p>
               </div>
             ) : filteredStudents.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-white/[0.03] border-b border-white/5">
-                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Student Identity</th>
-                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 text-center">Engagement Status</th>
+                    <tr className="bg-surface-elevated border-b border-border">
+                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-text-muted">Student Identity</th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-text-muted text-center">Engagement Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-border">
                     {filteredStudents.map((student) => (
-                      <tr key={student.id} className="group hover:bg-white/[0.02] transition-colors">
+                      <tr key={student.id} className="group hover:bg-surface-elevated transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-lumina-highlight to-amber-600 flex items-center justify-center text-black font-black text-sm shadow-lg shadow-lumina-highlight/10">
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-black text-sm shadow-lg shadow-primary/10">
                               {student.full_name?.charAt(0) || "S"}
                             </div>
                             <div>
-                              <p className="text-sm font-bold text-white group-hover:text-lumina-highlight transition-colors leading-tight">
+                              <p className="text-sm font-bold text-text group-hover:text-primary transition-colors leading-tight">
                                 {student.full_name}
                               </p>
-                              <p className="text-[10px] font-mono text-gray-500 mt-0.5 tracking-tight">
+                              <p className="text-[10px] font-mono text-text-muted mt-0.5 tracking-tight">
                                 {student.student_roll || "SID-XXXX"}
                               </p>
                             </div>
@@ -313,11 +313,11 @@ export default function AttendanceTracker({
                                   "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all border group/btn",
                                   attendance[student.id] === status.id
                                     ? {
-                                      "bg-green-500/20 border-green-500/40 text-green-400": status.color === "green",
-                                      "bg-amber-400/20 border-amber-400/40 text-amber-200": status.color === "amber",
-                                      "bg-red-500/20 border-red-500/40 text-red-300": status.color === "red",
+                                      "bg-green-500/20 border-green-500/40 text-green-600 dark:text-green-400": status.color === "green",
+                                      "bg-amber-400/20 border-amber-400/40 text-amber-700 dark:text-amber-200": status.color === "amber",
+                                      "bg-red-500/20 border-red-500/40 text-red-600 dark:text-red-300": status.color === "red",
                                     }
-                                    : "bg-transparent border-transparent text-gray-600 hover:bg-white/5 hover:text-gray-400"
+                                    : "bg-transparent border-transparent text-text-muted hover:bg-surface-elevated hover:text-text-secondary"
                                 )}
                               >
                                 <status.icon size={16} />
@@ -333,11 +333,11 @@ export default function AttendanceTracker({
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-24 text-center px-6">
-                <div className="bg-white/5 w-16 h-16 rounded-3xl flex items-center justify-center mb-4 border border-white/10 group">
-                  <Users className="w-8 h-8 text-gray-600 group-hover:text-lumina-highlight transition-colors" />
+                <div className="bg-surface-elevated w-16 h-16 rounded-3xl flex items-center justify-center mb-4 border border-border group">
+                  <Users className="w-8 h-8 text-text-muted group-hover:text-primary transition-colors" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">No students matches</h3>
-                <p className="text-xs text-gray-500 max-w-xs leading-relaxed">
+                <h3 className="text-lg font-bold text-text mb-2">No students matches</h3>
+                <p className="text-xs text-text-secondary max-w-xs leading-relaxed">
                   Refine your search or selection criteria above to update the student intelligence grid.
                 </p>
               </div>
@@ -347,12 +347,12 @@ export default function AttendanceTracker({
       )}
 
       {students.length === 0 && !fetchingStudents && (
-        <div className="flex flex-col items-center justify-center py-32 rounded-3xl border border-dashed border-white/10 bg-white/[0.01]">
-          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-6">
-            <Calendar className="w-8 h-8 text-gray-500" />
+        <div className="flex flex-col items-center justify-center py-32 rounded-3xl border border-dashed border-border bg-surface-elevated/20">
+          <div className="w-16 h-16 rounded-full bg-surface-elevated flex items-center justify-center mb-6">
+            <Calendar className="w-8 h-8 text-text-muted" />
           </div>
-          <h3 className="text-xl font-display font-bold text-white mb-2">Ready for Attendance?</h3>
-          <p className="text-sm text-gray-500 max-w-xs text-center px-4 leading-relaxed">
+          <h3 className="text-xl font-display font-bold text-text mb-2">Ready for Attendance?</h3>
+          <p className="text-sm text-text-secondary max-w-xs text-center px-4 leading-relaxed">
             Select a course stream and batch hub above to initialize the attendance intelligence session.
           </p>
         </div>

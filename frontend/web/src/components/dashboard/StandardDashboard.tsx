@@ -89,19 +89,19 @@ export function StandardDashboard({
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Premium Header */}
+      {/* Header */}
       <div className="relative group">
-        <div className="absolute inset-0 bg-gradient-to-r from-lumina-highlight/15 via-transparent to-lumina-highlight/5 rounded-[2.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-        <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 bg-black/40 border border-white/5 rounded-[2.5rem] p-8 lg:p-12 overflow-hidden backdrop-blur-md">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-lumina-highlight/5 rounded-full blur-[100px] -mr-32 -mt-32" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/5 rounded-[2.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000 dark:block hidden" />
+        <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 bg-surface-elevated border border-border rounded-[2.5rem] p-8 lg:p-12 overflow-hidden shadow-sm dark:shadow-none">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32 dark:block hidden" />
           <div className="flex-1 z-10 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lumina-highlight/10 border border-lumina-highlight/20 text-lumina-highlight text-[10px] font-black uppercase tracking-[0.2em] mb-6 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-6 shadow-sm">
                <Zap className="w-3 h-3 animate-pulse" /> System Status: Optimized
             </div>
-            <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tight text-white mb-2">
+            <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tight text-text mb-2">
               {title}
             </h1>
-            <p className="text-gray-400 text-lg md:text-xl max-w-2xl leading-relaxed font-medium">
+            <p className="text-text-secondary text-lg md:text-xl max-w-2xl leading-relaxed font-medium">
               {subtitle || `Welcome back to your Lumina terminal. Everything is looking great today.`}
             </p>
             {headerAction && <div className="mt-8">{headerAction}</div>}
@@ -136,50 +136,50 @@ export function StandardDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8">
         <div className="space-y-8">
           {/* Main Content / Alerts */}
-          <section className="glass-onyx rounded-[2.5rem] overflow-hidden border-white/5">
-            <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/[0.02]">
+          <section className="bg-surface border border-border rounded-[2.5rem] overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between p-6 border-b border-border bg-surface-elevated/50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-lumina-highlight/10 flex items-center justify-center text-lumina-highlight border border-lumina-highlight/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
                   <Bell className="w-5 h-5" />
                 </div>
-                <h2 className="text-xl font-display font-bold text-white">Priority Alerts</h2>
+                <h2 className="text-xl font-display font-bold text-text">Priority Alerts</h2>
               </div>
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest bg-white/[0.03] px-3 py-1 rounded-full">{(alerts?.length || 0)} Active</span>
+              <span className="text-xs font-bold text-text-muted uppercase tracking-widest bg-surface-elevated px-3 py-1 rounded-full">{(alerts?.length || 0)} Active</span>
             </div>
             <div className="p-6 space-y-4">
               {(alerts?.length || 0) > 0 ? (
                 alerts?.map((alert) => (
                   <div 
                     key={alert.id}
-                    className="group relative flex items-start gap-4 p-5 rounded-2xl bg-white/[0.01] border border-white/5 hover:bg-white/[0.03] hover:border-lumina-highlight/20 transition-all duration-300"
+                    className="group relative flex items-start gap-4 p-5 rounded-2xl bg-surface-elevated/30 border border-border hover:bg-surface-elevated hover:border-primary/20 transition-all duration-300"
                   >
                     <div className={cn(
-                      "w-2 h-2 mt-2 rounded-full ring-4 shadow-[0_0_12px_rgba(var(--color))] transition-transform group-hover:scale-125",
+                      "w-2 h-2 mt-2 rounded-full ring-4 transition-transform group-hover:scale-125",
                       alert.priority === "critical" ? "bg-red-500 ring-red-500/10" :
                       alert.priority === "high" ? "bg-orange-500 ring-orange-500/10" :
-                      "bg-lumina-highlight ring-lumina-highlight/10"
+                      "bg-primary ring-primary/10"
                     )} />
                     <div className="flex-1">
                       <div className="flex items-center justify-between gap-4 mb-1">
-                        <h3 className="font-bold text-white group-hover:text-lumina-highlight transition-colors leading-tight">{alert.title}</h3>
+                        <h3 className="font-bold text-text group-hover:text-primary transition-colors leading-tight">{alert.title}</h3>
                         <span className={cn(
                           "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border transition-colors",
-                          alert.priority === "critical" ? "border-red-500/30 text-red-400 bg-red-400/5" :
-                          alert.priority === "high" ? "border-orange-500/30 text-orange-400 bg-orange-400/5" :
-                          "border-lumina-highlight/30 text-lumina-highlight bg-lumina-highlight/5"
+                          alert.priority === "critical" ? "border-red-500/30 text-red-500 bg-red-500/5" :
+                          alert.priority === "high" ? "border-orange-500/30 text-orange-500 bg-orange-500/5" :
+                          "border-primary/30 text-primary bg-primary/5"
                         )}>
                           {alert.priority}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-400 leading-relaxed font-medium">
+                      <p className="text-sm text-text-secondary leading-relaxed font-medium">
                         {alert.description}
                       </p>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500">
-                  <div className="w-16 h-16 rounded-3xl bg-white/[0.02] flex items-center justify-center mb-4 border border-white/5">
+                <div className="flex flex-col items-center justify-center py-12 text-center text-text-muted">
+                  <div className="w-16 h-16 rounded-3xl bg-surface-elevated flex items-center justify-center mb-4 border border-border">
                     <ShieldCheck className="w-8 h-8 opacity-20" />
                   </div>
                   <p className="font-bold uppercase tracking-widest text-[10px]">Your queue is clear</p>
@@ -195,43 +195,43 @@ export function StandardDashboard({
 
         <div className="space-y-8 h-full">
           {/* Feed / Activity */}
-          <section className="glass-onyx rounded-[2.5rem] overflow-hidden flex flex-col h-full border-white/5">
-            <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/[0.02]">
+          <section className="bg-surface border border-border rounded-[2.5rem] overflow-hidden flex flex-col h-full shadow-sm">
+            <div className="flex items-center justify-between p-6 border-b border-border bg-surface-elevated/50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-400 border border-white/10">
+                <div className="w-10 h-10 rounded-xl bg-surface-elevated flex items-center justify-center text-text-secondary border border-border shadow-sm text-primary">
                   <TrendingUp className="w-5 h-5" />
                 </div>
-                <h2 className="text-xl font-display font-bold text-white">Recent Activity</h2>
+                <h2 className="text-xl font-display font-bold text-text">Recent Activity</h2>
               </div>
             </div>
             <div className="flex-1 p-6 space-y-6 relative ml-4">
-              <div className="absolute left-0 top-6 bottom-6 w-px bg-white/5" />
+              <div className="absolute left-0 top-6 bottom-6 w-px bg-border" />
               {(feed?.length || 0) > 0 ? (
                 feed?.map((item) => (
                   <div key={item.id} className="relative pl-8 group">
-                    <div className="absolute left-[-4px] top-1.5 w-2 h-2 rounded-full bg-lumina-highlight border border-lumina-highlight group-hover:scale-150 transition-transform duration-300 shadow-[0_0_12px_rgba(252,196,25,0.6)]" />
+                    <div className="absolute left-[-4px] top-1.5 w-2 h-2 rounded-full bg-primary border border-primary group-hover:scale-150 transition-transform duration-300 shadow-sm" />
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center justify-between gap-4">
-                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{item.type.replace('_', ' ')}</span>
-                        <span className="text-[10px] font-bold text-gray-600 flex items-center gap-1">
+                        <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{item.type.replace('_', ' ')}</span>
+                        <span className="text-[10px] font-bold text-text-muted flex items-center gap-1">
                           <Calendar className="w-3 h-3" /> {item.time}
                         </span>
                       </div>
-                      <h3 className="font-semibold text-white text-sm leading-snug group-hover:text-lumina-highlight transition-colors">
+                      <h3 className="font-semibold text-text text-sm leading-snug group-hover:text-primary transition-colors">
                         {item.title}
                       </h3>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-center text-gray-500 pl-0">
+                <div className="flex flex-col items-center justify-center py-20 text-center text-text-muted pl-0">
                   <p className="font-bold uppercase tracking-widest text-[10px]">Nothing to show</p>
                   <p className="text-sm mt-1">Activities will appear as they happen.</p>
                 </div>
               )}
             </div>
-            <div className="p-4 border-t border-white/5 bg-white/[0.01]">
-              <button className="w-full py-2 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-lumina-highlight transition-colors flex items-center justify-center gap-2">
+            <div className="p-4 border-t border-border bg-surface-elevated/30">
+              <button className="w-full py-2 text-xs font-black uppercase tracking-widest text-text-secondary hover:text-primary transition-colors flex items-center justify-center gap-2">
                 View Activity Log <ArrowRight className="w-3 h-3" />
               </button>
             </div>

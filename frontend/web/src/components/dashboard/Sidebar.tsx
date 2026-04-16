@@ -177,42 +177,32 @@ export default function Sidebar({
       onMouseEnter={() => handleHoverChange(true)}
       onMouseLeave={() => handleHoverChange(false)}
       className={cn(
-        "fixed left-0 top-0 bottom-0 z-40 flex flex-col transition-all duration-300 ease-in-out overflow-hidden shadow-2xl",
-        isPremium 
-          ? "bg-[#fdfaf5]/60 backdrop-blur-2xl border-r border-[#efe9de]" 
-          : "bg-background/92 backdrop-blur-2xl border-r border-border shadow-[20px_0_40px_-20px_rgba(17,24,39,0.18)] dark:shadow-[20px_0_40px_-20px_rgba(0,0,0,0.8)]",
+        "fixed left-0 top-0 bottom-0 z-40 flex flex-col transition-all duration-300 ease-in-out overflow-hidden",
+        "bg-surface border-r border-border shadow-lg",
         isHovered ? "w-64" : "w-20",
         isOpen ? "translate-x-0 w-64 flex" : "-translate-x-full lg:translate-x-0 hidden lg:flex"
       )}
     >
       {/* LOGO */}
-      <div className={cn(
-        "flex items-center px-6 h-16 shrink-0",
-        isPremium ? "border-b border-[#efe9de]" : "border-b border-border bg-gradient-to-b from-primary/6 to-transparent"
-      )}>
+      <div className="flex items-center px-6 h-16 shrink-0 border-b border-border">
         <Link href="/" className="text-2xl font-display font-black flex items-center gap-1 select-none">
+          <span className="shrink-0 text-text">L</span>
           <span className={cn(
-            "shrink-0",
-            isPremium ? "text-[#4a3f35]" : "text-foreground"
-          )}>L</span>
-          <span className={cn(
-            "transition-all duration-300 overflow-hidden whitespace-nowrap",
-            isPremium ? "text-[#4a3f35]" : "text-foreground",
+            "transition-all duration-300 overflow-hidden whitespace-nowrap text-text",
             isHovered ? "opacity-100 max-w-[120px]" : "opacity-0 max-w-0"
           )}>
             umina
           </span>
           <span className={cn(
-            "text-lumina-highlight transition-all duration-300 overflow-hidden whitespace-nowrap",
+            "text-primary transition-all duration-300 overflow-hidden whitespace-nowrap",
             isHovered ? "opacity-100 max-w-[60px]" : "opacity-0 max-w-0"
           )}>
             AI
           </span>
         </Link>
 
-
         {onClose && (
-          <button onClick={onClose} className={cn("lg:hidden ml-auto hover:text-foreground", isPremium ? "text-[#8c7851]" : "text-muted-foreground")} aria-label="Close menu">
+          <button onClick={onClose} className="lg:hidden ml-auto text-text-secondary hover:text-text" aria-label="Close menu">
             <X className="w-5 h-5" />
           </button>
         )}
@@ -232,19 +222,13 @@ export default function Sidebar({
                 "flex items-center p-3 rounded-xl transition-all duration-300 group relative min-w-0",
                 isHovered ? "gap-3 px-4" : "justify-center px-0",
                 isActive
-                  ? isPremium 
-                    ? "bg-[#8c7851]/10 text-[#8c7851] border border-[#8c7851]/30 shadow-[0_0_20px_rgba(140,120,81,0.1)]"
-                    : "bg-primary/12 text-primary border border-primary/25 shadow-[0_0_30px_rgba(34,197,94,0.14)] dark:shadow-[0_0_30px_rgba(245,158,11,0.2)]"
-                  : isPremium 
-                    ? "text-[#807060] hover:bg-[#8c7851]/5 hover:text-[#4a3f35]"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
+                  : "text-text-secondary hover:bg-surface-elevated hover:text-text"
               )}
             >
               <item.icon className={cn(
                 "w-5 h-5 shrink-0 transition-all duration-300", 
-                isActive 
-                  ? (isPremium ? "text-[#8c7851]" : "text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.35)] dark:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]") 
-                  : (isPremium ? "text-[#b8a994] group-hover:text-[#8c7851]" : "text-muted-foreground group-hover:text-primary")
+                isActive ? "text-primary" : "text-text-muted group-hover:text-primary"
               )} />
 
               <span className={cn(
@@ -259,25 +243,16 @@ export default function Sidebar({
       </nav>
 
       {/* USER & LOGOUT */}
-      <div className={cn(
-        "p-4 space-y-2 shrink-0",
-        isPremium ? "border-t border-[#efe9de]" : "border-t border-border"
-      )}>
+      <div className="p-4 space-y-2 shrink-0 border-t border-border">
         {user && (
           <Link
             href={profileHref}
             className={cn(
-              "flex items-center rounded-xl transition-all duration-300 overflow-hidden border",
-              isPremium 
-                ? "bg-white/50 border-[#efe9de] hover:bg-white/80" 
-                : "bg-card/85 border-border hover:bg-secondary",
+              "flex items-center rounded-xl transition-all duration-300 overflow-hidden border border-border bg-surface-elevated hover:border-primary/30",
               isHovered ? "p-3 gap-3" : "p-2 justify-center"
             )}
           >
-            <div className={cn(
-              "w-8 h-8 rounded-full overflow-hidden border shrink-0",
-              isPremium ? "border-[#efe9de]" : "border-border"
-            )}>
+            <div className="w-8 h-8 rounded-full overflow-hidden border border-border shrink-0">
               <img
                 src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
                 alt="User avatar"
@@ -288,14 +263,8 @@ export default function Sidebar({
               "transition-all duration-300 overflow-hidden whitespace-nowrap",
               isHovered ? "opacity-100 max-w-[150px]" : "opacity-0 max-w-0"
             )}>
-              <p className={cn(
-                "text-xs font-bold truncate",
-                isPremium ? "text-[#4a3f35]" : "text-foreground"
-              )}>{user.name}</p>
-              <p className={cn(
-                "text-[10px] truncate tracking-tight",
-                isPremium ? "text-[#b8a994]" : "text-muted-foreground"
-              )}>{user.email}</p>
+              <p className="text-xs font-bold truncate text-text">{user.name}</p>
+              <p className="text-[10px] truncate tracking-tight text-text-secondary">{user.email}</p>
             </div>
           </Link>
         )}
@@ -303,10 +272,7 @@ export default function Sidebar({
         <button
           onClick={handleLogout}
           className={cn(
-            "flex items-center w-full py-3 rounded-xl text-xs font-bold transition-all duration-300 group relative",
-            isPremium 
-              ? "text-red-600/80 hover:bg-red-500/5 hover:text-red-600" 
-              : "text-red-400/80 hover:bg-red-500/10 hover:text-red-400",
+            "flex items-center w-full py-3 rounded-xl text-xs font-bold transition-all duration-300 group relative text-red-500 hover:bg-red-500/5",
             isHovered ? "px-4 gap-4" : "justify-center px-0"
           )}
         >

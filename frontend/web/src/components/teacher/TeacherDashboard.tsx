@@ -145,11 +145,11 @@ function SectionPanel({
   className?: string;
 }) {
   return (
-    <section className={cn("glass-v2 border-white/5 overflow-hidden", className)}>
-      <div className="flex items-start justify-between gap-4 border-b border-white/5 p-6">
+    <section className={cn("bg-surface border border-border rounded-[2.5rem] overflow-hidden shadow-sm", className)}>
+      <div className="flex items-start justify-between gap-4 border-b border-border p-6 bg-surface-elevated/50">
         <div>
-          <h2 className="text-xl font-display font-bold text-white tracking-tight">{title}</h2>
-          {subtitle ? <p className="mt-1 text-sm text-gray-400 font-medium">{subtitle}</p> : null}
+          <h2 className="text-xl font-display font-bold text-text tracking-tight">{title}</h2>
+          {subtitle ? <p className="mt-1 text-sm text-text-secondary font-medium">{subtitle}</p> : null}
         </div>
         {action}
       </div>
@@ -160,23 +160,23 @@ function SectionPanel({
 
 function GradingCard({ assignment }: { assignment: TeacherAssignmentCard }) {
   return (
-    <div className="flex items-center justify-between p-5 rounded-3xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300 group">
+    <div className="flex items-center justify-between p-5 rounded-3xl bg-surface-elevated/30 border border-border hover:bg-surface-elevated hover:border-primary/20 transition-all duration-300 group">
       <div className="flex items-center gap-5">
         <div
           className={cn(
             "p-3 rounded-2xl shadow-inner",
             assignment.status === "overdue"
-              ? "bg-red-500/10 text-red-400"
-              : "bg-lumina-highlight/10 text-lumina-highlight"
+              ? "bg-red-500/10 text-red-500"
+              : "bg-primary/10 text-primary"
           )}
         >
           <FileText className="w-6 h-6" />
         </div>
         <div>
-          <h4 className="font-bold text-white flex items-center gap-2 text-base">
+          <h4 className="font-bold text-text flex items-center gap-2 text-base">
             {assignment.title}
           </h4>
-          <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5 font-medium">
+          <p className="text-xs text-text-secondary flex items-center gap-1.5 mt-0.5 font-medium">
             <BookOpen className="w-3.5 h-3.5" />
             {assignment.courseName}
           </p>
@@ -185,16 +185,16 @@ function GradingCard({ assignment }: { assignment: TeacherAssignmentCard }) {
 
       <div className="flex items-center gap-6">
         <div className="text-right">
-          <p className="text-xl font-black text-white tracking-tight">
+          <p className="text-xl font-black text-text tracking-tight">
             {assignment.pendingGrading}
           </p>
-          <p className="text-[9px] text-gray-600 uppercase font-black tracking-widest leading-none">
+          <p className="text-[9px] text-text-muted uppercase font-black tracking-widest leading-none">
             Pending
           </p>
         </div>
         <Link
           href={assignment.href}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-lumina-highlight text-black text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-lumina-highlight/20"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-md"
         >
           Review
           <ArrowRight className="w-3.5 h-3.5" />
@@ -235,10 +235,10 @@ export default function TeacherDashboardContent() {
 
   if (loading) {
     return (
-      <div className="flex h-[75vh] items-center justify-center glass-v2 border border-white/5 rounded-3xl">
+      <div className="flex h-[75vh] items-center justify-center bg-surface border border-border rounded-3xl">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-2 border-lumina-highlight/20 border-t-lumina-highlight" />
-          <p className="text-sm font-black uppercase tracking-widest text-gray-500 animate-pulse">Syncing Intelligence...</p>
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+          <p className="text-sm font-black uppercase tracking-widest text-text-muted animate-pulse">Syncing Intelligence...</p>
         </div>
       </div>
     );
@@ -247,12 +247,12 @@ export default function TeacherDashboardContent() {
   if (error) {
     return (
       <div className="p-10 rounded-3xl border border-red-500/20 bg-red-500/5 text-center">
-        <AlertTriangle className="h-10 w-10 text-red-400 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-white mb-2">Sync Error</h3>
-        <p className="text-gray-400 max-w-md mx-auto">{error}</p>
+        <AlertTriangle className="h-10 w-10 text-red-500 mx-auto mb-4" />
+        <h3 className="text-xl font-bold text-text mb-2">Sync Error</h3>
+        <p className="text-text-secondary max-w-md mx-auto">{error}</p>
         <button 
           onClick={() => window.location.reload()}
-          className="mt-6 px-6 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-300 font-bold rounded-xl border border-red-500/30 transition-all text-sm"
+          className="mt-6 px-6 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl border border-red-500/30 transition-all text-sm"
         >
           Recall Interface
         </button>
@@ -276,22 +276,22 @@ export default function TeacherDashboardContent() {
     <div className="space-y-8 pb-12">
       {/* Weekly Snapshot Panel - Quick Data View */}
       {weeklySnapshot && (
-        <div className="p-1 gap-1 flex flex-wrap glass-v2 border-white/5 rounded-2xl overflow-hidden">
-          <div className="flex-1 min-w-[120px] p-4 text-center border-r border-white/5 last:border-none">
-            <p className="text-[10px] uppercase font-black tracking-widest text-gray-500 mb-1">Published</p>
-            <p className="text-xl font-black text-white">{weeklySnapshot.publishedCourses}</p>
+        <div className="p-1 gap-1 flex flex-wrap bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
+          <div className="flex-1 min-w-[120px] p-4 text-center border-r border-border last:border-none">
+            <p className="text-[10px] uppercase font-black tracking-widest text-text-muted mb-1">Published</p>
+            <p className="text-xl font-black text-text">{weeklySnapshot.publishedCourses}</p>
           </div>
-          <div className="flex-1 min-w-[120px] p-4 text-center border-r border-white/5 last:border-none">
-            <p className="text-[10px] uppercase font-black tracking-widest text-gray-500 mb-1 font-medium">Drafts</p>
-            <p className="text-xl font-black text-lumina-highlight">{weeklySnapshot.draftCourses}</p>
+          <div className="flex-1 min-w-[120px] p-4 text-center border-r border-border last:border-none">
+            <p className="text-[10px] uppercase font-black tracking-widest text-text-muted mb-1 font-medium">Drafts</p>
+            <p className="text-xl font-black text-primary">{weeklySnapshot.draftCourses}</p>
           </div>
-          <div className="flex-1 min-w-[120px] p-4 text-center border-r border-white/5 last:border-none">
-            <p className="text-[10px] uppercase font-black tracking-widest text-gray-500 mb-1">Assignments</p>
-            <p className="text-xl font-black text-white">{weeklySnapshot.assignmentsCreated}</p>
+          <div className="flex-1 min-w-[120px] p-4 text-center border-r border-border last:border-none">
+            <p className="text-[10px] uppercase font-black tracking-widest text-text-muted mb-1">Assignments</p>
+            <p className="text-xl font-black text-text">{weeklySnapshot.assignmentsCreated}</p>
           </div>
-          <div className="flex-1 min-w-[120px] p-4 text-center border-r border-white/5 last:border-none">
-            <p className="text-[10px] uppercase font-black tracking-widest text-gray-500 mb-1">Submissions</p>
-            <p className="text-xl font-black text-white">{weeklySnapshot.submissionsReceived}</p>
+          <div className="flex-1 min-w-[120px] p-4 text-center border-r border-border last:border-none">
+            <p className="text-[10px] uppercase font-black tracking-widest text-text-muted mb-1">Submissions</p>
+            <p className="text-xl font-black text-text">{weeklySnapshot.submissionsReceived}</p>
           </div>
         </div>
       )}
@@ -336,17 +336,17 @@ export default function TeacherDashboardContent() {
                   key={item.id}
                   href={item.href}
                   className={cn(
-                    "group p-5 rounded-2xl border bg-gradient-to-br transition-all duration-300 hover:-translate-y-1",
+                    "group p-5 rounded-2xl border bg-surface-elevated/50 transition-all duration-300 hover:-translate-y-1 shadow-sm",
                     item.tone === "urgent" 
-                      ? "from-red-500/20 to-red-500/5 border-red-500/20"
+                      ? "border-red-500/20"
                       : item.tone === "watch"
-                      ? "from-lumina-highlight/20 to-lumina-highlight/5 border-lumina-highlight/20"
-                      : "from-blue-500/20 to-blue-500/5 border-blue-500/20"
+                      ? "border-primary/20"
+                      : "border-blue-500/20"
                   )}
                 >
-                  <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">{item.kind}</p>
-                  <h4 className="text-sm font-bold text-white mb-1 group-hover:text-lumina-highlight transition-colors">{item.title}</h4>
-                  <p className="text-xs text-gray-400 line-clamp-1">{item.detail}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">{item.kind}</p>
+                  <h4 className="text-sm font-bold text-text mb-1 group-hover:text-primary transition-colors">{item.title}</h4>
+                  <p className="text-xs text-text-secondary line-clamp-1">{item.detail}</p>
                 </Link>
               ))}
             </div>
@@ -358,7 +358,7 @@ export default function TeacherDashboardContent() {
               title="Grading Hub" 
               subtitle="Assignments awaiting teacher intelligence."
               action={
-                <Link href="/teacher/gradebook" className="text-xs font-black uppercase tracking-widest text-lumina-highlight hover:underline decoration-thickness-2 flex items-center gap-1">
+                <Link href="/teacher/gradebook" className="text-xs font-black uppercase tracking-widest text-primary hover:underline decoration-thickness-2 flex items-center gap-1">
                   Full Gradebook <ChevronRight size={14} />
                 </Link>
               }
@@ -373,7 +373,7 @@ export default function TeacherDashboardContent() {
           <SectionPanel 
             title="Attendance Intel" 
             subtitle="Quick attendance session for active streams."
-            className="border-lumina-highlight/10 shadow-[0_20px_50px_rgba(245,158,11,0.05)]"
+            className="border-primary/10 shadow-sm"
           >
             <AttendanceTracker standalone={false} className="p-0 border-none bg-transparent shadow-none" />
           </SectionPanel>
@@ -382,24 +382,24 @@ export default function TeacherDashboardContent() {
           <SectionPanel title="Active Course Streams" subtitle="Monitor your global academic streams.">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {courses.slice(0, 4).map((course) => (
-                <div key={course.id} className="p-5 rounded-3xl bg-white/[0.03] border border-white/5 hover:border-white/20 transition-all group">
+                <div key={course.id} className="p-5 rounded-3xl bg-surface-elevated/30 border border-border hover:border-primary/20 transition-all group shadow-sm">
                   <div className="flex justify-between items-start mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-lumina-highlight to-amber-700 flex items-center justify-center text-black font-black">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-black shadow-md">
                       {course.code || "CS"}
                     </div>
                     <div className="flex flex-col items-end">
-                      <p className="text-xl font-black text-white">{course.studentCount}</p>
-                      <p className="text-[10px] font-black uppercase tracking-tighter text-gray-500">Learners</p>
+                      <p className="text-xl font-black text-text">{course.studentCount}</p>
+                      <p className="text-[10px] font-black uppercase tracking-tighter text-text-muted">Learners</p>
                     </div>
                   </div>
-                  <h4 className="font-bold text-white mb-4 line-clamp-1">{course.title}</h4>
+                  <h4 className="font-bold text-text mb-4 line-clamp-1 group-hover:text-primary transition-colors">{course.title}</h4>
                   <div className="space-y-3">
-                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-lumina-highlight rounded-full" style={{ width: `${course.averageProgress}%` }} />
+                    <div className="h-1.5 w-full bg-surface rounded-full overflow-hidden border border-border">
+                      <div className="h-full bg-primary rounded-full" style={{ width: `${course.averageProgress}%` }} />
                     </div>
-                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-text-secondary">
                       <span>Progress</span>
-                      <span className="text-lumina-highlight">{course.averageProgress}%</span>
+                      <span className="text-primary">{course.averageProgress}%</span>
                     </div>
                   </div>
                 </div>
@@ -415,16 +415,16 @@ export default function TeacherDashboardContent() {
             {interventionQueue.length > 0 ? (
               <div className="space-y-4">
                 {interventionQueue.slice(0, 5).map((item) => (
-                  <div key={item.id} className="flex items-center gap-4 p-3 rounded-2xl bg-white/[0.02] border border-white/5">
+                  <div key={item.id} className="flex items-center gap-4 p-3 rounded-2xl bg-surface-elevated/30 border border-border transition-colors hover:border-primary/20">
                     <div className={cn(
                       "w-2 h-2 rounded-full",
-                      item.riskLevel.toLowerCase() === "high" ? "bg-red-500 animate-pulse" : "bg-lumina-highlight"
+                      item.riskLevel.toLowerCase() === "high" ? "bg-red-500 animate-pulse" : "bg-primary"
                     )} />
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-white">{item.studentName}</p>
-                      <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">{item.status}</p>
+                      <p className="text-sm font-bold text-text">{item.studentName}</p>
+                      <p className="text-[10px] text-text-muted uppercase font-black tracking-widest">{item.status}</p>
                     </div>
-                    <button className="p-2 hover:bg-white/10 rounded-lg text-gray-500 hover:text-white transition-all">
+                    <button className="p-2 hover:bg-surface-elevated rounded-lg text-text-muted hover:text-text transition-all">
                       <ArrowRight size={14} />
                     </button>
                   </div>
@@ -432,10 +432,10 @@ export default function TeacherDashboardContent() {
               </div>
             ) : (
               <div className="text-center py-8">
-                <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <ShieldCheck className="text-gray-600" />
+                <div className="w-12 h-12 bg-surface-elevated rounded-full flex items-center justify-center mx-auto mb-3 border border-border">
+                  <ShieldCheck className="text-text-muted opacity-50" />
                 </div>
-                <p className="text-xs text-gray-500 font-medium">All students on-track.</p>
+                <p className="text-xs text-text-muted font-medium">All students on-track.</p>
               </div>
             )}
           </SectionPanel>
@@ -446,7 +446,7 @@ export default function TeacherDashboardContent() {
               {studentMomentum.slice(0, 5).map((student) => (
                 <div key={student.id} className="flex items-center gap-4 group">
                   <div className="relative">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-gray-400 overflow-hidden border border-white/10">
+                    <div className="w-10 h-10 rounded-xl bg-surface-elevated flex items-center justify-center text-text-secondary overflow-hidden border border-border">
                       {student.avatar ? (
                         <img src={student.avatar} alt={student.name} className="w-full h-full object-cover" />
                       ) : (
@@ -454,17 +454,17 @@ export default function TeacherDashboardContent() {
                       )}
                     </div>
                     <div className={cn(
-                      "absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-black",
-                      student.status === "on-track" ? "bg-green-500" : student.status === "watch" ? "bg-lumina-highlight" : "bg-red-500"
+                      "absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-surface",
+                      student.status === "on-track" ? "bg-green-500" : student.status === "watch" ? "bg-primary" : "bg-red-500"
                     )} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-white truncate">{student.name}</p>
-                    <p className="text-[10px] text-gray-500 font-medium">{student.focusArea}</p>
+                    <p className="text-sm font-bold text-text truncate group-hover:text-primary transition-colors">{student.name}</p>
+                    <p className="text-[10px] text-text-secondary font-medium">{student.focusArea}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-bold text-lumina-highlight">{student.averageMastery}%</p>
-                    <p className="text-[9px] text-gray-600 uppercase font-black tracking-tighter">Mastery</p>
+                    <p className="text-xs font-bold text-primary">{student.averageMastery}%</p>
+                    <p className="text-[9px] text-text-muted uppercase font-black tracking-tighter">Mastery</p>
                   </div>
                 </div>
               ))}
@@ -472,18 +472,17 @@ export default function TeacherDashboardContent() {
           </SectionPanel>
 
           {/* Snapshot Action */}
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-lumina-highlight to-amber-700 text-black">
+          <div className="p-6 rounded-[2rem] bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 text-text">
              <h3 className="text-xl font-display font-black leading-tight mb-2">Create New Intelligence Hub</h3>
-             <p className="text-sm font-bold opacity-80 mb-6">Launch a new course stream or curriculum module instantly.</p>
+             <p className="text-sm font-bold text-text-secondary mb-6">Launch a new course stream or curriculum module instantly.</p>
              <Link 
                href="/teacher/create-course"
-               className="w-full py-3 bg-black text-white font-black uppercase tracking-widest text-xs rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl text-center block"
+               className="w-full py-3 bg-primary text-primary-foreground font-black uppercase tracking-widest text-xs rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg text-center block"
              >
                Initialize HUB
              </Link>
           </div>
         </div>
-      </div>
     </div>
   );
 }
