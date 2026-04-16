@@ -63,19 +63,19 @@ function SectionCard({
   className?: string;
 }) {
   return (
-    <section className={cn("glass-v2-gold border-white/5 overflow-hidden rounded-[2.5rem]", className)}>
-      <div className="flex items-start justify-between gap-4 p-6 border-b border-white/5">
+    <section className={cn("glass-v2-gold border-border overflow-hidden rounded-[2.5rem]", className)}>
+      <div className="flex items-start justify-between gap-4 p-6 border-b border-border">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-white/[0.04] border border-white/5 flex items-center justify-center text-lumina-highlight">
+            <div className="w-11 h-11 rounded-2xl bg-surface border border-border flex items-center justify-center text-primary">
               <Icon className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-display font-bold text-white">
+              <h2 className="text-xl font-display font-bold text-foreground">
                 {title}
               </h2>
               {subtitle ? (
-                <p className="text-sm text-gray-400 mt-1">{subtitle}</p>
+                <p className="text-sm text-text-muted mt-1">{subtitle}</p>
               ) : null}
             </div>
           </div>
@@ -168,15 +168,15 @@ export default function StudentDashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] font-mono">
         <div className="relative w-24 h-24 mb-12">
-          <div className="absolute inset-0 bg-lumina-highlight/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute inset-0 border-2 border-lumina-highlight/30 rounded-full animate-[ping_3s_infinite]" />
-          <div className="relative h-full w-full rounded-full border-t-2 border-lumina-highlight animate-spin flex items-center justify-center">
-             <Bot className="w-8 h-8 text-lumina-highlight animate-pulse" />
+          <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute inset-0 border-2 border-primary/30 rounded-full animate-[ping_3s_infinite]" />
+          <div className="relative h-full w-full rounded-full border-t-2 border-primary animate-spin flex items-center justify-center">
+             <Bot className="w-8 h-8 text-primary animate-pulse" />
           </div>
         </div>
         <div className="space-y-3 text-center">
-            <p className="text-lumina-highlight text-sm font-black uppercase tracking-[0.3em] animate-pulse">Initializing Terminal...</p>
-            <div className="flex flex-col gap-1 text-[10px] text-gray-500 uppercase tracking-widest font-black opacity-40">
+            <p className="text-primary text-sm font-black uppercase tracking-[0.3em] animate-pulse">Initializing Terminal...</p>
+            <div className="flex flex-col gap-1 text-[10px] text-text-muted uppercase tracking-widest font-black opacity-40">
                 <p className="animate-[fade-in_1s_ease-out_forwards]">Establishing neural link...</p>
                 <p className="animate-[fade-in_1s_ease-out_0.2s_forwards] opacity-0">Decrypting learner profile...</p>
                 <p className="animate-[fade-in_1s_ease-out_0.4s_forwards] opacity-0">Optimizing cognitive path...</p>
@@ -189,15 +189,15 @@ export default function StudentDashboard() {
   if (error || !dashboardData) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center p-12 glass-v2-gold border-red-500/20 max-w-md">
-          <div className="w-16 h-16 rounded-3xl bg-red-500/10 flex items-center justify-center text-red-500 mb-6 mx-auto">
+        <div className="text-center p-12 glass-v2-gold border-danger/20 max-w-md">
+          <div className="w-16 h-16 rounded-3xl bg-danger/10 flex items-center justify-center text-danger mb-6 mx-auto">
             <AlertTriangle className="w-8 h-8" />
           </div>
-          <h2 className="text-2xl font-display font-bold text-white mb-2">Sync Interrupted</h2>
-          <p className="text-gray-400 mb-8">{error || "The terminal could not establish a secure link to your learner profile."}</p>
+          <h2 className="text-2xl font-display font-bold text-foreground mb-2">Sync Interrupted</h2>
+          <p className="text-text-muted mb-8">{error || "The terminal could not establish a secure link to your learner profile."}</p>
           <button 
             onClick={() => loadDashboard()} 
-            className="w-full h-14 bg-white/[0.04] border border-white/10 text-white font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-white/10 transition-all active:scale-95 flex items-center justify-center gap-3"
+            className="w-full h-14 bg-surface border border-border text-foreground font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-surface-elevated transition-all active:scale-95 flex items-center justify-center gap-3"
           >
             <RefreshCw className="w-4 h-4" />
             Retry Connection
@@ -221,14 +221,14 @@ export default function StudentDashboard() {
         <div className="flex flex-wrap gap-4 mt-4">
           <Link
             href="/student/ai_tutor"
-            className="h-14 px-8 rounded-2xl bg-lumina-highlight text-black font-black inline-flex items-center gap-3 hover:scale-105 transition-all shadow-xl hover:shadow-lumina-highlight/20 active:scale-95"
+            className="h-14 px-8 rounded-2xl bg-primary text-primary-foreground font-black inline-flex items-center gap-3 hover:scale-105 transition-all shadow-xl hover:shadow-primary/20 active:scale-95"
           >
             Start Learning Session
             <ShieldCheck className="w-5 h-5" />
           </Link>
           <Link
             href="/student/course_explorer"
-            className="h-14 px-8 rounded-2xl border border-white/10 text-white font-bold inline-flex items-center gap-3 hover:bg-white/5 transition-all"
+            className="h-14 px-8 rounded-2xl border border-border text-foreground font-bold inline-flex items-center gap-3 hover:bg-surface transition-all"
           >
             Course Explorer
           </Link>
@@ -262,7 +262,7 @@ export default function StudentDashboard() {
               </div>
               <Link
                 href={nextAction.href}
-                className="inline-flex items-center gap-2 group text-lumina-highlight font-black uppercase tracking-widest text-xs"
+                className="inline-flex items-center gap-2 group text-primary font-black uppercase tracking-widest text-xs"
               >
                 {nextAction.ctaLabel}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -300,10 +300,10 @@ export default function StudentDashboard() {
           {resumeCourse ? (
             <div className="space-y-6">
               <div>
-                <h3 className="text-2xl font-display font-bold text-white mb-2">{resumeCourse.title}</h3>
-                <div className="flex items-center gap-4 text-sm text-gray-400">
+                <h3 className="text-2xl font-display font-bold text-foreground mb-2">{resumeCourse.title}</h3>
+                <div className="flex items-center gap-4 text-sm text-text-muted">
                   <span>{resumeCourse.streak} day streak</span>
-                  <span className="text-lumina-highlight font-bold">{resumeCourse.mastery}% mastery</span>
+                  <span className="text-primary font-bold">{resumeCourse.mastery}% mastery</span>
                 </div>
               </div>
               <div className="space-y-2">
@@ -312,7 +312,7 @@ export default function StudentDashboard() {
               </div>
               <Link
                 href={resumeCourse.href}
-                className="h-12 w-full rounded-2xl bg-white/[0.04] border border-white/10 text-white font-bold inline-flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+                className="h-12 w-full rounded-2xl bg-surface border border-border text-foreground font-bold inline-flex items-center justify-center gap-2 hover:bg-surface-elevated transition-all"
               >
                 Resume Course
                 <CheckCircle className="w-4 h-4" />
@@ -329,19 +329,19 @@ export default function StudentDashboard() {
           icon={Bot}
         >
           {coachInsight ? (
-            <div className="p-6 rounded-[2rem] bg-lumina-highlight/5 border border-lumina-highlight/10">
+            <p className="p-6 rounded-[2rem] bg-primary/5 border border-primary/10">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-2xl bg-lumina-highlight/20 flex items-center justify-center text-lumina-highlight">
+                <div className="w-10 h-10 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
                   <Bot className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold text-white">{coachInsight.title}</h3>
+                <h3 className="text-xl font-bold text-foreground">{coachInsight.title}</h3>
               </div>
-              <p className="text-gray-400 text-sm leading-relaxed mb-6">
+              <p className="text-text-muted text-sm leading-relaxed mb-6">
                 {coachInsight.summary}
               </p>
               <Link
                 href={coachInsight.href || "#"}
-                className="inline-flex items-center gap-2 text-lumina-highlight font-black uppercase tracking-widest text-xs group"
+                className="inline-flex items-center gap-2 text-primary font-black uppercase tracking-widest text-xs group"
               >
                 {coachInsight.actionLabel || "View Action"}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -370,14 +370,14 @@ export default function StudentDashboard() {
           )}>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                 <div className="w-8 h-8 rounded-xl bg-lumina-highlight/10 flex items-center justify-center text-lumina-highlight/40">
-                   {linkStatus === "linked" ? <CheckCircle className="w-5 h-5 text-lumina-highlight" /> : <ShieldCheck className="w-5 h-5" />}
+                 <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary/40">
+                   {linkStatus === "linked" ? <CheckCircle className="w-5 h-5 text-primary" /> : <ShieldCheck className="w-5 h-5" />}
                  </div>
-                 <h3 className="text-[10px] uppercase tracking-[0.25em] text-gray-500 font-black">
+                 <h3 className="text-[10px] uppercase tracking-[0.25em] text-text-muted font-black">
                    {linkStatus === "linked" ? "Identity Verified" : "Secure Account Mapping"}
                  </h3>
               </div>
-              <p className="text-gray-400 text-sm max-w-sm leading-relaxed">
+              <p className="text-text-muted text-sm max-w-sm leading-relaxed">
                 {linkStatus === "linked" 
                   ? "Your parent can now monitor your progress, set specific goals, and view AI-generated weekly performance summaries."
                   : "Required for parental monitoring and shared reports. This code expires periodically for security."}
@@ -385,21 +385,21 @@ export default function StudentDashboard() {
             </div>
             
             {linkStatus === "linked" ? (
-              <div className="bg-lumina-highlight/10 px-8 py-4 rounded-2xl flex items-center gap-3">
-                <ShieldCheck className="text-lumina-highlight w-6 h-6" />
-                <span className="font-bold text-white uppercase tracking-widest text-sm">Linked to Parent</span>
+              <div className="bg-primary/10 px-8 py-4 rounded-2xl flex items-center gap-3">
+                <ShieldCheck className="text-primary w-6 h-6" />
+                <span className="font-bold text-foreground uppercase tracking-widest text-sm">Linked to Parent</span>
               </div>
             ) : (
               <div className="flex items-center gap-4">
                 <div className="relative group">
                   <div className={cn(
-                    "bg-black/60 border-2 border-white/5 rounded-2xl px-12 py-6 text-4xl font-mono font-black text-lumina-highlight tracking-[0.25em] shadow-[inset_0_2px_20px_rgba(0,0,0,0.8)] border-dashed",
+                    "bg-black/60 border-2 border-border rounded-2xl px-12 py-6 text-4xl font-mono font-black text-primary tracking-[0.25em] shadow-[inset_0_2px_20px_rgba(0,0,0,0.8)] border-dashed",
                     isRefreshing && "opacity-30 blur-sm grayscale"
                   )}>
                     {meta?.parentLinkCode || "••••••••"}
                     {isRefreshing && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <RefreshCw className="w-8 h-8 animate-spin text-lumina-highlight" />
+                        <RefreshCw className="w-8 h-8 animate-spin text-primary" />
                       </div>
                     )}
                   </div>
@@ -411,7 +411,7 @@ export default function StudentDashboard() {
                          navigator.clipboard.writeText(meta.parentLinkCode);
                        }
                     }}
-                    className="h-12 w-12 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-gray-500 hover:text-lumina-highlight hover:bg-lumina-highlight/10 transition-all border-dashed"
+                    className="h-12 w-12 rounded-xl bg-surface border border-border flex items-center justify-center text-text-muted hover:text-primary hover:bg-primary/10 transition-all border-dashed"
                     title="Copy Code"
                   >
                     <ClipboardList className="h-5 w-5" />
@@ -419,7 +419,7 @@ export default function StudentDashboard() {
                   <button 
                     disabled={isRefreshing}
                     onClick={refreshLinkCode}
-                    className="h-12 w-12 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-gray-500 hover:text-lumina-highlight hover:bg-lumina-highlight/10 transition-all border-dashed"
+                    className="h-12 w-12 rounded-xl bg-surface border border-border flex items-center justify-center text-text-muted hover:text-primary hover:bg-primary/10 transition-all border-dashed"
                     title="Refresh Code"
                   >
                     <RefreshCw className={cn("h-5 w-5", isRefreshing && "animate-spin")} />
@@ -440,7 +440,7 @@ export default function StudentDashboard() {
           action={
             <Link
               href="/student/spaced_repetition"
-              className="inline-flex items-center gap-1.5 text-lumina-highlight font-black uppercase tracking-widest text-[10px] group"
+              className="inline-flex items-center gap-1.5 text-primary font-black uppercase tracking-widest text-[10px] group"
             >
               Open
               <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
@@ -453,15 +453,15 @@ export default function StudentDashboard() {
               <MiniMetric label="Streak" value={getStatValue("Current Streak", "0 day")} />
               <MiniMetric label="Algorithm" value="FSRS v5" />
             </div>
-            <p className="text-sm text-gray-400 leading-relaxed">
+            <p className="text-sm text-text-muted leading-relaxed">
               Daily spaced repetition prevents forgetting. The system schedules each concept
               just before you would naturally forget it, optimizing long-term memory.
             </p>
             <Link
               href="/student/spaced_repetition"
-              className="h-12 w-full rounded-2xl bg-white/[0.04] border border-white/10 text-white font-bold inline-flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+              className="h-12 w-full rounded-2xl bg-surface border border-border text-foreground font-bold inline-flex items-center justify-center gap-2 hover:bg-surface-elevated transition-all"
             >
-              <CheckCircle className="w-4 h-4 text-lumina-highlight" />
+              <CheckCircle className="w-4 h-4 text-primary" />
               Start Today&apos;s Revision
               <ArrowRight className="w-4 h-4" />
             </Link>
@@ -475,7 +475,7 @@ export default function StudentDashboard() {
           action={
             <Link
               href="/student/exam_readiness"
-              className="inline-flex items-center gap-1.5 text-lumina-highlight font-black uppercase tracking-widest text-[10px] group"
+              className="inline-flex items-center gap-1.5 text-primary font-black uppercase tracking-widest text-[10px] group"
             >
               Full Report
               <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
@@ -491,13 +491,13 @@ export default function StudentDashboard() {
               <MiniMetric label="Risk" value={normalizeLabel(meta?.riskLevel || "Low")} />
               <MiniMetric label="Status" value="On Track" />
             </div>
-            <p className="text-sm text-gray-400 leading-relaxed">
+            <p className="text-sm text-text-muted leading-relaxed">
               Based on your BKT mastery model, knowledge graph coverage, and recent
               assessment performance. Weak areas are prioritised automatically.
             </p>
             <Link
               href="/student/exam_readiness"
-              className="h-12 w-full rounded-2xl bg-white/[0.04] border border-white/10 text-white font-bold inline-flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+              className="h-12 w-full rounded-2xl bg-surface border border-border text-foreground font-bold inline-flex items-center justify-center gap-2 hover:bg-surface-elevated transition-all"
             >
               <Target className="w-4 h-4 text-lumina-highlight" />
               View Readiness Report

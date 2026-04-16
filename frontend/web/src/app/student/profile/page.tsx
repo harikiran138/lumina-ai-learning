@@ -85,14 +85,14 @@ export default function StudentProfile() {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center text-white">Loading profile...</div>;
+    return <div className="p-8 text-center text-foreground">Loading profile...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="min-h-screen bg-black text-foreground relative overflow-hidden">
       {/* Background Effects */}
       <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900" />
+        <div className="absolute inset-0 bg-gradient-to-br from-surface via-black to-surface" />
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
       </div>
 
@@ -163,7 +163,7 @@ export default function StudentProfile() {
                     {skill}
                   </span>
                 )) || (
-                  <span className="text-gray-500 text-sm">
+                  <span className="text-text-muted text-sm">
                     No skills listed
                   </span>
                 )}
@@ -171,18 +171,18 @@ export default function StudentProfile() {
             </div>
 
             {/* AI Tutor Card */}
-            <div className="glass-card p-6 relative overflow-hidden group backdrop-blur-md bg-black/40 border-white/10">
-              <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 to-amber-600/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-2 relative z-10 flex items-center">
-                <Bot className="w-4 h-4 mr-2 text-lumina-primary" />
+            <div className="glass-card p-6 relative overflow-hidden group backdrop-blur-md bg-black/40 border-border">
+              <div className="absolute inset-0 bg-gradient-to-br from-warning/20 to-warning/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-2 relative z-10 flex items-center">
+                <Bot className="w-4 h-4 mr-2 text-primary" />
                 AI Tutor
               </h3>
-              <p className="text-xs text-gray-400 mb-4 relative z-10">
+              <p className="text-xs text-text-muted mb-4 relative z-10">
                 Get personalized learning assistance.
               </p>
               <a
                 href="/student/ai_tutor"
-                className="flex items-center justify-center w-full py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 text-white rounded-lg font-medium transition-all relative z-10 shadow-lg shadow-yellow-900/20"
+                className="flex items-center justify-center w-full py-2 bg-gradient-to-r from-warning to-warning hover:from-warning/80 hover:to-warning/80 text-warning-foreground rounded-lg font-medium transition-all relative z-10 shadow-lg shadow-warning/20"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Open AI Tutor
@@ -191,16 +191,16 @@ export default function StudentProfile() {
 
             {/* Parent Linking Card */}
             {profile?.parent_link_code && (
-              <div className="glass-card p-6 relative overflow-hidden group backdrop-blur-md bg-black/40 border-white/10 mt-6">
-                <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-2 flex items-center">
-                  <LinkIcon className="w-4 h-4 mr-2 text-lumina-primary" />
+              <div className="glass-card p-6 relative overflow-hidden group backdrop-blur-md bg-black/40 border-border mt-6">
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-2 flex items-center">
+                  <LinkIcon className="w-4 h-4 mr-2 text-primary" />
                   Parent Linking
                 </h3>
-                <p className="text-xs text-gray-400 mb-4">
+                <p className="text-xs text-text-muted mb-4">
                   Share this code with your parent to link your accounts.
                 </p>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 font-mono text-center text-lumina-primary tracking-widest text-lg">
+                  <div className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 font-mono text-center text-primary tracking-widest text-lg">
                     {profile.parent_link_code}
                   </div>
                   <button 
@@ -210,19 +210,19 @@ export default function StudentProfile() {
                         alert("Code copied to clipboard!");
                       }
                     }}
-                    className="p-2 hover:bg-white/5 rounded-lg border border-white/10 transition-colors"
+                    className="p-2 hover:bg-surface rounded-lg border border-border transition-colors"
                     title="Copy to clipboard"
                   >
-                    <Copy className="w-4 h-4 text-gray-400 hover:text-white" />
+                    <Copy className="w-4 h-4 text-text-muted hover:text-foreground" />
                   </button>
                 </div>
               </div>
             )}
 
             {/* Adaptive Mastery Card */}
-            <div className="glass-card p-6 relative overflow-hidden group backdrop-blur-md bg-black/40 border-white/10 mt-6">
-              <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4 flex items-center">
-                <Brain className="w-4 h-4 mr-2 text-pink-500" />
+            <div className="glass-card p-6 relative overflow-hidden group backdrop-blur-md bg-black/40 border-border mt-6">
+              <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4 flex items-center">
+                <Brain className="w-4 h-4 mr-2 text-success" />
                 Knowledge Mastery
               </h3>
 
@@ -232,16 +232,16 @@ export default function StudentProfile() {
                     ([concept, score]: [string, any]) => (
                       <div key={concept}>
                         <div className="flex justify-between text-xs mb-1">
-                          <span className="text-gray-300 capitalize">
+                          <span className="text-foreground capitalize">
                             {concept}
                           </span>
-                          <span className="text-pink-400 font-mono">
+                          <span className="text-success font-mono">
                             {(score * 100).toFixed(0)}%
                           </span>
                         </div>
-                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-2 w-full bg-surface rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-pink-500 to-yellow-500 transition-all duration-1000"
+                            className="h-full bg-gradient-to-r from-success to-warning transition-all duration-1000"
                             style={{ width: `${score * 100}%` }}
                           />
                         </div>
@@ -250,9 +250,9 @@ export default function StudentProfile() {
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-gray-500">No assessment data yet.</p>
+                <p className="text-xs text-text-muted">No assessment data yet.</p>
               )}
-              <p className="text-xs text-gray-400 mt-4">
+              <p className="text-xs text-text-muted mt-4">
                 Based on BKT Analysis
               </p>
             </div>
@@ -261,12 +261,12 @@ export default function StudentProfile() {
           {/* Right Column - Activity & Certificates & Badges */}
           <div className="lg:col-span-2 space-y-6">
             {/* Badges Section */}
-            <div className="glass-card p-6 backdrop-blur-md bg-black/40 border-white/10">
+            <div className="glass-card p-6 backdrop-blur-md bg-black/40 border-border">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-lg font-semibold text-foreground">
                   Earned Badges
                 </h3>
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-text-muted">
                   {badges.length} Unlocked
                 </span>
               </div>
@@ -297,24 +297,24 @@ export default function StudentProfile() {
                   })}
                 </div>
               ) : (
-                <div className="text-center py-6 border border-white/5 rounded-xl bg-white/5">
-                  <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-2 text-gray-600">
+                <div className="text-center py-6 border border-surface rounded-xl bg-surface">
+                  <div className="w-12 h-12 bg-surface-elevated rounded-full flex items-center justify-center mx-auto mb-2 text-text-muted">
                     <Award className="w-6 h-6" />
                   </div>
-                  <p className="text-gray-400 text-sm">No badges yet.</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-text-muted text-sm">No badges yet.</p>
+                  <p className="text-xs text-text-secondary">
                     Complete modules to earn them!
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="glass-card p-6 backdrop-blur-md bg-black/40 border-white/10">
+            <div className="glass-card p-6 backdrop-blur-md bg-black/40 border-border">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-lg font-semibold text-foreground">
                   Certificates
                 </h3>
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-text-muted">
                   {certificates.length} Earned
                 </span>
               </div>

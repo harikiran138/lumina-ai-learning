@@ -63,19 +63,19 @@ export default function StudentCourses() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             Learning Portal
           </h1>
-          <p className="text-gray-400">Manage your learning journey</p>
+          <p className="text-text-muted">Manage your learning journey</p>
         </div>
 
-        <div className="flex bg-white/5 p-1 rounded-lg">
+        <div className="flex bg-surface p-1 rounded-lg">
           <button
             onClick={() => setActiveTab("my_courses")}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
               activeTab === "my_courses"
-                ? "bg-lumina-primary text-black"
-                : "text-gray-400 hover:text-white"
+                ? "bg-primary text-primary-foreground"
+                : "text-text-muted hover:text-foreground"
             }`}
           >
             My Courses
@@ -84,8 +84,8 @@ export default function StudentCourses() {
             onClick={() => setActiveTab("explore")}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
               activeTab === "explore"
-                ? "bg-lumina-primary text-black"
-                : "text-gray-400 hover:text-white"
+                ? "bg-primary text-primary-foreground"
+                : "text-text-muted hover:text-foreground"
             }`}
           >
             Explore Courses
@@ -95,7 +95,7 @@ export default function StudentCourses() {
 
       {isLoading ? (
         <div className="flex justify-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lumina-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : (
         <>
@@ -110,12 +110,12 @@ export default function StudentCourses() {
                   />
                 ))
               ) : (
-                <div className="col-span-full py-12 text-center text-gray-500">
+                <div className="col-span-full py-12 text-center text-text-muted">
                   <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-20" />
                   <p>You haven't enrolled in any courses yet.</p>
                   <button
                     onClick={() => setActiveTab("explore")}
-                    className="mt-4 text-lumina-primary hover:underline"
+                    className="mt-4 text-primary hover:underline"
                   >
                     Explore now
                   </button>
@@ -128,8 +128,8 @@ export default function StudentCourses() {
             <div className="space-y-12">
               {exploreData.enrolled.length > 0 && (
                 <section>
-                  <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-success" />
                     Your Enrolled Courses
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -146,8 +146,8 @@ export default function StudentCourses() {
               )}
 
               <section>
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-lumina-primary" />
+                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-primary" />
                   Recommended For You
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -161,7 +161,7 @@ export default function StudentCourses() {
                       />
                     ))
                   ) : (
-                    <div className="col-span-full text-gray-500">
+                    <div className="col-span-full text-text-muted">
                       No new courses available.
                     </div>
                   )}
@@ -178,14 +178,14 @@ export default function StudentCourses() {
 function CourseCard({ course, isEnrolled, compact, onEnroll }: any) {
   return (
     <div
-      className={`glass-card group hover:border-lumina-primary/30 transition-all duration-300 flex flex-col h-full ${
+      className={`glass-card group hover:border-primary/30 transition-all duration-300 flex flex-col h-full ${
         compact ? "p-0" : ""
       }`}
     >
       <div
         className={`${
           compact ? "h-32" : "h-48"
-        } bg-gradient-to-br from-gray-800 to-gray-900 relative rounded-t-xl overflow-hidden`}
+        } bg-gradient-to-br from-surface to-surface-elevated relative rounded-t-xl overflow-hidden`}
       >
         <img
           src={
@@ -196,7 +196,7 @@ function CourseCard({ course, isEnrolled, compact, onEnroll }: any) {
           className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
         />
         {isEnrolled && (
-          <div className="absolute top-2 right-2 bg-black/60 px-2 py-1 rounded text-xs text-white backdrop-blur-md border border-white/10">
+          <div className="absolute top-2 right-2 bg-black/60 px-2 py-1 rounded text-xs text-foreground backdrop-blur-md border border-border">
             Enrolled
           </div>
         )}
@@ -206,23 +206,23 @@ function CourseCard({ course, isEnrolled, compact, onEnroll }: any) {
         <h3
           className={`${
             compact ? "text-sm" : "text-lg"
-          } font-bold text-white mb-2 group-hover:text-lumina-primary transition-colors line-clamp-2`}
+          } font-bold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2`}
         >
           {course.name}
         </h3>
         {!compact && (
           <>
-            <p className="text-sm text-gray-400 mb-4 line-clamp-3 flex-1">
+            <p className="text-sm text-text-muted mb-4 line-clamp-3 flex-1">
               {course.description || "Course details will appear here once your instructor publishes them."}
             </p>
-            <div className="space-y-2 mb-4 text-xs text-gray-500">
+            <div className="space-y-2 mb-4 text-xs text-text-secondary">
               {course.facultyName ? (
-                <p>Instructor: <span className="text-gray-300">{course.facultyName}</span></p>
+                <p>Instructor: <span className="text-foreground">{course.facultyName}</span></p>
               ) : null}
               {isEnrolled ? (
                 <p>
-                  Progress: <span className="text-gray-300">{Math.round(course.progress || 0)}%</span>
-                  {" "}• Mastery: <span className="text-gray-300">{Math.round(course.mastery || 0)}%</span>
+                  Progress: <span className="text-foreground">{Math.round(course.progress || 0)}%</span>
+                  {" "}• Mastery: <span className="text-foreground">{Math.round(course.mastery || 0)}%</span>
                 </p>
               ) : null}
             </div>
@@ -235,14 +235,14 @@ function CourseCard({ course, isEnrolled, compact, onEnroll }: any) {
               href={`/student/courses/${course.id}`}
               className={`w-full text-center px-4 py-2 ${
                 compact ? "text-xs px-2 py-1" : ""
-              } bg-white/5 hover:bg-lumina-primary hover:text-black border border-white/10 rounded-lg font-medium transition-all`}
+              } bg-surface hover:bg-primary hover:text-primary-foreground border border-border rounded-lg font-medium transition-all`}
             >
               Continue
             </Link>
           ) : (
             <button
               onClick={onEnroll}
-              className="w-full px-4 py-2 bg-lumina-primary text-black hover:bg-lumina-secondary rounded-lg font-bold text-sm transition-all"
+              className="w-full px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/80 rounded-lg font-bold text-sm transition-all"
             >
               Enroll Now
             </button>

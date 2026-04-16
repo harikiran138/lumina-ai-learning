@@ -87,21 +87,21 @@ function AssignmentsContent() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-            <FileText className="text-amber-500" />
+          <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
+            <FileText className="text-warning" />
             My Assignments
           </h1>
-          <p className="text-gray-400">
+          <p className="text-text-muted">
             View upcoming deadlines and submit your work for grading.
           </p>
         </div>
       </div>
 
       {assignments.length === 0 ? (
-        <div className="text-center py-32 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-xl">
-          <CheckCircle className="w-16 h-16 text-green-500/30 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">All caught up!</h3>
-          <p className="text-gray-400">You have no pending assignments at the moment.</p>
+        <div className="text-center py-32 bg-surface border border-border rounded-3xl backdrop-blur-xl">
+          <CheckCircle className="w-16 h-16 text-success/30 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-foreground mb-2">All caught up!</h3>
+          <p className="text-text-muted">You have no pending assignments at the moment.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -115,22 +115,22 @@ function AssignmentsContent() {
             return (
               <div
                 key={asm.id}
-                className="group relative bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all duration-300 backdrop-blur-xl flex flex-col h-full"
+                className="group relative bg-surface border border-border rounded-3xl p-6 hover:bg-surface-elevated transition-all duration-300 backdrop-blur-xl flex flex-col h-full"
               >
                 {/* Status Badge */}
                 <div className="absolute top-4 right-4">
                   {isGraded ? (
-                    <div className="px-3 py-1 bg-green-500/10 text-green-400 border border-green-500/20 rounded-lg text-xs font-bold flex items-center gap-1.5">
+                    <div className="px-3 py-1 bg-success/10 text-success border border-success/20 rounded-lg text-xs font-bold flex items-center gap-1.5">
                       <Trophy size={14} />
                       GRADED
                     </div>
                   ) : isSubmitted ? (
-                    <div className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg text-xs font-bold flex items-center gap-1.5">
+                    <div className="px-3 py-1 bg-info/10 text-info border border-info/20 rounded-lg text-xs font-bold flex items-center gap-1.5">
                       <CheckCircle size={14} />
                       SUBMITTED
                     </div>
                   ) : (
-                    <div className="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-lg text-xs font-bold flex items-center gap-1.5">
+                    <div className="px-3 py-1 bg-warning/10 text-warning border border-warning/20 rounded-lg text-xs font-bold flex items-center gap-1.5">
                       <Clock size={14} />
                       PENDING
                     </div>
@@ -138,58 +138,58 @@ function AssignmentsContent() {
                 </div>
 
                 <div className="mb-4">
-                  <div className="bg-amber-500/10 text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-widest w-fit mb-3 border border-amber-500/10">
+                  <div className="bg-warning/10 text-warning text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-widest w-fit mb-3 border border-warning/10">
                     {asm.course_name || asm.courseName || "Coursework"}
                   </div>
-                  <h3 className="text-xl font-bold text-white group-hover:text-amber-500 transition-colors mb-2">
+                  <h3 className="text-xl font-bold text-foreground group-hover:text-warning transition-colors mb-2">
                     {asm.title}
                   </h3>
-                  <p className="text-sm text-gray-400 line-clamp-2 leading-relaxed">
+                  <p className="text-sm text-text-muted line-clamp-2 leading-relaxed">
                     {asm.description}
                   </p>
                 </div>
 
-                <div className="mt-auto space-y-4 pt-4 border-t border-white/5">
+                <div className="mt-auto space-y-4 pt-4 border-t border-border">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 flex items-center gap-1.5">
+                    <span className="text-text-secondary flex items-center gap-1.5">
                       <Clock size={14} />
                       Due Date:
                     </span>
-                    <span className="text-gray-300 font-medium">
+                    <span className="text-foreground font-medium">
                       {new Date(asm.due_date).toLocaleDateString()}
                     </span>
                   </div>
 
                   {isGraded ? (
-                    <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 p-4 rounded-2xl border border-green-500/20">
+                    <div className="bg-gradient-to-br from-success/10 to-success/5 p-4 rounded-2xl border border-success/20">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-green-400 font-bold uppercase tracking-wider">Your Score</span>
-                        <span className="text-2xl font-black text-white">{normalizedScore}<span className="text-sm text-green-500/50">/100</span></span>
+                        <span className="text-xs text-success font-bold uppercase tracking-wider">Your Score</span>
+                        <span className="text-2xl font-black text-foreground">{normalizedScore}<span className="text-sm text-success/50">/100</span></span>
                       </div>
                       {submission.feedback && (
-                        <div className="text-xs text-gray-400 italic">
+                        <div className="text-xs text-text-muted italic">
                           "{submission.feedback}"
                         </div>
                       )}
                     </div>
                   ) : isSubmitted ? (
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                    <div className="bg-surface p-4 rounded-2xl border border-border">
                       <div className="flex items-center justify-between mb-3 text-sm">
-                        <span className="text-gray-500">Working URL:</span>
+                        <span className="text-text-secondary">Working URL:</span>
                         <a 
                             href={submission.content_url} 
                             target="_blank" 
-                            className="text-amber-500 hover:underline flex items-center gap-1"
+                            className="text-warning hover:underline flex items-center gap-1"
                         >
                             View Submission <ExternalLink size={12} />
                         </a>
                       </div>
-                      <div className="text-[10px] text-gray-600 uppercase font-bold tracking-widest text-center">
+                      <div className="text-[10px] text-text-muted uppercase font-bold tracking-widest text-center">
                         Waiting for faculty review
                       </div>
                     </div>
                   ) : (
-                    <label className="flex items-center justify-center gap-2 w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-2xl transition-all cursor-pointer shadow-[0_0_20px_rgba(245,158,11,0.2)] active:scale-95 disabled:opacity-50">
+                    <label className="flex items-center justify-center gap-2 w-full py-3.5 bg-warning hover:bg-warning/80 text-warning-foreground font-bold rounded-2xl transition-all cursor-pointer shadow-[0_0_20px_rgba(245,158,11,0.2)] active:scale-95 disabled:opacity-50">
                       {submitting === asm.id ? (
                         <Loader2 className="animate-spin w-5 h-5" />
                       ) : (

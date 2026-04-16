@@ -222,8 +222,8 @@ export default function StudentSettings() {
               onClick={() => setActiveSection(section.id)}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all min-w-0 ${
                 activeSection === section.id
-                  ? "bg-lumina-primary/10 text-lumina-primary border border-lumina-primary/20"
-                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+                  ? "bg-primary/10 text-primary border border-primary/20"
+                  : "text-text-muted hover:bg-surface hover:text-foreground"
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">
@@ -236,10 +236,10 @@ export default function StudentSettings() {
             </button>
           ))}
 
-          <div className="pt-6 mt-6 border-t border-white/10">
+          <div className="pt-6 mt-6 border-t border-border">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors min-w-0"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-danger hover:bg-danger/10 transition-colors min-w-0"
             >
               <LogOut className="w-5 h-5 shrink-0" />
               <span className="font-medium truncate">Sign Out</span>
@@ -251,17 +251,17 @@ export default function StudentSettings() {
       <div className="flex-1 glass-card p-6 lg:p-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h2 className="text-xl font-bold text-white mb-1">
+            <h2 className="text-xl font-bold text-foreground mb-1">
               {sections.find((section) => section.id === activeSection)?.label}
             </h2>
-            <p className="text-gray-400 text-sm">
+            <p className="text-text-muted text-sm">
               These settings now persist through your student profile instead of staying as placeholders.
             </p>
           </div>
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-lumina-primary text-black font-bold rounded-lg hover:bg-lumina-secondary transition-colors disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/80 transition-colors disabled:opacity-60"
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Changes
@@ -269,12 +269,12 @@ export default function StudentSettings() {
         </div>
 
         {feedback && (
-          <div className="mb-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-300">
+          <div className="mb-6 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
             {feedback}
           </div>
         )}
         {error && (
-          <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div className="mb-6 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
             {error}
           </div>
         )}
@@ -282,7 +282,7 @@ export default function StudentSettings() {
         {activeSection === "profile" && (
           <div className="space-y-8">
             <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-full bg-gray-800 border-2 border-white/10 overflow-hidden">
+              <div className="w-24 h-24 rounded-full bg-surface-elevated border-2 border-border overflow-hidden">
                 <img
                   src={
                     settings.avatar ||
@@ -293,7 +293,7 @@ export default function StudentSettings() {
                 />
               </div>
               <div className="flex-1 space-y-2">
-                <label className="text-sm font-medium text-gray-300">Avatar URL</label>
+                <label className="text-sm font-medium text-foreground">Avatar URL</label>
                 <input
                   type="text"
                   value={settings.avatar}

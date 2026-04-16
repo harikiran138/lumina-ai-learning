@@ -24,18 +24,18 @@ export default function StudentGradesPage() {
   }, []);
 
   return (
-    <div className="p-8 max-w-5xl mx-auto text-white space-y-6">
+    <div className="p-8 max-w-5xl mx-auto text-foreground space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Results</h1>
-        <p className="text-gray-400">Your graded submissions and feedback.</p>
+        <p className="text-text-muted">Your graded submissions and feedback.</p>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="animate-spin w-8 h-8 text-amber-500" />
+          <Loader2 className="animate-spin w-8 h-8 text-warning" />
         </div>
       ) : error ? (
-        <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-4 rounded-xl">
+        <div className="bg-danger/10 border border-danger/50 text-danger p-4 rounded-xl">
           {error}
         </div>
       ) : (
@@ -43,24 +43,24 @@ export default function StudentGradesPage() {
           {grades.map((grade: any) => (
             <div
               key={grade.submissionId}
-              className="bg-white/5 border border-white/10 rounded-2xl p-5"
+              className="bg-surface border border-border rounded-2xl p-5"
             >
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                 <div>
-                  <h3 className="text-lg font-semibold">{grade.assignmentTitle}</h3>
-                  <p className="text-sm text-gray-400">{grade.courseName}</p>
+                  <h3 className="text-lg font-semibold text-foreground">{grade.assignmentTitle}</h3>
+                  <p className="text-sm text-text-muted">{grade.courseName}</p>
                 </div>
-                <div className="text-2xl font-bold text-green-400">
+                <div className="text-2xl font-bold text-success">
                   {grade.marks ?? "-"}
                 </div>
               </div>
               {grade.feedback && (
-                <p className="text-sm text-gray-300 mt-3">{grade.feedback}</p>
+                <p className="text-sm text-foreground mt-3">{grade.feedback}</p>
               )}
             </div>
           ))}
           {grades.length === 0 && (
-            <div className="text-gray-400">No graded submissions yet.</div>
+            <div className="text-text-muted">No graded submissions yet.</div>
           )}
         </div>
       )}
