@@ -6,52 +6,72 @@ import structlog
 
 from app.api.deps import get_current_student as get_current_student
 from app.database.scoped_db import get_scoped_db
-from app.store.academic_store import AcademicStore
+from app.services.ai_queue_service import AIQueueService
 
 router = APIRouter()
 log = structlog.get_logger(__name__)
 
+def get_ai_queue_service(db=Depends(get_scoped_db)) -> AIQueueService:
+    return AIQueueService(db=db)
+
 class AgentQueryRequest(BaseModel):
     query: str
     course_id: Optional[str] = None
+    class_id: Optional[str] = None # Optional; will be resolved from student enrollment if missing
     context: Optional[Dict[str, Any]] = None
 
 @router.post("/tutor/ask")
 async def ask_tutor_agent(
     request: AgentQueryRequest,
     current_user: dict = Depends(get_current_student),
+    ai_queue: AIQueueService = Depends(get_ai_queue_service)
 ):
-    """Query the AI Tutor agent. Logic uses ai_answer_queue to track human-in-the-loop verification."""
+    """Query the AI Tutor agent. Logic uses AIQueueService to track verification."""
     db = get_scoped_db(current_user)
     academic_store = AcademicStore(db=db)
     
-    # 1. Get primary teacher for the course to fulfill schema NOT NULL requirement
+    # 1. Resolve Class ID and Teacher ID
+    class_id = request.class_id
+    if not class_id:
+        enrollment = await academic_store.get_student_enrollment(current_user["id"])
+        class_id = enrollment.get("class_id") if enrollment else None
+    
+    if not class_id:
+        raise HTTPException(status_code=400, detail="Student is not enrolled in any class")
+
     teacher_id = None
     if request.course_id:
         try:
             assignment = await academic_store.get_teacher_assignment(request.course_id)
             teacher_id = (assignment or {}).get("teacher_id")
-        except:
-            pass
+        except: pass
     
-    # Fallback to a system-wide AI auditor or just fail if no teacher
     if not teacher_id:
-         # In a real Lumina setup, there's always an HOD/Admin who can verify
-         teacher_id = current_user["id"] # Fallback to student (self-verify stub) or a system ID
+         # Fallback to HOD or Admin
+         dept_id = current_user.get("department_id")
+         if dept_id:
+             dept = await academic_store.get_department_by_id(dept_id)
+             teacher_id = dept.get("hod_id")
+    
+    if not teacher_id:
+        # Final fallback to self (system placeholder)
+        teacher_id = current_user["id"]
     
     data = {
         "student_id": current_user["id"],
         "teacher_id": teacher_id,
         "course_id": request.course_id,
+        "class_id": class_id,
         "student_question": request.query,
         "status": "pending",
-        "created_at": "now()"
     }
     
     try:
-        res = db.table("ai_answer_queue").insert(data).execute()
-        new_id = res.data[0]["id"]
-        return {"success": True, "id": str(new_id), "status": "pending"}
+        res = await ai_queue.create_queue_item(data)
+        if not res:
+            raise ValueError("Failed to create queue item")
+            
+        return {"success": True, "id": str(res["id"]), "status": "pending"}
     except Exception as e:
         log.error("ai_tutor_ask_failed", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to queue AI query")
@@ -60,11 +80,11 @@ async def ask_tutor_agent(
 async def get_tutor_status(
     answer_id: str,
     current_user: dict = Depends(get_current_student),
+    ai_queue: AIQueueService = Depends(get_ai_queue_service)
 ):
     """Get the completion status of an AI Tutor query."""
-    db = get_scoped_db(current_user)
     try:
-        job = await db.fetch_one("ai_answer_queue", {"id": answer_id})
+        job = await ai_queue.get_item_details(answer_id)
         if not job:
             raise HTTPException(status_code=404, detail="Answer not found")
 

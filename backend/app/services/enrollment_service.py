@@ -6,6 +6,7 @@ This service uses student_enrollments (canonical) exclusively.
 The legacy `enrollments` table is only used for course-progress tracking (StudentStore).
 """
 
+from datetime import datetime
 from typing import Optional
 from app.store.academic_store import AcademicStore
 from app.core.logging import structlog
@@ -31,20 +32,41 @@ async def enroll_student_in_class(
     Raises ValueError if already enrolled.
     """
     store = AcademicStore(db=db)
+    
+    # 1. Fetch class info to get program/semester/course
+    cls = await store.get_class_by_id(class_id)
+    if not cls:
+        raise ValueError("Class not found")
+        
+    program_id = cls.get("program_id")
+    # Use provided semester_id or fall back to class semester
+    final_semester_id = semester_id or cls.get("semester_id")
+    course_id = cls.get("course_id")
 
+    # 2. Check existing enrollment
     existing = await store.get_student_enrollments_compat(
-        student_id=student_id, class_id=class_id
+        student_id=student_id, class_id=class_id, course_id=course_id
     )
     if existing:
-        raise ValueError("Student already enrolled in this class")
+        raise ValueError("Student already enrolled in this class/course")
 
+    # 3. Insert into student_enrollments
     result = await db.insert("student_enrollments", {
         "student_id": student_id,
         "class_id": class_id,
-        "semester_id": semester_id,
+        "course_id": course_id,
+        "program_id": program_id,
+        "current_semester_id": final_semester_id,
         "status": "active",
+        "progress": {
+            "completed_lessons": [],
+            "mastery": 0.0,
+            "hours_spent": 0.0,
+            "streak": 0,
+            "last_accessed": datetime.utcnow().isoformat(),
+        }
     })
-    log.info("student_enrolled_in_class", student_id=student_id, class_id=class_id)
+    log.info("student_enrolled_in_class", student_id=student_id, class_id=class_id, course_id=course_id)
     return result
 
 

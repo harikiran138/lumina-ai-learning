@@ -1079,6 +1079,7 @@ CREATE TABLE IF NOT EXISTS classes (
     academic_year TEXT,
     batch_name TEXT,
     class_name TEXT,
+    course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
     batch TEXT,
     section TEXT,
     department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
@@ -1093,11 +1094,13 @@ CREATE TABLE IF NOT EXISTS student_enrollments (
     program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
     current_semester_id UUID REFERENCES semesters(id) ON DELETE SET NULL,
     class_id UUID REFERENCES classes(id) ON DELETE SET NULL,
+    course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
     year_of_study INTEGER DEFAULT 1,
     status TEXT DEFAULT 'active',
+    progress JSONB DEFAULT '{"completed_lessons": [], "mastery": 0, "hours_spent": 0, "streak": 0}',
     enrolled_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(student_id, program_id)
+    UNIQUE(student_id, course_id, class_id)
 );
 
 CREATE TABLE IF NOT EXISTS student_credits (

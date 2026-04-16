@@ -73,28 +73,44 @@ class AIQueueService:
                 return row
         return None
 
-    async def get_all_for_admin(
-        self, class_id: Optional[str] = None, course_id: Optional[str] = None
-    ) -> List[AIQueueAdminView]:
-        """
-        Admin sees all queue items. Optionally scoped to a class or course.
-        """
+    async def get_all_for_admin(self, course_id: Optional[str] = None) -> List[AIQueueAdminView]:
+        """Get all items for admin view, optionally filtered by course."""
         rows = await self.store.get_all_items(course_id=course_id)
-        # Service level filtering for class
+        results = []
+        for row in rows:
+            item = AIQueueAdminView(**row)
+            results.append(item)
+        return results
+
+    async def get_queue(self, role: str = "admin") -> List[AIQueueAdminView]:
+        """
+        Legacy wrapper for admin queue access.
+        STRICT: Only used for role-based global access.
+        """
+        if role in {"admin", "super_admin", "college_admin"}:
+            return await self.get_all_for_admin()
+        return []
+
+    async def get_pending_for_teacher(self, db: Any, teacher_id: str, class_id: Optional[str]) -> List[AIQueueTeacherView]:
+        """
+        Teacher queue with auth check.
+        - class_id provided: scope to that class with access verification.
+        - class_id None: return all pending items where teacher_id matches.
+        """
         if class_id:
-            rows = [r for r in rows if str(r.get("class_id")) == str(class_id)]
-        return [AIQueueAdminView.from_item(row) for row in rows]
+            if not await verify_teacher_has_class_access(db, teacher_id, class_id):
+                log.warning("teacher_access_denied", teacher_id=teacher_id, class_id=class_id)
+                return []
+            rows = await self.store.get_pending_items_for_class(class_id)
+        else:
+            # Cross-class: items directly assigned to this teacher
+            rows = await self.store.get_teacher_items(teacher_id)
+            rows = [
+                r for r in rows
+                if r.get("status") in {"pending", "ai_answered", "escalated_to_faculty"}
+                and not bool(r.get("released_to_student", False))
+            ]
 
-    async def get_pending_for_teacher(self, db: Any, teacher_id: str, class_id: str) -> List[AIQueueTeacherView]:
-        """
-        Canonical method for teacher to get items for a specific class with auth check.
-        """
-        if not await verify_teacher_has_class_access(db, teacher_id, class_id):
-            log.warning("teacher_access_denied", teacher_id=teacher_id, class_id=class_id)
-            return []
-
-        rows = await self.store.get_pending_items_for_class(class_id)
-        
         # Enrich with student names
         student_ids = list({row.get("student_id") for row in rows if row.get("student_id")})
         student_info = await self.store.get_student_info(student_ids)
@@ -103,76 +119,12 @@ class AIQueueService:
         results = []
         for row in rows:
             student = student_lookup.get(str(row.get("student_id")), {})
-            item = AIQueueTeacherView.from_item(row)
-            # DTO enrichment if needed (schema handles most)
+            # Merge student name into the row so the DTO can expose it
+            enriched_row = {**row, "student_name": student.get("full_name") or student.get("name")}
+            item = AIQueueTeacherView.from_item(enriched_row)
             results.append(item)
         return results
 
-    async def get_queue(
-        self,
-        teacher_id: str,
-        course_id: Optional[str] = None,
-        role: str = "teacher",
-    ) -> Dict[str, Any]:
-        """
-        Retrieve pending/provisional questions for review. 
-        Maintains legacy response shape for the dashboard.
-        """
-        rows = await self.store.get_all_items(course_id=course_id)
-
-        # Filter by role
-        if role == "teacher":
-            rows = [
-                row for row in rows
-                if str(row.get("teacher_id")) == str(teacher_id)
-                and not bool(row.get("released_to_student", False))
-                and row.get("status") in {"pending", "ai_answered", "escalated_to_faculty"}
-            ]
-        elif role == "hod":
-            rows = [row for row in rows if row.get("status") == "escalated_to_hod"]
-        elif role in {"admin", "super_admin", "college_admin"}:
-             rows = [row for row in rows if not bool(row.get("released_to_student", False))]
-        else:
-            return {"items": [], "total_pending": 0, "avg_wait_time_sec": 0}
-
-        # Enrich with student info
-        student_ids = list({row.get("student_id") for row in rows if row.get("student_id")})
-        student_info = await self.store.get_student_info(student_ids)
-        student_lookup = {str(item.get("id")): item for item in student_info}
-
-        items: List[Dict[str, Any]] = []
-        created_times = []
-
-        for row in rows:
-            student = student_lookup.get(str(row.get("student_id")), {})
-            wait_sec = self._calc_pending_time(row.get("created_at"))
-            items.append({
-                "id": row.get("id"),
-                "question_id": row.get("id"),
-                "question_text": row.get("student_question", ""),
-                "student_name": student.get("full_name") or student.get("email") or "Student",
-                "student_email": student.get("email") or "",
-                "course_id": row.get("course_id"),
-                "course_name": f"Course {row.get('course_id', '')}",
-                "ai_draft": row.get("ai_generated_answer", ""),
-                "ai_confidence": row.get("ai_confidence"),
-                "status": row.get("status", "pending"),
-                "created_at": row.get("created_at"),
-                "time_pending_sec": wait_sec,
-                "released_to_student": bool(row.get("released_to_student", False)),
-                "request_mode": row.get("request_mode"),
-            })
-            if row.get("created_at"):
-                created_times.append(wait_sec)
-
-        total_pending = len([i for i in items if i["status"] != "approved"])
-        avg_wait = sum(created_times) / len(created_times) if created_times else 0
-
-        return {
-            "items": items,
-            "total_pending": total_pending,
-            "avg_wait_time_sec": int(avg_wait),
-        }
 
     @staticmethod
     def _calc_pending_time(created_at: Optional[str]) -> int:

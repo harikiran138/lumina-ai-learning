@@ -37,9 +37,24 @@ export default function StudentMasterListPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
 
+  interface RawStudent {
+    id: string;
+    full_name?: string;
+    name?: string;
+    email?: string;
+    mastery_score?: number;
+    average_mastery?: number;
+    engagement_score?: number;
+    engagement?: number;
+    risk_level?: Student["risk"];
+    last_active?: string;
+    updated_at?: string;
+    streak?: number;
+  }
+
   useEffect(() => {
     api.getTeacherStudents().then((data) => {
-      const mapped: Student[] = (data || []).map((s: any) => ({
+      const mapped: Student[] = (data || []).map((s: RawStudent) => ({
         id: s.id,
         name: s.full_name || s.name || "Student",
         email: s.email || "",

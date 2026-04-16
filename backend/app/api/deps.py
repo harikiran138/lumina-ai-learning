@@ -204,6 +204,21 @@ async def get_current_student(current_user: dict = Depends(get_current_active_us
     role = _ensure_valid_role(current_user)
     if role != "student":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Student privileges required")
+    
+    # Enrichment: Resolve primary enrollment
+    from app.database.supabase_manager import supabase_db
+    try:
+        # Get latest active enrollment
+        enrollment = await supabase_db.fetch_one(
+            "student_enrollments", 
+            {"student_id": current_user["id"], "status": "active"}
+        )
+        if enrollment:
+            current_user["resolved_class_id"] = enrollment.get("class_id")
+            current_user["resolved_course_id"] = enrollment.get("course_id")
+    except Exception:
+        pass
+        
     return current_user
 
 async def get_current_parent(current_user: dict = Depends(get_current_active_user)) -> dict:

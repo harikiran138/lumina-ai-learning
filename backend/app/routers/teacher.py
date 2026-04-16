@@ -6,6 +6,7 @@ from typing import List, Literal, Optional, Dict, Any
 from app.core.logging import structlog
 from app.services.ai_queue_service import AIQueueService
 from app.services.ai_queue_analytics import AIQueueAnalytics
+from app.store.ai_queue_store import AIQueueStore
 
 log = structlog.get_logger()
 
@@ -110,13 +111,31 @@ async def get_teacher_dashboard(
     check_teacher_role(current_user)
     teacher_id = str(current_user.get("id"))
 
-    # Courses the teacher owns directly + courses they have assignments for
-    owned_courses = await course_store.get_courses_by_teacher(teacher_id)
-    
-    # Assignments the teacher owns
-    assignments = await teacher_store.list_teacher_links(teacher_id)
+    # Assignments via teacher_assignments (canonical) — scope all queries to these
+    assignments = await teacher_store.get_teacher_assignments(teacher_id)
+
+    # If teacher has no assignments, return an empty but valid dashboard
+    if not assignments:
+        return {
+            "summary": {
+                "totalStudents": 0, "activeCourses": 0, "avgMastery": None,
+                "pendingGrading": 0, "atRiskStudents": 0, "upcomingDeadlines": 0,
+                "pendingAIVerifications": 0,
+            },
+            "courses": [], "weeklySnapshot": {"publishedCourses": 0, "draftCourses": 0, "assignmentsCreated": 0, "submissionsReceived": 0},
+            "stats": [
+                {"label": "Active Students", "value": "0"},
+                {"label": "Avg. Performance", "value": None},
+                {"label": "Pending Verifications", "value": "0"},
+            ],
+            "alerts": [], "feed": [], "meta": {"role": "teacher", "no_assignments": True},
+        }
+
     assigned_course_ids = {str(item.get("course_id")) for item in assignments if item.get("course_id")}
     class_ids = list({str(item.get("class_id")) for item in assignments if item.get("class_id")})
+
+    # Courses the teacher owns directly + courses they have assignments for
+    owned_courses = await course_store.get_courses_by_teacher(teacher_id)
 
     # Combine owned courses with any assigned courses
     owned_course_ids = {str(c.get("id")) for c in owned_courses}
@@ -141,8 +160,8 @@ async def get_teacher_dashboard(
     
     total_students = len(enrolled_student_ids)
 
-    # Pending submissions
-    pending_submissions = await assignment_store.get_pending_submissions()
+    # Pending submissions - Filtered by teacher's classes to prevent data leak
+    pending_submissions = await assignment_store.get_pending_submissions(class_ids=class_ids)
     pending_count = len(pending_submissions)
 
     # At-risk interventions
@@ -166,6 +185,16 @@ async def get_teacher_dashboard(
     published = sum(1 for c in courses_data if c.get("is_published") or c.get("status") == "Published")
     draft     = len(courses_data) - published
 
+    # AI verifications pending — scoped to teacher's classes only
+    pending_ai_count = 0
+    try:
+        ai_store = AIQueueStore()
+        for cid in class_ids:
+            ai_items = await ai_store.get_pending_items_for_class(cid)
+            pending_ai_count += len(ai_items)
+    except Exception:
+        pending_ai_count = 0
+
     course_cards = [
         {
             "id":          str(c.get("id")),
@@ -173,20 +202,20 @@ async def get_teacher_dashboard(
             "code":        c.get("course_code") or c.get("code") or "",
             "description": c.get("description") or "",
             "status":      "Published" if (c.get("is_published") or c.get("status") == "Published") else "Draft",
-            "students":    total_students if len(courses_data) == 1 else 0, # Simple heuristic for now
+            "students":    total_students,
         }
         for c in courses_data
     ]
 
     return {
         "summary": {
-            "totalStudents":        total_students,
-            "activeCourses":        published,
-            "avgMastery":           78.5, # Default value instead of 0
-            "pendingGrading":       pending_count,
-            "atRiskStudents":       len(active_alerts),
-            "upcomingDeadlines":    0,
-            "pendingAIVerifications": 0,
+            "totalStudents":          total_students,
+            "activeCourses":          published,
+            "avgMastery":             None,
+            "pendingGrading":         pending_count,
+            "atRiskStudents":         len(active_alerts),
+            "upcomingDeadlines":      0,
+            "pendingAIVerifications": pending_ai_count,
         },
         "courses": course_cards,
         "weeklySnapshot": {
@@ -196,9 +225,9 @@ async def get_teacher_dashboard(
             "submissionsReceived": 0,
         },
         "stats": [
-            { "label": "Active Students", "value": str(total_students) },
-            { "label": "Avg. Performance", "value": "78.5%" },
-            { "label": "Retention Rate", "value": "94%" },
+            {"label": "Active Students",       "value": str(total_students)},
+            {"label": "Avg. Performance",      "value": None},
+            {"label": "Pending Verifications", "value": str(pending_ai_count)},
         ],
         "alerts": active_alerts[:5],
         "feed": [
@@ -211,7 +240,7 @@ async def get_teacher_dashboard(
             }
             for s in pending_submissions[:10]
         ],
-        "meta":   {"role": "teacher"},
+        "meta": {"role": "teacher"},
     }
 
 # --- Onboarding ---
@@ -228,7 +257,7 @@ async def get_teacher_onboarding_options(
     check_teacher_role(current_user)
 
     teacher_id = str(current_user.get("id"))
-    assignments = await teacher_store.list_teacher_links(teacher_id)
+    assignments = await teacher_store.get_teacher_assignments(teacher_id)
 
     course_ids = list({item.get("course_id") for item in assignments if item.get("course_id")})
     class_ids = list({item.get("class_id") for item in assignments if item.get("class_id")})
@@ -286,7 +315,7 @@ async def complete_teacher_onboarding(
     teacher_id = str(current_user.get("id"))
     employee_id = current_user.get("employee_id")
     
-    assignments = await teacher_store.list_teacher_links(teacher_id)
+    assignments = await teacher_store.get_teacher_assignments(teacher_id)
     assignment_lookup = {str(item.get("id")): item for item in assignments if item.get("id")}
 
     if assignments and not payload.confirmed_assignment_ids:
@@ -376,7 +405,7 @@ async def list_teacher_subjects(
 
     try:
         # Fetch teacher assignments and courses in parallel
-        assignments = await teacher_store.list_teacher_links(teacher_id)
+        assignments = await teacher_store.get_teacher_assignments(teacher_id)
         courses = await course_store.get_courses_by_teacher(teacher_id)
 
         # Build fast lookup
@@ -526,14 +555,53 @@ async def approve_scaffold(
     })
     return course
 
+# --- Classes ---
+
+@router.get("/classes")
+async def get_teacher_classes(
+    current_user: dict = Depends(get_current_user),
+    teacher_store: TeacherStore = Depends(get_teacher_store),
+    institution_store: InstitutionStore = Depends(get_institution_store),
+):
+    """Return all classes this teacher is assigned to via teacher_assignments."""
+    check_teacher_role(current_user)
+    teacher_id = str(current_user.get("id"))
+
+    assignments = await teacher_store.list_teacher_links(teacher_id)
+    class_ids = list({str(item.get("class_id")) for item in assignments if item.get("class_id")})
+    if not class_ids:
+        return []
+
+    classes = await institution_store.get_classes_by_ids(class_ids)
+    class_lookup = {str(c.get("id")): c for c in classes}
+
+    result = []
+    for assignment in assignments:
+        cid = str(assignment.get("class_id") or "")
+        cls = class_lookup.get(cid)
+        if cls:
+            result.append({
+                "assignment_id": assignment.get("id"),
+                "class_id": cid,
+                "class_name": cls.get("name") or cls.get("class_name") or "",
+                "course_id": assignment.get("course_id"),
+                "batch_id": assignment.get("batch_id"),
+                "semester_id": cls.get("semester_id"),
+                "department_id": cls.get("department_id"),
+                "status": assignment.get("status"),
+            })
+    return result
+
+
 # --- Answer Verification ---
 
 @router.get("/verification/queue")
 async def get_verification_queue(
     current_user: dict = Depends(get_current_user)
 ):
+    """Verification queue is served from /api/teacher/ai-queue (ai_queue.py)."""
     check_teacher_role(current_user)
-# Verification queue moved to ai_governance.py
+    return []  # Redirected to /api/teacher/ai-queue
 
 # --- Physical Submissions ---
 
@@ -665,248 +733,7 @@ async def get_teacher_links_list(
     teacher_store: TeacherStore = Depends(get_teacher_store)
 ):
     check_teacher_role(current_user)
-    return await teacher_store.list_teacher_links(str(current_user["id"]))
-
-
-# --- Live Intervention & Question Override ---
+    return await teacher_store.get_teacher_assignments(str(current_user["id"]))
 
 
 # Live intervention and question override moved to assessment.py
-
-
-# --- AI Tutor Answer Queue Management ---
-
-from app.services.ai_tutor_service import AITutorService
-from app.services.realtime_service import RealtimeService
-from app.core.logging import structlog
-
-log = structlog.get_logger()
-
-
-class QueueFilterOptions(BaseModel):
-    status: Optional[Literal["PROVISIONAL", "PENDING", "APPROVED", "REJECTED"]] = None
-    student_id: Optional[str] = None
-    subject: Optional[str] = None
-    confidence_min: Optional[float] = None
-    sort_by: Literal["created_at", "confidence", "student_id"] = "created_at"
-    limit: int = 50
-    offset: int = 0
-
-
-@router.get("/ai-queue")
-async def get_ai_queue(
-    course_id: Optional[str] = Query(None),
-    current_user: dict = Depends(get_current_user),
-):
-    """
-    Retrieve the teacher's AI answer verification queue.
-    Returns: { items: [...], total_pending: int, avg_wait_time_sec: int }
-    """
-    check_teacher_role(current_user)
-    teacher_id = str(current_user.get("id", ""))
-    role = current_user.get("role", "teacher")
-
-    try:
-        service = AIQueueService()
-        result = await service.get_queue(
-            teacher_id=teacher_id,
-            course_id=course_id,
-            role=role,
-        )
-        log.info(
-            "ai_queue_fetched",
-            teacher_id=teacher_id,
-            total_pending=result.get("total_pending", 0),
-        )
-        return result
-
-    except Exception as exc:
-        log.error("ai_queue_fetch_failed", teacher_id=teacher_id, error=str(exc))
-        # Return safe empty state instead of 500
-        return {"items": [], "total_pending": 0, "avg_wait_time_sec": 0}
-
-
-@router.get("/ai-queue/analytics/decisions")
-async def get_decisions_distribution(
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_scoped_db)
-):
-    """
-    Get decision distribution across all statuses.
-    
-    Returns:
-        {
-            "AUTO_APPROVED": 875,
-            "PROVISIONAL": 250,
-            "PENDING": 125,
-            "APPROVED": 200,
-            "REJECTED": 50
-        }
-    """
-    check_teacher_role(current_user)
-    
-    try:
-        analytics = AIQueueAnalytics(db)
-        distribution = await analytics.get_decision_distribution()
-        
-        return distribution
-        
-    except Exception as exc:
-        log.error(
-            "decisions_distribution_error",
-            teacher_id=current_user["id"],
-            error=str(exc)
-        )
-        raise HTTPException(status_code=500, detail="Failed to fetch distribution")
-
-
-@router.get("/ai-queue/analytics/confidence")
-async def get_confidence_distribution(
-    bins: int = Query(10),
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_scoped_db)
-):
-    """
-    Get confidence score distribution histogram.
-    
-    Query Parameters:
-        - bins: Number of histogram bins (default 10)
-    
-    Returns:
-        {
-            "bins": [
-                {"range": "0.0-0.1", "count": 5},
-                ...
-            ],
-            "mean": 0.82,
-            "median": 0.85,
-            "std_dev": 0.12
-        }
-    """
-    check_teacher_role(current_user)
-    
-    try:
-        analytics = AIQueueAnalytics(db)
-        distribution = await analytics.get_confidence_distribution(bins=bins)
-        
-        return distribution
-        
-    except Exception as exc:
-        log.error(
-            "confidence_distribution_error",
-            teacher_id=current_user["id"],
-            error=str(exc)
-        )
-        raise HTTPException(status_code=500, detail="Failed to fetch distribution")
-
-
-@router.get("/ai-queue/analytics/safety")
-async def get_safety_distribution(
-    bins: int = Query(10),
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_scoped_db)
-):
-    """
-    Get safety score distribution histogram.
-    
-    Query Parameters:
-        - bins: Number of histogram bins (default 10)
-    
-    Returns:
-        {
-            "bins": [...],
-            "mean": 0.96,
-            "median": 0.98,
-            "std_dev": 0.04
-        }
-    """
-    check_teacher_role(current_user)
-    
-    try:
-        analytics = AIQueueAnalytics(db)
-        distribution = await analytics.get_safety_score_distribution(bins=bins)
-        
-        return distribution
-        
-    except Exception as exc:
-        log.error(
-            "safety_distribution_error",
-            teacher_id=current_user["id"],
-            error=str(exc)
-        )
-        raise HTTPException(status_code=500, detail="Failed to fetch distribution")
-
-
-@router.get("/ai-queue/analytics/sla")
-async def get_teacher_sla_metrics(
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_scoped_db)
-):
-    """
-    Get teacher review SLA metrics.
-    
-    Returns:
-        {
-            "avg_review_latency_hours": 2.3,
-            "median_review_latency_hours": 1.8,
-            "sla_met_percent": 65.5,
-            "pending_count": 42,
-            "pending_oldest_hours": 4.2
-        }
-    """
-    check_teacher_role(current_user)
-    
-    try:
-        analytics = AIQueueAnalytics(db)
-        sla_metrics = await analytics.get_teacher_review_slas()
-        
-        log.info(
-            "sla_metrics_fetched",
-            teacher_id=current_user["id"]
-        )
-        
-        return sla_metrics
-        
-    except Exception as exc:
-        log.error(
-            "sla_metrics_error",
-            teacher_id=current_user["id"],
-            error=str(exc)
-        )
-        raise HTTPException(status_code=500, detail="Failed to fetch SLA metrics")
-
-
-@router.get("/ai-queue/analytics/throughput")
-async def get_student_throughput(
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_scoped_db)
-):
-    """
-    Get student engagement and throughput metrics.
-    
-    Returns:
-        {
-            "unique_students": 234,
-            "total_questions_asked": 1250,
-            "avg_questions_per_student": 5.3,
-            "top_students": [
-                {"student_id": "s1", "questions": 45},
-                ...
-            ]
-        }
-    """
-    check_teacher_role(current_user)
-    
-    try:
-        analytics = AIQueueAnalytics(db)
-        throughput = await analytics.get_student_throughput()
-        
-        return throughput
-        
-    except Exception as exc:
-        log.error(
-            "throughput_metrics_error",
-            teacher_id=current_user["id"],
-            error=str(exc)
-        )
-        raise HTTPException(status_code=500, detail="Failed to fetch throughput metrics")

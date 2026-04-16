@@ -14,6 +14,7 @@ from app.database.scoped_db import ScopedSupabase, get_scoped_db
 from app.services.ai_tutor_service import AITutorService, TutorGenerationRequest
 from app.services.realtime_service import RealtimeService
 from app.services.personalization_service import PersonalizationService
+from app.services.ai_queue_service import AIQueueService
 
 router = APIRouter()
 log = structlog.get_logger()
@@ -289,6 +290,8 @@ async def _generate_ai_answer_background(
     """
     service = AITutorService()
     realtime = RealtimeService()
+    # Centralized AI Queue Service
+    ai_queue = AIQueueService(db=db)
     
     # STEP 1: Generate answer (can fail - AI timeout, rate limit, etc)
     try:
@@ -302,6 +305,9 @@ async def _generate_ai_answer_background(
         if result.status == "AUTO_APPROVED":
             result.status = "PROVISIONAL"
         
+        # Centralized update via service
+        await ai_queue.update_queue_item_ai_result(queue_id, result)
+
         log.info(
             "ai_answer_generation_success",
             queue_id=queue_id,
@@ -318,26 +324,10 @@ async def _generate_ai_answer_background(
             note="LLM request timed out"
         )
         # Mark as PENDING so teacher can review manually
-        await db.client.from_("ai_answer_queue").update({
-            "status": "PENDING",
-            "failed_reason": "AI generation timeout",
-            "error_at": datetime.now(timezone.utc).isoformat()
-        }).eq("id", queue_id).execute()
-        return
-    
-    except ValueError as val_err:
-        log.error(
-            "ai_answer_generation_validation_error",
-            queue_id=queue_id,
-            student_id=student_id,
-            error=str(val_err),
-            note="Question or context validation failed"
-        )
-        await db.client.from_("ai_answer_queue").update({
-            "status": "PENDING",
-            "failed_reason": f"Validation error: {str(val_err)[:100]}",
-            "error_at": datetime.now(timezone.utc).isoformat()
-        }).eq("id", queue_id).execute()
+        await ai_queue.store.update_item(queue_id, {
+            "status": "pending", # Canonical status name
+            "faculty_note": "AI generation timeout", # Canonical field
+        })
         return
     
     except Exception as ai_err:
@@ -349,11 +339,10 @@ async def _generate_ai_answer_background(
             error_type=type(ai_err).__name__
         )
         # Mark as PENDING for manual review
-        await db.client.from_("ai_answer_queue").update({
-            "status": "PENDING",
-            "failed_reason": f"AI error: {str(ai_err)[:100]}",
-            "error_at": datetime.now(timezone.utc).isoformat()
-        }).eq("id", queue_id).execute()
+        await ai_queue.store.update_item(queue_id, {
+            "status": "pending",
+            "faculty_note": f"AI error: {str(ai_err)[:100]}",
+        })
         return
     
     # STEP 2: Emit event via RealtimeService (handles everything)
@@ -368,6 +357,7 @@ async def _generate_ai_answer_background(
             source="ai_auto" if result.status == "AUTO_APPROVED" else "ai_provisional",
             rag_sources=result.rag_sources
         )
+        # ... logs truncated ...
         
         broadcast_status = emit_result.get("broadcast_result", "unknown")
         

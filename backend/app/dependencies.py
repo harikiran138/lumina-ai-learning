@@ -137,3 +137,7 @@ def get_compliance_service(db: ScopedSupabase = Depends(get_scoped_db)):
 def get_guardian_service(db: ScopedSupabase = Depends(get_scoped_db)):
     from app.services.guardian_service import GuardianService
     return GuardianService(db=db)
+
+def get_ai_queue_service(db: ScopedSupabase = Depends(get_scoped_db)):
+    from app.services.ai_queue_service import AIQueueService
+    return AIQueueService(db=db)

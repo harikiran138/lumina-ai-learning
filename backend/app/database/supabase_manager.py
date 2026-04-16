@@ -74,7 +74,6 @@ _DEFAULT_LOCAL_TABLES = {
     "assignments",
     "assignment_submissions",
     "courses",
-    "enrollments",
     "student_enrollments",
     "student_progress",
     "parent_child_links",

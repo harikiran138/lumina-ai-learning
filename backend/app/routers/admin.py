@@ -43,6 +43,7 @@ class CreateClassRequest(BaseModel):
     department_id: str
     program_id: str
     semester_id: str
+    course_id: str
     class_name: str
     batch_name: str
     student_limit: int = 60
@@ -781,13 +782,12 @@ async def update_class(class_id: str, data: dict, admin: dict = Depends(is_admin
 ):
     """Update class metadata and limits."""
     allowed = {
-        "section_name",
-        "class_name",
+        "name",          # canonical class name
+        "class_name",    # alias, store maps to name
         "batch_name",
-        "batch",
-        "section",
         "academic_year",
         "semester_id",
+        "department_id",
         "program_id",
         "student_limit",
         "teacher_limit",

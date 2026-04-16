@@ -105,7 +105,7 @@ class TeacherStore:
         return await self.db.fetch_all("teacher_assignments", {"teacher_id": teacher_id})
 
     async def list_teacher_links(self, teacher_id: str) -> List[dict]:
-        """Alias for teacher assignment links used by router orchestration."""
+        """Canonical alias: returns all teacher_assignments rows for this teacher."""
         return await self.get_teacher_assignments(teacher_id)
 
     async def get_class_teachers(self, class_id: str, course_id: str) -> List[dict]:

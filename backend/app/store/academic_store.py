@@ -13,15 +13,13 @@ class AcademicStore:
     def __init__(self, db: Optional[Any] = None):
         self.db = db or supabase_db
 
-    def _normalize_section(self, sec: Optional[dict]) -> Optional[dict]:
-        if not sec:
+    def _normalize_class(self, cls: Optional[dict]) -> Optional[dict]:
+        if not cls:
             return None
-        normalized = sec.copy()
-        # Ensure section_name and class_name are interchangeable for legacy support
-        if "section_name" not in normalized and "name" in normalized:
-            normalized["section_name"] = normalized.get("name")
-        if "class_name" not in normalized and "name" in normalized:
-            normalized["class_name"] = normalized.get("name")
+        normalized = cls.copy()
+        # Canonical schema uses 'name' for class name.
+        if "name" not in normalized and "class_name" in normalized:
+            normalized["name"] = normalized.get("class_name")
         return normalized
 
     async def get_course_by_id(self, course_id: str) -> Optional[dict]:
@@ -51,19 +49,14 @@ class AcademicStore:
     async def get_student_credits(self, student_id: str) -> List[dict]:
         return await self.db.fetch_all("student_credits", {"student_id": student_id})
 
-    async def get_sections(self, batch_id: str, semester_id: Optional[str] = None) -> List[dict]:
-        """Fetch all sections/classes for a specific batch and semester."""
-        filters = {"batch_id": batch_id}
+    async def get_classes(self, program_id: str, semester_id: Optional[str] = None) -> List[dict]:
+        """Fetch all classes for a specific program and semester."""
+        filters = {"program_id": program_id}
         if semester_id:
             filters["semester_id"] = semester_id
             
         classes = await self.db.fetch_all("classes", filters)
-        return [s for s in (self._normalize_section(s) for s in classes) if s is not None]
-
-    async def get_section_by_id(self, section_id: str) -> Optional[dict]:
-        """Fetch a specific class/section by ID."""
-        sec = await self.db.fetch_one("classes", {"id": section_id})
-        return self._normalize_section(sec)
+        return [c for c in (self._normalize_class(c) for c in classes) if c is not None]
 
     async def create_class(self, data: Dict[str, Any]) -> Optional[dict]:
         # Map incoming legacy fields to current schema
@@ -131,7 +124,7 @@ class AcademicStore:
                 "student_id": student_id,
                 "academic_year_id": enrollment.get("academic_year_id"),
                 "semester_id": next_sem["id"],
-                "class_id": enrollment.get("class_id") or enrollment.get("section_id"),
+                "class_id": enrollment.get("class_id"),
                 "result_status": "promoted"
             })
             
@@ -245,9 +238,9 @@ class AcademicStore:
         concepts = await self.get_course_concepts(course_id)
         return [c["name"] for c in concepts]
 
-    async def assign_student_to_section(self, student_id: str, section_id: str, academic_year_id: str):
+    async def assign_student_to_class(self, student_id: str, class_id: str, academic_year_id: str):
         data = {
-            "class_id": section_id,
+            "class_id": class_id,
             "academic_year_id": academic_year_id,
             "updated_at": datetime.utcnow().isoformat()
         }
@@ -257,7 +250,7 @@ class AcademicStore:
         try:
             await self.db.upsert("student_profiles", {
                 "user_id": student_id,
-                "class_id": section_id,
+                "class_id": class_id,
                 "academic_year_id": academic_year_id
             }, on_conflict="user_id")
         except Exception as e:
@@ -265,8 +258,9 @@ class AcademicStore:
             
         return res
 
+
     async def get_student_enrollments_compat(
-        self, student_id: str, class_id: str = None, semester_id: str = None
+        self, student_id: str, class_id: str = None, semester_id: str = None, course_id: str = None
     ) -> list:
         """
         Canonical enrollment read. Replaces all direct queries to the legacy
@@ -277,6 +271,8 @@ class AcademicStore:
             filters["class_id"] = class_id
         if semester_id:
             filters["semester_id"] = semester_id
+        if course_id:
+            filters["course_id"] = course_id
         return await self.db.fetch_all("student_enrollments", filters)
 
     async def get_class_by_id(self, class_id: str) -> Optional[dict]:

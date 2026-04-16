@@ -40,7 +40,6 @@ GLOBAL_TABLES = {
     # Junction tables scoped by student_id/user_id — no institution_id column
     "student_subjects",
     "skill_mastery",
-    "enrollments",
     "student_enrollments",
     # Hierarchy tables scoped via program_id/department_id — no institution_id column
     "semesters",

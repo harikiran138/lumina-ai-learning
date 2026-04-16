@@ -401,13 +401,20 @@ class AITutorStore:
                 "response_payload": None,
             }
 
+        from app.store.ai_queue_store import AIQueueStore
+        ai_queue_store = AIQueueStore(db=self.db)
+        
         try:
-            queue_item = await self.content_store.create_verification_item(
-                student_id=student_id,
-                teacher_id=course_context["teacher_id"],
-                student_question=prompt,
-                ai_generated_answer=draft_payload["draft_answer"],
-                course_id=course_context.get("course_id"),
+            queue_item = await ai_queue_store.create_item(
+                {
+                    "student_id": student_id,
+                    "teacher_id": course_context["teacher_id"],
+                    "course_id": course_context.get("course_id"),
+                    "class_id": course_context.get("class_id"), # NEW: Canonical key
+                    "student_question": prompt,
+                    "ai_generated_answer": draft_payload["draft_answer"],
+                    "status": "pending",
+                }
             )
             queue_id = queue_item.get("id") if queue_item else None
         except Exception as exc:
@@ -461,8 +468,8 @@ class AITutorStore:
         course_name = "General course"
         course_id = requested_course_id
         class_id = context.get("class_id")
-
-        class_id = context.get("class_id") or context.get("section_id")
+        if not class_id and context.get("section_id"):
+            class_id = context.get("section_id")
         academic_year_id = context.get("academic_year_id")
         section_name = "Not specified"
         academic_year_name = "Not specified"
@@ -471,7 +478,7 @@ class AITutorStore:
             enrollment = await supabase_db.fetch_one("student_enrollments", {"student_id": student_id})
             if enrollment:
                 course_id = enrollment.get("course_id")
-                class_id = class_id or enrollment.get("class_id") or enrollment.get("section_id")
+                class_id = class_id or enrollment.get("class_id")
                 academic_year_id = academic_year_id or enrollment.get("academic_year_id")
 
         if class_id:

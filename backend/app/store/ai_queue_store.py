@@ -140,3 +140,23 @@ class AIQueueStore(BaseStoreMixin):
         except Exception as e:
             log.error("store_get_student_info_failed", error=str(e))
             return []
+
+
+async def get_items_by_student(db, student_id: str) -> List[Dict[str, Any]]:
+    return await AIQueueStore(db).get_items_by_student(student_id)
+
+
+async def get_pending_items_for_class(db, class_id: str) -> List[Dict[str, Any]]:
+    return await AIQueueStore(db).get_pending_items_for_class(class_id)
+
+
+async def get_item_by_id(db, item_id: str) -> Optional[Dict[str, Any]]:
+    return await AIQueueStore(db).get_item_by_id(item_id)
+
+
+async def update_item_status(db, item_id: str, status: str, reviewer_id: str) -> bool:
+    return await AIQueueStore(db).update_item_status(item_id, status, reviewer_id)
+
+
+async def get_all_items(db) -> List[Dict[str, Any]]:
+    return await AIQueueStore(db).get_all_items()

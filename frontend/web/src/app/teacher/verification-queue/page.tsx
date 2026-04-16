@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { RealAPI } from "@/lib/api";
+import type { AIQueueTeacherView } from "@/types/api";
 import {
   CheckCircle,
   XCircle,
@@ -73,22 +74,22 @@ export default function VerificationQueuePage() {
     try {
       const api = RealAPI.getInstance();
       const data = await api.getTeacherAiQueue();
-      const items: AIAnswer[] = (data.items || []).map((row: any) => ({
+      const items: AIAnswer[] = (data.items || []).map((row: AIQueueTeacherView) => ({
         id: row.id,
         questionText: row.question_text || "",
         aiAnswer: row.ai_draft || "",
-        studentName: row.student_name || "Unknown Student",
-        courseTitle: row.course_name || `Course ${row.course_id || ""}`,
-        topicName: row.lecture_context || undefined,
+        studentName: (row as AIQueueTeacherView & { student_name?: string }).student_name || "Unknown Student",
+        courseTitle: (row as AIQueueTeacherView & { course_name?: string }).course_name || `Course ${row.course_id || ""}`,
+        topicName: undefined,
         askedAt: row.created_at || new Date().toISOString(),
         status: normalizeStatus(row.status || "pending"),
         confidence: row.ai_confidence ?? null,
-        teacherNote: row.teacher_note || row.faculty_note || undefined,
+        teacherNote: row.teacher_note || undefined,
       }));
       setQueue(items);
       setTotalPending(data.total_pending ?? items.filter((q) => q.status === "pending").length);
-    } catch (err: any) {
-      setError(err.message || "Failed to load queue");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load queue");
     } finally {
       setLoading(false);
     }

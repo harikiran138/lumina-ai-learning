@@ -20,6 +20,21 @@ ROLE_CRITICAL_ROUTES = [
 
 LEGACY_TABLE_NAMES = ["enrollments", "sections"]
 
+LEGACY_SECTIONS_QUERY_PATTERNS = [
+    'table("sections")',
+    "table('sections')",
+    'fetch_all("sections")',
+    "fetch_all('sections')",
+    'fetch_one("sections")',
+    "fetch_one('sections')",
+    'insert("sections")',
+    "insert('sections')",
+    'update("sections")',
+    "update('sections')",
+    'delete("sections")',
+    "delete('sections')",
+]
+
 CANONICAL_DEPENDENCY_MAP = {
     "student.py": "get_current_student",
     "teacher.py": "get_current_teacher",
@@ -121,6 +136,39 @@ def test_no_sections_table_in_routers():
                 f"{file}: direct sections table query in router. "
                 "Use schedule_service or the sections compat view."
             )
+
+
+def test_sections_is_view_only_compatibility_shim():
+    """
+    The legacy sections object may only exist as a compatibility shim.
+    No backend app code may issue raw CRUD against the sections table.
+    """
+    for root, _, files in os.walk(_abs("backend/app")):
+        for file in files:
+            if not file.endswith(".py"):
+                continue
+            full_path = os.path.join(root, file)
+            with open(full_path) as f:
+                source = f.read()
+            for pattern in LEGACY_SECTIONS_QUERY_PATTERNS:
+                assert pattern not in source, (
+                    f"{file}: direct legacy sections table access detected: {pattern}. "
+                    "Use the sections compatibility view or canonical classes table."
+                )
+
+
+def test_sections_compat_migration_uses_view_not_table():
+    """The compatibility migration must expose sections as a view over classes."""
+    source = _source("supabase/migrations/20260416000001_compat_legacy_sections_enrollments.sql")
+    assert "CREATE VIEW public.sections" in source, (
+        "Compatibility migration must expose public.sections as a view."
+    )
+    assert "sections_legacy" in source, (
+        "Compatibility migration must preserve legacy sections rows as sections_legacy."
+    )
+    assert "CREATE TABLE public.sections" not in source and "CREATE TABLE IF NOT EXISTS public.sections" not in source, (
+        "Compatibility migration must not create a new sections table."
+    )
 
 
 def test_ai_queue_student_route_uses_service():

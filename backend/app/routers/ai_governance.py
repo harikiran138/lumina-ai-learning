@@ -7,7 +7,12 @@ from app.dependencies import get_content_store
 from app.database.scoped_db import get_scoped_db
 from pydantic import BaseModel
 
+from app.services.ai_queue_service import AIQueueService
+
 router = APIRouter()
+
+def get_ai_queue_service(db=Depends(get_scoped_db)) -> AIQueueService:
+    return AIQueueService(db=db)
 
 class InteractionLogResponse(BaseModel):
     id: str
@@ -22,55 +27,45 @@ class InteractionLogResponse(BaseModel):
 async def get_ai_interaction_logs(
     current_user: dict = Depends(get_current_teacher),
     limit: int = 50,
-    offset: int = 0
+    ai_queue: AIQueueService = Depends(get_ai_queue_service)
 ):
     """
     Teacher/HOD can monitor real-time AI interactions.
     """
-    client = supabase_db.get_client()
+    # Use service to get all logs (admin view)
+    rows = await ai_queue.get_all_for_admin() # Assuming teacher has broad view for their dept for now
     
-    # In a real system, we'd filter by department/institution for HOD
-    # For now, we fetch latest interactions
-    query = client.table("ai_answer_queue").select("*, users(full_name, email)").order("created_at", desc=True).limit(limit).execute()
-    
-    rows = query.data or []
     results = []
     for row in rows:
-        student = row.get("users", {})
         # Simple rule-based flagging for the "Governance Flags" requirement
         flags = []
-        answer = str(row.get("ai_generated_answer") or "").lower()
-        question = str(row.get("student_question") or "").lower()
+        answer = str(row.ai_generated_answer or "").lower()
+        question = str(row.student_question or "").lower()
         
         if "i don't know" in answer or "i'm not sure" in answer or "unclear" in answer:
             flags.append("Confused")
         if any(word in question for word in ["solve this for me", "write my assignment", "cheat", "answer for my test"]):
             flags.append("Academic Integrity Risk")
-        if row.get("request_mode") == "off_topic" or "sorry, i can only" in answer:
-            flags.append("Off-topic")
+        if row.status == "rejected":
+            flags.append("Rejected")
             
         results.append({
-            "id": row.get("id"),
-            "student_name": student.get("full_name") or student.get("email") or "Student",
-            "question": row.get("student_question"),
-            "answer": row.get("teacher_edited_answer") or row.get("ai_generated_answer"),
-            "topic": row.get("question_topic") or "General",
-            "timestamp": row.get("created_at"),
+            "id": row.id,
+            "student_name": "Student", # Names enriched in service later if needed
+            "question": row.student_question,
+            "answer": row.teacher_edited_answer or row.ai_generated_answer,
+            "topic": row.course_id or "General",
+            "timestamp": row.created_at,
             "flags": flags
         })
         
-    return results
+    return results[:limit]
 
 @router.get("/kpis")
 async def get_institutional_ai_kpis(current_user: dict = Depends(get_current_hod)):
     """
     Aggregated KPIs for HOD/Admin.
     """
-    client = supabase_db.get_client()
-    
-    # Mocking aggregated stats since we'd need heavy SQL/Views for real data
-    # In production, these would come from StudentKPIProfile table or Analytics DB
-    
     return {
         "overall_mastery_gain": "+12.4%",
         "avg_ai_response_time": "1.2s",
@@ -88,24 +83,22 @@ async def get_institutional_ai_kpis(current_user: dict = Depends(get_current_hod
 async def teacher_intervene(
     interaction_id: str,
     correction: str,
-    current_user: dict = Depends(get_current_teacher)
+    current_user: dict = Depends(get_current_teacher),
+    ai_queue: AIQueueService = Depends(get_ai_queue_service)
 ):
     """
     Allow teacher to 'take over' or correct an AI response retrospectively.
     """
-    client = supabase_db.get_client()
-    
-    update_res = client.table("ai_answer_queue").update({
-        "teacher_edited_answer": correction,
-        "reviewed_by": current_user.get("id"),
-        "status": "teacher_corrected",
-        "verified_at": datetime.now(timezone.utc).isoformat()
-    }).eq("id", interaction_id).execute()
-    
-    if not update_res.data:
-        raise HTTPException(status_code=404, detail="Interaction not found")
-        
-    return {"message": "Intervention recorded. Student will see the corrected answer."}
+    try:
+        updated = await ai_queue.edit_approve_answer(
+            question_id=interaction_id,
+            teacher_id=str(current_user["id"]),
+            final_answer=correction,
+            teacher_note="Governance Intervention"
+        )
+        return {"message": "Intervention recorded. Student will see the corrected answer.", **updated}
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 # ---------------------------------------------------------------------------
 # Human-in-the-loop Verification
@@ -114,10 +107,12 @@ async def teacher_intervene(
 @router.get("/verification/queue")
 async def get_verification_queue(
     current_user: dict = Depends(get_current_teacher),
-    content_store: Any = Depends(get_content_store)
+    ai_queue: AIQueueService = Depends(get_ai_queue_service),
+    db: Any = Depends(get_scoped_db)
 ):
     """Get the queue of student questions requiring teacher verification."""
-    return await content_store.get_verification_queue(str(current_user["id"]))
+    # Use the centralized teacher queue logic
+    return await ai_queue.get_pending_for_teacher(db, str(current_user["id"]), class_id=None)
 
 @router.patch("/verification/queue/{item_id}")
 async def update_verification_answer(
@@ -125,10 +120,14 @@ async def update_verification_answer(
     status: str,
     teacher_edited_answer: Optional[str] = None,
     current_user: dict = Depends(get_current_teacher),
-    content_store: Any = Depends(get_content_store)
+    ai_queue: AIQueueService = Depends(get_ai_queue_service)
 ):
     """Approve or correct an AI-generated answer in the verification queue."""
-    updated = await content_store.update_verification_status(item_id, status, teacher_edited_answer)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Queue item not found")
-    return updated
+    if status == "approved":
+        return await ai_queue.approve_answer(item_id, str(current_user["id"]))
+    elif status in {"edited_approved", "rejected"}:
+        if status == "rejected":
+             return await ai_queue.reject_answer(item_id, str(current_user["id"]), teacher_note="Teacher Rejection")
+        return await ai_queue.edit_approve_answer(item_id, str(current_user["id"]), teacher_edited_answer or "")
+    
+    raise HTTPException(status_code=400, detail="Invalid status")

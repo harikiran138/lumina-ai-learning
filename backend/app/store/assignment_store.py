@@ -132,10 +132,29 @@ class AssignmentStore:
             log.error("get_student_submission_failed", error=str(e))
             return None
 
-    async def get_pending_submissions(self) -> List[dict]:
-        """Fetch all pending (submitted but not graded) assignments."""
+    async def get_pending_submissions(self, class_ids: Optional[List[str]] = None) -> List[dict]:
+        """Fetch pending submissions, optionally filtered by classes."""
         try:
-            return await self.db.fetch_all("assignment_submissions", {"status": "submitted"})
+            filters = {"status": "submitted"}
+            submissions = await self.db.fetch_all("assignment_submissions", filters)
+            
+            if class_ids is not None:
+                # If class_ids is empty, return empty list (teacher has no classes)
+                if not class_ids:
+                    return []
+                # Supabasemanager might not support 'in' directly in fetch_all dict
+                # So we filter manually or check if fetch_all supports complex filters
+                # Let's assume we filter manually for safety, or check assignments join
+                results = []
+                for s in submissions:
+                    # We need to check if the submission's assignment belongs to one of these classes
+                    # assignment_submissions usually has course_id, but let's check assignment
+                    assignment = await self.get_assignment(s.get("assignment_id"))
+                    if assignment and str(assignment.get("class_id")) in [str(cid) for cid in class_ids]:
+                        results.append(s)
+                return results
+            
+            return submissions
         except Exception as e:
             log.error("get_pending_submissions_failed", error=str(e))
             return []

@@ -230,7 +230,17 @@ async function fetchWithRetry(
         const clonedResponse = response.clone();
         const errorBody = await clonedResponse.text().catch(() => "");
         console.error(`[AUTH FAIL] ${response.status} at ${url}:`, errorBody.substring(0, 500));
-        throw new Error(`Auth Failure: ${response.status} - Single attempt only for security.`);
+        
+        let errorDetail = `Auth Failure: ${response.status}`;
+        try {
+          const json = JSON.parse(errorBody);
+          errorDetail = extractApiErrorMessage(json, errorDetail);
+        } catch {
+          if (errorBody && errorBody.length < 200 && !errorBody.includes("<!DOCTYPE")) {
+            errorDetail = errorBody;
+          }
+        }
+        throw new Error(errorDetail);
       }
 
       // [Lumina Recovery] STOP retrying on 5xx Server Errors immediately.
@@ -2046,6 +2056,21 @@ export class RealAPI {
     });
   }
 
+  /** GET /api/teacher/classes — returns all classes this teacher is assigned to */
+  async getTeacherClasses(): Promise<Array<{
+    assignment_id: string;
+    class_id: string;
+    class_name: string;
+    course_id?: string;
+    batch_id?: string;
+    semester_id?: string;
+    department_id?: string;
+    status?: string;
+  }>> {
+    const res = await this.fetchAuthorized("/api/teacher/classes");
+    return res.ok ? await res.json() : [];
+  }
+
   /** GET /api/teacher/students/{batchId} — returns students for a batch */
   async getTeacherStudents(batchId?: string): Promise<any[]> {
     if (batchId) {
@@ -2100,35 +2125,31 @@ export class RealAPI {
   }
 
   /** GET /api/teacher/ai-queue — returns AI answers awaiting verification */
-  async getTeacherAiQueue(): Promise<{ items: TeacherAiQueueItem[]; total_pending: number }> {
-    const res = await this.fetchAuthorized("/api/teacher/ai-queue");
+  async getTeacherAiQueue(classId?: string): Promise<{ items: TeacherAiQueueItem[]; total_pending: number }> {
+    const path = classId ? `/api/teacher/class/${classId}/ai-queue` : "/api/teacher/ai-queue";
+    const res = await this.fetchAuthorized(path);
     return res.ok ? await res.json() : { items: [], total_pending: 0 };
   }
 
   /** POST /api/teacher/ai-queue/{id}/approve — approve an AI answer */
   async approveAiQueueItem(id: string): Promise<any> {
-    const res = await this.fetchAuthorized(`/api/teacher/ai-queue/${id}/approve`, {
-      method: "POST"
-    });
-    return res.ok ? await res.json() : null;
+    return this.fetchJsonOrDefault(`/api/teacher/ai-queue/${id}/approve`, { success: false }, { method: "POST" });
   }
 
   /** POST /api/teacher/ai-queue/{id}/edit-approve — edit and approve an AI answer */
-  async editApproveAiQueueItem(id: string, final_answer: string, faculty_note?: string): Promise<any> {
-    const res = await this.fetchAuthorized(`/api/teacher/ai-queue/${id}/edit-approve`, {
+  async editApproveAiQueueItem(id: string, finalAnswer: string, teacherNote?: string): Promise<any> {
+    return this.fetchJsonOrDefault(`/api/teacher/ai-queue/${id}/edit-approve`, { success: false }, {
       method: "POST",
-      body: JSON.stringify({ final_answer, teacher_note: faculty_note, faculty_note })
+      body: JSON.stringify({ final_answer: finalAnswer, teacher_note: teacherNote }),
     });
-    return res.ok ? await res.json() : null;
   }
 
   /** POST /api/teacher/ai-queue/{id}/reject — reject an AI answer */
-  async rejectAiQueueItem(id: string, faculty_note: string): Promise<any> {
-    const res = await this.fetchAuthorized(`/api/teacher/ai-queue/${id}/reject`, {
+  async rejectAiQueueItem(id: string, note: string): Promise<any> {
+    return this.fetchJsonOrDefault(`/api/teacher/ai-queue/${id}/reject`, { success: false }, {
       method: "POST",
-      body: JSON.stringify({ teacher_note: faculty_note, faculty_note })
+      body: JSON.stringify({ teacher_note: note }),
     });
-    return res.ok ? await res.json() : null;
   }
 
   /** GET /api/teacher/alerts — teacher at-risk alerts */
@@ -2137,32 +2158,17 @@ export class RealAPI {
     return res.ok ? await res.json() : [];
   }
 
-  /** GET /api/teacher/ai-queue — teacher verification queue (real AI answer queue) */
-  async getTeacherVerificationQueue(): Promise<{ items: any[]; total_pending: number }> {
-    const res = await this.fetchAuthorized("/api/teacher/ai-queue");
-    if (res.ok) return res.json();
-    return { items: [], total_pending: 0 };
-  }
+  /** Legacy aliases for components using older names */
+  async getTeacherVerificationQueue(classId?: string) { return this.getTeacherAiQueue(classId); }
+  async approveQueueItem(id: string) { return this.approveAiQueueItem(id); }
+  async editApproveQueueItem(id: string, answer: string, note?: string) { return this.editApproveAiQueueItem(id, answer, note); }
+  async rejectQueueItem(id: string, note: string) { return this.rejectAiQueueItem(id, note); }
 
-  /** POST /api/teacher/ai-queue/{id}/approve */
-  async approveQueueItem(queueId: string): Promise<any> {
-    return this.fetchJsonOrDefault(`/api/teacher/ai-queue/${queueId}/approve`, { success: false }, { method: "POST" });
-  }
-
-  /** POST /api/teacher/ai-queue/{id}/edit-approve */
-  async editApproveQueueItem(queueId: string, finalAnswer: string, teacherNote?: string): Promise<any> {
-    return this.fetchJsonOrDefault(`/api/teacher/ai-queue/${queueId}/edit-approve`, { success: false }, {
-      method: "POST",
-      body: JSON.stringify({ final_answer: finalAnswer, teacher_note: teacherNote }),
-    });
-  }
-
-  /** POST /api/teacher/ai-queue/{id}/reject */
-  async rejectQueueItem(queueId: string, note: string): Promise<any> {
-    return this.fetchJsonOrDefault(`/api/teacher/ai-queue/${queueId}/reject`, { success: false }, {
-      method: "POST",
-      body: JSON.stringify({ teacher_note: note }),
-    });
+  /** GET /api/monitoring/analytics/ — AI Tutor analytics */
+  async getAiQueueAnalytics(metric: "decisions" | "confidence" | "slas" | "throughput"): Promise<any> {
+    // Note: the backend route is now /api/teacher/ai-queue/analytics/{metric}
+    const res = await this.fetchAuthorized(`/api/teacher/ai-queue/analytics/${metric}`);
+    return res.ok ? await res.json() : null;
   }
 
   /** GET student question statuses from the AI answer queue — best-effort, returns [] on any failure */

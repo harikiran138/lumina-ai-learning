@@ -28,13 +28,20 @@ from app.services.ai_queue_service import AIQueueService
 from app.services.academic_service import AcademicService
 from app.services.realtime_service import RealtimeService
 from app.routers.realtime import broadcast_ai_tutor_event
+from app.services.ai_queue_analytics import AIQueueAnalytics
+from app.api.deps import get_current_user
+from app.dependencies import get_ai_queue_service
+from app.database.scoped_db import get_scoped_db, ScopedSupabase
 
 log = structlog.get_logger()
 router = APIRouter()
 tutor_service = AITutorService()
-queue_service = AIQueueService()
 academic_service = AcademicService()
 realtime_service = RealtimeService()
+
+# Fallback for background tasks and legacy student routes
+# In a full refactor, these would also use Depends()
+_global_queue_service = AIQueueService()
 
 
 class AskQuestionRequest(BaseModel):
@@ -216,11 +223,11 @@ async def _generate_ai_answer(queue_id: str, request_payload: Dict[str, Any]) ->
             student_id=request.student_id,
             request=request
         )
-        await queue_service.update_queue_item_ai_result(queue_id, result)
+        await _global_queue_service.update_queue_item_ai_result(queue_id, result)
         log.info("ai_queue_answer_generated", queue_id=queue_id, status=result.status)
     except Exception as exc:
         fallback = tutor_service._fallback_response(request, "AI generation failed.")
-        await queue_service.store.update_item(queue_id, {"ai_generated_answer": fallback, "generation_error": str(exc)})
+        await _global_queue_service.store.update_item(queue_id, {"ai_generated_answer": fallback, "generation_error": str(exc)})
         log.error("ai_queue_generation_failed", queue_id=queue_id, error=str(exc))
 
 
@@ -246,7 +253,7 @@ async def _submit_question(
 
     # Use AIQueueService for cache
     signature = _question_signature(clean_question)
-    cached_row = await queue_service.lookup_cached_answer(str(course["id"]), signature)
+    cached_row = await _global_queue_service.lookup_cached_answer(str(course["id"]), signature)
 
     insert_payload = {
         "student_id": student_id,
@@ -265,7 +272,7 @@ async def _submit_question(
         "question_topic": body.topic or ctx["course"].get("subject"),
     }
 
-    queue_item = await queue_service.create_queue_item(insert_payload)
+    queue_item = await _global_queue_service.create_queue_item(insert_payload)
     if not queue_item:
         raise HTTPException(status_code=500, detail="Failed to create queue item")
 
@@ -316,7 +323,7 @@ async def list_student_tutor_questions(
     current_user: Dict[str, Any] = Depends(get_current_student),
 ):
     student_id = str(current_user["id"])
-    views = await queue_service.get_pending_for_student(student_id)
+    views = await _global_queue_service.get_pending_for_student(student_id)
     return [
         {
             "question_id": v.question_id,
@@ -337,7 +344,7 @@ async def get_student_tutor_answer(
     question_id: str,
     current_user: Dict[str, Any] = Depends(get_current_student),
 ):
-    item = await queue_service.get_item_details(question_id)
+    item = await _global_queue_service.get_item_details(question_id)
     if not item:
         raise HTTPException(status_code=404, detail="Question not found")
 
@@ -367,7 +374,7 @@ async def list_course_questions(
     # Validation: if student, must be enrolled in class related to this course
     # For now, we trust the course_id but in a full refactor we'd verify enrollment.
     
-    view_data = await queue_service.get_all_for_admin(course_id=course_id)
+    view_data = await _global_queue_service.get_all_for_admin(course_id=course_id)
     
     results = []
     for v in view_data:
@@ -401,7 +408,7 @@ async def question_status(
     question_id: str,
     current_user: Dict[str, Any] = Depends(get_current_student),
 ):
-    item = await queue_service.get_item_details(question_id)
+    item = await _global_queue_service.get_item_details(question_id)
     if not item:
         raise HTTPException(status_code=404, detail="Question not found")
     if str(item.get("student_id")) != str(current_user.get("id")):
@@ -409,73 +416,98 @@ async def question_status(
     return _student_delivery_payload(item)
 
 
+@router.get("/teacher/class/{class_id}/ai-queue")
+async def get_teacher_class_queue(
+    class_id: str,
+    db: ScopedSupabase = Depends(get_scoped_db),
+    teacher: dict = Depends(get_current_teacher),
+    service: AIQueueService = Depends(get_ai_queue_service)
+):
+    """
+    Teacher queue for a specific class.
+    STRICT Architecture: uses service.get_pending_for_teacher()
+    """
+    return await service.get_pending_for_teacher(db, str(teacher["id"]), class_id)
+
+
 @router.get("/teacher/ai-queue")
-async def teacher_queue(current_user: Dict[str, Any] = Depends(get_current_teacher)):
+async def get_teacher_ai_queue(
+    db: ScopedSupabase = Depends(get_scoped_db),
+    teacher: dict = Depends(get_current_teacher),
+    service: AIQueueService = Depends(get_ai_queue_service)
+):
     """
-    Get queue of pending AI answers for teacher review.
-    
-    INTEGRATED: Uses AIQueueService.get_queue()
+    Teacher queue across all classes (fallback for legacy frontend).
     """
-    try:
-        result = await queue_service.get_queue(
-            teacher_id=str(current_user["id"]),
-            role=current_user.get("role", "teacher")
-        )
-        return result
-    except Exception as exc:
-        log.error("teacher_queue_failed", error=str(exc))
-        raise HTTPException(status_code=500, detail="Failed to retrieve queue")
+    return await service.get_pending_for_teacher(db, str(teacher["id"]), None)
+
+
+@router.get("/teacher/ai-queue/analytics/decisions")
+async def get_decisions_distribution(
+    teacher: dict = Depends(get_current_teacher),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
+    analytics = AIQueueAnalytics(db)
+    return await analytics.get_decision_distribution()
+
+
+@router.get("/teacher/ai-queue/analytics/confidence")
+async def get_confidence_stats(
+    bins: int = 10,
+    teacher: dict = Depends(get_current_teacher),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
+    analytics = AIQueueAnalytics(db)
+    return await analytics.get_confidence_distribution(bins=bins)
+
+
+@router.get("/teacher/ai-queue/analytics/slas")
+async def get_review_slas(
+    teacher: dict = Depends(get_current_teacher),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
+    analytics = AIQueueAnalytics(db)
+    return await analytics.get_teacher_review_slas()
+
+
+@router.get("/teacher/ai-queue/analytics/throughput")
+async def get_student_throughput(
+    teacher: dict = Depends(get_current_teacher),
+    db: ScopedSupabase = Depends(get_scoped_db)
+):
+    analytics = AIQueueAnalytics(db)
+    return await analytics.get_student_throughput()
 
 
 @router.post("/teacher/ai-queue/{queue_id}/approve")
 async def approve_queue_item(
     queue_id: str,
-    current_user: Dict[str, Any] = Depends(get_current_teacher),
+    teacher: dict = Depends(get_current_teacher),
+    service: AIQueueService = Depends(get_ai_queue_service)
 ):
     """
     Teacher approves AI-generated answer.
-    
-    INTEGRATED:
-    1. Uses AIQueueService.approve_answer()
-    2. Emits real-time event via RealtimeService.emit_answer_approved()
-    3. Broadcasts to student WebSocket via broadcast_ai_tutor_event()
-    4. Student receives notification in real-time
     """
     try:
-        # Use service to approve
-        await queue_service.approve_answer(
+        await service.approve_answer(
             question_id=queue_id,
-            teacher_id=str(current_user["id"]),
+            teacher_id=str(teacher["id"]),
             feedback=None
         )
         
-        # Fetch the updated item via service to get student_id/content for broadcast.
-        item = await queue_service.get_item_details(queue_id)
+        item = await service.get_item_details(queue_id)
         if not item:
             raise HTTPException(status_code=404, detail="Queue item not found after approval")
 
-        student_id = item.get("student_id")
+        student_id = str(item.get("student_id"))
         
-        # Emit to event store (DB) and broadcast to student's WebSocket
-        await realtime_service.emit_answer_approved(
-            question_id=queue_id,
-            student_id=student_id,
-            answer=item.get("ai_generated_answer", ""),
-            teacher_name=current_user.get("full_name", "Teacher"),
-            teacher_feedback=None,
-            source="teacher_approved"
-        )
-        
-        # The realtime_service.emit_answer_approved internally calls broadcast_ai_tutor_event
-        # so we don't need to call it manually if the service is correctly integrated.
-        # But looking at existing code, it was called manually. Let's keep it robust.
         event_payload = {
             "event": "answer.approved_by_teacher",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "data": {
                 "question_id": queue_id,
                 "answer": item.get("ai_generated_answer", ""),
-                "teacher_name": current_user.get("full_name", "Teacher"),
+                "teacher_name": teacher.get("full_name", "Teacher"),
                 "teacher_feedback": None,
                 "source": "teacher_approved"
             }
@@ -496,48 +528,31 @@ async def approve_queue_item(
 async def edit_approve_queue_item(
     queue_id: str,
     body: EditApproveRequest,
-    current_user: Dict[str, Any] = Depends(get_current_teacher),
+    teacher: dict = Depends(get_current_teacher),
+    service: AIQueueService = Depends(get_ai_queue_service)
 ):
     """
     Teacher edits and approves AI-generated answer.
-    
-    INTEGRATED:
-    1. Uses AIQueueService.edit_approve_answer()
-    2. Emits real-time event via RealtimeService.emit_answer_approved()
-    3. Broadcasts to student WebSocket via broadcast_ai_tutor_event()
-    4. Student receives approved answer in real-time with teacher edits
     """
     try:
-        # Use service to edit/approve
-        await queue_service.edit_approve_answer(
+        await service.edit_approve_answer(
             question_id=queue_id,
-            teacher_id=str(current_user["id"]),
+            teacher_id=str(teacher["id"]),
             final_answer=body.final_answer,
             teacher_note=body.teacher_note
         )
         
-        # Get student_id for broadcast via service layer.
-        item = await queue_service.get_item_details(queue_id)
-        student_id = item.get("student_id") if item else None
+        item = await service.get_item_details(queue_id)
+        student_id = str(item.get("student_id")) if item else None
         
         if student_id:
-            # Emit and broadcast
-            await realtime_service.emit_answer_approved(
-                question_id=queue_id,
-                student_id=student_id,
-                answer=body.final_answer,
-                teacher_name=current_user.get("full_name", "Teacher"),
-                teacher_feedback=body.teacher_note,
-                source="teacher_approved"
-            )
-            
             event_payload = {
                 "event": "answer.approved_by_teacher",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "data": {
                     "question_id": queue_id,
                     "answer": body.final_answer,
-                    "teacher_name": current_user.get("full_name", "Teacher"),
+                    "teacher_name": teacher.get("full_name", "Teacher"),
                     "teacher_feedback": body.teacher_note,
                     "source": "teacher_approved",
                     "edited": True
@@ -559,46 +574,30 @@ async def edit_approve_queue_item(
 async def reject_queue_item(
     queue_id: str,
     body: RejectRequest,
-    current_user: Dict[str, Any] = Depends(get_current_teacher),
+    teacher: dict = Depends(get_current_teacher),
+    service: AIQueueService = Depends(get_ai_queue_service)
 ):
     """
     Teacher rejects AI-generated answer.
-    
-    INTEGRATED:
-    1. Uses AIQueueService.reject_answer()
-    2. Emits real-time event via RealtimeService.emit_answer_rejected()
-    3. Broadcasts to student WebSocket via broadcast_ai_tutor_event()
-    4. Student receives rejection notification in real-time
     """
     try:
-        # Use service to reject
-        await queue_service.reject_answer(
+        await service.reject_answer(
             question_id=queue_id,
-            teacher_id=str(current_user["id"]),
+            teacher_id=str(teacher["id"]),
             teacher_note=body.teacher_note
         )
         
-        # Get student_id for notification via service layer.
-        item = await queue_service.get_item_details(queue_id)
-        student_id = item.get("student_id") if item else None
+        item = await service.get_item_details(queue_id)
+        student_id = str(item.get("student_id")) if item else None
         
         if student_id:
-            # Emit and broadcast
-            await realtime_service.emit_answer_rejected(
-                question_id=queue_id,
-                student_id=student_id,
-                reason=body.teacher_note,
-                teacher_name=current_user.get("full_name", "Teacher"),
-                suggestion=None
-            )
-            
             event_payload = {
                 "event": "answer.rejected",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "data": {
                     "question_id": queue_id,
                     "reason": body.teacher_note,
-                    "teacher_name": current_user.get("full_name", "Teacher"),
+                    "teacher_name": teacher.get("full_name", "Teacher"),
                     "suggestion": None
                 }
             }
@@ -618,13 +617,14 @@ async def reject_queue_item(
 async def escalate_queue_item(
     queue_id: str,
     body: EscalateRequest,
-    current_user: Dict[str, Any] = Depends(get_current_teacher),
+    teacher: dict = Depends(get_current_teacher),
+    service: AIQueueService = Depends(get_ai_queue_service)
 ):
     try:
-        result = await queue_service.escalate_answer(
+        result = await service.escalate_answer(
             question_id=queue_id,
-            escalator_id=str(current_user["id"]),
-            escalator_role=current_user.get("role", "teacher"),
+            escalator_id=str(teacher["id"]),
+            escalator_role=teacher.get("role", "teacher"),
             reason=body.reason
         )
         
