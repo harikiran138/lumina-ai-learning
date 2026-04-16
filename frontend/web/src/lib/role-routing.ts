@@ -5,7 +5,10 @@ export const ROLE_HOME_ROUTES: Record<string, string> = {
   institution_admin: "/admin/dashboard",
   college_admin: "/college",
   hod: "/hod/dashboard",
+  supervisor: "/teacher/dashboard",   // Supervisor uses teacher portal + extra items
   teacher: "/teacher/dashboard",
+  auditor: "/auditor/dashboard",
+  finance: "/admin/dashboard",
   student: "/student/dashboard",
   parent: "/parent/dashboard",
   mentor: "/mentor/dashboard",
@@ -22,7 +25,9 @@ const ROLE_PATH_PREFIXES: Record<string, string[]> = {
   college_admin: ["/admin", "/college"],
   institution_admin: ["/admin", "/college"],
   hod: ["/hod"],
+  supervisor: ["/teacher"],    // Supervisor navigates the teacher portal
   teacher: ["/teacher"],
+  auditor: ["/auditor"],
   student: ["/student"],
   parent: ["/parent"],
   mentor: ["/mentor"],

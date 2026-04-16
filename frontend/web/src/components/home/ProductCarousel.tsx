@@ -30,13 +30,13 @@ export default function ProductCarousel() {
   const [active, setActive] = useState(0);
 
   return (
-    <section id="product-screens" className="py-24 relative overflow-hidden bg-neutral-900">
+    <section id="product-screens" className="py-24 relative overflow-hidden bg-surface">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-20">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-6 font-display">
-            A Interface for <span className="gradient-text">Every Device</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-text mb-6 font-display">
+            An Interface for <span className="text-primary">Every Device</span>
           </h2>
-          <p className="text-lg text-zinc-400 font-sans">
+          <p className="text-lg text-text-secondary font-sans">
             Lumina's sleek, responsive design ensures a premium experience whether you're at a desktop or on the move.
           </p>
         </div>
@@ -48,25 +48,25 @@ export default function ProductCarousel() {
                  <div 
                    key={i} 
                    onClick={() => setActive(i)}
-                   className={`p-6 cursor-pointer border-l-4 transition-all duration-300 ${active === i ? "border-lumina-primary bg-white/5" : "border-transparent hover:bg-white/[0.02]"}`}
+                   className={`p-6 cursor-pointer border-l-4 transition-all duration-300 ${active === i ? "border-primary bg-primary/5" : "border-border hover:bg-surface-elevated"}`}
                  >
-                   <h3 className={`text-xl font-bold mb-2 font-display ${active === i ? "text-white" : "text-zinc-500"}`}>{screen.title}</h3>
-                   <p className="text-sm text-zinc-400 font-sans">{screen.description}</p>
+                   <h3 className={`text-xl font-bold mb-2 font-display ${active === i ? "text-text" : "text-text-muted"}`}>{screen.title}</h3>
+                   <p className="text-sm text-text-secondary font-sans">{screen.description}</p>
                  </div>
                ))}
              </div>
 
              <div className="flex-[2] w-full">
-                <div className="relative glass-panel aspect-video rounded-3xl overflow-hidden border-white/10 bg-surface-950 shadow-2xl">
+                <div className="relative rounded-3xl overflow-hidden border border-border bg-surface-elevated shadow-2xl aspect-video">
                    <div className="absolute inset-0 flex items-center justify-center p-8">
-                      <div className="w-full h-full bg-[#020617] rounded-xl border border-white/5 relative overflow-hidden flex items-center justify-center">
-                         <div className="absolute inset-0 neural-mesh opacity-20" />
+                      <div className="w-full h-full bg-surface rounded-xl border border-border relative overflow-hidden flex items-center justify-center">
+                         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,var(--primary-glow),transparent_70%)]" />
                          <div className="text-center space-y-4 relative z-10">
-                            <div className="inline-block p-4 rounded-full bg-lumina-primary/20 mb-4 shadow-primary-glow">
-                               {screens[active].type === "desktop" ? <Laptop className="h-12 w-12 text-lumina-primary" /> : screens[active].type === "tablet" ? <Tablet className="h-12 w-12 text-lumina-primary" /> : <Smartphone className="h-12 w-12 text-lumina-primary" />}
+                            <div className="inline-block p-4 rounded-full bg-primary/10 mb-4">
+                               {screens[active].type === "desktop" ? <Laptop className="h-12 w-12 text-primary" /> : screens[active].type === "tablet" ? <Tablet className="h-12 w-12 text-primary" /> : <Smartphone className="h-12 w-12 text-primary" />}
                             </div>
-                            <h4 className="text-2xl font-black text-white font-display uppercase tracking-widest">{screens[active].title}</h4>
-                            <p className="text-xs text-zinc-500 font-mono">Simulating Interface Build...</p>
+                            <h4 className="text-2xl font-black text-text font-display uppercase tracking-widest">{screens[active].title}</h4>
+                            <p className="text-xs text-text-muted font-mono">Simulating Interface Build...</p>
                          </div>
                       </div>
                    </div>

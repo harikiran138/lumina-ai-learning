@@ -6,22 +6,59 @@ class Role(str, Enum):
     """
     Standard institutional roles in the Lumina platform.
     Self-signup:   student, teacher, parent, mentor, peer_tutor, researcher
-    Invite-only:   hod, college_admin, super_admin, counselor, content_creator
+    Invite-only:   hod, supervisor, college_admin, super_admin, counselor, content_creator
     """
     SUPER_ADMIN = "super_admin"
     SYSTEM_ADMIN = "system_admin"
     COLLEGE_ADMIN = "college_admin"
     INSTITUTION_ADMIN = "institution_admin"
     HOD = "hod"
+    SUPERVISOR = "supervisor"   # Between HOD and teacher — faculty coordinator
     TEACHER = "teacher"
     STUDENT = "student"
     PARENT = "parent"
     GUEST = "guest"
+    AUDITOR = "auditor"
+    FINANCE = "finance"
+    ALUMNI = "alumni"
     MENTOR = "mentor"
     PEER_TUTOR = "peer_tutor"
     RESEARCHER = "researcher"
     COUNSELOR = "counselor"
     CONTENT_CREATOR = "content_creator"
+
+
+# Role hierarchy: higher number = more authority
+ROLE_HIERARCHY: dict[str, int] = {
+    Role.SUPER_ADMIN: 100,
+    Role.SYSTEM_ADMIN: 95,
+    Role.COLLEGE_ADMIN: 90,
+    Role.INSTITUTION_ADMIN: 85,
+    "admin": 80,
+    Role.HOD: 60,
+    Role.SUPERVISOR: 50,   # Between HOD and teacher
+    Role.AUDITOR: 45,
+    Role.FINANCE: 35,
+    Role.TEACHER: 40,
+    Role.STUDENT: 20,
+    Role.PARENT: 15,
+    Role.ALUMNI: 10,
+    Role.MENTOR: 30,
+    Role.PEER_TUTOR: 25,
+    Role.RESEARCHER: 30,
+    Role.COUNSELOR: 35,
+    Role.CONTENT_CREATOR: 35,
+    Role.GUEST: 0,
+}
+
+# Supervisor-specific permissions
+SUPERVISOR_PERMISSIONS = frozenset([
+    "grades:override",
+    "templates:edit_master",
+    "courses:view_all_sections",
+    "verification_queue:manage",
+    "teacher:grade_review",
+])
 
 
 # Canonical end-user roles used by auth and onboarding.
@@ -37,12 +74,15 @@ VALID_ROLES: Set[str] = {
 # Roles that require an admin invite
 INVITE_ONLY_ROLES = {
     Role.HOD.value,
+    Role.SUPERVISOR.value,
     Role.COLLEGE_ADMIN.value,
     Role.SUPER_ADMIN.value,
     Role.SYSTEM_ADMIN.value,
     Role.INSTITUTION_ADMIN.value,
     Role.COUNSELOR.value,
     Role.CONTENT_CREATOR.value,
+    Role.AUDITOR.value,
+    Role.FINANCE.value,
 }
 
 PLATFORM_ROLES: Set[str] = {
@@ -121,6 +161,10 @@ def normalize_role(role: Any) -> str:
         "researcher": Role.RESEARCHER.value,
         "counselor": Role.COUNSELOR.value,
         "hod": Role.HOD.value,
+        "supervisor": Role.SUPERVISOR.value,
+        "auditor": Role.AUDITOR.value,
+        "finance": Role.FINANCE.value,
+        "alumni": Role.ALUMNI.value,
     }
 
     if raw in alias_map:

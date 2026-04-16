@@ -53,10 +53,26 @@ const PROTECTED_PATHS: Record<string, string> = {
   '/content_creator': 'content_creator',
   '/researcher':      'researcher',
   '/alumni':          'alumni',
+  '/auditor':         'auditor',
 }
 
 // Roles that may access /admin/* in addition to super_admin.
-const ADMIN_ALLOWED = new Set(['super_admin', 'college_admin', 'institution_admin', 'system_admin', 'admin', 'hod'])
+const ADMIN_ALLOWED = new Set([
+  'super_admin', 'college_admin', 'institution_admin', 'system_admin', 'admin', 'hod',
+])
+
+// Supervisor routes: supervisor gets all teacher routes PLUS these
+const SUPERVISOR_EXTRA_PATHS = new Set([
+  '/teacher/coordination',
+  '/teacher/verification-queue',
+  '/teacher/courses/coordinator',
+])
+
+// Auditor allowed roles
+const AUDITOR_ALLOWED = new Set(['auditor', 'super_admin', 'system_admin'])
+
+// Public routes where guest session tracking applies
+const PUBLIC_TRACKABLE_PATHS = ['/courses/catalog', '/courses']
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -82,6 +98,37 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/')
+
+  // ── Guest session tracking ────────────────────────────────────────────────
+  // Issue an anonymous session cookie for unauthenticated visitors on public
+  // trackable routes (e.g. /courses/catalog) for conversion analytics.
+  if (!token && PUBLIC_TRACKABLE_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
+    const guestToken = request.cookies.get('lumina_guest')?.value ?? crypto.randomUUID()
+    const res = NextResponse.next()
+
+    res.cookies.set('lumina_guest', guestToken, {
+      maxAge: 60 * 60 * 24 * 30,  // 30 days
+      sameSite: 'lax',
+      path: '/',
+      httpOnly: false,  // client JS may read for UX purposes
+    })
+
+    // Fire-and-forget: log page visit to backend (never block rendering)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    if (apiUrl) {
+      fetch(`${apiUrl}/api/guest/track`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_token: guestToken,
+          path: pathname,
+          referrer: request.headers.get('referer') ?? null,
+        }),
+      }).catch(() => {})
+    }
+
+    return res
+  }
 
   // ── 2. Unauthenticated visitor ────────────────────────────────────────────────
   if (!token) {
@@ -129,6 +176,7 @@ export function middleware(request: NextRequest) {
   // If a role is NOT in this set, and onboardingCompleted is false, they go to /onboarding.
   const ONBOARDING_BYPASS_ROLES = new Set([
     'super_admin', 'admin', 'system_admin', 'institution_admin', 'hod',
+    'supervisor', 'auditor', 'finance',
     'teacher', 'content_creator', 'alumni'
   ])
   const onboardingCompleted =
@@ -170,10 +218,23 @@ export function middleware(request: NextRequest) {
   // ── 6. Role-based access control ─────────────────────────────────────────────
   for (const [pathPrefix, expectedRole] of Object.entries(PROTECTED_PATHS)) {
     if (pathname === pathPrefix || pathname.startsWith(`${pathPrefix}/`)) {
-      const allowed =
-        pathPrefix === '/admin'
-          ? ADMIN_ALLOWED.has(role)
-          : role === 'super_admin' || role === expectedRole
+      let allowed: boolean
+
+      if (pathPrefix === '/admin') {
+        allowed = ADMIN_ALLOWED.has(role)
+      } else if (pathPrefix === '/auditor') {
+        allowed = AUDITOR_ALLOWED.has(role)
+      } else if (pathPrefix === '/teacher') {
+        // Supervisor inherits all teacher routes; also gets its extra paths
+        allowed =
+          role === 'super_admin' ||
+          role === 'teacher' ||
+          role === 'supervisor' ||
+          (expectedRole === 'teacher' && ADMIN_ALLOWED.has(role)) ||
+          SUPERVISOR_EXTRA_PATHS.has(pathname)
+      } else {
+        allowed = role === 'super_admin' || role === expectedRole
+      }
 
       if (!allowed) {
         const url = request.nextUrl.clone()
