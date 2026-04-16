@@ -1,7 +1,14 @@
 version: "3.8"
 
+# ================================================================
+# Lumina — Local Development Compose
+# Lightweight: only postgres + redis run locally.
+# Neo4j, MinIO, Prometheus, Grafana removed (use AWS managed services).
+# For production, use: docker-compose.aws.yml
+# ================================================================
+
 services:
-  # --- Database Services ---
+  # ── Local Datastores (dev only) ────────────────────────────────────────────
   db:
     image: postgres:16-alpine
     restart: always
@@ -36,46 +43,7 @@ services:
       timeout: 5s
       retries: 5
 
-  neo4j:
-    image: neo4j:5-community
-    restart: always
-    ports:
-      - "7474:7474"
-      - "7687:7687"
-    environment:
-      - NEO4J_AUTH=neo4j/password
-    volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "cypher-shell", "RETURN 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  minio:
-    image: minio/minio
-    restart: always
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
-    command: server /data --console-address ":9001"
-    volumes:
-      - minio_data:/data
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # --- Application Services ---
+  # ── Application Services ──────────────────────────────────────────────────
   backend:
     build:
       context: ./backend
@@ -83,15 +51,15 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./backend:/app
-      - chroma_data:/app/db/chroma # Persist ChromaDB
     ports:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://lumina:lumina_password@db:5432/lumina_db
       - REDIS_URL=redis://redis:6379/0
-      - CHROMA_DB_PATH=/app/db/chroma
-      - OLLAMA_HOST=http://host.docker.internal:11434
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
       - ML_SERVICE_URL=http://ml-service:9000
+      - ENVIRONMENT=development
     depends_on:
       db:
         condition: service_healthy
@@ -104,50 +72,20 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: celery -A app.worker.celery_app worker --loglevel=info
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=1
     volumes:
       - ./backend:/app
-      - chroma_data:/app/db/chroma
     environment:
       - DATABASE_URL=postgresql://lumina:lumina_password@db:5432/lumina_db
       - REDIS_URL=redis://redis:6379/0
-      - CHROMA_DB_PATH=/app/db/chroma
-      - OLLAMA_HOST=http://host.docker.internal:11434
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME:-}
+      - ENVIRONMENT=development
     depends_on:
       - redis
-    networks:
-      - app-network
-
-  flower:
-    image: mher/flower
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    ports:
-      - "5555:5555"
-    depends_on:
-      - redis
-      - worker
-    networks:
-      - app-network
-
-  frontend:
-    build:
-      context: ./frontend/web
-      dockerfile: Dockerfile
-    ports:
-      - "8001:3000"
-    environment:
-      - API_URL=http://backend:8000
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-    depends_on:
-      - backend
     networks:
       - app-network
 
@@ -158,53 +96,43 @@ services:
     command: uvicorn ml_services.main:app --host 0.0.0.0 --port 9000 --reload
     volumes:
       - ./backend:/app
-      - chroma_data:/app/db/chroma
     ports:
       - "9000:9000"
     environment:
       - DATABASE_URL=postgresql://lumina:lumina_password@db:5432/lumina_db
       - REDIS_URL=redis://redis:6379/0
-      - CHROMA_DB_PATH=/app/db/chroma
+      - ENVIRONMENT=development
     depends_on:
       db:
         condition: service_healthy
     networks:
       - app-network
 
-  prometheus:
-    image: prom/prometheus:latest
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
+  frontend:
+    build:
+      context: ./frontend/web
+      dockerfile: Dockerfile
     ports:
-      - "9090:9090"
-    networks:
-      - app-network
-
-  grafana:
-    image: grafana/grafana:latest
-    volumes:
-      - grafana_data:/var/lib/grafana
-    ports:
-      - "3003:3000"
+      - "8001:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     depends_on:
-      - prometheus
+      - backend
     networks:
       - app-network
 
 volumes:
   postgres_data:
   redis_data:
-  chroma_data:
-  prometheus_data:
-  grafana_data:
-  neo4j_data:
-  neo4j_logs:
-  minio_data:
 
 networks:
   app-network:
     driver: bridge
+
+# Removed from dev compose (use AWS managed services or run separately):
+#   neo4j     → Neo4j AuraDB Free:  see infra/neo4j.md
+#   minio     → AWS S3:              see infra/rds.md  (storage.py already uses S3)
+#   prometheus → AWS CloudWatch:     see infra/cloudwatch-dashboard.json
+#   grafana   → AWS CloudWatch:      dashboards are in infra/cloudwatch-dashboard.json
+#   flower    → Run locally if needed: docker run -p 5555:5555 mher/flower

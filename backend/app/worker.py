@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from celery import Celery
-from app.services.ocr_service import ocr_service
+from app.services.ocr_service import ocr_service, unload_trocr
 from app.services.grader_service import grader_service
 from app.services.personalization_service import get_personalization_service
 from app.store.assignment_store import AssignmentStore
@@ -21,6 +21,34 @@ CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
 
 celery_app = Celery("lumina_worker", broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
+
+# ── Production tuning (RAM safety on t3.large) ────────────────────────────────
+celery_app.conf.update(
+    # Restart worker process every 50 tasks — prevents slow RAM leak
+    worker_max_tasks_per_child=50,
+    # Kill and restart worker if it exceeds 512 MB (value is in KB)
+    worker_max_memory_per_child=524288,
+    # Soft timeout: 5 min — task gets a SIGTERM
+    task_soft_time_limit=300,
+    # Hard timeout: 10 min — task gets SIGKILL
+    task_time_limit=600,
+    # Ack only after completion — safe for EC2 spot/preemption
+    task_acks_late=True,
+    # Limit Redis connection pool (prevents connection exhaustion)
+    broker_pool_limit=2,
+    # Route heavy ML tasks to dedicated queue
+    task_routes={
+        "app.worker.task_grade_submission": {"queue": "ml_tasks"},
+        "app.worker.task_generate_unit_topic_assets": {"queue": "ml_tasks"},
+        "app.worker.task_generate_unit_presentation": {"queue": "ml_tasks"},
+        "app.worker.task_run_weekly_digest": {"queue": "default"},
+        "app.worker.task_run_inactivity_alert": {"queue": "default"},
+        "app.worker.task_run_post_assessment_remediation": {"queue": "default"},
+        "app.worker.task_run_profile_refresh": {"queue": "default"},
+    },
+    # Result expiration — don't let results pile up in Redis
+    result_expires=3600,  # 1 hour
+)
 
 store = AssignmentStore()
 unit_store = UnitStore()
@@ -198,6 +226,8 @@ def task_grade_submission(
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
+        # Free TrOCR from memory immediately — it uses ~2.5 GB
+        unload_trocr()
 
 
 @celery_app.task(bind=True)

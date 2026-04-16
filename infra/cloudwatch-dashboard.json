@@ -1,0 +1,87 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "x": 0, "y": 0, "width": 12, "height": 6,
+      "properties": {
+        "title": "API Request Count (per endpoint)",
+        "metrics": [
+          ["Lumina/Backend", "AIRequestCount", "Status", "success"],
+          ["Lumina/Backend", "AIRequestCount", "Status", "error"]
+        ],
+        "stat": "Sum",
+        "period": 60,
+        "view": "timeSeries"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12, "y": 0, "width": 12, "height": 6,
+      "properties": {
+        "title": "AI Inference Latency (p50/p95)",
+        "metrics": [
+          ["Lumina/Backend", "AILatencySeconds", {"stat": "p50", "label": "p50"}],
+          ["Lumina/Backend", "AILatencySeconds", {"stat": "p95", "label": "p95"}]
+        ],
+        "stat": "p95",
+        "period": 60,
+        "view": "timeSeries"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0, "y": 6, "width": 12, "height": 6,
+      "properties": {
+        "title": "Celery Task Queue Depth",
+        "metrics": [
+          ["Lumina/Backend", "CeleryQueueDepth", "Queue", "default"],
+          ["Lumina/Backend", "CeleryQueueDepth", "Queue", "ml_tasks"]
+        ],
+        "stat": "Average",
+        "period": 60,
+        "view": "timeSeries"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12, "y": 6, "width": 12, "height": 6,
+      "properties": {
+        "title": "Active Student Sessions",
+        "metrics": [
+          ["Lumina/Backend", "ActiveStudentSessions"]
+        ],
+        "stat": "Maximum",
+        "period": 300,
+        "view": "timeSeries"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0, "y": 12, "width": 12, "height": 6,
+      "properties": {
+        "title": "DB Operation Count + Latency",
+        "metrics": [
+          ["Lumina/Backend", "DBOperationCount", "Status", "success"],
+          ["Lumina/Backend", "DBLatencySeconds",  {"stat": "p95", "label": "DB p95 latency"}]
+        ],
+        "stat": "Sum",
+        "period": 60,
+        "view": "timeSeries"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12, "y": 12, "width": 12, "height": 6,
+      "properties": {
+        "title": "Student Submissions Graded",
+        "metrics": [
+          ["Lumina/Backend", "StudentSubmissionCount", "Status", "success"],
+          ["Lumina/Backend", "StudentSubmissionCount", "Status", "error"]
+        ],
+        "stat": "Sum",
+        "period": 300,
+        "view": "timeSeries"
+      }
+    }
+  ]
+}

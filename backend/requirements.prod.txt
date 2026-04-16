@@ -1,0 +1,50 @@
+# ================================================================
+# Lumina Backend — Production dependencies only
+# Dev/test packages removed to reduce image size.
+# Use requirements.txt for local development.
+# ================================================================
+fastapi==0.115.6
+uvicorn[standard]
+starlette
+redis==5.0.1
+pydantic==2.5.3
+python-multipart==0.0.6
+bcrypt==4.0.1
+python-jose==3.3.0
+passlib==1.7.4
+email-validator==2.1.0.post1
+chromadb
+pypdf
+pdfplumber>=0.11.4
+sentence-transformers
+transformers
+aiofiles
+httpx>=0.27.0
+Pillow
+pydantic-settings
+google-genai==1.0.0
+apscheduler
+python-pptx>=0.6.21
+huggingface_hub
+boto3
+celery==5.3.6
+structlog==24.1.0
+sentry-sdk[fastapi]==1.40.6
+slowapi==0.1.9
+rank-bm25==0.2.2
+qdrant-client
+supabase==2.13.0
+
+# ML / OCR
+numpy<2.0.0
+opencv-python-headless==4.8.1.78
+
+# CloudWatch metrics (replaces prometheus in production)
+# boto3 above covers cloudwatch client already
+
+# EXCLUDED from production (dev/test/lint only — add to requirements.txt):
+# pytest, pytest-asyncio, httpx[test]  → testing
+# pre-commit, black, ruff, mypy         → linting
+# bandit, semgrep                        → security scanning
+# ragas                                  → LLM eval framework
+# prometheus-fastapi-instrumentator      → replaced by CloudWatch

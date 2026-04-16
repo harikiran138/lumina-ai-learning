@@ -14,24 +14,38 @@ from app.core.logging import structlog
 
 log = structlog.get_logger()
 
-# Lazy-load heavy models so the server starts fast
-_trocr_processor = None
-_trocr_model = None
-
-
+# ── TrOCR: delegate to ModelRegistry (lazy load + explicit unload) ────────────
 def _load_trocr(model_name: str):
-    global _trocr_processor, _trocr_model
-    if _trocr_processor is None:
-        from transformers import TrOCRProcessor, VisionEncoderDecoderModel
-        import torch
-        log.info("loading_trocr_model", model=model_name)
-        _trocr_processor = TrOCRProcessor.from_pretrained(model_name)
-        _trocr_model = VisionEncoderDecoderModel.from_pretrained(model_name)
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        _trocr_model = _trocr_model.to(device)
-        _trocr_model.eval()
-        log.info("trocr_loaded", device=device)
-    return _trocr_processor, _trocr_model
+    """Load TrOCR via ModelRegistry so it can be unloaded after each task."""
+    try:
+        from ml_services.model_registry import ModelRegistry
+        bundle = ModelRegistry.get().load_trocr(model_name)
+        return bundle["processor"], bundle["model"]
+    except Exception:
+        # Fallback: module-level globals (dev only)
+        global _trocr_processor_fallback, _trocr_model_fallback
+        if "_trocr_processor_fallback" not in globals() or _trocr_processor_fallback is None:
+            from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+            import torch
+            log.info("loading_trocr_model_fallback", model=model_name)
+            _trocr_processor_fallback = TrOCRProcessor.from_pretrained(model_name)
+            _trocr_model_fallback = VisionEncoderDecoderModel.from_pretrained(model_name)
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            _trocr_model_fallback = _trocr_model_fallback.to(device)
+            _trocr_model_fallback.eval()
+        return _trocr_processor_fallback, _trocr_model_fallback
+
+
+def unload_trocr():
+    """Free TrOCR from memory. MUST be called after every grading task."""
+    try:
+        from ml_services.model_registry import ModelRegistry
+        ModelRegistry.get().unload("trocr")
+    except Exception:
+        global _trocr_processor_fallback, _trocr_model_fallback
+        _trocr_processor_fallback = None
+        _trocr_model_fallback = None
+        import gc; gc.collect()
 
 
 # ── Image pre-processing ──────────────────────────────────────────────────────

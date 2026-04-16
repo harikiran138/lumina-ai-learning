@@ -13,11 +13,18 @@ class RedisClientProxy:
                 settings, "REDIS_URL", os.getenv("REDIS_URL", "redis://localhost:6379")
             )
             try:
-                self.client = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+                self.client = redis.from_url(
+                    redis_url,
+                    encoding="utf-8",
+                    decode_responses=True,
+                    # Cap connection pool — prevents exhaustion on t3.large / ElastiCache
+                    max_connections=10,
+                    socket_timeout=5,
+                    socket_connect_timeout=5,
+                    retry_on_timeout=True,
+                )
                 await self.client.ping()
-                # print(f"Connected to Redis at {redis_url}")
             except Exception:
-                # print(f"Redis connection failed: {e}")
                 self.client = None
 
     async def get(self, key, *args, **kwargs):
