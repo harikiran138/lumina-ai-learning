@@ -12,16 +12,16 @@ async def get_hod_dashboard(
     academic_store: AcademicStore = Depends(get_academic_store),
     teacher_store: TeacherStore = Depends(get_teacher_store)
 ):
-    dept_id = current_user["resolved_department_id"]
-    dept = await academic_store.get_department_by_id(dept_id)
+    department_id = current_user["resolved_department_id"]
+    dept = await academic_store.get_department_by_id(department_id)
     if not dept:
         raise HTTPException(status_code=404, detail="Department not found")
 
     # Aggregate dashboard data
-    teachers = await academic_store.get_department_teachers(dept_id)
-    programs = await academic_store.get_department_programs(dept_id)
-    students = await academic_store.get_department_students(dept_id)
-    requests = await teacher_store.get_pending_requests_by_department(dept_id)
+    teachers = await academic_store.get_department_teachers(department_id)
+    programs = await academic_store.get_department_programs(department_id)
+    students = await academic_store.get_department_students(department_id)
+    requests = await teacher_store.get_pending_requests_by_department(department_id)
 
     # Standardized structure
     return {
@@ -69,8 +69,8 @@ async def get_hod_department(
     current_user: dict = Depends(get_current_hod),
     academic_store: AcademicStore = Depends(get_academic_store)
 ):
-    dept_id = current_user["resolved_department_id"]
-    dept = await academic_store.get_department_by_id(dept_id)
+    department_id = current_user["resolved_department_id"]
+    dept = await academic_store.get_department_by_id(department_id)
     if not dept:
         raise HTTPException(status_code=404, detail="Department not found")
     return dept
@@ -80,24 +80,24 @@ async def get_department_teachers(
     current_user: dict = Depends(get_current_hod),
     academic_store: AcademicStore = Depends(get_academic_store)
 ):
-    dept_id = current_user["resolved_department_id"]
-    return await academic_store.get_department_teachers(dept_id)
+    department_id = current_user["resolved_department_id"]
+    return await academic_store.get_department_teachers(department_id)
 
 @router.get("/programs")
 async def get_department_programs(
     current_user: dict = Depends(get_current_hod),
     academic_store: AcademicStore = Depends(get_academic_store)
 ):
-    dept_id = current_user["resolved_department_id"]
-    return await academic_store.get_department_programs(dept_id)
+    department_id = current_user["resolved_department_id"]
+    return await academic_store.get_department_programs(department_id)
 
 @router.get("/requests")
 async def get_department_teacher_requests(
     current_user: dict = Depends(get_current_hod),
     teacher_store: TeacherStore = Depends(get_teacher_store)
 ):
-    dept_id = current_user["resolved_department_id"]
-    return await teacher_store.get_pending_requests_by_department(dept_id)
+    department_id = current_user["resolved_department_id"]
+    return await teacher_store.get_pending_requests_by_department(department_id)
 
 @router.patch("/requests/{request_id}")
 async def update_teacher_request(
@@ -106,7 +106,7 @@ async def update_teacher_request(
     current_user: dict = Depends(get_current_hod),
     teacher_store: TeacherStore = Depends(get_teacher_store)
 ):
-    dept_id = current_user["resolved_department_id"]
+    department_id = current_user["resolved_department_id"]
     
     status = payload.get("status")
     if status not in {"APPROVED", "REJECTED"}:
@@ -118,7 +118,7 @@ async def update_teacher_request(
         raise HTTPException(status_code=404, detail="Request not found")
         
     teacher = await teacher_store.db.fetch_one("users", {"id": request["teacher_id"]})
-    if not teacher or teacher.get("department_id") != dept_id:
+    if not teacher or teacher.get("department_id") != department_id:
         raise HTTPException(status_code=403, detail="Not authorized to act on this request")
     
     if request.get("status") != "PENDING_HOD":

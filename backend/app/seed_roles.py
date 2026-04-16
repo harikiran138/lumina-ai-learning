@@ -70,10 +70,10 @@ async def seed_roles():
     
     # 1. Setup Institutional Data (Department for HOD/Teacher)
     print("\n--- Seeding Institutional Data ---")
-    dept_id = "dept_stem_001"
+    department_id = "dept_stem_001"
     try:
         await academic_store.db.insert("departments", {
-            "id": dept_id,
+            "id": department_id,
             "department_name": "STEM & AI",
             "code": "STEM",
             "hod_id": hod_id,

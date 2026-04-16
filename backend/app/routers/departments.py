@@ -29,10 +29,10 @@ async def create_department(inst_id: str, data: dict, admin: dict = Depends(is_a
     db = get_scoped_db(admin)
     return await InstitutionStore(db=db).create_department(data)
 
-@router.patch("/{inst_id}/{dept_id}")
+@router.patch("/{inst_id}/{department_id}")
 async def update_department(
     inst_id: str,
-    dept_id: str,
+    department_id: str,
     data: dict,
     admin: dict = Depends(is_admin),
 ):
@@ -44,15 +44,15 @@ async def update_department(
 
     payload["updated_at"] = datetime.utcnow().isoformat()
     db = get_scoped_db(admin)
-    result = await db.update("departments", payload, {"id": dept_id, "institution_id": inst_id})
+    result = await db.update("departments", payload, {"id": department_id, "institution_id": inst_id})
     if not result:
         raise HTTPException(status_code=404, detail="Department not found")
     return result[0]
 
-@router.patch("/{inst_id}/{dept_id}/hod")
+@router.patch("/{inst_id}/{department_id}/hod")
 async def assign_hod(
     inst_id: str,
-    dept_id: str,
+    department_id: str,
     data: dict,
     admin: dict = Depends(is_admin),
 ):
@@ -68,13 +68,13 @@ async def assign_hod(
         raise HTTPException(status_code=404, detail="HOD user not found")
 
     await user_store.update_user_role(hod_id, "hod")
-    await user_store.update_user_fields(hod_id, {"department_id": dept_id})
+    await user_store.update_user_fields(hod_id, {"department_id": department_id})
 
     res = await db.update(
         "departments",
         {"hod_id": hod_id, "updated_at": datetime.utcnow().isoformat()},
-        {"id": dept_id, "institution_id": inst_id},
+        {"id": department_id, "institution_id": inst_id},
     )
     if not res:
         raise HTTPException(status_code=404, detail="Department not found")
-    return {"status": "success", "department_id": dept_id, "hod_id": hod_id}
+    return {"status": "success", "department_id": department_id, "hod_id": hod_id}

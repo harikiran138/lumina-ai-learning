@@ -69,7 +69,7 @@ class AIQueueStore(BaseStoreMixin):
             "ai_generated_answer", "teacher_edited_answer", "status",
             "created_at", "verified_at", "priority_score", "question_id",
             "ai_model", "ai_confidence", "ai_sources", "final_answer",
-            "faculty_note", "college_id", "reviewed_by", "reviewed_at",
+            "faculty_note", "institution_id", "reviewed_by", "reviewed_at",
             "ai_draft", "is_deleted", "deleted_at", "released_to_student",
             "released_at", "added_to_bank", "added_to_bank_at",
             "teacher_custom_answer", "priority_factors", "rejection_reason",

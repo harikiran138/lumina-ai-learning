@@ -1245,8 +1245,8 @@ async def get_profile(
             "academicYear": None,
         }
         
-        inst_id = current_user.get("college_id")
-        dept_id = current_user.get("dept_id") or current_user.get("department_id")
+        inst_id = current_user.get("institution_id")
+        department_id = current_user.get("department_id") or current_user.get("department_id")
         batch_id = current_user.get("batch_id")
         class_id = current_user.get("class_id")
         ay_id = current_user.get("academic_year_id")
@@ -1254,8 +1254,8 @@ async def get_profile(
         if inst_id:
             inst = await personalization.db.fetch_one("institutions", {"id": inst_id})
             hierarchy["institution"] = (inst.get("name") if inst else None) if isinstance(inst, dict) else None
-        if dept_id:
-            dept = await personalization.db.fetch_one("departments", {"id": dept_id})
+        if department_id:
+            dept = await personalization.db.fetch_one("departments", {"id": department_id})
             hierarchy["department"] = (dept.get("name") if dept else None) if isinstance(dept, dict) else None
         if batch_id:
             batch = await personalization.db.fetch_one("batches", {"id": batch_id})

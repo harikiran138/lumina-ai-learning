@@ -20,7 +20,7 @@ def _uid() -> str:
 async def create_course(
     client: httpx.AsyncClient,
     teacher_token: str,
-    dept_id: Optional[str] = None,
+    department_id: Optional[str] = None,
 ) -> Optional[dict]:
     """
     POST /api/courses/create (query params) — accepts teacher role.
@@ -120,12 +120,12 @@ async def list_assignments(
 async def run_teacher_flow(
     client: httpx.AsyncClient,
     teacher_token: str,
-    dept_id: Optional[str] = None,
+    department_id: Optional[str] = None,
 ) -> dict:
     log("Running teacher flow ...")
     ctx: dict = {}
 
-    course = await create_course(client, teacher_token, dept_id)
+    course = await create_course(client, teacher_token, department_id)
     if course:
         ctx["course_id"] = course.get("id")
         assignment = await create_assignment(client, teacher_token, ctx["course_id"])

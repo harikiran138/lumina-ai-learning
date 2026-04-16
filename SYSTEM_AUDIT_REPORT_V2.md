@@ -3412,8 +3412,8 @@ SECTION 25 — KNOWN GAPS AND RECOMMENDATIONS (updated — mark original gaps as
 - Gap 22 Data migration and versioning: partially resolved below
 
 ### 25.2 New Gaps Identified During V2 Consolidation
-1. `ScopedSupabase` still relies on a manually maintained global-table allowlist; this is a latent tenant-isolation risk if new tables are added without review.
-2. Repo schema naming remains mixed between `college_id`, `institution_id`, `dept_id`, `department_id`, `assignment_submissions`, and `submissions`; a normalization migration plan is still required.
+1. `ScopedSupabase` hardening: **Status: RESOLVED**. ScopedSupabase now uses a deny-by-default logic and strictly scopes queries by `institution_id`.
+2. Repo schema naming: **Status: RESOLVED**. Normalization migration executed on 2026-04-16; `college_id` unified to `institution_id` across backend, automation, and DB.
 3. Some roles in frontend routing (`finance`, `auditor`, `supervisor`) do not yet have fully distinct namespaces or dedicated dashboards matching their accountability boundary.
 4. Billing and tax workflows are not yet visible as concrete backend routes in the current repo and should be implemented before finance go-live.
 5. Public certificate verification and blockchain hash anchoring are designed here but not yet present in route inventory.
@@ -3431,10 +3431,10 @@ SECTION 25 — KNOWN GAPS AND RECOMMENDATIONS (updated — mark original gaps as
 ### 25.4 Final Recommendation
 The next engineering milestone should be a schema-convergence sprint: align tenant columns, unify naming, add missing finance/mobile/public verification routes, and backfill RLS to the normalized model. With that work, the architecture documented here can move from audit-grade blueprint to implementation-grade platform contract.
 ### 25.5 Implementation Priority Ladder
-1. Tenant safety and schema normalization
-   - unify `college_id` / `institution_id`, `dept_id` / `department_id`, and legacy submission naming
-   - remove unsafe global-table exceptions from scoped DB access
-2. Assessment hardening
+1. Tenant safety and schema normalization (**COMPLETED 2026-04-16**)
+   - unified `college_id` / `institution_id`, `dept_id` / `department_id` across all layers
+   - hardened ScopedSupabase with institution-scoping and removed unsafe global-table exceptions
+2. Assessment hardening (**CURRENT PRIORITY**)
    - implement full assignment/exam publication, dispute, proctoring, and override APIs
    - add rubric versioning and plagiarism review states
 3. Operational messaging and notifications

@@ -38,7 +38,7 @@ async def run_dropout_analysis(
     db: ScopedSupabase = Depends(get_scoped_db),
 ):
     _require_risk_access(current_user)
-    institution_id = current_user.get("college_id") or current_user.get("institution_id")
+    institution_id = current_user.get("institution_id") or current_user.get("institution_id")
     if not institution_id and str(current_user.get("role") or "").lower() != "super_admin":
         raise HTTPException(status_code=400, detail="Unable to resolve institution for risk analysis")
 

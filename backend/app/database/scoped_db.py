@@ -16,42 +16,15 @@ def _load_soft_delete_tables() -> Set[str]:
 
 SOFT_DELETE_TABLES = _load_soft_delete_tables()
 
-# Tables that are not scoped by institution (global or user-only)
+# Tables that are truly global (system-wide)
+# Most tables should be scoped by institution_id to ensure tenant isolation.
 GLOBAL_TABLES = {
-    "user_data",
-    "roles",
-    "permissions",
-    "users",
+    "institutions",
     "institution_login_policies",
-    "batches",
-    "learner_profiles",
-    "assessment_sessions",
-    # These tables use their own foreign keys (course_id, batch_id, teacher_id)
-    # and do not have an institution_id column
-    "teacher_assignments",
-    "assignments",
-    "assignment_submissions",
-    "enrollment_codes",
-    "courses",
-    "ai_answer_queue",
-    "verified_answers_bank",
-    "attendance_sessions",
-    "attendance_records",
-    # Junction tables scoped by student_id/user_id — no institution_id column
-    "student_subjects",
-    "skill_mastery",
-    "student_enrollments",
-    # Hierarchy tables scoped via program_id/department_id — no institution_id column
-    "semesters",
-    "classes",
-    "teacher_requests",
-    "content_uploads",
-    "physical_submissions",
-    "course_concepts",
-    "counselor_notes",
-    "risk_reveal_logs",
-    "follow_up_tasks",
-    "risk_alerts",
+    "super_audit_log",
+    "system_configs",
+    "roles",
+    "permissions"
 }
 
 
@@ -195,7 +168,7 @@ class ScopedSupabase:
         self.user = user
         self.role = user.get("role")
         self.is_super_admin = (self.role == "super_admin")
-        self.institution_id = user.get("college_id") or user.get("institution_id")
+        self.institution_id = user.get("institution_id")
         self.jwt = user.get("access_token")
         
         self._scoped_client = None
@@ -299,6 +272,6 @@ from fastapi import Depends
 
 def get_scoped_db(user: dict = Depends(get_current_user)) -> ScopedSupabase:
     """
-    Dependency to get a database client scoped to the current user's college.
+    Dependency to get a database client scoped to the current user's institution.
     """
     return ScopedSupabase(user)

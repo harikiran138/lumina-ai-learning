@@ -48,9 +48,9 @@ async def ask_tutor_agent(
     
     if not teacher_id:
          # Fallback to HOD or Admin
-         dept_id = current_user.get("department_id")
-         if dept_id:
-             dept = await academic_store.get_department_by_id(dept_id)
+         department_id = current_user.get("department_id")
+         if department_id:
+             dept = await academic_store.get_department_by_id(department_id)
              teacher_id = dept.get("hod_id")
     
     if not teacher_id:

@@ -157,10 +157,10 @@ async def get_current_super_admin(current_user: dict = Depends(get_current_activ
     _ensure_2fa(current_user)
     return current_user
 
-async def get_current_college_admin(current_user: dict = Depends(get_current_active_user)) -> dict:
+async def get_current_institution_admin(current_user: dict = Depends(get_current_active_user)) -> dict:
     role = _ensure_valid_role(current_user)
-    if role not in {"admin", "college_admin", "super_admin", "institution_admin", "system_admin", "hod"}:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="College Admin privileges required")
+    if role not in {"admin", "super_admin", "institution_admin", "system_admin"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Institution Admin privileges required")
     _ensure_2fa(current_user)
     return current_user
 
@@ -175,7 +175,7 @@ async def get_current_hod(
     of department scoping for all HOD endpoints.
     """
     role = _ensure_valid_role(current_user)
-    if role not in {"hod", "college_admin", "super_admin"}:
+    if role not in {"hod", "super_admin", "institution_admin"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="HOD privileges required")
 
     # Enrich with resolved_department_id so every HOD route can read it safely.
@@ -203,7 +203,7 @@ async def get_current_hod(
 
 async def get_current_teacher(current_user: dict = Depends(get_current_active_user)) -> dict:
     role = _ensure_valid_role(current_user)
-    allowed = {"teacher", "hod", "college_admin", "super_admin", "faculty"}
+    allowed = {"teacher", "hod", "super_admin", "institution_admin", "faculty"}
     if role not in allowed:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Teacher privileges required")
     return current_user
@@ -256,4 +256,5 @@ async def get_current_researcher(current_user: dict = Depends(get_current_active
     return current_user
 
 # Aliases for compatibility
-get_current_admin = get_current_college_admin
+get_current_admin = get_current_institution_admin
+get_current_college_admin = get_current_institution_admin

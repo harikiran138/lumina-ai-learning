@@ -28,10 +28,10 @@ class SubjectCreateRequest(BaseModel):
     faculty_id: Optional[str] = None
 
 
-def _ensure_department_access(current_user: Dict[str, Any], dept_id: str) -> None:
+def _ensure_department_access(current_user: Dict[str, Any], department_id: str) -> None:
     role = str(current_user.get("role") or "").lower()
-    resolved_dept = current_user.get("dept_id") or current_user.get("department_id") or current_user.get("resolved_department_id")
-    if role in {"hod", "teacher"} and str(resolved_dept) != str(dept_id):
+    resolved_dept = current_user.get("department_id") or current_user.get("department_id") or current_user.get("resolved_department_id")
+    if role in {"hod", "teacher"} and str(resolved_dept) != str(department_id):
         raise HTTPException(status_code=403, detail="You do not have access to this department")
 
 
@@ -47,27 +47,27 @@ def _normalize_subject(row: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-@router.get("/{dept_id}/batches")
+@router.get("/{department_id}/batches")
 async def list_batches(
-    dept_id: str,
+    department_id: str,
     current_user: Dict[str, Any] = Depends(get_current_teacher),
     db: ScopedSupabase = Depends(get_scoped_db),
 ):
-    _ensure_department_access(current_user, dept_id)
-    rows = await db.fetch_all("batches", {"dept_id": dept_id}, limit=200)
+    _ensure_department_access(current_user, department_id)
+    rows = await db.fetch_all("batches", {"department_id": department_id}, limit=200)
     return sorted(rows, key=lambda item: (item.get("year") or 0, item.get("label") or ""), reverse=True)
 
 
-@router.post("/{dept_id}/batches")
+@router.post("/{department_id}/batches")
 async def create_batch(
-    dept_id: str,
+    department_id: str,
     payload: BatchCreateRequest,
     current_user: Dict[str, Any] = Depends(get_current_hod),
     db: ScopedSupabase = Depends(get_scoped_db),
 ):
-    _ensure_department_access(current_user, dept_id)
-    college_id = current_user.get("college_id") or current_user.get("institution_id")
-    if not college_id and str(current_user.get("role") or "").lower() != "super_admin":
+    _ensure_department_access(current_user, department_id)
+    institution_id = current_user.get("institution_id") or current_user.get("institution_id")
+    if not institution_id and str(current_user.get("role") or "").lower() != "super_admin":
         raise HTTPException(status_code=400, detail="Unable to resolve institution for batch creation")
 
     normalized_sections = [
@@ -76,8 +76,8 @@ async def create_batch(
         if isinstance(section, str) and section.strip()
     ]
     data = {
-        "dept_id": dept_id,
-        "college_id": college_id,
+        "department_id": department_id,
+        "institution_id": institution_id,
         "year": payload.year,
         "label": payload.label.strip(),
         "sections": normalized_sections,
@@ -91,29 +91,29 @@ async def create_batch(
     return created
 
 
-@router.get("/{dept_id}/subjects")
+@router.get("/{department_id}/subjects")
 async def list_subjects(
-    dept_id: str,
+    department_id: str,
     current_user: Dict[str, Any] = Depends(get_current_teacher),
     db: ScopedSupabase = Depends(get_scoped_db),
 ):
-    _ensure_department_access(current_user, dept_id)
-    rows = await db.fetch_all("courses", {"department_id": dept_id}, limit=200)
+    _ensure_department_access(current_user, department_id)
+    rows = await db.fetch_all("courses", {"department_id": department_id}, limit=200)
     if not rows:
-        rows = await db.fetch_all("courses", {"dept_id": dept_id}, limit=200)
+        rows = await db.fetch_all("courses", {"department_id": department_id}, limit=200)
     normalized = [_normalize_subject(row) for row in rows]
     return sorted(normalized, key=lambda item: ((item.get("name") or "").lower(), item.get("code") or ""))
 
 
-@router.post("/{dept_id}/subjects")
+@router.post("/{department_id}/subjects")
 async def create_subject(
-    dept_id: str,
+    department_id: str,
     payload: SubjectCreateRequest,
     current_user: Dict[str, Any] = Depends(get_current_hod),
     db: ScopedSupabase = Depends(get_scoped_db),
 ):
-    _ensure_department_access(current_user, dept_id)
-    college_id = current_user.get("college_id") or current_user.get("institution_id")
+    _ensure_department_access(current_user, department_id)
+    institution_id = current_user.get("institution_id") or current_user.get("institution_id")
 
     data = {
         "name": payload.name.strip(),
@@ -121,16 +121,16 @@ async def create_subject(
         "course_name": payload.name.strip(),
         "code": payload.code.strip().upper(),
         "course_code": payload.code.strip().upper(),
-        "department_id": dept_id,
-        "dept_id": dept_id,
+        "department_id": department_id,
+        "department_id": department_id,
         "teacher_id": payload.faculty_id,
         "faculty_id": payload.faculty_id,
         "batch_id": payload.batch_id,
         "credits": payload.credits,
         "type": payload.type.strip(),
         "subject_type": payload.type.strip(),
-        "college_id": college_id,
-        "institution_id": college_id,
+        "institution_id": institution_id,
+        "institution_id": institution_id,
         "created_at": datetime.utcnow().isoformat(),
         "updated_at": datetime.utcnow().isoformat(),
     }
@@ -161,7 +161,7 @@ async def generate_batch_enrollment_code(
     import uuid
     from datetime import datetime, timedelta
     
-    _ensure_department_access(current_user, current_user.get("dept_id"))
+    _ensure_department_access(current_user, current_user.get("department_id"))
     
     code = uuid.uuid4().hex[:6].upper()
     expires_at = (datetime.utcnow() + timedelta(hours=72)).isoformat()

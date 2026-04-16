@@ -87,8 +87,8 @@ class UserStore:
         safe_user["createdAt"] = created_at
         
         # Ensure institutional fields are present
-        safe_user["college_id"] = safe_user.get("college_id")
-        safe_user["dept_id"] = safe_user.get("dept_id") or safe_user.get("department_id")
+        safe_user["institution_id"] = safe_user.get("institution_id")
+        safe_user["department_id"] = safe_user.get("department_id") or safe_user.get("department_id")
         safe_user["batch_id"] = safe_user.get("batch_id")
         safe_user["section_id"] = safe_user.get("section_id")
         safe_user["academic_year_id"] = safe_user.get("academic_year_id")
@@ -108,7 +108,7 @@ class UserStore:
 
     async def create_user(
         self, email: str, password: str, full_name: str, role: str = "student", 
-        phone: str = "", college_id: str = None, dept_id: str = None, 
+        phone: str = "", institution_id: str = None, department_id: str = None, 
         batch_id: str = None, roll_number: str = None, employee_id: str = None
     ) -> dict:
         existing_user = await self.get_user_by_email(email)
@@ -135,8 +135,8 @@ class UserStore:
         profile_metadata = {
             "full_name": full_name,
             "phone": phone or "N/A",
-            "college_id": college_id,
-            "dept_id": dept_id,
+            "institution_id": institution_id,
+            "department_id": department_id,
             "batch_id": batch_id,
             "roll_number": roll_number,
             "employee_id": employee_id
@@ -228,7 +228,7 @@ class UserStore:
                     "parent_link_code": parent_link_code
                 }
             }
-            if metadata.get("college_id"): learner_data["institution_id"] = metadata["college_id"]
+            if metadata.get("institution_id"): learner_data["institution_id"] = metadata["institution_id"]
             
             # Use insert_safe for multi-table resilience
             await self.db.insert_safe("learner_profiles", learner_data)
@@ -246,7 +246,7 @@ class UserStore:
                 teacher_data = {
                     "user_id": user_id,
                     "employee_id": metadata.get("empid") or metadata.get("employee_id") or "N/A",
-                    "department_id": metadata.get("dept_id") or metadata.get("department_id")
+                    "department_id": metadata.get("department_id") or metadata.get("department_id")
                 }
                 await self.db.insert_safe("teacher_profiles", teacher_data)
                 log.info("teacher_profile_persisted", user_id=user_id)
@@ -256,7 +256,7 @@ class UserStore:
                 onboarding_data = {
                     "user_id": user_id,
                     "role": canonical_role,
-                    "institution_id": metadata.get("college_id"),
+                    "institution_id": metadata.get("institution_id"),
                     "onboarding_step": 1
                 }
                 await self.db.insert_safe("onboarding_profiles", onboarding_data)
@@ -423,8 +423,8 @@ class UserStore:
             "phone",
             "is_active",
             "status",
-            "college_id",
-            "dept_id",
+            "institution_id",
+            "department_id",
             "department_id",
             "batch_id",
             "section",
@@ -500,8 +500,8 @@ class UserStore:
             "phone",
             "is_active",
             "status",
-            "college_id",
-            "dept_id",
+            "institution_id",
+            "department_id",
             "department_id",
             "batch_id",
             "section",

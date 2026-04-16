@@ -68,9 +68,9 @@ class UserResponse(BaseModel):
     email: str
     role: str
     department: Optional[str] = None
-    collegeId: Optional[str] = None
-    deptId: Optional[str] = None
-    batchId: Optional[str] = None
+    institution_id: Optional[str] = Field(None, alias="collegeId")
+    department_id: Optional[str] = Field(None, alias="deptId")
+    batch_id: Optional[str] = Field(None, alias="batchId")
     onboardingStep: Optional[int] = 0
     onboardingCompleted: Optional[bool] = False
     adaptiveOnboardingCompleted: Optional[bool] = False
@@ -85,7 +85,7 @@ class NestedUser(BaseModel):
 
 class NestedPayload(BaseModel):
     role: Optional[str] = None
-    college_id: Optional[str] = Field(None, alias="collegeId")
+    institution_id: Optional[str] = Field(None, alias="collegeId")
 
     class Config:
         populate_by_name = True
@@ -100,7 +100,7 @@ class LoginRequest(BaseModel):
     email: Optional[str] = None
     password: Optional[str] = None
     role_hint: Optional[str] = Field(None, alias="roleHint")
-    college_id: Optional[str] = Field(None, alias="collegeId")
+    institution_id: Optional[str] = Field(None, alias="collegeId")
 
     class Config:
         populate_by_name = True
@@ -179,7 +179,7 @@ async def is_onboarding_complete(user: dict) -> Tuple[bool, bool]:
     # 4. Fallback: check onboarding_step
     onboarding_step = int(user.get("onboarding_step") or 0)
     required_steps = 5 # Standard for learner/parent
-    if role == "college_admin": required_steps = 2
+    if role == "institution_admin": required_steps = 2
     
     if onboarding_step >= required_steps:
         if role == "student":
@@ -216,8 +216,8 @@ async def build_claims(user: dict) -> dict:
         # ✗ REMOVED PII (was exposed):
         # - "email": user.get("email"),  # PII: fetch via /auth/me
         # - "fullName": user.get("full_name"),  # PII: fetch via /auth/me
-        # - "collegeId": user.get("college_id"),  # PII: fetch via /auth/me
-        # - "deptId": user.get("dept_id"),  # PII: fetch via /auth/me
+        # - "collegeId": user.get("institution_id"),  # PII: fetch via /auth/me
+        # - "deptId": user.get("department_id"),  # PII: fetch via /auth/me
         # - "batchId": user.get("batch_id"),  # PII: fetch via /auth/me
     }
 
@@ -262,23 +262,23 @@ async def _resolve_identifier(identifier: str, user_store: UserStore) -> Optiona
     return await user_store.get_user_by_email(identifier, include_sensitive=True)
 
 
-async def _check_college_login_policy(user: dict):
-    college_id = user.get("college_id")
-    if not college_id:
+async def _check_institution_login_policy(user: dict):
+    institution_id = user.get("institution_id")
+    if not institution_id:
         return
     try:
         client = supabase_db.get_client()
-        college_resp = await client.table("institutions").select("*").eq("id", college_id).limit(1).async_execute()
-        college = college_resp.data[0] if college_resp.data else None
+        institution_resp = await client.table("institutions").select("*").eq("id", institution_id).limit(1).async_execute()
+        institution = institution_resp.data[0] if institution_resp.data else None
     except Exception:
-        college = None
-    if not college:
+        institution = None
+    if not institution:
         return
-    if college.get("is_active") is False:
-        raise HTTPException(status_code=403, detail="College is inactive")
-    policy = college.get("login_policy") or "email_only"
+    if institution.get("is_active") is False:
+        raise HTTPException(status_code=403, detail="Institution is inactive")
+    policy = institution.get("login_policy") or "email_only"
     if policy == "sso":
-        raise HTTPException(status_code=403, detail="College requires SSO login")
+        raise HTTPException(status_code=403, detail="Institution requires SSO login")
     if policy == "oauth_allowed" and not user.get("password_hash"):
         raise HTTPException(status_code=403, detail="Use OAuth to login")
 
@@ -375,14 +375,14 @@ async def _log_login_history(
     ip_address: str,
     user_agent: str,
     role: Optional[str],
-    college_id: Optional[str],
+    institution_id: Optional[str],
 ):
     try:
         (supabase_db.get_client()
          .table("login_history")
          .insert({
              "user_id":         user_id,
-             "college_id":      college_id,
+             "institution_id":      institution_id,
              "identifier_used": identifier,
              "identifier_type": identifier_type,
              "role_at_login":   role,
@@ -465,8 +465,8 @@ async def register(user: UserCreate, user_store: UserStore = Depends(get_user_st
             fullName=new_user.get("full_name") or new_user.get("name", "Unknown"),
             email=new_user["email"],
             role=new_user.get("role", "student"),
-            department=new_user.get("department_id") or new_user.get("dept_id"),
-            collegeId=new_user.get("college_id"),
+            department=new_user.get("department_id"),
+            institution_id=new_user.get("institution_id"),
             onboardingStep=new_user.get("onboarding_step", 0),
             onboardingCompleted=False,
             adaptiveOnboardingCompleted=new_user.get("role") != "student",
@@ -504,7 +504,7 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     _require_active_user(user)
-    await _check_college_login_policy(user)
+    await _check_institution_login_policy(user)
     if not verify_password(form_data.password, user.get("password_hash", "")):
         await _record_failed_attempt(form_data.username, ip_address)
         raise HTTPException(
@@ -537,8 +537,8 @@ async def accept_invite(
     updates = {"password_hash": hashed_password, "is_active": True, "onboarding_step": 0}
     if invite_payload.get("institution_id"):
         updates["institution_id"] = invite_payload.get("institution_id")
-    if invite_payload.get("college_id"):
-        updates["college_id"] = invite_payload.get("college_id")
+    if invite_payload.get("institution_id"):
+        updates["institution_id"] = invite_payload.get("institution_id")
     if invite_payload.get("department_id"):
         updates["department_id"] = invite_payload.get("department_id")
     if invite_payload.get("role"):
@@ -627,17 +627,17 @@ async def login_json(
 ):
     # Handle both nested and flat request structures
     if payload.user:
-        # NEW: Nested structure {user: {identifier/email, password}, payload: {role, college_id}}
+        # NEW: Nested structure {user: {identifier/email, password}, payload: {role, institution_id}}
         raw_identifier = (payload.user.identifier or payload.user.email or "").strip()
         password = payload.user.password
         role_hint = payload.payload.role if payload.payload else None
-        college_id = payload.payload.college_id if payload.payload else None
+        institution_id = payload.payload.institution_id if payload.payload else None
     else:
         # LEGACY: Flat structure (backward compatibility)
         raw_identifier = (payload.identifier or payload.email or "").strip()
         password = payload.password
         role_hint = payload.role_hint
-        college_id = payload.college_id
+        institution_id = payload.institution_id
     if not raw_identifier:
         raise HTTPException(status_code=400, detail="Identifier or email is required")
 
@@ -670,7 +670,7 @@ async def login_json(
             ip_address=ip_address,
             user_agent=user_agent,
             role=user.get("role") if user else None,
-            college_id=user.get("college_id") if user else None,
+            institution_id=user.get("institution_id") if user else None,
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -678,7 +678,7 @@ async def login_json(
         )
 
     _require_active_user(user)
-    await _check_college_login_policy(user)
+    await _check_institution_login_policy(user)
 
     # ── Clear failed attempts on successful auth ──────────────────────────────
     await _clear_login_attempts(raw_identifier, ip_address)
@@ -694,14 +694,14 @@ async def login_json(
             user_id=user.get("id"), identifier=raw_identifier,
             identifier_type=identifier_type, success=True, failure_reason=None,
             ip_address=ip_address, user_agent=user_agent,
-            role=user.get("role"), college_id=user.get("college_id"),
+            role=user.get("role"), institution_id=user.get("institution_id"),
         )
         audit_logger.log(
             action="user_login",
             user_id=str(user.get("id")),
             metadata={
                 "identifier_type": identifier_type,
-                "college_id": user.get("college_id"),
+                "institution_id": user.get("institution_id"),
                 "force_password_change": True,
             },
         )
@@ -750,7 +750,7 @@ async def login_json(
         user_id=str(user.get("id")),
         metadata={
             "identifier_type": identifier_type,
-            "college_id": user.get("college_id"),
+            "institution_id": user.get("institution_id"),
             "force_password_change": False,
         },
     )
@@ -764,9 +764,9 @@ async def login_json(
             role=normalize_role(user.get("role", "student")),
             fullName=user.get("full_name") or user.get("name", "Unknown"),
             email=user.get("email"),
-            collegeId=user.get("college_id"),
-            deptId=user.get("dept_id") or user.get("department_id"),
-            batchId=user.get("batch_id"),
+            institution_id=user.get("institution_id"),
+            department_id=user.get("department_id"),
+            batch_id=user.get("batch_id"),
             onboardingStep=user.get("onboarding_step", 0),
             onboardingCompleted=onboarding_completed,
             adaptiveOnboardingCompleted=adaptive_completed,
@@ -937,9 +937,9 @@ async def read_users_me(current_user: dict = Depends(get_current_user)):
             fullName=current_user.get("full_name") or current_user.get("name", "Unknown"),
             email=current_user.get("email", "unknown@example.com"),
             role=current_user.get("role", "student"),
-            department=current_user.get("department_id") or current_user.get("dept_id"),
-            collegeId=current_user.get("college_id"),
-            deptId=current_user.get("dept_id") or current_user.get("department_id"),
+            department=current_user.get("department_id") or current_user.get("department_id"),
+            collegeId=current_user.get("institution_id"),
+            deptId=current_user.get("department_id") or current_user.get("department_id"),
             batchId=current_user.get("batch_id"),
             onboardingStep=current_user.get("onboarding_step", 0),
             onboardingCompleted=onboarding_completed,

@@ -164,32 +164,32 @@ class AcademicStore:
         """Fetch all departments for an institution."""
         return await self.db.fetch_all("departments", {"institution_id": institution_id})
 
-    async def get_department_by_id(self, dept_id: str) -> Optional[dict]:
-        return await self.db.fetch_one("departments", {"id": dept_id})
+    async def get_department_by_id(self, department_id: str) -> Optional[dict]:
+        return await self.db.fetch_one("departments", {"id": department_id})
 
     async def get_department_by_hod(self, hod_id: str) -> Optional[dict]:
         return await self.db.fetch_one("departments", {"hod_id": hod_id})
 
-    async def get_department_teachers(self, dept_id: str) -> List[dict]:
+    async def get_department_teachers(self, department_id: str) -> List[dict]:
         """Fetch all teachers belonging to a specific department."""
-        return await self.db.fetch_all("users", {"department_id": dept_id, "role": "teacher"})
+        return await self.db.fetch_all("users", {"department_id": department_id, "role": "teacher"})
 
-    async def get_department_programs(self, dept_id: str) -> List[dict]:
+    async def get_department_programs(self, department_id: str) -> List[dict]:
         """Fetch all programs under a specific department."""
-        return await self.db.fetch_all("programs", {"department_id": dept_id})
+        return await self.db.fetch_all("programs", {"department_id": department_id})
 
-    async def get_department_students(self, dept_id: str) -> List[dict]:
+    async def get_department_students(self, department_id: str) -> List[dict]:
         """Fetch all students belonging to a specific department."""
-        return await self.db.fetch_all("users", {"department_id": dept_id, "role": "student"})
+        return await self.db.fetch_all("users", {"department_id": department_id, "role": "student"})
 
     async def create_department(self, data: Dict[str, Any]) -> Optional[dict]:
         return await self.db.insert("departments", data)
 
-    async def update_department(self, dept_id: str, data: Dict[str, Any]) -> Optional[dict]:
-        return await self.db.update("departments", data, {"id": dept_id})
+    async def update_department(self, department_id: str, data: Dict[str, Any]) -> Optional[dict]:
+        return await self.db.update("departments", data, {"id": department_id})
 
-    async def delete_department(self, dept_id: str) -> bool:
-        res = await self.db.delete("departments", {"id": dept_id})
+    async def delete_department(self, department_id: str) -> bool:
+        res = await self.db.delete("departments", {"id": department_id})
         return res is not None
 
     # --- Institution & Program Methods ---

@@ -60,7 +60,7 @@ async def create_college(client: httpx.AsyncClient, admin_token: str) -> Optiona
 async def create_department(
     client: httpx.AsyncClient,
     admin_token: str,
-    college_id: str,
+    institution_id: str,
 ) -> Optional[dict]:
     payload = {
         "name":         "Computer Science & AI",
@@ -69,7 +69,7 @@ async def create_department(
     }
     try:
         resp = await client.post(
-            f"{API}/colleges/{college_id}/departments",
+            f"{API}/colleges/{institution_id}/departments",
             json=payload,
             headers={"Authorization": f"Bearer {admin_token}"},
             timeout=HTTP_TIMEOUT,
@@ -81,7 +81,7 @@ async def create_department(
         if resp.status_code in (400, 409):
             warn("Department may already exist — fetching existing ...")
             r2 = await client.get(
-                f"{API}/colleges/{college_id}/departments",
+                f"{API}/colleges/{institution_id}/departments",
                 headers={"Authorization": f"Bearer {admin_token}"},
                 timeout=HTTP_TIMEOUT,
             )
@@ -99,7 +99,7 @@ async def create_department(
 async def create_batch(
     client: httpx.AsyncClient,
     hod_token: str,
-    dept_id: str,
+    department_id: str,
 ) -> Optional[dict]:
     payload = {
         "year":     2026,
@@ -109,7 +109,7 @@ async def create_batch(
     }
     try:
         resp = await client.post(
-            f"{API}/departments/{dept_id}/batches",
+            f"{API}/departments/{department_id}/batches",
             json=payload,
             headers={"Authorization": f"Bearer {hod_token}"},
             timeout=HTTP_TIMEOUT,
@@ -128,7 +128,7 @@ async def create_batch(
 async def create_subject(
     client: httpx.AsyncClient,
     hod_token: str,
-    dept_id: str,
+    department_id: str,
 ) -> Optional[dict]:
     payload = {
         "name":     "Agentic AI Systems",
@@ -138,7 +138,7 @@ async def create_subject(
     }
     try:
         resp = await client.post(
-            f"{API}/departments/{dept_id}/subjects",
+            f"{API}/departments/{department_id}/subjects",
             json=payload,
             headers={"Authorization": f"Bearer {hod_token}"},
             timeout=HTTP_TIMEOUT,
@@ -181,12 +181,12 @@ async def create_enrollment_code(
 async def assign_users_to_dept(
     client: httpx.AsyncClient,
     admin_token: str,
-    dept_id: str,
-    college_id: str,
+    department_id: str,
+    institution_id: str,
 ) -> None:
     """
-    PATCH hod@lumina.com and teacher@lumina.com to carry dept_id + college_id so
-    that HOD/Faculty dashboards (which require dept_id) work without 403.
+    PATCH hod@lumina.com and teacher@lumina.com to carry department_id + institution_id so
+    that HOD/Faculty dashboards (which require department_id) work without 403.
     """
     from automation.config import API, HTTP_TIMEOUT, USERS
     for role_key in ("hod", "teacher"):
@@ -196,14 +196,14 @@ async def assign_users_to_dept(
                 f"{API}/admin/users/by-email",
                 json={
                     "email":      email,
-                    "dept_id":    dept_id,
-                    "college_id": college_id,
+                    "department_id":    department_id,
+                    "institution_id": institution_id,
                 },
                 headers={"Authorization": f"Bearer {admin_token}"},
                 timeout=HTTP_TIMEOUT,
             )
             if resp.status_code == 200:
-                ok(f"Linked {email} → dept {dept_id}")
+                ok(f"Linked {email} → dept {department_id}")
             else:
                 # Fallback: try PATCH /admin/users/{id} if by-email endpoint missing
                 warn(f"by-email patch not available ({resp.status_code}) for {email} — skipping dept assignment")
@@ -227,18 +227,18 @@ async def run_academic_flow(
     if not college:
         fail("Cannot continue without a college record")
         return ctx
-    ctx["college_id"] = college.get("id")
+    ctx["institution_id"] = college.get("id")
 
-    dept = await create_department(client, admin_token, ctx["college_id"])
+    dept = await create_department(client, admin_token, ctx["institution_id"])
     if not dept:
         fail("Cannot continue without a department record")
         return ctx
-    ctx["dept_id"] = dept.get("id")
+    ctx["department_id"] = dept.get("id")
 
     # Assign HOD and teacher to this department so their dashboards don't 403
-    await assign_users_to_dept(client, admin_token, ctx["dept_id"], ctx["college_id"])
+    await assign_users_to_dept(client, admin_token, ctx["department_id"], ctx["institution_id"])
 
-    batch = await create_batch(client, hod_token, ctx["dept_id"])
+    batch = await create_batch(client, hod_token, ctx["department_id"])
     if batch:
         ctx["batch_id"] = batch.get("id")
         code = await create_enrollment_code(client, hod_token, ctx["batch_id"])
@@ -246,7 +246,7 @@ async def run_academic_flow(
     else:
         warn("Batch creation failed — student enrollment step will be skipped")
 
-    subject = await create_subject(client, hod_token, ctx["dept_id"])
+    subject = await create_subject(client, hod_token, ctx["department_id"])
     if subject:
         ctx["subject_id"] = subject.get("id")
 

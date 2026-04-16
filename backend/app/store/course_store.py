@@ -64,7 +64,7 @@ class CourseStore:
         thumbnail_url: Optional[str] = None,
         program_id: Optional[str] = None,
         modules: Optional[List[Any]] = None,
-        college_id: Optional[str] = None
+        institution_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Public create_course method that builds the course data object and persists it.
@@ -82,7 +82,7 @@ class CourseStore:
             "image_url": thumbnail_url, # fallback
             "program_id": program_id,
             "modules": modules or [],
-            "college_id": college_id,
+            "institution_id": institution_id,
             "is_published": False,
             "review_status": "draft"
         }

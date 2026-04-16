@@ -23,10 +23,10 @@ async def _ensure_course_access(user: dict, course_id: str, db: Any):
         return course
 
     if role in {"teacher", "faculty", "hod"}:
-        if user.get("dept_id") and course.get("department_id") != user.get("dept_id"):
+        if user.get("department_id") and course.get("department_id") != user.get("department_id"):
             raise HTTPException(status_code=403, detail="Outside department scope")
     if role == "student":
-        if user.get("dept_id") and course.get("department_id") != user.get("dept_id"):
+        if user.get("department_id") and course.get("department_id") != user.get("department_id"):
             raise HTTPException(status_code=403, detail="Outside department scope")
     return course
 

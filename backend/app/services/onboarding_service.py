@@ -160,7 +160,7 @@ class OnboardingService:
                 {
                     "student_id": user_id,
                     "batch_id": batch_id,
-                    "dept_id": step_2.get("departmentId") or step_2.get("dept_id") or current_user.get("dept_id"),
+                    "department_id": step_2.get("departmentId") or step_2.get("department_id") or current_user.get("department_id"),
                     "section": step_2.get("section") or current_user.get("section"),
                     "status": "active",
                     "updated_at": now
@@ -192,7 +192,7 @@ class OnboardingService:
             "user_id": user_id,
             "full_name": payload.get("full_name") or step_1.get("fullName") or current_user.get("full_name") or current_user.get("name"),
             "employee_id": payload.get("employee_id") or step_1.get("employeeId") or current_user.get("employee_id"),
-            "institution_id": payload.get("institution_id") or step_1.get("collegeId") or current_user.get("college_id") or current_user.get("institution_id"),
+            "institution_id": payload.get("institution_id") or step_1.get("collegeId") or current_user.get("institution_id") or current_user.get("institution_id"),
             "department": payload.get("department") or step_1.get("department"),
             "designation": payload.get("designation") or step_1.get("designation") or "Teacher",
             "qualification": payload.get("qualification") or step_1.get("qualification"),
@@ -364,8 +364,8 @@ class OnboardingService:
 
     async def _migrate_admin(self, user_id: str, progress: Dict[str, Any], current_user: Dict[str, Any], payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Migrates admin data and activates institutions."""
-        college_id = current_user.get("college_id") or current_user.get("institution_id")
-        if college_id:
+        institution_id = current_user.get("institution_id") or current_user.get("institution_id")
+        if institution_id:
             await self.db.update(
                 "institutions",
                 {
@@ -373,7 +373,7 @@ class OnboardingService:
                     "is_active": True,
                     "updated_at": datetime.utcnow().isoformat(),
                 },
-                {"id": college_id},
+                {"id": institution_id},
             )
-            return {"status": "success", "institution_activated": college_id}
+            return {"status": "success", "institution_activated": institution_id}
         return {"status": "skipped", "reason": "no_institution_linked"}

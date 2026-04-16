@@ -334,8 +334,8 @@ class AnalyticsStore:
         scoped_user_ids = set(stakeholder_user_ids)
 
         for user in users:
-            user_institution_id = self._coalesce(user, "college_id", "institution_id", "collegeId", "institutionId")
-            user_department_id = self._coalesce(user, "dept_id", "department_id", "deptId", "departmentId")
+            user_institution_id = self._coalesce(user, "institution_id", "institution_id", "collegeId", "institutionId")
+            user_department_id = self._coalesce(user, "department_id", "department_id", "deptId", "departmentId")
             if user_institution_id == institution_id:
                 scoped_user_ids.add(user["id"])
             elif user_department_id and str(user_department_id) in department_ids:
@@ -364,8 +364,8 @@ class AnalyticsStore:
 
         scoped_courses = []
         for course in courses:
-            course_institution_id = self._coalesce(course, "college_id", "institution_id", "collegeId", "institutionId")
-            course_department_id = self._coalesce(course, "department_id", "dept_id", "departmentId", "deptId")
+            course_institution_id = self._coalesce(course, "institution_id", "institution_id", "collegeId", "institutionId")
+            course_department_id = self._coalesce(course, "department_id", "department_id", "departmentId", "deptId")
             if course_institution_id == institution_id or (
                 course_department_id and str(course_department_id) in department_ids
             ):
@@ -1596,7 +1596,7 @@ class AnalyticsStore:
             institution_depts = {d["id"] for d in all_depts if d.get("institution_id") == institution_id}
             teachers = [
                 u for u in teachers 
-                if u.get("institution_id") == institution_id or u.get("dept_id") in institution_depts or u.get("department_id") in institution_depts
+                if u.get("institution_id") == institution_id or u.get("department_id") in institution_depts or u.get("department_id") in institution_depts
             ]
 
         teacher_stats = []
@@ -1621,9 +1621,9 @@ class AnalyticsStore:
             # Utilization (courses / max courses)
             # Default limit is 10 as per model and 009_admin_limits.sql comments
             limit = 10 
-            dept_id = teacher.get("dept_id") or teacher.get("department_id")
-            if dept_id:
-                dept = next((d for d in all_depts if d["id"] == dept_id), None)
+            department_id = teacher.get("department_id") or teacher.get("department_id")
+            if department_id:
+                dept = next((d for d in all_depts if d["id"] == department_id), None)
                 if dept:
                     limit = dept.get("course_limit") or 10
             

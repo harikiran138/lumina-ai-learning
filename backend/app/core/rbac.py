@@ -10,10 +10,9 @@ class Role(str, Enum):
     """
     SUPER_ADMIN = "super_admin"
     SYSTEM_ADMIN = "system_admin"
-    COLLEGE_ADMIN = "college_admin"
     INSTITUTION_ADMIN = "institution_admin"
     HOD = "hod"
-    SUPERVISOR = "supervisor"   # Between HOD and teacher — faculty coordinator
+    SUPERVISOR = "supervisor"
     TEACHER = "teacher"
     STUDENT = "student"
     PARENT = "parent"
@@ -32,11 +31,10 @@ class Role(str, Enum):
 ROLE_HIERARCHY: dict[str, int] = {
     Role.SUPER_ADMIN: 100,
     Role.SYSTEM_ADMIN: 95,
-    Role.COLLEGE_ADMIN: 90,
     Role.INSTITUTION_ADMIN: 85,
     "admin": 80,
     Role.HOD: 60,
-    Role.SUPERVISOR: 50,   # Between HOD and teacher
+    Role.SUPERVISOR: 50,
     Role.AUDITOR: 45,
     Role.FINANCE: 35,
     Role.TEACHER: 40,
@@ -75,7 +73,6 @@ VALID_ROLES: Set[str] = {
 INVITE_ONLY_ROLES = {
     Role.HOD.value,
     Role.SUPERVISOR.value,
-    Role.COLLEGE_ADMIN.value,
     Role.SUPER_ADMIN.value,
     Role.SYSTEM_ADMIN.value,
     Role.INSTITUTION_ADMIN.value,
@@ -87,7 +84,6 @@ INVITE_ONLY_ROLES = {
 
 PLATFORM_ROLES: Set[str] = {
     Role.HOD.value,
-    Role.COLLEGE_ADMIN.value,
     Role.SUPER_ADMIN.value,
     Role.SYSTEM_ADMIN.value,
     Role.INSTITUTION_ADMIN.value,
@@ -140,17 +136,9 @@ def normalize_role(role: Any) -> str:
         "teacher": Role.TEACHER.value,
         "adm": "admin",
         "admin": "admin",
-        "college_admin": Role.COLLEGE_ADMIN.value,
-        "superadmin": Role.SUPER_ADMIN.value,
-        "super admin": Role.SUPER_ADMIN.value,
-        "system_admin": Role.SYSTEM_ADMIN.value,
-        "systemadmin": Role.SYSTEM_ADMIN.value,
-        "system admin": Role.SYSTEM_ADMIN.value,
-        "institution_admin": Role.INSTITUTION_ADMIN.value,
-        "institutionadmin": Role.INSTITUTION_ADMIN.value,
-        "institution admin": Role.INSTITUTION_ADMIN.value,
-        "collegeadmin": Role.COLLEGE_ADMIN.value,
-        "college admin": Role.COLLEGE_ADMIN.value,
+        "college_admin": Role.INSTITUTION_ADMIN.value,
+        "collegeadmin": Role.INSTITUTION_ADMIN.value,
+        "college admin": Role.INSTITUTION_ADMIN.value,
         "inst_admin": Role.INSTITUTION_ADMIN.value,
         "curriculum": Role.CONTENT_CREATOR.value,
         "peer tutor": Role.PEER_TUTOR.value,

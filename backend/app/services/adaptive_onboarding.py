@@ -176,7 +176,7 @@ class AdaptiveOnboardingEngine:
             {
                 "id": str(uuid.uuid4()),
                 "user_id": user_id,
-                "institution_id": current_user.get("institution_id") or current_user.get("college_id"),
+                "institution_id": current_user.get("institution_id") or current_user.get("institution_id"),
                 "role": role,
                 "flow_key": f"{role}_adaptive_v1",
                 "status": "in_progress",
@@ -341,8 +341,8 @@ class AdaptiveOnboardingEngine:
             "email": current_user.get("email"),
             "full_name": current_user.get("name") or current_user.get("full_name"),
             "first_name": personal.get("firstName") or current_user.get("first_name"),
-            "institution_id": current_user.get("institution_id") or current_user.get("college_id"),
-            "department_id": current_user.get("dept_id") or current_user.get("department_id"),
+            "institution_id": current_user.get("institution_id") or current_user.get("institution_id"),
+            "department_id": current_user.get("department_id") or current_user.get("department_id"),
             "batch_id": current_user.get("batch_id"),
             "subject_ids": subject_ids,
             "subject_rows": [
@@ -979,7 +979,7 @@ class AdaptiveOnboardingEngine:
 
         profile_payload = {
             "user_id": user_id,
-            "institution_id": current_user.get("institution_id") or current_user.get("college_id"),
+            "institution_id": current_user.get("institution_id") or current_user.get("institution_id"),
             "role": role,
             "status": "completed",
             "latest_session_id": session.get("id"),

@@ -476,7 +476,7 @@ async def update_user_role(user_id: str, role: str, admin: dict = Depends(is_adm
 async def assign_user_dept_by_email(data: dict, admin: dict = Depends(is_admin),
     user_store: UserStore = Depends(get_user_store)
 ):
-    """Update dept_id / college_id for a user identified by email. Used by demo setup."""
+    """Update department_id / institution_id for a user identified by email. Used by demo setup."""
     email = (data.get("email") or "").strip().lower()
     if not email:
         raise HTTPException(status_code=400, detail="email is required")
@@ -486,10 +486,10 @@ async def assign_user_dept_by_email(data: dict, admin: dict = Depends(is_admin),
         raise HTTPException(status_code=404, detail=f"User {email} not found")
 
     updates: dict = {}
-    if data.get("dept_id"):
-        updates["dept_id"] = data["dept_id"]
-    if data.get("college_id"):
-        updates["college_id"] = data["college_id"]
+    if data.get("department_id"):
+        updates["department_id"] = data["department_id"]
+    if data.get("institution_id"):
+        updates["institution_id"] = data["institution_id"]
     if not updates:
         raise HTTPException(status_code=400, detail="No updatable fields provided")
 
@@ -657,10 +657,10 @@ async def create_department(inst_id: str, data: dict, admin: dict = Depends(is_a
     return await institution_store.create_department(data)
 
 
-@router.patch("/institutions/{inst_id}/departments/{dept_id}")
+@router.patch("/institutions/{inst_id}/departments/{department_id}")
 async def update_department(
     inst_id: str,
-    dept_id: str,
+    department_id: str,
     data: dict,
     admin: dict = Depends(is_admin),
     db: ScopedSupabase = Depends(get_scoped_db)
@@ -683,17 +683,17 @@ async def update_department(
     result = await db.update(
         "departments",
         payload,
-        {"id": dept_id, "institution_id": inst_id},
+        {"id": department_id, "institution_id": inst_id},
     )
     if not result:
         raise HTTPException(status_code=404, detail="Department not found")
     return result[0]
 
 
-@router.patch("/institutions/{inst_id}/departments/{dept_id}/hod")
+@router.patch("/institutions/{inst_id}/departments/{department_id}/hod")
 async def assign_hod(
     inst_id: str,
-    dept_id: str,
+    department_id: str,
     data: dict,
     admin: dict = Depends(is_admin),
     user_store: UserStore = Depends(get_user_store),
@@ -710,17 +710,17 @@ async def assign_hod(
 
     # Ensure role is hod
     await user_store.update_user_role(hod_id, "hod")
-    await user_store.update_user_fields(hod_id, {"department_id": dept_id})
+    await user_store.update_user_fields(hod_id, {"department_id": department_id})
 
     # Update department
     res = await db.update(
         "departments",
         {"hod_id": hod_id, "updated_at": datetime.utcnow().isoformat()},
-        {"id": dept_id, "institution_id": inst_id},
+        {"id": department_id, "institution_id": inst_id},
     )
     if not res:
         raise HTTPException(status_code=404, detail="Department not found")
-    return {"status": "success", "department_id": dept_id, "hod_id": hod_id}
+    return {"status": "success", "department_id": department_id, "hod_id": hod_id}
 
 
 @router.get("/teachers/stats", response_model=List[dict])
@@ -1120,10 +1120,10 @@ async def bulk_enrollment(
             if dept_code:
                 dept = await db.fetch_one("departments", {"code": dept_code})
                 if dept:
-                    update_data = {"dept_id": dept["id"]}
+                    update_data = {"department_id": dept["id"]}
                     if batch_label:
                         batch = await db.fetch_one(
-                            "batches", {"dept_id": dept["id"], "label": batch_label}
+                            "batches", {"department_id": dept["id"], "label": batch_label}
                         )
                         if batch:
                             update_data["batch_id"] = batch["id"]
@@ -1182,12 +1182,12 @@ async def create_new_department(payload: CreateDeptRequest, admin: dict = Depend
     return {"success": True, "department": dept}
 
 
-@router.delete("/departments/{dept_id}")
-async def delete_department(dept_id: str, admin: dict = Depends(is_admin),
+@router.delete("/departments/{department_id}")
+async def delete_department(department_id: str, admin: dict = Depends(is_admin),
     academic_store: AcademicStore = Depends(get_academic_store)
 ):
     academic_store = academic_store
-    success = await academic_store.delete_department(dept_id)
+    success = await academic_store.delete_department(department_id)
     if not success:
         raise HTTPException(status_code=404, detail="Department not found or delete failed")
     return {"success": True}

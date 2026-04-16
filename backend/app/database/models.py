@@ -27,7 +27,6 @@ class User(BaseModel):
     
     # Institutional Scoping
     institution_id: Optional[str] = None
-    college_id: Optional[str] = None
     department_id: Optional[str] = None
     batch_id: Optional[str] = None
     

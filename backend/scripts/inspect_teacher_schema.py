@@ -20,7 +20,7 @@ async def inspect():
             print(f"Columns: {list(res.data[0].keys())}")
         else:
             print("Table is empty, trying guesses...")
-            guesses = ["user_id", "employee_id", "dept_id", "department_id", "name", "email"]
+            guesses = ["user_id", "employee_id", "department_id", "department_id", "name", "email"]
             for g in guesses:
                 try:
                     test = await client.table(table).select(g).limit(1).async_execute()
