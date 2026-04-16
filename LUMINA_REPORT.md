@@ -1,7 +1,7 @@
 # Lumina Automation Report
 
-**Date:** 2026-04-16 13:33:28  
-**Score:** 3/21 checks passed (14%)  
+**Date:** 2026-04-16 15:18:52  
+**Score:** 10/21 checks passed (47%)  
 **Verdict:** ❌ NOT READY — fix failures above
 
 ## Check Results
@@ -9,24 +9,24 @@
 | Check | Status |
 |-------|--------|
 | Backend Health | ✅ PASS |
-| Frontend Health | ✅ PASS |
+| Frontend Health | ❌ FAIL |
 | DB Seeding | ✅ PASS |
-| Admin Login | ❌ FAIL |
-| HOD Login | ❌ FAIL |
-| Teacher Login | ❌ FAIL |
-| Student Login | ❌ FAIL |
-| College Created | ❌ FAIL |
-| Department Created | ❌ FAIL |
+| Admin Login | ✅ PASS |
+| HOD Login | ✅ PASS |
+| Teacher Login | ✅ PASS |
+| Student Login | ✅ PASS |
+| College Created | ✅ PASS |
+| Department Created | ✅ PASS |
 | Batch Created | ❌ FAIL |
 | Enrollment Code | ❌ FAIL |
-| Course Created | ❌ FAIL |
+| Course Created | ✅ PASS |
 | Assignment Created | ❌ FAIL |
 | Student Enrolled | ❌ FAIL |
 | Assignment Submitted | ❌ FAIL |
 | AI Question Asked | ❌ FAIL |
 | AI Queue Approved | ❌ FAIL |
 | AI Tutor Chat | ❌ FAIL |
-| Faculty Dashboard | ❌ FAIL |
+| Faculty Dashboard | ✅ PASS |
 | HOD Dashboard | ❌ FAIL |
 | Assignment Graded | ❌ FAIL |
 
@@ -34,11 +34,11 @@
 
 | Resource | ID |
 |----------|----|
-| College   | — |
-| Department | — |
+| College   | 8a148996-2fc6-4c10-8fbb-22f61e7d4de2 |
+| Department | be25e85d-ceab-4a8e-a972-554c7095c1c0 |
 | Batch      | — |
 | Subject    | — |
-| Course     | — |
+| Course     | 02870026-d4dc-439f-bf41-1a67f7850240 |
 | Assignment | — |
 
 ## Demo Credentials

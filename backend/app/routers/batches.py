@@ -148,3 +148,37 @@ async def create_subject(
     if not created:
         raise HTTPException(status_code=500, detail="Failed to create subject")
     return _normalize_subject(created)
+
+
+@router.post("/{batch_id}/enrollment-code")
+async def generate_batch_enrollment_code(
+    batch_id: str,
+    payload: Dict[str, Any],
+    current_user: Dict[str, Any] = Depends(get_current_hod),
+    db: ScopedSupabase = Depends(get_scoped_db),
+):
+    """Generate a 6-digit enrollment code for a batch."""
+    import uuid
+    from datetime import datetime, timedelta
+    
+    _ensure_department_access(current_user, current_user.get("dept_id"))
+    
+    code = uuid.uuid4().hex[:6].upper()
+    expires_at = (datetime.utcnow() + timedelta(hours=72)).isoformat()
+    
+    data = {
+        "code": code,
+        "batch_id": batch_id,
+        "section": payload.get("section") or "A",
+        "expires_at": expires_at,
+        "created_by": str(current_user["id"]),
+        "created_at": datetime.utcnow().isoformat()
+    }
+    
+    try:
+        # Use underlying client to insert into enrollment_codes table
+        client = db.get_client()
+        await client.table("enrollment_codes").insert(data).async_execute()
+        return {"code": code, "expires_at": expires_at}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create enrollment code: {str(e)}")

@@ -29,7 +29,10 @@ async def create_demo_users():
                     "password_hash": hashed_pw,
                     "name": name,
                     "full_name": name,
-                    "role": role
+                    "role": role,
+                    "two_factor_enabled": False,
+                    "is_2fa_enabled": False,
+                    "two_factor_verified": False
                 }
                 await user_store.update_user_fields(user["id"], updates)
                 print(f"   - Synced/Reset demo {role}: {email}")
@@ -42,7 +45,7 @@ async def create_demo_users():
 async def main():
     print("🚀 Starting Demo User Setup...")
     # We clear and seed to ensure a fresh state for automation
-    await seed_data(clear=True)
+    # await seed_data(clear=True)
     await create_demo_users()
     print("DEMO_USERS_SETUP_COMPLETE")
 

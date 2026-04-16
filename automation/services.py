@@ -72,12 +72,13 @@ def start_backend(project_root: Path) -> Optional[subprocess.Popen]:
         sys.exit(1)
 
     log("Starting FastAPI backend (uvicorn)...")
+    log_file = open(project_root / "backend.log", "a")
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "app.main:app",
          "--host", "0.0.0.0", "--port", "9000"],
         cwd=str(backend_dir),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=log_file,
+        stderr=subprocess.STDOUT,
     )
     return proc
 

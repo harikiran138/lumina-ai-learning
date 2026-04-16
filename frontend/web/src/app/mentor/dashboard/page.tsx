@@ -129,7 +129,7 @@ export default function MentorDashboard() {
               <span className="text-xs font-bold text-text-muted uppercase tracking-widest">{metric.label}</span>
               <div className={cn(
                 "p-1.5 rounded-lg",
-                metric.trend === 'up' ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                metric.trend === 'up' ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
               )}>
                 <TrendingUp className="w-4 h-4" />
               </div>
@@ -138,7 +138,7 @@ export default function MentorDashboard() {
               <span className="text-3xl font-bold text-foreground group-hover:text-primary transition-all">{metric.value}</span>
               <span className={cn(
                 "text-xs font-bold",
-                metric.trend === 'up' ? "text-green-500" : "text-red-500"
+                metric.trend === 'up' ? "text-success" : "text-danger"
               )}>{metric.change}</span>
             </div>
           </GlassCard>
@@ -209,7 +209,7 @@ export default function MentorDashboard() {
         <div className="space-y-8">
           <GlassCard className="p-8">
             <div className="flex items-center gap-3 mb-8">
-              <div className="p-3 rounded-2xl bg-yellow-500/10">
+              <div className="p-3 rounded-2xl bg-primary/10">
                 <Calendar className="w-6 h-6 text-primary" />
               </div>
               <h2 className="text-xl font-bold text-foreground">Sessions</h2>
@@ -218,7 +218,7 @@ export default function MentorDashboard() {
             <div className="space-y-4">
               {loading ? (
                 <div className="animate-pulse space-y-4">
-                  {[1, 2, 3].map(i => <div key={i} className="h-20 bg-white/5 rounded-2xl"></div>)}
+                  {[1, 2, 3].map(i => <div key={i} className="h-20 bg-surface rounded-2xl"></div>)}
                 </div>
               ) : sessions.length > 0 ? (
                 sessions.slice(0, 3).map((session) => (

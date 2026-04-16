@@ -63,3 +63,16 @@ async def create_program(inst_id: str, data: dict, admin: dict = Depends(is_admi
     data["institution_id"] = inst_id
     return await store.create_program(data)
 
+
+@router.get("/{inst_id}/departments")
+async def list_departments(inst_id: str, admin: dict = Depends(is_admin), store: InstitutionStore = Depends(get_institution_store)):
+    """List all departments for an institution."""
+    return await store.list_departments(inst_id)
+
+
+@router.post("/{inst_id}/departments")
+async def create_department(inst_id: str, data: dict, admin: dict = Depends(is_admin), store: InstitutionStore = Depends(get_institution_store)):
+    """Create a new department under an institution."""
+    data["institution_id"] = inst_id
+    return await store.create_department(data)
+

@@ -41,3 +41,4 @@ supabase==2.13.0
 numpy<2.0.0
 # OCR service dependency - fixed version for stability
 opencv-python-headless==4.8.1.78
+faker

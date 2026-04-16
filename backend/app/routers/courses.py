@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional, List
 import structlog
 
-from app.api.deps import get_current_college_admin
+from app.api.deps import get_current_college_admin, get_current_teacher
 from app.dependencies import get_course_store
 from app.store.course_store import CourseStore
 
@@ -13,6 +13,26 @@ def is_admin(current_user: dict = Depends(get_current_college_admin)):
     if not current_user.get("two_factor_enabled"):
         log.warning("admin_access_without_2fa", user_id=current_user.get("id"))
     return current_user
+
+@router.post("/create")
+async def create_course(
+    name: str,
+    code: str,
+    description: Optional[str] = None,
+    current_user: dict = Depends(get_current_teacher),
+    course_store: CourseStore = Depends(get_course_store)
+):
+    """
+    Create a new course.
+    Expects query parameters as per automation requirements.
+    """
+    return await course_store.create_course(
+        name=name,
+        code=code,
+        description=description or "",
+        teacher_id=str(current_user.get("id"))
+    )
+
 
 @router.get("/")
 async def get_all_courses(
