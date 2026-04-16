@@ -177,7 +177,7 @@ export default function AtRiskStudents() {
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-4">
             <div className="relative flex-1 min-w-[220px]">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               
               <input
                 type="text"
@@ -210,7 +210,7 @@ export default function AtRiskStudents() {
             {filtered.map((student, idx) => {
               const cfg = severityConfig[student.severity];
               return (
-                <GlassCard key={student.id} className="p-6 hover:border-white/10 transition-all">
+                <GlassCard key={student.id} className="p-6 hover:border-border transition-all">
                   <div className="flex flex-col md:flex-row md:items-center gap-5">
                     <span className="text-lg font-bold text-text-secondary w-6 shrink-0 hidden md:block">{idx + 1}.</span>
                     <div className="w-12 h-12 rounded-2xl bg-surface border border-border flex items-center justify-center font-bold text-foreground text-base uppercase shrink-0">
@@ -265,7 +265,7 @@ export default function AtRiskStudents() {
               );
             })}
             {filtered.length === 0 && (
-              <div className="py-16 text-center opacity-30 italic text-gray-500">No students match the current filters.</div>
+              <div className="py-16 text-center opacity-30 italic text-text-muted">No students match the current filters.</div>
             )}
           </div>
         </>

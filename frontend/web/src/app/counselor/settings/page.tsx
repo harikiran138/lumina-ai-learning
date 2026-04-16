@@ -125,7 +125,7 @@ export default function CounselorSettings() {
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
                       <input type="checkbox" defaultChecked={item.default} className="sr-only peer" />
-                      <div className="w-10 h-5 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
+                      <div className="w-10 h-5 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-primary-foreground after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
                     </label>
                   </div>
                 ))}
@@ -149,7 +149,7 @@ export default function CounselorSettings() {
                   { label: 'Audit log for identity reveals',   desc: 'All identity reveal actions are immutably logged.',             locked: true, enabled: true },
                   { label: 'Share data with faculty',          desc: 'Allow faculty to see aggregated (non-sensitive) risk flags.',   locked: false, enabled: false },
                 ].map((item) => (
-                  <div key={item.label} className="flex items-start justify-between gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                  <div key={item.label} className="flex items-start justify-between gap-4 p-4 rounded-2xl bg-surface border border-border">
                     <div className="flex items-start gap-3">
                       {item.locked && <Lock className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />}
                       <div>
@@ -159,7 +159,7 @@ export default function CounselorSettings() {
                     </div>
                     <label className={cn('relative inline-flex items-center shrink-0 mt-1', item.locked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer')}>
                       <input type="checkbox" defaultChecked={item.enabled} disabled={item.locked} className="sr-only peer" />
-                      <div className="w-10 h-5 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
+                      <div className="w-10 h-5 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-primary-foreground after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
                     </label>
                   </div>
                 ))}

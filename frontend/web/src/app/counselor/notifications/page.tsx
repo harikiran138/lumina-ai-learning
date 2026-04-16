@@ -18,7 +18,7 @@ const GlassCard: React.FC<{ className?: string; children: React.ReactNode }> = (
     initial={{ opacity: 0, y: 16 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.4 }}
-    className={cn('rounded-3xl border border-white/5 bg-white/[0.03] backdrop-blur-2xl shadow-premium overflow-hidden', className)}
+    className={cn('rounded-3xl border border-border bg-surface-elevated shadow-premium overflow-hidden', className)}
   >
     {children}
   </motion.div>
@@ -35,10 +35,10 @@ const notifications = [
 ];
 
 const typeConfig: Record<string, { icon: React.FC<any>; color: string; bg: string; dot: string }> = {
-  high:    { icon: AlertCircle,  color: 'text-red-400',     bg: 'bg-red-500/10',     dot: 'bg-red-500' },
-  medium:  { icon: AlertTriangle,color: 'text-amber-400',   bg: 'bg-amber-500/10',   dot: 'bg-amber-500' },
-  success: { icon: CheckCircle2, color: 'text-teal-400',    bg: 'bg-teal-500/10',    dot: 'bg-teal-500' },
-  info:    { icon: Info,         color: 'text-indigo-400',  bg: 'bg-indigo-500/10',  dot: 'bg-indigo-500' },
+  high:    { icon: AlertCircle,  color: 'text-danger',     bg: 'bg-danger/10',     dot: 'bg-danger' },
+  medium:  { icon: AlertTriangle,color: 'text-warning',   bg: 'bg-warning/10',   dot: 'bg-warning' },
+  success: { icon: CheckCircle2, color: 'text-success',    bg: 'bg-success/10',    dot: 'bg-success' },
+  info:    { icon: Info,         color: 'text-info',  bg: 'bg-info/10',  dot: 'bg-info' },
 };
 
 export default function Notifications() {
@@ -55,25 +55,25 @@ export default function Notifications() {
     <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-display font-bold text-white tracking-tight flex items-center gap-3">
+          <h1 className="text-4xl font-display font-bold text-foreground tracking-tight flex items-center gap-3">
             Notifications
             {unreadCount > 0 && (
-              <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-sm font-bold border border-red-500/20">
+              <span className="px-3 py-1 rounded-full bg-danger/10 text-danger text-sm font-bold border border-danger/20">
                 {unreadCount} New
               </span>
             )}
           </h1>
-          <p className="text-gray-400 mt-1 font-medium italic">Real-time risk signals, intervention updates, and system alerts</p>
+          <p className="text-text-muted mt-1 font-medium italic">Real-time risk signals, intervention updates, and system alerts</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-surface border border-border rounded-xl p-1">
             {(['all', 'unread'] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={cn(
                   'px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all',
-                  filter === f ? 'bg-lumina-highlight text-black' : 'text-gray-500 hover:text-white',
+                  filter === f ? 'bg-primary text-primary-foreground' : 'text-text-muted hover:text-foreground',
                 )}
               >
                 {f}
@@ -82,7 +82,7 @@ export default function Notifications() {
           </div>
           <button
             onClick={markAllRead}
-            className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all font-bold text-[10px] uppercase tracking-widest"
+            className="px-5 py-2.5 rounded-xl bg-surface border border-border text-text-muted hover:text-foreground transition-all font-bold text-[10px] uppercase tracking-widest"
           >
             Mark All Read
           </button>
@@ -105,17 +105,17 @@ export default function Notifications() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className={cn('font-bold text-sm', n.read ? 'text-gray-300' : 'text-white')}>{n.title}</p>
-                      <p className="text-xs text-gray-500 mt-1 leading-relaxed">{n.body}</p>
+                      <p className={cn('font-bold text-sm', n.read ? 'text-text-secondary' : 'text-foreground')}>{n.title}</p>
+                      <p className="text-xs text-text-muted mt-1 leading-relaxed">{n.body}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] text-gray-600 font-medium flex items-center gap-1">
+                      <span className="text-[10px] text-text-muted font-medium flex items-center gap-1">
                         <Clock className="w-3 h-3" /> {n.time}
                       </span>
                       {!n.read && <span className={cn('w-2 h-2 rounded-full shrink-0', cfg.dot)} />}
                       <button
                         onClick={() => dismiss(n.id)}
-                        className="p-1 rounded-lg hover:bg-white/5 text-gray-600 hover:text-white transition-all"
+                        className="p-1 rounded-lg hover:bg-surface text-text-muted hover:text-foreground transition-all"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -127,7 +127,7 @@ export default function Notifications() {
           );
         })}
         {displayed.length === 0 && (
-          <div className="py-16 text-center opacity-30 italic text-gray-500">
+          <div className="py-16 text-center opacity-30 italic text-text-muted">
             {filter === 'unread' ? 'No unread notifications.' : 'No notifications.'}
           </div>
         )}

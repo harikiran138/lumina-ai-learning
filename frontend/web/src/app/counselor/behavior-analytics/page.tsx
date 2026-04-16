@@ -63,7 +63,7 @@ const activityDrop = [
 ];
 
 const metrics = [
-  { label: 'Avg Login / Week', value: '3.75', trend: -38, icon: LogIn,        color: 'text-amber-400',  bg: 'bg-amber-500/10' },
+  { label: 'Avg Login / Week', value: '3.75', trend: -38, icon: LogIn,        color: 'text-warning',  bg: 'bg-warning/10' },
   { label: 'Avg Study Hours',  value: '2.2h', trend: -42, icon: Clock,        color: 'text-danger',    bg: 'bg-danger/10' },
   { label: 'Activity Score',   value: '34%',  trend: -28, icon: Activity,     color: 'text-info', bg: 'bg-info/10' },
   { label: 'Q&A Engagement',   value: '7.25', trend: -55, icon: MessageSquare,color: 'text-success',   bg: 'bg-success/10' },
