@@ -12,7 +12,7 @@ export const SkeletonText: React.FC<{ lines?: number; className?: string }> = ({
       {Array.from({ length: lines }).map((_, i) => (
         <div
           key={i}
-          className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+          className="h-4 bg-surface rounded animate-pulse"
           style={{ width: i === lines - 1 ? "60%" : "100%" }}
         />
       ))}
@@ -29,10 +29,10 @@ export const SkeletonCard: React.FC<{ className?: string }> = ({
   return (
     <div className={`border rounded-lg p-4 ${className}`}>
       <div className="animate-pulse">
-        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4" />
+        <div className="h-6 bg-surface rounded w-3/4 mb-4" />
         <div className="space-y-2">
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded" />
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6" />
+          <div className="h-4 bg-surface rounded" />
+          <div className="h-4 bg-surface rounded w-5/6" />
         </div>
       </div>
     </div>
@@ -50,10 +50,10 @@ export const SkeletonList: React.FC<{ items?: number; className?: string }> = ({
     <div className={`space-y-3 ${className}`}>
       {Array.from({ length: items }).map((_, i) => (
         <div key={i} className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+          <div className="w-10 h-10 bg-surface rounded-full animate-pulse" />
           <div className="flex-1 space-y-2">
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse" />
-            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 animate-pulse" />
+            <div className="h-4 bg-surface rounded w-3/4 animate-pulse" />
+            <div className="h-3 bg-surface rounded w-1/2 animate-pulse" />
           </div>
         </div>
       ))}
@@ -77,7 +77,7 @@ export const Spinner: React.FC<{
   return (
     <div className={`${sizeClasses[size]} ${className}`}>
       <svg
-        className="animate-spin text-amber-600"
+        className="animate-spin text-primary"
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
@@ -112,14 +112,14 @@ export const ProgressBar: React.FC<{
 
   return (
     <div className={`w-full ${className}`}>
-      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+      <div className="w-full bg-surface rounded-full h-2.5">
         <div
-          className="bg-amber-600 h-2.5 rounded-full transition-all duration-300"
+          className="bg-primary h-2.5 rounded-full transition-all duration-300"
           style={{ width: `${clampedProgress}%` }}
         />
       </div>
       {showLabel && (
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 text-center">
+        <p className="text-sm text-text-secondary mt-1 text-center">
           {clampedProgress}%
         </p>
       )}
@@ -134,10 +134,10 @@ export const LoadingOverlay: React.FC<{ message?: string }> = ({
   message = "Loading...",
 }) => {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 flex flex-col items-center space-y-4">
+    <div className="fixed inset-0 bg-[color:var(--color-text)]/50 flex items-center justify-center z-50">
+      <div className="bg-surface-elevated border border-border rounded-lg p-6 flex flex-col items-center space-y-4">
         <Spinner size="lg" />
-        <p className="text-gray-700 dark:text-gray-300">{message}</p>
+        <p className="text-text">{message}</p>
       </div>
     </div>
   );
@@ -153,7 +153,7 @@ export const InlineLoading: React.FC<{ text?: string; className?: string }> = ({
   return (
     <div className={`flex items-center space-x-2 ${className}`}>
       <Spinner size="sm" />
-      <span className="text-gray-600 dark:text-gray-400">{text}</span>
+      <span className="text-text-secondary">{text}</span>
     </div>
   );
 };
@@ -170,13 +170,13 @@ export const SkeletonTable: React.FC<{ rows?: number; columns?: number }> = ({
       <div className="border rounded-lg overflow-hidden">
         {/* Header */}
         <div
-          className="bg-gray-100 dark:bg-gray-800 p-4 grid gap-4"
+          className="bg-surface p-4 grid gap-4"
           style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
         >
           {Array.from({ length: columns }).map((_, i) => (
             <div
               key={i}
-              className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+              className="h-4 bg-surface rounded animate-pulse"
             />
           ))}
         </div>
@@ -190,7 +190,7 @@ export const SkeletonTable: React.FC<{ rows?: number; columns?: number }> = ({
             {Array.from({ length: columns }).map((_, colIndex) => (
               <div
                 key={colIndex}
-                className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+                className="h-4 bg-surface rounded animate-pulse"
               />
             ))}
           </div>
@@ -208,8 +208,8 @@ export const PulsingDot: React.FC<{ className?: string }> = ({
 }) => {
   return (
     <span className={`relative flex h-3 w-3 ${className}`}>
-      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-      <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500" />
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary" />
     </span>
   );
 };

@@ -1,15 +1,18 @@
 -- ============================================================
--- Migration: add_sm2_and_behavior_pipeline
--- Adds SM-2 spaced repetition columns to skill_mastery and
+-- Migration: add_fsrs_v5_and_behavior_pipeline
+-- Adds FSRS v5 spaced repetition columns to skill_mastery and
 -- ensures behavior_logs table is ready for the tracking pipeline.
+-- NOTE: Lumina uses FSRS v5 (NOT SM-2). ease_factor maps to
+-- fsrs_difficulty; interval_days maps to fsrs_stability.
+-- See migration 034 for the canonical FSRS v5 column rename.
 -- Apply via: Supabase Dashboard → SQL Editor → Run
 -- ============================================================
 
--- 1. SM-2 columns on skill_mastery
+-- 1. FSRS v5 base columns on skill_mastery (legacy names kept for compat)
 ALTER TABLE skill_mastery
-  ADD COLUMN IF NOT EXISTS ease_factor    NUMERIC DEFAULT 2.5,
+  ADD COLUMN IF NOT EXISTS ease_factor    NUMERIC DEFAULT 2.5,  -- maps to fsrs_difficulty (D)
   ADD COLUMN IF NOT EXISTS repetitions    INT     DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS interval_days  INT     DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS interval_days  INT     DEFAULT 1,     -- maps to fsrs_stability (S) in days
   ADD COLUMN IF NOT EXISTS next_review_at TIMESTAMPTZ;
 
 -- Index for efficient review schedule queries

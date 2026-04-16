@@ -451,7 +451,7 @@ export default function StudentDashboard() {
             <div className="grid grid-cols-3 gap-4">
               <MiniMetric label="Due Today" value={String(getStatValue("Due Reviews", "5"))} />
               <MiniMetric label="Streak" value={getStatValue("Current Streak", "0 day")} />
-              <MiniMetric label="Algorithm" value="SM-2" />
+              <MiniMetric label="Algorithm" value="FSRS v5" />
             </div>
             <p className="text-sm text-gray-400 leading-relaxed">
               Daily spaced repetition prevents forgetting. The system schedules each concept

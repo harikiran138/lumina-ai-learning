@@ -58,7 +58,7 @@ export default function TopNav({
           )}
         >
           <Bell className="w-5 h-5" aria-hidden="true" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full shadow-lg" aria-label="New notifications"></span>
+          <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full shadow-lg" aria-label="New notifications"></span>
         </button>
         <ThemeToggle />
         <div className="flex items-center space-x-3 border-l border-border pl-4">

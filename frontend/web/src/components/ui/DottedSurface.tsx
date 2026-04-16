@@ -2,10 +2,12 @@
 import { cn } from "@/lib/utils";
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { useThemeMode } from "@/hooks/useThemeMode";
 
 type DottedSurfaceProps = Omit<React.ComponentProps<"div">, "ref">;
 
 export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
+  const { mounted, isDark } = useThemeMode();
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{
     scene: THREE.Scene;
@@ -17,7 +19,7 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
   } | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !mounted) return;
 
     const SEPARATION = 150;
     const AMOUNTX = 40;
@@ -41,12 +43,14 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
     });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x000000, 0); // Transparent background, but fog matches black
+    renderer.setClearColor(0x000000, 0);
 
     containerRef.current.appendChild(renderer.domElement);
 
-    // Create particles
-    const particles: THREE.Points[] = [];
+    const particleColor = new THREE.Color(
+      isDark ? "rgba(255,255,255,1)" : "rgba(22,163,74,1)",
+    );
+
     const positions: number[] = [];
     const colors: number[] = [];
 
@@ -60,8 +64,7 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
         const z = iy * SEPARATION - (AMOUNTY * SEPARATION) / 2;
 
         positions.push(x, y, z);
-        // Always white/grey dots for black background
-        colors.push(0.6, 0.6, 0.6); // Slightly dimmer white for aesthetics
+        colors.push(particleColor.r, particleColor.g, particleColor.b);
       }
     }
 
@@ -73,10 +76,10 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 
     // Create material
     const material = new THREE.PointsMaterial({
-      size: 8,
+      size: 7,
       vertexColors: true,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.15,
       sizeAttenuation: true,
     });
 
@@ -173,7 +176,11 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
         }
       }
     };
-  }, []);
+  }, [isDark, mounted]);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div

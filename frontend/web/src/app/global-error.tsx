@@ -15,21 +15,21 @@ export default function GlobalError({
 
   return (
     <html>
-      <body className="bg-black text-white flex items-center justify-center min-h-screen">
-        <div className="text-center p-8 bg-white/5 border border-white/10 rounded-2xl max-w-md">
-          <h2 className="text-2xl font-bold mb-4 text-red-500">
+      <body className="bg-background text-foreground flex items-center justify-center min-h-screen">
+        <div className="text-center p-8 bg-surface-elevated border border-border rounded-2xl max-w-md shadow-lg">
+          <h2 className="text-2xl font-bold mb-4 text-destructive">
             Something went wrong!
           </h2>
-          <p className="text-gray-400 mb-6 text-sm">
+          <p className="text-text-secondary mb-6 text-sm">
             A critical error occurred in the application.
             <br />
-            <span className="font-mono text-xs opacity-50">
+            <span className="font-mono text-xs opacity-70">
               {error.name}: {error.message}
             </span>
           </p>
           <button
             onClick={() => reset()}
-            className="px-6 py-2 bg-lumina-primary text-black font-bold rounded-lg hover:bg-white transition-colors"
+            className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary-hover transition-colors"
           >
             Try again
           </button>

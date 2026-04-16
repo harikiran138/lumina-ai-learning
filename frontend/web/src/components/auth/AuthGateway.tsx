@@ -208,6 +208,29 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
     Array.from(new Set(Object.values(ROLE_HOME_ROUTES))).forEach((route) => router.prefetch(route));
   }, [router]);
 
+  async function handleDemoLogin(email: string) {
+    const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? "Lumina@Demo2025";
+    setIdentifier(email);
+    setPassword(demoPassword);
+    setIsLoading(true);
+    setError(null);
+    setStatusMessage("Logging in with demo account…");
+    try {
+      const loggedInUser = await api.login({
+        identifier: email,
+        password: demoPassword,
+        role_hint: "student",
+      });
+      setUser(loggedInUser);
+      redirectAfterAuth(router, loggedInUser);
+    } catch (err: any) {
+      setError(err?.message ?? "Demo login failed. Check NEXT_PUBLIC_DEMO_PASSWORD.");
+      setStatusMessage(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
 
@@ -614,6 +637,36 @@ export default function AuthGateway({ mode }: { mode: AuthMode }) {
                   </>
                 )}
               </button>
+
+              {/* ── Demo quick-login (visible only in DEMO_MODE) ─────────────── */}
+              {process.env.NEXT_PUBLIC_DEMO_MODE === "true" && (
+                <div className="mt-2 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
+                  <p className="text-[10px] text-amber-400/80 font-bold uppercase tracking-[0.2em] mb-3 text-center">
+                    Demo Quick Login
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { role: "Super Admin",  email: "superadmin@demo.lumina.ai",          color: "purple" },
+                      { role: "Admin",        email: "admin@nsrit.demo.lumina.ai",          color: "blue"   },
+                      { role: "HOD",          email: "hod@nsrit.demo.lumina.ai",            color: "indigo" },
+                      { role: "Supervisor",   email: "supervisor@nsrit.demo.lumina.ai",     color: "teal"   },
+                      { role: "Teacher",      email: "teacher@nsrit.demo.lumina.ai",        color: "green"  },
+                      { role: "Student",      email: "student@nsrit.demo.lumina.ai",        color: "orange" },
+                    ] as const).map(({ role, email, color }) => (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => handleDemoLogin(email)}
+                        disabled={isLoading}
+                        className={`text-[11px] py-2 px-2 rounded-xl border transition-colors font-semibold disabled:opacity-40
+                          text-${color}-400 bg-${color}-500/10 border-${color}-500/20 hover:bg-${color}-500/20`}
+                      >
+                        {role}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </form>
           ) : (
             <form onSubmit={handleSignup} className="space-y-6 rounded-[2rem] border border-border bg-surface-elevated p-6 shadow-xl sm:p-8">

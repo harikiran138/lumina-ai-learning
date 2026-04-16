@@ -1,20 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
 import { Toaster } from "sonner";
+import { useThemeMode } from "@/hooks/useThemeMode";
 
 export function ThemedToaster() {
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const { mounted, isLight } = useThemeMode();
 
   return (
     <Toaster
-      theme={mounted && resolvedTheme === "light" ? "light" : "dark"}
+      theme={mounted && isLight ? "light" : "dark"}
       richColors
       position="top-right"
     />

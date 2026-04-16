@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import GlobalErrorBoundary from "@/components/layout/GlobalErrorBoundary";
@@ -20,27 +21,24 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function () {
-                try {
-                  const theme = localStorage.getItem("theme");
-                  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-                  const finalTheme = theme || (prefersDark ? "dark" : "light");
-                  document.documentElement.setAttribute("data-theme", finalTheme);
-                  document.documentElement.classList.toggle("dark", finalTheme === "dark");
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`(function () {
+            try {
+              var theme = localStorage.getItem("theme");
+              var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+              var finalTheme = theme || (prefersDark ? "dark" : "light");
+              document.documentElement.setAttribute("data-theme", finalTheme);
+              document.documentElement.classList.toggle("dark", finalTheme === "dark");
+            } catch (error) {}
+          })();`}
+        </Script>
       </head>
-      <body className="min-h-screen bg-bg text-text" suppressHydrationWarning={true}>
+      <body className="min-h-screen bg-background text-foreground antialiased" suppressHydrationWarning={true}>
         <ThemeProvider
           attribute="data-theme"
-          defaultTheme="dark"
+          defaultTheme="system"
           enableSystem
+          enableColorScheme
           disableTransitionOnChange
         >
           <GlobalErrorBoundary>

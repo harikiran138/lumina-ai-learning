@@ -258,6 +258,34 @@ Defined in frontend/web/src/middleware.ts
 
 Highlights:
 - Protected route prefixes mapped per role namespace
+
+## 6. Theme System Audit
+
+### 6.1 Core Theme Plumbing Fixed
+- Global theme init script now runs before interactive render in [frontend/web/src/app/layout.tsx](../frontend/web/src/app/layout.tsx)
+- Theme provider now defaults to system theme and preserves `data-theme`
+- Shared theme hook added in [frontend/web/src/hooks/useThemeMode.ts](../frontend/web/src/hooks/useThemeMode.ts)
+- Tailwind semantic color mapping added in [frontend/web/tailwind.config.ts](../frontend/web/tailwind.config.ts)
+
+### 6.2 Semantic Token Layer
+- Light theme now maps to clean SaaS white/green tokens in [frontend/web/src/app/globals.css](../frontend/web/src/app/globals.css)
+- Dark theme remains mapped to the existing dark/yellow palette without changing the visible dark design language
+- Legacy glass utilities were normalized to token-backed surfaces instead of hardcoded black/white styling
+
+### 6.3 Visual Components Refactored
+- Theme toggle, toaster, error boundary, loading states, navigation header, and onboarding mood card now use token classes
+- Decorative particle mesh is suppressed in light mode to remove visual noise and preserve a clean white UI
+- Debug outline support is gated behind `html[data-theme-debug="true"]` instead of being permanently enabled
+
+### 6.4 Remaining Legacy Color Debt
+- Several legacy App Router pages and JS-rendered views still contain hardcoded utility colors and hex values
+- The light-theme compatibility layer in CSS remaps many of these surfaces visually, but the source files still need a separate cleanup pass for full token compliance
+
+### 6.5 Validation Status
+- Edited theme files compile cleanly
+- Full production build is currently blocked by unrelated pre-existing syntax errors in:
+  - [frontend/web/src/components/onboarding/AdaptiveOnboardingPanel.tsx](../frontend/web/src/components/onboarding/AdaptiveOnboardingPanel.tsx)
+  - [frontend/web/src/components/teacher/TeacherDashboard.tsx](../frontend/web/src/components/teacher/TeacherDashboard.tsx)
 - ADMIN_ALLOWED set permits /admin access for:
   - super_admin, college_admin, institution_admin, system_admin, admin, hod
 - Middleware enforces onboarding gate with role-based bypass set

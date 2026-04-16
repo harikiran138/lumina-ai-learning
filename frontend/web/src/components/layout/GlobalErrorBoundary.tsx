@@ -49,7 +49,7 @@ class GlobalErrorBoundary extends Component<Props, State> {
               </p>
             </div>
             {this.state.error && (
-              <div className="p-3 rounded-lg bg-black/20 text-xs font-mono text-left overflow-auto max-h-32 text-destructive-foreground">
+              <div className="p-3 rounded-lg bg-surface text-xs font-mono text-left overflow-auto max-h-32 text-text-secondary border border-border">
                 {this.state.error.message}
               </div>
             )}

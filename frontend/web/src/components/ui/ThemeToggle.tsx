@@ -1,22 +1,16 @@
 "use client";
 
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useThemeMode } from "@/hooks/useThemeMode";
 import { Moon, Sun } from "lucide-react";
 
 export default function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const { mounted, isDark, toggleTheme } = useThemeMode();
 
   if (!mounted) {
     return (
       <button
         suppressHydrationWarning
-        className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+        className="p-2 rounded-lg text-text-secondary hover:bg-surface hover:text-text transition-colors"
         aria-label="Toggle Theme"
       >
         <div className="w-6 h-6" />
@@ -27,11 +21,11 @@ export default function ThemeToggle() {
   return (
     <button
       suppressHydrationWarning
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+      onClick={toggleTheme}
+      className="p-2 rounded-lg text-text-secondary hover:bg-surface hover:text-text transition-colors"
       aria-label="Toggle Theme"
     >
-      {resolvedTheme === "dark" ? (
+      {isDark ? (
         <Sun className="w-6 h-6" aria-hidden="true" />
       ) : (
         <Moon className="w-6 h-6" aria-hidden="true" />

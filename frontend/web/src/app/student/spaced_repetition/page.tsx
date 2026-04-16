@@ -37,7 +37,8 @@ type SessionStats = {
   nextReviewIn: string;
 };
 
-// SM-2 next-interval computation (client-side preview)
+// FSRS v5 simplified next-interval computation (client-side preview)
+// Full FSRS v5 runs server-side; this is a client preview approximation.
 function computeNextInterval(
   interval: number,
   easeFactor: number,
@@ -352,9 +353,9 @@ export default function SpacedRepetitionPage() {
           How Spaced Repetition Works
         </h3>
         <p className="text-sm text-gray-400 leading-relaxed mb-4">
-          Lumina uses an SM-2 / FSRS algorithm to schedule each concept just before you're
-          likely to forget it. Rate honestly — the system adapts intervals to your personal
-          memory curve for maximum long-term retention.
+          Lumina uses the FSRS v5 algorithm to schedule each concept just before you're
+          likely to forget it. FSRS v5 models your personal stability (S) and difficulty (D)
+          for each card — adapting intervals to your memory curve for maximum long-term retention.
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
           {[

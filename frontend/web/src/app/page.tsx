@@ -110,7 +110,7 @@ export default function Home() {
                 <>
                   <Link
                     href={user.onboardingCompleted ? getRoleHome(user.role) : "/onboarding"}
-                    className="glass-button-highlight text-black text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all"
+                    className="glass-button-highlight text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all"
                   >
                     Go to Dashboard
                   </Link>
@@ -125,7 +125,7 @@ export default function Home() {
                   </Link>
                   <Link
                     href="/register"
-                    className="glass-button-highlight text-black text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all"
+                    className="glass-button-highlight text-xs font-bold uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl hover:scale-[1.05] active:scale-[0.98] transition-all"
                   >
                     Get Started
                   </Link>
@@ -194,7 +194,7 @@ export default function Home() {
 
       <DottedSurface />
       <div className="fixed inset-0 pointer-events-none -z-10">
-        <div className="absolute top-0 left-0 w-full h-full neural-mesh opacity-[0.03]" />
+        <div className="absolute top-0 left-0 w-full h-full neural-mesh" />
       </div>
     </div>
   );
