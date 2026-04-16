@@ -109,8 +109,8 @@ async def suppress_risk_alert(
     store: CounselorStore = Depends(get_counselor_store)
 ):
     """Temporarily suppress alert after initial intervention."""
-    if current_user.get("role") not in ["counselor", "admin"]:
-        raise HTTPException(status_code=403, detail="Forbidden: Counselor role required")
+    if current_user.get("role") not in [Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN]:
+        raise HTTPException(status_code=403, detail="Forbidden: Counselor/Teacher role required")
     
     success = await store.suppress_alert(alert_id, expiry_hours)
     if not success:
@@ -126,8 +126,8 @@ async def update_follow_up_task(
     store: CounselorStore = Depends(get_counselor_store)
 ):
     """Update follow-up task status (e.g., set to 'acknowledged' or 'completed')."""
-    if current_user.get("role") not in ["counselor", "admin"]:
-        raise HTTPException(status_code=403, detail="Forbidden: Counselor role required")
+    if current_user.get("role") not in [Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN]:
+        raise HTTPException(status_code=403, detail="Forbidden: Counselor/Teacher role required")
 
     task = await store.manage_follow_up(task_id, update_data)
     if not task:

@@ -429,16 +429,16 @@ export default function LiveClassPage() {
       </div>
 
       {/* Link to analytics */}
-      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6 flex items-center justify-between gap-4">
+      <div className="rounded-2xl border border-border bg-surface p-6 flex items-center justify-between gap-4">
         <div>
-          <h3 className="text-sm font-semibold text-white">Session Analytics</h3>
-          <p className="text-sm text-gray-400 mt-1">
+          <h3 className="text-sm font-semibold text-foreground">Session Analytics</h3>
+          <p className="text-sm text-text-muted mt-1">
             View detailed engagement, quiz performance, and question trends from past sessions.
           </p>
         </div>
         <Link
           href="/teacher/analytics"
-          className="inline-flex items-center gap-2 rounded-xl border border-lumina-highlight/20 bg-lumina-highlight/5 px-4 py-2.5 text-sm font-semibold text-lumina-highlight hover:bg-lumina-highlight/10 transition-colors shrink-0"
+          className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm font-semibold text-primary hover:bg-primary/10 transition-colors shrink-0"
         >
           View Analytics
           <ArrowRight className="h-4 w-4" />
