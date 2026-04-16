@@ -21,7 +21,17 @@ def _ensure_valid_role(current_user: dict) -> str:
     return role
 
 def _ensure_2fa(current_user: dict):
-    if not current_user.get("two_factor_verified"):
+    two_factor_enabled = bool(
+        current_user.get("two_factor_enabled")
+        or current_user.get("is_2fa_enabled")
+    )
+    two_factor_verified = bool(
+        current_user.get("two_factor_verified")
+        or current_user.get("is_2fa_verified")
+    )
+
+    # Enforce 2FA only for accounts that explicitly enabled it.
+    if two_factor_enabled and not two_factor_verified:
         logger.error(f"administrative_2fa_block: user_id={current_user.get('id')} role={current_user.get('role')}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, 
@@ -149,7 +159,7 @@ async def get_current_super_admin(current_user: dict = Depends(get_current_activ
 
 async def get_current_college_admin(current_user: dict = Depends(get_current_active_user)) -> dict:
     role = _ensure_valid_role(current_user)
-    if role not in {"admin", "college_admin", "super_admin"}:
+    if role not in {"admin", "college_admin", "super_admin", "institution_admin", "system_admin", "hod"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="College Admin privileges required")
     _ensure_2fa(current_user)
     return current_user

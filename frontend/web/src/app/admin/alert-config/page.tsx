@@ -7,7 +7,6 @@ import {
   Trash2,
   Save,
   CheckCircle2,
-  AlertTriangle,
   Users,
   Bot,
   Shield,
@@ -85,7 +84,7 @@ const DEFAULT_RULES: AlertRule[] = [
   },
 ];
 
-const CATEGORY_META: Record<AlertRule["category"], { label: string; icon: typeof Bell; color: string }> = {
+const CATEGORY_META: Record<AlertRule["category"], { label: string; icon: any; color: string }> = {
   academic: { label: "Academic", icon: Users, color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
   ai: { label: "AI", icon: Bot, color: "text-lumina-highlight bg-lumina-highlight/10 border-lumina-highlight/20" },
   security: { label: "Security", icon: Shield, color: "text-red-400 bg-red-400/10 border-red-400/20" },

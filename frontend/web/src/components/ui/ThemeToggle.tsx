@@ -16,7 +16,7 @@ export default function ThemeToggle() {
     return (
       <button
         suppressHydrationWarning
-        className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+        className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
         aria-label="Toggle Theme"
       >
         <div className="w-6 h-6" />
@@ -28,7 +28,7 @@ export default function ThemeToggle() {
     <button
       suppressHydrationWarning
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+      className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
       aria-label="Toggle Theme"
     >
       {resolvedTheme === "dark" ? (

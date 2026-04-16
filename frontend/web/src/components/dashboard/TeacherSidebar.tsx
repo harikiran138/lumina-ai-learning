@@ -106,30 +106,30 @@ export default function TeacherSidebar({
       onMouseEnter={() => onHoverChange?.(true)}
       onMouseLeave={() => onHoverChange?.(false)}
       className={cn(
-        "fixed left-4 top-4 bottom-4 glass-v2-gold border-white/5 shadow-premium z-50 transition-all duration-300 ease-in-out flex flex-col overflow-hidden",
+        "fixed left-4 top-4 bottom-4 glass-v2-gold border-border shadow-premium z-50 transition-all duration-300 ease-in-out flex flex-col overflow-hidden",
         isHovering ? "w-64" : "w-20",
         isOpen
-          ? "translate-x-0 bg-black/95 w-64 flex"
+          ? "translate-x-0 bg-background/95 w-64 flex"
           : "-translate-x-[120%] lg:translate-x-0 hidden lg:flex",
       )}
     >
       <div
         className={cn(
-          "flex items-center border-b border-white/5 shrink-0 transition-all duration-300",
+          "flex items-center border-b border-border shrink-0 transition-all duration-300",
           isHovering ? "h-20 px-6" : "h-16 px-4 justify-center",
         )}
       >
         <Link href="/" className="font-display font-black text-2xl flex items-center select-none truncate">
-          <span className="text-white shrink-0">L</span>
+          <span className="text-foreground shrink-0">L</span>
           <span className={cn(
-            "text-white transition-all duration-300 overflow-hidden whitespace-nowrap",
+            "text-foreground transition-all duration-300 overflow-hidden whitespace-nowrap",
             isHovering ? "max-w-[100px] opacity-100" : "max-w-0 opacity-0"
           )}>umina</span>
           <span className="text-lumina-highlight">AI</span>
         </Link>
         <button
           onClick={onClose}
-          className="lg:hidden ml-auto text-gray-400 hover:text-white transition-colors"
+          className="lg:hidden ml-auto text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="w-6 h-6" />
         </button>
@@ -148,8 +148,8 @@ export default function TeacherSidebar({
                 "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
                 isHovering ? "px-4" : "justify-center px-0",
                 isActive
-                  ? "bg-lumina-highlight/15 text-lumina-highlight border border-lumina-highlight/30 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
-                  : "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
+                  ? "bg-primary/12 text-primary border border-primary/25 shadow-[0_0_20px_rgba(34,197,94,0.14)] dark:shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground",
               )}
             >
               <item.icon
@@ -157,8 +157,8 @@ export default function TeacherSidebar({
                   "h-5 w-5 transition-all duration-300 shrink-0",
                   isHovering ? "mr-3" : "mr-0",
                   isActive
-                    ? "text-lumina-highlight"
-                    : "text-gray-500 group-hover:text-gray-300",
+                    ? "text-primary"
+                    : "text-muted-foreground group-hover:text-primary",
                 )}
               />
               <span
@@ -176,24 +176,24 @@ export default function TeacherSidebar({
 
       <div
         className={cn(
-          "p-4 border-t border-white/10 space-y-4 transition-all duration-300 shrink-0",
+          "p-4 border-t border-border space-y-4 transition-all duration-300 shrink-0",
           !isHovering && "px-3",
         )}
       >
         <Link
           href="/teacher/alerts"
-          className={cn(
-            "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
-            isHovering ? "px-4" : "justify-center px-0",
-            "text-gray-400 hover:bg-white/[0.03] hover:text-gray-200",
-          )}
+            className={cn(
+              "flex items-center py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative group min-w-0",
+              isHovering ? "px-4" : "justify-center px-0",
+              "text-muted-foreground hover:bg-secondary hover:text-foreground",
+            )}
         >
           <div className="relative shrink-0">
             <Bell
               className={cn(
                 "h-5 w-5 transition-all duration-300 shrink-0",
                 isHovering ? "mr-3" : "mr-0",
-                "text-gray-500 group-hover:text-gray-300",
+                "text-muted-foreground group-hover:text-primary",
               )}
             />
             {notificationCount > 0 && (
@@ -219,11 +219,11 @@ export default function TeacherSidebar({
           <Link
             href="/teacher/profile"
             className={cn(
-              "flex items-center rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer overflow-hidden",
+              "flex items-center rounded-xl bg-card/85 border border-border hover:bg-secondary transition-all duration-300 cursor-pointer overflow-hidden",
               isHovering ? "p-3 gap-3" : "p-2 justify-center",
             )}
           >
-            <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
+            <div className="w-8 h-8 rounded-full overflow-hidden border border-border shrink-0">
               <img
                 src={
                   user.avatar ||
@@ -239,10 +239,10 @@ export default function TeacherSidebar({
                 isHovering ? "max-w-[150px] opacity-100" : "max-w-0 opacity-0",
               )}
             >
-              <p className="text-xs font-bold text-white truncate">
+              <p className="text-xs font-bold text-foreground truncate">
                 {user.name}
               </p>
-              <p className="text-[10px] text-gray-400 truncate tracking-tight">
+              <p className="text-[10px] text-muted-foreground truncate tracking-tight">
                 {user.email}
               </p>
             </div>
@@ -252,7 +252,7 @@ export default function TeacherSidebar({
         <button
           onClick={handleLogout}
           className={cn(
-            "flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-300",
+            "flex items-center w-full py-2 text-xs font-bold text-red-400/80 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-all duration-300",
             isHovering ? "px-4" : "justify-center px-0",
           )}
         >

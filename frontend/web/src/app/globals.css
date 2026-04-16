@@ -28,14 +28,14 @@
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
 
-  --color-lumina-primary: #f59e0b;
-  --color-lumina-secondary: #fbbf24;
-  --color-lumina-highlight: #f59e0b;
-  --color-lumina-accent: #f97316;
-  --color-lumina-accent-dark: #ea580c;
-  --color-lumina-dark: #050505;
-  --color-lumina-light: #f8fafc;
-  --color-lumina-gray: #94a3b8;
+  --color-lumina-primary: rgb(var(--lumina-brand-primary-rgb));
+  --color-lumina-secondary: rgb(var(--lumina-brand-secondary-rgb));
+  --color-lumina-highlight: rgb(var(--lumina-brand-primary-rgb));
+  --color-lumina-accent: rgb(var(--lumina-brand-accent-rgb));
+  --color-lumina-accent-dark: rgb(var(--lumina-brand-dark-rgb));
+  --color-lumina-dark: rgb(var(--lumina-surface-strong-rgb));
+  --color-lumina-light: rgb(var(--lumina-surface-soft-rgb));
+  --color-lumina-gray: rgb(var(--lumina-text-muted-rgb));
 
   --radius-xl: calc(var(--radius) + 0.25rem);
   --radius-lg: var(--radius);
@@ -54,34 +54,62 @@
 /* Font stack: Inter and Space Grotesk are loaded from Google Fonts in production.
    System fonts below serve as fallbacks when the CDN is unreachable. */
 :root {
+  color-scheme: light;
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 :root {
-  --background: 0 0% 2%;
-  --foreground: 210 40% 98%;
-  --card: 0 0% 4%;
-  --card-foreground: 210 40% 98%;
-  --popover: 0 0% 4%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 38 92% 50%;
-  --primary-foreground: 0 0% 2%;
-  --secondary: 220 20% 20%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 0 0% 12%;
-  --muted-foreground: 215 20% 68%;
-  --accent: 24 95% 53%;
-  --accent-foreground: 210 40% 98%;
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 142 76% 36%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 20% 98%;
+  --secondary-foreground: 142 64% 24%;
+  --muted: 210 20% 98%;
+  --muted-foreground: 220 9% 46%;
+  --accent: 217 91% 60%;
+  --accent-foreground: 0 0% 100%;
   --destructive: 0 84% 60%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 0 0% 12%;
-  --input: 0 0% 12%;
-  --ring: 38 92% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 142 76% 36%;
   --radius: 1rem;
+
+  --lumina-brand-primary-rgb: 22 163 74;
+  --lumina-brand-secondary-rgb: 34 197 94;
+  --lumina-brand-accent-rgb: 59 130 246;
+  --lumina-brand-dark-rgb: 22 101 52;
+  --lumina-surface-strong-rgb: 17 24 39;
+  --lumina-surface-soft-rgb: 249 250 251;
+  --lumina-text-muted-rgb: 156 163 175;
+  --lumina-body-glow-start: rgb(var(--lumina-brand-primary-rgb) / 0.14);
+  --lumina-body-glow-end: rgb(var(--lumina-brand-accent-rgb) / 0.1);
+  --lumina-command-center-bg:
+    radial-gradient(circle at 0% 0%, rgb(var(--lumina-brand-primary-rgb) / 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 100% 100%, rgb(var(--lumina-brand-accent-rgb) / 0.06) 0%, transparent 40%),
+    #ffffff;
+  --lumina-glass-bg: rgb(255 255 255 / 0.72);
+  --lumina-glass-bg-strong: rgb(255 255 255 / 0.88);
+  --lumina-glass-panel-start: rgb(255 255 255 / 0.94);
+  --lumina-glass-panel-end: rgb(249 250 251 / 0.82);
+  --lumina-glass-border: rgb(229 231 235 / 0.95);
+  --lumina-glass-border-strong: rgb(var(--lumina-brand-primary-rgb) / 0.16);
+  --lumina-glass-shadow: 0 18px 48px rgb(17 24 39 / 0.08);
+  --lumina-glass-shadow-strong: 0 24px 90px rgb(17 24 39 / 0.12);
+  --lumina-button-secondary-bg: rgb(255 255 255 / 0.92);
+  --lumina-button-secondary-bg-hover: rgb(249 250 251 / 1);
+  --lumina-button-secondary-border: rgb(229 231 235 / 0.95);
+  --lumina-button-secondary-color: #111827;
 }
 
 .dark {
+  color-scheme: dark;
   --background: 0 0% 2%;
   --foreground: 210 40% 98%;
   --card: 0 0% 4%;
@@ -101,6 +129,32 @@
   --border: 0 0% 12%;
   --input: 0 0% 12%;
   --ring: 38 92% 50%;
+
+  --lumina-brand-primary-rgb: 245 158 11;
+  --lumina-brand-secondary-rgb: 251 191 36;
+  --lumina-brand-accent-rgb: 249 115 22;
+  --lumina-brand-dark-rgb: 234 88 12;
+  --lumina-surface-strong-rgb: 5 5 5;
+  --lumina-surface-soft-rgb: 248 250 252;
+  --lumina-text-muted-rgb: 148 163 184;
+  --lumina-body-glow-start: rgb(var(--lumina-brand-primary-rgb) / 0.16);
+  --lumina-body-glow-end: rgb(var(--lumina-brand-accent-rgb) / 0.14);
+  --lumina-command-center-bg:
+    radial-gradient(circle at 0% 0%, rgb(var(--lumina-brand-primary-rgb) / 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 100% 100%, rgb(var(--lumina-brand-accent-rgb) / 0.06) 0%, transparent 40%),
+    #050505;
+  --lumina-glass-bg: rgb(18 18 20 / 0.65);
+  --lumina-glass-bg-strong: rgb(18 18 20 / 0.82);
+  --lumina-glass-panel-start: rgb(18 18 20 / 0.82);
+  --lumina-glass-panel-end: rgb(10 10 12 / 0.72);
+  --lumina-glass-border: rgb(255 255 255 / 0.09);
+  --lumina-glass-border-strong: rgb(var(--lumina-brand-primary-rgb) / 0.2);
+  --lumina-glass-shadow: 0 14px 40px rgb(0 0 0 / 0.4);
+  --lumina-glass-shadow-strong: 0 24px 90px rgb(10 10 12 / 0.45);
+  --lumina-button-secondary-bg: rgb(255 255 255 / 0.04);
+  --lumina-button-secondary-bg-hover: rgb(255 255 255 / 0.08);
+  --lumina-button-secondary-border: rgb(255 255 255 / 0.12);
+  --lumina-button-secondary-color: #ffffff;
 }
 
 *,
@@ -118,8 +172,8 @@ body {
   min-height: 100vh;
   color: hsl(var(--foreground));
   background:
-    radial-gradient(circle at top left, rgba(245, 158, 11, 0.16), transparent 24rem),
-    radial-gradient(circle at bottom right, rgba(249, 115, 22, 0.14), transparent 26rem),
+    radial-gradient(circle at top left, var(--lumina-body-glow-start), transparent 24rem),
+    radial-gradient(circle at bottom right, var(--lumina-body-glow-end), transparent 26rem),
     hsl(var(--background));
   font-family: var(--font-sans), sans-serif;
   text-rendering: optimizeLegibility;
@@ -140,8 +194,8 @@ select {
 }
 
 ::selection {
-  background: rgba(245, 158, 11, 0.28);
-  color: #fff;
+  background: hsl(var(--primary) / 0.28);
+  color: hsl(var(--primary-foreground));
 }
 
 @layer base {
@@ -152,14 +206,23 @@ select {
 
 @layer utilities {
   .gradient-text {
-    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    background: linear-gradient(
+      135deg,
+      rgb(var(--lumina-brand-primary-rgb)) 0%,
+      rgb(var(--lumina-brand-secondary-rgb)) 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
 
   .gradient-text-gold {
-    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
+    background: linear-gradient(
+      135deg,
+      rgb(var(--lumina-brand-primary-rgb)) 0%,
+      rgb(var(--lumina-brand-secondary-rgb)) 50%,
+      rgb(var(--lumina-brand-primary-rgb)) 100%
+    );
     background-size: 200% auto;
     -webkit-background-clip: text;
     background-clip: text;
@@ -168,7 +231,12 @@ select {
   }
 
   .gradient-text-orange {
-    background: linear-gradient(135deg, #f59e0b 0%, #fb923c 45%, #f97316 100%);
+    background: linear-gradient(
+      135deg,
+      rgb(var(--lumina-brand-primary-rgb)) 0%,
+      rgb(var(--lumina-brand-secondary-rgb)) 45%,
+      rgb(var(--lumina-brand-accent-rgb)) 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -201,37 +269,47 @@ select {
   }
 
   .command-center-bg {
-    background: 
-      radial-gradient(circle at 0% 0%, rgba(245, 158, 11, 0.08) 0%, transparent 40%),
-      radial-gradient(circle at 100% 100%, rgba(249, 115, 22, 0.06) 0%, transparent 40%),
-      #050505;
+    background: var(--lumina-command-center-bg);
     position: relative;
   }
 
   .glass {
-    background: rgba(18, 18, 20, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--lumina-glass-bg);
+    border: 1px solid var(--lumina-glass-border);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
+    box-shadow: var(--lumina-glass-shadow);
   }
 
   .glass-panel {
-    background: linear-gradient(180deg, rgba(18, 18, 20, 0.82), rgba(10, 10, 12, 0.72));
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: linear-gradient(180deg, var(--lumina-glass-panel-start), var(--lumina-glass-panel-end));
+    border: 1px solid var(--lumina-glass-border);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    box-shadow: 0 24px 90px rgba(10, 10, 12, 0.45);
+    box-shadow: var(--lumina-glass-shadow-strong);
   }
 
   .glass-card,
   .glass-v2,
   .glass-card-premium {
     border-radius: 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(18, 18, 20, 0.65);
+    border: 1px solid var(--lumina-glass-border);
+    background: var(--lumina-glass-bg);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
-    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--lumina-glass-shadow);
+  }
+
+  .glass-v2-primary,
+  .glass-v2-gold {
+    border-radius: 1.5rem;
+    border: 1px solid var(--lumina-glass-border-strong);
+    background:
+      linear-gradient(180deg, rgb(var(--lumina-brand-primary-rgb) / 0.08), transparent 24%),
+      var(--lumina-glass-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: var(--lumina-glass-shadow);
   }
 
   .glass-ivory {
@@ -333,13 +411,14 @@ select {
   }
 
   .glass-button-secondary {
-    background: rgba(255, 255, 255, 0.04);
-    color: #fff;
+    background: var(--lumina-button-secondary-bg);
+    border-color: var(--lumina-button-secondary-border);
+    color: var(--lumina-button-secondary-color);
   }
 
   .glass-button-secondary:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--lumina-button-secondary-bg-hover);
+    border-color: var(--lumina-button-secondary-border);
   }
 
   .glass-button-highlight {

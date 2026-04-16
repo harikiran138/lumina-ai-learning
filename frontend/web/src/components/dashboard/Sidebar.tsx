@@ -180,7 +180,7 @@ export default function Sidebar({
         "fixed left-0 top-0 bottom-0 z-40 flex flex-col transition-all duration-300 ease-in-out overflow-hidden shadow-2xl",
         isPremium 
           ? "bg-[#fdfaf5]/60 backdrop-blur-2xl border-r border-[#efe9de]" 
-          : "bg-black/60 backdrop-blur-2xl border-r border-lumina-highlight/10 shadow-[20px_0_40px_-20px_rgba(0,0,0,0.8)]",
+          : "bg-background/92 backdrop-blur-2xl border-r border-border shadow-[20px_0_40px_-20px_rgba(17,24,39,0.18)] dark:shadow-[20px_0_40px_-20px_rgba(0,0,0,0.8)]",
         isHovered ? "w-64" : "w-20",
         isOpen ? "translate-x-0 w-64 flex" : "-translate-x-full lg:translate-x-0 hidden lg:flex"
       )}
@@ -188,16 +188,16 @@ export default function Sidebar({
       {/* LOGO */}
       <div className={cn(
         "flex items-center px-6 h-16 shrink-0",
-        isPremium ? "border-b border-[#efe9de]" : "border-b border-white/5 bg-gradient-to-b from-lumina-highlight/5 to-transparent"
+        isPremium ? "border-b border-[#efe9de]" : "border-b border-border bg-gradient-to-b from-primary/6 to-transparent"
       )}>
         <Link href="/" className="text-2xl font-display font-black flex items-center gap-1 select-none">
           <span className={cn(
             "shrink-0",
-            isPremium ? "text-[#4a3f35]" : "text-white"
+            isPremium ? "text-[#4a3f35]" : "text-foreground"
           )}>L</span>
           <span className={cn(
             "transition-all duration-300 overflow-hidden whitespace-nowrap",
-            isPremium ? "text-[#4a3f35]" : "text-white",
+            isPremium ? "text-[#4a3f35]" : "text-foreground",
             isHovered ? "opacity-100 max-w-[120px]" : "opacity-0 max-w-0"
           )}>
             umina
@@ -212,7 +212,7 @@ export default function Sidebar({
 
 
         {onClose && (
-          <button onClick={onClose} className={cn("lg:hidden ml-auto hover:text-white", isPremium ? "text-[#8c7851]" : "text-gray-400")} aria-label="Close menu">
+          <button onClick={onClose} className={cn("lg:hidden ml-auto hover:text-foreground", isPremium ? "text-[#8c7851]" : "text-muted-foreground")} aria-label="Close menu">
             <X className="w-5 h-5" />
           </button>
         )}
@@ -234,17 +234,17 @@ export default function Sidebar({
                 isActive
                   ? isPremium 
                     ? "bg-[#8c7851]/10 text-[#8c7851] border border-[#8c7851]/30 shadow-[0_0_20px_rgba(140,120,81,0.1)]"
-                    : "bg-lumina-highlight/15 text-lumina-highlight border border-lumina-highlight/30 shadow-[0_0_30px_rgba(245,158,11,0.2)]"
+                    : "bg-primary/12 text-primary border border-primary/25 shadow-[0_0_30px_rgba(34,197,94,0.14)] dark:shadow-[0_0_30px_rgba(245,158,11,0.2)]"
                   : isPremium 
                     ? "text-[#807060] hover:bg-[#8c7851]/5 hover:text-[#4a3f35]"
-                    : "text-gray-400 hover:bg-lumina-highlight/5 hover:text-white"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
             >
               <item.icon className={cn(
                 "w-5 h-5 shrink-0 transition-all duration-300", 
                 isActive 
-                  ? (isPremium ? "text-[#8c7851]" : "text-lumina-highlight drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]") 
-                  : (isPremium ? "text-[#b8a994] group-hover:text-[#8c7851]" : "text-gray-500 group-hover:text-lumina-highlight")
+                  ? (isPremium ? "text-[#8c7851]" : "text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.35)] dark:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]") 
+                  : (isPremium ? "text-[#b8a994] group-hover:text-[#8c7851]" : "text-muted-foreground group-hover:text-primary")
               )} />
 
               <span className={cn(
@@ -261,7 +261,7 @@ export default function Sidebar({
       {/* USER & LOGOUT */}
       <div className={cn(
         "p-4 space-y-2 shrink-0",
-        isPremium ? "border-t border-[#efe9de]" : "border-t border-white/5"
+        isPremium ? "border-t border-[#efe9de]" : "border-t border-border"
       )}>
         {user && (
           <Link
@@ -270,13 +270,13 @@ export default function Sidebar({
               "flex items-center rounded-xl transition-all duration-300 overflow-hidden border",
               isPremium 
                 ? "bg-white/50 border-[#efe9de] hover:bg-white/80" 
-                : "bg-white/5 border-white/5 hover:bg-white/10",
+                : "bg-card/85 border-border hover:bg-secondary",
               isHovered ? "p-3 gap-3" : "p-2 justify-center"
             )}
           >
             <div className={cn(
               "w-8 h-8 rounded-full overflow-hidden border shrink-0",
-              isPremium ? "border-[#efe9de]" : "border-white/10"
+              isPremium ? "border-[#efe9de]" : "border-border"
             )}>
               <img
                 src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
@@ -290,11 +290,11 @@ export default function Sidebar({
             )}>
               <p className={cn(
                 "text-xs font-bold truncate",
-                isPremium ? "text-[#4a3f35]" : "text-white"
+                isPremium ? "text-[#4a3f35]" : "text-foreground"
               )}>{user.name}</p>
               <p className={cn(
                 "text-[10px] truncate tracking-tight",
-                isPremium ? "text-[#b8a994]" : "text-gray-400"
+                isPremium ? "text-[#b8a994]" : "text-muted-foreground"
               )}>{user.email}</p>
             </div>
           </Link>

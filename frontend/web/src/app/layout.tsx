@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import GlobalErrorBoundary from "@/components/layout/GlobalErrorBoundary";
-import { Toaster } from "sonner";
+import { ThemedToaster } from "@/components/providers/themed-toaster";
 
 export const metadata: Metadata = {
   title: "Lumina AI",
@@ -30,7 +30,7 @@ export default function RootLayout({
             <AuthProvider>
               <OfflineBanner />
               {children}
-              <Toaster theme="dark" richColors position="top-right" />
+              <ThemedToaster />
             </AuthProvider>
           </GlobalErrorBoundary>
         </ThemeProvider>

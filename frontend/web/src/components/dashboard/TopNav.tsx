@@ -23,7 +23,7 @@ export default function TopNav({
         "fixed top-0 right-0 h-16 transition-all duration-300 z-30 px-6 flex items-center justify-between",
         isPremium 
           ? "bg-[#fdfaf5]/60 backdrop-blur-md border-b border-[#efe9de] text-[#4a3f35]" 
-          : "bg-black/60 backdrop-blur-2xl border-b border-white/5 text-white shadow-[0_4px_30px_rgba(0,0,0,0.4)]",
+          : "bg-background/85 backdrop-blur-2xl border-b border-border text-foreground shadow-[0_4px_30px_rgba(17,24,39,0.08)] dark:shadow-[0_4px_30px_rgba(0,0,0,0.4)]",
         className,
       )}
     >
@@ -34,7 +34,7 @@ export default function TopNav({
           onClick={onMenuClick}
           suppressHydrationWarning
           aria-label="Open menu"
-          className="lg:hidden p-2 rounded-lg text-gray-400 hover:bg-white/5 mr-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lumina-highlight"
+          className="lg:hidden p-2 rounded-lg text-muted-foreground hover:bg-secondary mr-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Menu className="w-6 h-6" aria-hidden="true" />
         </button>
@@ -48,12 +48,12 @@ export default function TopNav({
               "w-full pl-10 pr-4 py-2 border rounded-xl transition-all duration-300 backdrop-blur-sm outline-none text-sm",
               isPremium 
                 ? "bg-[#8c7851]/5 border-[#efe9de] text-[#4a3f35] placeholder-[#c4b5a2] focus:border-[#8c7851] focus:bg-white" 
-                : "bg-white/[0.03] border-white/5 text-white placeholder-gray-500 focus:ring-2 focus:ring-lumina-highlight/30 focus:border-lumina-highlight/30"
+                : "bg-background/90 border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-primary"
             )}
           />
           <Search className={cn(
             "absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4",
-            isPremium ? "text-[#b8a994]" : "text-gray-500"
+            isPremium ? "text-[#b8a994]" : "text-muted-foreground"
           )} aria-hidden="true" />
         </div>
       </div>
@@ -65,7 +65,7 @@ export default function TopNav({
             "p-2 rounded-xl transition-all duration-300 relative focus-visible:outline-none focus-visible:ring-2",
             isPremium 
               ? "text-[#8c7851] hover:bg-[#8c7851]/5 focus-visible:ring-[#8c7851]" 
-              : "text-gray-400 hover:text-lumina-highlight hover:bg-white/5 focus-visible:ring-lumina-highlight"
+              : "text-muted-foreground hover:text-primary hover:bg-secondary focus-visible:ring-ring"
           )}
         >
           <Bell className="w-5 h-5" aria-hidden="true" />
@@ -78,12 +78,12 @@ export default function TopNav({
         )}>
           <div className="text-right hidden sm:block">
             <p className={cn(
-              "text-sm font-medium",
-              isPremium ? "text-[#4a3f35]" : "text-white"
+            "text-sm font-medium",
+              isPremium ? "text-[#4a3f35]" : "text-foreground"
             )}>{user.name}</p>
             <p className={cn(
               "text-xs capitalize",
-              isPremium ? "text-[#8c7851]/80" : "text-lumina-highlight/80"
+              isPremium ? "text-[#8c7851]/80" : "text-primary/80"
             )}>
               {user.role}
             </p>
@@ -92,7 +92,7 @@ export default function TopNav({
             "w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-lg border transition-all duration-500",
             isPremium 
               ? "bg-[#8c7851] text-white border-[#8c7851]/20 shadow-[#8c7851]/20 hover:scale-105" 
-              : "bg-gradient-to-br from-lumina-highlight to-amber-600 text-black border-white/10 shadow-lumina-highlight/20"
+              : "bg-gradient-to-br from-primary to-accent text-primary-foreground border-primary/20 shadow-primary/20 hover:scale-105"
           )}>
             {user.initial}
           </div>

@@ -26,7 +26,7 @@ export default function DashboardLayout({
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
   return (
-    <div className="flex h-screen bg-black overflow-hidden font-sans selection:bg-highlight-gold/30">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans selection:bg-primary/20 selection:text-foreground">
       {/* 1. SIDEBAR: fixed, left-0, top-0, h-full, w-20, z-40 */}
       <SidebarComponent
         isOpen={sidebarOpen}
@@ -67,7 +67,7 @@ export default function DashboardLayout({
         {/* Mobile Toggle Overlay */}
         <div 
           className={cn(
-            "fixed inset-0 bg-black/60 z-30 transition-opacity lg:hidden",
+            "fixed inset-0 bg-black/40 dark:bg-black/60 z-30 transition-opacity lg:hidden",
             sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
           onClick={() => setSidebarOpen(false)}

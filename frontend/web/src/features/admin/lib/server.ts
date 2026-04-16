@@ -6,14 +6,17 @@ async function serverFetch(path: string): Promise<Response> {
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token")?.value;
 
+  const devApiBase =
+    process.env.API_URL?.trim().replace(/\/+$/, "") ||
+    process.env.API_BASE_URL?.trim().replace(/\/+$/, "") ||
+    "http://localhost:9000";
+
   const apiBase =
     process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "") ||
     process.env.NEXT_PUBLIC_API_BASE?.trim().replace(/\/+$/, "") ||
-    "";
+    devApiBase;
 
-  const url = apiBase
-    ? `${apiBase}${path}`
-    : `http://localhost:8000${path}`;
+  const url = `${apiBase}${path}`;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

@@ -76,12 +76,12 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="text-white min-h-screen bg-neutral-950 selection:bg-lumina-highlight/30 selection:text-white">
-      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-neutral-950/50 backdrop-blur-2xl">
+    <div className="text-foreground min-h-screen bg-background selection:bg-primary/20 selection:text-foreground">
+      <header className="fixed top-0 left-0 right-0 z-[100] border-b border-border bg-background/80 backdrop-blur-2xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex-shrink-0">
-              <Link href="/" className="text-2xl font-black text-white flex items-center font-display tracking-tight group">
+              <Link href="/" className="text-2xl font-black text-foreground flex items-center font-display tracking-tight group">
                 <span className="gradient-text transition-all duration-300 group-hover:drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]">Lumina</span>
                 <span className="ml-1 text-lumina-highlight">AI</span>
               </Link>
@@ -98,7 +98,7 @@ export default function Home() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-lumina-highlight transition-all duration-300"
+                  className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-lumina-highlight transition-all duration-300"
                 >
                   {item.label}
                 </Link>
@@ -119,7 +119,7 @@ export default function Home() {
                 <>
                   <Link
                     href="/login"
-                    className="text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors hidden sm:block"
+                    className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
                   >
                     Sign In
                   </Link>
