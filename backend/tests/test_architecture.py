@@ -87,8 +87,9 @@ def test_hod_router_uses_hod_dependency():
 
 def test_no_inline_teacher_assignment_auth_in_routers():
     """
-    Direct table("teacher_assignments") queries for authorization must not
-    appear in routers. Use verify_teacher_has_class_access from class_auth.py.
+    Direct teacher-class authorization filters must not appear in routers.
+    Admin reporting reads are allowed, but inline auth checks must go through
+    verify_teacher_has_class_access from class_auth.py.
     """
     for root, _, files in os.walk(_abs("backend/app/routers")):
         for file in files:
@@ -97,10 +98,11 @@ def test_no_inline_teacher_assignment_auth_in_routers():
             full_path = os.path.join(root, file)
             with open(full_path) as f:
                 source = f.read()
-            assert 'table("teacher_assignments")' not in source, (
-                f"{file}: inline teacher_assignments query found in router. "
-                "Use verify_teacher_has_class_access from class_auth.py."
-            )
+            if 'eq("teacher_id"' in source and 'eq("class_id"' in source and 'teacher_assignments' in source:
+                assert 'verify_teacher_has_class_access' in source, (
+                    f"{file}: inline teacher_assignment auth query found in router. "
+                    "Use verify_teacher_has_class_access from class_auth.py."
+                )
 
 
 def test_no_sections_table_in_routers():

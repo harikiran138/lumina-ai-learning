@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from app.routers.auth import get_current_user
 from app.api.deps import get_current_college_admin
 from app.store.user_store import UserStore
+from app.store.student_store import StudentStore
 from app.store.course_store import CourseStore
 from app.store.analytics_store import AnalyticsStore
 from app.store.institution_store import InstitutionStore
@@ -16,6 +17,7 @@ from app.store.academic_store import AcademicStore
 from app.store.config_store import ConfigStore
 from app.dependencies import (
     get_user_store, 
+    get_student_store,
     get_course_store, 
     get_analytics_store, 
     get_institution_store, 
@@ -804,38 +806,20 @@ async def update_class(class_id: str, data: dict, admin: dict = Depends(is_admin
 
 @router.get("/classes/{class_id}/summary")
 async def class_summary(class_id: str, admin: dict = Depends(is_admin),
-    db: ScopedSupabase = Depends(get_scoped_db)
+    db: ScopedSupabase = Depends(get_scoped_db),
+    student_store: StudentStore = Depends(get_student_store),
+    course_store: CourseStore = Depends(get_course_store),
+    academic_store: AcademicStore = Depends(get_academic_store),
 ):
     """Summarize class capacity usage and assignments."""
-    students = (
-        db.table("student_enrollments")
-        .select("id")
-        .eq("class_id", class_id)
-        .execute()
-        .data
-        or []
-    )
-    assignments = (
-        db.table("teacher_assignments")
-        .select("*")
-        .eq("class_id", class_id)
-        .execute()
-        .data
-        or []
-    )
+    students = await student_store.get_enrollments_by_class(class_id)
+    assignments = await academic_store.get_class_teacher_links(class_id)
     teacher_ids = list({item.get("teacher_id") for item in assignments if item.get("teacher_id")})
     course_ids = list({item.get("course_id") for item in assignments if item.get("course_id")})
 
     courses = {}
     if course_ids:
-        course_rows = (
-            db.table("courses")
-            .select("id, title, course_name, name, course_code, code")
-            .in_("id", course_ids)
-            .execute()
-            .data
-            or []
-        )
+        course_rows = await course_store.get_courses_by_ids(course_ids)
         courses = {row["id"]: row for row in course_rows}
 
     return {

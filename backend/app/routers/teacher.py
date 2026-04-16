@@ -114,7 +114,7 @@ async def get_teacher_dashboard(
     owned_courses = await course_store.get_courses_by_teacher(teacher_id)
     
     # Assignments the teacher owns
-    assignments = await teacher_store.get_teacher_assignments(teacher_id)
+    assignments = await teacher_store.list_teacher_links(teacher_id)
     assigned_course_ids = {str(item.get("course_id")) for item in assignments if item.get("course_id")}
     class_ids = list({str(item.get("class_id")) for item in assignments if item.get("class_id")})
 
@@ -228,7 +228,7 @@ async def get_teacher_onboarding_options(
     check_teacher_role(current_user)
 
     teacher_id = str(current_user.get("id"))
-    assignments = await teacher_store.get_teacher_assignments(teacher_id)
+    assignments = await teacher_store.list_teacher_links(teacher_id)
 
     course_ids = list({item.get("course_id") for item in assignments if item.get("course_id")})
     class_ids = list({item.get("class_id") for item in assignments if item.get("class_id")})
@@ -286,7 +286,7 @@ async def complete_teacher_onboarding(
     teacher_id = str(current_user.get("id"))
     employee_id = current_user.get("employee_id")
     
-    assignments = await teacher_store.get_teacher_assignments(teacher_id)
+    assignments = await teacher_store.list_teacher_links(teacher_id)
     assignment_lookup = {str(item.get("id")): item for item in assignments if item.get("id")}
 
     if assignments and not payload.confirmed_assignment_ids:
@@ -376,7 +376,7 @@ async def list_teacher_subjects(
 
     try:
         # Fetch teacher assignments and courses in parallel
-        assignments = await teacher_store.get_teacher_assignments(teacher_id)
+        assignments = await teacher_store.list_teacher_links(teacher_id)
         courses = await course_store.get_courses_by_teacher(teacher_id)
 
         # Build fast lookup
@@ -660,12 +660,12 @@ async def request_teacher_assignment(
     return await teacher_store.create_request(str(current_user["id"]), course_id, class_id)
 
 @router.get("/assignments")
-async def get_teacher_assignments_list(
+async def get_teacher_links_list(
     current_user: dict = Depends(get_current_user),
     teacher_store: TeacherStore = Depends(get_teacher_store)
 ):
     check_teacher_role(current_user)
-    return await teacher_store.get_teacher_assignments(str(current_user["id"]))
+    return await teacher_store.list_teacher_links(str(current_user["id"]))
 
 
 # --- Live Intervention & Question Override ---

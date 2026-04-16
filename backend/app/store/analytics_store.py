@@ -377,8 +377,8 @@ class AnalyticsStore:
         users = [self._normalize_user(item) for item in await self._read_table("users")]
         courses = [self._normalize_course(item) for item in await self._read_table("courses")]
 
-        # 'progress' table doesn't exist — read from enrollments and expand progress data
-        raw_enrollments = await self._read_table("enrollments")
+        # 'progress' table doesn't exist — read from canonical student_enrollments and expand progress data
+        raw_enrollments = await self._read_table("student_enrollments")
         progress = []
         for e in raw_enrollments:
             # Handle both flat and nested progress schema
@@ -1424,7 +1424,7 @@ class AnalyticsStore:
             program_id = enrollment_context.get("program_id")
 
             # 2. Fetch Course Enrollments (Progress Tracking)
-            enrollment_response = await client.table("enrollments").select("*").eq("student_id", student_id).async_execute()
+            enrollment_response = await client.table("student_enrollments").select("*").eq("student_id", student_id).async_execute()
             enrollments = enrollment_response.data or []
 
             # 3. Fetch Class-related details

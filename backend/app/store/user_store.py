@@ -382,7 +382,6 @@ class UserStore:
             await client.table("user_data").delete().eq("user_id", user_id).async_execute()
 
             # 2. Clean up enrollments / progress
-            await client.table("enrollments").delete().eq("student_id", user_id).async_execute()
             await client.table("student_enrollments").delete().eq("student_id", user_id).async_execute()
             await client.table("student_progress").delete().eq("student_id", user_id).async_execute()
             await client.table("student_profiles").delete().eq("user_id", user_id).async_execute()

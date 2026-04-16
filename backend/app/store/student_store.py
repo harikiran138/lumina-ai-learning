@@ -11,7 +11,7 @@ log = structlog.get_logger()
 class StudentStore(BaseStoreMixin):
     """
     Store for student-specific operations: Enrollment, Progress, Badges, Certificates.
-    Operates on 'enrollments' and 'users' tables in Supabase.
+    Operates on 'student_enrollments' and 'users' tables in Supabase.
     """
 
     def __init__(self, db: Optional[Any] = None):
@@ -65,7 +65,7 @@ class StudentStore(BaseStoreMixin):
         }
 
         success, result, error = await self.insert_safely(
-            "enrollments",
+            "student_enrollments",
             enrollment_data,
             student_id=student_id,
             course_id=course_id
@@ -78,8 +78,6 @@ class StudentStore(BaseStoreMixin):
             response = await self.db.table("student_enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).async_execute()
             if response.data:
                 return response.data[0]
-            # Fallback to legacy table if student_enrollments has no course_id column yet
-            response = await self.db.table("enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).async_execute()
             return response.data[0] if response.data else None
         except Exception as e:
             log.error("get_enrollment_failed", student_id=student_id, course_id=course_id, error=str(e))
@@ -118,7 +116,7 @@ class StudentStore(BaseStoreMixin):
                 "progress": progress
             }
             
-            await self.db.update("enrollments", updates, {"id": enrollment["id"]})
+            await self.db.update("student_enrollments", updates, {"id": enrollment["id"]})
 
             return {"success": True, "lesson_id": lesson_id, "progress": progress_pct}
         except Exception as e:
@@ -128,8 +126,6 @@ class StudentStore(BaseStoreMixin):
     async def get_enrollments_by_class(self, class_id: str) -> List[dict]:
         """Fetch all student enrollments for a specific class/section."""
         try:
-            # Table is 'student_enrollments' in some schemas, 'enrollments' in others.
-            # BaseStoreMixin typically handles mapping, but we'll try 'student_enrollments' first as it's the specific join table for classes.
             response = await self.db.table("student_enrollments").select("*").eq("class_id", class_id).async_execute()
             return response.data or []
         except Exception as e:
@@ -141,7 +137,7 @@ class StudentStore(BaseStoreMixin):
         try:
             query = self.db.table("student_enrollments").select("*").eq("batch_id", batch_id)
             if section:
-                query = query.eq("section", section)
+                query = query.eq("class_id", section)
             res = await query.async_execute()
             return res.data or []
         except Exception as e:
@@ -181,7 +177,7 @@ class StudentStore(BaseStoreMixin):
     async def update_mastery(self, student_id: str, course_id: str, mastery: float) -> bool:
         """Update student mastery level with a floor of 0.0."""
         success, enrollment, error = await self.fetch_one_safely(
-            "enrollments",
+            "student_enrollments",
             {"student_id": student_id, "course_id": course_id},
             student_id=student_id,
             course_id=course_id
@@ -195,7 +191,7 @@ class StudentStore(BaseStoreMixin):
         progress["mastery"] = max(0.0, float(mastery))
         
         success, _, _ = await self.update_safely(
-            "enrollments",
+            "student_enrollments",
             {"progress": progress},
             {"student_id": student_id, "course_id": course_id},
             student_id=student_id,
@@ -209,7 +205,7 @@ class StudentStore(BaseStoreMixin):
         Uses safe update with schema discovery.
         """
         success, enrollment, error = await self.fetch_one_safely(
-            "enrollments",
+            "student_enrollments",
             {"student_id": student_id, "course_id": course_id},
             student_id=student_id,
             course_id=course_id
@@ -246,7 +242,7 @@ class StudentStore(BaseStoreMixin):
         updates = {"progress": progress}
 
         success, _, _ = await self.update_safely(
-            "enrollments",
+            "student_enrollments",
             updates,
             {"id": enrollment["id"]},
             student_id=student_id,

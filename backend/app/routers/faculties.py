@@ -11,12 +11,12 @@ log = structlog.get_logger(__name__)
 teacher_store = TeacherStore()
 
 @router.get("/assignments")
-async def get_teacher_assignments(
+async def get_teacher_links(
     current_user: dict = Depends(get_current_user)
 ):
     """Get all courses and classes assigned to the current teacher."""
     db = get_scoped_db(current_user)
-    return await teacher_store.get_teacher_assignments(str(current_user["id"]))
+    return await teacher_store.list_teacher_links(str(current_user["id"]))
 
 @router.post("/assignments/request")
 async def request_teacher_assignment(

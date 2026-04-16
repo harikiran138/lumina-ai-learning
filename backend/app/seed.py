@@ -18,7 +18,7 @@ LUMINA_TABLES = [
     "quiz_attempts",
     "quizzes",
     "conversations",
-    "enrollments",
+    "student_enrollments",
     "courses",
     "users"
 ]
@@ -98,7 +98,7 @@ async def seed_data(clear=False):
             # Enroll in 2 random courses
             enrolled_courses = random.sample(courses, 2)
             for course in enrolled_courses:
-                await supabase_db.insert("enrollments", {
+                await supabase_db.insert("student_enrollments", {
                     "student_id": student["id"],
                     "course_id": course["id"],
                     "status": "active",

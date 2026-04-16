@@ -146,7 +146,7 @@ export default function EnrollmentPage() {
                       <p className="font-medium text-green-900">{result.batch?.department_name || 'Engineering'}</p>
                     </div>
                     <div className="p-3 bg-white/80 rounded-lg border border-green-100">
-                      <p className="text-xs text-muted-foreground uppercase font-semibold">Section</p>
+                      <p className="text-xs text-muted-foreground uppercase font-semibold">Batch</p>
                       <p className="font-medium text-green-900">{result.batch?.name || 'Batch A'}</p>
                     </div>
                   </div>
@@ -173,7 +173,7 @@ export default function EnrollmentPage() {
                 </h3>
                 <ul className="space-y-3">
                   {[
-                    "Join your specific academic section instantly",
+                    "Join your specific academic batch instantly",
                     "Access your official course curriculum",
                     "Link with your assigned faculty instructors",
                     "Start tracking your attendance and grades"

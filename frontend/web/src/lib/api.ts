@@ -1,4 +1,5 @@
 // API client for the Lumina FastAPI backend
+import type { TeacherAiQueueItem } from "@/types/api";
 
 const HOSTED_API_BASE = "/api";
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
@@ -2099,7 +2100,7 @@ export class RealAPI {
   }
 
   /** GET /api/teacher/ai-queue — returns AI answers awaiting verification */
-  async getTeacherAiQueue(): Promise<{ items: any[]; total_pending: number }> {
+  async getTeacherAiQueue(): Promise<{ items: TeacherAiQueueItem[]; total_pending: number }> {
     const res = await this.fetchAuthorized("/api/teacher/ai-queue");
     return res.ok ? await res.json() : { items: [], total_pending: 0 };
   }
@@ -2116,7 +2117,7 @@ export class RealAPI {
   async editApproveAiQueueItem(id: string, final_answer: string, faculty_note?: string): Promise<any> {
     const res = await this.fetchAuthorized(`/api/teacher/ai-queue/${id}/edit-approve`, {
       method: "POST",
-      body: JSON.stringify({ final_answer, faculty_note })
+      body: JSON.stringify({ final_answer, teacher_note: faculty_note, faculty_note })
     });
     return res.ok ? await res.json() : null;
   }
@@ -2125,7 +2126,7 @@ export class RealAPI {
   async rejectAiQueueItem(id: string, faculty_note: string): Promise<any> {
     const res = await this.fetchAuthorized(`/api/teacher/ai-queue/${id}/reject`, {
       method: "POST",
-      body: JSON.stringify({ faculty_note })
+      body: JSON.stringify({ teacher_note: faculty_note, faculty_note })
     });
     return res.ok ? await res.json() : null;
   }

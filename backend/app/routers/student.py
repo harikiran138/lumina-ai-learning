@@ -39,7 +39,7 @@ from app.store.attendance_store import AttendanceStore
 from app.services.personalization_service import PersonalizationService
 from app.services.onboarding_service import OnboardingService
 from app.services.risk_service import RiskAnalysisService
-from app.api.deps import get_current_student as get_current_user
+from app.api.deps import get_current_student as get_current_student
 from app.database.supabase_manager import supabase_db
 from app.database.scoped_db import get_scoped_db, ScopedSupabase
 from app.store.academic_store import AcademicStore
@@ -63,7 +63,6 @@ class EnrollmentRequest(BaseModel):
 
 
 class StudentOnboardingCompleteRequest(BaseModel):
-    section_id: Optional[str] = None
     class_id: Optional[str] = None
     program_id: Optional[str] = None
     subject_ids: List[str] = []
@@ -689,7 +688,7 @@ def _build_achievement_summary(
 @router.post("/tutor/ask")
 async def ask_tutor(
     payload: Dict[str, Any] = Body(...),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
 ):
     prompt = (
         payload.get("prompt")
@@ -783,7 +782,7 @@ async def ask_tutor(
 @router.get("/tutor/answer/{answer_id}")
 async def get_tutor_answer(
     answer_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
 ):
     job = _student_tutor_answers.get(answer_id)
     if not job:
@@ -814,7 +813,7 @@ async def get_tutor_answer(
 
 @router.get("/ai-tutor/pending")
 async def get_pending_ai_answers(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
 ):
     """
     Return all AI answers for the current student using the canonical
@@ -832,7 +831,7 @@ async def get_pending_ai_answers(
 
 @router.get("/dashboard")
 async def get_student_dashboard(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     analytics: AnalyticsStore = Depends(get_analytics_store),
     assignment_store: AssignmentStore = Depends(get_assignment_store),
     personalization: PersonalizationService = Depends(get_personalization_service),
@@ -979,7 +978,7 @@ async def get_student_dashboard(
 
 @router.get("/analytics")
 async def get_student_analytics(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """
@@ -1029,7 +1028,7 @@ async def get_student_analytics(
 @router.post("/activity")
 async def log_student_activity(
     request: ActivityLogRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """
@@ -1068,13 +1067,13 @@ async def log_student_activity(
 
 
 @router.get("/test-user")
-async def test_user(current_user: dict = Depends(get_current_user)):
+async def test_user(current_user: dict = Depends(get_current_student)):
     return current_user
 
 
 @router.get("/badges")
 async def get_badges(
-    current_user: dict = Depends(get_current_user), 
+    current_user: dict = Depends(get_current_student), 
     student_store: StudentStore = Depends(get_student_store)
 ):
     """
@@ -1085,7 +1084,7 @@ async def get_badges(
 
 @router.get("/subjects/list")
 async def list_student_subjects(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     course_store: CourseStore = Depends(get_course_store),
 ):
     """
@@ -1096,7 +1095,7 @@ async def list_student_subjects(
 
 @router.get("/onboarding/options")
 async def get_student_onboarding_options(
-     current_user: dict = Depends(get_current_user),
+     current_user: dict = Depends(get_current_student),
      onboarding_service: OnboardingService = Depends(get_onboarding_service),
 ):
     """
@@ -1108,7 +1107,7 @@ async def get_student_onboarding_options(
 @router.post("/onboarding/complete")
 async def complete_student_onboarding(
     data: Dict[str, Any],
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     onboarding_service: OnboardingService = Depends(get_onboarding_service),
 ):
     """
@@ -1122,7 +1121,7 @@ async def complete_student_onboarding(
 
 @router.get("/certificates")
 async def get_certificates(
-    current_user: dict = Depends(get_current_user), 
+    current_user: dict = Depends(get_current_student), 
     student_store: StudentStore = Depends(get_student_store)
 ):
     """
@@ -1134,7 +1133,7 @@ async def get_certificates(
 @router.post("/profile/update")
 async def update_profile(
     data: Dict[str, Any],
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     user_store: UserStore = Depends(get_user_store),
     user_data_store: UserDataStore = Depends(get_user_data_store),
     personalization: PersonalizationService = Depends(get_personalization_service),
@@ -1194,7 +1193,7 @@ async def update_profile(
 
 @router.get("/profile/analytics")
 async def get_learner_analytics(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """
@@ -1207,7 +1206,7 @@ async def get_learner_analytics(
 
 @router.get("/profile/projections")
 async def get_mastery_projections(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """
@@ -1218,7 +1217,7 @@ async def get_mastery_projections(
 
 @router.get("/profile")
 async def get_profile(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     personalization: PersonalizationService = Depends(get_personalization_service),
     user_data_store: UserDataStore = Depends(get_user_data_store),
     analytics: AnalyticsStore = Depends(get_analytics_store),
@@ -1249,7 +1248,7 @@ async def get_profile(
         inst_id = current_user.get("college_id")
         dept_id = current_user.get("dept_id") or current_user.get("department_id")
         batch_id = current_user.get("batch_id")
-        section_id = current_user.get("section_id")
+        class_id = current_user.get("class_id")
         ay_id = current_user.get("academic_year_id")
         
         if inst_id:
@@ -1262,9 +1261,9 @@ async def get_profile(
             batch = await personalization.db.fetch_one("batches", {"id": batch_id})
             if batch and isinstance(batch, dict):
                 hierarchy["batch"] = f"{batch.get('batch_name') or batch.get('name')} ({batch.get('year') or ''})"
-        if section_id:
-            section = await personalization.db.fetch_one("sections", {"id": section_id})
-            hierarchy["section"] = (section.get("name") if section else None) if isinstance(section, dict) else None
+        if class_id:
+            class_row = await personalization.db.fetch_one("classes", {"id": class_id})
+            hierarchy["section"] = (class_row.get("name") if class_row else None) if isinstance(class_row, dict) else None
         if ay_id:
             ay = await personalization.db.fetch_one("academic_years", {"id": ay_id})
             hierarchy["academicYear"] = (ay.get("name") if ay else None) if isinstance(ay, dict) else None
@@ -1332,7 +1331,7 @@ async def get_profile(
 @router.get("/leaderboard")
 async def get_leaderboard(
     timeframe: str = "weekly",
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     response: Response = None,
     analytics_store: AnalyticsStore = Depends(get_analytics_store),
 ):
@@ -1424,7 +1423,7 @@ async def get_leaderboard(
 
 @router.get("/attendance/summary")
 async def get_student_attendance_summary(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     attendance_store: AttendanceStore = Depends(get_attendance_store),
 ):
     """
@@ -1436,7 +1435,7 @@ async def get_student_attendance_summary(
 @router.get("/attendance/detail")
 async def get_student_attendance_detail(
     course_id: Optional[str] = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     attendance_store: AttendanceStore = Depends(get_attendance_store),
 ):
     """
@@ -1449,7 +1448,7 @@ async def get_student_attendance_detail(
 async def list_student_assignments(
     course_id: Optional[str] = None,
     status: Optional[str] = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     assignment_store: AssignmentStore = Depends(get_assignment_store),
 ):
     """
@@ -1464,7 +1463,7 @@ async def list_student_assignments(
 async def submit_student_assignment(
     assignment_id: str,
     submission_data: Dict[str, Any],
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     assignment_store: AssignmentStore = Depends(get_assignment_store),
 ):
     """
@@ -1478,7 +1477,7 @@ async def submit_student_assignment(
 @router.get("/grades/list")
 async def list_student_grades(
     course_id: Optional[str] = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     student_store: StudentStore = Depends(get_student_store),
 ):
     """
@@ -1490,7 +1489,7 @@ async def list_student_grades(
 @router.get("/materials/list")
 async def list_student_materials(
     course_id: Optional[str] = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     course_store: CourseStore = Depends(get_course_store),
 ):
     """
@@ -1502,7 +1501,7 @@ async def list_student_materials(
 @router.post("/behavior/ingest")
 async def ingest_behavior_batch(
     payload: Dict[str, Any],
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """
@@ -1523,7 +1522,7 @@ async def ingest_behavior_batch(
 @router.get("/adaptive/next-question")
 async def get_adaptive_question(
     course_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """
@@ -1534,7 +1533,7 @@ async def get_adaptive_question(
 
 @router.get("/review/schedule")
 async def get_review_schedule(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """
@@ -1545,7 +1544,7 @@ async def get_review_schedule(
 
 @router.get("/spaced-repetition/list")
 async def get_student_spaced_repetition(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """Get SRS cards due for review."""
@@ -1555,7 +1554,7 @@ async def get_student_spaced_repetition(
 @router.post("/spaced-repetition/submit")
 async def submit_student_spaced_repetition_review(
     payload: Dict[str, Any],
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """Submit SRS review results."""
@@ -1567,7 +1566,7 @@ async def submit_student_spaced_repetition_review(
 @router.post("/quiz/submit-answer")
 async def submit_answer(
     payload: Dict[str, Any],
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     personalization: PersonalizationService = Depends(get_personalization_service),
 ):
     """Submit a single quiz answer and get immediate feedback / mastery update."""
@@ -1582,7 +1581,7 @@ async def submit_answer(
 @router.get("/intelligence/report")
 async def get_student_intelligence_report(
     # Renamed from get_student_intelligence to avoid collision with /intelligence route below.
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     personalization: PersonalizationService = Depends(get_personalization_service),
     risk_service: RiskAnalysisService = Depends(get_risk_analysis_service),
 ):
@@ -1602,7 +1601,7 @@ async def get_student_intelligence_report(
 @router.get("/debug/trace")
 async def get_student_debug_trace(
     # Renamed from get_debug_trace to avoid collision with /intelligence/debug/{question_id} route below.
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
     analytics_store: AnalyticsStore = Depends(get_analytics_store),
 ):
     """Debug endpoint to see raw event trace for a student."""
@@ -1617,7 +1616,7 @@ async def get_student_debug_trace(
 @router.get("/intelligence")
 async def get_student_intelligence_state(
     course_id: Optional[str] = None,
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: Dict[str, Any] = Depends(get_current_student),
 ):
     """
     Returns the full intelligence state for the current student:
@@ -1683,7 +1682,7 @@ async def get_student_intelligence_state(
 @router.get("/intelligence/debug/{question_id}")
 async def get_intelligence_debug_trace(
     question_id: str,
-    current_user: Dict[str, Any] = Depends(get_current_user),
+    current_user: Dict[str, Any] = Depends(get_current_student),
 ):
     """
     Returns full pipeline trace for a specific answer interaction.

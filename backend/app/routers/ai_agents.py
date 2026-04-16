@@ -4,8 +4,9 @@ from typing import Optional, Dict, Any
 import asyncio
 import structlog
 
-from app.api.deps import get_current_student as get_current_user
+from app.api.deps import get_current_student as get_current_student
 from app.database.scoped_db import get_scoped_db
+from app.store.academic_store import AcademicStore
 
 router = APIRouter()
 log = structlog.get_logger(__name__)
@@ -18,16 +19,17 @@ class AgentQueryRequest(BaseModel):
 @router.post("/tutor/ask")
 async def ask_tutor_agent(
     request: AgentQueryRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
 ):
     """Query the AI Tutor agent. Logic uses ai_answer_queue to track human-in-the-loop verification."""
     db = get_scoped_db(current_user)
+    academic_store = AcademicStore(db=db)
     
     # 1. Get primary teacher for the course to fulfill schema NOT NULL requirement
     teacher_id = None
     if request.course_id:
         try:
-            assignment = await db.fetch_one("teacher_assignments", {"course_id": request.course_id})
+            assignment = await academic_store.get_teacher_assignment(request.course_id)
             teacher_id = (assignment or {}).get("teacher_id")
         except:
             pass
@@ -57,7 +59,7 @@ async def ask_tutor_agent(
 @router.get("/tutor/status/{answer_id}")
 async def get_tutor_status(
     answer_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_student),
 ):
     """Get the completion status of an AI Tutor query."""
     db = get_scoped_db(current_user)

@@ -462,7 +462,6 @@ class AITutorStore:
         course_id = requested_course_id
         class_id = context.get("class_id")
 
-        # Canonical: use class_id; section_id is a legacy alias
         class_id = context.get("class_id") or context.get("section_id")
         academic_year_id = context.get("academic_year_id")
         section_name = "Not specified"
@@ -526,7 +525,6 @@ class AITutorStore:
             "course_name": course_name,
             "teacher_id": teacher_id,
             "class_id": class_id,          # canonical key
-            "section_id": class_id,        # legacy alias — kept for backward compat
             "section_name": section_name,
             "academic_year_id": academic_year_id,
             "academic_year": academic_year_name,

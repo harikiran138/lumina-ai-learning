@@ -24,6 +24,27 @@ class AcademicStore:
             normalized["class_name"] = normalized.get("name")
         return normalized
 
+    async def get_course_by_id(self, course_id: str) -> Optional[dict]:
+        return await self.db.fetch_one("courses", {"id": course_id})
+
+    async def get_courses_by_ids(self, course_ids: List[str]) -> List[dict]:
+        return await self.db.fetch_all("courses", {"id": ("in", course_ids)})
+
+    async def get_student_subjects(self, student_id: str) -> List[dict]:
+        return await self.db.fetch_all("student_subjects", {"student_id": student_id})
+
+    async def get_learner_profile(self, user_id: str) -> Optional[dict]:
+        return await self.db.fetch_one("learner_profiles", {"user_id": user_id})
+
+    async def get_skill_mastery(self, user_id: str) -> List[dict]:
+        return await self.db.fetch_all("skill_mastery", {"user_id": user_id})
+
+    async def get_semester(self, semester_id: str) -> Optional[dict]:
+        return await self.db.fetch_one("semesters", {"id": semester_id})
+
+    async def get_assignments(self, course_id: str, limit: int = 3) -> List[dict]:
+        return await self.db.fetch_all("assignments", {"course_id": course_id}, limit=limit)
+
     async def get_student_enrollment(self, student_id: str) -> Optional[dict]:
         return await self.db.fetch_one("student_enrollments", {"student_id": student_id})
 
@@ -110,7 +131,7 @@ class AcademicStore:
                 "student_id": student_id,
                 "academic_year_id": enrollment.get("academic_year_id"),
                 "semester_id": next_sem["id"],
-                "section_id": enrollment.get("section_id"),
+                "class_id": enrollment.get("class_id") or enrollment.get("section_id"),
                 "result_status": "promoted"
             })
             
@@ -226,7 +247,7 @@ class AcademicStore:
 
     async def assign_student_to_section(self, student_id: str, section_id: str, academic_year_id: str):
         data = {
-            "section_id": section_id,
+            "class_id": section_id,
             "academic_year_id": academic_year_id,
             "updated_at": datetime.utcnow().isoformat()
         }
@@ -236,7 +257,7 @@ class AcademicStore:
         try:
             await self.db.upsert("student_profiles", {
                 "user_id": student_id,
-                "section_id": section_id,
+                "class_id": section_id,
                 "academic_year_id": academic_year_id
             }, on_conflict="user_id")
         except Exception as e:
@@ -262,9 +283,17 @@ class AcademicStore:
         """Fetch a class by its canonical class_id."""
         return await self.db.fetch_one("classes", {"id": class_id})
 
-    async def get_teacher_assignments_for_class(self, class_id: str) -> list:
-        """Fetch all teacher assignments for a given class."""
+    async def get_teacher_assignment(self, course_id: str) -> Optional[dict]:
+        """Fetch the teacher assigned to a specific course."""
+        return await self.db.fetch_one("teacher_assignments", {"course_id": course_id})
+
+    async def get_teacher_assignments_for_class(self, class_id: str) -> List[dict]:
+        """Fetch all teacher assignments for a specific class."""
         return await self.db.fetch_all("teacher_assignments", {"class_id": class_id})
+
+    async def get_class_teacher_links(self, class_id: str) -> List[dict]:
+        """Alias for class-level teacher links used by router orchestration."""
+        return await self.get_teacher_assignments_for_class(class_id)
 
     async def update_mastery(self, student_id: str, topic_id: str, performance_gain: float):
         """Update a student's mastery level for a specific topic/concept."""

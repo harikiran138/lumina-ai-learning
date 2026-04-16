@@ -21,7 +21,7 @@ async def verify_teacher_has_class_access(db, teacher_id: str, class_id: str) ->
             "teacher_assignments",
             {"teacher_id": teacher_id, "class_id": class_id},
         )
-        return assignment is not None
+        return bool(assignment and assignment.get("status") == "approved")
     except Exception as exc:
         log.error(
             "verify_teacher_class_access_failed",

@@ -33,7 +33,7 @@ interface AIAnswer {
   askedAt: string;
   status: "pending" | "approved" | "edited" | "rejected" | "escalated_to_faculty" | "escalated_to_hod" | "edited_approved";
   confidence: number | null;
-  facultyNote?: string;
+  teacherNote?: string;
 }
 
 function formatTimeAgo(dateString: string) {
@@ -83,7 +83,7 @@ export default function VerificationQueuePage() {
         askedAt: row.created_at || new Date().toISOString(),
         status: normalizeStatus(row.status || "pending"),
         confidence: row.ai_confidence ?? null,
-        facultyNote: row.faculty_note || undefined,
+        teacherNote: row.teacher_note || row.faculty_note || undefined,
       }));
       setQueue(items);
       setTotalPending(data.total_pending ?? items.filter((q) => q.status === "pending").length);
@@ -132,7 +132,7 @@ export default function VerificationQueuePage() {
                 ...item,
                 status: action,
                 aiAnswer: updatedAnswer ?? item.aiAnswer,
-                facultyNote: note ?? item.facultyNote,
+                teacherNote: note ?? item.teacherNote,
               }
             : item,
         ),
@@ -151,7 +151,7 @@ export default function VerificationQueuePage() {
   const startEdit = (item: AIAnswer) => {
     setEditingId(item.id);
     setEditText(item.aiAnswer);
-    setNoteText(item.facultyNote ?? "");
+    setNoteText(item.teacherNote ?? "");
     setExpandedId(item.id);
   };
 
